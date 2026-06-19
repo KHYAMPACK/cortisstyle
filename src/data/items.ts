@@ -147,6 +147,24 @@ export const clothingItems: ClothingItem[] = [
         zIndex: 4,
       },
     },
+  ), 
+  defineItem(
+    "sunglasses-02",
+    "SUNGLASSES",
+    "accessories",
+    "Oliver Peoples",
+    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
+    "Purchased from Hanam Vintage Depot — Available at select vintage markets in Apgujeong Private Sale.",
+    undefined,
+    {
+      canvasImage: "/images/clothes/outfit-02/sunglasses-02.png",
+      defaultCanvasPosition: {
+        top: "10%",
+        left: "10%",
+        width: "20%",
+        zIndex: 4,
+      },
+    },
   ),
   defineItem(
     "necklace-01",
@@ -257,6 +275,24 @@ export const clothingItems: ClothingItem[] = [
     },
   ),
   defineItem(
+    "necklace-02",
+    "NECKLACE",
+    "accessories",
+    "The Row",
+    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
+    "Purchased from Dongdaemun Vintage Market — Available at select vintage markets in Itaewon Antiquity Lane.",
+    undefined,
+    {
+      canvasImage: "/images/clothes/outfit-03/necklace-02.png",
+      defaultCanvasPosition: {
+        top: "10%",
+        left: "10%",
+        width: "20%",
+        zIndex: 4,
+      },
+    },
+  ),  
+  defineItem(
     "tank-top-01",
     "TANK TOP",
     "tops",
@@ -364,6 +400,7 @@ export const clothingItems: ClothingItem[] = [
       },
     },
   ),
+ 
 ];
 
 const clothingItemMap = new Map(

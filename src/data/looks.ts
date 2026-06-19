@@ -137,6 +137,7 @@ export const looks: Look[] = [
     width: IMAGE_WIDTH,
     height: IMAGE_HEIGHT,
     items: [
+      placement("sunglasses-02", "20%", "48%", "14%", "62%"),
       placement("necklace-01", "20%", "48%", "14%", "62%"),
       placement("longsleeve-shirt-01", "54%", "42%", "48%", "28%"),
       placement("shorts-01", "70%", "48%", "76%", "58%"),
@@ -224,6 +225,7 @@ export const looks: Look[] = [
       placement("sneakers-03", "70%", "48%", "76%", "58%"),
       placement("sunglasses-01", "70%", "48%", "76%", "58%"),
       placement("cap-01", "70%", "48%", "76%", "58%"),
+      placement("necklace-02", "70%", "48%", "76%", "58%"),
       placement("teal-bag-01", "70%", "48%", "76%", "58%"),
     ],
   },
