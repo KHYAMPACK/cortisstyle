@@ -1,15 +1,71 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
+import { FormEvent, useEffect, useState } from "react";
+import { useAuth } from "@/context/AuthContext";
 
 const spring = { type: "spring" as const, stiffness: 100, damping: 20 };
 
 interface AuthPopupProps {
   isOpen: boolean;
   onClose: () => void;
+  onAuthSuccess?: () => void;
+  description?: string;
 }
 
-export function AuthPopup({ isOpen, onClose }: AuthPopupProps) {
+type AuthMode = "signin" | "signup";
+
+export function AuthPopup({
+  isOpen,
+  onClose,
+  onAuthSuccess,
+  description = "Join Cortis Style to access your private archive.",
+}: AuthPopupProps) {
+  const {
+    signInWithPassword,
+    signUpWithPassword,
+    isAuthenticating,
+    authError,
+    clearAuthError,
+  } = useAuth();
+
+  const [mode, setMode] = useState<AuthMode>("signin");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  useEffect(() => {
+    if (!isOpen) {
+      setEmail("");
+      setPassword("");
+      setMode("signin");
+      clearAuthError();
+    }
+  }, [isOpen, clearAuthError]);
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    clearAuthError();
+
+    try {
+      if (mode === "signin") {
+        await signInWithPassword(email.trim(), password);
+      } else {
+        const hasSession = await signUpWithPassword(email.trim(), password);
+        if (!hasSession) return;
+      }
+
+      onAuthSuccess?.();
+      onClose();
+    } catch {
+      // Error state is handled in AuthContext.
+    }
+  };
+
+  const toggleMode = () => {
+    clearAuthError();
+    setMode((current) => (current === "signin" ? "signup" : "signin"));
+  };
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -42,32 +98,83 @@ export function AuthPopup({ isOpen, onClose }: AuthPopupProps) {
               id="auth-popup-title"
               className="font-serif text-2xl leading-tight text-neutral-950"
             >
-              Join Cortis Style
+              {mode === "signin" ? "Welcome Back" : "Join Cortis Style"}
             </h2>
             <p className="mt-4 text-sm leading-relaxed text-neutral-600">
-              Please create an account or sign in to save your favorite look
-              archives.
+              {description}
             </p>
 
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+              <label className="block">
+                <span className="mb-2 block text-[9px] tracking-[0.35em] text-neutral-400 uppercase">
+                  Email
+                </span>
+                <input
+                  type="email"
+                  required
+                  autoComplete="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  className="w-full border border-neutral-200 bg-white px-3 py-3 text-sm text-neutral-900 outline-none transition-colors focus:border-neutral-900"
+                  placeholder="you@studio.com"
+                />
+              </label>
+
+              <label className="block">
+                <span className="mb-2 block text-[9px] tracking-[0.35em] text-neutral-400 uppercase">
+                  Password
+                </span>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  autoComplete={
+                    mode === "signin" ? "current-password" : "new-password"
+                  }
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  className="w-full border border-neutral-200 bg-white px-3 py-3 text-sm text-neutral-900 outline-none transition-colors focus:border-neutral-900"
+                  placeholder="••••••••"
+                />
+              </label>
+
+              {authError && (
+                <motion.p
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-[11px] leading-relaxed text-red-600"
+                >
+                  {authError}
+                </motion.p>
+              )}
+
               <button
-                type="button"
-                className="flex-1 border border-neutral-900 bg-neutral-900 px-5 py-3 text-[10px] tracking-[0.3em] text-white uppercase transition-colors hover:bg-white hover:text-neutral-900"
+                type="submit"
+                disabled={isAuthenticating}
+                className="w-full border border-neutral-900 bg-neutral-900 px-5 py-3 text-[10px] tracking-[0.3em] text-white uppercase transition-colors hover:bg-white hover:text-neutral-900 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Sign In
+                {isAuthenticating
+                  ? "Processing…"
+                  : mode === "signin"
+                    ? "Sign In"
+                    : "Create Premium Account"}
               </button>
-              <button
-                type="button"
-                className="flex-1 border border-neutral-900 bg-white px-5 py-3 text-[10px] tracking-[0.3em] text-neutral-900 uppercase transition-colors hover:bg-neutral-900 hover:text-white"
-              >
-                Sign Up
-              </button>
-            </div>
+            </form>
+
+            <button
+              type="button"
+              onClick={toggleMode}
+              className="mt-5 w-full text-[10px] tracking-[0.25em] text-neutral-500 uppercase transition-colors hover:text-neutral-900"
+            >
+              {mode === "signin"
+                ? "Create Premium Account"
+                : "Already have an account? Sign In"}
+            </button>
 
             <button
               type="button"
               onClick={onClose}
-              className="mt-6 w-full text-[10px] tracking-[0.3em] text-neutral-400 uppercase transition-colors hover:text-neutral-900"
+              className="mt-4 w-full text-[10px] tracking-[0.3em] text-neutral-400 uppercase transition-colors hover:text-neutral-900"
             >
               Close
             </button>

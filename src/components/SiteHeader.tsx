@@ -1,6 +1,9 @@
 "use client";
 
+"use client";
+
 import { HeaderIconNav } from "@/components/HeaderIconNav";
+import { EnterDigitalWardrobeButton } from "@/components/EnterDigitalWardrobeButton";
 
 export function SiteHeader() {
   return (
@@ -18,10 +21,13 @@ export function SiteHeader() {
           </h1>
         </div>
 
-        <p className="max-w-xs text-[11px] leading-relaxed tracking-[0.08em] text-neutral-500 md:text-right">
-          An editorial study in form, silhouette, and restraint.
-          Curated looks for the new season.
-        </p>
+        <div className="flex max-w-xs flex-col items-start gap-5 md:items-end">
+          <p className="text-[11px] leading-relaxed tracking-[0.08em] text-neutral-500 md:text-right">
+            An editorial study in form, silhouette, and restraint.
+            Curated looks for the new season.
+          </p>
+          <EnterDigitalWardrobeButton />
+        </div>
       </div>
     </header>
   );
