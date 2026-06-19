@@ -42,6 +42,22 @@ export const looks: Look[] = [
     modelName: "SEONGHYEON",
     shopierUrl: "https://shopier.com/placeholder",
     guidePrice: GUIDE_PRICE_TL,
+    layout: "collage",
+    outfitId: "outfit-01",
+    editorGuideImage:
+      "/images/clothes/outfit-01/temp_image_0AD45B1B-0275-4C7F-817B-E22C2700E090.WEBP",
+    modelPortraitPosition: {
+      top: "6%",
+      left: "52%",
+      width: "42%",
+      zIndex: 1,
+    },
+    modelNamePosition: {
+      top: "60%",
+      left: "52%",
+      fontSizePx: 100,
+      zIndex: 1,
+    },
     ...metrics({
       vibe: "Avant-Garde / Cyber Grunge",
       investmentRetail: 5,
@@ -51,12 +67,12 @@ export const looks: Look[] = [
     width: IMAGE_WIDTH,
     height: IMAGE_HEIGHT,
     items: [
-      placement("black-vintage-beanie-01", "10.2%", "32.4%", "5.7%", "47.8%"),
-      placement("chrome-mesh-layer-top-01", "36%", "48%", "40%", "20%"),
-      placement("baggy-jeans-01", "54.0%", "41.2%", "54%", "16%"),
-      placement("vintage-sunglasses-01", "23.5%", "20.8%", "17.2%", "15.7%"),
-      placement("chunky-sneakers-01", "76.8%", "17.4%", "68.2%", "21.2%"),
-      placement("leather-vintage-bag-01", "62.5%", "78.6%", "73.2%", "79.2%"),
+      placement("black-beanie-01", "10.2%", "32.4%", "5.7%", "47.8%"),
+      placement("compression-shirt-01", "36%", "48%", "40%", "20%"),
+      placement("bootcut-jeans-02", "54.0%", "41.2%", "54%", "16%"),
+      placement("black-sunglasses-01", "23.5%", "20.8%", "17.2%", "15.7%"),
+      placement("sneakers-01", "76.8%", "17.4%", "68.2%", "21.2%"),
+      placement("black-bag-01", "62.5%", "78.6%", "73.2%", "79.2%"),
     ],
   },
   {

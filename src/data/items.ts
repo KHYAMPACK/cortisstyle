@@ -25,6 +25,7 @@ function defineItem(
   blurredDescription: string,
   unlockedDescription?: string,
   shopUrl?: string,
+  canvas?: Pick<ClothingItem, "canvasImage" | "defaultCanvasPosition">,
 ): ClothingItem {
   return {
     id,
@@ -34,57 +35,118 @@ function defineItem(
     blurredDescription,
     unlockedDescription: unlockedDescription ?? revealDescription(blurredDescription),
     shopUrl: shopUrl ?? `https://shopier.com/cortis/${id}`,
+    ...canvas,
   };
 }
 
 export const clothingItems: ClothingItem[] = [
   defineItem(
-    "black-vintage-beanie-01",
-    "BLACK VINTAGE BEANIE",
+    "black-beanie-01",
+    "BLACK BEANIE",
     "headwear",
     "Chanel",
     "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
     "Purchased from Cortis Archive Seoul — Available at select vintage markets in Dongdaemun Vintage Market.",
+    undefined,
+    {
+      canvasImage: "/images/clothes/outfit-01/black-beanie-01.png",
+      defaultCanvasPosition: {
+        top: "5%",
+        left: "38%",
+        width: "20%",
+        zIndex: 4,
+      },
+    },
   ),
   defineItem(
-    "chrome-mesh-layer-top-01",
-    "CHROME MESH LAYER TOP",
+    "compression-shirt-01",
+    "COMPRESSION SHIRT",
     "tops",
     "Archive Atelier",
     "Sourced via [BLURRED] archive — Limited restock at [BLURRED] concept store.",
     "Sourced via Cortis Archive Seoul — Limited restock at Garosu-gil Concept Store.",
+    undefined,
+    {
+      canvasImage: "/images/clothes/outfit-01/compression-shirt-01.png",
+      defaultCanvasPosition: {
+        top: "28%",
+        left: "30%",
+        width: "40%",
+        zIndex: 6,
+      },
+    },
   ),
   defineItem(
-    "baggy-jeans-01",
-    "BAGGY JEANS",
+    "bootcut-jeans-02",
+    "BOOTCUT JEANS",
     "bottoms",
     "Levi's Vintage",
     "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
     "Purchased from Itaewon Antiquity Lane — Available at select vintage markets in Dongdaemun Vintage Market.",
+    undefined,
+    {
+      canvasImage: "/images/clothes/outfit-01/bootcut-jeans-02.png",
+      defaultCanvasPosition: {
+        top: "48%",
+        left: "25%",
+        width: "38%",
+        zIndex: 4,
+      },
+    },
   ),
   defineItem(
-    "vintage-sunglasses-01",
-    "VINTAGE SUNGLASSES",
+    "black-sunglasses-01",
+    "BLACK SUNGLASSES",
     "accessories",
     "Oliver Peoples",
     "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
     "Purchased from Hanam Vintage Depot — Available at select vintage markets in Apgujeong Private Sale.",
+    undefined,
+    {
+      canvasImage: "/images/clothes/outfit-01/black-sunglasses-01.png",
+      defaultCanvasPosition: {
+        top: "6%",
+        left: "5%",
+        width: "24%",
+        zIndex: 4,
+      },
+    },
   ),
   defineItem(
-    "chunky-sneakers-01",
-    "CHUNKY SNEAKERS",
+    "sneakers-01",
+    "SNEAKERS",
     "shoes",
     "Balenciaga",
     "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
     "Purchased from Garosu-gil Concept Store — Available at select vintage markets in Cortis Archive Seoul.",
+    undefined,
+    {
+      canvasImage: "/images/clothes/outfit-01/sneakers-01.png",
+      defaultCanvasPosition: {
+        top: "72%",
+        left: "8%",
+        width: "32%",
+        zIndex: 4,
+      },
+    },
   ),
   defineItem(
-    "leather-vintage-bag-01",
-    "LEATHER VINTAGE BAG",
+    "black-bag-01",
+    "BLACK BAG",
     "accessories",
     "Coach Vintage",
     "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
     "Purchased from Dongdaemun Vintage Market — Available at select vintage markets in Itaewon Antiquity Lane.",
+    undefined,
+    {
+      canvasImage: "/images/clothes/outfit-01/black-bag-01.png",
+      defaultCanvasPosition: {
+        top: "58%",
+        left: "62%",
+        width: "28%",
+        zIndex: 4,
+      },
+    },
   ),
   defineItem(
     "oversized-wool-overcoat-01",

@@ -5,6 +5,13 @@ export type ClothingCategory =
   | "shoes"
   | "accessories";
 
+export interface CanvasPosition {
+  top: string;
+  left: string;
+  width: string;
+  zIndex: number;
+}
+
 export interface ClothingItem {
   id: string;
   name: string;
@@ -13,4 +20,6 @@ export interface ClothingItem {
   blurredDescription: string;
   unlockedDescription: string;
   shopUrl: string;
+  canvasImage?: string;
+  defaultCanvasPosition?: CanvasPosition;
 }

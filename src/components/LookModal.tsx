@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useState } from "react";
 import type { Look, ResolvedLookItem } from "@/types/look";
+import type { CanvasItemLayout } from "@/lib/canvasLayout";
 import { resolveEditableLookItems } from "@/lib/resolveLookItems";
 import { LookImagePanel } from "@/components/modal/LookImagePanel";
 import { LookItemsPanel } from "@/components/modal/LookItemsPanel";
@@ -26,6 +27,9 @@ export function LookModal({ look, onClose }: LookModalProps) {
   const [showPreview, setShowPreview] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
   const [editableItems, setEditableItems] = useState<ResolvedLookItem[]>([]);
+  const [canvasLayouts, setCanvasLayouts] = useState<
+    Record<string, CanvasItemLayout>
+  >({});
 
   useEffect(() => {
     setActiveItemId(null);
@@ -36,6 +40,7 @@ export function LookModal({ look, onClose }: LookModalProps) {
     } else {
       setEditableItems([]);
     }
+    setCanvasLayouts({});
   }, [look]);
 
   useEffect(() => {
@@ -70,21 +75,9 @@ export function LookModal({ look, onClose }: LookModalProps) {
     setActiveItemId(itemId);
   };
 
-  const handleCoordinateChange = useCallback(
-    (itemId: string, point: "from" | "to", top: string, left: string) => {
-      setEditableItems((current) =>
-        current.map((item) =>
-          item.id === itemId
-            ? {
-                ...item,
-                coordinates: {
-                  ...item.coordinates,
-                  [point]: { top, left },
-                },
-              }
-            : item,
-        ),
-      );
+  const handleCanvasLayoutsChange = useCallback(
+    (layouts: Record<string, CanvasItemLayout>) => {
+      setCanvasLayouts(layouts);
     },
     [],
   );
@@ -151,15 +144,22 @@ export function LookModal({ look, onClose }: LookModalProps) {
               </button>
 
               <LookImagePanel
+                lookId={look.id}
                 image={look.image}
                 title={look.title}
                 modelName={look.modelName}
+                layout={look.layout}
+                outfitId={look.outfitId}
+                editorGuideImage={look.editorGuideImage}
+                modelPortraitImage={look.modelPortraitImage}
+                modelPortraitPosition={look.modelPortraitPosition}
+                modelNamePosition={look.modelNamePosition}
                 items={editableItems}
                 activeItemId={activeItemId}
                 isEditMode={isEditMode && !showPreview}
                 showPreview={showPreview}
                 onSelectItem={handleSelectItem}
-                onCoordinateChange={handleCoordinateChange}
+                onCanvasLayoutsChange={handleCanvasLayoutsChange}
               />
 
               <LookItemsPanel
@@ -174,6 +174,7 @@ export function LookModal({ look, onClose }: LookModalProps) {
                 onPurchase={() => setShowCheckout(true)}
                 onBackToLook={handleBackToLook}
                 onCloseCheckout={() => setShowCheckout(false)}
+                canvasLayouts={canvasLayouts}
               />
             </div>
           </motion.div>

@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useRef } from "react";
 import type { Look, ResolvedLookItem } from "@/types/look";
+import type { CanvasItemLayout } from "@/lib/canvasLayout";
 import { CoordinateEditorExport } from "@/components/modal/CoordinateEditorExport";
 import { LookItemCard } from "@/components/modal/LookItemCard";
 import { ProductMetadataTable } from "@/components/modal/ProductMetadataTable";
@@ -25,6 +26,7 @@ interface LookItemsPanelProps {
   onPurchase: () => void;
   onBackToLook: () => void;
   onCloseCheckout: () => void;
+  canvasLayouts?: Record<string, CanvasItemLayout>;
 }
 
 export function LookItemsPanel({
@@ -39,6 +41,7 @@ export function LookItemsPanel({
   onPurchase,
   onBackToLook,
   onCloseCheckout,
+  canvasLayouts,
 }: LookItemsPanelProps) {
   const itemRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
 
@@ -156,7 +159,14 @@ export function LookItemsPanel({
                 ))}
               </div>
 
-              {isEditMode && <CoordinateEditorExport items={items} />}
+              {isEditMode && (
+                <CoordinateEditorExport
+                  items={items}
+                  canvasLayouts={canvasLayouts}
+                  isCollage={look.layout === "collage"}
+                  modelName={look.modelName}
+                />
+              )}
             </motion.div>
           )}
         </AnimatePresence>
