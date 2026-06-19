@@ -51,12 +51,31 @@ export function GuidePreviewCanvas({
         className="flex h-full max-h-full w-full max-w-sm flex-col gap-2.5 overflow-y-auto"
       >
         <PreviewPage label="Page 1 — Style Guide & Source Directory">
-          <GuidePageOneView guide={guide} compact />
+          <GuidePageOneView guide={guide} compact blurred />
         </PreviewPage>
 
         <PreviewPage label="Page 2 — Certificate & Digital Ledger">
-          <GuidePageTwoView guide={guide} compact />
+          <GuidePageTwoView guide={guide} compact blurred />
         </PreviewPage>
+      </div>
+
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          backgroundImage:
+            "repeating-linear-gradient(-45deg, transparent, transparent 18px, rgba(255,255,255,0.04) 18px, rgba(255,255,255,0.04) 19px)",
+        }}
+      />
+
+      <div className="pointer-events-none absolute inset-0 bg-black/20 backdrop-blur-[1px]" />
+
+      <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+        <p
+          className="rotate-[-24deg] text-center font-serif text-sm tracking-[0.25em] text-white/15 uppercase md:text-lg"
+          style={{ textShadow: "0 0 40px rgba(0,0,0,0.6)" }}
+        >
+          Preview Only — Legal use requires purchase
+        </p>
       </div>
     </motion.div>
   );

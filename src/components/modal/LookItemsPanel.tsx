@@ -94,9 +94,9 @@ export function LookItemsPanel({
               </div>
 
               <p className="mt-6 text-xs leading-relaxed text-neutral-500">
-                Preview the unlocked editorial guide on the left. Complete your
+                Preview the watermarked document on the left. Complete your
                 purchase to receive the full printable PDF with certificate and
-                direct shop links delivered instantly.
+                unlocked shop links delivered instantly.
               </p>
 
               <DownloadStyleGuideButton lookId={look.id} className="mt-6" />
