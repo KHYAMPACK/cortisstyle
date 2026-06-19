@@ -7,8 +7,7 @@ import {
   formatHitboxHeight,
   formatHitboxWidth,
   resolveHitboxOffset,
-  MODEL_NAME_CANVAS_ID,
-  MODEL_PORTRAIT_CANVAS_ID,
+  stripLegacyModelLayers,
   type CanvasItemLayout,
 } from "@/lib/canvasLayout";
 import { isLocalhostClient } from "@/lib/dev";
@@ -18,7 +17,6 @@ interface CoordinateEditorExportProps {
   items: ResolvedLookItem[];
   canvasLayouts?: Record<string, CanvasItemLayout>;
   isCollage?: boolean;
-  modelName?: string;
 }
 
 function layoutToExportEntry(
@@ -26,17 +24,6 @@ function layoutToExportEntry(
   layout: CanvasItemLayout,
   label?: string,
 ) {
-  if (layout.fontSizePx !== undefined && layout.widthPx === undefined) {
-    return {
-      itemId,
-      label,
-      top: layout.top,
-      left: layout.left,
-      fontSize: `${layout.fontSizePx}px`,
-      zIndex: layout.zIndex,
-    };
-  }
-
   return {
     itemId,
     label,
@@ -56,87 +43,40 @@ export function CoordinateEditorExport({
   items,
   canvasLayouts = {},
   isCollage = false,
-  modelName,
 }: CoordinateEditorExportProps) {
   const [saveState, setSaveState] = useState<
     "idle" | "saving" | "saved" | "error"
   >("idle");
   const [saveError, setSaveError] = useState<string | null>(null);
   const canSaveToCodebase = isLocalhostClient();
+  const clothingLayouts = useMemo(
+    () => stripLegacyModelLayers(canvasLayouts),
+    [canvasLayouts],
+  );
+
   const canvasJson = useMemo(() => {
-    const entries = [];
-
-    const modelLayout = canvasLayouts[MODEL_PORTRAIT_CANVAS_ID];
-    if (modelLayout) {
-      entries.push(
-        layoutToExportEntry(
-          MODEL_PORTRAIT_CANVAS_ID,
-          modelLayout,
-          "Model portrait",
-        ),
-      );
-    }
-
-    const nameLayout = canvasLayouts[MODEL_NAME_CANVAS_ID];
-    if (nameLayout) {
-      entries.push(
-        layoutToExportEntry(
-          MODEL_NAME_CANVAS_ID,
-          nameLayout,
-          modelName ?? "Model name",
-        ),
-      );
-    }
-
-    for (const item of items) {
-      const layout = canvasLayouts[item.id];
+    const entries = items.map((item) => {
+      const layout = clothingLayouts[item.id];
       if (!layout) {
-        entries.push({ itemId: item.id });
-        continue;
+        return { itemId: item.id };
       }
-      entries.push(layoutToExportEntry(item.id, layout, item.name));
-    }
+      return layoutToExportEntry(item.id, layout, item.name);
+    });
 
     return JSON.stringify(entries, null, 2);
-  }, [items, canvasLayouts, modelName]);
+  }, [items, clothingLayouts]);
 
   const canvasSnippet = useMemo(() => {
-    const snippets: string[] = [];
-    const modelLayout = canvasLayouts[MODEL_PORTRAIT_CANVAS_ID];
+    return items
+      .map((item) => {
+        const layout = clothingLayouts[item.id];
+        if (!layout) {
+          return `// missing layout for ${item.id}`;
+        }
 
-    if (modelLayout) {
-      snippets.push(`// Model portrait
-modelPortraitPosition: {
-  top: "${modelLayout.top}",
-  left: "${modelLayout.left}",
-  width: "42%",
-  zIndex: ${modelLayout.zIndex},
-},
-// hitboxWidth: "${formatHitboxWidth(modelLayout)}",
-// hitboxHeight: "${formatHitboxHeight(modelLayout)}",`);
-    }
+        const widthPercent = item.defaultCanvasPosition?.width ?? "20%";
 
-    const nameLayout = canvasLayouts[MODEL_NAME_CANVAS_ID];
-    if (nameLayout) {
-      snippets.push(`// Model name typography
-modelNamePosition: {
-  top: "${nameLayout.top}",
-  left: "${nameLayout.left}",
-  fontSizePx: ${nameLayout.fontSizePx ?? 11},
-  zIndex: ${nameLayout.zIndex},
-},`);
-    }
-
-    for (const item of items) {
-      const layout = canvasLayouts[item.id];
-      if (!layout) {
-        snippets.push(`// missing layout for ${item.id}`);
-        continue;
-      }
-
-      const widthPercent = item.defaultCanvasPosition?.width ?? "20%";
-
-      snippets.push(`// ${item.id}
+        return `// ${item.id}
 defaultCanvasPosition: {
   top: "${layout.top}",
   left: "${layout.left}",
@@ -144,11 +84,10 @@ defaultCanvasPosition: {
   zIndex: ${layout.zIndex},
 },
 // hitboxWidth: "${formatHitboxWidth(layout)}",
-// hitboxHeight: "${formatHitboxHeight(layout)}",`);
-    }
-
-    return snippets.join("\n\n");
-  }, [items, canvasLayouts]);
+// hitboxHeight: "${formatHitboxHeight(layout)}",`;
+      })
+      .join("\n\n");
+  }, [items, clothingLayouts]);
 
   const placementsJson = useMemo(
     () =>
@@ -190,7 +129,7 @@ defaultCanvasPosition: {
       const response = await fetch("/api/save-canvas-layout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lookId, layouts: canvasLayouts }),
+        body: JSON.stringify({ lookId, layouts: clothingLayouts }),
       });
 
       const payload = (await response.json()) as {

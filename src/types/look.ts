@@ -34,21 +34,5 @@ export interface Look extends StyleMetrics {
   outfitId?: string;
   /** Edit-only guide override. Defaults to /images/clothes/{outfitId}/combined.png */
   editorGuideImage?: string;
-  /** Override model portrait path. Defaults to /images/clothes/{outfitId}/model.png */
-  modelPortraitImage?: string;
-  /** Default canvas position for the model portrait layer */
-  modelPortraitPosition?: {
-    top: string;
-    left: string;
-    width: string;
-    zIndex: number;
-  };
-  /** Default canvas position for the model name typography layer */
-  modelNamePosition?: {
-    top: string;
-    left: string;
-    fontSizePx: number;
-    zIndex: number;
-  };
   items: LookItemPlacement[];
 }

@@ -165,7 +165,6 @@ export function LookItemsPanel({
                   items={items}
                   canvasLayouts={canvasLayouts}
                   isCollage={look.layout === "collage"}
-                  modelName={look.modelName}
                 />
               )}
             </motion.div>

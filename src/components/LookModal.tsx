@@ -140,16 +140,7 @@ export function LookModal({ look, onClose }: LookModalProps) {
               </button>
 
               <LookImagePanel
-                lookId={look.id}
-                image={look.image}
-                title={look.title}
-                modelName={look.modelName}
-                layout={look.layout}
-                outfitId={look.outfitId}
-                editorGuideImage={look.editorGuideImage}
-                modelPortraitImage={look.modelPortraitImage}
-                modelPortraitPosition={look.modelPortraitPosition}
-                modelNamePosition={look.modelNamePosition}
+                look={look}
                 items={editableItems}
                 activeItemId={activeItemId}
                 isEditMode={isEditMode && !showPreview}

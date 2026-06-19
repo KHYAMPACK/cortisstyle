@@ -31,23 +31,17 @@ export function LookCard({ look, priority = false, onSelect }: LookCardProps) {
           aria-hidden
         />
 
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 opacity-0 transition-opacity duration-500 group-hover:opacity-100">
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-500 group-hover:opacity-100">
           <span className="font-serif text-[11px] tracking-[0.45em] text-white uppercase">
             View Look
-          </span>
-          <span className="text-[9px] tracking-[0.35em] text-white/70 uppercase">
-            {look.modelName}
           </span>
         </div>
       </div>
 
-      <div className="flex items-baseline justify-between gap-4 border-t border-neutral-200 px-3 py-3 md:px-4 md:py-4">
+      <div className="border-t border-neutral-200 px-3 py-3 md:px-4 md:py-4">
         <h2 className="font-serif text-[11px] leading-snug tracking-[0.12em] text-neutral-900 uppercase md:text-xs">
           {look.title}
         </h2>
-        <span className="shrink-0 text-[9px] tracking-[0.3em] text-neutral-400 uppercase">
-          {look.modelName}
-        </span>
       </div>
     </button>
   );

@@ -1,18 +1,18 @@
 import { committedCanvasLayouts } from "@/data/canvas-layouts";
 import { isLocalhostClient } from "@/lib/dev";
 import type { CanvasItemLayout } from "@/types/canvas-layout";
-import { MODEL_NAME_CANVAS_ID, MODEL_PORTRAIT_CANVAS_ID } from "@/types/canvas-layout";
+import { LEGACY_MODEL_LAYER_IDS } from "@/types/canvas-layout";
 
 export type { CanvasItemLayout } from "@/types/canvas-layout";
-export {
-  DEFAULT_MODEL_NAME_POSITION,
-  DEFAULT_MODEL_PORTRAIT_POSITION,
-  MODEL_NAME_CANVAS_ID,
-  MODEL_PORTRAIT_CANVAS_ID,
-} from "@/types/canvas-layout";
 
-export function isTextLayerLayout(layout: CanvasItemLayout): boolean {
-  return layout.fontSizePx !== undefined && layout.widthPx === undefined;
+const LEGACY_MODEL_LAYER_ID_SET = new Set<string>(LEGACY_MODEL_LAYER_IDS);
+
+export function stripLegacyModelLayers(
+  layouts: Record<string, CanvasItemLayout>,
+): Record<string, CanvasItemLayout> {
+  return Object.fromEntries(
+    Object.entries(layouts).filter(([id]) => !LEGACY_MODEL_LAYER_ID_SET.has(id)),
+  );
 }
 
 export function resolveHitboxDimensions(layout: CanvasItemLayout): {
@@ -50,7 +50,9 @@ export function loadCanvasLayoutsFromStorage(
     if (!raw) return null;
 
     const parsed = JSON.parse(raw) as Record<string, CanvasItemLayout>;
-    return parsed && typeof parsed === "object" ? parsed : null;
+    if (!parsed || typeof parsed !== "object") return null;
+
+    return stripLegacyModelLayers(parsed);
   } catch {
     return null;
   }
@@ -62,7 +64,10 @@ export function saveCanvasLayoutsToStorage(
 ): void {
   if (typeof window === "undefined") return;
 
-  localStorage.setItem(getLayoutStorageKey(lookId), JSON.stringify(layouts));
+  localStorage.setItem(
+    getLayoutStorageKey(lookId),
+    JSON.stringify(stripLegacyModelLayers(layouts)),
+  );
 }
 
 export function clearCanvasLayoutsFromStorage(lookId: string): void {
@@ -73,18 +78,6 @@ export function clearCanvasLayoutsFromStorage(lookId: string): void {
 
 export function resolveOutfitId(lookId: string, outfitId?: string): string {
   return outfitId ?? lookId.replace(/^look-/, "outfit-");
-}
-
-export function resolveModelPortraitPath(
-  lookId: string,
-  options?: { outfitId?: string; modelPortraitImage?: string },
-): string {
-  if (options?.modelPortraitImage) {
-    return options.modelPortraitImage;
-  }
-
-  const folder = resolveOutfitId(lookId, options?.outfitId);
-  return `/images/clothes/${folder}/model.png`;
 }
 
 export function resolveEditorGuideImagePath(
@@ -115,20 +108,6 @@ export function layoutFromDefaultPosition(
     top: position.top,
     left: position.left,
     widthPx: Math.round(widthPx),
-    zIndex: position.zIndex,
-  };
-}
-
-export function layoutFromTextPosition(position: {
-  top: string;
-  left: string;
-  fontSizePx: number;
-  zIndex: number;
-}): CanvasItemLayout {
-  return {
-    top: position.top,
-    left: position.left,
-    fontSizePx: position.fontSizePx,
     zIndex: position.zIndex,
   };
 }
@@ -164,7 +143,6 @@ function mergeStoredLayout(
     top: stored.top ?? defaults.top,
     left: stored.left ?? defaults.left,
     widthPx: stored.widthPx ?? defaults.widthPx,
-    fontSizePx: stored.fontSizePx ?? defaults.fontSizePx,
     hitboxWidthPx: stored.hitboxWidthPx ?? defaults.hitboxWidthPx,
     hitboxHeightPx: stored.hitboxHeightPx ?? defaults.hitboxHeightPx,
     hitboxOffsetTopPx: stored.hitboxOffsetTopPx ?? defaults.hitboxOffsetTopPx,
@@ -208,47 +186,16 @@ export function resolveCanvasLayouts(
     };
   }>,
   containerWidth: number,
-  options?: {
-    modelPortrait?: {
-      top: string;
-      left: string;
-      width: string;
-      zIndex: number;
-    };
-    modelName?: {
-      top: string;
-      left: string;
-      fontSizePx: number;
-      zIndex: number;
-    };
-  },
 ): Record<string, CanvasItemLayout> {
   const defaults = buildInitialCanvasLayouts(items, containerWidth);
-
-  if (options?.modelPortrait) {
-    defaults[MODEL_PORTRAIT_CANVAS_ID] = layoutFromDefaultPosition(
-      options.modelPortrait,
-      containerWidth,
-    );
-  }
-
-  if (options?.modelName) {
-    defaults[MODEL_NAME_CANVAS_ID] = layoutFromTextPosition(options.modelName);
-  }
-
-  const committed = committedCanvasLayouts[lookId];
+  const committed = stripLegacyModelLayers(committedCanvasLayouts[lookId] ?? {});
   let merged = mergeLayoutRecords(defaults, committed);
-
-  // looks.ts controls model name unless Save to Codebase wrote __model-name__.
-  if (options?.modelName && !committed?.[MODEL_NAME_CANVAS_ID]) {
-    merged[MODEL_NAME_CANVAS_ID] = layoutFromTextPosition(options.modelName);
-  }
 
   if (isLocalhostClient()) {
     merged = mergeLayoutRecords(merged, loadCanvasLayoutsFromStorage(lookId));
   }
 
-  return merged;
+  return stripLegacyModelLayers(merged);
 }
 
 export type CanvasMoveDirection = "up" | "down" | "left" | "right";
@@ -407,22 +354,6 @@ export function getVisualRect(
   };
 }
 
-export function getTextRect(
-  layout: CanvasItemLayout,
-  label: string,
-  container: { width: number; height: number },
-): CanvasRect {
-  const anchor = getAssetAnchorPx(layout, container);
-  const fontSizePx = layout.fontSizePx ?? 11;
-
-  return {
-    top: anchor.top,
-    left: anchor.left,
-    width: Math.max(fontSizePx * 2, label.length * fontSizePx * 0.58),
-    height: fontSizePx * 1.6,
-  };
-}
-
 export interface CanvasHitTestEntry {
   id: string;
   zIndex: number;
@@ -433,57 +364,29 @@ export interface CanvasHitTestEntry {
 export function buildCanvasHitTestEntries(
   layouts: Record<string, CanvasItemLayout>,
   items: Array<{ id: string }>,
-  modelName: string,
   options: {
     isEditMode: boolean;
     selectedItemId: string | null;
   },
   container: { width: number; height: number },
 ): CanvasHitTestEntry[] {
-  const clothingIds = new Set(items.map((item) => item.id));
   const entries: CanvasHitTestEntry[] = [];
 
-  for (const [id, layout] of Object.entries(layouts)) {
-    const isClothing = clothingIds.has(id);
-    const isModelPortrait = id === MODEL_PORTRAIT_CANVAS_ID;
-    const isModelName = id === MODEL_NAME_CANVAS_ID;
-
-    if (!options.isEditMode && !isClothing) {
-      continue;
-    }
+  for (const item of items) {
+    const layout = layouts[item.id];
+    if (!layout || layout.widthPx === undefined) continue;
 
     const zIndex =
-      options.isEditMode && options.selectedItemId === id
+      options.isEditMode && options.selectedItemId === item.id
         ? layout.zIndex + 1000
         : layout.zIndex;
 
-    if (isModelName) {
-      entries.push({
-        id,
-        zIndex,
-        hitRect: getTextRect(layout, modelName, container),
-      });
-      continue;
-    }
-
-    if (layout.widthPx !== undefined) {
-      entries.push({
-        id,
-        zIndex,
-        hitRect: getHitboxRect(layout, container),
-        fallbackRect: isClothing ? getVisualRect(layout, container) : null,
-      });
-      continue;
-    }
-
-    if (isModelPortrait) {
-      entries.push({
-        id,
-        zIndex,
-        hitRect: getHitboxRect(layout, container),
-        fallbackRect: getVisualRect(layout, container),
-      });
-    }
+    entries.push({
+      id: item.id,
+      zIndex,
+      hitRect: getHitboxRect(layout, container),
+      fallbackRect: getVisualRect(layout, container),
+    });
   }
 
   return entries.sort((a, b) => b.zIndex - a.zIndex);

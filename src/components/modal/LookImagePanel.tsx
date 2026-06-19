@@ -8,16 +8,16 @@ import { GuidePreviewCanvas } from "@/components/modal/GuidePreviewCanvas";
 import { LookCanvas } from "@/components/modal/LookCanvas";
 
 interface LookImagePanelProps {
-  lookId: string;
-  image: string;
-  title: string;
-  modelName: string;
-  layout?: Look["layout"];
-  outfitId?: string;
-  editorGuideImage?: string;
-  modelPortraitImage?: string;
-  modelPortraitPosition?: Look["modelPortraitPosition"];
-  modelNamePosition?: Look["modelNamePosition"];
+  look: Pick<
+    Look,
+    | "id"
+    | "image"
+    | "title"
+    | "modelName"
+    | "layout"
+    | "outfitId"
+    | "editorGuideImage"
+  >;
   items: ResolvedLookItem[];
   activeItemId: string | null;
   isEditMode: boolean;
@@ -27,16 +27,7 @@ interface LookImagePanelProps {
 }
 
 export function LookImagePanel({
-  lookId,
-  image,
-  title,
-  modelName,
-  layout,
-  outfitId,
-  editorGuideImage,
-  modelPortraitImage,
-  modelPortraitPosition,
-  modelNamePosition,
+  look,
   items,
   activeItemId,
   isEditMode,
@@ -45,7 +36,7 @@ export function LookImagePanel({
   onCanvasLayoutsChange,
 }: LookImagePanelProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const allowCanvasBleed = layout === "collage" && isEditMode && !showPreview;
+  const allowCanvasBleed = look.layout === "collage" && isEditMode && !showPreview;
 
   return (
     <div className="flex h-[42vh] min-h-0 shrink-0 items-center justify-center bg-white p-4 lg:h-full lg:w-[52%] lg:p-8">
@@ -63,24 +54,17 @@ export function LookImagePanel({
             {showPreview ? (
               <GuidePreviewCanvas
                 key="preview"
-                lookTitle={title}
-                modelName={modelName}
+                lookTitle={look.title}
+                modelName={look.modelName}
                 items={items}
                 isUnlockedViewState={showPreview}
               />
             ) : (
               <LookCanvas
                 key="canvas"
-                lookId={lookId}
-                lookImage={image}
-                title={title}
-                modelName={modelName}
-                layout={layout}
-                outfitId={outfitId}
-                editorGuideImage={editorGuideImage}
-                modelPortraitImage={modelPortraitImage}
-                modelPortraitPosition={modelPortraitPosition}
-                modelNamePosition={modelNamePosition}
+                look={look}
+                lookImage={look.image}
+                title={look.title}
                 items={items}
                 activeItemId={activeItemId}
                 isEditMode={isEditMode}

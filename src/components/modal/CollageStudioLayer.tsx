@@ -14,11 +14,7 @@ import {
 import type { ResolvedLookItem } from "@/types/look";
 import {
   buildCanvasHitTestEntries,
-  DEFAULT_MODEL_NAME_POSITION,
-  DEFAULT_MODEL_PORTRAIT_POSITION,
   findTopmostAssetAtPoint,
-  MODEL_NAME_CANVAS_ID,
-  MODEL_PORTRAIT_CANVAS_ID,
   nudgeCanvasLayout,
   nudgeHitboxLayout,
   nudgeHitboxOffset,
@@ -33,20 +29,6 @@ import { isLocalhostClient } from "@/lib/dev";
 
 interface CollageStudioLayerProps {
   lookId: string;
-  modelName: string;
-  modelPortraitSrc: string;
-  modelPortraitPosition?: {
-    top: string;
-    left: string;
-    width: string;
-    zIndex: number;
-  };
-  modelNamePosition?: {
-    top: string;
-    left: string;
-    fontSizePx: number;
-    zIndex: number;
-  };
   items: ResolvedLookItem[];
   selectedItemId: string | null;
   activeItemId: string | null;
@@ -66,15 +48,9 @@ const ARROW_KEY_DIRECTION: Record<string, CanvasMoveDirection> = {
 
 const MIN_WIDTH_PX = 48;
 const MAX_WIDTH_PX = 720;
-const MIN_FONT_PX = 8;
-const MAX_FONT_PX = 96;
 
 export function CollageStudioLayer({
   lookId,
-  modelName,
-  modelPortraitSrc,
-  modelPortraitPosition = DEFAULT_MODEL_PORTRAIT_POSITION,
-  modelNamePosition = DEFAULT_MODEL_NAME_POSITION,
   items,
   selectedItemId,
   activeItemId,
@@ -100,19 +76,10 @@ export function CollageStudioLayer({
     const containerWidth = parent.getBoundingClientRect().width;
     if (containerWidth <= 0) return;
 
-    const nextLayouts = resolveCanvasLayouts(lookId, items, containerWidth, {
-      modelPortrait: modelPortraitPosition,
-      modelName: modelNamePosition,
-    });
+    const nextLayouts = resolveCanvasLayouts(lookId, items, containerWidth);
     layoutsReadyRef.current = true;
     setLayouts(nextLayouts);
-  }, [
-    lookId,
-    items,
-    modelPortraitPosition,
-    modelNamePosition,
-    parentRef,
-  ]);
+  }, [lookId, items, parentRef]);
 
   useLayoutEffect(() => {
     syncLayoutsFromContainer();
@@ -163,7 +130,6 @@ export function CollageStudioLayer({
       const entries = buildCanvasHitTestEntries(
         layouts,
         items,
-        modelName,
         { isEditMode, selectedItemId },
         container,
       );
@@ -176,7 +142,7 @@ export function CollageStudioLayer({
 
         if (isEditMode) {
           onSelectCanvasItem(hitId);
-        } else if (clothingIds.current.has(hitId)) {
+        } else {
           onSelectItem(hitId);
         }
         return;
@@ -193,7 +159,6 @@ export function CollageStudioLayer({
   }, [
     layouts,
     items,
-    modelName,
     isEditMode,
     selectedItemId,
     parentRef,
@@ -206,25 +171,9 @@ export function CollageStudioLayer({
 
     const handleWheel = (event: WheelEvent) => {
       const layout = layouts[selectedItemId];
-      if (!layout) return;
+      if (!layout || layout.widthPx === undefined) return;
 
       event.preventDefault();
-
-      if (selectedItemId === MODEL_NAME_CANVAS_ID) {
-        const fontSizePx = layout.fontSizePx ?? 11;
-        const delta = event.deltaY > 0 ? -1 : 1;
-        const nextSize = Math.max(
-          MIN_FONT_PX,
-          Math.min(MAX_FONT_PX, fontSizePx + delta),
-        );
-        setLayouts((current) => ({
-          ...current,
-          [selectedItemId]: { ...layout, fontSizePx: nextSize },
-        }));
-        return;
-      }
-
-      if (layout.widthPx === undefined) return;
 
       const delta = event.deltaY > 0 ? -8 : 8;
       const nextWidth = Math.round(
@@ -289,10 +238,9 @@ export function CollageStudioLayer({
 
       setLayouts((current) => {
         const layout = current[selectedItemId];
-        if (!layout) return current;
+        if (!layout || layout.widthPx === undefined) return current;
 
-        const isTextLayer = selectedItemId === MODEL_NAME_CANVAS_ID;
-        if (isHitboxMode && !isTextLayer && layout.widthPx !== undefined) {
+        if (isHitboxMode) {
           const patch = event.shiftKey
             ? nudgeHitboxLayout(layout, direction, stepPx)
             : nudgeHitboxOffset(layout, direction, stepPx);
@@ -321,47 +269,12 @@ export function CollageStudioLayer({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isEditMode, isHitboxMode, selectedItemId, parentRef]);
 
-  const modelLayout = layouts[MODEL_PORTRAIT_CANVAS_ID];
-  const modelNameLayout = layouts[MODEL_NAME_CANVAS_ID];
-
   return (
     <>
       {isEditMode && isHitboxMode && (
-        <div className="pointer-events-none absolute top-2 right-2 z-[100] bg-red-600/90 px-2 py-1 text-[8px] tracking-[0.25em] text-white uppercase">
+        <div className="pointer-events-none absolute top-2 left-2 z-[100] bg-red-600/90 px-2 py-1 text-[8px] tracking-[0.25em] text-white uppercase">
           Hitbox · Arrows move · Shift+Arrows resize
         </div>
-      )}
-
-      {modelLayout && (
-        <CanvasAsset
-          layout={modelLayout}
-          isSelected={isEditMode && selectedItemId === MODEL_PORTRAIT_CANVAS_ID}
-          isDimmed={false}
-          isEditMode={isEditMode}
-          isHitboxMode={isHitboxMode}
-          onScale={(widthPx) =>
-            updateLayout(MODEL_PORTRAIT_CANVAS_ID, { widthPx })
-          }
-        >
-          <Image
-            src={modelPortraitSrc}
-            alt={`${modelName} portrait`}
-            width={1200}
-            height={1200}
-            draggable={false}
-            className="pointer-events-none h-auto w-full select-none object-contain"
-            sizes="(max-width: 1024px) 30vw, 18vw"
-          />
-        </CanvasAsset>
-      )}
-
-      {modelNameLayout && (
-        <CanvasTextLayer
-          label={modelName}
-          layout={modelNameLayout}
-          isSelected={isEditMode && selectedItemId === MODEL_NAME_CANVAS_ID}
-          isEditMode={isEditMode}
-        />
       )}
 
       {items.map((item) => {
@@ -468,43 +381,6 @@ function CanvasAsset({
       {isEditMode && isSelected && !isHitboxMode && (
         <ResizeHandle visualWidth={visualWidth} onScale={onScale} />
       )}
-    </motion.div>
-  );
-}
-
-interface CanvasTextLayerProps {
-  label: string;
-  layout: CanvasItemLayout;
-  isSelected: boolean;
-  isEditMode: boolean;
-}
-
-function CanvasTextLayer({
-  label,
-  layout,
-  isSelected,
-  isEditMode,
-}: CanvasTextLayerProps) {
-  const fontSizePx = layout.fontSizePx ?? 11;
-
-  return (
-    <motion.div
-      className="pointer-events-none absolute select-none"
-      style={{
-        top: layout.top,
-        left: layout.left,
-        zIndex: isSelected ? layout.zIndex + 10 : layout.zIndex,
-      }}
-      animate={{ opacity: 1 }}
-    >
-      <span
-        className={`block font-serif leading-none tracking-[0.35em] text-neutral-950 uppercase ${
-          isEditMode && isSelected ? "ring-1 ring-blue-500/90" : ""
-        }`}
-        style={{ fontSize: fontSizePx }}
-      >
-        {label}
-      </span>
     </motion.div>
   );
 }

@@ -5,29 +5,21 @@ import Image from "next/image";
 import { useEffect, useState, type RefObject } from "react";
 import type { Look, ResolvedLookItem } from "@/types/look";
 import type { CanvasItemLayout } from "@/lib/canvasLayout";
-import {
-  resolveEditorGuideImagePath,
-  resolveModelPortraitPath,
-} from "@/lib/canvasLayout";
+import { resolveEditorGuideImagePath } from "@/lib/canvasLayout";
 import {
   canRenderCollageLayout,
   COLLAGE_BACKDROP,
-  COLLAGE_BACKDROP_GRADIENT,
 } from "@/lib/collageLayout";
 import { CollageStudioLayer } from "@/components/modal/CollageStudioLayer";
 import { EditorGuideOverlay } from "@/components/modal/EditorGuideOverlay";
 
 interface LookCanvasProps {
-  lookId: string;
+  look: Pick<
+    Look,
+    "id" | "outfitId" | "layout" | "editorGuideImage"
+  >;
   lookImage: string;
   title: string;
-  modelName: string;
-  layout?: Look["layout"];
-  outfitId?: string;
-  editorGuideImage?: string;
-  modelPortraitImage?: string;
-  modelPortraitPosition?: Look["modelPortraitPosition"];
-  modelNamePosition?: Look["modelNamePosition"];
   items: ResolvedLookItem[];
   activeItemId: string | null;
   isEditMode: boolean;
@@ -37,16 +29,9 @@ interface LookCanvasProps {
 }
 
 export function LookCanvas({
-  lookId,
+  look,
   lookImage,
   title,
-  modelName,
-  layout,
-  outfitId,
-  editorGuideImage,
-  modelPortraitImage,
-  modelPortraitPosition,
-  modelNamePosition,
   items,
   activeItemId,
   isEditMode,
@@ -55,11 +40,11 @@ export function LookCanvas({
   onCanvasLayoutsChange,
 }: LookCanvasProps) {
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
-  const useCollage = canRenderCollageLayout(layout, items);
+  const useCollage = canRenderCollageLayout(look.layout, items);
 
   useEffect(() => {
     setSelectedItemId(null);
-  }, [lookId]);
+  }, [look.id]);
 
   useEffect(() => {
     if (!isEditMode) {
@@ -70,13 +55,9 @@ export function LookCanvas({
   const allowBleed = useCollage && isEditMode;
 
   const showEditorGuide = useCollage && isEditMode;
-  const guideImagePath = resolveEditorGuideImagePath(lookId, {
-    outfitId,
-    editorGuideImage,
-  });
-  const modelPortraitSrc = resolveModelPortraitPath(lookId, {
-    outfitId,
-    modelPortraitImage,
+  const guideImagePath = resolveEditorGuideImagePath(look.id, {
+    outfitId: look.outfitId,
+    editorGuideImage: look.editorGuideImage,
   });
 
   return (
@@ -84,15 +65,8 @@ export function LookCanvas({
       ref={containerRef}
       className={`relative h-full w-full ${
         allowBleed ? "overflow-visible" : "overflow-hidden"
-      } ${isEditMode ? "ring-2 ring-blue-400 ring-inset" : ""}`}
-      style={
-        useCollage
-          ? {
-              backgroundColor: COLLAGE_BACKDROP,
-              backgroundImage: COLLAGE_BACKDROP_GRADIENT,
-            }
-          : undefined
-      }
+      } ${useCollage ? "bg-white" : ""} ${isEditMode ? "ring-2 ring-blue-400 ring-inset" : ""}`}
+      style={useCollage ? { backgroundColor: COLLAGE_BACKDROP } : undefined}
     >
       <AnimatePresence>
         {showEditorGuide && (
@@ -106,11 +80,7 @@ export function LookCanvas({
 
       {useCollage ? (
         <CollageStudioLayer
-          lookId={lookId}
-          modelName={modelName}
-          modelPortraitSrc={modelPortraitSrc}
-          modelPortraitPosition={modelPortraitPosition}
-          modelNamePosition={modelNamePosition}
+          lookId={look.id}
           items={items}
           selectedItemId={selectedItemId}
           activeItemId={activeItemId}

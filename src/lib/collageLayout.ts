@@ -1,9 +1,7 @@
 import type { ResolvedLookItem } from "@/types/look";
 import type { Look } from "@/types/look";
 
-export const COLLAGE_BACKDROP = "#c2c5c6";
-export const COLLAGE_BACKDROP_GRADIENT =
-  "linear-gradient(180deg, #c8cbcc 0%, #b5b8b9 100%)";
+export const COLLAGE_BACKDROP = "#ffffff";
 
 export function canRenderCollageLayout(
   layout: Look["layout"],

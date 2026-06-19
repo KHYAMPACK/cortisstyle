@@ -46,23 +46,6 @@ export const looks: Look[] = [
     outfitId: "outfit-01",
     editorGuideImage:
       "/images/clothes/outfit-01/temp_image_0AD45B1B-0275-4C7F-817B-E22C2700E090.WEBP",
-    // Model portrait
-modelPortraitPosition: {
-  top: "-25.68%",
-  left: "27.98%",
-  width: "42%",
-  zIndex: 1,
-},
-// hitboxWidth: "66px",
-// hitboxHeight: "66px",
-
-// Model name typography
-modelNamePosition: {
-  top: "45.28%",
-  left: "63.90%",
-  fontSizePx: 30,
-  zIndex: 1,
-},
     ...metrics({
       vibe: "Avant-Garde / Cyber Grunge",
       investmentRetail: 5,

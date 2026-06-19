@@ -55,20 +55,5 @@
     "hitboxHeightPx": 112,
     "hitboxOffsetTopPx": 149,
     "hitboxOffsetLeftPx": 86
-  },
-  "__model-portrait__": {
-    "top": "6%",
-    "left": "52%",
-    "widthPx": 130,
-    "zIndex": 0,
-    "hitboxWidthPx": 66,
-    "hitboxOffsetTopPx": 139,
-    "hitboxOffsetLeftPx": 187
-  },
-  "__model-name__": {
-    "top": "45.28%",
-    "left": "63.90%",
-    "fontSizePx": 50,
-    "zIndex": 1
   }
 }

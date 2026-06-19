@@ -1,6 +1,7 @@
 import { promises as fs } from "fs";
 import path from "path";
-import type { CanvasItemLayout } from "@/lib/canvasLayout";
+import type { CanvasItemLayout } from "@/types/canvas-layout";
+import { stripLegacyModelLayers } from "@/lib/canvasLayout";
 
 export const runtime = "nodejs";
 
@@ -97,8 +98,13 @@ export async function POST(request: Request) {
 
   await fs.mkdir(LAYOUTS_DIR, { recursive: true });
 
+  const cleanedLayouts = stripLegacyModelLayers(layouts);
   const filePath = path.join(LAYOUTS_DIR, `${lookId}.json`);
-  await fs.writeFile(filePath, `${JSON.stringify(layouts, null, 2)}\n`, "utf8");
+  await fs.writeFile(
+    filePath,
+    `${JSON.stringify(cleanedLayouts, null, 2)}\n`,
+    "utf8",
+  );
   await regenerateCanvasLayoutIndex();
 
   return Response.json({
