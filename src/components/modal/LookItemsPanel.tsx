@@ -9,6 +9,7 @@ import { ProductMetadataTable } from "@/components/modal/ProductMetadataTable";
 import { PurchaseActionBar } from "@/components/modal/PurchaseActionBar";
 import { ReviewHighlights } from "@/components/modal/ReviewHighlights";
 import { ShopierCheckoutOverlay } from "@/components/modal/ShopierCheckoutOverlay";
+import { StyleAnalysis } from "@/components/modal/StyleAnalysis";
 
 const spring = { type: "spring" as const, stiffness: 100, damping: 20 };
 
@@ -129,6 +130,13 @@ export function LookItemsPanel({
               <p className="mt-2 text-[10px] tracking-[0.35em] text-neutral-500 uppercase">
                 {look.modelName}
               </p>
+
+              <StyleAnalysis
+                vibe={look.vibe}
+                investmentRetail={look.investmentRetail}
+                investmentWithGuide={look.investmentWithGuide}
+                versatility={look.versatility}
+              />
 
               <div className="mt-8 space-y-3 border-t border-neutral-200 pt-8">
                 {items.map((item) => (

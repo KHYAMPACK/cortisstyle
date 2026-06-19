@@ -1,4 +1,5 @@
 import type { ClothingItem } from "@/types/item";
+import type { StyleMetrics } from "@/types/style-metrics";
 
 export interface CoordinatePoint {
   top: string;
@@ -19,7 +20,7 @@ export interface ResolvedLookItem extends ClothingItem {
   coordinates: ItemCoordinates;
 }
 
-export interface Look {
+export interface Look extends StyleMetrics {
   id: string;
   title: string;
   image: string;

@@ -1,4 +1,5 @@
 import type { ItemCoordinates, Look, LookItemPlacement } from "@/types/look";
+import type { StyleMetrics } from "@/types/style-metrics";
 
 const IMAGE_WIDTH = 1700;
 const IMAGE_HEIGHT = 2500;
@@ -29,6 +30,10 @@ function placement(
   };
 }
 
+function metrics(data: StyleMetrics): StyleMetrics {
+  return data;
+}
+
 export const looks: Look[] = [
   {
     id: "look-01",
@@ -37,6 +42,12 @@ export const looks: Look[] = [
     modelName: "SEONGHYEON",
     shopierUrl: "https://shopier.com/placeholder",
     guidePrice: GUIDE_PRICE_TL,
+    ...metrics({
+      vibe: "Avant-Garde / Cyber Grunge",
+      investmentRetail: 5,
+      investmentWithGuide: 2,
+      versatility: 5,
+    }),
     width: IMAGE_WIDTH,
     height: IMAGE_HEIGHT,
     items: [
@@ -55,6 +66,12 @@ export const looks: Look[] = [
     modelName: "JUHOON",
     shopierUrl: "https://shopier.com/placeholder",
     guidePrice: GUIDE_PRICE_TL,
+    ...metrics({
+      vibe: "Quiet Luxury / Monochrome",
+      investmentRetail: 4,
+      investmentWithGuide: 2,
+      versatility: 4,
+    }),
     width: IMAGE_WIDTH,
     height: IMAGE_HEIGHT,
     items: [
@@ -70,6 +87,12 @@ export const looks: Look[] = [
     modelName: "SEONGHYEON",
     shopierUrl: "https://shopier.com/placeholder",
     guidePrice: GUIDE_PRICE_TL,
+    ...metrics({
+      vibe: "Deconstructed / Editorial Raw",
+      investmentRetail: 5,
+      investmentWithGuide: 3,
+      versatility: 3,
+    }),
     width: IMAGE_WIDTH,
     height: IMAGE_HEIGHT,
     items: [
@@ -85,6 +108,12 @@ export const looks: Look[] = [
     modelName: "JUHOON",
     shopierUrl: "https://shopier.com/placeholder",
     guidePrice: GUIDE_PRICE_TL,
+    ...metrics({
+      vibe: "Architectural / Void Tailoring",
+      investmentRetail: 5,
+      investmentWithGuide: 3,
+      versatility: 4,
+    }),
     width: IMAGE_WIDTH,
     height: IMAGE_HEIGHT,
     items: [
@@ -100,6 +129,12 @@ export const looks: Look[] = [
     modelName: "SEONGHYEON",
     shopierUrl: "https://shopier.com/placeholder",
     guidePrice: GUIDE_PRICE_TL,
+    ...metrics({
+      vibe: "Industrial / Utility Poise",
+      investmentRetail: 4,
+      investmentWithGuide: 2,
+      versatility: 5,
+    }),
     width: IMAGE_WIDTH,
     height: IMAGE_HEIGHT,
     items: [
@@ -115,6 +150,12 @@ export const looks: Look[] = [
     modelName: "JUHOON",
     shopierUrl: "https://shopier.com/placeholder",
     guidePrice: GUIDE_PRICE_TL,
+    ...metrics({
+      vibe: "Soft Brutalism / Minimal Form",
+      investmentRetail: 4,
+      investmentWithGuide: 2,
+      versatility: 4,
+    }),
     width: IMAGE_WIDTH,
     height: IMAGE_HEIGHT,
     items: [
@@ -130,6 +171,12 @@ export const looks: Look[] = [
     modelName: "SEONGHYEON",
     shopierUrl: "https://shopier.com/placeholder",
     guidePrice: GUIDE_PRICE_TL,
+    ...metrics({
+      vibe: "Nocturnal / Layered Silk",
+      investmentRetail: 4,
+      investmentWithGuide: 2,
+      versatility: 3,
+    }),
     width: IMAGE_WIDTH,
     height: IMAGE_HEIGHT,
     items: [
@@ -145,6 +192,12 @@ export const looks: Look[] = [
     modelName: "JUHOON",
     shopierUrl: "https://shopier.com/placeholder",
     guidePrice: GUIDE_PRICE_TL,
+    ...metrics({
+      vibe: "Romantic Brutalism / Drape",
+      investmentRetail: 5,
+      investmentWithGuide: 3,
+      versatility: 3,
+    }),
     width: IMAGE_WIDTH,
     height: IMAGE_HEIGHT,
     items: [
@@ -160,6 +213,12 @@ export const looks: Look[] = [
     modelName: "SEONGHYEON",
     shopierUrl: "https://shopier.com/placeholder",
     guidePrice: GUIDE_PRICE_TL,
+    ...metrics({
+      vibe: "Athletic / Static Motion",
+      investmentRetail: 4,
+      investmentWithGuide: 2,
+      versatility: 5,
+    }),
     width: IMAGE_WIDTH,
     height: IMAGE_HEIGHT,
     items: [
@@ -175,6 +234,12 @@ export const looks: Look[] = [
     modelName: "JUHOON",
     shopierUrl: "https://shopier.com/placeholder",
     guidePrice: GUIDE_PRICE_TL,
+    ...metrics({
+      vibe: "Pale Structure / Ivory Form",
+      investmentRetail: 4,
+      investmentWithGuide: 2,
+      versatility: 4,
+    }),
     width: IMAGE_WIDTH,
     height: IMAGE_HEIGHT,
     items: [
@@ -190,6 +255,12 @@ export const looks: Look[] = [
     modelName: "SEONGHYEON",
     shopierUrl: "https://shopier.com/placeholder",
     guidePrice: GUIDE_PRICE_TL,
+    ...metrics({
+      vibe: "Dissolved Form / Fluid Denim",
+      investmentRetail: 4,
+      investmentWithGuide: 3,
+      versatility: 3,
+    }),
     width: IMAGE_WIDTH,
     height: IMAGE_HEIGHT,
     items: [
@@ -205,6 +276,12 @@ export const looks: Look[] = [
     modelName: "JUHOON",
     shopierUrl: "https://shopier.com/placeholder",
     guidePrice: GUIDE_PRICE_TL,
+    ...metrics({
+      vibe: "Classic / Final Frame",
+      investmentRetail: 5,
+      investmentWithGuide: 2,
+      versatility: 5,
+    }),
     width: IMAGE_WIDTH,
     height: IMAGE_HEIGHT,
     items: [

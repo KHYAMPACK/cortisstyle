@@ -48,6 +48,7 @@ export function LookImagePanel({
                 lookTitle={title}
                 modelName={modelName}
                 items={items}
+                isUnlockedViewState={showPreview}
               />
             ) : (
               <div
