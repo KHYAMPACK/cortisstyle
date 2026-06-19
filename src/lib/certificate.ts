@@ -17,19 +17,6 @@ export function generateCertificateSerial(
 }
 
 export function generateIssueSerial(lookId: string, buyerName: string): string {
-  const serial = generateSerialRegisterNumber(lookId, buyerName);
-  return serial.replace("/", " / ");
-}
-
-export function formatArchiveCode(lookId: string): string {
-  const lookNumber = lookId.replace(/^look-/i, "").toUpperCase();
-  return `CRT-LK${lookNumber}`;
-}
-
-export function generateSerialRegisterNumber(
-  lookId: string,
-  buyerName: string,
-): string {
   let hash = 0;
   const input = `${lookId}:${buyerName.trim().toLowerCase()}`;
 
@@ -37,33 +24,7 @@ export function generateSerialRegisterNumber(
     hash = (hash * 31 + input.charCodeAt(index)) % 1000;
   }
 
-  return `${String(hash).padStart(4, "0")}/1000`;
-}
-
-export function formatSerialRegisterLine(
-  lookId: string,
-  buyerName: string,
-): string {
-  return `${formatArchiveCode(lookId)}-#${generateSerialRegisterNumber(lookId, buyerName)}`;
-}
-
-export function formatCertificateLedgerTimestamp(date: Date = new Date()): string {
-  const datePart = new Intl.DateTimeFormat("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  })
-    .format(date)
-    .toUpperCase();
-
-  const timePart = new Intl.DateTimeFormat("en-GB", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-  }).format(date);
-
-  return `${datePart} // ${timePart}`;
+  return `${String(hash).padStart(4, "0")} / 1000`;
 }
 
 export function formatPurchaseDate(date: Date = new Date()): string {
