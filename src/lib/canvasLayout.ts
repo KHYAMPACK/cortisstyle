@@ -396,16 +396,32 @@ export function findTopmostAssetAtPoint(
   x: number,
   y: number,
   entries: CanvasHitTestEntry[],
+  options?: { allowVisualFallback?: boolean },
 ): string | null {
-  for (const entry of entries) {
-    if (pointInRect(x, y, entry.hitRect)) {
-      return entry.id;
-    }
+  let hitId: string | null = null;
+  let hitZ = -Infinity;
 
-    if (entry.fallbackRect && pointInRect(x, y, entry.fallbackRect)) {
-      return entry.id;
+  for (const entry of entries) {
+    if (pointInRect(x, y, entry.hitRect) && entry.zIndex > hitZ) {
+      hitId = entry.id;
+      hitZ = entry.zIndex;
     }
   }
 
-  return null;
+  if (hitId) return hitId;
+  if (options?.allowVisualFallback === false) return null;
+
+  hitZ = -Infinity;
+  for (const entry of entries) {
+    if (
+      entry.fallbackRect &&
+      pointInRect(x, y, entry.fallbackRect) &&
+      entry.zIndex > hitZ
+    ) {
+      hitId = entry.id;
+      hitZ = entry.zIndex;
+    }
+  }
+
+  return hitId;
 }

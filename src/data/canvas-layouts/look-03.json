@@ -1,0 +1,66 @@
+{
+  "tank-top-01": {
+    "top": "-15.32%",
+    "left": "0.42%",
+    "widthPx": 382,
+    "zIndex": 4,
+    "hitboxWidthPx": 102,
+    "hitboxHeightPx": 152,
+    "hitboxOffsetTopPx": 190,
+    "hitboxOffsetLeftPx": 138
+  },
+  "baggy-jeans-01": {
+    "top": "16.90%",
+    "left": "1.04%",
+    "widthPx": 374,
+    "zIndex": 4,
+    "hitboxWidthPx": 144,
+    "hitboxHeightPx": 284,
+    "hitboxOffsetTopPx": 163,
+    "hitboxOffsetLeftPx": 114
+  },
+  "bracelet-01": {
+    "top": "1.30%",
+    "left": "-25.36%",
+    "widthPx": 366,
+    "zIndex": 4,
+    "hitboxWidthPx": 56,
+    "hitboxHeightPx": 56,
+    "hitboxOffsetTopPx": 241,
+    "hitboxOffsetLeftPx": 155
+  },
+  "sneakers-03": {
+    "top": "33.86%",
+    "left": "-31.16%",
+    "widthPx": 390,
+    "zIndex": 4,
+    "hitboxWidthPx": 130,
+    "hitboxHeightPx": 140,
+    "hitboxOffsetTopPx": 215,
+    "hitboxOffsetLeftPx": 131
+  },
+  "sunglasses-01": {
+    "top": "15.22%",
+    "left": "28.48%",
+    "widthPx": 70,
+    "zIndex": 4
+  },
+  "cap-01": {
+    "top": "-32.24%",
+    "left": "6.58%",
+    "widthPx": 382,
+    "zIndex": 4,
+    "hitboxWidthPx": 92,
+    "hitboxHeightPx": 72,
+    "hitboxOffsetTopPx": 214,
+    "hitboxOffsetLeftPx": 133
+  },
+  "teal-bag-01": {
+    "top": "5.62%",
+    "left": "35.36%",
+    "widthPx": 366,
+    "zIndex": 4,
+    "hitboxWidthPx": 366,
+    "hitboxOffsetTopPx": 14
+  }
+}

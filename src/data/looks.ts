@@ -64,7 +64,7 @@ export const looks: Look[] = [
     ],
   },
   {
-    id: "look-02",
+    id: "look-20",
     title: "Look 02 — Monochrome Silence",
     image: "/images/temp_image_173022D3-DEF3-4AE1-925F-D805072E95B3.WEBP",
     modelName: "JUHOON",
@@ -79,13 +79,10 @@ export const looks: Look[] = [
     width: IMAGE_WIDTH,
     height: IMAGE_HEIGHT,
     items: [
-      placement("oversized-wool-overcoat-01", "20%", "48%", "14%", "62%"),
-      placement("raw-hem-trousers-01", "52%", "42%", "48%", "28%"),
-      placement("sculpted-leather-belt-01", "70%", "48%", "76%", "58%"),
     ],
   },
   {
-    id: "look-03",
+    id: "look-30",
     title: "Look 03 — Raw Editorial",
     image: "/images/temp_image_25420D54-8401-4EA4-9534-08085AA504B3.WEBP",
     modelName: "SEONGHYEON",
@@ -100,9 +97,6 @@ export const looks: Look[] = [
     width: IMAGE_WIDTH,
     height: IMAGE_HEIGHT,
     items: [
-      placement("deconstructed-blazer-01", "24%", "42%", "18%", "32%"),
-      placement("sheer-panel-shirt-01", "48%", "48%", "42%", "22%"),
-      placement("stacked-silver-rings-01", "36%", "58%", "28%", "68%"),
     ],
   },
   {
@@ -121,18 +115,19 @@ export const looks: Look[] = [
     width: IMAGE_WIDTH,
     height: IMAGE_HEIGHT,
     items: [
-      placement("double-breasted-suit-jacket-01", "22%", "46%", "16%", "30%"),
-      placement("wide-leg-pleated-pants-01", "58%", "42%", "52%", "24%"),
-      placement("patent-oxford-shoes-01", "78%", "46%", "86%", "38%"),
     ],
   },
   {
-    id: "look-05",
-    title: "Look 05 — Industrial Poise",
-    image: "/images/temp_image_5CAF4EFB-6498-4A2F-9DE7-D1F4BFEE885F.WEBP",
-    modelName: "SEONGHYEON",
+    id: "look-02",
+    title: "Look 02 — Industrial Poise",
+    image: "/images/clothes/outfit-02/ootd236.png",
+    modelName: "MARTIN",
     shopierUrl: "https://shopier.com/placeholder",
     guidePrice: GUIDE_PRICE_TL,
+    layout: "collage",
+    outfitId: "outfit-02",
+    editorGuideImage:
+      "/images/clothes/outfit-02/temp_image_BFD792D8-8457-4412-905C-9FE51B6AA168.WEBP",
     ...metrics({
       vibe: "Industrial / Utility Poise",
       investmentRetail: 4,
@@ -142,9 +137,10 @@ export const looks: Look[] = [
     width: IMAGE_WIDTH,
     height: IMAGE_HEIGHT,
     items: [
-      placement("utility-cargo-vest-01", "18%", "48%", "10%", "64%"),
-      placement("ribbed-tank-layer-01", "44%", "40%", "38%", "22%"),
-      placement("steel-toe-ankle-boots-01", "74%", "44%", "82%", "30%"),
+      placement("longsleeve-shirt-01", "54%", "42%", "48%", "28%"),
+      placement("shorts-01", "70%", "48%", "76%", "58%"),
+      placement("black-bag-02", "70%", "48%", "76%", "58%"),
+      placement("sneakers-02", "70%", "48%", "76%", "58%"),
     ],
   },
   {
@@ -163,9 +159,6 @@ export const looks: Look[] = [
     width: IMAGE_WIDTH,
     height: IMAGE_HEIGHT,
     items: [
-      placement("concrete-grey-knit-01", "26%", "40%", "18%", "24%"),
-      placement("structured-canvas-trousers-01", "55%", "44%", "48%", "18%"),
-      placement("minimalist-crossbody-bag-01", "52%", "64%", "44%", "82%"),
     ],
   },
   {
@@ -184,9 +177,6 @@ export const looks: Look[] = [
     width: IMAGE_WIDTH,
     height: IMAGE_HEIGHT,
     items: [
-      placement("midnight-silk-shirt-01", "21%", "44%", "14%", "28%"),
-      placement("layered-chain-necklace-01", "34%", "52%", "26%", "68%"),
-      placement("suede-chelsea-boots-01", "76%", "46%", "84%", "22%"),
     ],
   },
   {
@@ -205,30 +195,35 @@ export const looks: Look[] = [
     width: IMAGE_WIDTH,
     height: IMAGE_HEIGHT,
     items: [
-      placement("asymmetric-draped-top-01", "23%", "48%", "16%", "32%"),
-      placement("floor-length-wool-skirt-01", "60%", "42%", "54%", "20%"),
-      placement("sculpted-heeled-mules-01", "82%", "48%", "90%", "62%"),
     ],
   },
   {
-    id: "look-09",
-    title: "Look 09 — Static Motion",
-    image: "/images/temp_image_95DC569E-5870-49FD-B619-26156683DFAC.WEBP",
+    id: "look-03",
+    title: "Look 03 — Raw Editorial",
+    image: "/images/clothes/outfit-03/ootd237.png",
     modelName: "SEONGHYEON",
     shopierUrl: "https://shopier.com/placeholder",
     guidePrice: GUIDE_PRICE_TL,
+    layout: "collage",
+    outfitId: "outfit-03",
+    editorGuideImage:
+      "/images/clothes/outfit-03/ootd237.png",
     ...metrics({
-      vibe: "Athletic / Static Motion",
+      vibe: "Deconstructed / Editorial Raw",
       investmentRetail: 4,
       investmentWithGuide: 2,
-      versatility: 5,
+      versatility: 3,
     }),
     width: IMAGE_WIDTH,
     height: IMAGE_HEIGHT,
     items: [
-      placement("motion-print-windbreaker-01", "19%", "50%", "12%", "66%"),
-      placement("tapered-nylon-joggers-01", "50%", "42%", "44%", "24%"),
-      placement("reflective-runner-sneakers-01", "70%", "44%", "78%", "34%"),
+      placement("tank-top-01", "54%", "42%", "48%", "28%"),
+      placement("baggy-jeans-01", "70%", "48%", "76%", "58%"),
+      placement("bracelet-01", "70%", "48%", "76%", "58%"),
+      placement("sneakers-03", "70%", "48%", "76%", "58%"),
+      placement("sunglasses-01", "70%", "48%", "76%", "58%"),
+      placement("cap-01", "70%", "48%", "76%", "58%"),
+      placement("teal-bag-01", "70%", "48%", "76%", "58%"),
     ],
   },
   {
@@ -247,9 +242,6 @@ export const looks: Look[] = [
     width: IMAGE_WIDTH,
     height: IMAGE_HEIGHT,
     items: [
-      placement("ivory-structured-blouse-01", "25%", "38%", "18%", "22%"),
-      placement("pale-linen-trousers-01", "54%", "46%", "48%", "18%"),
-      placement("pearl-drop-earrings-01", "30%", "56%", "22%", "72%"),
     ],
   },
   {
@@ -268,9 +260,6 @@ export const looks: Look[] = [
     width: IMAGE_WIDTH,
     height: IMAGE_HEIGHT,
     items: [
-      placement("liquid-drape-cardigan-01", "16%", "46%", "10%", "30%"),
-      placement("faded-wide-denim-01", "62%", "40%", "56%", "18%"),
-      placement("translucent-frame-sunglasses-01", "22%", "54%", "14%", "72%"),
     ],
   },
   {
@@ -289,9 +278,6 @@ export const looks: Look[] = [
     width: IMAGE_WIDTH,
     height: IMAGE_HEIGHT,
     items: [
-      placement("statement-trench-coat-01", "18%", "36%", "12%", "20%"),
-      placement("monogram-silk-scarf-01", "40%", "50%", "32%", "68%"),
-      placement("polished-leather-loafers-01", "75%", "46%", "84%", "28%"),
     ],
   },
 ];

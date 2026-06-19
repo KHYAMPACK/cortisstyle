@@ -8,7 +8,6 @@ import {
   useLayoutEffect,
   useRef,
   useState,
-  type ReactNode,
   type RefObject,
 } from "react";
 import type { ResolvedLookItem } from "@/types/look";
@@ -134,7 +133,9 @@ export function CollageStudioLayer({
         container,
       );
 
-      const hitId = findTopmostAssetAtPoint(x, y, entries);
+      const hitId = findTopmostAssetAtPoint(x, y, entries, {
+        allowVisualFallback: !isHitboxMode,
+      });
 
       if (hitId) {
         event.preventDefault();
@@ -160,6 +161,7 @@ export function CollageStudioLayer({
     layouts,
     items,
     isEditMode,
+    isHitboxMode,
     selectedItemId,
     parentRef,
     onSelectCanvasItem,
@@ -293,22 +295,14 @@ export function CollageStudioLayer({
           <CanvasAsset
             key={item.id}
             layout={layout}
+            imageSrc={item.canvasImage}
+            imageAlt={item.name}
             isSelected={isSelected}
             isDimmed={isDimmed}
             isEditMode={isEditMode}
             isHitboxMode={isHitboxMode}
             onScale={(widthPx) => updateLayout(item.id, { widthPx })}
-          >
-            <Image
-              src={item.canvasImage}
-              alt={item.name}
-              width={1200}
-              height={1200}
-              draggable={false}
-              className="pointer-events-none h-auto w-full select-none object-contain"
-              sizes="(max-width: 1024px) 30vw, 18vw"
-            />
-          </CanvasAsset>
+          />
         );
       })}
     </>
@@ -317,22 +311,24 @@ export function CollageStudioLayer({
 
 interface CanvasAssetProps {
   layout: CanvasItemLayout;
+  imageSrc: string;
+  imageAlt: string;
   isSelected: boolean;
   isDimmed: boolean;
   isEditMode: boolean;
   isHitboxMode: boolean;
   onScale: (widthPx: number) => void;
-  children: ReactNode;
 }
 
 function CanvasAsset({
   layout,
+  imageSrc,
+  imageAlt,
   isSelected,
   isDimmed,
   isEditMode,
   isHitboxMode,
   onScale,
-  children,
 }: CanvasAssetProps) {
   const hitbox = resolveHitboxDimensions(layout);
   const hitboxOffset = resolveHitboxOffset(layout);
@@ -350,7 +346,18 @@ function CanvasAsset({
       animate={{ opacity: isDimmed ? 0.55 : 1 }}
       transition={{ duration: 0.25 }}
     >
-      <div className="relative">{children}</div>
+      <div className="relative leading-[0]">
+        <Image
+          src={imageSrc}
+          alt={imageAlt}
+          width={1200}
+          height={1200}
+          unoptimized
+          draggable={false}
+          sizes={`${Math.ceil(visualWidth)}px`}
+          className="pointer-events-none block h-auto w-full max-w-none select-none object-contain object-left-top"
+        />
+      </div>
 
       {isEditMode && isSelected && !isHitboxMode && (
         <div

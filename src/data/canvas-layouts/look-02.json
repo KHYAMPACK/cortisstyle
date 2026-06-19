@@ -1,0 +1,48 @@
+{
+  "longsleeve-shirt-01": {
+    "top": "-9.68%",
+    "left": "30.60%",
+    "widthPx": 374,
+    "zIndex": 4,
+    "hitboxWidthPx": 184,
+    "hitboxHeightPx": 224,
+    "hitboxOffsetTopPx": 139,
+    "hitboxOffsetLeftPx": 95
+  },
+  "shorts-01": {
+    "top": "9.74%",
+    "left": "-1.30%",
+    "widthPx": 382,
+    "zIndex": 4,
+    "hitboxWidthPx": 136,
+    "hitboxHeightPx": 96,
+    "hitboxOffsetTopPx": 244,
+    "hitboxOffsetLeftPx": 97
+  },
+  "black-bag-02": {
+    "top": "20.38%",
+    "left": "30.86%",
+    "widthPx": 366,
+    "zIndex": 4,
+    "hitboxWidthPx": 166,
+    "hitboxHeightPx": 176,
+    "hitboxOffsetTopPx": 172,
+    "hitboxOffsetLeftPx": 100
+  },
+  "sneakers-02": {
+    "top": "10%",
+    "left": "10%",
+    "widthPx": 70,
+    "zIndex": 4
+  },
+  "necklace-01": {
+    "top": "-7.56%",
+    "left": "-27.18%",
+    "widthPx": 355,
+    "zIndex": 4,
+    "hitboxWidthPx": 72,
+    "hitboxHeightPx": 132,
+    "hitboxOffsetTopPx": 176,
+    "hitboxOffsetLeftPx": 136
+  }
+}
