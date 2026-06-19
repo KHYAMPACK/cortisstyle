@@ -58,9 +58,9 @@ modelPortraitPosition: {
 
 // Model name typography
 modelNamePosition: {
-  top: "33.28%",
+  top: "38.28%",
   left: "63.90%",
-  fontSizePx: 11,
+  fontSizePx: 20,
   zIndex: 1,
 },
     ...metrics({
