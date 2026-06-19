@@ -39,7 +39,7 @@ export const looks: Look[] = [
     id: "look-01",
     title: "Look 01 — Cyber Grunge",
     image: "/images/clothes/outfit-01/temp_image_0AD45B1B-0275-4C7F-817B-E22C2700E090.WEBP",
-    modelName: "SEON",
+    modelName: "SEONGHYEON",
     shopierUrl: "https://shopier.com/placeholder",
     guidePrice: GUIDE_PRICE_TL,
     layout: "collage",
@@ -58,9 +58,9 @@ modelPortraitPosition: {
 
 // Model name typography
 modelNamePosition: {
-  top: "38.28%",
+  top: "45.28%",
   left: "63.90%",
-  fontSizePx: 20,
+  fontSizePx: 50,
   zIndex: 1,
 },
     ...metrics({
