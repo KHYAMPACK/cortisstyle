@@ -1,3 +1,6 @@
+import { committedCanvasLayouts } from "@/data/canvas-layouts";
+import { isLocalhostClient } from "@/lib/dev";
+
 export interface CanvasItemLayout {
   top: string;
   left: string;
@@ -79,6 +82,12 @@ export function saveCanvasLayoutsToStorage(
   if (typeof window === "undefined") return;
 
   localStorage.setItem(getLayoutStorageKey(lookId), JSON.stringify(layouts));
+}
+
+export function clearCanvasLayoutsFromStorage(lookId: string): void {
+  if (typeof window === "undefined") return;
+
+  localStorage.removeItem(getLayoutStorageKey(lookId));
 }
 
 export function resolveOutfitId(lookId: string, outfitId?: string): string {
@@ -184,6 +193,28 @@ function mergeStoredLayout(
   };
 }
 
+function mergeLayoutRecords(
+  base: Record<string, CanvasItemLayout>,
+  overlay: Record<string, CanvasItemLayout> | null | undefined,
+): Record<string, CanvasItemLayout> {
+  if (!overlay) return base;
+
+  const merged: Record<string, CanvasItemLayout> = { ...base };
+
+  for (const itemId of Object.keys(base)) {
+    const stored = overlay[itemId];
+    if (!stored) continue;
+    merged[itemId] = mergeStoredLayout(base[itemId], stored);
+  }
+
+  for (const itemId of Object.keys(overlay)) {
+    if (merged[itemId]) continue;
+    merged[itemId] = overlay[itemId];
+  }
+
+  return merged;
+}
+
 export function resolveCanvasLayouts(
   lookId: string,
   items: Array<{
@@ -224,20 +255,11 @@ export function resolveCanvasLayouts(
     defaults[MODEL_NAME_CANVAS_ID] = layoutFromTextPosition(options.modelName);
   }
 
-  const saved = loadCanvasLayoutsFromStorage(lookId);
-  if (!saved) return defaults;
+  const committed = committedCanvasLayouts[lookId];
+  let merged = mergeLayoutRecords(defaults, committed);
 
-  const merged: Record<string, CanvasItemLayout> = { ...defaults };
-
-  for (const itemId of Object.keys(defaults)) {
-    const stored = saved[itemId];
-    if (!stored) continue;
-    merged[itemId] = mergeStoredLayout(defaults[itemId], stored);
-  }
-
-  for (const itemId of Object.keys(saved)) {
-    if (merged[itemId]) continue;
-    merged[itemId] = saved[itemId];
+  if (isLocalhostClient()) {
+    merged = mergeLayoutRecords(merged, loadCanvasLayoutsFromStorage(lookId));
   }
 
   return merged;

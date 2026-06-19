@@ -51,11 +51,13 @@ export const clothingItems: ClothingItem[] = [
     {
       canvasImage: "/images/clothes/outfit-01/black-beanie-01.png",
       defaultCanvasPosition: {
-        top: "5%",
-        left: "38%",
+        top: "2.34%",
+        left: "17.96%",
         width: "20%",
         zIndex: 4,
       },
+       hitboxWidthPx: 86,
+       hitboxHeightPx: 76,
     },
   ),
   defineItem(

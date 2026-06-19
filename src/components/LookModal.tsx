@@ -8,13 +8,9 @@ import { resolveEditableLookItems } from "@/lib/resolveLookItems";
 import { LookImagePanel } from "@/components/modal/LookImagePanel";
 import { LookItemsPanel } from "@/components/modal/LookItemsPanel";
 import { HeaderIconNav } from "@/components/HeaderIconNav";
+import { isLocalhostClient } from "@/lib/dev";
 
 const spring = { type: "spring" as const, stiffness: 100, damping: 20 };
-
-function isLocalhost(): boolean {
-  if (typeof window === "undefined") return false;
-  return ["localhost", "127.0.0.1"].includes(window.location.hostname);
-}
 
 interface LookModalProps {
   look: Look | null;
@@ -23,7 +19,7 @@ interface LookModalProps {
 
 export function LookModal({ look, onClose }: LookModalProps) {
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
-  const [isEditMode, setIsEditMode] = useState(isLocalhost);
+  const [isEditMode, setIsEditMode] = useState(isLocalhostClient);
   const [showPreview, setShowPreview] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
   const [editableItems, setEditableItems] = useState<ResolvedLookItem[]>([]);
@@ -119,7 +115,7 @@ export function LookModal({ look, onClose }: LookModalProps) {
             className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center p-4 md:p-8"
           >
             <div className="pointer-events-auto relative flex h-[90vh] max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden bg-white shadow-2xl lg:flex-row">
-              {isLocalhost() && !showPreview && (
+              {isLocalhostClient() && !showPreview && (
                 <button
                   type="button"
                   onClick={() => setIsEditMode((current) => !current)}

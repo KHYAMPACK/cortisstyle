@@ -161,6 +161,7 @@ export function LookItemsPanel({
 
               {isEditMode && (
                 <CoordinateEditorExport
+                  lookId={look.id}
                   items={items}
                   canvasLayouts={canvasLayouts}
                   isCollage={look.layout === "collage"}

@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import type { ResolvedLookItem } from "@/types/look";
 import {
+  clearCanvasLayoutsFromStorage,
   formatHitboxHeight,
   formatHitboxWidth,
   resolveHitboxOffset,
@@ -10,8 +11,10 @@ import {
   MODEL_PORTRAIT_CANVAS_ID,
   type CanvasItemLayout,
 } from "@/lib/canvasLayout";
+import { isLocalhostClient } from "@/lib/dev";
 
 interface CoordinateEditorExportProps {
+  lookId: string;
   items: ResolvedLookItem[];
   canvasLayouts?: Record<string, CanvasItemLayout>;
   isCollage?: boolean;
@@ -49,11 +52,17 @@ function layoutToExportEntry(
 }
 
 export function CoordinateEditorExport({
+  lookId,
   items,
   canvasLayouts = {},
   isCollage = false,
   modelName,
 }: CoordinateEditorExportProps) {
+  const [saveState, setSaveState] = useState<
+    "idle" | "saving" | "saved" | "error"
+  >("idle");
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const canSaveToCodebase = isLocalhostClient();
   const canvasJson = useMemo(() => {
     const entries = [];
 
@@ -173,6 +182,37 @@ defaultCanvasPosition: {
     await navigator.clipboard.writeText(payload);
   };
 
+  const handleSaveToCodebase = async () => {
+    setSaveState("saving");
+    setSaveError(null);
+
+    try {
+      const response = await fetch("/api/save-canvas-layout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lookId, layouts: canvasLayouts }),
+      });
+
+      const payload = (await response.json()) as {
+        error?: string;
+        file?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Failed to save canvas layout.");
+      }
+
+      clearCanvasLayoutsFromStorage(lookId);
+      setSaveState("saved");
+      window.setTimeout(() => window.location.reload(), 600);
+    } catch (error) {
+      setSaveState("error");
+      setSaveError(
+        error instanceof Error ? error.message : "Failed to save canvas layout.",
+      );
+    }
+  };
+
   if (isCollage) {
     return (
       <div className="mt-6 space-y-3 border-t border-blue-200 pt-6">
@@ -202,6 +242,34 @@ defaultCanvasPosition: {
         >
           Copy Canvas Layout to Clipboard
         </button>
+        {canSaveToCodebase && (
+          <>
+            <button
+              type="button"
+              onClick={handleSaveToCodebase}
+              disabled={saveState === "saving" || saveState === "saved"}
+              className="w-full border border-neutral-900 bg-neutral-900 px-4 py-3 text-[10px] tracking-[0.25em] text-white uppercase transition-colors hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {saveState === "saving"
+                ? "Saving to Codebase…"
+                : saveState === "saved"
+                  ? "Saved — Reloading…"
+                  : "Save Layout to Codebase"}
+            </button>
+            <p className="text-[9px] leading-relaxed text-neutral-500">
+              Writes{" "}
+              <span className="font-mono">
+                src/data/canvas-layouts/{lookId}.json
+              </span>{" "}
+              and reloads so committed layouts load for everyone on deploy.
+            </p>
+            {saveState === "error" && saveError && (
+              <p className="text-[9px] leading-relaxed text-red-600">
+                {saveError}
+              </p>
+            )}
+          </>
+        )}
       </div>
     );
   }
