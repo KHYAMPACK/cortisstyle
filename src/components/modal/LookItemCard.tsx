@@ -2,12 +2,12 @@
 
 import { motion } from "framer-motion";
 import { forwardRef } from "react";
-import type { LookItem } from "@/types/look";
+import type { ResolvedLookItem } from "@/types/look";
 
 const spring = { type: "spring" as const, stiffness: 100, damping: 20 };
 
 interface LookItemCardProps {
-  item: LookItem;
+  item: ResolvedLookItem;
   isActive: boolean;
   onSelect: (itemId: string) => void;
 }

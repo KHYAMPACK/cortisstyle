@@ -2,9 +2,11 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useState } from "react";
-import type { Look, LookItem } from "@/types/look";
+import type { Look, ResolvedLookItem } from "@/types/look";
+import { resolveEditableLookItems } from "@/lib/resolveLookItems";
 import { LookImagePanel } from "@/components/modal/LookImagePanel";
 import { LookItemsPanel } from "@/components/modal/LookItemsPanel";
+import { HeaderIconNav } from "@/components/HeaderIconNav";
 
 const spring = { type: "spring" as const, stiffness: 100, damping: 20 };
 
@@ -21,12 +23,16 @@ interface LookModalProps {
 export function LookModal({ look, onClose }: LookModalProps) {
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(isLocalhost);
-  const [editableItems, setEditableItems] = useState<LookItem[]>([]);
+  const [showPreview, setShowPreview] = useState(false);
+  const [showCheckout, setShowCheckout] = useState(false);
+  const [editableItems, setEditableItems] = useState<ResolvedLookItem[]>([]);
 
   useEffect(() => {
     setActiveItemId(null);
+    setShowPreview(false);
+    setShowCheckout(false);
     if (look) {
-      setEditableItems(structuredClone(look.items));
+      setEditableItems(resolveEditableLookItems(look));
     } else {
       setEditableItems([]);
     }
@@ -36,7 +42,19 @@ export function LookModal({ look, onClose }: LookModalProps) {
     if (!look) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
+      if (event.key !== "Escape") return;
+
+      if (showCheckout) {
+        setShowCheckout(false);
+        return;
+      }
+
+      if (showPreview) {
+        setShowPreview(false);
+        return;
+      }
+
+      onClose();
     };
 
     document.body.style.overflow = "hidden";
@@ -46,7 +64,7 @@ export function LookModal({ look, onClose }: LookModalProps) {
       document.body.style.overflow = "";
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [look, onClose]);
+  }, [look, onClose, showPreview, showCheckout]);
 
   const handleSelectItem = (itemId: string) => {
     setActiveItemId(itemId);
@@ -70,6 +88,17 @@ export function LookModal({ look, onClose }: LookModalProps) {
     },
     [],
   );
+
+  const handleUnlock = () => {
+    setShowPreview(true);
+    setShowCheckout(false);
+    setActiveItemId(null);
+  };
+
+  const handleBackToLook = () => {
+    setShowPreview(false);
+    setShowCheckout(false);
+  };
 
   return (
     <AnimatePresence>
@@ -97,17 +126,21 @@ export function LookModal({ look, onClose }: LookModalProps) {
             className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center p-4 md:p-8"
           >
             <div className="pointer-events-auto relative flex h-[90vh] max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden bg-white shadow-2xl lg:flex-row">
-              <button
-                type="button"
-                onClick={() => setIsEditMode((current) => !current)}
-                className={`absolute top-4 left-4 z-20 border px-3 py-2 font-sans text-[9px] tracking-[0.3em] uppercase transition-colors ${
-                  isEditMode
-                    ? "border-blue-600 bg-blue-600 text-white"
-                    : "border-neutral-300 bg-white text-neutral-500 hover:border-neutral-900 hover:text-neutral-900"
-                }`}
-              >
-                {isEditMode ? "Editor On" : "Editor Off"}
-              </button>
+              {isLocalhost() && !showPreview && (
+                <button
+                  type="button"
+                  onClick={() => setIsEditMode((current) => !current)}
+                  className={`absolute top-4 left-4 z-20 border px-3 py-2 font-sans text-[9px] tracking-[0.3em] uppercase transition-colors ${
+                    isEditMode
+                      ? "border-blue-600 bg-blue-600 text-white"
+                      : "border-neutral-300 bg-white text-neutral-500 hover:border-neutral-900 hover:text-neutral-900"
+                  }`}
+                >
+                  {isEditMode ? "Editor On" : "Editor Off"}
+                </button>
+              )}
+
+      <HeaderIconNav variant="modal" className="absolute top-4 right-[5.25rem] z-20" />
 
               <button
                 type="button"
@@ -120,9 +153,11 @@ export function LookModal({ look, onClose }: LookModalProps) {
               <LookImagePanel
                 image={look.image}
                 title={look.title}
+                modelName={look.modelName}
                 items={editableItems}
                 activeItemId={activeItemId}
-                isEditMode={isEditMode}
+                isEditMode={isEditMode && !showPreview}
+                showPreview={showPreview}
                 onSelectItem={handleSelectItem}
                 onCoordinateChange={handleCoordinateChange}
               />
@@ -131,8 +166,14 @@ export function LookModal({ look, onClose }: LookModalProps) {
                 look={look}
                 items={editableItems}
                 activeItemId={activeItemId}
-                isEditMode={isEditMode}
+                isEditMode={isEditMode && !showPreview}
+                showPreview={showPreview}
+                showCheckout={showCheckout}
                 onSelectItem={handleSelectItem}
+                onUnlock={handleUnlock}
+                onPurchase={() => setShowCheckout(true)}
+                onBackToLook={handleBackToLook}
+                onCloseCheckout={() => setShowCheckout(false)}
               />
             </div>
           </motion.div>

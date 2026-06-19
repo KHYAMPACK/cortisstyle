@@ -1,3 +1,5 @@
+import type { ClothingItem } from "@/types/item";
+
 export interface CoordinatePoint {
   top: string;
   left: string;
@@ -8,10 +10,12 @@ export interface ItemCoordinates {
   to: CoordinatePoint;
 }
 
-export interface LookItem {
-  id: string;
-  name: string;
-  blurredDescription: string;
+export interface LookItemPlacement {
+  itemId: string;
+  coordinates: ItemCoordinates;
+}
+
+export interface ResolvedLookItem extends ClothingItem {
   coordinates: ItemCoordinates;
 }
 
@@ -21,7 +25,8 @@ export interface Look {
   image: string;
   modelName: string;
   shopierUrl: string;
+  guidePrice: number;
   width: number;
   height: number;
-  items: LookItem[];
+  items: LookItemPlacement[];
 }

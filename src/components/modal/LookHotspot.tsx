@@ -2,13 +2,13 @@
 
 import { motion, type PanInfo } from "framer-motion";
 import type { RefObject } from "react";
-import type { LookItem } from "@/types/look";
+import type { ResolvedLookItem } from "@/types/look";
 import { pointFromClient } from "@/lib/coordinates";
 
 const spring = { type: "spring" as const, stiffness: 100, damping: 20 };
 
 interface LookHotspotProps {
-  item: LookItem;
+  item: ResolvedLookItem;
   isActive: boolean;
   isEditMode: boolean;
   containerRef: RefObject<HTMLDivElement | null>;

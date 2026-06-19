@@ -1,19 +1,18 @@
 "use client";
 
 import { useMemo } from "react";
-import type { LookItem } from "@/types/look";
+import type { ResolvedLookItem } from "@/types/look";
 
 interface CoordinateEditorExportProps {
-  items: LookItem[];
+  items: ResolvedLookItem[];
 }
 
 export function CoordinateEditorExport({ items }: CoordinateEditorExportProps) {
-  const coordinatesJson = useMemo(
+  const placementsJson = useMemo(
     () =>
       JSON.stringify(
         items.map((item) => ({
-          id: item.id,
-          name: item.name,
+          itemId: item.id,
           coordinates: item.coordinates,
         })),
         null,
@@ -22,19 +21,19 @@ export function CoordinateEditorExport({ items }: CoordinateEditorExportProps) {
     [items],
   );
 
-  const leaderSnippet = useMemo(
+  const placementSnippet = useMemo(
     () =>
       items
         .map(
           (item) =>
-            `leader("${item.coordinates.from.top}", "${item.coordinates.from.left}", "${item.coordinates.to.top}", "${item.coordinates.to.left}"),`,
+            `placement("${item.id}", "${item.coordinates.from.top}", "${item.coordinates.from.left}", "${item.coordinates.to.top}", "${item.coordinates.to.left}"),`,
         )
         .join("\n"),
     [items],
   );
 
   const handleCopy = async () => {
-    const payload = `${coordinatesJson}\n\n// leader() helpers:\n${leaderSnippet}`;
+    const payload = `${placementsJson}\n\n// placement() helpers:\n${placementSnippet}`;
     await navigator.clipboard.writeText(payload);
   };
 
@@ -45,13 +44,13 @@ export function CoordinateEditorExport({ items }: CoordinateEditorExportProps) {
       </p>
       <textarea
         readOnly
-        value={coordinatesJson}
+        value={placementsJson}
         rows={8}
         className="w-full resize-none border border-blue-200 bg-blue-50/40 p-3 font-mono text-[10px] leading-relaxed text-neutral-800 outline-none"
       />
       <textarea
         readOnly
-        value={leaderSnippet}
+        value={placementSnippet}
         rows={6}
         className="w-full resize-none border border-blue-200 bg-blue-50/40 p-3 font-mono text-[10px] leading-relaxed text-neutral-800 outline-none"
       />
