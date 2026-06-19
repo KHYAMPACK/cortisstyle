@@ -1,34 +1,15 @@
 import { committedCanvasLayouts } from "@/data/canvas-layouts";
 import { isLocalhostClient } from "@/lib/dev";
+import type { CanvasItemLayout } from "@/types/canvas-layout";
+import { MODEL_NAME_CANVAS_ID, MODEL_PORTRAIT_CANVAS_ID } from "@/types/canvas-layout";
 
-export interface CanvasItemLayout {
-  top: string;
-  left: string;
-  widthPx?: number;
-  fontSizePx?: number;
-  zIndex: number;
-  hitboxWidthPx?: number;
-  hitboxHeightPx?: number;
-  hitboxOffsetTopPx?: number;
-  hitboxOffsetLeftPx?: number;
-}
-
-export const MODEL_PORTRAIT_CANVAS_ID = "__model-portrait__";
-export const MODEL_NAME_CANVAS_ID = "__model-name__";
-
-export const DEFAULT_MODEL_PORTRAIT_POSITION = {
-  top: "6%",
-  left: "52%",
-  width: "42%",
-  zIndex: 0,
-} as const;
-
-export const DEFAULT_MODEL_NAME_POSITION = {
-  top: "72%",
-  left: "52%",
-  fontSizePx: 11,
-  zIndex: 1,
-} as const;
+export type { CanvasItemLayout } from "@/types/canvas-layout";
+export {
+  DEFAULT_MODEL_NAME_POSITION,
+  DEFAULT_MODEL_PORTRAIT_POSITION,
+  MODEL_NAME_CANVAS_ID,
+  MODEL_PORTRAIT_CANVAS_ID,
+} from "@/types/canvas-layout";
 
 export function isTextLayerLayout(layout: CanvasItemLayout): boolean {
   return layout.fontSizePx !== undefined && layout.widthPx === undefined;
@@ -189,7 +170,7 @@ function mergeStoredLayout(
     hitboxOffsetTopPx: stored.hitboxOffsetTopPx ?? defaults.hitboxOffsetTopPx,
     hitboxOffsetLeftPx:
       stored.hitboxOffsetLeftPx ?? defaults.hitboxOffsetLeftPx,
-    zIndex: defaults.zIndex,
+    zIndex: stored.zIndex ?? defaults.zIndex,
   };
 }
 

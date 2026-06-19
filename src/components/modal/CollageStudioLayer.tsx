@@ -29,6 +29,7 @@ import {
   type CanvasItemLayout,
   type CanvasMoveDirection,
 } from "@/lib/canvasLayout";
+import { isLocalhostClient } from "@/lib/dev";
 
 interface CollageStudioLayerProps {
   lookId: string;
@@ -92,24 +93,51 @@ export function CollageStudioLayer({
     clothingIds.current = new Set(items.map((item) => item.id));
   }, [items]);
 
-  useLayoutEffect(() => {
+  const syncLayoutsFromContainer = useCallback(() => {
     const parent = parentRef.current;
     if (!parent) return;
 
     const containerWidth = parent.getBoundingClientRect().width;
+    if (containerWidth <= 0) return;
+
     const nextLayouts = resolveCanvasLayouts(lookId, items, containerWidth, {
       modelPortrait: modelPortraitPosition,
       modelName: modelNamePosition,
     });
     layoutsReadyRef.current = true;
     setLayouts(nextLayouts);
-  }, [lookId, items, modelPortraitPosition, modelNamePosition, parentRef]);
+  }, [
+    lookId,
+    items,
+    modelPortraitPosition,
+    modelNamePosition,
+    parentRef,
+  ]);
+
+  useLayoutEffect(() => {
+    syncLayoutsFromContainer();
+  }, [syncLayoutsFromContainer]);
+
+  useEffect(() => {
+    const parent = parentRef.current;
+    if (!parent || typeof ResizeObserver === "undefined") return;
+
+    const observer = new ResizeObserver(() => {
+      syncLayoutsFromContainer();
+    });
+    observer.observe(parent);
+
+    return () => observer.disconnect();
+  }, [syncLayoutsFromContainer, parentRef]);
 
   useEffect(() => {
     if (!layoutsReadyRef.current || Object.keys(layouts).length === 0) return;
 
     onLayoutsChange?.(layouts);
-    saveCanvasLayoutsToStorage(lookId, layouts);
+
+    if (isLocalhostClient()) {
+      saveCanvasLayoutsToStorage(lookId, layouts);
+    }
   }, [lookId, layouts, onLayoutsChange]);
 
   useEffect(() => {

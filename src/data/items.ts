@@ -56,8 +56,6 @@ export const clothingItems: ClothingItem[] = [
         width: "20%",
         zIndex: 4,
       },
-       hitboxWidthPx: 86,
-       hitboxHeightPx: 76,
     },
   ),
   defineItem(
