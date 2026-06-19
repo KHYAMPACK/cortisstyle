@@ -59,6 +59,16 @@
     "hitboxOffsetTopPx": 214,
     "hitboxOffsetLeftPx": 133
   },
+  "necklace-02": {
+    "top": "-14.82%",
+    "left": "-17.22%",
+    "widthPx": 366,
+    "zIndex": 4,
+    "hitboxWidthPx": 66,
+    "hitboxHeightPx": 116,
+    "hitboxOffsetTopPx": 206,
+    "hitboxOffsetLeftPx": 139
+  },
   "teal-bag-01": {
     "top": "5.62%",
     "left": "35.36%",

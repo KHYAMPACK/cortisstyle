@@ -1,4 +1,14 @@
 {
+  "sunglasses-02": {
+    "top": "3.32%",
+    "left": "14.82%",
+    "widthPx": 102,
+    "zIndex": 4,
+    "hitboxWidthPx": 102,
+    "hitboxHeightPx": 72,
+    "hitboxOffsetTopPx": 8,
+    "hitboxOffsetLeftPx": -3
+  },
   "necklace-01": {
     "top": "-9.54%",
     "left": "-30.04%",

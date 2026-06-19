@@ -1,59 +1,59 @@
 {
   "black-beanie-01": {
-    "top": "2.02%",
-    "left": "17.93%",
-    "widthPx": 86,
-    "zIndex": 3,
-    "hitboxWidthPx": 76,
-    "hitboxHeightPx": 66,
-    "hitboxOffsetTopPx": 18,
+    "top": "2.34%",
+    "left": "17.96%",
+    "widthPx": 96,
+    "zIndex": 4,
+    "hitboxWidthPx": 86,
+    "hitboxHeightPx": 76,
+    "hitboxOffsetTopPx": 17,
     "hitboxOffsetLeftPx": 5
   },
   "compression-shirt-01": {
-    "top": "16.40%",
-    "left": "32.40%",
-    "widthPx": 108,
-    "zIndex": 2,
+    "top": "16.38%",
+    "left": "32.64%",
+    "widthPx": 120,
+    "zIndex": 6,
     "hitboxHeightPx": 160
   },
   "bootcut-jeans-02": {
-    "top": "39.20%",
-    "left": "13.60%",
-    "widthPx": 238,
-    "zIndex": 1,
-    "hitboxWidthPx": 186,
-    "hitboxHeightPx": 276,
-    "hitboxOffsetTopPx": 26,
+    "top": "39.46%",
+    "left": "13.92%",
+    "widthPx": 266,
+    "zIndex": 4,
+    "hitboxWidthPx": 216,
+    "hitboxHeightPx": 316,
+    "hitboxOffsetTopPx": 27,
     "hitboxOffsetLeftPx": 28
   },
   "black-sunglasses-01": {
-    "top": "2.24%",
-    "left": "-6.61%",
-    "widthPx": 186,
+    "top": "3.02%",
+    "left": "-6.08%",
+    "widthPx": 204,
     "zIndex": 4,
     "hitboxWidthPx": 104,
     "hitboxHeightPx": 44,
-    "hitboxOffsetTopPx": 97,
-    "hitboxOffsetLeftPx": 38
+    "hitboxOffsetTopPx": 106,
+    "hitboxOffsetLeftPx": 50
   },
   "sneakers-01": {
-    "top": "50.60%",
-    "left": "-13.42%",
-    "widthPx": 227,
-    "zIndex": 3,
-    "hitboxWidthPx": 98,
-    "hitboxHeightPx": 128,
-    "hitboxOffsetTopPx": 104,
-    "hitboxOffsetLeftPx": 66
+    "top": "51.46%",
+    "left": "-12.56%",
+    "widthPx": 248,
+    "zIndex": 4,
+    "hitboxWidthPx": 118,
+    "hitboxHeightPx": 138,
+    "hitboxOffsetTopPx": 108,
+    "hitboxOffsetLeftPx": 60
   },
   "black-bag-01": {
-    "top": "19.58%",
-    "left": "38.51%",
-    "widthPx": 263,
-    "zIndex": 2,
-    "hitboxWidthPx": 116,
-    "hitboxHeightPx": 112,
-    "hitboxOffsetTopPx": 149,
-    "hitboxOffsetLeftPx": 86
+    "top": "20.32%",
+    "left": "39.58%",
+    "widthPx": 288,
+    "zIndex": 4,
+    "hitboxWidthPx": 126,
+    "hitboxHeightPx": 162,
+    "hitboxOffsetTopPx": 130,
+    "hitboxOffsetLeftPx": 93
   }
 }
