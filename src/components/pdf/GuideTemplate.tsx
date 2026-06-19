@@ -192,6 +192,187 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontStyle: "italic",
   },
+  certPage: {
+    backgroundColor: "#0A0A0A",
+    color: "#FFFFFF",
+    padding: 28,
+    fontFamily: "Helvetica",
+  },
+  certFrame: {
+    position: "relative",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.2)",
+    minHeight: "100%",
+    paddingTop: 28,
+    paddingBottom: 22,
+    paddingHorizontal: 26,
+    justifyContent: "space-between",
+  },
+  certCrosshair: {
+    position: "absolute",
+    fontSize: 7,
+    color: "rgba(255,255,255,0.35)",
+    fontFamily: "Courier",
+  },
+  certHeader: {
+    alignItems: "center",
+    marginBottom: 18,
+  },
+  certTitle: {
+    fontFamily: "Times-Roman",
+    fontSize: 13,
+    letterSpacing: 3.2,
+    textTransform: "uppercase",
+    color: "#FFFFFF",
+    textAlign: "center",
+  },
+  certSubtitle: {
+    marginTop: 8,
+    fontSize: 6,
+    letterSpacing: 2.6,
+    textTransform: "uppercase",
+    color: "#737373",
+    textAlign: "center",
+  },
+  certDivider: {
+    marginTop: 12,
+    width: 72,
+    height: 1,
+    backgroundColor: "#262626",
+    alignSelf: "center",
+  },
+  certOwnershipBlock: {
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  certOwnershipEyebrow: {
+    fontSize: 5.5,
+    letterSpacing: 2,
+    textTransform: "uppercase",
+    color: "#737373",
+    textAlign: "center",
+  },
+  certHolder: {
+    marginTop: 10,
+    fontFamily: "Times-Roman",
+    fontSize: 11,
+    letterSpacing: 1.6,
+    textTransform: "uppercase",
+    color: "#FFFFFF",
+    textAlign: "center",
+  },
+  certSerial: {
+    marginTop: 8,
+    fontSize: 5.5,
+    letterSpacing: 1.4,
+    textTransform: "uppercase",
+    color: "#A3A3A3",
+    textAlign: "center",
+  },
+  certAssetBlock: {
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  certAssetItem: {
+    fontSize: 6.5,
+    letterSpacing: 0.6,
+    color: "#D4D4D4",
+    textAlign: "center",
+    marginBottom: 4,
+  },
+  certLedger: {
+    marginTop: 8,
+    fontSize: 5.5,
+    letterSpacing: 1.1,
+    textTransform: "uppercase",
+    color: "#737373",
+    textAlign: "center",
+  },
+  certColumns: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 14,
+  },
+  certColumn: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: "#262626",
+    backgroundColor: "#0D0D0D",
+    padding: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 108,
+  },
+  certQrBox: {
+    width: 52,
+    height: 52,
+    borderWidth: 1,
+    borderColor: "#525252",
+    backgroundColor: "#0A0A0A",
+    marginBottom: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  certQrLabel: {
+    fontSize: 4.5,
+    letterSpacing: 1,
+    textTransform: "uppercase",
+    color: "#737373",
+    textAlign: "center",
+    lineHeight: 1.45,
+  },
+  certEmblemOuter: {
+    width: 64,
+    height: 64,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.2)",
+    borderRadius: 32,
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+  },
+  certEmblemMid: {
+    position: "absolute",
+    width: 52,
+    height: 52,
+    borderWidth: 1,
+    borderColor: "#404040",
+    borderRadius: 26,
+  },
+  certEmblemInner: {
+    position: "absolute",
+    width: 40,
+    height: 40,
+    borderWidth: 1,
+    borderColor: "#262626",
+    borderRadius: 20,
+    backgroundColor: "#111111",
+  },
+  certEmblemLabel: {
+    fontSize: 4.5,
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
+    color: "#D4D4D4",
+    textAlign: "center",
+  },
+  certEmblemSignature: {
+    marginTop: 3,
+    fontSize: 4,
+    letterSpacing: 1,
+    textTransform: "uppercase",
+    color: "#525252",
+    textAlign: "center",
+  },
+  certFooterQuote: {
+    borderTopWidth: 1,
+    borderTopColor: "#262626",
+    paddingTop: 10,
+    fontSize: 5,
+    letterSpacing: 1.4,
+    color: "#525252",
+    textAlign: "center",
+    fontStyle: "italic",
+  },
 });
 
 export interface GuideTemplateProps {
@@ -225,8 +406,78 @@ function DirectoryItem({
   );
 }
 
+function CertificatePage({ guide }: { guide: ResolvedStyleGuide }) {
+  const { pageTwo } = guide;
+
+  return (
+    <Page size="A4" style={styles.certPage}>
+      <View style={styles.certFrame}>
+        <Text style={[styles.certCrosshair, { top: 6, left: 8 }]}>+</Text>
+        <Text style={[styles.certCrosshair, { top: 6, right: 8 }]}>+</Text>
+        <Text style={[styles.certCrosshair, { bottom: 6, left: 8 }]}>+</Text>
+        <Text style={[styles.certCrosshair, { bottom: 6, right: 8 }]}>+</Text>
+
+        <View>
+          <View style={styles.certHeader}>
+            <Text style={styles.certTitle}>{pageTwo.certificateTitle}</Text>
+            <Text style={styles.certSubtitle}>{pageTwo.certificateSubtitle}</Text>
+            <View style={styles.certDivider} />
+          </View>
+
+          <View style={styles.certOwnershipBlock}>
+            <Text style={styles.certOwnershipEyebrow}>
+              This official digital asset is proudly issued and registered to:
+            </Text>
+            <Text style={styles.certHolder}>HOLDER: {pageTwo.holderName}</Text>
+            <Text style={styles.certSerial}>
+              {`SERIAL REGISTER NO: ${pageTwo.serialRegisterLine} // STATUS: ${pageTwo.status}`}
+            </Text>
+          </View>
+
+          <View style={styles.certAssetBlock}>
+            {pageTwo.assetReceiptItems.map((asset) => (
+              <Text key={asset} style={styles.certAssetItem}>
+                • {asset}
+              </Text>
+            ))}
+            <Text style={styles.certLedger}>
+              {`LOGGED ON THE BLOCKCHAIN/LEDGER: ${pageTwo.ledgerTimestamp}`}
+            </Text>
+          </View>
+
+          <View style={styles.certColumns}>
+            <View style={styles.certColumn}>
+              <View style={styles.certQrBox}>
+                <Text style={styles.qrPlaceholder}>QR</Text>
+              </View>
+              <Text style={styles.certQrLabel}>{pageTwo.qrColumnLabel}</Text>
+            </View>
+
+            <View style={styles.certColumn}>
+              <View style={styles.certEmblemOuter}>
+                <View style={styles.certEmblemMid} />
+                <View style={styles.certEmblemInner} />
+                <View>
+                  <Text style={styles.certEmblemLabel}>{pageTwo.emblemLabel}</Text>
+                  <Text style={styles.certEmblemSignature}>
+                    {pageTwo.curatorSignature}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        <Text style={styles.certFooterQuote}>
+          &ldquo;{pageTwo.closingQuote}&rdquo;
+        </Text>
+      </View>
+    </Page>
+  );
+}
+
 export function createGuideDocument({ guide }: GuideTemplateProps) {
-  const { pageOne, pageTwo } = guide;
+  const { pageOne } = guide;
 
   return (
     <Document
@@ -245,42 +496,7 @@ export function createGuideDocument({ guide }: GuideTemplateProps) {
         ))}
       </Page>
 
-      <Page size="A4" style={styles.page}>
-        <View style={styles.headerBlock}>
-          <Text style={styles.vaultEyebrow}>Cortis Style — Digital Vault</Text>
-          <Text style={styles.vaultTitle}>{pageTwo.vaultTitle}</Text>
-          <Text style={styles.issueLine}>
-            {`ISSUE NO. ${pageTwo.issueSerial} // STATUS: ${pageTwo.status}`}
-          </Text>
-        </View>
-
-        <View>
-          <Text style={styles.sectionLabel}>Wardrobe Asset Receipt</Text>
-          {pageTwo.ledgerAssets.map((asset) => (
-            <Text key={asset} style={styles.ledgerItem}>
-              {asset}
-            </Text>
-          ))}
-          <Text style={styles.fieldLabel}>Ledger Logged</Text>
-          <Text style={styles.ledgerTimestamp}>
-            LEDGER LOGGED: {pageTwo.ledgerTimestamp}
-          </Text>
-        </View>
-
-        <View style={styles.synergySection}>
-          <Text style={styles.sectionLabel}>{pageTwo.synergySectionTitle}</Text>
-          <Text style={styles.synergyStat}>{pageTwo.synergyStat}</Text>
-
-          <View style={styles.qrFrame}>
-            <View style={styles.qrGrid}>
-              <Text style={styles.qrPlaceholder}>QR</Text>
-            </View>
-            <Text style={styles.qrSubtext}>{pageTwo.qrSubtext}</Text>
-          </View>
-        </View>
-
-        <Text style={styles.footerQuote}>&ldquo;{pageTwo.closingQuote}&rdquo;</Text>
-      </Page>
+      <CertificatePage guide={guide} />
     </Document>
   );
 }

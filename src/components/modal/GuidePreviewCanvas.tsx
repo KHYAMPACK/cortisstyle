@@ -54,7 +54,7 @@ export function GuidePreviewCanvas({
           <GuidePageOneView guide={guide} compact blurred />
         </PreviewPage>
 
-        <PreviewPage label="Page 2 — Certificate & Digital Ledger">
+        <PreviewPage label="Page 2 — Certificate of Digital Ownership">
           <GuidePageTwoView guide={guide} compact blurred />
         </PreviewPage>
       </div>

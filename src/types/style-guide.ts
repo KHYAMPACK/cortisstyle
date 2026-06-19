@@ -15,12 +15,15 @@ export interface StyleGuidePageOne {
 }
 
 export interface StyleGuidePageTwo {
-  vaultTitle: string;
-  status: string;
-  ledgerAssets: string[];
-  synergySectionTitle: string;
-  synergyStat: string;
-  qrSubtext: string;
+  certificateTitle: string;
+  certificateSubtitle: string;
+  archiveCode: string;
+  assetReceiptItems: string[];
+  synergyRating: string;
+  synergyNote: string;
+  qrColumnLabel: string;
+  emblemLabel: string;
+  curatorSignature: string;
   closingQuote: string;
 }
 
@@ -34,14 +37,18 @@ export interface ResolvedStyleGuideDirectoryItem extends StyleGuideDirectoryItem
   shopUrl: string;
 }
 
+export interface ResolvedStyleGuidePageTwo extends StyleGuidePageTwo {
+  holderName: string;
+  serialRegisterLine: string;
+  ledgerTimestamp: string;
+  status: string;
+}
+
 export interface ResolvedStyleGuide {
   lookId: string;
   buyerName: string;
   pageOne: Omit<StyleGuidePageOne, "directoryItems"> & {
     directoryItems: ResolvedStyleGuideDirectoryItem[];
   };
-  pageTwo: StyleGuidePageTwo & {
-    issueSerial: string;
-    ledgerTimestamp: string;
-  };
+  pageTwo: ResolvedStyleGuidePageTwo;
 }

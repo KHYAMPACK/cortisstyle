@@ -56,20 +56,23 @@ export const look02StyleGuide: StyleGuideDefinition = {
     ],
   },
   pageTwo: {
-    vaultTitle: "ARCHIVE VERIFICATION & CERTIFICATE OF DIGITAL OWNERSHIP",
-    status: "UNLOCKED",
-    ledgerAssets: [
-      "[ UNLOCKED & TRANSFERRED ] 1× Avant-Garde Shield Eyewear Asset",
-      "[ UNLOCKED & TRANSFERRED ] 1× Industrial Hardware Necklace Asset",
-      "[ UNLOCKED & TRANSFERRED ] 1× Asymmetric Cut Long Sleeve Top Asset",
-      "[ UNLOCKED & TRANSFERRED ] 1× Distressed Technical Shorts Asset",
-      "[ UNLOCKED & TRANSFERRED ] 1× Multi-Pocket Utilitarian Bag Asset",
+    certificateTitle: "CERTIFICATE OF DIGITAL OWNERSHIP",
+    certificateSubtitle:
+      "CORTIS STYLE ARCHIVE // DIGITAL VAULT VERIFICATION",
+    archiveCode: "CRT-LK02",
+    assetReceiptItems: [
+      "1× Avant-Garde Shield Eyewear Asset",
+      "1× Industrial Hardware Necklace Asset",
+      "1× Asymmetric Cut Long Sleeve Top Asset",
+      "1× Distressed Technical Shorts Asset",
+      "1× Multi-Pocket Utilitarian Bag Asset",
     ],
-    synergySectionTitle: "UNIVERSAL CLOSET SYNERGY",
-    synergyStat:
-      "SYNERGY RATING: 90% (High cross-compatibility with Look 01 components).",
-    qrSubtext:
-      "Scan this code to instantly access your interactive Digital Wardrobe dashboard, mix-and-match your inventory, and track your closet value.",
+    synergyRating: "90%",
+    synergyNote: "High cross-compatibility with Look 01 components.",
+    qrColumnLabel:
+      "SCAN TO ACCESS DIGITAL CLOSET WARDROBE. SYNERGY RATING: 90%.",
+    emblemLabel: "OFFICIAL ARCHIVE SEAL",
+    curatorSignature: "CORTIS STYLE CURATOR",
     closingQuote:
       "Color outside the lines. Thank you for curating the archive.",
   },
