@@ -1,7 +1,17 @@
 {
+  "necklace-01": {
+    "top": "-9.54%",
+    "left": "-30.04%",
+    "widthPx": 371,
+    "zIndex": 4,
+    "hitboxWidthPx": 72,
+    "hitboxHeightPx": 132,
+    "hitboxOffsetTopPx": 180,
+    "hitboxOffsetLeftPx": 146
+  },
   "longsleeve-shirt-01": {
     "top": "-9.68%",
-    "left": "30.60%",
+    "left": "1.30%",
     "widthPx": 374,
     "zIndex": 4,
     "hitboxWidthPx": 184,
@@ -30,19 +40,13 @@
     "hitboxOffsetLeftPx": 100
   },
   "sneakers-02": {
-    "top": "10%",
-    "left": "10%",
-    "widthPx": 70,
-    "zIndex": 4
-  },
-  "necklace-01": {
-    "top": "-7.56%",
-    "left": "-27.18%",
-    "widthPx": 355,
+    "top": "36.40%",
+    "left": "-21.68%",
+    "widthPx": 368,
     "zIndex": 4,
-    "hitboxWidthPx": 72,
-    "hitboxHeightPx": 132,
-    "hitboxOffsetTopPx": 176,
-    "hitboxOffsetLeftPx": 136
+    "hitboxWidthPx": 158,
+    "hitboxHeightPx": 128,
+    "hitboxOffsetTopPx": 211,
+    "hitboxOffsetLeftPx": 109
   }
 }

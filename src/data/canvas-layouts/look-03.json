@@ -40,10 +40,14 @@
     "hitboxOffsetLeftPx": 131
   },
   "sunglasses-01": {
-    "top": "15.22%",
-    "left": "28.48%",
-    "widthPx": 70,
-    "zIndex": 4
+    "top": "-37.04%",
+    "left": "-27.74%",
+    "widthPx": 406,
+    "zIndex": 4,
+    "hitboxWidthPx": 116,
+    "hitboxHeightPx": 56,
+    "hitboxOffsetTopPx": 260,
+    "hitboxOffsetLeftPx": 146
   },
   "cap-01": {
     "top": "-32.24%",
