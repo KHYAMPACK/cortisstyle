@@ -2,229 +2,284 @@
 
 import {
   Document,
+  Link,
   Page,
   StyleSheet,
   Text,
   View,
 } from "@react-pdf/renderer";
-import type { ClothingItem } from "@/types/item";
+import type { ResolvedStyleGuide } from "@/types/style-guide";
+
+const palette = {
+  page: "#0A0A0A",
+  panel: "#111111",
+  ink: "#E5E5E5",
+  muted: "#737373",
+  dim: "#525252",
+  rule: "#262626",
+  accent: "#A3A3A3",
+};
 
 const styles = StyleSheet.create({
   page: {
-    backgroundColor: "#FFFFFF",
-    color: "#0A0A0A",
-    padding: 48,
-    fontFamily: "Times-Roman",
-  },
-  certificateFrame: {
-    borderWidth: 1,
-    borderColor: "#0A0A0A",
-    padding: 40,
-    minHeight: "100%",
-    justifyContent: "space-between",
-  },
-  eyebrow: {
-    fontSize: 8,
-    letterSpacing: 3,
-    textTransform: "uppercase",
-    color: "#737373",
-    marginBottom: 24,
+    backgroundColor: palette.page,
+    color: palette.ink,
+    paddingTop: 36,
+    paddingBottom: 36,
+    paddingHorizontal: 40,
     fontFamily: "Helvetica",
   },
-  title: {
-    fontSize: 28,
-    letterSpacing: 1,
-    marginBottom: 8,
-    fontFamily: "Times-Roman",
-  },
-  subtitle: {
-    fontSize: 11,
-    color: "#525252",
-    marginBottom: 40,
-    fontFamily: "Helvetica",
-  },
-  bodyText: {
-    fontSize: 12,
-    lineHeight: 1.7,
-    color: "#171717",
+  headerBlock: {
+    borderBottomWidth: 1,
+    borderBottomColor: palette.rule,
+    paddingBottom: 14,
     marginBottom: 16,
   },
-  detailBlock: {
-    marginTop: 32,
+  serifTitle: {
+    fontFamily: "Times-Roman",
+    fontSize: 17,
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+    color: "#F5F5F5",
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: 7,
+    letterSpacing: 2.4,
+    textTransform: "uppercase",
+    color: palette.muted,
+    marginBottom: 8,
+  },
+  metadata: {
+    fontSize: 6.5,
+    letterSpacing: 1.4,
+    textTransform: "uppercase",
+    color: palette.dim,
     borderTopWidth: 1,
-    borderTopColor: "#E5E5E5",
-    paddingTop: 24,
-    gap: 10,
+    borderTopColor: palette.rule,
+    paddingTop: 8,
   },
-  detailRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 16,
+  itemBlock: {
+    borderTopWidth: 1,
+    borderTopColor: palette.rule,
+    paddingTop: 10,
+    paddingBottom: 2,
+    gap: 2,
   },
-  detailLabel: {
-    fontSize: 8,
+  fieldLabel: {
+    fontSize: 5.5,
     letterSpacing: 2,
     textTransform: "uppercase",
-    color: "#A3A3A3",
-    fontFamily: "Helvetica",
-    width: 120,
+    color: palette.muted,
+    marginTop: 4,
   },
-  detailValue: {
-    fontSize: 11,
-    flex: 1,
-    textAlign: "right",
+  itemType: {
     fontFamily: "Times-Roman",
-  },
-  footer: {
-    marginTop: 48,
-    borderTopWidth: 1,
-    borderTopColor: "#E5E5E5",
-    paddingTop: 16,
-    fontSize: 8,
-    letterSpacing: 2,
+    fontSize: 8.5,
+    letterSpacing: 0.8,
     textTransform: "uppercase",
-    color: "#A3A3A3",
-    textAlign: "center",
-    fontFamily: "Helvetica",
+    color: "#F5F5F5",
+    marginTop: 1,
   },
-  guideHeader: {
-    marginBottom: 28,
+  fieldValue: {
+    fontSize: 7,
+    lineHeight: 1.45,
+    color: "#D4D4D4",
+    marginTop: 1,
   },
-  guideTitle: {
-    fontSize: 22,
-    marginBottom: 6,
-    fontFamily: "Times-Roman",
-  },
-  guideSubtitle: {
-    fontSize: 10,
-    color: "#525252",
-    letterSpacing: 1.5,
-    textTransform: "uppercase",
-    fontFamily: "Helvetica",
-  },
-  itemCard: {
-    borderTopWidth: 1,
-    borderTopColor: "#E5E5E5",
-    paddingTop: 18,
-    paddingBottom: 18,
-    gap: 6,
-  },
-  itemName: {
-    fontSize: 13,
-    letterSpacing: 1,
-    textTransform: "uppercase",
-    fontFamily: "Times-Roman",
-  },
-  itemMeta: {
-    fontSize: 9,
-    color: "#737373",
+  shopLink: {
+    fontSize: 6.5,
     letterSpacing: 1.2,
     textTransform: "uppercase",
-    fontFamily: "Helvetica",
+    color: "#D4D4D4",
+    textDecoration: "underline",
+    marginTop: 1,
   },
-  itemDescription: {
-    fontSize: 10,
-    lineHeight: 1.6,
-    color: "#262626",
+  vaultEyebrow: {
+    fontSize: 6,
+    letterSpacing: 2.2,
+    textTransform: "uppercase",
+    color: palette.dim,
+    marginBottom: 6,
+  },
+  vaultTitle: {
+    fontFamily: "Times-Roman",
+    fontSize: 11,
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+    color: "#F5F5F5",
+    lineHeight: 1.35,
+    marginBottom: 8,
+  },
+  issueLine: {
+    fontSize: 6.5,
+    letterSpacing: 1.3,
+    textTransform: "uppercase",
+    color: palette.muted,
+  },
+  sectionLabel: {
+    fontSize: 5.5,
+    letterSpacing: 2,
+    textTransform: "uppercase",
+    color: palette.muted,
+    marginBottom: 6,
+  },
+  ledgerItem: {
+    fontSize: 6.5,
+    lineHeight: 1.5,
+    color: "#D4D4D4",
+    fontFamily: "Courier",
+    marginBottom: 3,
+  },
+  ledgerTimestamp: {
+    fontSize: 6.5,
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+    color: "#D4D4D4",
+    fontFamily: "Courier",
     marginTop: 4,
   },
-  itemUrl: {
-    fontSize: 9,
-    color: "#0A0A0A",
-    marginTop: 4,
-    fontFamily: "Helvetica",
+  synergySection: {
+    borderTopWidth: 1,
+    borderTopColor: palette.rule,
+    paddingTop: 12,
+    marginTop: 10,
+  },
+  synergyStat: {
+    fontSize: 7,
+    lineHeight: 1.45,
+    color: "#D4D4D4",
+  },
+  qrFrame: {
+    borderWidth: 1,
+    borderColor: "#404040",
+    backgroundColor: palette.panel,
+    padding: 12,
+    marginTop: 10,
+    alignItems: "center",
+  },
+  qrGrid: {
+    width: 56,
+    height: 56,
+    borderWidth: 1,
+    borderColor: "#525252",
+    backgroundColor: palette.page,
+    marginBottom: 8,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  qrPlaceholder: {
+    fontSize: 5,
+    letterSpacing: 1.5,
+    textTransform: "uppercase",
+    color: palette.muted,
+  },
+  qrSubtext: {
+    fontSize: 6,
+    lineHeight: 1.5,
+    color: palette.muted,
+    textAlign: "center",
+    fontStyle: "italic",
+  },
+  footerQuote: {
+    borderTopWidth: 1,
+    borderTopColor: palette.rule,
+    paddingTop: 10,
+    marginTop: 14,
+    fontSize: 6,
+    letterSpacing: 1.2,
+    color: palette.dim,
+    textAlign: "center",
+    fontStyle: "italic",
   },
 });
 
 export interface GuideTemplateProps {
-  buyerName: string;
-  dateOfPurchase: string;
-  lookTitle: string;
-  certificateSerial: string;
-  items: ClothingItem[];
+  guide: ResolvedStyleGuide;
 }
 
-export function createGuideDocument({
-  buyerName,
-  dateOfPurchase,
-  lookTitle,
-  certificateSerial,
-  items,
-}: GuideTemplateProps) {
+function DirectoryItem({
+  item,
+}: {
+  item: ResolvedStyleGuide["pageOne"]["directoryItems"][number];
+}) {
+  return (
+    <View style={styles.itemBlock}>
+      <Text style={styles.fieldLabel}>Item Type</Text>
+      <Text style={styles.itemType}>{item.itemType}</Text>
+
+      <Text style={styles.fieldLabel}>Brand &amp; Model</Text>
+      <Text style={styles.fieldValue}>{item.brandModel}</Text>
+
+      <Text style={styles.fieldLabel}>Action</Text>
+      <Link style={styles.shopLink} src={item.shopUrl}>
+        Shop Source →
+      </Link>
+
+      <Text style={styles.fieldLabel}>Pro-Proportion Tip</Text>
+      <Text style={styles.fieldValue}>{item.proportionTip}</Text>
+
+      <Text style={styles.fieldLabel}>Budget Alternative</Text>
+      <Text style={styles.fieldValue}>{item.budgetAlternative}</Text>
+    </View>
+  );
+}
+
+export function createGuideDocument({ guide }: GuideTemplateProps) {
+  const { pageOne, pageTwo } = guide;
+
   return (
     <Document
-      title={`Cortis Style Guide — ${lookTitle}`}
+      title={`Cortis Style Guide — ${pageOne.title}`}
       author="Cortis Style"
     >
       <Page size="A4" style={styles.page}>
-        <View style={styles.certificateFrame}>
-          <View>
-            <Text style={styles.eyebrow}>Cortis Style — Official Document</Text>
-            <Text style={styles.title}>Certificate of Styling Authenticity</Text>
-            <Text style={styles.subtitle}>
-              A registered record of editorial curation
-            </Text>
-
-            <Text style={styles.bodyText}>
-              This document confirms that {buyerName} is an official curator of{" "}
-              {lookTitle}, authenticated under the Cortis Style archive and issued
-              as a printable certificate of styling authenticity.
-            </Text>
-
-            <Text style={styles.bodyText}>
-              The bearer is granted access to the complete unlocked style guide
-              accompanying this certificate, including verified sourcing notes and
-              direct commerce references for each documented garment and accessory.
-            </Text>
-
-            <View style={styles.detailBlock}>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Curator</Text>
-                <Text style={styles.detailValue}>{buyerName}</Text>
-              </View>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Look</Text>
-                <Text style={styles.detailValue}>{lookTitle}</Text>
-              </View>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Date of Issue</Text>
-                <Text style={styles.detailValue}>{dateOfPurchase}</Text>
-              </View>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Certificate No.</Text>
-                <Text style={styles.detailValue}>{certificateSerial}</Text>
-              </View>
-            </View>
-          </View>
-
-          <Text style={styles.footer}>
-            Cortis Style — Lookbook Authentication System
-          </Text>
+        <View style={styles.headerBlock}>
+          <Text style={styles.serifTitle}>{pageOne.title}</Text>
+          <Text style={styles.subtitle}>{pageOne.subtitle}</Text>
+          <Text style={styles.metadata}>{pageOne.metadataLine}</Text>
         </View>
+
+        {pageOne.directoryItems.map((item) => (
+          <DirectoryItem key={item.itemId} item={item} />
+        ))}
       </Page>
 
       <Page size="A4" style={styles.page}>
-        <View>
-          <View style={styles.guideHeader}>
-            <Text style={styles.guideTitle}>Unlocked Style Guide</Text>
-            <Text style={styles.guideSubtitle}>
-              {lookTitle} — Full Item Registry
-            </Text>
-          </View>
-
-          {items.map((item) => (
-            <View key={item.id} style={styles.itemCard}>
-              <Text style={styles.itemName}>{item.name}</Text>
-              <Text style={styles.itemMeta}>
-                {item.brand} — {item.category}
-              </Text>
-              <Text style={styles.itemDescription}>
-                {item.unlockedDescription}
-              </Text>
-              <Text style={styles.itemUrl}>{item.shopUrl}</Text>
-            </View>
-          ))}
+        <View style={styles.headerBlock}>
+          <Text style={styles.vaultEyebrow}>Cortis Style — Digital Vault</Text>
+          <Text style={styles.vaultTitle}>{pageTwo.vaultTitle}</Text>
+          <Text style={styles.issueLine}>
+            {`ISSUE NO. ${pageTwo.issueSerial} // STATUS: ${pageTwo.status}`}
+          </Text>
         </View>
+
+        <View>
+          <Text style={styles.sectionLabel}>Wardrobe Asset Receipt</Text>
+          {pageTwo.ledgerAssets.map((asset) => (
+            <Text key={asset} style={styles.ledgerItem}>
+              {asset}
+            </Text>
+          ))}
+          <Text style={styles.fieldLabel}>Ledger Logged</Text>
+          <Text style={styles.ledgerTimestamp}>
+            LEDGER LOGGED: {pageTwo.ledgerTimestamp}
+          </Text>
+        </View>
+
+        <View style={styles.synergySection}>
+          <Text style={styles.sectionLabel}>{pageTwo.synergySectionTitle}</Text>
+          <Text style={styles.synergyStat}>{pageTwo.synergyStat}</Text>
+
+          <View style={styles.qrFrame}>
+            <View style={styles.qrGrid}>
+              <Text style={styles.qrPlaceholder}>QR</Text>
+            </View>
+            <Text style={styles.qrSubtext}>{pageTwo.qrSubtext}</Text>
+          </View>
+        </View>
+
+        <Text style={styles.footerQuote}>&ldquo;{pageTwo.closingQuote}&rdquo;</Text>
       </Page>
     </Document>
   );

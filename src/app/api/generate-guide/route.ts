@@ -1,9 +1,5 @@
 import { looks } from "@/data/looks";
-import {
-  formatPurchaseDate,
-  generateCertificateSerial,
-} from "@/lib/certificate";
-import { resolveLookItems } from "@/lib/resolveLookItems";
+import { resolveStyleGuide } from "@/lib/resolveStyleGuide";
 
 export const runtime = "nodejs";
 
@@ -42,22 +38,12 @@ export async function POST(request: Request) {
     import("@/components/pdf/GuideTemplate"),
   ]);
 
-  const resolvedItems = resolveLookItems(look);
   const purchaseDate = new Date();
-  const dateOfPurchase = formatPurchaseDate(purchaseDate);
-  const certificateSerial = generateCertificateSerial(
-    look.id,
-    buyerName,
-    purchaseDate.toISOString(),
-  );
+  const guide = resolveStyleGuide(look, { buyerName, purchaseDate });
 
   const pdfBuffer = await renderToBuffer(
     createGuideDocument({
-      buyerName,
-      dateOfPurchase,
-      lookTitle: look.title,
-      certificateSerial,
-      items: resolvedItems,
+      guide,
     }),
   );
 

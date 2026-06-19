@@ -8,16 +8,7 @@ import { GuidePreviewCanvas } from "@/components/modal/GuidePreviewCanvas";
 import { LookCanvas } from "@/components/modal/LookCanvas";
 
 interface LookImagePanelProps {
-  look: Pick<
-    Look,
-    | "id"
-    | "image"
-    | "title"
-    | "modelName"
-    | "layout"
-    | "outfitId"
-    | "editorGuideImage"
-  >;
+  look: Look;
   items: ResolvedLookItem[];
   activeItemId: string | null;
   isEditMode: boolean;
@@ -54,9 +45,7 @@ export function LookImagePanel({
             {showPreview ? (
               <GuidePreviewCanvas
                 key="preview"
-                lookTitle={look.title}
-                modelName={look.modelName}
-                items={items}
+                look={look}
                 isUnlockedViewState={showPreview}
               />
             ) : (
