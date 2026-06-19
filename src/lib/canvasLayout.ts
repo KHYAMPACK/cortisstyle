@@ -239,6 +239,11 @@ export function resolveCanvasLayouts(
   const committed = committedCanvasLayouts[lookId];
   let merged = mergeLayoutRecords(defaults, committed);
 
+  // looks.ts controls model name unless Save to Codebase wrote __model-name__.
+  if (options?.modelName && !committed?.[MODEL_NAME_CANVAS_ID]) {
+    merged[MODEL_NAME_CANVAS_ID] = layoutFromTextPosition(options.modelName);
+  }
+
   if (isLocalhostClient()) {
     merged = mergeLayoutRecords(merged, loadCanvasLayoutsFromStorage(lookId));
   }

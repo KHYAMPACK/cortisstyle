@@ -60,7 +60,7 @@ modelPortraitPosition: {
 modelNamePosition: {
   top: "45.28%",
   left: "63.90%",
-  fontSizePx: 50,
+  fontSizePx: 30,
   zIndex: 1,
 },
     ...metrics({

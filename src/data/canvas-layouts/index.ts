@@ -6,5 +6,5 @@ export const committedCanvasLayouts: Record<
   string,
   Record<string, CanvasItemLayout>
 > = {
-  "look-01": look_01 as Record<string, CanvasItemLayout>,
+  "look-01": look_01,
 };

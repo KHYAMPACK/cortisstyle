@@ -67,7 +67,7 @@ const ARROW_KEY_DIRECTION: Record<string, CanvasMoveDirection> = {
 const MIN_WIDTH_PX = 48;
 const MAX_WIDTH_PX = 720;
 const MIN_FONT_PX = 8;
-const MAX_FONT_PX = 28;
+const MAX_FONT_PX = 96;
 
 export function CollageStudioLayer({
   lookId,
@@ -120,7 +120,7 @@ export function CollageStudioLayer({
 
   useEffect(() => {
     const parent = parentRef.current;
-    if (!parent || typeof ResizeObserver === "undefined") return;
+    if (!parent || typeof ResizeObserver === "undefined" || isEditMode) return;
 
     const observer = new ResizeObserver(() => {
       syncLayoutsFromContainer();
@@ -128,7 +128,7 @@ export function CollageStudioLayer({
     observer.observe(parent);
 
     return () => observer.disconnect();
-  }, [syncLayoutsFromContainer, parentRef]);
+  }, [syncLayoutsFromContainer, parentRef, isEditMode]);
 
   useEffect(() => {
     if (!layoutsReadyRef.current || Object.keys(layouts).length === 0) return;
