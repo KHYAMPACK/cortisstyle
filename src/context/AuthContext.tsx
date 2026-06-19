@@ -59,8 +59,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [session],
   );
 
-  const refreshWardrobe = useCallback(async () => {
-    if (!session?.user || !isSupabaseConfigured()) {
+  const refreshWardrobe = useCallback(async (userId: string) => {
+    if (!isSupabaseConfigured()) {
       setPurchasedLookIds([]);
       return;
     }
@@ -68,7 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setWardrobeLoading(true);
 
     try {
-      const lookIds = await fetchUserWardrobeLookIds(session.user.id);
+      const lookIds = await fetchUserWardrobeLookIds(userId);
       setPurchasedLookIds(lookIds);
     } catch (error) {
       console.error("Failed to load wardrobe:", error);
@@ -77,7 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setWardrobeLoading(false);
     }
-  }, [session]);
+  }, []);
 
   useEffect(() => {
     if (!isSupabaseConfigured()) {
@@ -88,37 +88,52 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const supabase = getSupabaseClient();
     let isMounted = true;
 
-    const bootstrap = async () => {
-      const { data, error } = await supabase.auth.getSession();
-
-      if (!isMounted) return;
-
-      if (error) {
-        console.error("Supabase session error:", error);
-        setAuthError(error.message);
-      }
-
-      setSession(data.session ?? null);
-      setIsInitializing(false);
-    };
-
-    bootstrap();
-
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, nextSession) => {
+    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession);
 
       if (nextSession?.user) {
-        try {
-          await syncProfile(nextSession.user);
-        } catch (error) {
-          console.error("Profile sync failed:", error);
-        }
+        // Defer Supabase DB calls so getSession() is not deadlocked.
+        window.setTimeout(() => {
+          void syncProfile(nextSession.user).catch((error) => {
+            console.error("Profile sync failed:", error);
+          });
+        }, 0);
       } else {
         setPurchasedLookIds([]);
       }
     });
+
+    const bootstrap = async () => {
+      try {
+        const { data, error } = await supabase.auth.getSession();
+
+        if (!isMounted) return;
+
+        if (error) {
+          console.error("Supabase session error:", error);
+          setAuthError(error.message);
+        }
+
+        setSession(data.session ?? null);
+      } catch (error) {
+        if (!isMounted) return;
+
+        console.error("Supabase bootstrap failed:", error);
+        setAuthError(
+          error instanceof Error
+            ? error.message
+            : "Unable to restore your session.",
+        );
+      } finally {
+        if (isMounted) {
+          setIsInitializing(false);
+        }
+      }
+    };
+
+    void bootstrap();
 
     return () => {
       isMounted = false;
@@ -126,10 +141,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  const userId = session?.user?.id;
+
   useEffect(() => {
-    if (!session?.user) return;
-    void refreshWardrobe();
-  }, [session, refreshWardrobe]);
+    if (isInitializing || !userId) return;
+    void refreshWardrobe(userId);
+  }, [isInitializing, userId, refreshWardrobe]);
+
+  const refreshWardrobeForSession = useCallback(async () => {
+    if (!userId) {
+      setPurchasedLookIds([]);
+      return;
+    }
+
+    await refreshWardrobe(userId);
+  }, [refreshWardrobe, userId]);
 
   const signInWithPassword = useCallback(
     async (email: string, password: string) => {
@@ -247,7 +273,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signInWithPassword,
       signUpWithPassword,
       signOut,
-      refreshWardrobe,
+      refreshWardrobe: refreshWardrobeForSession,
       clearAuthError,
     }),
     [
@@ -262,7 +288,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signInWithPassword,
       signUpWithPassword,
       signOut,
-      refreshWardrobe,
+      refreshWardrobeForSession,
       clearAuthError,
     ],
   );

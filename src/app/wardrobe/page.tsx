@@ -52,6 +52,14 @@ export default function WardrobePage() {
   if (isInitializing) {
     return (
       <div className="min-h-full bg-white text-neutral-900">
+        <header className="border-b border-neutral-200 px-5 py-8 md:px-10 md:py-10">
+          <p className="text-[9px] tracking-[0.45em] text-neutral-400 uppercase">
+            Wardrobe Archive
+          </p>
+          <h1 className="mt-2 font-serif text-3xl leading-none tracking-[-0.02em] text-neutral-950 md:text-5xl">
+            Digital Wardrobe
+          </h1>
+        </header>
         <WardrobeLoadingState label="Authenticating archive" />
       </div>
     );

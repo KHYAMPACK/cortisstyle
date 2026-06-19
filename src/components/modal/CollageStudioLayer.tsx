@@ -48,6 +48,20 @@ const ARROW_KEY_DIRECTION: Record<string, CanvasMoveDirection> = {
 const MIN_WIDTH_PX = 48;
 const MAX_WIDTH_PX = 720;
 
+function canvasLayoutsEqual(
+  current: Record<string, CanvasItemLayout>,
+  next: Record<string, CanvasItemLayout>,
+): boolean {
+  const currentKeys = Object.keys(current);
+  const nextKeys = Object.keys(next);
+
+  if (currentKeys.length !== nextKeys.length) return false;
+
+  return currentKeys.every(
+    (key) => JSON.stringify(current[key]) === JSON.stringify(next[key]),
+  );
+}
+
 export function CollageStudioLayer({
   lookId,
   items,
@@ -76,8 +90,18 @@ export function CollageStudioLayer({
     if (containerWidth <= 0) return;
 
     const nextLayouts = resolveCanvasLayouts(lookId, items, containerWidth);
-    layoutsReadyRef.current = true;
-    setLayouts(nextLayouts);
+
+    setLayouts((current) => {
+      if (Object.keys(nextLayouts).length > 0) {
+        layoutsReadyRef.current = true;
+      }
+
+      if (canvasLayoutsEqual(current, nextLayouts)) {
+        return current;
+      }
+
+      return nextLayouts;
+    });
   }, [lookId, items, parentRef]);
 
   useLayoutEffect(() => {
@@ -101,10 +125,10 @@ export function CollageStudioLayer({
 
     onLayoutsChange?.(layouts);
 
-    if (isLocalhostClient()) {
+    if (isEditMode && isLocalhostClient()) {
       saveCanvasLayoutsToStorage(lookId, layouts);
     }
-  }, [lookId, layouts, onLayoutsChange]);
+  }, [lookId, layouts, onLayoutsChange, isEditMode]);
 
   useEffect(() => {
     if (!isEditMode) {
