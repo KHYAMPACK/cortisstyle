@@ -6,7 +6,14 @@ import { MatrixBlueprintGrid } from "@/components/modal/MatrixBlueprintGrid";
 import { WardrobeBuilderBlueprintCell } from "@/components/wardrobe/WardrobeBuilderBlueprintCell";
 import { MatrixBlueprintInteractionGrid } from "@/components/wardrobe/MatrixBlueprintInteractionGrid";
 import { WardrobeBuilderSlotZone } from "@/components/wardrobe/WardrobeBuilderSlotZone";
+import { WardrobeMoodImageFrame } from "@/components/wardrobe/WardrobeMoodImageFrame";
+import { WardrobeOutfitMoodboardCard } from "@/components/wardrobe/WardrobeOutfitMoodboardCard";
+import { WardrobeSaveOutfitModal } from "@/components/wardrobe/WardrobeSaveOutfitModal";
 import { WardrobeSelectionDrawer } from "@/components/wardrobe/WardrobeSelectionDrawer";
+import {
+  createSavedOutfitBlueprint,
+  persistSavedWardrobeOutfit,
+} from "@/lib/savedWardrobeOutfit";
 import {
   filterInventoryByCategory,
   resolveBuilderInventory,
@@ -18,11 +25,13 @@ import {
   resolveWardrobeBuilderLookItems,
 } from "@/lib/wardrobeBuilderLook";
 import {
+  DEFAULT_OUTFIT_CARD_META,
   getSlotDefinition,
   WARDROBE_BUILDER_LOOK,
   type MatrixCategoryFilter,
   type WardrobeEquippedItem,
   type WardrobeMatrixSlotIndex,
+  type WardrobeOutfitCardMeta,
   type WardrobeOutfitMatrix,
 } from "@/types/wardrobe-builder";
 import type { WardrobeClothingItem } from "@/types/user";
@@ -38,7 +47,11 @@ export function WardrobeBuilderCanvas({
   const [currentOutfit, setCurrentOutfit] = useState<WardrobeOutfitMatrix>(() =>
     Array(9).fill(null),
   );
+  const [cardMeta, setCardMeta] = useState<WardrobeOutfitCardMeta>(
+    DEFAULT_OUTFIT_CARD_META,
+  );
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   const [activeCategoryFilter, setActiveCategoryFilter] =
     useState<MatrixCategoryFilter | null>(null);
   const [activeSlotIndex, setActiveSlotIndex] =
@@ -112,6 +125,21 @@ export function WardrobeBuilderCanvas({
     setActiveSlotIndex(null);
   };
 
+  const handleSaveOutfit = (payload: { name: string; moodImageUrl: string | null }) => {
+    setCardMeta({
+      name: payload.name,
+      moodImageUrl: payload.moodImageUrl,
+    });
+
+    const blueprint = createSavedOutfitBlueprint({
+      name: payload.name,
+      moodImageUrl: payload.moodImageUrl,
+      slots: currentOutfit,
+    });
+
+    persistSavedWardrobeOutfit(blueprint);
+  };
+
   return (
     <section
       aria-label="Wardrobe builder matrix"
@@ -126,55 +154,55 @@ export function WardrobeBuilderCanvas({
         </h2>
       </div>
 
-      <div className="flex w-full flex-col items-center justify-center bg-white">
-        <div className="relative aspect-[3/4] w-full max-w-[420px] shrink-0 overflow-hidden border border-neutral-200 bg-white">
-          <div className="relative flex h-full w-full items-center justify-center overflow-hidden">
-            <div className="relative h-full w-full overflow-hidden">
-              <LookCanvas
-                key={outfitCanvasKey}
-                className="absolute inset-0 h-full w-full"
-                look={WARDROBE_BUILDER_LOOK}
-                lookImage=""
-                title="Wardrobe Builder"
-                items={lookItems}
-                activeItemId={null}
-                isEditMode={false}
-                containerRef={containerRef}
-                onSelectItem={() => {}}
-                resolveLayouts={resolveLayouts}
-              />
+      <div className="grid w-full place-items-center">
+        <WardrobeOutfitMoodboardCard name={cardMeta.name}>
+          <div className="relative mx-auto aspect-[3/4] w-full max-w-[420px] shrink-0 overflow-hidden border border-neutral-200 bg-white">
+            <LookCanvas
+              key={outfitCanvasKey}
+              className="absolute inset-0 h-full w-full"
+              look={WARDROBE_BUILDER_LOOK}
+              lookImage=""
+              title="Wardrobe Builder"
+              items={lookItems}
+              activeItemId={null}
+              isEditMode={false}
+              containerRef={containerRef}
+              onSelectItem={() => {}}
+              resolveLayouts={resolveLayouts}
+            />
 
-              <MatrixBlueprintGrid
-                className="z-30"
-                renderCell={({ slotIndex }) => {
-                  const index = slotIndex as WardrobeMatrixSlotIndex;
-                  const slot = getSlotDefinition(index);
-                  return (
-                    <WardrobeBuilderBlueprintCell
-                      label={slot.label}
-                      isEmpty={currentOutfit[index] === null}
-                    />
-                  );
-                }}
-              />
+            <MatrixBlueprintGrid
+              className="z-30"
+              renderCell={({ slotIndex }) => {
+                const index = slotIndex as WardrobeMatrixSlotIndex;
+                const slot = getSlotDefinition(index);
+                return (
+                  <WardrobeBuilderBlueprintCell
+                    label={slot.label}
+                    isEmpty={currentOutfit[index] === null}
+                  />
+                );
+              }}
+            />
 
-              <MatrixBlueprintInteractionGrid
-                className="z-40"
-                renderCell={({ slotIndex }) => {
-                  const index = slotIndex as WardrobeMatrixSlotIndex;
-                  const slot = getSlotDefinition(index);
-                  return (
-                    <WardrobeBuilderSlotZone
-                      label={slot.label}
-                      isEmpty={currentOutfit[index] === null}
-                      onClick={() => openDrawerForSlot(index)}
-                    />
-                  );
-                }}
-              />
-            </div>
+            <MatrixBlueprintInteractionGrid
+              className="z-40"
+              renderCell={({ slotIndex }) => {
+                const index = slotIndex as WardrobeMatrixSlotIndex;
+                const slot = getSlotDefinition(index);
+                return (
+                  <WardrobeBuilderSlotZone
+                    label={slot.label}
+                    isEmpty={currentOutfit[index] === null}
+                    onClick={() => openDrawerForSlot(index)}
+                  />
+                );
+              }}
+            />
+
+            <WardrobeMoodImageFrame moodImageUrl={cardMeta.moodImageUrl} />
           </div>
-        </div>
+        </WardrobeOutfitMoodboardCard>
       </div>
 
       <p className="mx-auto mt-5 w-full max-w-[420px] text-center font-mono text-[9px] tracking-[0.18em] text-neutral-400 uppercase">
@@ -183,12 +211,29 @@ export function WardrobeBuilderCanvas({
           : "Tap an empty slot to assign archive assets"}
       </p>
 
+      <button
+        type="button"
+        onClick={() => setIsSaveModalOpen(true)}
+        disabled={equippedCount === 0}
+        className="fixed right-6 bottom-6 z-[60] border border-neutral-900 bg-neutral-900 px-5 py-3 font-mono text-[10px] tracking-[0.3em] text-white uppercase shadow-lg transition-colors hover:bg-white hover:text-neutral-900 disabled:cursor-not-allowed disabled:border-neutral-200 disabled:bg-neutral-200 disabled:text-neutral-400"
+      >
+        Save Outfit
+      </button>
+
       <WardrobeSelectionDrawer
         isOpen={isDrawerOpen}
         categoryFilter={activeCategoryFilter}
         items={drawerItems}
         onClose={closeDrawer}
         onSelectItem={handleSelectItem}
+      />
+
+      <WardrobeSaveOutfitModal
+        isOpen={isSaveModalOpen}
+        initialName={cardMeta.name}
+        initialMoodImageUrl={cardMeta.moodImageUrl}
+        onClose={() => setIsSaveModalOpen(false)}
+        onSave={handleSaveOutfit}
       />
     </section>
   );

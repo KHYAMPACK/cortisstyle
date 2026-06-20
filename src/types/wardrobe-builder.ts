@@ -98,3 +98,19 @@ export const WARDROBE_BUILDER_LOOK = {
   id: "wardrobe-builder",
   layout: "collage" as const,
 };
+
+export interface WardrobeOutfitCardMeta {
+  name: string;
+  moodImageUrl: string | null;
+}
+
+export interface SavedWardrobeOutfitBlueprint extends WardrobeOutfitCardMeta {
+  id: string;
+  slots: WardrobeOutfitMatrix;
+  savedAt: string;
+}
+
+export const DEFAULT_OUTFIT_CARD_META: WardrobeOutfitCardMeta = {
+  name: "",
+  moodImageUrl: null,
+};
