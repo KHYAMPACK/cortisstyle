@@ -11,6 +11,15 @@ import {
   type FormEvent,
 } from "react";
 import { createPortal } from "react-dom";
+import { WardrobeOutfitLivePreviewCard } from "@/components/wardrobe/WardrobeOutfitLivePreviewCard";
+import { exportLookCardAsPng } from "@/lib/exportLookCardPng";
+import { persistSavedWardrobeOutfitToDb } from "@/lib/savedWardrobeOutfitDb";
+import type { CanvasItemLayout } from "@/types/canvas-layout";
+import type { ResolvedLookItem } from "@/types/look";
+import type {
+  SavedWardrobeOutfitBlueprint,
+  WardrobeOutfitMatrix,
+} from "@/types/wardrobe-builder";
 
 const spring = { type: "spring" as const, stiffness: 100, damping: 20 };
 
@@ -19,12 +28,26 @@ export interface WardrobeSaveOutfitPayload {
   moodImageUrl: string | null;
 }
 
+type ModalPhase = "edit" | "success";
+
 interface WardrobeSaveOutfitModalProps {
   isOpen: boolean;
+  userId: string | null;
+  slots: WardrobeOutfitMatrix;
+  lookItems: ResolvedLookItem[];
+  canvasKey: string;
+  resolveLayouts: (
+    items: ResolvedLookItem[],
+    containerWidth: number,
+  ) => Record<string, CanvasItemLayout>;
   initialName?: string;
   initialMoodImageUrl?: string | null;
   onClose: () => void;
-  onSave: (payload: WardrobeSaveOutfitPayload) => void;
+  onSaveSuccess: (
+    blueprint: SavedWardrobeOutfitBlueprint,
+    payload: WardrobeSaveOutfitPayload,
+  ) => void;
+  onSavedToOutfits: () => void;
 }
 
 function readImageFile(file: File): Promise<string> {
@@ -38,18 +61,32 @@ function readImageFile(file: File): Promise<string> {
 
 export function WardrobeSaveOutfitModal({
   isOpen,
+  userId,
+  slots,
+  lookItems,
+  canvasKey,
+  resolveLayouts,
   initialName = "",
   initialMoodImageUrl = null,
   onClose,
-  onSave,
+  onSaveSuccess,
+  onSavedToOutfits,
 }: WardrobeSaveOutfitModalProps) {
+  const [phase, setPhase] = useState<ModalPhase>("edit");
   const [name, setName] = useState(initialName);
   const [moodImageUrl, setMoodImageUrl] = useState<string | null>(
     initialMoodImageUrl,
   );
+  const [savedBlueprint, setSavedBlueprint] =
+    useState<SavedWardrobeOutfitBlueprint | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [shareError, setShareError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setIsMounted(true);
@@ -58,8 +95,14 @@ export function WardrobeSaveOutfitModal({
   useEffect(() => {
     if (!isOpen) return;
 
+    setPhase("edit");
     setName(initialName);
     setMoodImageUrl(initialMoodImageUrl);
+    setSavedBlueprint(null);
+    setIsSaving(false);
+    setIsSharing(false);
+    setSaveError(null);
+    setShareError(null);
 
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -93,17 +136,75 @@ export function WardrobeSaveOutfitModal({
     await applyImageFile(file);
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    onSave({
+    if (!userId) {
+      setSaveError("Sign in to save outfits to your archive.");
+      return;
+    }
+
+    const payload: WardrobeSaveOutfitPayload = {
       name: name.trim().toUpperCase(),
       moodImageUrl,
-    });
+    };
+
+    setIsSaving(true);
+    setSaveError(null);
+
+    try {
+      const blueprint = await persistSavedWardrobeOutfitToDb(userId, {
+        name: payload.name,
+        moodImageUrl: payload.moodImageUrl,
+        slots,
+      });
+
+      setSavedBlueprint(blueprint);
+      setPhase("success");
+      onSaveSuccess(blueprint, payload);
+    } catch (error) {
+      setSaveError(
+        error instanceof Error
+          ? error.message
+          : "Unable to save outfit to your archive.",
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleShareLookCard = async () => {
+    if (!previewRef.current) return;
+
+    setIsSharing(true);
+    setShareError(null);
+
+    try {
+      await exportLookCardAsPng(
+        previewRef.current,
+        savedBlueprint?.name ?? name,
+      );
+    } catch (error) {
+      setShareError(
+        error instanceof Error
+          ? error.message
+          : "Unable to export look card image.",
+      );
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
+  const handleSaveToOutfits = () => {
+    onSavedToOutfits();
     onClose();
   };
 
   if (!isMounted) return null;
+
+  const previewName = phase === "success" ? (savedBlueprint?.name ?? name) : name;
+  const previewMoodImageUrl =
+    phase === "success" ? (savedBlueprint?.moodImageUrl ?? moodImageUrl) : moodImageUrl;
 
   return createPortal(
     <AnimatePresence>
@@ -129,106 +230,194 @@ export function WardrobeSaveOutfitModal({
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 10 }}
               transition={spring}
-              className="pointer-events-auto w-[min(92vw,440px)] border border-neutral-200 bg-white p-8 shadow-2xl"
+              className="pointer-events-auto w-[min(96vw,920px)] border border-neutral-200 bg-white p-6 shadow-2xl md:p-8"
             >
-              <p className="mb-3 text-[9px] tracking-[0.4em] text-neutral-400 uppercase">
-                Moodboard Archive
-              </p>
-              <h2
-                id="save-outfit-title"
-                className="font-serif text-2xl leading-tight text-neutral-950"
-              >
-                Save Outfit
-              </h2>
-              <p className="mt-3 font-mono text-[10px] leading-relaxed tracking-[0.12em] text-neutral-500 uppercase">
-                Name your look and attach an editorial mood reference.
-              </p>
+              {phase === "edit" ? (
+                <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] lg:items-start">
+                  <div>
+                    <p className="mb-3 text-[9px] tracking-[0.4em] text-neutral-400 uppercase">
+                      Moodboard Archive
+                    </p>
+                    <h2
+                      id="save-outfit-title"
+                      className="font-serif text-2xl leading-tight text-neutral-950"
+                    >
+                      Save Outfit
+                    </h2>
+                    <p className="mt-3 font-mono text-[10px] leading-relaxed tracking-[0.12em] text-neutral-500 uppercase">
+                      Name your look and attach an editorial mood reference.
+                    </p>
 
-              <form onSubmit={handleSubmit} className="mt-8 space-y-6">
-                <label className="block">
-                  <span className="mb-2 block font-mono text-[9px] tracking-[0.35em] text-neutral-400 uppercase">
-                    Outfit Name
-                  </span>
-                  <input
-                    type="text"
-                    required
-                    value={name}
-                    onChange={(event) => setName(event.target.value)}
-                    placeholder="LOOK 01 — CYBER GRUNGE"
-                    className="w-full border border-neutral-200 bg-white px-3 py-3 font-mono text-[11px] tracking-[0.14em] text-neutral-900 uppercase outline-none transition-colors focus:border-neutral-900"
-                  />
-                </label>
-
-                <div>
-                  <span className="mb-2 block font-mono text-[9px] tracking-[0.35em] text-neutral-400 uppercase">
-                    Mood Image Overlay
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    onDragOver={(event) => {
-                      event.preventDefault();
-                      setIsDragging(true);
-                    }}
-                    onDragLeave={() => setIsDragging(false)}
-                    onDrop={handleDrop}
-                    className={`relative flex w-full flex-col items-center justify-center gap-3 border border-dashed px-4 py-8 transition-colors ${
-                      isDragging
-                        ? "border-neutral-900 bg-neutral-50"
-                        : "border-neutral-200 bg-white hover:border-neutral-400"
-                    }`}
-                  >
-                    {moodImageUrl ? (
-                      <div className="relative aspect-[3/4] w-[100px] overflow-hidden border border-neutral-100">
-                        <Image
-                          src={moodImageUrl}
-                          alt="Mood preview"
-                          fill
-                          unoptimized
-                          sizes="100px"
-                          className="object-cover"
+                    <form onSubmit={handleSubmit} className="mt-8 space-y-6">
+                      <label className="block">
+                        <span className="mb-2 block font-mono text-[9px] tracking-[0.35em] text-neutral-400 uppercase">
+                          Outfit Name
+                        </span>
+                        <input
+                          type="text"
+                          required
+                          value={name}
+                          onChange={(event) => setName(event.target.value)}
+                          placeholder="LOOK 01 — CYBER GRUNGE"
+                          className="w-full border border-neutral-200 bg-white px-3 py-3 font-mono text-[11px] tracking-[0.14em] text-neutral-900 uppercase outline-none transition-colors focus:border-neutral-900"
                         />
+                      </label>
+
+                      <div>
+                        <span className="mb-2 block font-mono text-[9px] tracking-[0.35em] text-neutral-400 uppercase">
+                          Mood Image Overlay
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          onDragOver={(event) => {
+                            event.preventDefault();
+                            setIsDragging(true);
+                          }}
+                          onDragLeave={() => setIsDragging(false)}
+                          onDrop={handleDrop}
+                          className={`relative flex w-full flex-col items-center justify-center gap-3 border border-dashed px-4 py-8 transition-colors ${
+                            isDragging
+                              ? "border-neutral-900 bg-neutral-50"
+                              : "border-neutral-200 bg-white hover:border-neutral-400"
+                          }`}
+                        >
+                          {moodImageUrl ? (
+                            <div className="relative aspect-[3/4] w-[100px] overflow-hidden border border-neutral-100">
+                              <Image
+                                src={moodImageUrl}
+                                alt="Mood preview"
+                                fill
+                                unoptimized
+                                sizes="100px"
+                                className="object-cover"
+                              />
+                            </div>
+                          ) : null}
+                          <span className="font-mono text-[9px] tracking-[0.2em] text-neutral-400 uppercase">
+                            {moodImageUrl
+                              ? "Replace Mood Image"
+                              : "Drag & Drop or Click to Upload"}
+                          </span>
+                        </button>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleFileChange}
+                        />
+                        {moodImageUrl ? (
+                          <button
+                            type="button"
+                            onClick={() => setMoodImageUrl(null)}
+                            className="mt-2 font-mono text-[9px] tracking-[0.2em] text-neutral-400 uppercase transition-colors hover:text-neutral-900"
+                          >
+                            Remove Mood Image
+                          </button>
+                        ) : null}
                       </div>
-                    ) : null}
-                    <span className="font-mono text-[9px] tracking-[0.2em] text-neutral-400 uppercase">
-                      {moodImageUrl
-                        ? "Replace Mood Image"
-                        : "Drag & Drop or Click to Upload"}
-                    </span>
-                  </button>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleFileChange}
-                  />
-                  {moodImageUrl ? (
+
+                      {saveError ? (
+                        <p className="font-mono text-[10px] tracking-[0.12em] text-red-600 uppercase">
+                          {saveError}
+                        </p>
+                      ) : null}
+
+                      <button
+                        type="submit"
+                        disabled={isSaving}
+                        className="w-full border border-neutral-900 bg-neutral-900 px-5 py-3 font-mono text-[10px] tracking-[0.3em] text-white uppercase transition-colors hover:bg-white hover:text-neutral-900 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {isSaving ? "Saving..." : "Save Outfit Card"}
+                      </button>
+                    </form>
+
                     <button
                       type="button"
-                      onClick={() => setMoodImageUrl(null)}
-                      className="mt-2 font-mono text-[9px] tracking-[0.2em] text-neutral-400 uppercase transition-colors hover:text-neutral-900"
+                      onClick={onClose}
+                      className="mt-4 w-full font-mono text-[10px] tracking-[0.3em] text-neutral-400 uppercase transition-colors hover:text-neutral-900"
                     >
-                      Remove Mood Image
+                      Cancel
                     </button>
-                  ) : null}
+                  </div>
+
+                  <div className="border border-neutral-100 bg-neutral-50/60 p-4 md:p-5">
+                    <p className="mb-4 font-mono text-[9px] tracking-[0.35em] text-neutral-400 uppercase">
+                      Live Preview
+                    </p>
+                    <div className="mx-auto max-w-[280px]">
+                      <WardrobeOutfitLivePreviewCard
+                        ref={previewRef}
+                        name={previewName}
+                        moodImageUrl={previewMoodImageUrl}
+                        lookItems={lookItems}
+                        resolveLayouts={resolveLayouts}
+                        canvasKey={canvasKey}
+                      />
+                    </div>
+                  </div>
                 </div>
+              ) : (
+                <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] lg:items-center">
+                  <div>
+                    <p className="mb-3 text-[9px] tracking-[0.4em] text-neutral-400 uppercase">
+                      Archive Confirmed
+                    </p>
+                    <h2
+                      id="save-outfit-title"
+                      className="font-serif text-2xl leading-tight text-neutral-950"
+                    >
+                      Look Card Ready
+                    </h2>
+                    <p className="mt-3 font-mono text-[10px] leading-relaxed tracking-[0.12em] text-neutral-500 uppercase">
+                      Your outfit is saved. Share the poster or add it to your
+                      dashboard collection.
+                    </p>
 
-                <button
-                  type="submit"
-                  className="w-full border border-neutral-900 bg-neutral-900 px-5 py-3 font-mono text-[10px] tracking-[0.3em] text-white uppercase transition-colors hover:bg-white hover:text-neutral-900"
-                >
-                  Save Outfit Card
-                </button>
-              </form>
+                    <div className="mt-8 space-y-3">
+                      <button
+                        type="button"
+                        onClick={handleShareLookCard}
+                        disabled={isSharing}
+                        className="w-full border border-neutral-900 bg-neutral-900 px-5 py-3 font-mono text-[10px] tracking-[0.3em] text-white uppercase transition-colors hover:bg-white hover:text-neutral-900 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {isSharing ? "Generating..." : "Share Look Card"}
+                      </button>
 
-              <button
-                type="button"
-                onClick={onClose}
-                className="mt-4 w-full font-mono text-[10px] tracking-[0.3em] text-neutral-400 uppercase transition-colors hover:text-neutral-900"
-              >
-                Cancel
-              </button>
+                      <button
+                        type="button"
+                        onClick={handleSaveToOutfits}
+                        className="w-full border border-neutral-200 bg-white px-5 py-3 font-mono text-[10px] tracking-[0.3em] text-neutral-900 uppercase transition-colors hover:border-neutral-900"
+                      >
+                        Save to Outfits
+                      </button>
+                    </div>
+
+                    {shareError ? (
+                      <p className="mt-4 font-mono text-[10px] tracking-[0.12em] text-red-600 uppercase">
+                        {shareError}
+                      </p>
+                    ) : null}
+                  </div>
+
+                  <div className="border border-neutral-100 bg-neutral-50/60 p-4 md:p-5">
+                    <p className="mb-4 font-mono text-[9px] tracking-[0.35em] text-neutral-400 uppercase">
+                      Saved Poster
+                    </p>
+                    <div className="mx-auto max-w-[280px]">
+                      <WardrobeOutfitLivePreviewCard
+                        ref={previewRef}
+                        name={previewName}
+                        moodImageUrl={previewMoodImageUrl}
+                        lookItems={lookItems}
+                        resolveLayouts={resolveLayouts}
+                        canvasKey={canvasKey}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
             </motion.div>
           </div>
         </>

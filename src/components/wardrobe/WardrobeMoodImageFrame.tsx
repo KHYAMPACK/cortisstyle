@@ -4,11 +4,17 @@ import Image from "next/image";
 
 interface WardrobeMoodImageFrameProps {
   moodImageUrl: string | null;
+  showPlaceholder?: boolean;
 }
 
 export function WardrobeMoodImageFrame({
   moodImageUrl,
+  showPlaceholder = false,
 }: WardrobeMoodImageFrameProps) {
+  if (!moodImageUrl && !showPlaceholder) {
+    return null;
+  }
+
   const isEmpty = moodImageUrl === null;
 
   return (

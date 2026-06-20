@@ -5,11 +5,13 @@ import type { ReactNode } from "react";
 interface WardrobeOutfitMoodboardCardProps {
   name: string;
   children: ReactNode;
+  showFooter?: boolean;
 }
 
 export function WardrobeOutfitMoodboardCard({
   name,
   children,
+  showFooter = true,
 }: WardrobeOutfitMoodboardCardProps) {
   const displayName = name.trim() || "UNTITLED LOOK";
 
@@ -17,16 +19,18 @@ export function WardrobeOutfitMoodboardCard({
     <div className="w-full max-w-[420px] shrink-0">
       {children}
 
-      <div className="flex items-end justify-between gap-6 py-4">
-        <p className="pl-1 font-mono text-[11px] tracking-widest text-neutral-800 uppercase">
-          {displayName}
-        </p>
+      {showFooter ? (
+        <div className="flex items-end justify-between gap-6 py-4">
+          <p className="pl-1 font-mono text-[11px] tracking-widest text-neutral-800 uppercase">
+            {displayName}
+          </p>
 
-        <div className="flex flex-col items-end font-mono text-[8px] tracking-wider text-neutral-400 uppercase">
-          <span>made with cortisstyle.com</span>
-          <span>@cortisstyle</span>
+          <div className="flex flex-col items-end font-mono text-[8px] tracking-wider text-neutral-400 uppercase">
+            <span>made with cortisstyle.com</span>
+            <span>@cortisstyle</span>
+          </div>
         </div>
-      </div>
+      ) : null}
     </div>
   );
 }

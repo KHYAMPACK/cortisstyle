@@ -50,10 +50,29 @@ create index if not exists user_wardrobe_user_id_idx
   on public.user_wardrobe (user_id);
 
 -- ---------------------------------------------------------------------------
+-- User saved outfit looks (wardrobe builder)
+-- ---------------------------------------------------------------------------
+create table if not exists public.user_saved_outfits (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  name text not null,
+  mood_image_url text,
+  slots jsonb not null,
+  saved_at timestamptz not null default timezone('utc', now())
+);
+
+create index if not exists user_saved_outfits_user_id_idx
+  on public.user_saved_outfits (user_id);
+
+create index if not exists user_saved_outfits_saved_at_idx
+  on public.user_saved_outfits (saved_at desc);
+
+-- ---------------------------------------------------------------------------
 -- Row Level Security
 -- ---------------------------------------------------------------------------
 alter table public.profiles enable row level security;
 alter table public.user_wardrobe enable row level security;
+alter table public.user_saved_outfits enable row level security;
 
 create policy "Profiles are viewable by owner"
   on public.profiles for select
@@ -74,6 +93,22 @@ create policy "Wardrobe rows are viewable by owner"
 create policy "Wardrobe rows are insertable by owner"
   on public.user_wardrobe for insert
   with check (auth.uid() = user_id);
+
+create policy "Saved outfits are viewable by owner"
+  on public.user_saved_outfits for select
+  using (auth.uid() = user_id);
+
+create policy "Saved outfits are insertable by owner"
+  on public.user_saved_outfits for insert
+  with check (auth.uid() = user_id);
+
+create policy "Saved outfits are updatable by owner"
+  on public.user_saved_outfits for update
+  using (auth.uid() = user_id);
+
+create policy "Saved outfits are deletable by owner"
+  on public.user_saved_outfits for delete
+  using (auth.uid() = user_id);
 
 -- Optional demo seed (replace USER_UUID after creating an account):
 -- insert into public.user_wardrobe (user_id, look_id)

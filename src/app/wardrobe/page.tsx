@@ -19,6 +19,7 @@ export default function WardrobePage() {
     wardrobeLoading,
     user,
     purchasedLooks,
+    savedOutfits,
     ownedClothes,
     signOut,
   } = useAuth();
@@ -115,7 +116,11 @@ export default function WardrobePage() {
             ) : wardrobeLoading ? (
               <WardrobeLoadingState label="Loading wardrobe collection" />
             ) : activeTab === "looks" ? (
-              <WardrobeLooksGrid looks={purchasedLooks} />
+              <WardrobeLooksGrid
+                looks={purchasedLooks}
+                savedOutfits={savedOutfits}
+                inventory={ownedClothes}
+              />
             ) : (
               <WardrobeItemsGrid items={ownedClothes} />
             )}

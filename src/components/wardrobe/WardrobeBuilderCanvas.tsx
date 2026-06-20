@@ -10,10 +10,7 @@ import { WardrobeMoodImageFrame } from "@/components/wardrobe/WardrobeMoodImageF
 import { WardrobeOutfitMoodboardCard } from "@/components/wardrobe/WardrobeOutfitMoodboardCard";
 import { WardrobeSaveOutfitModal } from "@/components/wardrobe/WardrobeSaveOutfitModal";
 import { WardrobeSelectionDrawer } from "@/components/wardrobe/WardrobeSelectionDrawer";
-import {
-  createSavedOutfitBlueprint,
-  persistSavedWardrobeOutfit,
-} from "@/lib/savedWardrobeOutfit";
+import { useAuth } from "@/context/AuthContext";
 import {
   filterInventoryByCategory,
   resolveBuilderInventory,
@@ -29,6 +26,7 @@ import {
   getSlotDefinition,
   WARDROBE_BUILDER_LOOK,
   type MatrixCategoryFilter,
+  type SavedWardrobeOutfitBlueprint,
   type WardrobeEquippedItem,
   type WardrobeMatrixSlotIndex,
   type WardrobeOutfitCardMeta,
@@ -43,6 +41,7 @@ interface WardrobeBuilderCanvasProps {
 export function WardrobeBuilderCanvas({
   ownedClothes = [],
 }: WardrobeBuilderCanvasProps) {
+  const { user, refreshSavedOutfits } = useAuth();
   const containerRef = useRef<HTMLDivElement>(null);
   const [currentOutfit, setCurrentOutfit] = useState<WardrobeOutfitMatrix>(() =>
     Array(9).fill(null),
@@ -89,6 +88,8 @@ export function WardrobeBuilderCanvas({
   );
 
   const equippedCount = currentOutfit.filter((slot) => slot !== null).length;
+  const hasSavedCardMeta =
+    cardMeta.name.trim().length > 0 || cardMeta.moodImageUrl !== null;
 
   const openDrawerForSlot = (slotIndex: WardrobeMatrixSlotIndex) => {
     const slot = getSlotDefinition(slotIndex);
@@ -125,19 +126,18 @@ export function WardrobeBuilderCanvas({
     setActiveSlotIndex(null);
   };
 
-  const handleSaveOutfit = (payload: { name: string; moodImageUrl: string | null }) => {
+  const handleSaveSuccess = (
+    _blueprint: SavedWardrobeOutfitBlueprint,
+    payload: { name: string; moodImageUrl: string | null },
+  ) => {
     setCardMeta({
       name: payload.name,
       moodImageUrl: payload.moodImageUrl,
     });
+  };
 
-    const blueprint = createSavedOutfitBlueprint({
-      name: payload.name,
-      moodImageUrl: payload.moodImageUrl,
-      slots: currentOutfit,
-    });
-
-    persistSavedWardrobeOutfit(blueprint);
+  const handleSavedToOutfits = () => {
+    void refreshSavedOutfits();
   };
 
   return (
@@ -155,7 +155,10 @@ export function WardrobeBuilderCanvas({
       </div>
 
       <div className="grid w-full place-items-center">
-        <WardrobeOutfitMoodboardCard name={cardMeta.name}>
+        <WardrobeOutfitMoodboardCard
+          name={cardMeta.name}
+          showFooter={hasSavedCardMeta}
+        >
           <div className="relative mx-auto aspect-[3/4] w-full max-w-[420px] shrink-0 overflow-hidden border border-neutral-200 bg-white">
             <LookCanvas
               key={outfitCanvasKey}
@@ -230,10 +233,16 @@ export function WardrobeBuilderCanvas({
 
       <WardrobeSaveOutfitModal
         isOpen={isSaveModalOpen}
+        userId={user?.id ?? null}
+        slots={currentOutfit}
+        lookItems={lookItems}
+        canvasKey={outfitCanvasKey}
+        resolveLayouts={resolveLayouts}
         initialName={cardMeta.name}
         initialMoodImageUrl={cardMeta.moodImageUrl}
         onClose={() => setIsSaveModalOpen(false)}
-        onSave={handleSaveOutfit}
+        onSaveSuccess={handleSaveSuccess}
+        onSavedToOutfits={handleSavedToOutfits}
       />
     </section>
   );

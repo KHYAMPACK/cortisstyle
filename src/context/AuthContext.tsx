@@ -17,12 +17,14 @@ import {
   resolveOwnedClothesFromLooks,
   resolvePurchasedLooks,
 } from "@/lib/wardrobe";
+import { fetchUserSavedOutfits } from "@/lib/savedWardrobeOutfitDb";
 import {
   mapSupabaseUser,
   type WardrobeClothingItem,
   type WardrobeLook,
   type WardrobeUser,
 } from "@/types/user";
+import type { SavedWardrobeOutfitBlueprint } from "@/types/wardrobe-builder";
 
 interface AuthContextValue {
   isAuthenticated: boolean;
@@ -32,11 +34,13 @@ interface AuthContextValue {
   authError: string | null;
   user: WardrobeUser | null;
   purchasedLooks: WardrobeLook[];
+  savedOutfits: SavedWardrobeOutfitBlueprint[];
   ownedClothes: WardrobeClothingItem[];
   signInWithPassword: (email: string, password: string) => Promise<void>;
   signUpWithPassword: (email: string, password: string) => Promise<boolean>;
   signOut: () => Promise<void>;
   refreshWardrobe: () => Promise<void>;
+  refreshSavedOutfits: () => Promise<void>;
   clearAuthError: () => void;
 }
 
@@ -53,6 +57,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [wardrobeLoading, setWardrobeLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [purchasedLookIds, setPurchasedLookIds] = useState<string[]>([]);
+  const [savedOutfits, setSavedOutfits] = useState<SavedWardrobeOutfitBlueprint[]>(
+    [],
+  );
 
   const user = useMemo(
     () => (session?.user ? mapSupabaseUser(session.user) : null),
@@ -79,6 +86,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const refreshSavedOutfits = useCallback(async (userId: string) => {
+    if (!isSupabaseConfigured()) {
+      setSavedOutfits([]);
+      return;
+    }
+
+    try {
+      const outfits = await fetchUserSavedOutfits(userId);
+      setSavedOutfits(outfits);
+    } catch (error) {
+      console.error("Failed to load saved outfits:", error);
+      setSavedOutfits([]);
+    }
+  }, []);
+
   useEffect(() => {
     if (!isSupabaseConfigured()) {
       setIsInitializing(false);
@@ -102,6 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }, 0);
       } else {
         setPurchasedLookIds([]);
+        setSavedOutfits([]);
       }
     });
 
@@ -146,7 +169,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (isInitializing || !userId) return;
     void refreshWardrobe(userId);
-  }, [isInitializing, userId, refreshWardrobe]);
+    void refreshSavedOutfits(userId);
+  }, [isInitializing, userId, refreshWardrobe, refreshSavedOutfits]);
 
   const refreshWardrobeForSession = useCallback(async () => {
     if (!userId) {
@@ -156,6 +180,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     await refreshWardrobe(userId);
   }, [refreshWardrobe, userId]);
+
+  const refreshSavedOutfitsForSession = useCallback(async () => {
+    if (!userId) {
+      setSavedOutfits([]);
+      return;
+    }
+
+    await refreshSavedOutfits(userId);
+  }, [refreshSavedOutfits, userId]);
 
   const signInWithPassword = useCallback(
     async (email: string, password: string) => {
@@ -243,6 +276,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     setPurchasedLookIds([]);
+    setSavedOutfits([]);
     setAuthError(null);
   }, []);
 
@@ -269,11 +303,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       authError,
       user,
       purchasedLooks,
+      savedOutfits,
       ownedClothes,
       signInWithPassword,
       signUpWithPassword,
       signOut,
       refreshWardrobe: refreshWardrobeForSession,
+      refreshSavedOutfits: refreshSavedOutfitsForSession,
       clearAuthError,
     }),
     [
@@ -284,11 +320,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       authError,
       user,
       purchasedLooks,
+      savedOutfits,
       ownedClothes,
       signInWithPassword,
       signUpWithPassword,
       signOut,
       refreshWardrobeForSession,
+      refreshSavedOutfitsForSession,
       clearAuthError,
     ],
   );
