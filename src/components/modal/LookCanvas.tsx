@@ -97,23 +97,21 @@ export function LookCanvas({
       </AnimatePresence>
 
       {useCollage ? (
-        <div className="absolute inset-0 h-full w-full overflow-hidden md:relative md:h-full md:w-full">
-          <CollageStudioLayer
-            lookId={look.id}
-            items={items}
-            selectedItemId={selectedItemId}
-            activeItemId={activeItemId}
-            isEditMode={isEditMode}
-            parentRef={containerRef}
-            onSelectItem={onSelectItem}
-            onSelectCanvasItem={setSelectedItemId}
-            onLayoutsChange={onCanvasLayoutsChange}
-            resolveLayouts={resolveLayouts}
-            isFreeDragMode={isFreeDragMode}
-            onFreeDragPositionCommit={onFreeDragPositionCommit}
-            disableCanvasHitTesting={disableCanvasHitTesting}
-          />
-        </div>
+        <CollageStudioLayer
+          lookId={look.id}
+          items={items}
+          selectedItemId={selectedItemId}
+          activeItemId={activeItemId}
+          isEditMode={isEditMode}
+          parentRef={containerRef}
+          onSelectItem={onSelectItem}
+          onSelectCanvasItem={setSelectedItemId}
+          onLayoutsChange={onCanvasLayoutsChange}
+          resolveLayouts={resolveLayouts}
+          isFreeDragMode={isFreeDragMode}
+          onFreeDragPositionCommit={onFreeDragPositionCommit}
+          disableCanvasHitTesting={disableCanvasHitTesting}
+        />
       ) : (
         <SingleLookImage image={lookImage} title={title} />
       )}

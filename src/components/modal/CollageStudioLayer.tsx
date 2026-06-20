@@ -450,7 +450,7 @@ export function CollageStudioLayer({
   }, [isEditMode, isHitboxMode, selectedItemId, parentRef]);
 
   return (
-    <div className="absolute inset-0 h-full w-full overflow-hidden md:relative md:h-full md:w-full">
+    <div className="relative h-full w-full max-md:absolute max-md:inset-0 max-md:overflow-hidden">
       <AnimatePresence>
         {!isFullyLoaded && (
           <motion.div

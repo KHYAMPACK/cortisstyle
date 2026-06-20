@@ -9,9 +9,6 @@ interface LookCanvasViewportProps {
 /**
  * Canonical LookCanvas parent chain — matches LookImagePanel view/edit framing
  * so resolveCanvasLayouts reads the same box model on homepage and wardrobe.
- *
- * Mobile uses the same 2:3 aspect as desktop so percentage coordinates resolve
- * identically. Desktop md:+ classes are unchanged.
  */
 export function LookCanvasViewport({
   children,
@@ -24,14 +21,16 @@ export function LookCanvasViewport({
 
   return (
     <div
-      className={`relative isolate mx-auto aspect-[2/3] w-full min-w-0 max-w-full overflow-hidden bg-white md:mx-0 md:aspect-[2/3] md:h-full md:max-h-none md:w-auto md:overflow-visible ${className}`.trim()}
+      className={`relative mx-auto aspect-[2/3] w-full min-w-0 max-w-full overflow-hidden bg-white md:mx-0 md:aspect-[2/3] md:h-full md:max-h-none md:w-auto md:overflow-visible ${className}`.trim()}
     >
-      {/* Mobile: absolute inset-0 coordinate sandbox. Desktop: flex centering unchanged. */}
-      <div className="absolute inset-0 h-full w-full overflow-hidden bg-white md:relative md:flex md:h-full md:w-full md:items-center md:justify-center md:overflow-visible">
+      {/* Desktop chain matches original verified layout exactly. */}
+      <div className="relative flex h-full w-full items-center justify-center overflow-hidden bg-white max-md:items-stretch max-md:justify-stretch md:overflow-visible">
         <div
-          className={`absolute inset-0 h-full w-full ${bleedClass} md:relative md:h-full md:w-full md:origin-center`}
+          className={`relative h-full w-full max-md:absolute max-md:inset-0 md:origin-center ${bleedClass}`}
         >
-          <div className={`absolute inset-0 h-full w-full ${bleedClass} md:relative md:h-full md:w-full`}>
+          <div
+            className={`relative h-full w-full max-md:absolute max-md:inset-0 ${bleedClass}`}
+          >
             {children}
           </div>
         </div>

@@ -32,9 +32,8 @@ export function LookImagePanel({
     look.layout === "collage" && isEditMode && !showPreview;
 
   return (
-    <div className="flex w-full min-w-0 shrink-0 flex-col items-center bg-white p-4 md:h-full md:w-[52%] md:p-8">
-      <div className="w-full min-w-0 max-md:max-w-full">
-        <LookCanvasViewport allowBleed={allowDesktopCanvasBleed}>
+    <div className="flex w-full shrink-0 flex-col items-center bg-white p-4 md:h-full md:w-[52%] md:p-8">
+      <LookCanvasViewport allowBleed={allowDesktopCanvasBleed}>
         <AnimatePresence mode="wait">
           {showPreview ? (
             <GuidePreviewCanvas
@@ -45,7 +44,6 @@ export function LookImagePanel({
           ) : (
             <LookCanvas
               key="canvas"
-              className="absolute inset-0 h-full w-full md:relative md:h-full md:w-full"
               look={look}
               lookImage={look.image}
               title={look.title}
@@ -58,8 +56,7 @@ export function LookImagePanel({
             />
           )}
         </AnimatePresence>
-        </LookCanvasViewport>
-      </div>
+      </LookCanvasViewport>
 
       <p className="mt-3 w-full text-center text-[9px] tracking-[0.38em] text-neutral-500 uppercase md:hidden">
         {look.title.toUpperCase()} // BY {look.modelName.toUpperCase()}
