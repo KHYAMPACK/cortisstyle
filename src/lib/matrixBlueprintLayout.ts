@@ -23,7 +23,7 @@ export const MATRIX_BLUEPRINT_COLUMNS: MatrixBlueprintCellLayout[][] = [
   [
     { slotIndex: 0, heightClass: "h-[80px] shrink-0" },
     { slotIndex: 3, heightClass: "min-h-[220px] flex-1" },
-    { slotIndex: 6, heightClass: "h-[80px] shrink-0" },
+    { slotIndex: 6, heightClass: "min-h-0 flex-1" },
   ],
   [
     { slotIndex: 1, heightClass: "h-[80px] shrink-0" },

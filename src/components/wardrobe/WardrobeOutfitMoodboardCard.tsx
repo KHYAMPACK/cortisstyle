@@ -33,8 +33,9 @@ export function WardrobeOutfitMoodboardCard({
           >
             {displayName}
           </span>
-          <span className={`shrink-0 whitespace-nowrap text-right ${FOOTER_META_CLASS}`}>
-            build your own
+          <span className={`shrink-0 text-right leading-relaxed ${FOOTER_META_CLASS}`}>
+            <span className="block">build your own</span>
+            <span className="block">cortisstyle.com</span>
           </span>
         </div>
       ) : null}
