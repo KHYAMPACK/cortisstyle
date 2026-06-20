@@ -34,7 +34,7 @@ export function WardrobeOutfitMoodboardCard({
             {displayName}
           </span>
           <span className={`shrink-0 whitespace-nowrap text-right ${FOOTER_META_CLASS}`}>
-            made with cortisstyle.com
+            build your own
           </span>
         </div>
       ) : null}

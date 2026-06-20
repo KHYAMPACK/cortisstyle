@@ -2,6 +2,7 @@
 
 import { forwardRef, useCallback, useRef } from "react";
 import { LookCanvas } from "@/components/modal/LookCanvas";
+import { WardrobeCanvasBrandWatermark } from "@/components/wardrobe/WardrobeCanvasBrandWatermark";
 import { WardrobeMoodImageFrame } from "@/components/wardrobe/WardrobeMoodImageFrame";
 import { WardrobeMoodword } from "@/components/wardrobe/WardrobeMoodword";
 import { WardrobeOutfitMoodboardCard } from "@/components/wardrobe/WardrobeOutfitMoodboardCard";
@@ -79,6 +80,8 @@ export const WardrobeOutfitLivePreviewCard = forwardRef<
               style={{ width: MAIN_CANVAS_WIDTH_PX }}
             >
               <div aria-hidden className="absolute inset-0 z-0 bg-white" />
+
+              <WardrobeCanvasBrandWatermark />
 
               <WardrobeMoodImageFrame
                 moodImageUrl={moodImageUrl}
