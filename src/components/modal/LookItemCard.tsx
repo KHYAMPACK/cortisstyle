@@ -25,7 +25,7 @@ export const LookItemCard = forwardRef<HTMLButtonElement, LookItemCardProps>(
           backgroundColor: isActive ? "#fafafa" : "#ffffff",
         }}
         transition={spring}
-        className={`relative w-full rounded-sm border px-4 py-4 text-left transition-shadow ${
+        className={`relative w-full scroll-mt-3 rounded-sm border px-4 py-4 text-left transition-shadow ${
           isActive
             ? "border-neutral-900 shadow-[0_0_0_1px_rgba(0,0,0,0.08)]"
             : "border-transparent hover:border-neutral-200"

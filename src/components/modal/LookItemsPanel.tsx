@@ -46,6 +46,7 @@ export function LookItemsPanel({
   onCloseCheckout,
   canvasLayouts,
 }: LookItemsPanelProps) {
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
   const outfitRarity = useMemo(
     () => computeOutfitRarityFromItems(items),
@@ -56,7 +57,17 @@ export function LookItemsPanel({
     if (!activeItemId || isEditMode || showPreview) return;
 
     const element = itemRefs.current.get(activeItemId);
-    element?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    const container = scrollContainerRef.current;
+    if (!element || !container) return;
+
+    const containerTop = container.getBoundingClientRect().top;
+    const elementTop = element.getBoundingClientRect().top;
+    const nextScrollTop = container.scrollTop + (elementTop - containerTop) - 12;
+
+    container.scrollTo({
+      top: Math.max(0, nextScrollTop),
+      behavior: "smooth",
+    });
   }, [activeItemId, isEditMode, showPreview]);
 
   return (
@@ -67,8 +78,8 @@ export function LookItemsPanel({
       transition={{ ...spring, delay: 0.12 }}
       className="relative flex min-h-0 w-full flex-1 flex-col overflow-hidden border-t border-neutral-200 md:h-full md:w-[48%] md:border-t-0 md:border-l"
     >
-      <div className="min-h-0 flex-1 overflow-y-auto">
-        <div className="px-4 py-4 pb-28 md:px-8 md:py-6 md:pt-16 md:pb-10">
+      <div ref={scrollContainerRef} className="min-h-0 flex-1 overflow-y-auto">
+        <div className="px-4 py-4 md:px-8 md:py-6 md:pt-16 md:pb-6">
         <AnimatePresence mode="wait">
           {showPreview ? (
             <motion.div
@@ -186,19 +197,19 @@ export function LookItemsPanel({
           )}
         </AnimatePresence>
         </div>
-
-        {!showPreview && (
-          <div className="sticky bottom-0 left-0 z-30 w-full shrink-0 border-t border-neutral-200 bg-white px-4 pt-2 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur-sm supports-[backdrop-filter]:bg-white/95 md:relative md:bottom-auto md:px-8 md:py-5 md:pb-5">
-            <button
-              type="button"
-              onClick={onUnlock}
-              className="block w-full border border-neutral-900 bg-neutral-900 px-6 py-4 text-center text-[10px] tracking-[0.3em] text-white uppercase transition-colors hover:bg-white hover:text-neutral-900"
-            >
-              Unlock Full Style Guide &amp; Shop Links
-            </button>
-          </div>
-        )}
       </div>
+
+      {!showPreview && (
+        <div className="shrink-0 border-t border-neutral-200 bg-white px-4 pt-2 pb-[max(1rem,env(safe-area-inset-bottom))] md:px-8 md:py-5">
+          <button
+            type="button"
+            onClick={onUnlock}
+            className="block w-full border border-neutral-900 bg-neutral-900 px-6 py-4 text-center text-[10px] tracking-[0.3em] text-white uppercase transition-colors hover:bg-white hover:text-neutral-900"
+          >
+            Unlock Full Style Guide &amp; Shop Links
+          </button>
+        </div>
+      )}
 
       <ShopierCheckoutOverlay
         isOpen={showCheckout}
