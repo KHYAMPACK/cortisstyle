@@ -4,6 +4,11 @@ import {
   formatLedgerTimestamp,
   generateIssueSerial,
 } from "@/lib/certificate";
+import {
+  GUIDE_CANVAS_REFERENCE_WIDTH,
+  resolveGuideAssetScaleMap,
+} from "@/lib/guideAssetScale";
+import { resolveCanvasLayouts } from "@/lib/canvasLayout";
 import { resolveLookItems } from "@/lib/resolveLookItems";
 import type { Look } from "@/types/look";
 import type {
@@ -23,6 +28,8 @@ function resolveBrandModel(item: NonNullable<ReturnType<typeof getClothingItem>>
 
 function resolveDirectoryItemFromClothing(
   itemId: string,
+  assetScaleFactor: number,
+  canvasWidthPx: number,
 ): ResolvedStyleGuideDirectoryItem | null {
   const item = getClothingItem(itemId);
   if (!item) return null;
@@ -33,11 +40,30 @@ function resolveDirectoryItemFromClothing(
     brandModel: resolveBrandModel(item),
     shopUrl: item.shopUrl,
     canvasImage: item.canvasImage,
+    canvasWidthPx,
+    assetScaleFactor,
     fitGuidance: item.fitGuidance,
     resaleKeywords: item.resaleKeywords,
     stylingExecution: item.stylingExecution,
     budgetAlternativeLink: item.budgetAlternativeLink,
   };
+}
+
+function resolveCanvasWidthPx(
+  lookId: string,
+  itemId: string,
+  itemIds: string[],
+): number {
+  const items = itemIds
+    .map((id) => getClothingItem(id))
+    .filter((item): item is NonNullable<typeof item> => Boolean(item));
+  const layouts = resolveCanvasLayouts(
+    lookId,
+    items,
+    GUIDE_CANVAS_REFERENCE_WIDTH,
+  );
+
+  return layouts[itemId]?.widthPx ?? 48;
 }
 
 function buildFallbackDefinition(look: Look): StyleGuideDefinition {
@@ -74,9 +100,17 @@ export function resolveStyleGuide(
 ): ResolvedStyleGuide {
   const definition =
     getStyleGuideDefinition(look.id) ?? buildFallbackDefinition(look);
+  const itemIds = definition.pageOne.directoryItemIds;
+  const assetScaleMap = resolveGuideAssetScaleMap(look.id, itemIds);
 
-  const directoryItems = definition.pageOne.directoryItemIds
-    .map(resolveDirectoryItemFromClothing)
+  const directoryItems = itemIds
+    .map((itemId) =>
+      resolveDirectoryItemFromClothing(
+        itemId,
+        assetScaleMap[itemId] ?? 1,
+        resolveCanvasWidthPx(look.id, itemId, itemIds),
+      ),
+    )
     .filter((item): item is ResolvedStyleGuideDirectoryItem => Boolean(item));
 
   return {

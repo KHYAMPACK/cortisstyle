@@ -13,7 +13,12 @@ import type { ResolvedStyleGuide } from "@/types/style-guide";
 import {
   formatFitGuidanceLine,
 } from "@/lib/guideFormat";
+import {
+  resolveGuideAssetInnerSize,
+} from "@/lib/guideAssetScale";
 import { resolveGuidePdfImagePath } from "@/lib/guideImages";
+
+export const GUIDE_PDF_ASSET_FRAME_SIZE = 72;
 
 const palette = {
   page: "#0A0A0A",
@@ -84,17 +89,21 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   itemAssetFrame: {
-    width: 72,
-    height: 72,
+    width: GUIDE_PDF_ASSET_FRAME_SIZE,
+    height: GUIDE_PDF_ASSET_FRAME_SIZE,
     borderWidth: 1,
     borderColor: palette.rule,
     backgroundColor: palette.panel,
+    overflow: "hidden",
     alignItems: "center",
     justifyContent: "center",
   },
+  itemAssetInner: {
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+  },
   itemAssetImage: {
-    width: 60,
-    height: 60,
     objectFit: "contain",
   },
   itemHeaderSerif: {
@@ -280,6 +289,10 @@ function DirectoryItem({
   item: ResolvedStyleGuide["pageOne"]["directoryItems"][number];
 }) {
   const imagePath = resolveGuidePdfImagePath(item);
+  const innerSize = resolveGuideAssetInnerSize(
+    GUIDE_PDF_ASSET_FRAME_SIZE,
+    item.assetScaleFactor,
+  );
 
   return (
     <View style={styles.itemBlock}>
@@ -327,7 +340,21 @@ function DirectoryItem({
         <View style={styles.itemRightCol}>
           <View style={styles.itemAssetFrame}>
             {imagePath ? (
-              <Image src={imagePath} style={styles.itemAssetImage} />
+              <View
+                style={[
+                  styles.itemAssetInner,
+                  { width: innerSize, height: innerSize },
+                ]}
+              >
+                <Image
+                  src={imagePath}
+                  style={{
+                    width: innerSize,
+                    height: innerSize,
+                    objectFit: "contain",
+                  }}
+                />
+              </View>
             ) : (
               <Text style={styles.qrPlaceholder}>Asset</Text>
             )}

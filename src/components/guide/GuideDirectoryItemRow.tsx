@@ -1,5 +1,5 @@
-import Image from "next/image";
 import type { ResolvedStyleGuideDirectoryItem } from "@/types/style-guide";
+import { GuideAssetPreviewBox } from "@/components/guide/GuideAssetPreviewBox";
 import { formatFitGuidanceLine } from "@/lib/guideFormat";
 
 interface GuideDirectoryItemRowProps {
@@ -30,7 +30,7 @@ export function GuideDirectoryItemRow({
     : "font-serif text-[7px] tracking-[0.06em] text-neutral-200 uppercase";
   const heavyBlur = blurred ? "blur-[4px] select-none" : "";
   const midBlur = blurred ? "blur-[2px] select-none" : "";
-  const imageBlur = blurred ? "blur-[2px] opacity-70" : "";
+  const frameSize = compact ? 72 : 88;
 
   return (
     <article className="border-b border-neutral-800 py-2.5 md:py-3">
@@ -102,22 +102,13 @@ export function GuideDirectoryItemRow({
         </div>
 
         <div className="flex flex-[0.3] items-center justify-center">
-          <div className="relative aspect-square w-full max-w-[72px] border border-neutral-800 bg-[#111111] md:max-w-[88px]">
-            {item.canvasImage ? (
-              <Image
-                src={item.canvasImage}
-                alt={item.itemType}
-                fill
-                unoptimized
-                sizes="88px"
-                className={`object-contain p-1.5 ${imageBlur}`}
-              />
-            ) : (
-              <div className="flex h-full items-center justify-center text-[4px] tracking-[0.2em] text-neutral-600 uppercase">
-                Asset
-              </div>
-            )}
-          </div>
+          <GuideAssetPreviewBox
+            imageSrc={item.canvasImage}
+            alt={item.itemType}
+            scaleFactor={item.assetScaleFactor}
+            frameSize={frameSize}
+            blurred={blurred}
+          />
         </div>
       </div>
     </article>

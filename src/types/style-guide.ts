@@ -34,6 +34,8 @@ export interface ResolvedStyleGuideDirectoryItem {
   brandModel: string;
   shopUrl: string;
   canvasImage?: string;
+  canvasWidthPx: number;
+  assetScaleFactor: number;
   fitGuidance: FitGuidance;
   resaleKeywords: ResaleKeywords;
   stylingExecution: StylingExecution;
