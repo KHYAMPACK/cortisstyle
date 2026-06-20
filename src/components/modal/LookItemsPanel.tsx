@@ -67,8 +67,8 @@ export function LookItemsPanel({
       transition={{ ...spring, delay: 0.12 }}
       className="relative flex min-h-0 w-full flex-1 flex-col overflow-hidden border-t border-neutral-200 md:h-full md:w-[48%] md:border-t-0 md:border-l"
     >
-      <div className="min-h-0 flex-1 overflow-y-auto max-md:scroll-pb-52">
-        <div className="px-4 py-4 pb-[calc(5rem+env(safe-area-inset-bottom,0px)+3rem)] md:px-8 md:py-6 md:pt-16 md:pb-10">
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="px-4 py-4 pb-28 md:px-8 md:py-6 md:pt-16 md:pb-10">
         <AnimatePresence mode="wait">
           {showPreview ? (
             <motion.div
@@ -188,7 +188,7 @@ export function LookItemsPanel({
         </div>
 
         {!showPreview && (
-          <div className="sticky bottom-0 left-0 z-30 w-full shrink-0 border-t border-neutral-200 bg-white px-4 pt-2 pb-[calc(1rem+env(safe-area-inset-bottom,0px)+3rem)] backdrop-blur-sm supports-[backdrop-filter]:bg-white/95 md:relative md:bottom-auto md:px-8 md:py-5 md:pb-5">
+          <div className="sticky bottom-0 left-0 z-30 w-full shrink-0 border-t border-neutral-200 bg-white px-4 pt-2 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur-sm supports-[backdrop-filter]:bg-white/95 md:relative md:bottom-auto md:px-8 md:py-5 md:pb-5">
             <button
               type="button"
               onClick={onUnlock}

@@ -32,7 +32,7 @@ export function LookImagePanel({
     look.layout === "collage" && isEditMode && !showPreview;
 
   return (
-    <div className="flex w-full shrink-0 flex-col items-center bg-white p-4 md:h-full md:w-[52%] md:p-8">
+    <div className="flex w-full shrink-0 flex-col items-center bg-white p-4 max-md:px-3 max-md:py-3 md:h-full md:w-[52%] md:p-8">
       <LookCanvasViewport allowBleed={allowDesktopCanvasBleed}>
         <AnimatePresence mode="wait">
           {showPreview ? (
@@ -58,7 +58,7 @@ export function LookImagePanel({
         </AnimatePresence>
       </LookCanvasViewport>
 
-      <p className="mt-3 w-full text-center text-[9px] tracking-[0.38em] text-neutral-500 uppercase md:hidden">
+      <p className="mt-3 w-full text-center text-[9px] tracking-[0.38em] text-neutral-500 uppercase max-md:mt-2 md:hidden">
         {look.title.toUpperCase()} // BY {look.modelName.toUpperCase()}
       </p>
     </div>

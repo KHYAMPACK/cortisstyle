@@ -21,7 +21,7 @@ export function LookCanvasViewport({
 
   return (
     <div
-      className={`relative mx-auto aspect-[2/3] w-full min-w-0 max-w-full overflow-hidden bg-white md:mx-0 md:aspect-[2/3] md:h-full md:max-h-none md:w-auto md:overflow-visible ${className}`.trim()}
+      className={`relative mx-auto aspect-[2/3] w-full min-w-0 max-w-full max-md:max-w-[min(100%,272px)] overflow-hidden bg-white md:mx-0 md:aspect-[2/3] md:h-full md:max-h-none md:max-w-full md:w-auto md:overflow-visible ${className}`.trim()}
     >
       {/* Desktop chain matches original verified layout exactly. */}
       <div className="relative flex h-full w-full items-center justify-center overflow-hidden bg-white max-md:items-stretch max-md:justify-stretch md:overflow-visible">
