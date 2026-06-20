@@ -59,9 +59,9 @@ export function LookItemsPanel({
       animate={{ x: 0, opacity: 1 }}
       exit={{ x: "100%", opacity: 0 }}
       transition={{ ...spring, delay: 0.12 }}
-      className="relative flex h-full min-h-0 flex-1 w-full flex-col overflow-hidden border-t border-neutral-200 lg:w-[48%] lg:border-t-0 lg:border-l"
+      className="relative flex min-h-0 w-full flex-1 flex-col overflow-hidden border-t border-neutral-200 md:h-full md:w-[48%] md:border-t-0 md:border-l"
     >
-      <div className="min-h-0 flex-1 overflow-y-auto px-6 pt-14 pb-8 md:px-8 md:pt-16 md:pb-10">
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6 pb-28 md:px-8 md:pt-16 md:pb-10">
         <AnimatePresence mode="wait">
           {showPreview ? (
             <motion.div
@@ -176,7 +176,7 @@ export function LookItemsPanel({
       </div>
 
       {!showPreview && (
-        <div className="relative shrink-0 border-t border-neutral-200 bg-white px-6 py-5 md:px-8">
+        <div className="sticky bottom-0 z-10 shrink-0 border-t border-neutral-200 bg-white px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] md:static md:px-8 md:py-5">
           <button
             type="button"
             onClick={onUnlock}
