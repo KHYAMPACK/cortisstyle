@@ -2,6 +2,7 @@
 
 import {
   Document,
+  Image,
   Link,
   Page,
   StyleSheet,
@@ -9,6 +10,10 @@ import {
   View,
 } from "@react-pdf/renderer";
 import type { ResolvedStyleGuide } from "@/types/style-guide";
+import {
+  formatFitGuidanceLine,
+} from "@/lib/guideFormat";
+import { resolveGuidePdfImagePath } from "@/lib/guideImages";
 
 const palette = {
   page: "#0A0A0A",
@@ -60,11 +65,82 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   itemBlock: {
-    borderTopWidth: 1,
-    borderTopColor: palette.rule,
+    borderBottomWidth: 1,
+    borderBottomColor: palette.rule,
     paddingTop: 10,
-    paddingBottom: 2,
-    gap: 2,
+    paddingBottom: 10,
+  },
+  itemRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  itemLeftCol: {
+    width: "70%",
+  },
+  itemRightCol: {
+    width: "30%",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  itemAssetFrame: {
+    width: 72,
+    height: 72,
+    borderWidth: 1,
+    borderColor: palette.rule,
+    backgroundColor: palette.panel,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  itemAssetImage: {
+    width: 60,
+    height: 60,
+    objectFit: "contain",
+  },
+  itemHeaderSerif: {
+    fontFamily: "Times-Roman",
+    fontSize: 9,
+    letterSpacing: 0.9,
+    textTransform: "uppercase",
+    color: "#FFFFFF",
+  },
+  itemBrandSerif: {
+    fontFamily: "Times-Roman",
+    fontSize: 7,
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+    color: "#D4D4D4",
+    marginTop: 2,
+  },
+  actionRow: {
+    flexDirection: "row",
+    gap: 6,
+    marginTop: 6,
+    marginBottom: 2,
+  },
+  actionButton: {
+    borderWidth: 1,
+    borderColor: "#404040",
+    paddingVertical: 3,
+    paddingHorizontal: 5,
+    fontSize: 5,
+    letterSpacing: 1,
+    textTransform: "uppercase",
+    color: "#D4D4D4",
+    textDecoration: "none",
+  },
+  metaLine: {
+    fontSize: 5.5,
+    lineHeight: 1.45,
+    letterSpacing: 0.5,
+    color: "#A3A3A3",
+    marginTop: 2,
+  },
+  bodyLine: {
+    fontSize: 5.5,
+    lineHeight: 1.45,
+    color: "#D4D4D4",
+    marginTop: 2,
   },
   fieldLabel: {
     fontSize: 5.5,
@@ -203,24 +279,61 @@ function DirectoryItem({
 }: {
   item: ResolvedStyleGuide["pageOne"]["directoryItems"][number];
 }) {
+  const imagePath = resolveGuidePdfImagePath(item);
+
   return (
     <View style={styles.itemBlock}>
-      <Text style={styles.fieldLabel}>Item Type</Text>
-      <Text style={styles.itemType}>{item.itemType}</Text>
+      <View style={styles.itemRow}>
+        <View style={styles.itemLeftCol}>
+          <Text style={styles.itemHeaderSerif}>{item.itemType}</Text>
+          <Text style={styles.itemBrandSerif}>{item.brandModel}</Text>
 
-      <Text style={styles.fieldLabel}>Brand &amp; Model</Text>
-      <Text style={styles.fieldValue}>{item.brandModel}</Text>
+          <Text style={styles.fieldLabel}>Actions</Text>
+          <View style={styles.actionRow}>
+            <Link style={styles.actionButton} src={item.shopUrl}>
+              Shop Original Source
+            </Link>
+            <Link
+              style={styles.actionButton}
+              src={item.budgetAlternativeLink.url}
+            >
+              Budget Alternative Direct Link
+            </Link>
+          </View>
 
-      <Text style={styles.fieldLabel}>Action</Text>
-      <Link style={styles.shopLink} src={item.shopUrl}>
-        Shop Source →
-      </Link>
+          <Text style={styles.fieldLabel}>Sizing &amp; Fit</Text>
+          <Text style={styles.metaLine}>
+            {formatFitGuidanceLine(item.fitGuidance)}
+          </Text>
 
-      <Text style={styles.fieldLabel}>Pro-Proportion Tip</Text>
-      <Text style={styles.fieldValue}>{item.proportionTip}</Text>
+          <Text style={styles.fieldLabel}>Styling &amp; Synergy</Text>
+          <Text style={styles.bodyLine}>{item.stylingExecution.howToWear}</Text>
+          <Text style={styles.bodyLine}>
+            {item.stylingExecution.textureSynergy}
+          </Text>
 
-      <Text style={styles.fieldLabel}>Budget Alternative</Text>
-      <Text style={styles.fieldValue}>{item.budgetAlternative}</Text>
+          <Text style={styles.fieldLabel}>Resale Directory</Text>
+          <Text style={styles.bodyLine}>
+            Search Keywords: {item.resaleKeywords.tags}
+          </Text>
+          <Text style={styles.metaLine}>
+            Est. Market Value: {item.resaleKeywords.estPriceRange}
+          </Text>
+          <Text style={styles.metaLine}>
+            Alt: {item.budgetAlternativeLink.name}
+          </Text>
+        </View>
+
+        <View style={styles.itemRightCol}>
+          <View style={styles.itemAssetFrame}>
+            {imagePath ? (
+              <Image src={imagePath} style={styles.itemAssetImage} />
+            ) : (
+              <Text style={styles.qrPlaceholder}>Asset</Text>
+            )}
+          </View>
+        </View>
+      </View>
     </View>
   );
 }

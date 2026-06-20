@@ -8,8 +8,8 @@ import { resolveLookItems } from "@/lib/resolveLookItems";
 import type { Look } from "@/types/look";
 import type {
   ResolvedStyleGuide,
+  ResolvedStyleGuideDirectoryItem,
   StyleGuideDefinition,
-  StyleGuideDirectoryItem,
 } from "@/types/style-guide";
 
 interface ResolveStyleGuideOptions {
@@ -17,14 +17,26 @@ interface ResolveStyleGuideOptions {
   purchaseDate?: Date;
 }
 
-function resolveDirectoryItem(
-  entry: StyleGuideDirectoryItem,
-): ResolvedStyleGuide["pageOne"]["directoryItems"][number] {
-  const item = getClothingItem(entry.itemId);
+function resolveBrandModel(item: NonNullable<ReturnType<typeof getClothingItem>>) {
+  return item.displayModel ?? `${item.brand} — ${item.name}`;
+}
+
+function resolveDirectoryItemFromClothing(
+  itemId: string,
+): ResolvedStyleGuideDirectoryItem | null {
+  const item = getClothingItem(itemId);
+  if (!item) return null;
 
   return {
-    ...entry,
-    shopUrl: entry.shopUrl ?? item?.shopUrl ?? "https://shopier.com/cortis",
+    itemId: item.id,
+    itemType: item.name,
+    brandModel: resolveBrandModel(item),
+    shopUrl: item.shopUrl,
+    canvasImage: item.canvasImage,
+    fitGuidance: item.fitGuidance,
+    resaleKeywords: item.resaleKeywords,
+    stylingExecution: item.stylingExecution,
+    budgetAlternativeLink: item.budgetAlternativeLink,
   };
 }
 
@@ -37,13 +49,7 @@ function buildFallbackDefinition(look: Look): StyleGuideDefinition {
       title: look.title.toUpperCase(),
       subtitle: "STYLE GUIDE & SOURCE DIRECTORY",
       metadataLine: `ARCHIVE NO: CRT-${look.id.replace("look-", "LK").toUpperCase()} // STYLED BY: ${look.modelName.toUpperCase()} // RELEASE: 2026_V1`,
-      directoryItems: items.map((item) => ({
-        itemId: item.id,
-        itemType: item.name,
-        brandModel: item.brand,
-        proportionTip: item.unlockedDescription,
-        budgetAlternative: "Search Depop or Grailed for comparable archive pieces.",
-      })),
+      directoryItemIds: items.map((item) => item.id),
     },
     pageTwo: {
       vaultTitle: "ARCHIVE VERIFICATION & CERTIFICATE OF DIGITAL OWNERSHIP",
@@ -69,6 +75,10 @@ export function resolveStyleGuide(
   const definition =
     getStyleGuideDefinition(look.id) ?? buildFallbackDefinition(look);
 
+  const directoryItems = definition.pageOne.directoryItemIds
+    .map(resolveDirectoryItemFromClothing)
+    .filter((item): item is ResolvedStyleGuideDirectoryItem => Boolean(item));
+
   return {
     lookId: look.id,
     buyerName,
@@ -76,7 +86,7 @@ export function resolveStyleGuide(
       title: definition.pageOne.title,
       subtitle: definition.pageOne.subtitle,
       metadataLine: definition.pageOne.metadataLine,
-      directoryItems: definition.pageOne.directoryItems.map(resolveDirectoryItem),
+      directoryItems,
     },
     pageTwo: {
       ...definition.pageTwo,

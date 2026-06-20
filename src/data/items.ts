@@ -1,4 +1,8 @@
 import type { ClothingCategory, ClothingItem } from "@/types/item";
+import {
+  clothingItemFashionMeta,
+  defaultFashionVectors,
+} from "@/data/item-metadata";
 
 const REVEAL_VENUES = [
   "Cortis Archive Seoul",
@@ -27,6 +31,9 @@ function defineItem(
   shopUrl?: string,
   canvas?: Pick<ClothingItem, "canvasImage" | "defaultCanvasPosition">,
 ): ClothingItem {
+  const fashion =
+    clothingItemFashionMeta[id] ?? defaultFashionVectors(name, brand, category);
+
   return {
     id,
     name,
@@ -36,6 +43,7 @@ function defineItem(
     unlockedDescription: unlockedDescription ?? revealDescription(blurredDescription),
     shopUrl: shopUrl ?? `https://shopier.com/cortis/${id}`,
     ...canvas,
+    ...fashion,
   };
 }
 

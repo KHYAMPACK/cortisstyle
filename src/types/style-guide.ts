@@ -1,17 +1,15 @@
-export interface StyleGuideDirectoryItem {
-  itemId: string;
-  itemType: string;
-  brandModel: string;
-  proportionTip: string;
-  budgetAlternative: string;
-  shopUrl?: string;
-}
+import type {
+  BudgetAlternativeLink,
+  FitGuidance,
+  ResaleKeywords,
+  StylingExecution,
+} from "@/types/item";
 
 export interface StyleGuidePageOne {
   title: string;
   subtitle: string;
   metadataLine: string;
-  directoryItems: StyleGuideDirectoryItem[];
+  directoryItemIds: string[];
 }
 
 export interface StyleGuidePageTwo {
@@ -30,14 +28,22 @@ export interface StyleGuideDefinition {
   pageTwo: StyleGuidePageTwo;
 }
 
-export interface ResolvedStyleGuideDirectoryItem extends StyleGuideDirectoryItem {
+export interface ResolvedStyleGuideDirectoryItem {
+  itemId: string;
+  itemType: string;
+  brandModel: string;
   shopUrl: string;
+  canvasImage?: string;
+  fitGuidance: FitGuidance;
+  resaleKeywords: ResaleKeywords;
+  stylingExecution: StylingExecution;
+  budgetAlternativeLink: BudgetAlternativeLink;
 }
 
 export interface ResolvedStyleGuide {
   lookId: string;
   buyerName: string;
-  pageOne: Omit<StyleGuidePageOne, "directoryItems"> & {
+  pageOne: Omit<StyleGuidePageOne, "directoryItemIds"> & {
     directoryItems: ResolvedStyleGuideDirectoryItem[];
   };
   pageTwo: StyleGuidePageTwo & {
