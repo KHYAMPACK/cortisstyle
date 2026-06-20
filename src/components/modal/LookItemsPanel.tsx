@@ -13,6 +13,7 @@ import { PurchaseActionBar } from "@/components/modal/PurchaseActionBar";
 import { ReviewHighlights } from "@/components/modal/ReviewHighlights";
 import { ShopierCheckoutOverlay } from "@/components/modal/ShopierCheckoutOverlay";
 import { StyleAnalysis } from "@/components/modal/StyleAnalysis";
+import { RarityBadge } from "@/components/RarityBadge";
 
 const spring = { type: "spring" as const, stiffness: 100, damping: 20 };
 
@@ -134,6 +135,8 @@ export function LookItemsPanel({
                 {look.title} — styled by {look.modelName}
               </h2>
 
+              <RarityBadge rarity={outfitRarity} className="mb-4 md:mb-6" />
+
               <div className="hidden md:block" aria-hidden="true">
                 <p className="mb-2 text-[9px] tracking-[0.45em] text-neutral-400 uppercase">
                   Styled by
@@ -150,7 +153,6 @@ export function LookItemsPanel({
                   investmentRetail={look.investmentRetail}
                   investmentWithGuide={look.investmentWithGuide}
                   versatility={look.versatility}
-                  outfitRarity={outfitRarity}
                 />
               </div>
 

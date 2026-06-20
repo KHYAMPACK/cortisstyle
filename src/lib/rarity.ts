@@ -42,3 +42,22 @@ export function computeOutfitRarityFromLook(look: Look): OutfitRarity {
 export function formatRarityBadge(rarity: OutfitRarity): string {
   return `[ ${rarity.label} // SCORE: ${rarity.score}/5 ]`;
 }
+
+const RARITY_SHORT_LABELS: Record<RarityScore, string> = {
+  1: "COMMON",
+  2: "UNCOMMON",
+  3: "RARE",
+  4: "EPIC",
+  5: "LEGENDARY",
+};
+
+export function getRarityShortLabel(score: RarityScore): string {
+  return RARITY_SHORT_LABELS[score];
+}
+
+export function formatItemRarityIndicator(score: RarityScore): string {
+  return `RARITY // ${getRarityShortLabel(score)}`;
+}
+
+/** Uniform teaser label — longest tier, used blurred until purchase unlock. */
+export const LOCKED_ITEM_RARITY_PLACEHOLDER = "LEGENDARY";
