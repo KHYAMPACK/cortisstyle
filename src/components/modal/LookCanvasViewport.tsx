@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { LookCanvasLayoutProvider } from "@/context/LookCanvasLayoutContext";
 import { useIsMobileMd } from "@/hooks/useIsMobileMd";
-import { LOOK_CANVAS_REFERENCE_WIDTH } from "@/lib/lookCanvasReference";
+import { LOOK_CANVAS_REFERENCE_HEIGHT, LOOK_CANVAS_REFERENCE_WIDTH } from "@/lib/lookCanvasReference";
 
 interface LookCanvasViewportProps {
   children: ReactNode;
@@ -28,7 +28,10 @@ export function LookCanvasViewport({
     : "overflow-hidden";
 
   return (
-    <LookCanvasLayoutProvider referenceWidth={isMobile ? LOOK_CANVAS_REFERENCE_WIDTH : null}>
+    <LookCanvasLayoutProvider
+      referenceWidth={isMobile ? LOOK_CANVAS_REFERENCE_WIDTH : null}
+      referenceHeight={isMobile ? LOOK_CANVAS_REFERENCE_HEIGHT : null}
+    >
       <div
         className={`relative mx-auto overflow-hidden bg-white max-md:h-[408px] max-md:w-full max-md:max-w-[272px] md:aspect-[2/3] md:mx-0 md:h-full md:max-h-none md:w-auto md:overflow-visible ${className}`.trim()}
       >

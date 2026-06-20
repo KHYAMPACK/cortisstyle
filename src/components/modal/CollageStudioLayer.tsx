@@ -25,7 +25,7 @@ import {
   type CanvasItemLayout,
   type CanvasMoveDirection,
 } from "@/lib/canvasLayout";
-import { useLookCanvasReferenceWidth } from "@/context/LookCanvasLayoutContext";
+import { useLookCanvasLayoutReference } from "@/context/LookCanvasLayoutContext";
 import {
   mapPointerToLayoutSpace,
   resolveLookCanvasLayoutContainer,
@@ -99,7 +99,7 @@ export function CollageStudioLayer({
   onFreeDragPositionCommit,
   disableCanvasHitTesting = false,
 }: CollageStudioLayerProps) {
-  const layoutReferenceWidth = useLookCanvasReferenceWidth();
+  const layoutReference = useLookCanvasLayoutReference();
   const [layouts, setLayouts] = useState<Record<string, CanvasItemLayout>>({});
   const [isHitboxMode, setIsHitboxMode] = useState(false);
   const [loadedImagesCount, setLoadedImagesCount] = useState(0);
@@ -154,7 +154,7 @@ export function CollageStudioLayer({
     if (!parent) return;
 
     const rect = parent.getBoundingClientRect();
-    const containerWidth = layoutReferenceWidth ?? rect.width;
+    const containerWidth = layoutReference?.width ?? rect.width;
     if (containerWidth <= 0) return;
 
     const nextLayouts = resolveLayouts
@@ -168,7 +168,7 @@ export function CollageStudioLayer({
 
       return nextLayouts;
     });
-  }, [lookId, items, parentRef, resolveLayouts, layoutReferenceWidth]);
+  }, [lookId, items, parentRef, resolveLayouts, layoutReference]);
 
   useLayoutEffect(() => {
     syncLayoutsFromContainer();
@@ -218,12 +218,9 @@ export function CollageStudioLayer({
         event.clientX,
         event.clientY,
         rect,
-        layoutReferenceWidth,
+        layoutReference,
       );
-      const container = resolveLookCanvasLayoutContainer(
-        layoutReferenceWidth,
-        rect,
-      );
+      const container = resolveLookCanvasLayoutContainer(layoutReference, rect);
 
       const entries = buildCanvasHitTestEntries(
         layouts,
@@ -267,7 +264,7 @@ export function CollageStudioLayer({
     onSelectCanvasItem,
     onSelectItem,
     isFreeDragMode,
-    layoutReferenceWidth,
+    layoutReference,
   ]);
 
   useEffect(() => {

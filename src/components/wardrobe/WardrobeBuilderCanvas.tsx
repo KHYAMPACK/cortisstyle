@@ -29,7 +29,12 @@ import {
   mergeFreeDragPositions,
   type FreeDragPosition,
 } from "@/lib/wardrobeDragLayout";
-import { normalizeSavedOutfitBlueprint } from "@/lib/normalizeSavedOutfit";
+import { LookCanvasLayoutProvider } from "@/context/LookCanvasLayoutContext";
+import { useIsMobileMd } from "@/hooks/useIsMobileMd";
+import {
+  LOOK_CANVAS_REFERENCE_WIDTH,
+  WARDROBE_CANVAS_REFERENCE_HEIGHT,
+} from "@/lib/lookCanvasReference";
 import {
   DEFAULT_OUTFIT_CARD_META,
   getSlotDefinition,
@@ -68,6 +73,7 @@ export function WardrobeBuilderCanvas({
   onBlueprintLoaded,
 }: WardrobeBuilderCanvasProps) {
   const { user, refreshSavedOutfits } = useAuth();
+  const isMobile = useIsMobileMd();
   const containerRef = useRef<HTMLDivElement>(null);
   const [currentOutfit, setCurrentOutfit] = useState<WardrobeOutfitMatrix>(() =>
     Array(9).fill(null),
@@ -311,12 +317,22 @@ export function WardrobeBuilderCanvas({
             </button>
           </div>
 
+          <LookCanvasLayoutProvider
+            referenceWidth={isMobile ? LOOK_CANVAS_REFERENCE_WIDTH : null}
+            referenceHeight={
+              isMobile ? WARDROBE_CANVAS_REFERENCE_HEIGHT : null
+            }
+          >
           <WardrobeOutfitMoodboardCard
           name={cardMeta.name}
           showFooter={hasSavedCardMeta}
           containerClassName={`${CANVAS_FRAME_CLASS} shrink-0`}
         >
-          <div className={CANVAS_BOUNDARY_CLASS}>
+          <div className="max-md:relative max-md:mx-auto max-md:h-[480px] max-md:w-full max-md:max-w-[360px] md:contents">
+            <div className="max-md:absolute max-md:left-1/2 max-md:top-0 max-md:h-[560px] max-md:w-[420px] max-md:-translate-x-1/2 max-md:origin-top max-md:scale-[calc(360/420)] md:contents">
+          <div
+            className={`${CANVAS_BOUNDARY_CLASS} max-md:mx-0 max-md:aspect-auto max-md:h-[560px] max-md:w-[420px] max-md:max-w-none`}
+          >
             <div aria-hidden className="pointer-events-none absolute inset-0 z-0 bg-white" />
 
             <WardrobeCanvasBrandWatermark />
@@ -376,7 +392,10 @@ export function WardrobeBuilderCanvas({
             />
 
           </div>
+            </div>
+          </div>
         </WardrobeOutfitMoodboardCard>
+          </LookCanvasLayoutProvider>
         </div>
       </div>
 
