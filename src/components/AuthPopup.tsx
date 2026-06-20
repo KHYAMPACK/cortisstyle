@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { FormEvent, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useAuth } from "@/context/AuthContext";
 
 const spring = { type: "spring" as const, stiffness: 100, damping: 20 };
@@ -32,6 +33,11 @@ export function AuthPopup({
   const [mode, setMode] = useState<AuthMode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!isOpen) {
@@ -39,7 +45,15 @@ export function AuthPopup({
       setPassword("");
       setMode("signin");
       clearAuthError();
+      return;
     }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
   }, [isOpen, clearAuthError]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -66,7 +80,9 @@ export function AuthPopup({
     setMode((current) => (current === "signin" ? "signup" : "signin"));
   };
 
-  return (
+  if (!isMounted) return null;
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <>
@@ -81,16 +97,17 @@ export function AuthPopup({
             className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm"
           />
 
-          <motion.div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="auth-popup-title"
-            initial={{ opacity: 0, scale: 0.94, y: 16 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: 10 }}
-            transition={spring}
-            className="fixed top-1/2 left-1/2 z-[60] w-[min(92vw,420px)] -translate-x-1/2 -translate-y-1/2 border border-neutral-200 bg-white p-8 shadow-2xl"
-          >
+          <div className="pointer-events-none fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="auth-popup-title"
+              initial={{ opacity: 0, scale: 0.94, y: 16 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 10 }}
+              transition={spring}
+              className="pointer-events-auto w-[min(92vw,420px)] border border-neutral-200 bg-white p-8 shadow-2xl"
+            >
             <p className="mb-3 text-[9px] tracking-[0.4em] text-neutral-400 uppercase">
               Members Only
             </p>
@@ -178,9 +195,11 @@ export function AuthPopup({
             >
               Close
             </button>
-          </motion.div>
+            </motion.div>
+          </div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }
