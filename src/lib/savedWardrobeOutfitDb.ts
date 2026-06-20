@@ -146,7 +146,12 @@ export async function fetchUserSavedOutfits(
       .eq("user_id", userId)
       .order("saved_at", { ascending: false });
 
-    data = fallback.data?.map((row) => ({ ...row, moodword: null })) ?? null;
+    data =
+      fallback.data?.map((row) => ({
+        ...row,
+        moodword: null,
+        layout_overrides: null,
+      })) ?? null;
     error = fallback.error;
   }
 
