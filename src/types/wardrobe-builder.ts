@@ -17,6 +17,8 @@ export interface WardrobeMatrixSlotDefinition {
   label: string;
   categoryFilter: MatrixCategoryFilter;
   stackOrder: number;
+  alignClass: string;
+  assetWrapperClass: string;
 }
 
 export const WARDROBE_MATRIX_SLOTS: WardrobeMatrixSlotDefinition[] = [
@@ -26,6 +28,8 @@ export const WARDROBE_MATRIX_SLOTS: WardrobeMatrixSlotDefinition[] = [
     label: "[ acc_head ]",
     categoryFilter: "ACC_HEAD",
     stackOrder: 15,
+    alignClass: "items-start justify-center",
+    assetWrapperClass: "",
   },
   {
     index: 1,
@@ -33,6 +37,8 @@ export const WARDROBE_MATRIX_SLOTS: WardrobeMatrixSlotDefinition[] = [
     label: "[ hat ]",
     categoryFilter: "HAT",
     stackOrder: 15,
+    alignClass: "items-start justify-center",
+    assetWrapperClass: "",
   },
   {
     index: 2,
@@ -40,6 +46,8 @@ export const WARDROBE_MATRIX_SLOTS: WardrobeMatrixSlotDefinition[] = [
     label: "[ eyewear ]",
     categoryFilter: "EYEWEAR",
     stackOrder: 30,
+    alignClass: "items-start justify-end",
+    assetWrapperClass: "translate-x-4 -translate-y-3",
   },
   {
     index: 3,
@@ -47,6 +55,8 @@ export const WARDROBE_MATRIX_SLOTS: WardrobeMatrixSlotDefinition[] = [
     label: "[ outer ]",
     categoryFilter: "OUTER",
     stackOrder: 20,
+    alignClass: "items-end justify-center",
+    assetWrapperClass: "translate-y-2",
   },
   {
     index: 4,
@@ -54,6 +64,8 @@ export const WARDROBE_MATRIX_SLOTS: WardrobeMatrixSlotDefinition[] = [
     label: "[ top ]",
     categoryFilter: "TOP",
     stackOrder: 20,
+    alignClass: "items-end justify-center",
+    assetWrapperClass: "translate-y-1",
   },
   {
     index: 5,
@@ -61,13 +73,17 @@ export const WARDROBE_MATRIX_SLOTS: WardrobeMatrixSlotDefinition[] = [
     label: "[ bag ]",
     categoryFilter: "BAG",
     stackOrder: 30,
+    alignClass: "items-end justify-end",
+    assetWrapperClass: "translate-x-8 -translate-y-10",
   },
   {
     index: 6,
     coordinate: "[3,1]",
     label: "[ shoes ]",
     categoryFilter: "SHOES",
-    stackOrder: 5,
+    stackOrder: 30,
+    alignClass: "items-end justify-center",
+    assetWrapperClass: "translate-y-4",
   },
   {
     index: 7,
@@ -75,6 +91,8 @@ export const WARDROBE_MATRIX_SLOTS: WardrobeMatrixSlotDefinition[] = [
     label: "[ bottom ]",
     categoryFilter: "BOTTOM",
     stackOrder: 10,
+    alignClass: "items-start justify-center",
+    assetWrapperClass: "-translate-y-3",
   },
   {
     index: 8,
@@ -82,6 +100,8 @@ export const WARDROBE_MATRIX_SLOTS: WardrobeMatrixSlotDefinition[] = [
     label: "[ waist ]",
     categoryFilter: "WAIST",
     stackOrder: 15,
+    alignClass: "items-end justify-end",
+    assetWrapperClass: "translate-x-2 translate-y-2",
   },
 ];
 
@@ -91,6 +111,7 @@ export interface WardrobeEquippedItem {
   image: string;
   rarityScore: number;
   categoryFilter: MatrixCategoryFilter;
+  widthPx: number;
 }
 
 export type WardrobeOutfitMatrix = Array<WardrobeEquippedItem | null>;

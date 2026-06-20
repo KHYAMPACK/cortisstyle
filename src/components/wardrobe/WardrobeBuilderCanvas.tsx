@@ -7,6 +7,7 @@ import {
   filterInventoryByCategory,
   resolveBuilderInventory,
 } from "@/lib/wardrobeBuilderInventory";
+import { resolveWardrobeItemComposition } from "@/lib/wardrobeBuilderComposition";
 import {
   getSlotDefinition,
   WARDROBE_MATRIX_SLOTS,
@@ -59,12 +60,15 @@ export function WardrobeBuilderCanvas({
     if (activeSlotIndex === null || !activeCategoryFilter) return;
     if (!item.canvasImage) return;
 
+    const composition = resolveWardrobeItemComposition(item.id, item.sourceLookId);
+
     const equippedItem: WardrobeEquippedItem = {
       id: item.id,
       name: item.name,
       image: item.canvasImage,
       rarityScore: item.rarityScore,
       categoryFilter: activeCategoryFilter,
+      widthPx: composition.widthPx,
     };
 
     setCurrentOutfit((current) => {
@@ -117,8 +121,9 @@ export function WardrobeBuilderCanvas({
         {WARDROBE_MATRIX_SLOTS.map((slot) => (
           <WardrobeBuilderSlot
             key={slot.index}
-            slotIndex={slot.index}
             stackOrder={slot.stackOrder}
+            alignClass={slot.alignClass}
+            assetWrapperClass={slot.assetWrapperClass}
             label={slot.label}
             item={currentOutfit[slot.index]}
             isMenuOpen={menuSlotIndex === slot.index}
