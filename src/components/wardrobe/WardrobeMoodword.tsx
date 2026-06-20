@@ -9,21 +9,16 @@ interface WardrobeMoodwordProps {
 
 export function WardrobeMoodword({
   outfitName,
-  emptyFallback = "Archive",
+  emptyFallback = "Style",
 }: WardrobeMoodwordProps) {
   const moodword = resolveMoodwordFromOutfitName(outfitName, emptyFallback);
 
   return (
-    <div
+    <p
       aria-hidden
-      className="pointer-events-none absolute top-[184px] right-4 z-10 w-[120px] text-right"
+      className="pointer-events-none absolute top-[184px] right-4 z-10 w-[120px] text-right font-serif text-[22px] leading-none font-semibold tracking-[-0.02em] text-neutral-950 uppercase"
     >
-      <p className="font-mono text-[8px] tracking-[0.35em] text-neutral-400 uppercase">
-        Mood
-      </p>
-      <p className="mt-1 font-serif text-[17px] leading-[0.95] font-medium tracking-[0.06em] text-neutral-950 uppercase">
-        {moodword}
-      </p>
-    </div>
+      {moodword}
+    </p>
   );
 }

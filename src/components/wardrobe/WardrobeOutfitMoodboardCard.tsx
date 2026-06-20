@@ -2,11 +2,13 @@
 
 import type { ReactNode } from "react";
 
+const FOOTER_META_CLASS =
+  "font-mono text-[9px] tracking-widest text-neutral-400 uppercase";
+
 interface WardrobeOutfitMoodboardCardProps {
   name: string;
   children: ReactNode;
   showFooter?: boolean;
-  /** Shown when `name` is empty — preview defaults to "LOOK NAME". */
   emptyNameLabel?: string;
   containerClassName?: string;
 }
@@ -25,15 +27,15 @@ export function WardrobeOutfitMoodboardCard({
       {children}
 
       {showFooter ? (
-        <div className="flex items-center justify-between gap-4 py-4">
-          <p className="min-w-0 flex-1 truncate pl-1 font-mono text-[11px] tracking-widest text-neutral-800 uppercase">
+        <div className="flex items-baseline justify-between gap-3 px-1 py-4">
+          <span
+            className={`min-w-0 flex-1 truncate text-left ${FOOTER_META_CLASS}`}
+          >
             {displayName}
-          </p>
-
-          <div className="shrink-0 text-right font-mono text-[8px] leading-relaxed tracking-wider text-neutral-400 uppercase">
-            <span className="block whitespace-nowrap">made with cortisstyle.com</span>
-            <span className="block whitespace-nowrap">@cortisstyle</span>
-          </div>
+          </span>
+          <span className={`shrink-0 whitespace-nowrap text-right ${FOOTER_META_CLASS}`}>
+            made with cortisstyle.com
+          </span>
         </div>
       ) : null}
     </div>

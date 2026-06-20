@@ -1,17 +1,21 @@
-/** Editorial moodword — text after an em/en dash in the outfit name, or a fallback label. */
+/** Single editorial moodword — last token after dash segment, or fallback. */
 export function resolveMoodwordFromOutfitName(
   name: string,
-  emptyFallback = "Archive",
+  emptyFallback = "Style",
 ): string {
   const trimmed = name.trim();
   if (!trimmed) return emptyFallback;
 
-  const parts = trimmed.split(/\s*[—–-]\s*/);
-  const tail = parts[parts.length - 1]?.trim();
+  const segments = trimmed.split(/\s*[—–-]\s*/);
+  const phrase =
+    segments.length > 1
+      ? (segments[segments.length - 1]?.trim() ?? "")
+      : trimmed;
 
-  if (parts.length > 1 && tail) {
-    return tail;
-  }
+  if (!phrase) return emptyFallback;
 
-  return trimmed;
+  const words = phrase.split(/\s+/).filter(Boolean);
+  const lastWord = words[words.length - 1];
+
+  return lastWord || emptyFallback;
 }

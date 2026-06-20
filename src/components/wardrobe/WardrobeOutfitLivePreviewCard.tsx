@@ -12,8 +12,13 @@ import { WARDROBE_BUILDER_LOOK } from "@/types/wardrobe-builder";
 /** Matches the verified main wardrobe canvas width — layout math stays identical. */
 const MAIN_CANVAS_WIDTH_PX = 420;
 
-/** Sidebar mask + scale: 420 × 0.76 ≈ 320px wide, 560 × 0.76 ≈ 426px tall. */
 const PREVIEW_SCALE = 0.76;
+
+const PREVIEW_CANVAS_HEIGHT_PX = Math.round(MAIN_CANVAS_WIDTH_PX * (4 / 3));
+const PREVIEW_FOOTER_HEIGHT_PX = 40;
+const PREVIEW_MASK_HEIGHT_PX = Math.round(
+  (PREVIEW_CANVAS_HEIGHT_PX + PREVIEW_FOOTER_HEIGHT_PX) * PREVIEW_SCALE,
+);
 
 interface WardrobeOutfitLivePreviewCardProps {
   name: string;
@@ -52,7 +57,10 @@ export const WardrobeOutfitLivePreviewCard = forwardRef<
 
   return (
     <div ref={ref} className={`shrink-0 ${className}`.trim()}>
-      <div className="relative mx-auto flex h-[426px] w-[320px] items-center justify-center overflow-hidden">
+      <div
+        className="relative mx-auto flex w-[320px] items-center justify-center overflow-hidden"
+        style={{ height: PREVIEW_MASK_HEIGHT_PX }}
+      >
         <div
           className="w-[420px] shrink-0 will-change-transform"
           style={{
@@ -60,7 +68,10 @@ export const WardrobeOutfitLivePreviewCard = forwardRef<
             transformOrigin: "center",
           }}
         >
-          <WardrobeOutfitMoodboardCard name={name}>
+          <WardrobeOutfitMoodboardCard
+            name={name}
+            containerClassName="w-[420px] shrink-0"
+          >
             <div
               className="relative mx-auto aspect-[3/4] w-[420px] shrink-0 overflow-hidden border border-neutral-200 bg-white"
               style={{ width: MAIN_CANVAS_WIDTH_PX }}
