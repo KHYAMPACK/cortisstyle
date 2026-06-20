@@ -145,9 +145,6 @@ export function WardrobeBuilderCanvas({
       name: payload.name,
       moodImageUrl: payload.moodImageUrl,
     });
-  };
-
-  const handleSavedToOutfits = () => {
     void refreshSavedOutfits();
   };
 
@@ -254,7 +251,6 @@ export function WardrobeBuilderCanvas({
         initialMoodImageUrl={cardMeta.moodImageUrl}
         onClose={() => setIsSaveModalOpen(false)}
         onSaveSuccess={handleSaveSuccess}
-        onSavedToOutfits={handleSavedToOutfits}
       />
     </section>
   );

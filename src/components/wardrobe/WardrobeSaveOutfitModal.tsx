@@ -47,7 +47,6 @@ interface WardrobeSaveOutfitModalProps {
     blueprint: SavedWardrobeOutfitBlueprint,
     payload: WardrobeSaveOutfitPayload,
   ) => void;
-  onSavedToOutfits: () => void;
 }
 
 function readImageFile(file: File): Promise<string> {
@@ -70,7 +69,6 @@ export function WardrobeSaveOutfitModal({
   initialMoodImageUrl = null,
   onClose,
   onSaveSuccess,
-  onSavedToOutfits,
 }: WardrobeSaveOutfitModalProps) {
   const [phase, setPhase] = useState<ModalPhase>("edit");
   const [name, setName] = useState(initialName);
@@ -87,14 +85,23 @@ export function WardrobeSaveOutfitModal({
   const [isMounted, setIsMounted] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
+  const saveInFlightRef = useRef(false);
+  const wasOpenRef = useRef(false);
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      wasOpenRef.current = false;
+      saveInFlightRef.current = false;
+      return;
+    }
 
+    if (wasOpenRef.current) return;
+
+    wasOpenRef.current = true;
     setPhase("edit");
     setName(initialName);
     setMoodImageUrl(initialMoodImageUrl);
@@ -103,6 +110,10 @@ export function WardrobeSaveOutfitModal({
     setIsSharing(false);
     setSaveError(null);
     setShareError(null);
+  }, [isOpen, initialName, initialMoodImageUrl]);
+
+  useEffect(() => {
+    if (!isOpen) return;
 
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -110,7 +121,7 @@ export function WardrobeSaveOutfitModal({
     return () => {
       document.body.style.overflow = previousOverflow;
     };
-  }, [isOpen, initialName, initialMoodImageUrl]);
+  }, [isOpen]);
 
   const applyImageFile = useCallback(async (file: File) => {
     if (!file.type.startsWith("image/")) return;
@@ -139,6 +150,10 @@ export function WardrobeSaveOutfitModal({
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
+    if (saveInFlightRef.current || isSaving || phase === "success") {
+      return;
+    }
+
     if (!userId) {
       setSaveError("Sign in to save outfits to your archive.");
       return;
@@ -149,6 +164,7 @@ export function WardrobeSaveOutfitModal({
       moodImageUrl,
     };
 
+    saveInFlightRef.current = true;
     setIsSaving(true);
     setSaveError(null);
 
@@ -169,6 +185,7 @@ export function WardrobeSaveOutfitModal({
           : "Unable to save outfit to your archive.",
       );
     } finally {
+      saveInFlightRef.current = false;
       setIsSaving(false);
     }
   };
@@ -195,8 +212,7 @@ export function WardrobeSaveOutfitModal({
     }
   };
 
-  const handleSaveToOutfits = () => {
-    onSavedToOutfits();
+  const handleDone = () => {
     onClose();
   };
 
@@ -371,26 +387,28 @@ export function WardrobeSaveOutfitModal({
                       Look Card Ready
                     </h2>
                     <p className="mt-3 font-mono text-[10px] leading-relaxed tracking-[0.12em] text-neutral-500 uppercase">
-                      Your outfit is saved. Share the poster or add it to your
-                      dashboard collection.
+                      Your outfit is saved to your archive. Download the look
+                      card or return to the builder.
                     </p>
 
-                    <div className="mt-8 space-y-3">
+                    <div className="mt-8 space-y-4">
                       <button
                         type="button"
                         onClick={handleShareLookCard}
                         disabled={isSharing}
                         className="w-full border border-neutral-900 bg-neutral-900 px-5 py-3 font-mono text-[10px] tracking-[0.3em] text-white uppercase transition-colors hover:bg-white hover:text-neutral-900 disabled:cursor-not-allowed disabled:opacity-60"
                       >
-                        {isSharing ? "Generating..." : "Share Look Card"}
+                        {isSharing
+                          ? "Generating..."
+                          : "Share / Download Look Card"}
                       </button>
 
                       <button
                         type="button"
-                        onClick={handleSaveToOutfits}
-                        className="w-full border border-neutral-200 bg-white px-5 py-3 font-mono text-[10px] tracking-[0.3em] text-neutral-900 uppercase transition-colors hover:border-neutral-900"
+                        onClick={handleDone}
+                        className="w-full font-mono text-[10px] tracking-[0.3em] text-neutral-400 uppercase transition-colors hover:text-neutral-900"
                       >
-                        Save to Outfits
+                        Close / Done
                       </button>
                     </div>
 
