@@ -1,4 +1,5 @@
 import type { SavedWardrobeOutfitBlueprint } from "@/types/wardrobe-builder";
+import { normalizeSavedOutfitBlueprint } from "@/lib/normalizeSavedOutfit";
 
 const STORAGE_KEY = "cortis-saved-wardrobe-outfits";
 
@@ -9,8 +10,10 @@ export function loadSavedWardrobeOutfits(): SavedWardrobeOutfitBlueprint[] {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
 
-    const parsed = JSON.parse(raw) as SavedWardrobeOutfitBlueprint[];
-    return Array.isArray(parsed) ? parsed : [];
+    const parsed = JSON.parse(raw) as Partial<SavedWardrobeOutfitBlueprint>[];
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed.map((entry) => normalizeSavedOutfitBlueprint(entry));
   } catch {
     return [];
   }

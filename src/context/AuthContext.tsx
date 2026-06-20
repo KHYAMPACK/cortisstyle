@@ -35,6 +35,7 @@ interface AuthContextValue {
   user: WardrobeUser | null;
   purchasedLooks: WardrobeLook[];
   savedOutfits: SavedWardrobeOutfitBlueprint[];
+  wardrobeLoadError: string | null;
   ownedClothes: WardrobeClothingItem[];
   signInWithPassword: (email: string, password: string) => Promise<void>;
   signUpWithPassword: (email: string, password: string) => Promise<boolean>;
@@ -60,6 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [savedOutfits, setSavedOutfits] = useState<SavedWardrobeOutfitBlueprint[]>(
     [],
   );
+  const [wardrobeLoadError, setWardrobeLoadError] = useState<string | null>(null);
 
   const user = useMemo(
     () => (session?.user ? mapSupabaseUser(session.user) : null),
@@ -73,13 +75,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     setWardrobeLoading(true);
+    setWardrobeLoadError(null);
 
     try {
       const lookIds = await fetchUserWardrobeLookIds(userId);
       setPurchasedLookIds(lookIds);
     } catch (error) {
       console.error("Failed to load wardrobe:", error);
-      setAuthError("Unable to load your wardrobe archive.");
+      setWardrobeLoadError(
+        error instanceof Error
+          ? error.message
+          : "Unable to load unlocked looks.",
+      );
       setPurchasedLookIds([]);
     } finally {
       setWardrobeLoading(false);
@@ -304,6 +311,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       purchasedLooks,
       savedOutfits,
+      wardrobeLoadError,
       ownedClothes,
       signInWithPassword,
       signUpWithPassword,
@@ -321,6 +329,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       purchasedLooks,
       savedOutfits,
+      wardrobeLoadError,
       ownedClothes,
       signInWithPassword,
       signUpWithPassword,

@@ -1,4 +1,5 @@
 import { getSupabaseClient } from "@/lib/supabaseClient";
+import { normalizeSavedOutfitBlueprint } from "@/lib/normalizeSavedOutfit";
 import {
   createSavedOutfitBlueprint,
   loadSavedWardrobeOutfits,
@@ -33,18 +34,23 @@ export interface PersistSavedOutfitResult {
   warning?: string;
 }
 
-/** Data-URL mood images can exceed PostgREST payload limits — cap stored size. */
 const MAX_MOOD_IMAGE_URL_LENGTH = 400_000;
 
 function mapRowToBlueprint(row: UserSavedOutfitRow): SavedWardrobeOutfitBlueprint {
-  return {
+  return normalizeSavedOutfitBlueprint({
     id: row.id,
     name: row.name,
     moodword: row.moodword ?? "",
     moodImageUrl: row.mood_image_url,
     slots: row.slots,
     savedAt: row.saved_at,
-  };
+  });
+}
+
+function isMissingMoodwordColumn(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const message = String((error as { message?: string }).message ?? "");
+  return message.includes("moodword") && message.includes("does not exist");
 }
 
 export function formatSupabaseError(error: unknown): string {
@@ -56,7 +62,6 @@ export function formatSupabaseError(error: unknown): string {
     message?: string;
     details?: string;
     hint?: string;
-    code?: string;
   };
 
   const parts = [record.message, record.details, record.hint].filter(Boolean);
@@ -102,11 +107,25 @@ export async function fetchUserSavedOutfits(
 ): Promise<SavedWardrobeOutfitBlueprint[]> {
   const supabase = getSupabaseClient();
 
-  const { data, error } = await supabase
+  const fullSelect =
+    "id, user_id, name, moodword, mood_image_url, slots, saved_at";
+
+  let { data, error } = await supabase
     .from("user_saved_outfits")
-    .select("id, user_id, name, moodword, mood_image_url, slots, saved_at")
+    .select(fullSelect)
     .eq("user_id", userId)
     .order("saved_at", { ascending: false });
+
+  if (error && isMissingMoodwordColumn(error)) {
+    const fallback = await supabase
+      .from("user_saved_outfits")
+      .select("id, user_id, name, mood_image_url, slots, saved_at")
+      .eq("user_id", userId)
+      .order("saved_at", { ascending: false });
+
+    data = fallback.data?.map((row) => ({ ...row, moodword: null })) ?? null;
+    error = fallback.error;
+  }
 
   if (error) {
     throw error;
@@ -126,7 +145,7 @@ export async function fetchAllSavedOutfitsForUser(
     console.error("Failed to load saved outfits from database:", error);
   }
 
-  const localOutfits = loadSavedWardrobeOutfits();
+  const localOutfits = loadSavedWardrobeOutfits().map(normalizeSavedOutfitBlueprint);
   const merged = new Map<string, SavedWardrobeOutfitBlueprint>();
 
   for (const outfit of localOutfits) {

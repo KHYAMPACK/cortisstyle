@@ -20,7 +20,7 @@ export function WardrobeOutfitMoodboardCard({
   emptyNameLabel = "LOOK NAME",
   containerClassName = "w-full max-w-[420px] shrink-0",
 }: WardrobeOutfitMoodboardCardProps) {
-  const displayName = name.trim() || emptyNameLabel;
+  const displayName = (name ?? "").trim() || emptyNameLabel;
 
   return (
     <div className={containerClassName}>

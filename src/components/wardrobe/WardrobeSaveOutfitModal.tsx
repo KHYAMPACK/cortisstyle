@@ -167,8 +167,8 @@ export function WardrobeSaveOutfitModal({
     }
 
     const payload: WardrobeSaveOutfitPayload = {
-      name: outfitName.trim().toUpperCase(),
-      moodword: moodword.trim().toUpperCase(),
+      name: (outfitName ?? "").trim().toUpperCase(),
+      moodword: (moodword ?? "").trim().toUpperCase(),
       moodImageUrl,
     };
 
@@ -226,9 +226,13 @@ export function WardrobeSaveOutfitModal({
   if (!isMounted) return null;
 
   const previewOutfitName =
-    phase === "success" ? (savedBlueprint?.name ?? outfitName) : outfitName;
+    phase === "success"
+      ? (savedBlueprint?.name ?? outfitName ?? "")
+      : (outfitName ?? "");
   const previewMoodword =
-    phase === "success" ? (savedBlueprint?.moodword ?? moodword) : moodword;
+    phase === "success"
+      ? (savedBlueprint?.moodword ?? moodword ?? "")
+      : (moodword ?? "");
   const previewMoodImageUrl =
     phase === "success" ? (savedBlueprint?.moodImageUrl ?? moodImageUrl) : moodImageUrl;
 

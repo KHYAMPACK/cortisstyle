@@ -20,6 +20,7 @@ export default function WardrobePage() {
     user,
     purchasedLooks,
     savedOutfits,
+    wardrobeLoadError,
     ownedClothes,
     signOut,
   } = useAuth();
@@ -113,14 +114,16 @@ export default function WardrobePage() {
           <div className="mt-8">
             {activeTab === "builder" ? (
               <WardrobeBuilderCanvas ownedClothes={ownedClothes} />
-            ) : wardrobeLoading ? (
-              <WardrobeLoadingState label="Loading wardrobe collection" />
             ) : activeTab === "looks" ? (
               <WardrobeLooksGrid
                 looks={purchasedLooks}
                 savedOutfits={savedOutfits}
                 inventory={ownedClothes}
+                wardrobeLoading={wardrobeLoading}
+                wardrobeError={wardrobeLoadError}
               />
+            ) : wardrobeLoading ? (
+              <WardrobeLoadingState label="Loading wardrobe collection" />
             ) : (
               <WardrobeItemsGrid items={ownedClothes} />
             )}

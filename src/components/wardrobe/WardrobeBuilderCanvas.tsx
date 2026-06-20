@@ -101,8 +101,8 @@ export function WardrobeBuilderCanvas({
 
   const equippedCount = currentOutfit.filter((slot) => slot !== null).length;
   const hasSavedCardMeta =
-    cardMeta.name.trim().length > 0 ||
-    cardMeta.moodword.trim().length > 0 ||
+    (cardMeta.name ?? "").trim().length > 0 ||
+    (cardMeta.moodword ?? "").trim().length > 0 ||
     cardMeta.moodImageUrl !== null;
 
   const openDrawerForSlot = (slotIndex: WardrobeMatrixSlotIndex) => {
@@ -145,8 +145,8 @@ export function WardrobeBuilderCanvas({
     payload: { name: string; moodword: string; moodImageUrl: string | null },
   ) => {
     setCardMeta({
-      name: payload.name,
-      moodword: payload.moodword,
+      name: payload.name ?? "",
+      moodword: payload.moodword ?? "",
       moodImageUrl: payload.moodImageUrl,
     });
     void refreshSavedOutfits();

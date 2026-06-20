@@ -42,6 +42,17 @@ export async function fetchUserWardrobeLookIds(
 ): Promise<string[]> {
   const supabase = getSupabaseClient();
 
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    throw new Error("Sign in to load your wardrobe archive.");
+  }
+
+  await ensureUserProfile(user.id, user.email);
+
   const { data, error } = await supabase
     .from("user_wardrobe")
     .select("look_id")

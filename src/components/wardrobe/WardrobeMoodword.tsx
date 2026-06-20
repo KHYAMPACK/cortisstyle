@@ -9,7 +9,7 @@ export function WardrobeMoodword({
   moodword,
   emptyFallback = "EDITORIAL",
 }: WardrobeMoodwordProps) {
-  const displayMoodword = moodword.trim() || emptyFallback;
+  const displayMoodword = (moodword ?? "").trim() || emptyFallback;
 
   return (
     <p
