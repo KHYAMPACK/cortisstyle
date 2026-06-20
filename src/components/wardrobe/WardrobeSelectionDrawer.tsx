@@ -9,16 +9,20 @@ interface WardrobeSelectionDrawerProps {
   isOpen: boolean;
   categoryFilter: MatrixCategoryFilter | null;
   items: WardrobeClothingItem[];
+  equippedItem: WardrobeClothingItem | null;
   onClose: () => void;
   onSelectItem: (item: WardrobeClothingItem) => void;
+  onRemoveItem: () => void;
 }
 
 export function WardrobeSelectionDrawer({
   isOpen,
   categoryFilter,
   items,
+  equippedItem,
   onClose,
   onSelectItem,
+  onRemoveItem,
 }: WardrobeSelectionDrawerProps) {
   return (
     <AnimatePresence>
@@ -63,6 +67,25 @@ export function WardrobeSelectionDrawer({
                   Close
                 </button>
               </div>
+              {equippedItem ? (
+                <div className="mt-4 flex items-center justify-between gap-4 border border-neutral-200 bg-neutral-50 px-4 py-3">
+                  <div className="min-w-0">
+                    <p className="font-mono text-[8px] tracking-[0.24em] text-neutral-400 uppercase">
+                      Equipped
+                    </p>
+                    <p className="truncate font-serif text-[10px] tracking-[0.1em] text-neutral-900 uppercase">
+                      {equippedItem.name}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={onRemoveItem}
+                    className="shrink-0 border border-neutral-900 px-3 py-2 font-mono text-[9px] tracking-[0.22em] text-neutral-900 uppercase transition-colors hover:bg-neutral-900 hover:text-white"
+                  >
+                    Remove Item
+                  </button>
+                </div>
+              ) : null}
             </div>
 
             <div className="overflow-y-auto px-5 py-5 md:px-8">

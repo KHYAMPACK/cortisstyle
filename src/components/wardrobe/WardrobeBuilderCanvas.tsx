@@ -128,6 +128,15 @@ export function WardrobeBuilderCanvas({
     [inventory, activeCategoryFilter],
   );
 
+  const equippedItemInActiveSlot = useMemo(() => {
+    if (activeSlotIndex === null) return null;
+
+    const equipped = currentOutfit[activeSlotIndex];
+    if (!equipped) return null;
+
+    return inventory.find((item) => item.id === equipped.id) ?? null;
+  }, [activeSlotIndex, currentOutfit, inventory]);
+
   const lookItems = useMemo(
     () => resolveWardrobeBuilderLookItems(currentOutfit, inventory),
     [currentOutfit, inventory],
@@ -249,6 +258,29 @@ export function WardrobeBuilderCanvas({
     setIsDrawerOpen(false);
     setActiveCategoryFilter(null);
     setActiveSlotIndex(null);
+  };
+
+  const handleRemoveItem = () => {
+    if (activeSlotIndex === null) return;
+
+    const equipped = currentOutfit[activeSlotIndex];
+    if (!equipped) return;
+
+    setCustomDragPositions((current) => {
+      if (!current[equipped.id]) return current;
+
+      const next = { ...current };
+      delete next[equipped.id];
+      return next;
+    });
+
+    setCurrentOutfit((current) => {
+      const next = [...current];
+      next[activeSlotIndex] = null;
+      return next;
+    });
+
+    closeDrawer();
   };
 
   const handleSaveSuccess = (
@@ -421,8 +453,10 @@ export function WardrobeBuilderCanvas({
         isOpen={isDrawerOpen}
         categoryFilter={activeCategoryFilter}
         items={drawerItems}
+        equippedItem={equippedItemInActiveSlot}
         onClose={closeDrawer}
         onSelectItem={handleSelectItem}
+        onRemoveItem={handleRemoveItem}
       />
 
       <WardrobeSaveOutfitModal

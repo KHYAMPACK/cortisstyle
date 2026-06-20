@@ -275,10 +275,10 @@ export function WardrobeSaveOutfitModal({
           />
 
           <div
-            className="absolute inset-0 touch-pan-y overflow-y-auto overscroll-contain"
+            className="absolute inset-0 touch-pan-y overflow-x-hidden overflow-y-auto overscroll-contain"
             onClick={(event) => handleBackdropDismiss(event, onClose)}
           >
-            <div className="flex min-h-full justify-center p-4 py-6 max-md:block md:items-center">
+            <div className="flex min-h-full justify-center px-4 py-6 md:items-center">
               <motion.div
                 role="dialog"
                 aria-modal="true"
@@ -288,7 +288,7 @@ export function WardrobeSaveOutfitModal({
                 exit={{ opacity: 0, scale: 0.96, y: 10 }}
                 transition={spring}
                 onClick={(event) => event.stopPropagation()}
-                className="mx-auto w-[min(96vw,920px)] border border-neutral-200 bg-white p-5 shadow-2xl md:p-8"
+                className="w-full max-w-[920px] border border-neutral-200 bg-white p-5 shadow-2xl md:p-8"
               >
               {phase === "edit" ? (
                 <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] lg:items-start">
