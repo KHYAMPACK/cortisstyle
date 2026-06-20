@@ -21,7 +21,8 @@ const PREVIEW_MASK_HEIGHT_PX = Math.round(
 );
 
 interface WardrobeOutfitLivePreviewCardProps {
-  name: string;
+  outfitName: string;
+  moodword: string;
   moodImageUrl: string | null;
   lookItems: ResolvedLookItem[];
   resolveLayouts: (
@@ -39,7 +40,8 @@ export const WardrobeOutfitLivePreviewCard = forwardRef<
   WardrobeOutfitLivePreviewCardProps
 >(function WardrobeOutfitLivePreviewCard(
   {
-    name,
+    outfitName,
+    moodword,
     moodImageUrl,
     lookItems,
     resolveLayouts,
@@ -69,7 +71,7 @@ export const WardrobeOutfitLivePreviewCard = forwardRef<
           }}
         >
           <WardrobeOutfitMoodboardCard
-            name={name}
+            name={outfitName}
             containerClassName="w-[420px] shrink-0"
           >
             <div
@@ -83,7 +85,7 @@ export const WardrobeOutfitLivePreviewCard = forwardRef<
                 showPlaceholder
               />
 
-              <WardrobeMoodword outfitName={name} />
+              <WardrobeMoodword moodword={moodword} />
 
               {/*
                 Preview-only blend: white LookCanvas backdrop reveals the mood

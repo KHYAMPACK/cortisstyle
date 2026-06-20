@@ -25,6 +25,7 @@ const spring = { type: "spring" as const, stiffness: 100, damping: 20 };
 
 export interface WardrobeSaveOutfitPayload {
   name: string;
+  moodword: string;
   moodImageUrl: string | null;
 }
 
@@ -41,6 +42,7 @@ interface WardrobeSaveOutfitModalProps {
     containerWidth: number,
   ) => Record<string, CanvasItemLayout>;
   initialName?: string;
+  initialMoodword?: string;
   initialMoodImageUrl?: string | null;
   onClose: () => void;
   onSaveSuccess: (
@@ -66,12 +68,14 @@ export function WardrobeSaveOutfitModal({
   canvasKey,
   resolveLayouts,
   initialName = "",
+  initialMoodword = "",
   initialMoodImageUrl = null,
   onClose,
   onSaveSuccess,
 }: WardrobeSaveOutfitModalProps) {
   const [phase, setPhase] = useState<ModalPhase>("edit");
-  const [name, setName] = useState(initialName);
+  const [outfitName, setOutfitName] = useState(initialName);
+  const [moodword, setMoodword] = useState(initialMoodword);
   const [moodImageUrl, setMoodImageUrl] = useState<string | null>(
     initialMoodImageUrl,
   );
@@ -103,14 +107,15 @@ export function WardrobeSaveOutfitModal({
 
     wasOpenRef.current = true;
     setPhase("edit");
-    setName(initialName);
+    setOutfitName(initialName);
+    setMoodword(initialMoodword);
     setMoodImageUrl(initialMoodImageUrl);
     setSavedBlueprint(null);
     setIsSaving(false);
     setIsSharing(false);
     setSaveError(null);
     setShareError(null);
-  }, [isOpen, initialName, initialMoodImageUrl]);
+  }, [isOpen, initialName, initialMoodword, initialMoodImageUrl]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -160,7 +165,8 @@ export function WardrobeSaveOutfitModal({
     }
 
     const payload: WardrobeSaveOutfitPayload = {
-      name: name.trim().toUpperCase(),
+      name: outfitName.trim().toUpperCase(),
+      moodword: moodword.trim().toUpperCase(),
       moodImageUrl,
     };
 
@@ -171,6 +177,7 @@ export function WardrobeSaveOutfitModal({
     try {
       const blueprint = await persistSavedWardrobeOutfitToDb(userId, {
         name: payload.name,
+        moodword: payload.moodword,
         moodImageUrl: payload.moodImageUrl,
         slots,
       });
@@ -199,7 +206,7 @@ export function WardrobeSaveOutfitModal({
     try {
       await exportLookCardAsPng(
         previewRef.current,
-        savedBlueprint?.name ?? name,
+        savedBlueprint?.name ?? outfitName,
       );
     } catch (error) {
       setShareError(
@@ -218,7 +225,10 @@ export function WardrobeSaveOutfitModal({
 
   if (!isMounted) return null;
 
-  const previewName = phase === "success" ? (savedBlueprint?.name ?? name) : name;
+  const previewOutfitName =
+    phase === "success" ? (savedBlueprint?.name ?? outfitName) : outfitName;
+  const previewMoodword =
+    phase === "success" ? (savedBlueprint?.moodword ?? moodword) : moodword;
   const previewMoodImageUrl =
     phase === "success" ? (savedBlueprint?.moodImageUrl ?? moodImageUrl) : moodImageUrl;
 
@@ -272,9 +282,22 @@ export function WardrobeSaveOutfitModal({
                         <input
                           type="text"
                           required
-                          value={name}
-                          onChange={(event) => setName(event.target.value)}
+                          value={outfitName}
+                          onChange={(event) => setOutfitName(event.target.value)}
                           placeholder="LOOK 01 — CYBER GRUNGE"
+                          className="w-full border border-neutral-200 bg-white px-3 py-3 font-mono text-[11px] tracking-[0.14em] text-neutral-900 uppercase outline-none transition-colors focus:border-neutral-900"
+                        />
+                      </label>
+
+                      <label className="block">
+                        <span className="mb-2 block font-mono text-[9px] tracking-[0.35em] text-neutral-400 uppercase">
+                          Moodword
+                        </span>
+                        <input
+                          type="text"
+                          value={moodword}
+                          onChange={(event) => setMoodword(event.target.value)}
+                          placeholder="e.g., CYBER, GRUNGE, AESTHETIC"
                           className="w-full border border-neutral-200 bg-white px-3 py-3 font-mono text-[11px] tracking-[0.14em] text-neutral-900 uppercase outline-none transition-colors focus:border-neutral-900"
                         />
                       </label>
@@ -365,7 +388,8 @@ export function WardrobeSaveOutfitModal({
                     <div className="mx-auto max-w-[280px]">
                       <WardrobeOutfitLivePreviewCard
                         ref={previewRef}
-                        name={name}
+                        outfitName={outfitName}
+                        moodword={moodword}
                         moodImageUrl={moodImageUrl}
                         lookItems={lookItems}
                         resolveLayouts={resolveLayouts}
@@ -426,7 +450,8 @@ export function WardrobeSaveOutfitModal({
                     <div className="mx-auto max-w-[280px]">
                       <WardrobeOutfitLivePreviewCard
                         ref={previewRef}
-                        name={previewName}
+                        outfitName={previewOutfitName}
+                        moodword={previewMoodword}
                         moodImageUrl={previewMoodImageUrl}
                         lookItems={lookItems}
                         resolveLayouts={resolveLayouts}

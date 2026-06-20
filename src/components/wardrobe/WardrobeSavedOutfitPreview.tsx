@@ -60,7 +60,8 @@ export function WardrobeSavedOutfitPreview({
       <div className="p-3 md:p-4">
         <WardrobeOutfitLivePreviewCard
           ref={previewRef}
-          name={outfit.name}
+          outfitName={outfit.name}
+          moodword={outfit.moodword}
           moodImageUrl={outfit.moodImageUrl}
           lookItems={lookItems}
           resolveLayouts={resolveLayouts}

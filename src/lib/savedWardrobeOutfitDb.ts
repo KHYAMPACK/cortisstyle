@@ -8,6 +8,7 @@ export interface UserSavedOutfitRow {
   id: string;
   user_id: string;
   name: string;
+  moodword: string | null;
   mood_image_url: string | null;
   slots: WardrobeOutfitMatrix;
   saved_at: string;
@@ -15,6 +16,7 @@ export interface UserSavedOutfitRow {
 
 export interface SaveWardrobeOutfitInput {
   name: string;
+  moodword: string;
   moodImageUrl: string | null;
   slots: WardrobeOutfitMatrix;
 }
@@ -23,6 +25,7 @@ function mapRowToBlueprint(row: UserSavedOutfitRow): SavedWardrobeOutfitBlueprin
   return {
     id: row.id,
     name: row.name,
+    moodword: row.moodword ?? "",
     moodImageUrl: row.mood_image_url,
     slots: row.slots,
     savedAt: row.saved_at,
@@ -36,7 +39,7 @@ export async function fetchUserSavedOutfits(
 
   const { data, error } = await supabase
     .from("user_saved_outfits")
-    .select("id, user_id, name, mood_image_url, slots, saved_at")
+    .select("id, user_id, name, moodword, mood_image_url, slots, saved_at")
     .eq("user_id", userId)
     .order("saved_at", { ascending: false });
 
@@ -58,10 +61,11 @@ export async function persistSavedWardrobeOutfitToDb(
     .insert({
       user_id: userId,
       name: input.name,
+      moodword: input.moodword,
       mood_image_url: input.moodImageUrl,
       slots: input.slots,
     })
-    .select("id, user_id, name, mood_image_url, slots, saved_at")
+    .select("id, user_id, name, moodword, mood_image_url, slots, saved_at")
     .single();
 
   if (error) {

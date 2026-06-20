@@ -101,6 +101,7 @@ export const WARDROBE_BUILDER_LOOK = {
 
 export interface WardrobeOutfitCardMeta {
   name: string;
+  moodword: string;
   moodImageUrl: string | null;
 }
 
@@ -112,5 +113,6 @@ export interface SavedWardrobeOutfitBlueprint extends WardrobeOutfitCardMeta {
 
 export const DEFAULT_OUTFIT_CARD_META: WardrobeOutfitCardMeta = {
   name: "",
+  moodword: "",
   moodImageUrl: null,
 };

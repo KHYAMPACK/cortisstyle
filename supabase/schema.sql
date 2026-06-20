@@ -56,6 +56,7 @@ create table if not exists public.user_saved_outfits (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.profiles (id) on delete cascade,
   name text not null,
+  moodword text,
   mood_image_url text,
   slots jsonb not null,
   saved_at timestamptz not null default timezone('utc', now())

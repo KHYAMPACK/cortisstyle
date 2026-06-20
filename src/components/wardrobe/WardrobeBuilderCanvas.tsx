@@ -100,7 +100,9 @@ export function WardrobeBuilderCanvas({
 
   const equippedCount = currentOutfit.filter((slot) => slot !== null).length;
   const hasSavedCardMeta =
-    cardMeta.name.trim().length > 0 || cardMeta.moodImageUrl !== null;
+    cardMeta.name.trim().length > 0 ||
+    cardMeta.moodword.trim().length > 0 ||
+    cardMeta.moodImageUrl !== null;
 
   const openDrawerForSlot = (slotIndex: WardrobeMatrixSlotIndex) => {
     const slot = getSlotDefinition(slotIndex);
@@ -139,10 +141,11 @@ export function WardrobeBuilderCanvas({
 
   const handleSaveSuccess = (
     _blueprint: SavedWardrobeOutfitBlueprint,
-    payload: { name: string; moodImageUrl: string | null },
+    payload: { name: string; moodword: string; moodImageUrl: string | null },
   ) => {
     setCardMeta({
       name: payload.name,
+      moodword: payload.moodword,
       moodImageUrl: payload.moodImageUrl,
     });
     void refreshSavedOutfits();
@@ -248,6 +251,7 @@ export function WardrobeBuilderCanvas({
         canvasKey={outfitCanvasKey}
         resolveLayouts={resolveLayouts}
         initialName={cardMeta.name}
+        initialMoodword={cardMeta.moodword}
         initialMoodImageUrl={cardMeta.moodImageUrl}
         onClose={() => setIsSaveModalOpen(false)}
         onSaveSuccess={handleSaveSuccess}
