@@ -255,7 +255,8 @@ export function WardrobeSaveOutfitModal({
             className="fixed inset-0 z-[90] bg-black/50 backdrop-blur-sm"
           />
 
-          <div className="pointer-events-none fixed inset-0 z-[90] flex items-center justify-center p-4">
+          <div className="pointer-events-none fixed inset-0 z-[90] overflow-y-auto overscroll-contain">
+            <div className="pointer-events-none flex min-h-full items-center justify-center p-4 py-6">
             <motion.div
               role="dialog"
               aria-modal="true"
@@ -264,7 +265,7 @@ export function WardrobeSaveOutfitModal({
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 10 }}
               transition={spring}
-              className="pointer-events-auto w-[min(96vw,920px)] border border-neutral-200 bg-white p-6 shadow-2xl md:p-8"
+              className="pointer-events-auto my-auto w-[min(96vw,920px)] border border-neutral-200 bg-white p-5 shadow-2xl md:p-8"
             >
               {phase === "edit" ? (
                 <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] lg:items-start">
@@ -476,6 +477,7 @@ export function WardrobeSaveOutfitModal({
                 </div>
               )}
             </motion.div>
+            </div>
           </div>
         </>
       )}
