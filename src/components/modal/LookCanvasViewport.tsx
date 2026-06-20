@@ -9,31 +9,29 @@ interface LookCanvasViewportProps {
 /**
  * Canonical LookCanvas parent chain — matches LookImagePanel view/edit framing
  * so resolveCanvasLayouts reads the same box model on homepage and wardrobe.
+ *
+ * Mobile uses the same 2:3 aspect as desktop so percentage coordinates resolve
+ * identically. Desktop md:+ classes are unchanged.
  */
 export function LookCanvasViewport({
   children,
   allowBleed = false,
   className = "",
 }: LookCanvasViewportProps) {
+  const bleedClass = allowBleed
+    ? "overflow-hidden md:overflow-visible"
+    : "overflow-hidden";
+
   return (
     <div
-      className={`relative mx-auto aspect-[4/5] w-full max-w-full max-h-[62vh] overflow-hidden bg-white md:mx-0 md:aspect-[2/3] md:h-full md:max-h-none md:w-auto md:overflow-visible ${className}`.trim()}
+      className={`relative isolate mx-auto aspect-[2/3] w-full min-w-0 max-w-full overflow-hidden bg-white md:mx-0 md:aspect-[2/3] md:h-full md:max-h-none md:w-auto md:overflow-visible ${className}`.trim()}
     >
-      <div className="relative flex h-full w-full items-center justify-center overflow-hidden bg-white md:overflow-visible">
+      {/* Mobile: absolute inset-0 coordinate sandbox. Desktop: flex centering unchanged. */}
+      <div className="absolute inset-0 h-full w-full overflow-hidden bg-white md:relative md:flex md:h-full md:w-full md:items-center md:justify-center md:overflow-visible">
         <div
-          className={`relative h-full w-full origin-center max-md:scale-[0.92] ${
-            allowBleed
-              ? "overflow-hidden md:overflow-visible"
-              : "overflow-hidden"
-          }`}
+          className={`absolute inset-0 h-full w-full ${bleedClass} md:relative md:h-full md:w-full md:origin-center`}
         >
-          <div
-            className={`relative h-full w-full ${
-              allowBleed
-                ? "overflow-hidden md:overflow-visible"
-                : "overflow-hidden"
-            }`}
-          >
+          <div className={`absolute inset-0 h-full w-full ${bleedClass} md:relative md:h-full md:w-full`}>
             {children}
           </div>
         </div>
