@@ -33,11 +33,11 @@ export function LookImagePanel({
   return (
     <div className="flex w-full shrink-0 flex-col items-center bg-white p-4 md:h-full md:w-[52%] md:p-8">
       <div
-        className="relative mx-auto aspect-[4/5] w-full max-w-full max-h-[55vh] overflow-hidden bg-white md:mx-0 md:aspect-[2/3] md:h-full md:max-h-none md:w-auto md:overflow-visible"
+        className="relative mx-auto aspect-[4/5] w-full max-w-full max-h-[62vh] overflow-hidden bg-white md:mx-0 md:aspect-[2/3] md:h-full md:max-h-none md:w-auto md:overflow-visible"
       >
         <div className="relative flex h-full w-full items-center justify-center overflow-hidden bg-white md:overflow-visible">
           <div
-            className={`relative h-full w-full origin-center max-md:scale-[0.9] ${
+            className={`relative h-full w-full origin-center max-md:scale-[0.92] ${
               allowDesktopCanvasBleed
                 ? "overflow-hidden md:overflow-visible"
                 : "overflow-hidden"

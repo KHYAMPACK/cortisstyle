@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import Image from "next/image";
 import {
   useCallback,
@@ -75,12 +75,35 @@ export function CollageStudioLayer({
 }: CollageStudioLayerProps) {
   const [layouts, setLayouts] = useState<Record<string, CanvasItemLayout>>({});
   const [isHitboxMode, setIsHitboxMode] = useState(false);
-  const layoutsReadyRef = useRef(false);
+  const [loadedImagesCount, setLoadedImagesCount] = useState(0);
+  const loadedImageIdsRef = useRef(new Set<string>());
   const clothingIds = useRef(new Set<string>());
+
+  const layoutsReady = Object.keys(layouts).length > 0;
+  const renderableItems = items.filter(
+    (item) => item.canvasImage && layouts[item.id],
+  );
+  const totalImagesToLoad = renderableItems.length;
+  const isFullyLoaded =
+    isEditMode ||
+    (layoutsReady &&
+      (totalImagesToLoad === 0 || loadedImagesCount >= totalImagesToLoad));
 
   useLayoutEffect(() => {
     clothingIds.current = new Set(items.map((item) => item.id));
   }, [items]);
+
+  useEffect(() => {
+    loadedImageIdsRef.current.clear();
+    setLoadedImagesCount(0);
+  }, [lookId, totalImagesToLoad]);
+
+  const handleImageLoad = useCallback((itemId: string) => {
+    if (loadedImageIdsRef.current.has(itemId)) return;
+
+    loadedImageIdsRef.current.add(itemId);
+    setLoadedImagesCount((current) => current + 1);
+  }, []);
 
   const syncLayoutsFromContainer = useCallback(() => {
     const parent = parentRef.current;
@@ -92,10 +115,6 @@ export function CollageStudioLayer({
     const nextLayouts = resolveCanvasLayouts(lookId, items, containerWidth);
 
     setLayouts((current) => {
-      if (Object.keys(nextLayouts).length > 0) {
-        layoutsReadyRef.current = true;
-      }
-
       if (canvasLayoutsEqual(current, nextLayouts)) {
         return current;
       }
@@ -121,7 +140,7 @@ export function CollageStudioLayer({
   }, [syncLayoutsFromContainer, parentRef, isEditMode]);
 
   useEffect(() => {
-    if (!layoutsReadyRef.current || Object.keys(layouts).length === 0) return;
+    if (!layoutsReady) return;
 
     onLayoutsChange?.(layouts);
 
@@ -296,40 +315,70 @@ export function CollageStudioLayer({
   }, [isEditMode, isHitboxMode, selectedItemId, parentRef]);
 
   return (
-    <>
+    <div className="relative h-full w-full">
+      <AnimatePresence>
+        {!isFullyLoaded && (
+          <motion.div
+            key="canvas-loading"
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.35, ease: "easeInOut" }}
+            className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-white"
+            aria-live="polite"
+            aria-busy="true"
+          >
+            <motion.div
+              aria-hidden
+              className="h-6 w-6 border border-neutral-300 border-t-neutral-900"
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1.1, repeat: Infinity, ease: "linear" }}
+            />
+            <p className="text-[9px] tracking-[0.35em] text-neutral-400 uppercase">
+              Loading Archive...
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {isEditMode && isHitboxMode && (
         <div className="pointer-events-none absolute top-2 left-2 z-[100] bg-red-600/90 px-2 py-1 text-[8px] tracking-[0.25em] text-white uppercase">
           Hitbox · Arrows move · Shift+Arrows resize
         </div>
       )}
 
-      {items.map((item) => {
-        if (!item.canvasImage) return null;
+      <motion.div
+        className="absolute inset-0"
+        initial={false}
+        animate={{ opacity: isFullyLoaded ? 1 : 0 }}
+        transition={{ duration: 0.5, ease: "easeInOut" }}
+      >
+        {renderableItems.map((item) => {
+          const layout = layouts[item.id];
+          if (!layout) return null;
 
-        const layout = layouts[item.id];
-        if (!layout) return null;
+          const isSelected = isEditMode
+            ? selectedItemId === item.id
+            : activeItemId === item.id;
+          const isDimmed =
+            !isEditMode && activeItemId !== null && activeItemId !== item.id;
 
-        const isSelected = isEditMode
-          ? selectedItemId === item.id
-          : activeItemId === item.id;
-        const isDimmed =
-          !isEditMode && activeItemId !== null && activeItemId !== item.id;
-
-        return (
-          <CanvasAsset
-            key={item.id}
-            layout={layout}
-            imageSrc={item.canvasImage}
-            imageAlt={item.name}
-            isSelected={isSelected}
-            isDimmed={isDimmed}
-            isEditMode={isEditMode}
-            isHitboxMode={isHitboxMode}
-            onScale={(widthPx) => updateLayout(item.id, { widthPx })}
-          />
-        );
-      })}
-    </>
+          return (
+            <CanvasAsset
+              key={item.id}
+              layout={layout}
+              imageSrc={item.canvasImage!}
+              imageAlt={item.name}
+              isSelected={isSelected}
+              isDimmed={isDimmed}
+              isEditMode={isEditMode}
+              isHitboxMode={isHitboxMode}
+              onScale={(widthPx) => updateLayout(item.id, { widthPx })}
+              onImageLoad={() => handleImageLoad(item.id)}
+            />
+          );
+        })}
+      </motion.div>
+    </div>
   );
 }
 
@@ -342,6 +391,7 @@ interface CanvasAssetProps {
   isEditMode: boolean;
   isHitboxMode: boolean;
   onScale: (widthPx: number) => void;
+  onImageLoad: () => void;
 }
 
 function CanvasAsset({
@@ -353,10 +403,22 @@ function CanvasAsset({
   isEditMode,
   isHitboxMode,
   onScale,
+  onImageLoad,
 }: CanvasAssetProps) {
   const hitbox = resolveHitboxDimensions(layout);
   const hitboxOffset = resolveHitboxOffset(layout);
   const visualWidth = layout.widthPx ?? hitbox.widthPx;
+  const hasReportedLoadRef = useRef(false);
+
+  useEffect(() => {
+    hasReportedLoadRef.current = false;
+  }, [imageSrc]);
+
+  const reportImageLoad = () => {
+    if (hasReportedLoadRef.current) return;
+    hasReportedLoadRef.current = true;
+    onImageLoad();
+  };
 
   return (
     <motion.div
@@ -379,6 +441,8 @@ function CanvasAsset({
           unoptimized
           draggable={false}
           sizes={`${Math.ceil(visualWidth)}px`}
+          onLoad={reportImageLoad}
+          onLoadingComplete={reportImageLoad}
           className="pointer-events-none block h-auto w-full max-w-none select-none object-contain object-left-top"
         />
       </div>
