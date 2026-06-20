@@ -115,9 +115,9 @@ export function WardrobeBuilderCanvas({
   return (
     <section
       aria-label="Wardrobe builder matrix"
-      className="relative w-full overflow-visible"
+      className="relative flex w-full flex-col items-center overflow-visible"
     >
-      <div className="mb-6 text-center">
+      <div className="mb-6 w-full text-center">
         <p className="text-[9px] tracking-[0.42em] text-neutral-400 uppercase">
           Core Matrix // 3×3
         </p>
@@ -126,52 +126,58 @@ export function WardrobeBuilderCanvas({
         </h2>
       </div>
 
-      <div className="relative mx-auto aspect-[3/4] w-full max-w-[420px] overflow-hidden border border-neutral-200 bg-white">
-        <LookCanvas
-          key={outfitCanvasKey}
-          className="absolute inset-0 h-full w-full"
-          look={WARDROBE_BUILDER_LOOK}
-          lookImage=""
-          title="Wardrobe Builder"
-          items={lookItems}
-          activeItemId={null}
-          isEditMode={false}
-          containerRef={containerRef}
-          onSelectItem={() => {}}
-          resolveLayouts={resolveLayouts}
-        />
-
-        <MatrixBlueprintGrid
-          className="z-30"
-          renderCell={({ slotIndex }) => {
-            const index = slotIndex as WardrobeMatrixSlotIndex;
-            const slot = getSlotDefinition(index);
-            return (
-              <WardrobeBuilderBlueprintCell
-                label={slot.label}
-                isEmpty={currentOutfit[index] === null}
+      <div className="flex w-full flex-col items-center justify-center bg-white">
+        <div className="relative aspect-[3/4] w-full max-w-[420px] shrink-0 overflow-hidden border border-neutral-200 bg-white">
+          <div className="relative flex h-full w-full items-center justify-center overflow-hidden">
+            <div className="relative h-full w-full overflow-hidden">
+              <LookCanvas
+                key={outfitCanvasKey}
+                className="absolute inset-0 h-full w-full"
+                look={WARDROBE_BUILDER_LOOK}
+                lookImage=""
+                title="Wardrobe Builder"
+                items={lookItems}
+                activeItemId={null}
+                isEditMode={false}
+                containerRef={containerRef}
+                onSelectItem={() => {}}
+                resolveLayouts={resolveLayouts}
               />
-            );
-          }}
-        />
 
-        <MatrixBlueprintInteractionGrid
-          className="z-40"
-          renderCell={({ slotIndex }) => {
-            const index = slotIndex as WardrobeMatrixSlotIndex;
-            const slot = getSlotDefinition(index);
-            return (
-              <WardrobeBuilderSlotZone
-                label={slot.label}
-                isEmpty={currentOutfit[index] === null}
-                onClick={() => openDrawerForSlot(index)}
+              <MatrixBlueprintGrid
+                className="z-30"
+                renderCell={({ slotIndex }) => {
+                  const index = slotIndex as WardrobeMatrixSlotIndex;
+                  const slot = getSlotDefinition(index);
+                  return (
+                    <WardrobeBuilderBlueprintCell
+                      label={slot.label}
+                      isEmpty={currentOutfit[index] === null}
+                    />
+                  );
+                }}
               />
-            );
-          }}
-        />
+
+              <MatrixBlueprintInteractionGrid
+                className="z-40"
+                renderCell={({ slotIndex }) => {
+                  const index = slotIndex as WardrobeMatrixSlotIndex;
+                  const slot = getSlotDefinition(index);
+                  return (
+                    <WardrobeBuilderSlotZone
+                      label={slot.label}
+                      isEmpty={currentOutfit[index] === null}
+                      onClick={() => openDrawerForSlot(index)}
+                    />
+                  );
+                }}
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
-      <p className="mx-auto mt-5 max-w-[420px] text-center font-mono text-[9px] tracking-[0.18em] text-neutral-400 uppercase">
+      <p className="mx-auto mt-5 w-full max-w-[420px] text-center font-mono text-[9px] tracking-[0.18em] text-neutral-400 uppercase">
         {equippedCount > 0
           ? `${equippedCount} / 9 slots equipped`
           : "Tap an empty slot to assign archive assets"}
