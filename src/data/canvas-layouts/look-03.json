@@ -1,6 +1,6 @@
 {
   "tank-top-01": {
-    "top": "-16.76%",
+    "top": "-17.48%",
     "left": "0.42%",
     "widthPx": 382,
     "zIndex": 4,
@@ -10,7 +10,7 @@
     "hitboxOffsetLeftPx": 138
   },
   "baggy-jeans-01": {
-    "top": "15.82%",
+    "top": "13.84%",
     "left": "1.04%",
     "widthPx": 374,
     "zIndex": 4,
@@ -21,7 +21,7 @@
   },
   "bracelet-01": {
     "top": "1.30%",
-    "left": "-25.36%",
+    "left": "-30.70%",
     "widthPx": 366,
     "zIndex": 4,
     "hitboxWidthPx": 56,
@@ -40,8 +40,8 @@
     "hitboxOffsetLeftPx": 131
   },
   "sunglasses-01": {
-    "top": "-42.32%",
-    "left": "-35.66%",
+    "top": "-37.04%",
+    "left": "-35.75%",
     "widthPx": 406,
     "zIndex": 4,
     "hitboxWidthPx": 116,
@@ -50,8 +50,8 @@
     "hitboxOffsetLeftPx": 146
   },
   "cap-01": {
-    "top": "-34.00%",
-    "left": "6.58%",
+    "top": "-35.80%",
+    "left": "3.91%",
     "widthPx": 382,
     "zIndex": 4,
     "hitboxWidthPx": 92,
@@ -61,7 +61,7 @@
   },
   "necklace-02": {
     "top": "-14.82%",
-    "left": "-17.22%",
+    "left": "-25.23%",
     "widthPx": 366,
     "zIndex": 4,
     "hitboxWidthPx": 66,
@@ -70,13 +70,13 @@
     "hitboxOffsetLeftPx": 139
   },
   "teal-bag-01": {
-    "top": "-3.18%",
+    "top": "-2.18%",
     "left": "35.36%",
     "widthPx": 366,
     "zIndex": 4,
     "hitboxWidthPx": 126,
-    "hitboxHeightPx": 146,
-    "hitboxOffsetTopPx": 196,
+    "hitboxHeightPx": 136,
+    "hitboxOffsetTopPx": 203,
     "hitboxOffsetLeftPx": 121
   }
 }
