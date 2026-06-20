@@ -2,14 +2,17 @@ import type { ClothingCategory } from "@/types/item";
 import type { CanvasItemLayout } from "@/types/canvas-layout";
 import type { MatrixCategoryFilter } from "@/types/wardrobe-builder";
 
-/** Editorial mood reference — above canvas card, below all garments. */
+/** Editorial mood reference — above canvas card, below blueprint and garments. */
 export const CANVAS_LAYER_MOOD = 10;
 
+/** Blueprint guide lines — above mood, below garments. */
+export const CANVAS_LAYER_BLUEPRINT = 20;
+
 /** Outerwear, tops, bottoms, waist. */
-export const CANVAS_LAYER_MID = 20;
+export const CANVAS_LAYER_MID = 30;
 
 /** Footwear, bags, eyewear, hats, head accessories. */
-export const CANVAS_LAYER_TOP = 30;
+export const CANVAS_LAYER_TOP = 35;
 
 /** Active selection / highlight — always wins. */
 export const CANVAS_LAYER_ACTIVE = 50;

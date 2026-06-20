@@ -65,7 +65,6 @@ export function WardrobeSavedOutfitPreview({
           lookItems={lookItems}
           resolveLayouts={resolveLayouts}
           canvasKey={canvasKey}
-          canvasWidthClassName="w-full"
         />
       </div>
       <div className="border-t border-neutral-200 px-3 py-3 md:px-4 md:py-4">

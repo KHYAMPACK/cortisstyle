@@ -6,7 +6,7 @@ import { MatrixBlueprintGrid } from "@/components/modal/MatrixBlueprintGrid";
 import { WardrobeBuilderBlueprintCell } from "@/components/wardrobe/WardrobeBuilderBlueprintCell";
 import { MatrixBlueprintInteractionGrid } from "@/components/wardrobe/MatrixBlueprintInteractionGrid";
 import { WardrobeBuilderSlotZone } from "@/components/wardrobe/WardrobeBuilderSlotZone";
-import { WardrobeMoodImageFrame } from "@/components/wardrobe/WardrobeMoodImageFrame";
+import { WardrobeCanvasFrame, WARDROBE_MAIN_CANVAS_FRAME_CLASS } from "@/components/wardrobe/WardrobeCanvasFrame";
 import { WardrobeOutfitMoodboardCard } from "@/components/wardrobe/WardrobeOutfitMoodboardCard";
 import { WardrobeSaveOutfitModal } from "@/components/wardrobe/WardrobeSaveOutfitModal";
 import { WardrobeSelectionDrawer } from "@/components/wardrobe/WardrobeSelectionDrawer";
@@ -170,12 +170,16 @@ export function WardrobeBuilderCanvas({
           name={cardMeta.name}
           showFooter={hasSavedCardMeta}
         >
-          <div className="relative mx-auto aspect-[3/4] w-full max-w-[420px] shrink-0 overflow-hidden border border-neutral-200 bg-white">
-            <WardrobeMoodImageFrame moodImageUrl={cardMeta.moodImageUrl} />
-
+          <WardrobeCanvasFrame
+            containerRef={containerRef}
+            moodImageUrl={cardMeta.moodImageUrl}
+            frameClassName={WARDROBE_MAIN_CANVAS_FRAME_CLASS}
+          >
             <LookCanvas
               key={outfitCanvasKey}
-              className="absolute inset-0 z-20 h-full w-full"
+              bindContainerRef={false}
+              transparentBackdrop
+              className="absolute inset-0 z-30 h-full w-full"
               look={WARDROBE_BUILDER_LOOK}
               lookImage=""
               title="Wardrobe Builder"
@@ -188,7 +192,7 @@ export function WardrobeBuilderCanvas({
             />
 
             <MatrixBlueprintGrid
-              className="z-30"
+              className="z-20"
               renderCell={({ slotIndex }) => {
                 const index = slotIndex as WardrobeMatrixSlotIndex;
                 const slot = getSlotDefinition(index);
@@ -216,7 +220,7 @@ export function WardrobeBuilderCanvas({
               }}
             />
 
-          </div>
+          </WardrobeCanvasFrame>
         </WardrobeOutfitMoodboardCard>
       </div>
 

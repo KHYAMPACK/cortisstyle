@@ -1,8 +1,11 @@
 "use client";
 
-import { forwardRef, useCallback, useMemo, useRef } from "react";
+import { forwardRef, useCallback, useRef } from "react";
 import { LookCanvas } from "@/components/modal/LookCanvas";
-import { WardrobeMoodImageFrame } from "@/components/wardrobe/WardrobeMoodImageFrame";
+import {
+  WardrobeCanvasFrame,
+  WARDROBE_PREVIEW_CANVAS_FRAME_CLASS,
+} from "@/components/wardrobe/WardrobeCanvasFrame";
 import { WardrobeOutfitMoodboardCard } from "@/components/wardrobe/WardrobeOutfitMoodboardCard";
 import type { CanvasItemLayout } from "@/types/canvas-layout";
 import type { ResolvedLookItem } from "@/types/look";
@@ -18,7 +21,6 @@ interface WardrobeOutfitLivePreviewCardProps {
   ) => Record<string, CanvasItemLayout>;
   canvasKey: string;
   className?: string;
-  canvasWidthClassName?: string;
 }
 
 export const WardrobeOutfitLivePreviewCard = forwardRef<
@@ -32,7 +34,6 @@ export const WardrobeOutfitLivePreviewCard = forwardRef<
     resolveLayouts,
     canvasKey,
     className = "",
-    canvasWidthClassName = "w-full",
   },
   ref,
 ) {
@@ -43,22 +44,23 @@ export const WardrobeOutfitLivePreviewCard = forwardRef<
     [resolveLayouts],
   );
 
-  const displayName = useMemo(() => name.trim() || "UNTITLED LOOK", [name]);
-
   return (
-    <div ref={ref} className={`bg-white ${className}`.trim()}>
-      <WardrobeOutfitMoodboardCard name={displayName}>
-        <div
-          className={`relative mx-auto aspect-[3/4] shrink-0 overflow-hidden border border-neutral-200 bg-white ${canvasWidthClassName}`}
+    <div ref={ref} className={`shrink-0 ${className}`.trim()}>
+      <WardrobeOutfitMoodboardCard
+        name={name}
+        containerClassName="w-[340px] shrink-0"
+      >
+        <WardrobeCanvasFrame
+          containerRef={containerRef}
+          moodImageUrl={moodImageUrl}
+          showMoodPlaceholder
+          frameClassName={WARDROBE_PREVIEW_CANVAS_FRAME_CLASS}
         >
-          <WardrobeMoodImageFrame
-            moodImageUrl={moodImageUrl}
-            showPlaceholder
-          />
-
           <LookCanvas
             key={canvasKey}
-            className="absolute inset-0 z-20 h-full w-full"
+            bindContainerRef={false}
+            transparentBackdrop
+            className="absolute inset-0 z-30 h-full w-full"
             look={WARDROBE_BUILDER_LOOK}
             lookImage=""
             title="Outfit Preview"
@@ -69,7 +71,7 @@ export const WardrobeOutfitLivePreviewCard = forwardRef<
             onSelectItem={() => {}}
             resolveLayouts={resolvePreviewLayouts}
           />
-        </div>
+        </WardrobeCanvasFrame>
       </WardrobeOutfitMoodboardCard>
     </div>
   );

@@ -32,6 +32,8 @@ interface LookCanvasProps {
     containerWidth: number,
   ) => Record<string, CanvasItemLayout>;
   className?: string;
+  transparentBackdrop?: boolean;
+  bindContainerRef?: boolean;
 }
 
 export function LookCanvas({
@@ -46,6 +48,8 @@ export function LookCanvas({
   onCanvasLayoutsChange,
   resolveLayouts,
   className = "",
+  transparentBackdrop = false,
+  bindContainerRef = true,
 }: LookCanvasProps) {
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const useCollage = canRenderCollageLayout(look.layout, items);
@@ -68,13 +72,19 @@ export function LookCanvas({
     editorGuideImage: look.editorGuideImage,
   });
 
+  const showOpaqueCollageBackdrop = useCollage && !transparentBackdrop;
+
   return (
     <div
-      ref={containerRef}
+      ref={bindContainerRef ? containerRef : undefined}
       className={`relative h-full w-full ${
         allowBleed ? "overflow-visible" : "overflow-hidden"
-      } ${useCollage ? "bg-white" : ""} ${isEditMode ? "ring-2 ring-blue-400 ring-inset" : ""} ${className}`.trim()}
-      style={useCollage ? { backgroundColor: COLLAGE_BACKDROP } : undefined}
+      } ${showOpaqueCollageBackdrop ? "bg-white" : "bg-transparent"} ${isEditMode ? "ring-2 ring-blue-400 ring-inset" : ""} ${className}`.trim()}
+      style={
+        showOpaqueCollageBackdrop
+          ? { backgroundColor: COLLAGE_BACKDROP }
+          : undefined
+      }
     >
       <AnimatePresence>
         {showEditorGuide && (
