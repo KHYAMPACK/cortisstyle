@@ -35,6 +35,7 @@ import {
   LOOK_CANVAS_REFERENCE_WIDTH,
   WARDROBE_CANVAS_REFERENCE_HEIGHT,
 } from "@/lib/lookCanvasReference";
+import { normalizeSavedOutfitBlueprint } from "@/lib/normalizeSavedOutfit";
 import {
   DEFAULT_OUTFIT_CARD_META,
   getSlotDefinition,
