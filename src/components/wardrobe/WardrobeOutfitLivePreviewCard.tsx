@@ -3,6 +3,7 @@
 import { forwardRef, useCallback, useRef } from "react";
 import { LookCanvas } from "@/components/modal/LookCanvas";
 import { WardrobeMoodImageFrame } from "@/components/wardrobe/WardrobeMoodImageFrame";
+import { WardrobeMoodword } from "@/components/wardrobe/WardrobeMoodword";
 import { WardrobeOutfitMoodboardCard } from "@/components/wardrobe/WardrobeOutfitMoodboardCard";
 import type { CanvasItemLayout } from "@/types/canvas-layout";
 import type { ResolvedLookItem } from "@/types/look";
@@ -70,6 +71,8 @@ export const WardrobeOutfitLivePreviewCard = forwardRef<
                 moodImageUrl={moodImageUrl}
                 showPlaceholder
               />
+
+              <WardrobeMoodword outfitName={name} />
 
               {/*
                 Preview-only blend: white LookCanvas backdrop reveals the mood

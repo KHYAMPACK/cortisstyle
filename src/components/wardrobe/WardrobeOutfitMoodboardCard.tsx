@@ -6,28 +6,33 @@ interface WardrobeOutfitMoodboardCardProps {
   name: string;
   children: ReactNode;
   showFooter?: boolean;
+  /** Shown when `name` is empty — preview defaults to "LOOK NAME". */
+  emptyNameLabel?: string;
+  containerClassName?: string;
 }
 
 export function WardrobeOutfitMoodboardCard({
   name,
   children,
   showFooter = true,
+  emptyNameLabel = "LOOK NAME",
+  containerClassName = "w-full max-w-[420px] shrink-0",
 }: WardrobeOutfitMoodboardCardProps) {
-  const displayName = name.trim() || "UNTITLED LOOK";
+  const displayName = name.trim() || emptyNameLabel;
 
   return (
-    <div className="w-full max-w-[420px] shrink-0">
+    <div className={containerClassName}>
       {children}
 
       {showFooter ? (
-        <div className="flex items-end justify-between gap-6 py-4">
-          <p className="pl-1 font-mono text-[11px] tracking-widest text-neutral-800 uppercase">
+        <div className="flex items-center justify-between gap-4 py-4">
+          <p className="min-w-0 flex-1 truncate pl-1 font-mono text-[11px] tracking-widest text-neutral-800 uppercase">
             {displayName}
           </p>
 
-          <div className="flex flex-col items-end font-mono text-[8px] tracking-wider text-neutral-400 uppercase">
-            <span>made with cortisstyle.com</span>
-            <span>@cortisstyle</span>
+          <div className="shrink-0 text-right font-mono text-[8px] leading-relaxed tracking-wider text-neutral-400 uppercase">
+            <span className="block whitespace-nowrap">made with cortisstyle.com</span>
+            <span className="block whitespace-nowrap">@cortisstyle</span>
           </div>
         </div>
       ) : null}

@@ -365,8 +365,8 @@ export function WardrobeSaveOutfitModal({
                     <div className="mx-auto max-w-[280px]">
                       <WardrobeOutfitLivePreviewCard
                         ref={previewRef}
-                        name={previewName}
-                        moodImageUrl={previewMoodImageUrl}
+                        name={name}
+                        moodImageUrl={moodImageUrl}
                         lookItems={lookItems}
                         resolveLayouts={resolveLayouts}
                         canvasKey={canvasKey}
