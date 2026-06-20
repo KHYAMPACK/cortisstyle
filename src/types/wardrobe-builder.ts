@@ -19,27 +19,17 @@ export interface WardrobeMatrixSlotDefinition {
   stackOrder: number;
   alignClass: string;
   assetWrapperClass: string;
-  assetBoundsClass: string;
-  isAssignable: boolean;
 }
-
-export const WARDROBE_MATRIX_ROW_HEIGHTS = {
-  head: "80px",
-  torso: "160px",
-  leg: "300px",
-} as const;
 
 export const WARDROBE_MATRIX_SLOTS: WardrobeMatrixSlotDefinition[] = [
   {
     index: 0,
     coordinate: "[1,1]",
-    label: "[ eyewear ]",
-    categoryFilter: "EYEWEAR",
-    stackOrder: 30,
+    label: "[ acc_head ]",
+    categoryFilter: "ACC_HEAD",
+    stackOrder: 15,
     alignClass: "items-start justify-center",
-    assetWrapperClass: "-translate-y-1",
-    assetBoundsClass: "h-[80px] w-full max-w-full",
-    isAssignable: true,
+    assetWrapperClass: "",
   },
   {
     index: 1,
@@ -49,19 +39,15 @@ export const WARDROBE_MATRIX_SLOTS: WardrobeMatrixSlotDefinition[] = [
     stackOrder: 15,
     alignClass: "items-start justify-center",
     assetWrapperClass: "",
-    assetBoundsClass: "h-[80px] w-full max-w-full",
-    isAssignable: true,
   },
   {
     index: 2,
     coordinate: "[1,3]",
-    label: "[ acc_head ]",
-    categoryFilter: "ACC_HEAD",
-    stackOrder: 15,
+    label: "[ eyewear ]",
+    categoryFilter: "EYEWEAR",
+    stackOrder: 30,
     alignClass: "items-start justify-end",
-    assetWrapperClass: "",
-    assetBoundsClass: "h-[80px] w-full max-w-full",
-    isAssignable: false,
+    assetWrapperClass: "translate-x-4 -translate-y-3",
   },
   {
     index: 3,
@@ -71,8 +57,6 @@ export const WARDROBE_MATRIX_SLOTS: WardrobeMatrixSlotDefinition[] = [
     stackOrder: 20,
     alignClass: "items-end justify-center",
     assetWrapperClass: "translate-y-2",
-    assetBoundsClass: "h-[160px] w-full max-w-full",
-    isAssignable: true,
   },
   {
     index: 4,
@@ -82,8 +66,6 @@ export const WARDROBE_MATRIX_SLOTS: WardrobeMatrixSlotDefinition[] = [
     stackOrder: 20,
     alignClass: "items-end justify-center",
     assetWrapperClass: "translate-y-1",
-    assetBoundsClass: "h-[160px] w-full max-w-full",
-    isAssignable: true,
   },
   {
     index: 5,
@@ -92,9 +74,7 @@ export const WARDROBE_MATRIX_SLOTS: WardrobeMatrixSlotDefinition[] = [
     categoryFilter: "BAG",
     stackOrder: 30,
     alignClass: "items-end justify-end",
-    assetWrapperClass: "translate-x-6 -translate-y-6",
-    assetBoundsClass: "h-[160px] w-full max-w-full",
-    isAssignable: true,
+    assetWrapperClass: "translate-x-8 -translate-y-10",
   },
   {
     index: 6,
@@ -103,9 +83,7 @@ export const WARDROBE_MATRIX_SLOTS: WardrobeMatrixSlotDefinition[] = [
     categoryFilter: "SHOES",
     stackOrder: 30,
     alignClass: "items-end justify-center",
-    assetWrapperClass: "translate-y-3",
-    assetBoundsClass: "h-[280px] w-full max-w-full",
-    isAssignable: true,
+    assetWrapperClass: "translate-y-4",
   },
   {
     index: 7,
@@ -114,9 +92,7 @@ export const WARDROBE_MATRIX_SLOTS: WardrobeMatrixSlotDefinition[] = [
     categoryFilter: "BOTTOM",
     stackOrder: 10,
     alignClass: "items-start justify-center",
-    assetWrapperClass: "-translate-y-2",
-    assetBoundsClass: "h-[280px] w-full max-w-full",
-    isAssignable: true,
+    assetWrapperClass: "-translate-y-3",
   },
   {
     index: 8,
@@ -126,8 +102,6 @@ export const WARDROBE_MATRIX_SLOTS: WardrobeMatrixSlotDefinition[] = [
     stackOrder: 15,
     alignClass: "items-end justify-end",
     assetWrapperClass: "translate-x-2 translate-y-2",
-    assetBoundsClass: "h-[280px] w-full max-w-full",
-    isAssignable: true,
   },
 ];
 
@@ -138,7 +112,6 @@ export interface WardrobeEquippedItem {
   rarityScore: number;
   categoryFilter: MatrixCategoryFilter;
   widthPx: number;
-  heightPx: number;
 }
 
 export type WardrobeOutfitMatrix = Array<WardrobeEquippedItem | null>;
