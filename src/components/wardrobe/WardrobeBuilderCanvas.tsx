@@ -10,6 +10,7 @@ import {
 import { resolveWardrobeItemComposition } from "@/lib/wardrobeBuilderComposition";
 import {
   getSlotDefinition,
+  WARDROBE_MATRIX_ROW_HEIGHTS,
   WARDROBE_MATRIX_SLOTS,
   type MatrixCategoryFilter,
   type WardrobeEquippedItem,
@@ -50,6 +51,8 @@ export function WardrobeBuilderCanvas({
 
   const openDrawerForSlot = (slotIndex: WardrobeMatrixSlotIndex) => {
     const slot = getSlotDefinition(slotIndex);
+    if (!slot.isAssignable) return;
+
     setActiveSlotIndex(slotIndex);
     setActiveCategoryFilter(slot.categoryFilter);
     setMenuSlotIndex(null);
@@ -69,6 +72,7 @@ export function WardrobeBuilderCanvas({
       rarityScore: item.rarityScore,
       categoryFilter: activeCategoryFilter,
       widthPx: composition.widthPx,
+      heightPx: composition.heightPx,
     };
 
     setCurrentOutfit((current) => {
@@ -114,8 +118,7 @@ export function WardrobeBuilderCanvas({
       <div
         className="relative mx-auto grid w-full max-w-[500px] grid-cols-3 overflow-visible border border-neutral-200/60 bg-white"
         style={{
-          gridTemplateRows:
-            "minmax(70px, auto) minmax(160px, auto) minmax(300px, auto)",
+          gridTemplateRows: `${WARDROBE_MATRIX_ROW_HEIGHTS.head} ${WARDROBE_MATRIX_ROW_HEIGHTS.torso} ${WARDROBE_MATRIX_ROW_HEIGHTS.leg}`,
         }}
       >
         {WARDROBE_MATRIX_SLOTS.map((slot) => (
@@ -124,6 +127,8 @@ export function WardrobeBuilderCanvas({
             stackOrder={slot.stackOrder}
             alignClass={slot.alignClass}
             assetWrapperClass={slot.assetWrapperClass}
+            assetBoundsClass={slot.assetBoundsClass}
+            isAssignable={slot.isAssignable}
             label={slot.label}
             item={currentOutfit[slot.index]}
             isMenuOpen={menuSlotIndex === slot.index}

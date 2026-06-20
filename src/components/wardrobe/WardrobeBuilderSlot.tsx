@@ -8,6 +8,8 @@ interface WardrobeBuilderSlotProps {
   stackOrder: number;
   alignClass: string;
   assetWrapperClass: string;
+  assetBoundsClass: string;
+  isAssignable: boolean;
   item: WardrobeEquippedItem | null;
   isMenuOpen: boolean;
   onEmptyClick: () => void;
@@ -70,6 +72,8 @@ export function WardrobeBuilderSlot({
   stackOrder,
   alignClass,
   assetWrapperClass,
+  assetBoundsClass,
+  isAssignable,
   item,
   isMenuOpen,
   onEmptyClick,
@@ -79,14 +83,33 @@ export function WardrobeBuilderSlot({
 }: WardrobeBuilderSlotProps) {
   const isEmpty = item === null;
 
+  const handleClick = () => {
+    if (isEmpty) {
+      if (!isAssignable) return;
+      onEmptyClick();
+      return;
+    }
+
+    onActiveClick();
+  };
+
   return (
     <button
       type="button"
-      onClick={isEmpty ? onEmptyClick : onActiveClick}
+      onClick={handleClick}
+      disabled={isEmpty && !isAssignable}
       style={{ zIndex: stackOrder }}
-      className={`relative flex h-full min-h-0 w-full overflow-visible border border-neutral-100/40 bg-transparent transition-colors hover:bg-neutral-50/40 ${alignClass}`}
+      className={`relative flex h-full min-h-0 w-full overflow-visible border border-neutral-100/40 bg-transparent transition-colors ${alignClass} ${
+        isEmpty && !isAssignable
+          ? "cursor-default opacity-70"
+          : "hover:bg-neutral-50/40"
+      }`}
       aria-label={
-        isEmpty ? `Assign item to ${label}` : `Manage equipped ${item.name}`
+        isEmpty
+          ? isAssignable
+            ? `Assign item to ${label}`
+            : `${label} reserved`
+          : `Manage equipped ${item.name}`
       }
     >
       {isEmpty ? (
@@ -105,16 +128,21 @@ export function WardrobeBuilderSlot({
       ) : (
         <>
           <div
-            className={`pointer-events-none relative shrink-0 ${assetWrapperClass}`}
+            className={`pointer-events-none relative ${assetBoundsClass} ${assetWrapperClass}`}
           >
             <Image
               src={item.image}
               alt={item.name}
               width={item.widthPx}
-              height={Math.round(item.widthPx * 1.4)}
+              height={item.heightPx}
               unoptimized
-              style={{ width: `${item.widthPx}px` }}
-              className="h-auto max-w-none object-contain"
+              style={{
+                width: `${item.widthPx}px`,
+                height: `${item.heightPx}px`,
+                maxWidth: "100%",
+                maxHeight: "100%",
+              }}
+              className="absolute top-1/2 left-1/2 max-h-full max-w-full -translate-x-1/2 -translate-y-1/2 object-contain"
             />
           </div>
           {isMenuOpen && <SlotActionMenu onSwap={onSwap} onRemove={onRemove} />}

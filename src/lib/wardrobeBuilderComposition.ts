@@ -1,6 +1,9 @@
 import { committedCanvasLayouts } from "@/data/canvas-layouts";
 import { getClothingItem } from "@/data/items";
-import { buildInitialCanvasLayouts } from "@/lib/canvasLayout";
+import {
+  buildInitialCanvasLayouts,
+  resolveHitboxDimensions,
+} from "@/lib/canvasLayout";
 import type { CanvasItemLayout } from "@/types/canvas-layout";
 
 /** Matches the wardrobe builder canvas max width. */
@@ -8,11 +11,15 @@ export const WARDROBE_BUILDER_CANVAS_WIDTH = 500;
 
 export interface WardrobeItemComposition {
   widthPx: number;
+  heightPx: number;
 }
 
 function mapLayoutToComposition(layout: CanvasItemLayout): WardrobeItemComposition {
+  const hitbox = resolveHitboxDimensions(layout);
+
   return {
-    widthPx: layout.widthPx ?? 160,
+    widthPx: layout.widthPx ?? hitbox.widthPx,
+    heightPx: hitbox.heightPx,
   };
 }
 
@@ -54,5 +61,5 @@ export function resolveWardrobeItemComposition(
     }
   }
 
-  return { widthPx: 160 };
+  return { widthPx: 120, heightPx: 80 };
 }
