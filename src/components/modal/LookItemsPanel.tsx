@@ -61,7 +61,7 @@ export function LookItemsPanel({
       transition={{ ...spring, delay: 0.12 }}
       className="relative flex min-h-0 w-full flex-1 flex-col overflow-hidden border-t border-neutral-200 md:h-full md:w-[48%] md:border-t-0 md:border-l"
     >
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6 pb-28 md:px-8 md:pt-16 md:pb-10">
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 pb-28 md:px-8 md:py-6 md:pt-16 md:pb-10">
         <AnimatePresence mode="wait">
           {showPreview ? (
             <motion.div
@@ -124,27 +124,30 @@ export function LookItemsPanel({
               exit={{ opacity: 0, y: -12 }}
               transition={spring}
             >
-              <p className="mb-2 text-[9px] tracking-[0.45em] text-neutral-400 uppercase">
-                Styled by
-              </p>
-              <h2
-                id="look-modal-title"
-                className="font-serif text-2xl leading-tight tracking-[-0.01em] text-neutral-950 md:text-3xl"
-              >
-                {look.title}
+              <h2 id="look-modal-title" className="sr-only">
+                {look.title} — styled by {look.modelName}
               </h2>
-              <p className="mt-2 text-[10px] tracking-[0.35em] text-neutral-500 uppercase">
-                {look.modelName}
-              </p>
 
-              <StyleAnalysis
-                vibe={look.vibe}
-                investmentRetail={look.investmentRetail}
-                investmentWithGuide={look.investmentWithGuide}
-                versatility={look.versatility}
-              />
+              <div className="hidden md:block" aria-hidden="true">
+                <p className="mb-2 text-[9px] tracking-[0.45em] text-neutral-400 uppercase">
+                  Styled by
+                </p>
+                <p className="font-serif text-2xl leading-tight tracking-[-0.01em] text-neutral-950 md:text-3xl">
+                  {look.title}
+                </p>
+                <p className="mt-2 text-[10px] tracking-[0.35em] text-neutral-500 uppercase">
+                  {look.modelName}
+                </p>
 
-              <div className="mt-8 space-y-3 border-t border-neutral-200 pt-8">
+                <StyleAnalysis
+                  vibe={look.vibe}
+                  investmentRetail={look.investmentRetail}
+                  investmentWithGuide={look.investmentWithGuide}
+                  versatility={look.versatility}
+                />
+              </div>
+
+              <div className="mt-4 space-y-3 border-t border-neutral-200 pt-4 md:mt-8 md:pt-8">
                 {items.map((item) => (
                   <LookItemCard
                     key={item.id}
