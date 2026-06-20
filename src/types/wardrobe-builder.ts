@@ -16,6 +16,7 @@ export interface WardrobeMatrixSlotDefinition {
   coordinate: string;
   label: string;
   categoryFilter: MatrixCategoryFilter;
+  stackOrder: number;
 }
 
 export const WARDROBE_MATRIX_SLOTS: WardrobeMatrixSlotDefinition[] = [
@@ -24,39 +25,63 @@ export const WARDROBE_MATRIX_SLOTS: WardrobeMatrixSlotDefinition[] = [
     coordinate: "[1,1]",
     label: "[ acc_head ]",
     categoryFilter: "ACC_HEAD",
+    stackOrder: 15,
   },
-  { index: 1, coordinate: "[1,2]", label: "[ hat ]", categoryFilter: "HAT" },
+  {
+    index: 1,
+    coordinate: "[1,2]",
+    label: "[ hat ]",
+    categoryFilter: "HAT",
+    stackOrder: 15,
+  },
   {
     index: 2,
     coordinate: "[1,3]",
     label: "[ eyewear ]",
     categoryFilter: "EYEWEAR",
+    stackOrder: 30,
   },
   {
     index: 3,
     coordinate: "[2,1]",
     label: "[ outer ]",
     categoryFilter: "OUTER",
+    stackOrder: 20,
   },
-  { index: 4, coordinate: "[2,2]", label: "[ top ]", categoryFilter: "TOP" },
-  { index: 5, coordinate: "[2,3]", label: "[ bag ]", categoryFilter: "BAG" },
+  {
+    index: 4,
+    coordinate: "[2,2]",
+    label: "[ top ]",
+    categoryFilter: "TOP",
+    stackOrder: 20,
+  },
+  {
+    index: 5,
+    coordinate: "[2,3]",
+    label: "[ bag ]",
+    categoryFilter: "BAG",
+    stackOrder: 30,
+  },
   {
     index: 6,
     coordinate: "[3,1]",
     label: "[ shoes ]",
     categoryFilter: "SHOES",
+    stackOrder: 5,
   },
   {
     index: 7,
     coordinate: "[3,2]",
     label: "[ bottom ]",
     categoryFilter: "BOTTOM",
+    stackOrder: 10,
   },
   {
     index: 8,
     coordinate: "[3,3]",
     label: "[ waist ]",
     categoryFilter: "WAIST",
+    stackOrder: 15,
   },
 ];
 

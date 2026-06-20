@@ -94,7 +94,10 @@ export function WardrobeBuilderCanvas({
   };
 
   return (
-    <section aria-label="Wardrobe builder matrix" className="relative w-full">
+    <section
+      aria-label="Wardrobe builder matrix"
+      className="relative w-full overflow-visible"
+    >
       <div className="mb-6 text-center">
         <p className="text-[9px] tracking-[0.42em] text-neutral-400 uppercase">
           Core Matrix // 3×3
@@ -104,10 +107,18 @@ export function WardrobeBuilderCanvas({
         </h2>
       </div>
 
-      <div className="mx-auto grid aspect-square w-full max-w-[500px] grid-cols-3 grid-rows-3 border border-neutral-200 bg-white">
+      <div
+        className="relative mx-auto grid w-full max-w-[500px] grid-cols-3 overflow-visible border border-neutral-200/60 bg-white"
+        style={{
+          gridTemplateRows:
+            "minmax(70px, auto) minmax(160px, auto) minmax(300px, auto)",
+        }}
+      >
         {WARDROBE_MATRIX_SLOTS.map((slot) => (
           <WardrobeBuilderSlot
             key={slot.index}
+            slotIndex={slot.index}
+            stackOrder={slot.stackOrder}
             label={slot.label}
             item={currentOutfit[slot.index]}
             isMenuOpen={menuSlotIndex === slot.index}

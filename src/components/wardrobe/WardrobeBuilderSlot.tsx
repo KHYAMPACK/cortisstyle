@@ -1,10 +1,15 @@
 "use client";
 
 import Image from "next/image";
-import type { WardrobeEquippedItem } from "@/types/wardrobe-builder";
+import type {
+  WardrobeEquippedItem,
+  WardrobeMatrixSlotIndex,
+} from "@/types/wardrobe-builder";
 
 interface WardrobeBuilderSlotProps {
   label: string;
+  slotIndex: WardrobeMatrixSlotIndex;
+  stackOrder: number;
   item: WardrobeEquippedItem | null;
   isMenuOpen: boolean;
   onEmptyClick: () => void;
@@ -35,7 +40,7 @@ function SlotActionMenu({
   onRemove: () => void;
 }) {
   return (
-    <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/92 backdrop-blur-[1px]">
+    <div className="absolute inset-0 z-40 flex items-center justify-center bg-white/92 backdrop-blur-[1px]">
       <div className="flex flex-col gap-2">
         <button
           type="button"
@@ -62,8 +67,26 @@ function SlotActionMenu({
   );
 }
 
+function getSlotAlignment(slotIndex: WardrobeMatrixSlotIndex): string {
+  if (slotIndex <= 2) {
+    return "items-center justify-center";
+  }
+
+  if (slotIndex <= 5) {
+    return "items-end justify-center";
+  }
+
+  if (slotIndex === 7) {
+    return "items-start justify-center";
+  }
+
+  return "items-end justify-center";
+}
+
 export function WardrobeBuilderSlot({
   label,
+  slotIndex,
+  stackOrder,
   item,
   isMenuOpen,
   onEmptyClick,
@@ -77,7 +100,8 @@ export function WardrobeBuilderSlot({
     <button
       type="button"
       onClick={isEmpty ? onEmptyClick : onActiveClick}
-      className="relative flex h-full w-full items-center justify-center overflow-hidden border border-neutral-100 bg-white transition-colors hover:bg-neutral-50/80"
+      style={{ zIndex: stackOrder }}
+      className={`relative flex h-full min-h-0 w-full overflow-visible border border-neutral-100/40 bg-transparent transition-colors hover:bg-neutral-50/40 ${getSlotAlignment(slotIndex)}`}
       aria-label={
         isEmpty ? `Assign item to ${label}` : `Manage equipped ${item.name}`
       }
@@ -97,14 +121,16 @@ export function WardrobeBuilderSlot({
         </>
       ) : (
         <>
-          <Image
-            src={item.image}
-            alt={item.name}
-            width={320}
-            height={320}
-            unoptimized
-            className="max-h-full max-w-full object-contain p-2"
-          />
+          <div className="pointer-events-none relative w-full px-1">
+            <Image
+              src={item.image}
+              alt={item.name}
+              width={480}
+              height={720}
+              unoptimized
+              className="h-auto w-full object-contain"
+            />
+          </div>
           {isMenuOpen && <SlotActionMenu onSwap={onSwap} onRemove={onRemove} />}
         </>
       )}
