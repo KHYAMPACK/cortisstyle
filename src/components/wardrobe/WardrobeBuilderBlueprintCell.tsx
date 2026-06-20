@@ -3,7 +3,6 @@
 interface WardrobeBuilderBlueprintCellProps {
   label: string;
   isEmpty: boolean;
-  onEmptyClick: () => void;
 }
 
 function TechnicalCrosshair() {
@@ -23,28 +22,24 @@ function TechnicalCrosshair() {
 export function WardrobeBuilderBlueprintCell({
   label,
   isEmpty,
-  onEmptyClick,
 }: WardrobeBuilderBlueprintCellProps) {
   return (
     <div className="relative border border-neutral-100/40">
       {isEmpty ? (
-        <button
-          type="button"
-          onClick={onEmptyClick}
-          className="pointer-events-auto absolute inset-0 flex items-center justify-center bg-transparent transition-colors hover:bg-neutral-50/40"
-          aria-label={`Assign item to ${label}`}
-        >
+        <>
           <TechnicalCrosshair />
-          <span
-            aria-hidden
-            className="font-mono text-lg leading-none font-light text-neutral-200"
-          >
-            +
-          </span>
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <span
+              aria-hidden
+              className="font-mono text-lg leading-none font-light text-neutral-200"
+            >
+              +
+            </span>
+          </div>
           <span className="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2 font-mono text-[10px] tracking-tighter whitespace-nowrap text-neutral-300 uppercase">
             {label}
           </span>
-        </button>
+        </>
       ) : null}
     </div>
   );

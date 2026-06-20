@@ -1,4 +1,5 @@
 import { clothingItems } from "@/data/items";
+import { looks } from "@/data/looks";
 import type { ClothingItem } from "@/types/item";
 import type { MatrixCategoryFilter } from "@/types/wardrobe-builder";
 import type { WardrobeClothingItem } from "@/types/user";
@@ -47,6 +48,16 @@ function inferMatrixCategories(item: ClothingItem): MatrixCategoryFilter[] {
   return ["TOP"];
 }
 
+export function resolveItemSourceLookId(itemId: string): string {
+  for (const look of looks) {
+    if (look.items.some((placement) => placement.itemId === itemId)) {
+      return look.id;
+    }
+  }
+
+  return "look-01";
+}
+
 export function resolveBuilderInventory(
   ownedClothes: WardrobeClothingItem[],
 ): WardrobeClothingItem[] {
@@ -56,7 +67,7 @@ export function resolveBuilderInventory(
 
   return clothingItems.map((item) => ({
     ...item,
-    sourceLookId: "builder-demo",
+    sourceLookId: resolveItemSourceLookId(item.id),
   }));
 }
 

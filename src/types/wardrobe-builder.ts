@@ -77,16 +77,9 @@ export const WARDROBE_MATRIX_SLOTS: WardrobeMatrixSlotDefinition[] = [
 
 export interface WardrobeEquippedItem {
   id: string;
-  name: string;
-  image: string;
-  rarityScore: number;
   categoryFilter: MatrixCategoryFilter;
   slotIndex: WardrobeMatrixSlotIndex;
-  top: string;
-  left: string;
-  widthPx: number;
-  zIndex: number;
-  anchorCenter: boolean;
+  sourceLookId?: string;
 }
 
 export type WardrobeOutfitMatrix = Array<WardrobeEquippedItem | null>;
@@ -100,3 +93,8 @@ export function getSlotDefinition(
 ): WardrobeMatrixSlotDefinition {
   return WARDROBE_MATRIX_SLOTS[index];
 }
+
+export const WARDROBE_BUILDER_LOOK = {
+  id: "wardrobe-builder",
+  layout: "collage" as const,
+};

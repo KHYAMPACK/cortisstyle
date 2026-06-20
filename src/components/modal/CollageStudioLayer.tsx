@@ -36,6 +36,10 @@ interface CollageStudioLayerProps {
   onSelectItem: (itemId: string) => void;
   onSelectCanvasItem: (itemId: string | null) => void;
   onLayoutsChange?: (layouts: Record<string, CanvasItemLayout>) => void;
+  resolveLayouts?: (
+    items: ResolvedLookItem[],
+    containerWidth: number,
+  ) => Record<string, CanvasItemLayout>;
 }
 
 const ARROW_KEY_DIRECTION: Record<string, CanvasMoveDirection> = {
@@ -72,6 +76,7 @@ export function CollageStudioLayer({
   onSelectItem,
   onSelectCanvasItem,
   onLayoutsChange,
+  resolveLayouts,
 }: CollageStudioLayerProps) {
   const [layouts, setLayouts] = useState<Record<string, CanvasItemLayout>>({});
   const [isHitboxMode, setIsHitboxMode] = useState(false);
@@ -112,7 +117,9 @@ export function CollageStudioLayer({
     const containerWidth = parent.getBoundingClientRect().width;
     if (containerWidth <= 0) return;
 
-    const nextLayouts = resolveCanvasLayouts(lookId, items, containerWidth);
+    const nextLayouts = resolveLayouts
+      ? resolveLayouts(items, containerWidth)
+      : resolveCanvasLayouts(lookId, items, containerWidth);
 
     setLayouts((current) => {
       if (canvasLayoutsEqual(current, nextLayouts)) {
@@ -121,7 +128,7 @@ export function CollageStudioLayer({
 
       return nextLayouts;
     });
-  }, [lookId, items, parentRef]);
+  }, [lookId, items, parentRef, resolveLayouts]);
 
   useLayoutEffect(() => {
     syncLayoutsFromContainer();

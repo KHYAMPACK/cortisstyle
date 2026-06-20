@@ -26,6 +26,10 @@ interface LookCanvasProps {
   containerRef: RefObject<HTMLDivElement | null>;
   onSelectItem: (itemId: string) => void;
   onCanvasLayoutsChange?: (layouts: Record<string, CanvasItemLayout>) => void;
+  resolveLayouts?: (
+    items: ResolvedLookItem[],
+    containerWidth: number,
+  ) => Record<string, CanvasItemLayout>;
 }
 
 export function LookCanvas({
@@ -38,6 +42,7 @@ export function LookCanvas({
   containerRef,
   onSelectItem,
   onCanvasLayoutsChange,
+  resolveLayouts,
 }: LookCanvasProps) {
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const useCollage = canRenderCollageLayout(look.layout, items);
@@ -89,6 +94,7 @@ export function LookCanvas({
           onSelectItem={onSelectItem}
           onSelectCanvasItem={setSelectedItemId}
           onLayoutsChange={onCanvasLayoutsChange}
+          resolveLayouts={resolveLayouts}
         />
       ) : (
         <SingleLookImage image={lookImage} title={title} />

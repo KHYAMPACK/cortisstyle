@@ -1,16 +1,23 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { LookCanvas } from "@/components/modal/LookCanvas";
 import { WardrobeBuilderBlueprintCell } from "@/components/wardrobe/WardrobeBuilderBlueprintCell";
-import { WardrobeBuilderEquippedAsset } from "@/components/wardrobe/WardrobeBuilderEquippedAsset";
+import { WardrobeBuilderSlotZone } from "@/components/wardrobe/WardrobeBuilderSlotZone";
 import { WardrobeSelectionDrawer } from "@/components/wardrobe/WardrobeSelectionDrawer";
 import {
   filterInventoryByCategory,
   resolveBuilderInventory,
+  resolveItemSourceLookId,
 } from "@/lib/wardrobeBuilderInventory";
-import { resolveWardrobeItemComposition } from "@/lib/wardrobeBuilderComposition";
+import {
+  buildWardrobeBuilderSourceLookMap,
+  resolveWardrobeBuilderCanvasLayouts,
+  resolveWardrobeBuilderLookItems,
+} from "@/lib/wardrobeBuilderLook";
 import {
   getSlotDefinition,
+  WARDROBE_BUILDER_LOOK,
   WARDROBE_MATRIX_SLOTS,
   type MatrixCategoryFilter,
   type WardrobeEquippedItem,
@@ -26,6 +33,7 @@ interface WardrobeBuilderCanvasProps {
 export function WardrobeBuilderCanvas({
   ownedClothes = [],
 }: WardrobeBuilderCanvasProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
   const [currentOutfit, setCurrentOutfit] = useState<WardrobeOutfitMatrix>(() =>
     Array(9).fill(null),
   );
@@ -33,8 +41,6 @@ export function WardrobeBuilderCanvas({
   const [activeCategoryFilter, setActiveCategoryFilter] =
     useState<MatrixCategoryFilter | null>(null);
   const [activeSlotIndex, setActiveSlotIndex] =
-    useState<WardrobeMatrixSlotIndex | null>(null);
-  const [menuSlotIndex, setMenuSlotIndex] =
     useState<WardrobeMatrixSlotIndex | null>(null);
 
   const inventory = useMemo(
@@ -47,21 +53,28 @@ export function WardrobeBuilderCanvas({
     [inventory, activeCategoryFilter],
   );
 
-  const equippedItems = useMemo(
-    () =>
-      currentOutfit.filter(
-        (item): item is WardrobeEquippedItem => item !== null,
-      ),
-    [currentOutfit],
+  const lookItems = useMemo(
+    () => resolveWardrobeBuilderLookItems(currentOutfit, inventory),
+    [currentOutfit, inventory],
   );
 
-  const equippedCount = equippedItems.length;
+  const sourceLookByItemId = useMemo(
+    () => buildWardrobeBuilderSourceLookMap(currentOutfit, inventory),
+    [currentOutfit, inventory],
+  );
+
+  const resolveLayouts = useCallback(
+    (items: Parameters<typeof resolveWardrobeBuilderCanvasLayouts>[0], width: number) =>
+      resolveWardrobeBuilderCanvasLayouts(items, width, sourceLookByItemId),
+    [sourceLookByItemId],
+  );
+
+  const equippedCount = currentOutfit.filter((slot) => slot !== null).length;
 
   const openDrawerForSlot = (slotIndex: WardrobeMatrixSlotIndex) => {
     const slot = getSlotDefinition(slotIndex);
     setActiveSlotIndex(slotIndex);
     setActiveCategoryFilter(slot.categoryFilter);
-    setMenuSlotIndex(null);
     setIsDrawerOpen(true);
   };
 
@@ -69,24 +82,11 @@ export function WardrobeBuilderCanvas({
     if (activeSlotIndex === null || !activeCategoryFilter) return;
     if (!item.canvasImage) return;
 
-    const composition = resolveWardrobeItemComposition(
-      item.id,
-      activeCategoryFilter,
-      item.sourceLookId,
-    );
-
     const equippedItem: WardrobeEquippedItem = {
       id: item.id,
-      name: item.name,
-      image: item.canvasImage,
-      rarityScore: item.rarityScore,
       categoryFilter: activeCategoryFilter,
       slotIndex: activeSlotIndex,
-      top: composition.top,
-      left: composition.left,
-      widthPx: composition.widthPx,
-      zIndex: composition.zIndex,
-      anchorCenter: composition.anchorCenter,
+      sourceLookId: item.sourceLookId ?? resolveItemSourceLookId(item.id),
     };
 
     setCurrentOutfit((current) => {
@@ -98,15 +98,6 @@ export function WardrobeBuilderCanvas({
     setIsDrawerOpen(false);
     setActiveCategoryFilter(null);
     setActiveSlotIndex(null);
-  };
-
-  const handleRemove = (slotIndex: WardrobeMatrixSlotIndex) => {
-    setCurrentOutfit((current) => {
-      const next = [...current];
-      next[slotIndex] = null;
-      return next;
-    });
-    setMenuSlotIndex(null);
   };
 
   const closeDrawer = () => {
@@ -130,30 +121,35 @@ export function WardrobeBuilderCanvas({
       </div>
 
       <div className="relative mx-auto aspect-[3/4] w-full max-w-[480px] overflow-hidden border border-neutral-200 bg-white">
-        <div className="pointer-events-none absolute inset-0 z-10 grid grid-cols-3 grid-rows-3">
+        <LookCanvas
+          look={WARDROBE_BUILDER_LOOK}
+          lookImage=""
+          title="Wardrobe Builder"
+          items={lookItems}
+          activeItemId={null}
+          isEditMode={false}
+          containerRef={containerRef}
+          onSelectItem={() => {}}
+          resolveLayouts={resolveLayouts}
+        />
+
+        <div className="pointer-events-none absolute inset-0 z-30 grid grid-cols-3 grid-rows-3">
           {WARDROBE_MATRIX_SLOTS.map((slot) => (
             <WardrobeBuilderBlueprintCell
               key={slot.index}
               label={slot.label}
               isEmpty={currentOutfit[slot.index] === null}
-              onEmptyClick={() => openDrawerForSlot(slot.index)}
             />
           ))}
         </div>
 
-        <div className="pointer-events-none absolute inset-0 z-20">
-          {equippedItems.map((item) => (
-            <WardrobeBuilderEquippedAsset
-              key={`${item.slotIndex}-${item.id}`}
-              item={item}
-              isMenuOpen={menuSlotIndex === item.slotIndex}
-              onActiveClick={() =>
-                setMenuSlotIndex((current) =>
-                  current === item.slotIndex ? null : item.slotIndex,
-                )
-              }
-              onSwap={() => openDrawerForSlot(item.slotIndex)}
-              onRemove={() => handleRemove(item.slotIndex)}
+        <div className="absolute inset-0 z-40 grid grid-cols-3 grid-rows-3">
+          {WARDROBE_MATRIX_SLOTS.map((slot) => (
+            <WardrobeBuilderSlotZone
+              key={slot.index}
+              label={slot.label}
+              isEmpty={currentOutfit[slot.index] === null}
+              onClick={() => openDrawerForSlot(slot.index)}
             />
           ))}
         </div>
