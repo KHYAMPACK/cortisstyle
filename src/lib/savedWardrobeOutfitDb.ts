@@ -37,7 +37,7 @@ export interface PersistSavedOutfitResult {
   warning?: string;
 }
 
-const MAX_MOOD_IMAGE_URL_LENGTH = 400_000;
+import { MAX_MOOD_IMAGE_URL_LENGTH } from "@/lib/compressMoodImage";
 
 function mapRowToBlueprint(row: UserSavedOutfitRow): SavedWardrobeOutfitBlueprint {
   return normalizeSavedOutfitBlueprint({

@@ -12,6 +12,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { WardrobeOutfitLivePreviewCard } from "@/components/wardrobe/WardrobeOutfitLivePreviewCard";
+import { compressMoodImageFile } from "@/lib/compressMoodImage";
 import { exportLookCardAsPng } from "@/lib/exportLookCardPng";
 import { persistSavedWardrobeOutfitToDb, formatSupabaseError } from "@/lib/savedWardrobeOutfitDb";
 import type { CanvasItemLayout } from "@/types/canvas-layout";
@@ -53,13 +54,13 @@ interface WardrobeSaveOutfitModalProps {
   ) => void;
 }
 
-function readImageFile(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
-  });
+function handleBackdropDismiss(
+  event: React.MouseEvent<HTMLDivElement>,
+  onClose: () => void,
+) {
+  if (event.target === event.currentTarget) {
+    onClose();
+  }
 }
 
 export function WardrobeSaveOutfitModal({
@@ -90,6 +91,8 @@ export function WardrobeSaveOutfitModal({
   const [saveWarning, setSaveWarning] = useState<string | null>(null);
   const [shareError, setShareError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [isProcessingMoodImage, setIsProcessingMoodImage] = useState(false);
+  const [moodImageError, setMoodImageError] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
@@ -120,6 +123,8 @@ export function WardrobeSaveOutfitModal({
     setSaveError(null);
     setShareError(null);
     setSaveWarning(null);
+    setMoodImageError(null);
+    setIsProcessingMoodImage(false);
   }, [isOpen, initialName, initialMoodword, initialMoodImageUrl]);
 
   useEffect(() => {
@@ -135,8 +140,22 @@ export function WardrobeSaveOutfitModal({
 
   const applyImageFile = useCallback(async (file: File) => {
     if (!file.type.startsWith("image/")) return;
-    const dataUrl = await readImageFile(file);
-    setMoodImageUrl(dataUrl);
+
+    setIsProcessingMoodImage(true);
+    setMoodImageError(null);
+
+    try {
+      const dataUrl = await compressMoodImageFile(file);
+      setMoodImageUrl(dataUrl);
+    } catch (error) {
+      setMoodImageError(
+        error instanceof Error
+          ? error.message
+          : "Unable to process mood image.",
+      );
+    } finally {
+      setIsProcessingMoodImage(false);
+    }
   }, []);
 
   const handleFileChange = async (
@@ -243,7 +262,7 @@ export function WardrobeSaveOutfitModal({
   return createPortal(
     <AnimatePresence>
       {isOpen && (
-        <>
+        <div className="fixed inset-0 z-[90]">
           <motion.button
             type="button"
             aria-label="Close save outfit modal"
@@ -252,21 +271,25 @@ export function WardrobeSaveOutfitModal({
             exit={{ opacity: 0 }}
             transition={spring}
             onClick={onClose}
-            className="fixed inset-0 z-[90] bg-black/50 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
           />
 
-          <div className="pointer-events-none fixed inset-0 z-[90] overflow-y-auto overscroll-contain">
-            <div className="pointer-events-none flex min-h-full items-center justify-center p-4 py-6">
-            <motion.div
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="save-outfit-title"
-              initial={{ opacity: 0, scale: 0.94, y: 16 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.96, y: 10 }}
-              transition={spring}
-              className="pointer-events-auto my-auto w-[min(96vw,920px)] border border-neutral-200 bg-white p-5 shadow-2xl md:p-8"
-            >
+          <div
+            className="absolute inset-0 touch-pan-y overflow-y-auto overscroll-contain"
+            onClick={(event) => handleBackdropDismiss(event, onClose)}
+          >
+            <div className="flex min-h-full justify-center p-4 py-6 max-md:block md:items-center">
+              <motion.div
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="save-outfit-title"
+                initial={{ opacity: 0, scale: 0.94, y: 16 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.96, y: 10 }}
+                transition={spring}
+                onClick={(event) => event.stopPropagation()}
+                className="mx-auto w-[min(96vw,920px)] border border-neutral-200 bg-white p-5 shadow-2xl md:p-8"
+              >
               {phase === "edit" ? (
                 <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] lg:items-start">
                   <div>
@@ -343,9 +366,11 @@ export function WardrobeSaveOutfitModal({
                             </div>
                           ) : null}
                           <span className="font-mono text-[9px] tracking-[0.2em] text-neutral-400 uppercase">
-                            {moodImageUrl
-                              ? "Replace Mood Image"
-                              : "Drag & Drop or Click to Upload"}
+                            {isProcessingMoodImage
+                              ? "Processing..."
+                              : moodImageUrl
+                                ? "Replace Mood Image"
+                                : "Drag & Drop or Click to Upload"}
                           </span>
                         </button>
                         <input
@@ -354,7 +379,13 @@ export function WardrobeSaveOutfitModal({
                           accept="image/*"
                           className="hidden"
                           onChange={handleFileChange}
+                          disabled={isProcessingMoodImage}
                         />
+                        {moodImageError ? (
+                          <p className="mt-2 font-mono text-[10px] tracking-[0.12em] text-red-600 uppercase">
+                            {moodImageError}
+                          </p>
+                        ) : null}
                         {moodImageUrl ? (
                           <button
                             type="button"
@@ -476,10 +507,10 @@ export function WardrobeSaveOutfitModal({
                   </div>
                 </div>
               )}
-            </motion.div>
+              </motion.div>
             </div>
           </div>
-        </>
+        </div>
       )}
     </AnimatePresence>,
     document.body,
