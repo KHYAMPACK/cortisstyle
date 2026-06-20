@@ -50,7 +50,11 @@ const CANVAS_WIDTH_CLASS =
 const CANVAS_FRAME_CLASS = `relative ${CANVAS_WIDTH_CLASS}`;
 
 const CANVAS_BOUNDARY_CLASS =
-  "relative mx-auto w-full aspect-[3/4] max-w-[360px] xs:max-w-[400px] sm:max-w-[420px] overflow-hidden border border-neutral-200 bg-white md:max-w-[420px] md:shrink-0";
+  "relative isolate mx-auto w-full aspect-[3/4] max-w-[360px] xs:max-w-[400px] sm:max-w-[420px] overflow-hidden border border-neutral-200 bg-white md:max-w-[420px] md:shrink-0";
+
+/** Isolated 3:4 coordinate sandbox — percentage math resolves only inside this box. */
+const CANVAS_COORDINATE_SANDBOX_CLASS =
+  "absolute inset-0 h-full w-full overflow-hidden";
 
 interface WardrobeBuilderCanvasProps {
   ownedClothes?: WardrobeClothingItem[];
@@ -313,7 +317,7 @@ export function WardrobeBuilderCanvas({
           containerClassName={`${CANVAS_FRAME_CLASS} shrink-0`}
         >
           <div className={CANVAS_BOUNDARY_CLASS}>
-            <div aria-hidden className="absolute inset-0 z-0 bg-white" />
+            <div aria-hidden className="pointer-events-none absolute inset-0 z-0 bg-white" />
 
             <WardrobeCanvasBrandWatermark />
 
@@ -321,7 +325,7 @@ export function WardrobeBuilderCanvas({
 
             <LookCanvas
               key={outfitCanvasKey}
-              className={`absolute inset-0 h-full w-full ${
+              className={`${CANVAS_COORDINATE_SANDBOX_CLASS} ${
                 isDragModeActive ? "z-[45]" : "z-20"
               }`}
               look={WARDROBE_BUILDER_LOOK}

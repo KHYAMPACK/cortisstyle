@@ -450,7 +450,7 @@ export function CollageStudioLayer({
   }, [isEditMode, isHitboxMode, selectedItemId, parentRef]);
 
   return (
-    <div className="relative h-full w-full">
+    <div className="absolute inset-0 h-full w-full overflow-hidden md:relative md:h-full md:w-full">
       <AnimatePresence>
         {!isFullyLoaded && (
           <motion.div
@@ -482,7 +482,7 @@ export function CollageStudioLayer({
       )}
 
       <motion.div
-        className="absolute inset-0"
+        className="absolute inset-0 h-full w-full overflow-hidden"
         initial={false}
         animate={{ opacity: isFullyLoaded ? 1 : 0 }}
         transition={{ duration: 0.5, ease: "easeInOut" }}
@@ -611,7 +611,7 @@ function CanvasAsset({
       onPointerUp={isFreeDragMode ? onPointerUp : undefined}
       onPointerCancel={isFreeDragMode ? onPointerCancel : undefined}
     >
-      <div className="relative leading-[0]">
+      <div className="relative shrink-0 leading-[0]">
         <Image
           key={itemId}
           src={imageSrc}
@@ -623,7 +623,7 @@ function CanvasAsset({
           sizes={`${Math.ceil(visualWidth)}px`}
           onLoad={reportImageLoad}
           onLoadingComplete={reportImageLoad}
-          className="pointer-events-none block h-auto w-full max-w-none select-none object-contain object-left-top"
+          className="pointer-events-none block h-auto w-full max-w-none shrink-0 select-none object-contain object-left-top max-md:max-h-none max-md:min-h-0"
         />
       </div>
 
