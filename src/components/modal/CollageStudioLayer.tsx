@@ -27,6 +27,11 @@ import {
 } from "@/lib/canvasLayout";
 import { resolveRenderedCanvasZIndex } from "@/lib/canvasLayerStack";
 import { isLocalhostClient } from "@/lib/dev";
+import {
+  formatLayoutPercent,
+  parseLayoutPercent,
+  type FreeDragPosition,
+} from "@/lib/wardrobeDragLayout";
 
 interface CollageStudioLayerProps {
   lookId: string;
@@ -42,6 +47,11 @@ interface CollageStudioLayerProps {
     items: ResolvedLookItem[],
     containerWidth: number,
   ) => Record<string, CanvasItemLayout>;
+  isFreeDragMode?: boolean;
+  onFreeDragPositionCommit?: (
+    itemId: string,
+    position: FreeDragPosition,
+  ) => void;
 }
 
 const ARROW_KEY_DIRECTION: Record<string, CanvasMoveDirection> = {
@@ -79,12 +89,26 @@ export function CollageStudioLayer({
   onSelectCanvasItem,
   onLayoutsChange,
   resolveLayouts,
+  isFreeDragMode = false,
+  onFreeDragPositionCommit,
 }: CollageStudioLayerProps) {
   const [layouts, setLayouts] = useState<Record<string, CanvasItemLayout>>({});
   const [isHitboxMode, setIsHitboxMode] = useState(false);
   const [loadedImagesCount, setLoadedImagesCount] = useState(0);
+  const [activeDrag, setActiveDrag] = useState<{
+    itemId: string;
+    top: string;
+    left: string;
+  } | null>(null);
   const loadedImageIdsRef = useRef(new Set<string>());
   const clothingIds = useRef(new Set<string>());
+  const dragSessionRef = useRef<{
+    itemId: string;
+    startClientX: number;
+    startClientY: number;
+    startTopPct: number;
+    startLeftPct: number;
+  } | null>(null);
 
   const layoutsReady = Object.keys(layouts).length > 0;
   const renderableItems = items.filter(
@@ -174,6 +198,8 @@ export function CollageStudioLayer({
     if (!parent) return;
 
     const handleCanvasClick = (event: MouseEvent) => {
+      if (isFreeDragMode) return;
+
       if ((event.target as HTMLElement).closest("[data-canvas-resize]")) {
         return;
       }
@@ -224,7 +250,99 @@ export function CollageStudioLayer({
     parentRef,
     onSelectCanvasItem,
     onSelectItem,
+    isFreeDragMode,
   ]);
+
+  useEffect(() => {
+    if (!isFreeDragMode) {
+      dragSessionRef.current = null;
+      setActiveDrag(null);
+    }
+  }, [isFreeDragMode]);
+
+  const computeDragPosition = useCallback(
+    (clientX: number, clientY: number) => {
+      const session = dragSessionRef.current;
+      const parent = parentRef.current;
+      if (!session || !parent) return null;
+
+      const rect = parent.getBoundingClientRect();
+      const dx = clientX - session.startClientX;
+      const dy = clientY - session.startClientY;
+
+      return {
+        itemId: session.itemId,
+        top: formatLayoutPercent(
+          session.startTopPct + (dy / rect.height) * 100,
+        ),
+        left: formatLayoutPercent(
+          session.startLeftPct + (dx / rect.width) * 100,
+        ),
+      };
+    },
+    [parentRef],
+  );
+
+  const handleAssetPointerDown = useCallback(
+    (itemId: string, layout: CanvasItemLayout) =>
+      (event: React.PointerEvent<HTMLDivElement>) => {
+        if (!isFreeDragMode) return;
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        event.currentTarget.setPointerCapture(event.pointerId);
+
+        dragSessionRef.current = {
+          itemId,
+          startClientX: event.clientX,
+          startClientY: event.clientY,
+          startTopPct: parseLayoutPercent(layout.top),
+          startLeftPct: parseLayoutPercent(layout.left),
+        };
+
+        setActiveDrag({
+          itemId,
+          top: layout.top,
+          left: layout.left,
+        });
+      },
+    [isFreeDragMode],
+  );
+
+  const handleAssetPointerMove = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      if (!isFreeDragMode || !dragSessionRef.current) return;
+
+      const nextPosition = computeDragPosition(event.clientX, event.clientY);
+      if (nextPosition) {
+        setActiveDrag(nextPosition);
+      }
+    },
+    [computeDragPosition, isFreeDragMode],
+  );
+
+  const handleAssetPointerUp = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      if (!dragSessionRef.current) return;
+
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      }
+
+      const nextPosition = computeDragPosition(event.clientX, event.clientY);
+      if (nextPosition) {
+        onFreeDragPositionCommit?.(nextPosition.itemId, {
+          top: nextPosition.top,
+          left: nextPosition.left,
+        });
+      }
+
+      dragSessionRef.current = null;
+      setActiveDrag(null);
+    },
+    [computeDragPosition, onFreeDragPositionCommit],
+  );
 
   useEffect(() => {
     if (!isEditMode || !selectedItemId || isHitboxMode) return;
@@ -368,14 +486,24 @@ export function CollageStudioLayer({
         transition={{ duration: 0.5, ease: "easeInOut" }}
       >
         {renderableItems.map((item) => {
-          const layout = layouts[item.id];
-          if (!layout) return null;
+          const baseLayout = layouts[item.id];
+          if (!baseLayout) return null;
+
+          const layout =
+            activeDrag?.itemId === item.id
+              ? {
+                  ...baseLayout,
+                  top: activeDrag.top,
+                  left: activeDrag.left,
+                }
+              : baseLayout;
 
           const isSelected = isEditMode
             ? selectedItemId === item.id
             : activeItemId === item.id;
           const isDimmed =
             !isEditMode && activeItemId !== null && activeItemId !== item.id;
+          const isDragging = activeDrag?.itemId === item.id;
 
           return (
             <CanvasAsset
@@ -386,8 +514,14 @@ export function CollageStudioLayer({
               imageAlt={item.name}
               isSelected={isSelected}
               isDimmed={isDimmed}
+              isDragging={isDragging}
               isEditMode={isEditMode}
               isHitboxMode={isHitboxMode}
+              isFreeDragMode={isFreeDragMode}
+              onPointerDown={handleAssetPointerDown(item.id, layout)}
+              onPointerMove={handleAssetPointerMove}
+              onPointerUp={handleAssetPointerUp}
+              onPointerCancel={handleAssetPointerUp}
               onScale={(widthPx) => updateLayout(item.id, { widthPx })}
               onImageLoad={() => handleImageLoad(item.id)}
             />
@@ -405,8 +539,14 @@ interface CanvasAssetProps {
   imageAlt: string;
   isSelected: boolean;
   isDimmed: boolean;
+  isDragging: boolean;
   isEditMode: boolean;
   isHitboxMode: boolean;
+  isFreeDragMode: boolean;
+  onPointerDown: (event: React.PointerEvent<HTMLDivElement>) => void;
+  onPointerMove: (event: React.PointerEvent<HTMLDivElement>) => void;
+  onPointerUp: (event: React.PointerEvent<HTMLDivElement>) => void;
+  onPointerCancel: (event: React.PointerEvent<HTMLDivElement>) => void;
   onScale: (widthPx: number) => void;
   onImageLoad: () => void;
 }
@@ -418,8 +558,14 @@ function CanvasAsset({
   imageAlt,
   isSelected,
   isDimmed,
+  isDragging,
   isEditMode,
   isHitboxMode,
+  isFreeDragMode,
+  onPointerDown,
+  onPointerMove,
+  onPointerUp,
+  onPointerCancel,
   onScale,
   onImageLoad,
 }: CanvasAssetProps) {
@@ -440,15 +586,26 @@ function CanvasAsset({
 
   return (
     <motion.div
-      className="pointer-events-none absolute select-none"
+      className={`absolute select-none touch-none ${
+        isFreeDragMode
+          ? "pointer-events-auto cursor-grab active:cursor-grabbing"
+          : "pointer-events-none"
+      }`}
       style={{
         top: layout.top,
         left: layout.left,
         width: visualWidth,
-        zIndex: resolveRenderedCanvasZIndex(layout.zIndex, isSelected),
+        zIndex: resolveRenderedCanvasZIndex(
+          layout.zIndex,
+          isSelected || isDragging,
+        ),
       }}
       animate={{ opacity: isDimmed ? 0.55 : 1 }}
       transition={{ duration: 0.25 }}
+      onPointerDown={isFreeDragMode ? onPointerDown : undefined}
+      onPointerMove={isFreeDragMode ? onPointerMove : undefined}
+      onPointerUp={isFreeDragMode ? onPointerUp : undefined}
+      onPointerCancel={isFreeDragMode ? onPointerCancel : undefined}
     >
       <div className="relative leading-[0]">
         <Image

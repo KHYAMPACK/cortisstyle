@@ -7,6 +7,7 @@ import {
   resolveWardrobeBuilderCanvasLayouts,
   resolveWardrobeBuilderLookItems,
 } from "@/lib/wardrobeBuilderLook";
+import { mergeLayoutOverrides } from "@/lib/wardrobeDragLayout";
 import type { SavedWardrobeOutfitBlueprint } from "@/types/wardrobe-builder";
 import type { WardrobeClothingItem } from "@/types/user";
 import { normalizeSavedOutfitBlueprint } from "@/lib/normalizeSavedOutfit";
@@ -15,11 +16,13 @@ import { WardrobeOutfitLivePreviewCard } from "@/components/wardrobe/WardrobeOut
 interface WardrobeSavedOutfitPreviewProps {
   outfit: SavedWardrobeOutfitBlueprint;
   inventory: WardrobeClothingItem[];
+  onOpenInBuilder?: (outfit: SavedWardrobeOutfitBlueprint) => void;
 }
 
 export function WardrobeSavedOutfitPreview({
   outfit,
   inventory,
+  onOpenInBuilder,
 }: WardrobeSavedOutfitPreviewProps) {
   const previewRef = useRef<HTMLDivElement>(null);
   const safeOutfit = useMemo(
@@ -51,13 +54,17 @@ export function WardrobeSavedOutfitPreview({
     (
       items: Parameters<typeof resolveWardrobeBuilderCanvasLayouts>[0],
       width: number,
-    ) => resolveWardrobeBuilderCanvasLayouts(
-      items,
-      width,
-      sourceLookByItemId,
-      categoryFilterByItemId,
-    ),
-    [sourceLookByItemId, categoryFilterByItemId],
+    ) => {
+      const base = resolveWardrobeBuilderCanvasLayouts(
+        items,
+        width,
+        sourceLookByItemId,
+        categoryFilterByItemId,
+      );
+
+      return mergeLayoutOverrides(base, safeOutfit.layoutOverrides, true);
+    },
+    [sourceLookByItemId, categoryFilterByItemId, safeOutfit.layoutOverrides],
   );
 
   return (
@@ -80,6 +87,15 @@ export function WardrobeSavedOutfitPreview({
         <p className="mt-1 font-mono text-[9px] tracking-[0.3em] text-neutral-400 uppercase">
           Saved Outfit
         </p>
+        {onOpenInBuilder ? (
+          <button
+            type="button"
+            onClick={() => onOpenInBuilder(safeOutfit)}
+            className="mt-3 w-full border border-neutral-900 px-3 py-2 font-mono text-[9px] tracking-[0.22em] text-neutral-900 uppercase transition-colors hover:bg-neutral-900 hover:text-white"
+          >
+            Open in Builder
+          </button>
+        ) : null}
       </div>
     </article>
   );

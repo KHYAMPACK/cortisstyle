@@ -7,11 +7,15 @@ create table if not exists public.user_saved_outfits (
   name text not null,
   mood_image_url text,
   slots jsonb not null,
+  layout_overrides jsonb,
   saved_at timestamptz not null default timezone('utc', now())
 );
 
 alter table public.user_saved_outfits
   add column if not exists moodword text;
+
+alter table public.user_saved_outfits
+  add column if not exists layout_overrides jsonb;
 
 alter table public.user_saved_outfits enable row level security;
 

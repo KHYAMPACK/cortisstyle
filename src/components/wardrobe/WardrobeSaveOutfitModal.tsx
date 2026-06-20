@@ -17,6 +17,7 @@ import { persistSavedWardrobeOutfitToDb, formatSupabaseError } from "@/lib/saved
 import type { CanvasItemLayout } from "@/types/canvas-layout";
 import type { ResolvedLookItem } from "@/types/look";
 import type {
+  LayoutPositionOverride,
   SavedWardrobeOutfitBlueprint,
   WardrobeOutfitMatrix,
 } from "@/types/wardrobe-builder";
@@ -41,6 +42,7 @@ interface WardrobeSaveOutfitModalProps {
     items: ResolvedLookItem[],
     containerWidth: number,
   ) => Record<string, CanvasItemLayout>;
+  layoutOverrides?: Record<string, LayoutPositionOverride>;
   initialName?: string;
   initialMoodword?: string;
   initialMoodImageUrl?: string | null;
@@ -67,6 +69,7 @@ export function WardrobeSaveOutfitModal({
   lookItems,
   canvasKey,
   resolveLayouts,
+  layoutOverrides,
   initialName = "",
   initialMoodword = "",
   initialMoodImageUrl = null,
@@ -183,6 +186,7 @@ export function WardrobeSaveOutfitModal({
         moodword: payload.moodword,
         moodImageUrl: payload.moodImageUrl,
         slots,
+        ...(layoutOverrides ? { layoutOverrides } : {}),
       });
 
       setSavedBlueprint(result.blueprint);

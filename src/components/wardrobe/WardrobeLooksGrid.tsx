@@ -10,6 +10,7 @@ interface WardrobeLooksGridProps {
   inventory?: WardrobeClothingItem[];
   wardrobeLoading?: boolean;
   wardrobeError?: string | null;
+  onOpenOutfitInBuilder?: (outfit: SavedWardrobeOutfitBlueprint) => void;
 }
 
 export function WardrobeLooksGrid({
@@ -18,6 +19,7 @@ export function WardrobeLooksGrid({
   inventory = [],
   wardrobeLoading = false,
   wardrobeError = null,
+  onOpenOutfitInBuilder,
 }: WardrobeLooksGridProps) {
   const hasSavedOutfits = savedOutfits.length > 0;
   const hasUnlockedLooks = looks.length > 0;
@@ -43,6 +45,7 @@ export function WardrobeLooksGrid({
                 <WardrobeSavedOutfitPreview
                   outfit={outfit}
                   inventory={inventory}
+                  onOpenInBuilder={onOpenOutfitInBuilder}
                 />
               </div>
             ))}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LookCanvas } from "@/components/modal/LookCanvas";
 import { MatrixBlueprintGrid } from "@/components/modal/MatrixBlueprintGrid";
 import { WardrobeBuilderBlueprintCell } from "@/components/wardrobe/WardrobeBuilderBlueprintCell";
@@ -24,6 +24,13 @@ import {
   resolveWardrobeBuilderLookItems,
 } from "@/lib/wardrobeBuilderLook";
 import {
+  dragPositionsToLayoutOverrides,
+  layoutOverridesToDragPositions,
+  mergeFreeDragPositions,
+  type FreeDragPosition,
+} from "@/lib/wardrobeDragLayout";
+import { normalizeSavedOutfitBlueprint } from "@/lib/normalizeSavedOutfit";
+import {
   DEFAULT_OUTFIT_CARD_META,
   getSlotDefinition,
   WARDROBE_BUILDER_LOOK,
@@ -38,10 +45,14 @@ import type { WardrobeClothingItem } from "@/types/user";
 
 interface WardrobeBuilderCanvasProps {
   ownedClothes?: WardrobeClothingItem[];
+  loadBlueprint?: SavedWardrobeOutfitBlueprint | null;
+  onBlueprintLoaded?: () => void;
 }
 
 export function WardrobeBuilderCanvas({
   ownedClothes = [],
+  loadBlueprint = null,
+  onBlueprintLoaded,
 }: WardrobeBuilderCanvasProps) {
   const { user, refreshSavedOutfits } = useAuth();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -57,6 +68,35 @@ export function WardrobeBuilderCanvas({
     useState<MatrixCategoryFilter | null>(null);
   const [activeSlotIndex, setActiveSlotIndex] =
     useState<WardrobeMatrixSlotIndex | null>(null);
+  const [isDragModeActive, setIsDragModeActive] = useState(false);
+  const [customDragPositions, setCustomDragPositions] = useState<
+    Record<string, FreeDragPosition>
+  >({});
+
+  useEffect(() => {
+    if (!loadBlueprint) return;
+
+    const blueprint = normalizeSavedOutfitBlueprint(loadBlueprint);
+
+    setCurrentOutfit(blueprint.slots);
+    setCardMeta({
+      name: blueprint.name,
+      moodword: blueprint.moodword,
+      moodImageUrl: blueprint.moodImageUrl,
+    });
+
+    if (blueprint.layoutOverrides) {
+      setCustomDragPositions(
+        layoutOverridesToDragPositions(blueprint.layoutOverrides),
+      );
+      setIsDragModeActive(true);
+    } else {
+      setCustomDragPositions({});
+      setIsDragModeActive(false);
+    }
+
+    onBlueprintLoaded?.();
+  }, [loadBlueprint, onBlueprintLoaded]);
 
   const inventory = useMemo(
     () => resolveBuilderInventory(ownedClothes),
@@ -89,15 +129,38 @@ export function WardrobeBuilderCanvas({
   );
 
   const resolveLayouts = useCallback(
-    (items: Parameters<typeof resolveWardrobeBuilderCanvasLayouts>[0], width: number) =>
-      resolveWardrobeBuilderCanvasLayouts(
+    (items: Parameters<typeof resolveWardrobeBuilderCanvasLayouts>[0], width: number) => {
+      const base = resolveWardrobeBuilderCanvasLayouts(
         items,
         width,
         sourceLookByItemId,
         categoryFilterByItemId,
-      ),
-    [sourceLookByItemId, categoryFilterByItemId],
+      );
+
+      if (!isDragModeActive) return base;
+
+      return mergeFreeDragPositions(base, customDragPositions);
+    },
+    [sourceLookByItemId, categoryFilterByItemId, isDragModeActive, customDragPositions],
   );
+
+  const handleFreeDragPositionCommit = useCallback(
+    (itemId: string, position: FreeDragPosition) => {
+      setCustomDragPositions((current) => ({
+        ...current,
+        [itemId]: position,
+      }));
+    },
+    [],
+  );
+
+  const layoutOverridesForSave = useMemo(() => {
+    if (!isDragModeActive || Object.keys(customDragPositions).length === 0) {
+      return undefined;
+    }
+
+    return dragPositionsToLayoutOverrides(customDragPositions);
+  }, [isDragModeActive, customDragPositions]);
 
   const equippedCount = currentOutfit.filter((slot) => slot !== null).length;
   const hasSavedCardMeta =
@@ -167,7 +230,47 @@ export function WardrobeBuilderCanvas({
       </div>
 
       <div className="grid w-full place-items-center">
-        <WardrobeOutfitMoodboardCard
+        <div className="relative w-full max-w-[420px]">
+          <div className="mb-3 flex items-center justify-end">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={isDragModeActive}
+              aria-label={
+                isDragModeActive
+                  ? "Free design mode active"
+                  : "Enable drag mode"
+              }
+              onClick={() => setIsDragModeActive((current) => !current)}
+              className="group flex items-center gap-3"
+            >
+              <span
+                className={`font-mono text-[9px] tracking-[0.28em] uppercase transition-colors ${
+                  isDragModeActive
+                    ? "text-neutral-950"
+                    : "text-neutral-400 group-hover:text-neutral-600"
+                }`}
+              >
+                {isDragModeActive ? "Free Design" : "Drag Mode"}
+              </span>
+              <span
+                aria-hidden
+                className={`relative inline-flex h-5 w-9 shrink-0 border border-neutral-900 transition-colors ${
+                  isDragModeActive ? "bg-neutral-900" : "bg-white"
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 h-3.5 w-3.5 bg-neutral-900 transition-transform duration-200 ${
+                    isDragModeActive
+                      ? "translate-x-[18px] bg-white"
+                      : "translate-x-0.5"
+                  }`}
+                />
+              </span>
+            </button>
+          </div>
+
+          <WardrobeOutfitMoodboardCard
           name={cardMeta.name}
           showFooter={hasSavedCardMeta}
         >
@@ -180,7 +283,9 @@ export function WardrobeBuilderCanvas({
 
             <LookCanvas
               key={outfitCanvasKey}
-              className="absolute inset-0 z-20 h-full w-full"
+              className={`absolute inset-0 h-full w-full ${
+                isDragModeActive ? "z-[45]" : "z-20"
+              }`}
               look={WARDROBE_BUILDER_LOOK}
               lookImage=""
               title="Wardrobe Builder"
@@ -190,10 +295,14 @@ export function WardrobeBuilderCanvas({
               containerRef={containerRef}
               onSelectItem={() => {}}
               resolveLayouts={resolveLayouts}
+              isFreeDragMode={isDragModeActive}
+              onFreeDragPositionCommit={handleFreeDragPositionCommit}
             />
 
             <MatrixBlueprintGrid
-              className="z-30"
+              className={`z-30 transition-opacity duration-300 ${
+                isDragModeActive ? "pointer-events-none opacity-0" : ""
+              }`}
               renderCell={({ slotIndex }) => {
                 const index = slotIndex as WardrobeMatrixSlotIndex;
                 const slot = getSlotDefinition(index);
@@ -207,7 +316,9 @@ export function WardrobeBuilderCanvas({
             />
 
             <MatrixBlueprintInteractionGrid
-              className="z-40"
+              className={`z-40 ${
+                isDragModeActive ? "pointer-events-none" : ""
+              }`}
               renderCell={({ slotIndex }) => {
                 const index = slotIndex as WardrobeMatrixSlotIndex;
                 const slot = getSlotDefinition(index);
@@ -223,6 +334,7 @@ export function WardrobeBuilderCanvas({
 
           </div>
         </WardrobeOutfitMoodboardCard>
+        </div>
       </div>
 
       <p className="mx-auto mt-5 w-full max-w-[420px] text-center font-mono text-[9px] tracking-[0.18em] text-neutral-400 uppercase">
@@ -255,6 +367,7 @@ export function WardrobeBuilderCanvas({
         lookItems={lookItems}
         canvasKey={outfitCanvasKey}
         resolveLayouts={resolveLayouts}
+        layoutOverrides={layoutOverridesForSave}
         initialName={cardMeta.name}
         initialMoodword={cardMeta.moodword}
         initialMoodImageUrl={cardMeta.moodImageUrl}

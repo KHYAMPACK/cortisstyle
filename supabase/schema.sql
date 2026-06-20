@@ -59,6 +59,7 @@ create table if not exists public.user_saved_outfits (
   moodword text,
   mood_image_url text,
   slots jsonb not null,
+  layout_overrides jsonb,
   saved_at timestamptz not null default timezone('utc', now())
 );
 

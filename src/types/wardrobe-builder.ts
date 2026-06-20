@@ -105,10 +105,16 @@ export interface WardrobeOutfitCardMeta {
   moodImageUrl: string | null;
 }
 
+export interface LayoutPositionOverride {
+  top: number;
+  left: number;
+}
+
 export interface SavedWardrobeOutfitBlueprint extends WardrobeOutfitCardMeta {
   id: string;
   slots: WardrobeOutfitMatrix;
   savedAt: string;
+  layoutOverrides?: Record<string, LayoutPositionOverride>;
 }
 
 export const DEFAULT_OUTFIT_CARD_META: WardrobeOutfitCardMeta = {

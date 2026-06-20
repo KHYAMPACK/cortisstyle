@@ -7,6 +7,7 @@ import {
 } from "@/lib/savedWardrobeOutfit";
 import { ensureUserProfile } from "@/lib/wardrobe";
 import type {
+  LayoutPositionOverride,
   SavedWardrobeOutfitBlueprint,
   WardrobeOutfitMatrix,
 } from "@/types/wardrobe-builder";
@@ -18,6 +19,7 @@ export interface UserSavedOutfitRow {
   moodword: string | null;
   mood_image_url: string | null;
   slots: WardrobeOutfitMatrix;
+  layout_overrides?: Record<string, LayoutPositionOverride> | null;
   saved_at: string;
 }
 
@@ -26,6 +28,7 @@ export interface SaveWardrobeOutfitInput {
   moodword: string;
   moodImageUrl: string | null;
   slots: WardrobeOutfitMatrix;
+  layoutOverrides?: Record<string, LayoutPositionOverride>;
 }
 
 export interface PersistSavedOutfitResult {
@@ -43,6 +46,7 @@ function mapRowToBlueprint(row: UserSavedOutfitRow): SavedWardrobeOutfitBlueprin
     moodword: row.moodword ?? "",
     moodImageUrl: row.mood_image_url,
     slots: row.slots,
+    layoutOverrides: row.layout_overrides ?? undefined,
     savedAt: row.saved_at,
   });
 }
@@ -51,6 +55,12 @@ function isMissingMoodwordColumn(error: unknown): boolean {
   if (!error || typeof error !== "object") return false;
   const message = String((error as { message?: string }).message ?? "");
   return message.includes("moodword") && message.includes("does not exist");
+}
+
+function isMissingLayoutOverridesColumn(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const message = String((error as { message?: string }).message ?? "");
+  return message.includes("layout_overrides") && message.includes("does not exist");
 }
 
 export function formatSupabaseError(error: unknown): string {
@@ -96,6 +106,7 @@ function persistLocally(
     moodword: input.moodword,
     moodImageUrl,
     slots: input.slots,
+    ...(input.layoutOverrides ? { layoutOverrides: input.layoutOverrides } : {}),
   });
 
   persistSavedWardrobeOutfit(blueprint);
@@ -108,13 +119,25 @@ export async function fetchUserSavedOutfits(
   const supabase = getSupabaseClient();
 
   const fullSelect =
-    "id, user_id, name, moodword, mood_image_url, slots, saved_at";
+    "id, user_id, name, moodword, mood_image_url, slots, layout_overrides, saved_at";
 
   let { data, error } = await supabase
     .from("user_saved_outfits")
     .select(fullSelect)
     .eq("user_id", userId)
     .order("saved_at", { ascending: false });
+
+  if (error && isMissingLayoutOverridesColumn(error)) {
+    const fallback = await supabase
+      .from("user_saved_outfits")
+      .select("id, user_id, name, moodword, mood_image_url, slots, saved_at")
+      .eq("user_id", userId)
+      .order("saved_at", { ascending: false });
+
+    data =
+      fallback.data?.map((row) => ({ ...row, layout_overrides: null })) ?? null;
+    error = fallback.error;
+  }
 
   if (error && isMissingMoodwordColumn(error)) {
     const fallback = await supabase
@@ -183,17 +206,39 @@ async function persistToDatabase(
 
   await ensureUserProfile(user.id, user.email);
 
-  const { data, error } = await supabase
+  const insertPayload: Record<string, unknown> = {
+    user_id: user.id,
+    name: input.name,
+    moodword: input.moodword || null,
+    mood_image_url: moodImageUrl,
+    slots: input.slots,
+  };
+
+  if (input.layoutOverrides && Object.keys(input.layoutOverrides).length > 0) {
+    insertPayload.layout_overrides = input.layoutOverrides;
+  }
+
+  let { data, error } = await supabase
     .from("user_saved_outfits")
-    .insert({
-      user_id: user.id,
-      name: input.name,
-      moodword: input.moodword || null,
-      mood_image_url: moodImageUrl,
-      slots: input.slots,
-    })
-    .select("id, user_id, name, moodword, mood_image_url, slots, saved_at")
+    .insert(insertPayload)
+    .select(
+      "id, user_id, name, moodword, mood_image_url, slots, layout_overrides, saved_at",
+    )
     .single();
+
+  if (error && isMissingLayoutOverridesColumn(error)) {
+    const { layout_overrides: _dropped, ...legacyPayload } = insertPayload;
+    const fallback = await supabase
+      .from("user_saved_outfits")
+      .insert(legacyPayload)
+      .select("id, user_id, name, moodword, mood_image_url, slots, saved_at")
+      .single();
+
+    data = fallback.data
+      ? { ...fallback.data, layout_overrides: null }
+      : null;
+    error = fallback.error;
+  }
 
   if (error) {
     throw error;
@@ -241,6 +286,7 @@ export async function persistSavedWardrobeOutfitToDb(
     const isSchemaIssue =
       dbMessage.includes("user_saved_outfits") ||
       dbMessage.includes("moodword") ||
+      dbMessage.includes("layout_overrides") ||
       dbMessage.includes("schema cache") ||
       dbMessage.includes("does not exist");
 

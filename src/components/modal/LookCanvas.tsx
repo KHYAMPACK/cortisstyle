@@ -32,6 +32,11 @@ interface LookCanvasProps {
     containerWidth: number,
   ) => Record<string, CanvasItemLayout>;
   className?: string;
+  isFreeDragMode?: boolean;
+  onFreeDragPositionCommit?: (
+    itemId: string,
+    position: { top: string; left: string },
+  ) => void;
 }
 
 export function LookCanvas({
@@ -46,6 +51,8 @@ export function LookCanvas({
   onCanvasLayoutsChange,
   resolveLayouts,
   className = "",
+  isFreeDragMode = false,
+  onFreeDragPositionCommit,
 }: LookCanvasProps) {
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const useCollage = canRenderCollageLayout(look.layout, items);
@@ -98,6 +105,8 @@ export function LookCanvas({
           onSelectCanvasItem={setSelectedItemId}
           onLayoutsChange={onCanvasLayoutsChange}
           resolveLayouts={resolveLayouts}
+          isFreeDragMode={isFreeDragMode}
+          onFreeDragPositionCommit={onFreeDragPositionCommit}
         />
       ) : (
         <SingleLookImage image={lookImage} title={title} />

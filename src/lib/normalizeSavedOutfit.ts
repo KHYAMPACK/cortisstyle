@@ -1,3 +1,4 @@
+import { normalizeLayoutOverrides } from "@/lib/wardrobeDragLayout";
 import type { SavedWardrobeOutfitBlueprint, WardrobeOutfitMatrix } from "@/types/wardrobe-builder";
 
 export function normalizeOutfitMatrix(
@@ -13,6 +14,8 @@ export function normalizeOutfitMatrix(
 export function normalizeSavedOutfitBlueprint(
   raw: Partial<SavedWardrobeOutfitBlueprint> & { id?: string },
 ): SavedWardrobeOutfitBlueprint {
+  const layoutOverrides = normalizeLayoutOverrides(raw.layoutOverrides);
+
   return {
     id: raw.id ?? `saved-outfit-${Date.now()}`,
     name: raw.name ?? "",
@@ -20,5 +23,6 @@ export function normalizeSavedOutfitBlueprint(
     moodImageUrl: raw.moodImageUrl ?? null,
     slots: normalizeOutfitMatrix(raw.slots),
     savedAt: raw.savedAt ?? new Date().toISOString(),
+    ...(layoutOverrides ? { layoutOverrides } : {}),
   };
 }

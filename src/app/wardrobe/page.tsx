@@ -10,6 +10,7 @@ import { WardrobeLoadingState } from "@/components/wardrobe/WardrobeLoadingState
 import { WardrobeLooksGrid } from "@/components/wardrobe/WardrobeLooksGrid";
 import { WardrobeTabs } from "@/components/wardrobe/WardrobeTabs";
 import { useAuth } from "@/context/AuthContext";
+import type { SavedWardrobeOutfitBlueprint } from "@/types/wardrobe-builder";
 
 export default function WardrobePage() {
   const router = useRouter();
@@ -27,6 +28,8 @@ export default function WardrobePage() {
   const [activeTab, setActiveTab] = useState<"builder" | "looks" | "items">(
     "builder",
   );
+  const [builderLoadBlueprint, setBuilderLoadBlueprint] =
+    useState<SavedWardrobeOutfitBlueprint | null>(null);
   const [showAuthPopup, setShowAuthPopup] = useState(false);
 
   useEffect(() => {
@@ -113,7 +116,11 @@ export default function WardrobePage() {
 
           <div className="mt-8">
             {activeTab === "builder" ? (
-              <WardrobeBuilderCanvas ownedClothes={ownedClothes} />
+              <WardrobeBuilderCanvas
+                ownedClothes={ownedClothes}
+                loadBlueprint={builderLoadBlueprint}
+                onBlueprintLoaded={() => setBuilderLoadBlueprint(null)}
+              />
             ) : activeTab === "looks" ? (
               <WardrobeLooksGrid
                 looks={purchasedLooks}
@@ -121,6 +128,10 @@ export default function WardrobePage() {
                 inventory={ownedClothes}
                 wardrobeLoading={wardrobeLoading}
                 wardrobeError={wardrobeLoadError}
+                onOpenOutfitInBuilder={(outfit) => {
+                  setBuilderLoadBlueprint(outfit);
+                  setActiveTab("builder");
+                }}
               />
             ) : wardrobeLoading ? (
               <WardrobeLoadingState label="Loading wardrobe collection" />
