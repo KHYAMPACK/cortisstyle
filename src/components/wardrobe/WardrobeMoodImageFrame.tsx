@@ -20,7 +20,7 @@ export function WardrobeMoodImageFrame({
   return (
     <div
       aria-hidden={isEmpty}
-      className={`absolute top-4 right-4 z-40 aspect-[3/4] w-[120px] overflow-hidden border border-neutral-100 bg-neutral-50 object-cover ${
+      className={`absolute top-4 right-4 z-10 aspect-[3/4] w-[120px] overflow-hidden border border-neutral-100 bg-neutral-50 object-cover ${
         isEmpty ? "pointer-events-none" : "pointer-events-auto"
       }`}
     >

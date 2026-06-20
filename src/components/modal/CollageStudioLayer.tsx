@@ -25,6 +25,7 @@ import {
   type CanvasItemLayout,
   type CanvasMoveDirection,
 } from "@/lib/canvasLayout";
+import { resolveRenderedCanvasZIndex } from "@/lib/canvasLayerStack";
 import { isLocalhostClient } from "@/lib/dev";
 
 interface CollageStudioLayerProps {
@@ -185,7 +186,7 @@ export function CollageStudioLayer({
       const entries = buildCanvasHitTestEntries(
         layouts,
         items,
-        { isEditMode, selectedItemId },
+        { isEditMode, selectedItemId, activeItemId },
         container,
       );
 
@@ -219,6 +220,7 @@ export function CollageStudioLayer({
     isEditMode,
     isHitboxMode,
     selectedItemId,
+    activeItemId,
     parentRef,
     onSelectCanvasItem,
     onSelectItem,
@@ -443,7 +445,7 @@ function CanvasAsset({
         top: layout.top,
         left: layout.left,
         width: visualWidth,
-        zIndex: isSelected ? layout.zIndex + 10 : layout.zIndex,
+        zIndex: resolveRenderedCanvasZIndex(layout.zIndex, isSelected),
       }}
       animate={{ opacity: isDimmed ? 0.55 : 1 }}
       transition={{ duration: 0.25 }}

@@ -1,8 +1,9 @@
 import { getClothingItem } from "@/data/items";
+import { applyFlatLayLayerStackToLayouts, resolveDefaultCanvasLayerZIndexFromMatrix } from "@/lib/canvasLayerStack";
 import { resolveCanvasLayouts } from "@/lib/canvasLayout";
 import type { CanvasItemLayout } from "@/types/canvas-layout";
 import type { ResolvedLookItem } from "@/types/look";
-import type { WardrobeOutfitMatrix } from "@/types/wardrobe-builder";
+import type { MatrixCategoryFilter, WardrobeOutfitMatrix } from "@/types/wardrobe-builder";
 import type { WardrobeClothingItem } from "@/types/user";
 
 const PLACEHOLDER_COORDINATES = {
@@ -25,6 +26,19 @@ export function buildWardrobeBuilderSourceLookMap(
   }
 
   return sourceLookByItemId;
+}
+
+export function buildWardrobeBuilderCategoryFilterMap(
+  currentOutfit: WardrobeOutfitMatrix,
+): Record<string, MatrixCategoryFilter> {
+  const categoryFilterByItemId: Record<string, MatrixCategoryFilter> = {};
+
+  for (const equipped of currentOutfit) {
+    if (!equipped) continue;
+    categoryFilterByItemId[equipped.id] = equipped.categoryFilter;
+  }
+
+  return categoryFilterByItemId;
 }
 
 export function resolveWardrobeBuilderLookItems(
@@ -55,6 +69,7 @@ export function resolveWardrobeBuilderCanvasLayouts(
   items: ResolvedLookItem[],
   containerWidth: number,
   sourceLookByItemId: Record<string, string | undefined>,
+  categoryFilterByItemId: Record<string, MatrixCategoryFilter>,
 ): Record<string, CanvasItemLayout> {
   const merged: Record<string, CanvasItemLayout> = {};
 
@@ -67,5 +82,14 @@ export function resolveWardrobeBuilderCanvasLayouts(
     }
   }
 
-  return merged;
+  const layerByItemId = Object.fromEntries(
+    items.map((item) => [
+      item.id,
+      resolveDefaultCanvasLayerZIndexFromMatrix(
+        categoryFilterByItemId[item.id] ?? "TOP",
+      ),
+    ]),
+  );
+
+  return applyFlatLayLayerStackToLayouts(merged, layerByItemId);
 }

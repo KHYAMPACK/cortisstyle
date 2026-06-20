@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useRef } from "react";
 import {
+  buildWardrobeBuilderCategoryFilterMap,
   buildWardrobeBuilderSourceLookMap,
   resolveWardrobeBuilderCanvasLayouts,
   resolveWardrobeBuilderLookItems,
@@ -31,6 +32,11 @@ export function WardrobeSavedOutfitPreview({
     [outfit.slots, inventory],
   );
 
+  const categoryFilterByItemId = useMemo(
+    () => buildWardrobeBuilderCategoryFilterMap(outfit.slots),
+    [outfit.slots],
+  );
+
   const canvasKey = useMemo(
     () => outfit.slots.map((slot) => slot?.id ?? "_").join("|"),
     [outfit.slots],
@@ -40,8 +46,13 @@ export function WardrobeSavedOutfitPreview({
     (
       items: Parameters<typeof resolveWardrobeBuilderCanvasLayouts>[0],
       width: number,
-    ) => resolveWardrobeBuilderCanvasLayouts(items, width, sourceLookByItemId),
-    [sourceLookByItemId],
+    ) => resolveWardrobeBuilderCanvasLayouts(
+      items,
+      width,
+      sourceLookByItemId,
+      categoryFilterByItemId,
+    ),
+    [sourceLookByItemId, categoryFilterByItemId],
   );
 
   return (

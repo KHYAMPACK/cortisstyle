@@ -1,5 +1,10 @@
 import { committedCanvasLayouts } from "@/data/canvas-layouts";
+import {
+  applyFlatLayLayerStackFromClothingItems,
+  resolveRenderedCanvasZIndex,
+} from "@/lib/canvasLayerStack";
 import { isLocalhostClient } from "@/lib/dev";
+import type { ClothingCategory } from "@/types/item";
 import type { CanvasItemLayout } from "@/types/canvas-layout";
 import { LEGACY_MODEL_LAYER_IDS } from "@/types/canvas-layout";
 
@@ -178,6 +183,7 @@ export function resolveCanvasLayouts(
   lookId: string,
   items: Array<{
     id: string;
+    category?: ClothingCategory;
     defaultCanvasPosition?: {
       top: string;
       left: string;
@@ -195,7 +201,14 @@ export function resolveCanvasLayouts(
     merged = mergeLayoutRecords(merged, loadCanvasLayoutsFromStorage(lookId));
   }
 
-  return stripLegacyModelLayers(merged);
+  const stacked = stripLegacyModelLayers(merged);
+
+  return items.every((item) => item.category)
+    ? applyFlatLayLayerStackFromClothingItems(
+        stacked,
+        items as Array<{ id: string; category: ClothingCategory }>,
+      )
+    : stacked;
 }
 
 export type CanvasMoveDirection = "up" | "down" | "left" | "right";
@@ -367,6 +380,7 @@ export function buildCanvasHitTestEntries(
   options: {
     isEditMode: boolean;
     selectedItemId: string | null;
+    activeItemId?: string | null;
   },
   container: { width: number; height: number },
 ): CanvasHitTestEntry[] {
@@ -376,14 +390,13 @@ export function buildCanvasHitTestEntries(
     const layout = layouts[item.id];
     if (!layout || layout.widthPx === undefined) continue;
 
-    const zIndex =
-      options.isEditMode && options.selectedItemId === item.id
-        ? layout.zIndex + 1000
-        : layout.zIndex;
+    const isActive =
+      (options.isEditMode && options.selectedItemId === item.id) ||
+      options.activeItemId === item.id;
 
     entries.push({
       id: item.id,
-      zIndex,
+      zIndex: resolveRenderedCanvasZIndex(layout.zIndex, isActive),
       hitRect: getHitboxRect(layout, container),
       fallbackRect: getVisualRect(layout, container),
     });

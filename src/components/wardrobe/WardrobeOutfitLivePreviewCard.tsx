@@ -51,9 +51,14 @@ export const WardrobeOutfitLivePreviewCard = forwardRef<
         <div
           className={`relative mx-auto aspect-[3/4] shrink-0 overflow-hidden border border-neutral-200 bg-white ${canvasWidthClassName}`}
         >
+          <WardrobeMoodImageFrame
+            moodImageUrl={moodImageUrl}
+            showPlaceholder
+          />
+
           <LookCanvas
             key={canvasKey}
-            className="absolute inset-0 h-full w-full"
+            className="absolute inset-0 z-20 h-full w-full"
             look={WARDROBE_BUILDER_LOOK}
             lookImage=""
             title="Outfit Preview"
@@ -63,11 +68,6 @@ export const WardrobeOutfitLivePreviewCard = forwardRef<
             containerRef={containerRef}
             onSelectItem={() => {}}
             resolveLayouts={resolvePreviewLayouts}
-          />
-
-          <WardrobeMoodImageFrame
-            moodImageUrl={moodImageUrl}
-            showPlaceholder
           />
         </div>
       </WardrobeOutfitMoodboardCard>

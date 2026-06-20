@@ -17,6 +17,7 @@ import {
   resolveItemSourceLookId,
 } from "@/lib/wardrobeBuilderInventory";
 import {
+  buildWardrobeBuilderCategoryFilterMap,
   buildWardrobeBuilderSourceLookMap,
   resolveWardrobeBuilderCanvasLayouts,
   resolveWardrobeBuilderLookItems,
@@ -76,6 +77,11 @@ export function WardrobeBuilderCanvas({
     [currentOutfit, inventory],
   );
 
+  const categoryFilterByItemId = useMemo(
+    () => buildWardrobeBuilderCategoryFilterMap(currentOutfit),
+    [currentOutfit],
+  );
+
   const outfitCanvasKey = useMemo(
     () => currentOutfit.map((slot) => slot?.id ?? "_").join("|"),
     [currentOutfit],
@@ -83,8 +89,13 @@ export function WardrobeBuilderCanvas({
 
   const resolveLayouts = useCallback(
     (items: Parameters<typeof resolveWardrobeBuilderCanvasLayouts>[0], width: number) =>
-      resolveWardrobeBuilderCanvasLayouts(items, width, sourceLookByItemId),
-    [sourceLookByItemId],
+      resolveWardrobeBuilderCanvasLayouts(
+        items,
+        width,
+        sourceLookByItemId,
+        categoryFilterByItemId,
+      ),
+    [sourceLookByItemId, categoryFilterByItemId],
   );
 
   const equippedCount = currentOutfit.filter((slot) => slot !== null).length;
@@ -160,9 +171,11 @@ export function WardrobeBuilderCanvas({
           showFooter={hasSavedCardMeta}
         >
           <div className="relative mx-auto aspect-[3/4] w-full max-w-[420px] shrink-0 overflow-hidden border border-neutral-200 bg-white">
+            <WardrobeMoodImageFrame moodImageUrl={cardMeta.moodImageUrl} />
+
             <LookCanvas
               key={outfitCanvasKey}
-              className="absolute inset-0 h-full w-full"
+              className="absolute inset-0 z-20 h-full w-full"
               look={WARDROBE_BUILDER_LOOK}
               lookImage=""
               title="Wardrobe Builder"
@@ -203,7 +216,6 @@ export function WardrobeBuilderCanvas({
               }}
             />
 
-            <WardrobeMoodImageFrame moodImageUrl={cardMeta.moodImageUrl} />
           </div>
         </WardrobeOutfitMoodboardCard>
       </div>
