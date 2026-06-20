@@ -107,6 +107,7 @@ export const WardrobeOutfitLivePreviewCard = forwardRef<
                   containerRef={containerRef}
                   onSelectItem={() => {}}
                   resolveLayouts={resolvePreviewLayouts}
+                  disableCanvasHitTesting
                 />
               </div>
             </div>

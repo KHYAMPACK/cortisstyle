@@ -52,6 +52,7 @@ interface CollageStudioLayerProps {
     itemId: string,
     position: FreeDragPosition,
   ) => void;
+  disableCanvasHitTesting?: boolean;
 }
 
 const ARROW_KEY_DIRECTION: Record<string, CanvasMoveDirection> = {
@@ -91,6 +92,7 @@ export function CollageStudioLayer({
   resolveLayouts,
   isFreeDragMode = false,
   onFreeDragPositionCommit,
+  disableCanvasHitTesting = false,
 }: CollageStudioLayerProps) {
   const [layouts, setLayouts] = useState<Record<string, CanvasItemLayout>>({});
   const [isHitboxMode, setIsHitboxMode] = useState(false);
@@ -198,7 +200,7 @@ export function CollageStudioLayer({
     if (!parent) return;
 
     const handleCanvasClick = (event: MouseEvent) => {
-      if (isFreeDragMode) return;
+      if (disableCanvasHitTesting || isFreeDragMode) return;
 
       if ((event.target as HTMLElement).closest("[data-canvas-resize]")) {
         return;

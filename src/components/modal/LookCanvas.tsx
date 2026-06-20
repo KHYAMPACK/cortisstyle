@@ -37,6 +37,8 @@ interface LookCanvasProps {
     itemId: string,
     position: { top: string; left: string },
   ) => void;
+  /** When true, click hit-testing won't intercept outer UI overlays. */
+  disableCanvasHitTesting?: boolean;
 }
 
 export function LookCanvas({
@@ -53,6 +55,7 @@ export function LookCanvas({
   className = "",
   isFreeDragMode = false,
   onFreeDragPositionCommit,
+  disableCanvasHitTesting = false,
 }: LookCanvasProps) {
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const useCollage = canRenderCollageLayout(look.layout, items);
@@ -107,6 +110,7 @@ export function LookCanvas({
           resolveLayouts={resolveLayouts}
           isFreeDragMode={isFreeDragMode}
           onFreeDragPositionCommit={onFreeDragPositionCommit}
+          disableCanvasHitTesting={disableCanvasHitTesting}
         />
       ) : (
         <SingleLookImage image={lookImage} title={title} />

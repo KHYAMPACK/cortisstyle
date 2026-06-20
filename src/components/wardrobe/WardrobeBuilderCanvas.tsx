@@ -128,6 +128,25 @@ export function WardrobeBuilderCanvas({
     [currentOutfit],
   );
 
+  useEffect(() => {
+    const equippedIds = new Set(
+      currentOutfit.map((slot) => slot?.id).filter(Boolean) as string[],
+    );
+
+    setCustomDragPositions((current) => {
+      const next: Record<string, FreeDragPosition> = {};
+      for (const [itemId, position] of Object.entries(current)) {
+        if (equippedIds.has(itemId)) {
+          next[itemId] = position;
+        }
+      }
+
+      return Object.keys(next).length === Object.keys(current).length
+        ? current
+        : next;
+    });
+  }, [currentOutfit]);
+
   const resolveLayouts = useCallback(
     (items: Parameters<typeof resolveWardrobeBuilderCanvasLayouts>[0], width: number) => {
       const base = resolveWardrobeBuilderCanvasLayouts(
@@ -137,11 +156,9 @@ export function WardrobeBuilderCanvas({
         categoryFilterByItemId,
       );
 
-      if (!isDragModeActive) return base;
-
       return mergeFreeDragPositions(base, customDragPositions);
     },
-    [sourceLookByItemId, categoryFilterByItemId, isDragModeActive, customDragPositions],
+    [sourceLookByItemId, categoryFilterByItemId, customDragPositions],
   );
 
   const handleFreeDragPositionCommit = useCallback(
@@ -155,12 +172,12 @@ export function WardrobeBuilderCanvas({
   );
 
   const layoutOverridesForSave = useMemo(() => {
-    if (!isDragModeActive || Object.keys(customDragPositions).length === 0) {
+    if (Object.keys(customDragPositions).length === 0) {
       return undefined;
     }
 
     return dragPositionsToLayoutOverrides(customDragPositions);
-  }, [isDragModeActive, customDragPositions]);
+  }, [customDragPositions]);
 
   const equippedCount = currentOutfit.filter((slot) => slot !== null).length;
   const hasSavedCardMeta =
@@ -185,6 +202,17 @@ export function WardrobeBuilderCanvas({
       slotIndex: activeSlotIndex,
       sourceLookId: item.sourceLookId ?? resolveItemSourceLookId(item.id),
     };
+
+    const previousItemId = currentOutfit[activeSlotIndex]?.id ?? null;
+
+    setCustomDragPositions((current) => {
+      if (!previousItemId && !current[item.id]) return current;
+
+      const next = { ...current };
+      if (previousItemId) delete next[previousItemId];
+      delete next[item.id];
+      return next;
+    });
 
     setCurrentOutfit((current) => {
       const next = [...current];
@@ -297,6 +325,7 @@ export function WardrobeBuilderCanvas({
               resolveLayouts={resolveLayouts}
               isFreeDragMode={isDragModeActive}
               onFreeDragPositionCommit={handleFreeDragPositionCommit}
+              disableCanvasHitTesting
             />
 
             <MatrixBlueprintGrid

@@ -25,6 +25,7 @@ export function WardrobeLookPreview({ look }: WardrobeLookPreviewProps) {
           isEditMode={false}
           containerRef={containerRef}
           onSelectItem={() => {}}
+          disableCanvasHitTesting
         />
       </div>
       <div className="border-t border-neutral-200 px-3 py-3 md:px-4 md:py-4">
