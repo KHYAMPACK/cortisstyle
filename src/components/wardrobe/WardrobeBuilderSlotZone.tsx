@@ -15,7 +15,7 @@ export function WardrobeBuilderSlotZone({
     <button
       type="button"
       onClick={onClick}
-      className="pointer-events-auto bg-transparent transition-colors hover:bg-neutral-50/30"
+      className="pointer-events-auto h-full w-full bg-transparent transition-colors hover:bg-neutral-50/30"
       aria-label={
         isEmpty ? `Assign item to ${label}` : `Swap item in ${label}`
       }

@@ -24,7 +24,7 @@ export function WardrobeBuilderBlueprintCell({
   isEmpty,
 }: WardrobeBuilderBlueprintCellProps) {
   return (
-    <div className="relative border border-neutral-100/40">
+    <div className="relative h-full w-full border border-neutral-100/40">
       {isEmpty ? (
         <>
           <TechnicalCrosshair />
