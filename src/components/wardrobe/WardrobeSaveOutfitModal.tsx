@@ -13,7 +13,7 @@ import {
 import { createPortal } from "react-dom";
 import { WardrobeOutfitLivePreviewCard } from "@/components/wardrobe/WardrobeOutfitLivePreviewCard";
 import { exportLookCardAsPng } from "@/lib/exportLookCardPng";
-import { persistSavedWardrobeOutfitToDb } from "@/lib/savedWardrobeOutfitDb";
+import { persistSavedWardrobeOutfitToDb, formatSupabaseError } from "@/lib/savedWardrobeOutfitDb";
 import type { CanvasItemLayout } from "@/types/canvas-layout";
 import type { ResolvedLookItem } from "@/types/look";
 import type {
@@ -84,6 +84,7 @@ export function WardrobeSaveOutfitModal({
   const [isSaving, setIsSaving] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveWarning, setSaveWarning] = useState<string | null>(null);
   const [shareError, setShareError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
@@ -115,6 +116,7 @@ export function WardrobeSaveOutfitModal({
     setIsSharing(false);
     setSaveError(null);
     setShareError(null);
+    setSaveWarning(null);
   }, [isOpen, initialName, initialMoodword, initialMoodImageUrl]);
 
   useEffect(() => {
@@ -173,24 +175,22 @@ export function WardrobeSaveOutfitModal({
     saveInFlightRef.current = true;
     setIsSaving(true);
     setSaveError(null);
+    setSaveWarning(null);
 
     try {
-      const blueprint = await persistSavedWardrobeOutfitToDb(userId, {
+      const result = await persistSavedWardrobeOutfitToDb(userId, {
         name: payload.name,
         moodword: payload.moodword,
         moodImageUrl: payload.moodImageUrl,
         slots,
       });
 
-      setSavedBlueprint(blueprint);
+      setSavedBlueprint(result.blueprint);
       setPhase("success");
-      onSaveSuccess(blueprint, payload);
+      setSaveWarning(result.warning ?? null);
+      onSaveSuccess(result.blueprint, payload);
     } catch (error) {
-      setSaveError(
-        error instanceof Error
-          ? error.message
-          : "Unable to save outfit to your archive.",
-      );
+      setSaveError(formatSupabaseError(error));
     } finally {
       saveInFlightRef.current = false;
       setIsSaving(false);
@@ -435,6 +435,12 @@ export function WardrobeSaveOutfitModal({
                         Close / Done
                       </button>
                     </div>
+
+                    {saveWarning ? (
+                      <p className="mt-4 font-mono text-[10px] leading-relaxed tracking-[0.12em] text-amber-700 uppercase">
+                        {saveWarning}
+                      </p>
+                    ) : null}
 
                     {shareError ? (
                       <p className="mt-4 font-mono text-[10px] tracking-[0.12em] text-red-600 uppercase">

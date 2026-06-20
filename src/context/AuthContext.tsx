@@ -17,7 +17,7 @@ import {
   resolveOwnedClothesFromLooks,
   resolvePurchasedLooks,
 } from "@/lib/wardrobe";
-import { fetchUserSavedOutfits } from "@/lib/savedWardrobeOutfitDb";
+import { fetchAllSavedOutfitsForUser } from "@/lib/savedWardrobeOutfitDb";
 import {
   mapSupabaseUser,
   type WardrobeClothingItem,
@@ -93,7 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const outfits = await fetchUserSavedOutfits(userId);
+      const outfits = await fetchAllSavedOutfitsForUser(userId);
       setSavedOutfits(outfits);
     } catch (error) {
       console.error("Failed to load saved outfits:", error);
