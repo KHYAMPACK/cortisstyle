@@ -9,11 +9,11 @@ interface LookGridProps {
 export function LookGrid({ onSelectLook }: LookGridProps) {
   return (
     <section
-      className="columns-1 gap-4 space-y-4 p-4 sm:columns-2 md:columns-3"
+      className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 md:grid-cols-3"
       aria-label="Fashion lookbook"
     >
       {looks.map((look, index) => (
-        <article key={look.id} className="mb-4 break-inside-avoid">
+        <article key={look.id}>
           <LookCard
             look={look}
             priority={index < 2}
