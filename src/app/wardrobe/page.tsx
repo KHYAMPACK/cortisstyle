@@ -111,10 +111,10 @@ export default function WardrobePage() {
       </section>
 
       {isAuthenticated ? (
-        <main className="px-5 py-8 md:px-10 md:py-10">
+        <main className="min-w-0 overflow-x-hidden px-5 py-8 md:px-10 md:py-10">
           <WardrobeTabs activeTab={activeTab} onChange={setActiveTab} />
 
-          <div className="mt-8">
+          <div className="mt-8 min-w-0">
             {activeTab === "builder" ? (
               <WardrobeBuilderCanvas
                 ownedClothes={ownedClothes}

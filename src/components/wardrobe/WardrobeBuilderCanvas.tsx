@@ -43,6 +43,15 @@ import {
 } from "@/types/wardrobe-builder";
 import type { WardrobeClothingItem } from "@/types/user";
 
+/** Mobile-first canvas frame — desktop caps unchanged at md+. */
+const CANVAS_WIDTH_CLASS =
+  "mx-auto w-full min-w-0 max-w-[360px] xs:max-w-[400px] sm:max-w-[420px] md:max-w-[420px]";
+
+const CANVAS_FRAME_CLASS = `relative ${CANVAS_WIDTH_CLASS}`;
+
+const CANVAS_BOUNDARY_CLASS =
+  "relative mx-auto w-full aspect-[3/4] max-w-[360px] xs:max-w-[400px] sm:max-w-[420px] overflow-hidden border border-neutral-200 bg-white md:max-w-[420px] md:shrink-0";
+
 interface WardrobeBuilderCanvasProps {
   ownedClothes?: WardrobeClothingItem[];
   loadBlueprint?: SavedWardrobeOutfitBlueprint | null;
@@ -246,7 +255,7 @@ export function WardrobeBuilderCanvas({
   return (
     <section
       aria-label="Wardrobe builder matrix"
-      className="relative flex w-full flex-col items-center overflow-visible"
+      className="relative flex w-full min-w-0 flex-col items-center overflow-visible"
     >
       <div className="mb-6 w-full text-center">
         <p className="text-[9px] tracking-[0.42em] text-neutral-400 uppercase">
@@ -257,8 +266,8 @@ export function WardrobeBuilderCanvas({
         </h2>
       </div>
 
-      <div className="grid w-full place-items-center">
-        <div className="relative w-full max-w-[420px]">
+      <div className="grid w-full min-w-0 place-items-center">
+        <div className={CANVAS_FRAME_CLASS}>
           <div className="mb-3 flex items-center justify-end">
             <button
               type="button"
@@ -301,8 +310,9 @@ export function WardrobeBuilderCanvas({
           <WardrobeOutfitMoodboardCard
           name={cardMeta.name}
           showFooter={hasSavedCardMeta}
+          containerClassName={`${CANVAS_FRAME_CLASS} shrink-0`}
         >
-          <div className="relative mx-auto aspect-[3/4] w-full max-w-[420px] shrink-0 overflow-hidden border border-neutral-200 bg-white">
+          <div className={CANVAS_BOUNDARY_CLASS}>
             <div aria-hidden className="absolute inset-0 z-0 bg-white" />
 
             <WardrobeCanvasBrandWatermark />
@@ -366,7 +376,9 @@ export function WardrobeBuilderCanvas({
         </div>
       </div>
 
-      <p className="mx-auto mt-5 w-full max-w-[420px] text-center font-mono text-[9px] tracking-[0.18em] text-neutral-400 uppercase">
+      <p
+        className={`mt-5 px-1 text-center font-mono text-[9px] tracking-[0.18em] text-neutral-400 uppercase ${CANVAS_WIDTH_CLASS}`}
+      >
         {equippedCount > 0
           ? `${equippedCount} / 9 slots equipped`
           : "Tap an empty slot to assign archive assets"}
