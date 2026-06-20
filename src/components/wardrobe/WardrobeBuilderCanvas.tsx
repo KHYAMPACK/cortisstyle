@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { WardrobeBuilderSlot } from "@/components/wardrobe/WardrobeBuilderSlot";
+import { WardrobeBuilderBlueprintCell } from "@/components/wardrobe/WardrobeBuilderBlueprintCell";
+import { WardrobeBuilderEquippedAsset } from "@/components/wardrobe/WardrobeBuilderEquippedAsset";
 import { WardrobeSelectionDrawer } from "@/components/wardrobe/WardrobeSelectionDrawer";
 import {
   filterInventoryByCategory,
@@ -10,7 +11,6 @@ import {
 import { resolveWardrobeItemComposition } from "@/lib/wardrobeBuilderComposition";
 import {
   getSlotDefinition,
-  WARDROBE_MATRIX_ROW_HEIGHTS,
   WARDROBE_MATRIX_SLOTS,
   type MatrixCategoryFilter,
   type WardrobeEquippedItem,
@@ -47,7 +47,15 @@ export function WardrobeBuilderCanvas({
     [inventory, activeCategoryFilter],
   );
 
-  const equippedCount = currentOutfit.filter((slot) => slot !== null).length;
+  const equippedItems = useMemo(
+    () =>
+      currentOutfit.filter(
+        (item): item is WardrobeEquippedItem => item !== null,
+      ),
+    [currentOutfit],
+  );
+
+  const equippedCount = equippedItems.length;
 
   const openDrawerForSlot = (slotIndex: WardrobeMatrixSlotIndex) => {
     const slot = getSlotDefinition(slotIndex);
@@ -61,7 +69,11 @@ export function WardrobeBuilderCanvas({
     if (activeSlotIndex === null || !activeCategoryFilter) return;
     if (!item.canvasImage) return;
 
-    const composition = resolveWardrobeItemComposition(item.id, item.sourceLookId);
+    const composition = resolveWardrobeItemComposition(
+      item.id,
+      activeCategoryFilter,
+      item.sourceLookId,
+    );
 
     const equippedItem: WardrobeEquippedItem = {
       id: item.id,
@@ -69,7 +81,12 @@ export function WardrobeBuilderCanvas({
       image: item.canvasImage,
       rarityScore: item.rarityScore,
       categoryFilter: activeCategoryFilter,
+      slotIndex: activeSlotIndex,
+      top: composition.top,
+      left: composition.left,
       widthPx: composition.widthPx,
+      zIndex: composition.zIndex,
+      anchorCenter: composition.anchorCenter,
     };
 
     setCurrentOutfit((current) => {
@@ -112,34 +129,37 @@ export function WardrobeBuilderCanvas({
         </h2>
       </div>
 
-      <div
-        className="relative mx-auto grid w-full max-w-[500px] grid-cols-3 overflow-visible border border-neutral-200/60 bg-white"
-        style={{
-          gridTemplateRows: WARDROBE_MATRIX_ROW_HEIGHTS,
-        }}
-      >
-        {WARDROBE_MATRIX_SLOTS.map((slot) => (
-          <WardrobeBuilderSlot
-            key={slot.index}
-            stackOrder={slot.stackOrder}
-            alignClass={slot.alignClass}
-            assetWrapperClass={slot.assetWrapperClass}
-            label={slot.label}
-            item={currentOutfit[slot.index]}
-            isMenuOpen={menuSlotIndex === slot.index}
-            onEmptyClick={() => openDrawerForSlot(slot.index)}
-            onActiveClick={() =>
-              setMenuSlotIndex((current) =>
-                current === slot.index ? null : slot.index,
-              )
-            }
-            onSwap={() => openDrawerForSlot(slot.index)}
-            onRemove={() => handleRemove(slot.index)}
-          />
-        ))}
+      <div className="relative mx-auto aspect-[3/4] w-full max-w-[480px] overflow-hidden border border-neutral-200 bg-white">
+        <div className="pointer-events-none absolute inset-0 z-10 grid grid-cols-3 grid-rows-3">
+          {WARDROBE_MATRIX_SLOTS.map((slot) => (
+            <WardrobeBuilderBlueprintCell
+              key={slot.index}
+              label={slot.label}
+              isEmpty={currentOutfit[slot.index] === null}
+              onEmptyClick={() => openDrawerForSlot(slot.index)}
+            />
+          ))}
+        </div>
+
+        <div className="pointer-events-none absolute inset-0 z-20">
+          {equippedItems.map((item) => (
+            <WardrobeBuilderEquippedAsset
+              key={`${item.slotIndex}-${item.id}`}
+              item={item}
+              isMenuOpen={menuSlotIndex === item.slotIndex}
+              onActiveClick={() =>
+                setMenuSlotIndex((current) =>
+                  current === item.slotIndex ? null : item.slotIndex,
+                )
+              }
+              onSwap={() => openDrawerForSlot(item.slotIndex)}
+              onRemove={() => handleRemove(item.slotIndex)}
+            />
+          ))}
+        </div>
       </div>
 
-      <p className="mx-auto mt-5 max-w-[500px] text-center font-mono text-[9px] tracking-[0.18em] text-neutral-400 uppercase">
+      <p className="mx-auto mt-5 max-w-[480px] text-center font-mono text-[9px] tracking-[0.18em] text-neutral-400 uppercase">
         {equippedCount > 0
           ? `${equippedCount} / 9 slots equipped`
           : "Tap an empty slot to assign archive assets"}
