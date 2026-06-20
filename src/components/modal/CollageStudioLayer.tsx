@@ -6,6 +6,7 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   type RefObject,
@@ -94,6 +95,11 @@ export function CollageStudioLayer({
     (layoutsReady &&
       (totalImagesToLoad === 0 || loadedImagesCount >= totalImagesToLoad));
 
+  const activeItemSignature = useMemo(
+    () => items.map((item) => item.id).join("|"),
+    [items],
+  );
+
   useLayoutEffect(() => {
     clothingIds.current = new Set(items.map((item) => item.id));
   }, [items]);
@@ -101,7 +107,7 @@ export function CollageStudioLayer({
   useEffect(() => {
     loadedImageIdsRef.current.clear();
     setLoadedImagesCount(0);
-  }, [lookId, totalImagesToLoad]);
+  }, [lookId, activeItemSignature]);
 
   const handleImageLoad = useCallback((itemId: string) => {
     if (loadedImageIdsRef.current.has(itemId)) return;
@@ -372,6 +378,7 @@ export function CollageStudioLayer({
           return (
             <CanvasAsset
               key={item.id}
+              itemId={item.id}
               layout={layout}
               imageSrc={item.canvasImage!}
               imageAlt={item.name}
@@ -390,6 +397,7 @@ export function CollageStudioLayer({
 }
 
 interface CanvasAssetProps {
+  itemId: string;
   layout: CanvasItemLayout;
   imageSrc: string;
   imageAlt: string;
@@ -402,6 +410,7 @@ interface CanvasAssetProps {
 }
 
 function CanvasAsset({
+  itemId,
   layout,
   imageSrc,
   imageAlt,
@@ -419,7 +428,7 @@ function CanvasAsset({
 
   useEffect(() => {
     hasReportedLoadRef.current = false;
-  }, [imageSrc]);
+  }, [imageSrc, itemId]);
 
   const reportImageLoad = () => {
     if (hasReportedLoadRef.current) return;
@@ -441,6 +450,7 @@ function CanvasAsset({
     >
       <div className="relative leading-[0]">
         <Image
+          key={itemId}
           src={imageSrc}
           alt={imageAlt}
           width={1200}

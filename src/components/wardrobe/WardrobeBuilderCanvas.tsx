@@ -63,6 +63,11 @@ export function WardrobeBuilderCanvas({
     [currentOutfit, inventory],
   );
 
+  const outfitCanvasKey = useMemo(
+    () => currentOutfit.map((slot) => slot?.id ?? "_").join("|"),
+    [currentOutfit],
+  );
+
   const resolveLayouts = useCallback(
     (items: Parameters<typeof resolveWardrobeBuilderCanvasLayouts>[0], width: number) =>
       resolveWardrobeBuilderCanvasLayouts(items, width, sourceLookByItemId),
@@ -120,38 +125,41 @@ export function WardrobeBuilderCanvas({
         </h2>
       </div>
 
-      <div className="relative mx-auto aspect-[3/4] w-full max-w-[480px] overflow-hidden border border-neutral-200 bg-white">
-        <LookCanvas
-          look={WARDROBE_BUILDER_LOOK}
-          lookImage=""
-          title="Wardrobe Builder"
-          items={lookItems}
-          activeItemId={null}
-          isEditMode={false}
-          containerRef={containerRef}
-          onSelectItem={() => {}}
-          resolveLayouts={resolveLayouts}
-        />
+      <div className="mx-auto w-full max-w-[480px] border border-neutral-200 bg-white">
+        <div className="relative aspect-[2/3] w-full overflow-hidden bg-white">
+          <LookCanvas
+            key={outfitCanvasKey}
+            look={WARDROBE_BUILDER_LOOK}
+            lookImage=""
+            title="Wardrobe Builder"
+            items={lookItems}
+            activeItemId={null}
+            isEditMode={false}
+            containerRef={containerRef}
+            onSelectItem={() => {}}
+            resolveLayouts={resolveLayouts}
+          />
 
-        <div className="pointer-events-none absolute inset-0 z-30 grid grid-cols-3 grid-rows-3">
-          {WARDROBE_MATRIX_SLOTS.map((slot) => (
-            <WardrobeBuilderBlueprintCell
-              key={slot.index}
-              label={slot.label}
-              isEmpty={currentOutfit[slot.index] === null}
-            />
-          ))}
-        </div>
+          <div className="pointer-events-none absolute inset-0 z-30 grid grid-cols-3 grid-rows-3">
+            {WARDROBE_MATRIX_SLOTS.map((slot) => (
+              <WardrobeBuilderBlueprintCell
+                key={slot.index}
+                label={slot.label}
+                isEmpty={currentOutfit[slot.index] === null}
+              />
+            ))}
+          </div>
 
-        <div className="absolute inset-0 z-40 grid grid-cols-3 grid-rows-3">
-          {WARDROBE_MATRIX_SLOTS.map((slot) => (
-            <WardrobeBuilderSlotZone
-              key={slot.index}
-              label={slot.label}
-              isEmpty={currentOutfit[slot.index] === null}
-              onClick={() => openDrawerForSlot(slot.index)}
-            />
-          ))}
+          <div className="absolute inset-0 z-40 grid grid-cols-3 grid-rows-3">
+            {WARDROBE_MATRIX_SLOTS.map((slot) => (
+              <WardrobeBuilderSlotZone
+                key={slot.index}
+                label={slot.label}
+                isEmpty={currentOutfit[slot.index] === null}
+                onClick={() => openDrawerForSlot(slot.index)}
+              />
+            ))}
+          </div>
         </div>
       </div>
 
