@@ -10,7 +10,7 @@ export function SiteHeader() {
   const showBrand = useScrollDirection();
 
   return (
-    <header className="fixed top-0 left-0 z-50 w-full border-b border-neutral-100 bg-white/90 backdrop-blur-md">
+    <header className="fixed top-0 left-0 z-50 w-full overflow-visible border-b border-neutral-100 bg-white/90 backdrop-blur-md">
       <div className="grid h-20 w-full grid-cols-[1fr_auto_1fr] items-center px-5 md:px-10">
         <div className="justify-self-start">
           <NavMenuDrawer />
@@ -35,7 +35,7 @@ export function SiteHeader() {
           </motion.div>
         </div>
 
-        <div className="justify-self-end">
+        <div className="justify-self-end overflow-visible">
           <HeaderIconNav />
         </div>
       </div>
