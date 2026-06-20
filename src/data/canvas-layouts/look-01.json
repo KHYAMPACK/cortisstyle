@@ -1,7 +1,7 @@
 {
   "black-beanie-01": {
-    "top": "2.34%",
-    "left": "17.96%",
+    "top": "-1.44%",
+    "left": "34.86%",
     "widthPx": 96,
     "zIndex": 4,
     "hitboxWidthPx": 86,
@@ -27,8 +27,8 @@
     "hitboxOffsetLeftPx": 28
   },
   "black-sunglasses-01": {
-    "top": "3.02%",
-    "left": "-6.08%",
+    "top": "-11.92%",
+    "left": "-8.68%",
     "widthPx": 204,
     "zIndex": 4,
     "hitboxWidthPx": 104,
@@ -47,7 +47,7 @@
     "hitboxOffsetLeftPx": 60
   },
   "black-bag-01": {
-    "top": "20.32%",
+    "top": "5.56%",
     "left": "39.58%",
     "widthPx": 288,
     "zIndex": 4,

@@ -1,8 +1,8 @@
 {
   "sunglasses-02": {
-    "top": "3.32%",
-    "left": "14.82%",
-    "widthPx": 102,
+    "top": "-0.20%",
+    "left": "6.90%",
+    "widthPx": 118,
     "zIndex": 4,
     "hitboxWidthPx": 102,
     "hitboxHeightPx": 72,
@@ -20,8 +20,8 @@
     "hitboxOffsetLeftPx": 146
   },
   "longsleeve-shirt-01": {
-    "top": "-9.68%",
-    "left": "1.30%",
+    "top": "-14.18%",
+    "left": "3.38%",
     "widthPx": 374,
     "zIndex": 4,
     "hitboxWidthPx": 184,
@@ -30,8 +30,8 @@
     "hitboxOffsetLeftPx": 95
   },
   "shorts-01": {
-    "top": "9.74%",
-    "left": "-1.30%",
+    "top": "5.06%",
+    "left": "1.30%",
     "widthPx": 382,
     "zIndex": 4,
     "hitboxWidthPx": 136,
@@ -40,7 +40,7 @@
     "hitboxOffsetLeftPx": 97
   },
   "black-bag-02": {
-    "top": "20.38%",
+    "top": "20.14%",
     "left": "30.86%",
     "widthPx": 366,
     "zIndex": 4,

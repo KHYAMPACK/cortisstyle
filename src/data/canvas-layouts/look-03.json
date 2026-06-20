@@ -1,6 +1,6 @@
 {
   "tank-top-01": {
-    "top": "-15.32%",
+    "top": "-16.76%",
     "left": "0.42%",
     "widthPx": 382,
     "zIndex": 4,
@@ -10,7 +10,7 @@
     "hitboxOffsetLeftPx": 138
   },
   "baggy-jeans-01": {
-    "top": "16.90%",
+    "top": "15.82%",
     "left": "1.04%",
     "widthPx": 374,
     "zIndex": 4,
@@ -40,8 +40,8 @@
     "hitboxOffsetLeftPx": 131
   },
   "sunglasses-01": {
-    "top": "-37.04%",
-    "left": "-27.74%",
+    "top": "-42.32%",
+    "left": "-35.66%",
     "widthPx": 406,
     "zIndex": 4,
     "hitboxWidthPx": 116,
@@ -50,7 +50,7 @@
     "hitboxOffsetLeftPx": 146
   },
   "cap-01": {
-    "top": "-32.24%",
+    "top": "-34.00%",
     "left": "6.58%",
     "widthPx": 382,
     "zIndex": 4,
@@ -70,11 +70,13 @@
     "hitboxOffsetLeftPx": 139
   },
   "teal-bag-01": {
-    "top": "5.62%",
+    "top": "-3.18%",
     "left": "35.36%",
     "widthPx": 366,
     "zIndex": 4,
-    "hitboxWidthPx": 366,
-    "hitboxOffsetTopPx": 14
+    "hitboxWidthPx": 126,
+    "hitboxHeightPx": 146,
+    "hitboxOffsetTopPx": 196,
+    "hitboxOffsetLeftPx": 121
   }
 }
