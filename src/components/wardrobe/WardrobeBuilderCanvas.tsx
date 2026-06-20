@@ -10,6 +10,7 @@ import {
 import { resolveWardrobeItemComposition } from "@/lib/wardrobeBuilderComposition";
 import {
   getSlotDefinition,
+  WARDROBE_MATRIX_ROW_HEIGHTS,
   WARDROBE_MATRIX_SLOTS,
   type MatrixCategoryFilter,
   type WardrobeEquippedItem,
@@ -114,8 +115,7 @@ export function WardrobeBuilderCanvas({
       <div
         className="relative mx-auto grid w-full max-w-[500px] grid-cols-3 overflow-visible border border-neutral-200/60 bg-white"
         style={{
-          gridTemplateRows:
-            "minmax(70px, auto) minmax(160px, auto) minmax(300px, auto)",
+          gridTemplateRows: WARDROBE_MATRIX_ROW_HEIGHTS,
         }}
       >
         {WARDROBE_MATRIX_SLOTS.map((slot) => (

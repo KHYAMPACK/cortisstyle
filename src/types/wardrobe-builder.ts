@@ -21,15 +21,17 @@ export interface WardrobeMatrixSlotDefinition {
   assetWrapperClass: string;
 }
 
+export const WARDROBE_MATRIX_ROW_HEIGHTS = "90px 180px 240px";
+
 export const WARDROBE_MATRIX_SLOTS: WardrobeMatrixSlotDefinition[] = [
   {
     index: 0,
     coordinate: "[1,1]",
-    label: "[ acc_head ]",
-    categoryFilter: "ACC_HEAD",
-    stackOrder: 15,
+    label: "[ eyewear ]",
+    categoryFilter: "EYEWEAR",
+    stackOrder: 30,
     alignClass: "items-start justify-center",
-    assetWrapperClass: "",
+    assetWrapperClass: "-translate-y-1",
   },
   {
     index: 1,
@@ -43,11 +45,11 @@ export const WARDROBE_MATRIX_SLOTS: WardrobeMatrixSlotDefinition[] = [
   {
     index: 2,
     coordinate: "[1,3]",
-    label: "[ eyewear ]",
-    categoryFilter: "EYEWEAR",
-    stackOrder: 30,
+    label: "[ acc_head ]",
+    categoryFilter: "ACC_HEAD",
+    stackOrder: 15,
     alignClass: "items-start justify-end",
-    assetWrapperClass: "translate-x-4 -translate-y-3",
+    assetWrapperClass: "",
   },
   {
     index: 3,

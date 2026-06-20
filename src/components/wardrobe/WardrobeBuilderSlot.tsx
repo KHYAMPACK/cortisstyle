@@ -105,7 +105,7 @@ export function WardrobeBuilderSlot({
       ) : (
         <>
           <div
-            className={`pointer-events-none relative shrink-0 ${assetWrapperClass}`}
+            className={`pointer-events-none relative shrink-0 overflow-visible ${assetWrapperClass}`}
           >
             <Image
               src={item.image}
@@ -114,7 +114,7 @@ export function WardrobeBuilderSlot({
               height={Math.round(item.widthPx * 1.4)}
               unoptimized
               style={{ width: `${item.widthPx}px` }}
-              className="h-auto max-w-none object-contain"
+              className="h-auto max-w-none"
             />
           </div>
           {isMenuOpen && <SlotActionMenu onSwap={onSwap} onRemove={onRemove} />}
