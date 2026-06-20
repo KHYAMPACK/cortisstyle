@@ -109,17 +109,21 @@ export default function WardrobePage() {
         <main className="px-5 py-8 md:px-10 md:py-10">
           <WardrobeTabs activeTab={activeTab} onChange={setActiveTab} />
 
-          <div className="mt-8">
-            {activeTab === "builder" ? (
+          {activeTab === "builder" ? (
+            <div className="mt-8 grid w-full place-items-center">
               <WardrobeBuilderCanvas ownedClothes={ownedClothes} />
-            ) : wardrobeLoading ? (
-              <WardrobeLoadingState label="Loading wardrobe collection" />
-            ) : activeTab === "looks" ? (
-              <WardrobeLooksGrid looks={purchasedLooks} />
-            ) : (
-              <WardrobeItemsGrid items={ownedClothes} />
-            )}
-          </div>
+            </div>
+          ) : (
+            <div className="mt-8">
+              {wardrobeLoading ? (
+                <WardrobeLoadingState label="Loading wardrobe collection" />
+              ) : activeTab === "looks" ? (
+                <WardrobeLooksGrid looks={purchasedLooks} />
+              ) : (
+                <WardrobeItemsGrid items={ownedClothes} />
+              )}
+            </div>
+          )}
         </main>
       ) : (
         <main className="px-5 py-24 md:px-10">

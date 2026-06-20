@@ -32,6 +32,8 @@ interface LookCanvasProps {
     containerWidth: number,
   ) => Record<string, CanvasItemLayout>;
   className?: string;
+  /** When false, parent must attach containerRef to the layout bounding box. */
+  bindContainerRef?: boolean;
 }
 
 export function LookCanvas({
@@ -46,6 +48,7 @@ export function LookCanvas({
   onCanvasLayoutsChange,
   resolveLayouts,
   className = "",
+  bindContainerRef = true,
 }: LookCanvasProps) {
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const useCollage = canRenderCollageLayout(look.layout, items);
@@ -70,7 +73,7 @@ export function LookCanvas({
 
   return (
     <div
-      ref={containerRef}
+      ref={bindContainerRef ? containerRef : undefined}
       className={`relative h-full w-full ${
         allowBleed ? "overflow-visible" : "overflow-hidden"
       } ${useCollage ? "bg-white" : ""} ${isEditMode ? "ring-2 ring-blue-400 ring-inset" : ""} ${className}`.trim()}
