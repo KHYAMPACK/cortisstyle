@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AuthPopup } from "@/components/AuthPopup";
-import { HeaderIconNav } from "@/components/HeaderIconNav";
 import { WardrobeItemsGrid } from "@/components/wardrobe/WardrobeItemsGrid";
 import { WardrobeLoadingState } from "@/components/wardrobe/WardrobeLoadingState";
 import { WardrobeLooksGrid } from "@/components/wardrobe/WardrobeLooksGrid";
@@ -52,14 +51,14 @@ export default function WardrobePage() {
   if (isInitializing) {
     return (
       <div className="min-h-full bg-white text-neutral-900">
-        <header className="border-b border-neutral-200 px-5 py-8 md:px-10 md:py-10">
+        <section className="border-b border-neutral-200 px-5 py-8 md:px-10 md:py-10">
           <p className="text-[9px] tracking-[0.45em] text-neutral-400 uppercase">
             Wardrobe Archive
           </p>
           <h1 className="mt-2 font-serif text-3xl leading-none tracking-[-0.02em] text-neutral-950 md:text-5xl">
             Digital Wardrobe
           </h1>
-        </header>
+        </section>
         <WardrobeLoadingState label="Authenticating archive" />
       </div>
     );
@@ -74,10 +73,8 @@ export default function WardrobePage() {
         description="Join Cortis Style to access your private archive."
       />
 
-      <header className="relative border-b border-neutral-200 px-5 py-8 md:px-10 md:py-10">
-        <HeaderIconNav className="absolute top-6 right-5 md:top-8 md:right-10" />
-
-        <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between md:pr-36">
+      <section className="border-b border-neutral-200 px-5 py-8 md:px-10 md:py-10">
+        <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
           <div>
             <Link
               href="/"
@@ -103,7 +100,7 @@ export default function WardrobePage() {
             </button>
           )}
         </div>
-      </header>
+      </section>
 
       {isAuthenticated ? (
         <main className="px-5 py-8 md:px-10 md:py-10">

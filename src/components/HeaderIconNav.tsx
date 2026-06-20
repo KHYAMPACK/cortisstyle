@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Heart, Search, ShoppingBag, User } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 import { AuthPopup } from "@/components/AuthPopup";
 import { useCart } from "@/context/CartContext";
@@ -40,13 +41,13 @@ export function HeaderIconNav({
               <Search {...iconProps} />
             </button>
 
-            <button
-              type="button"
-              aria-label="Account"
+            <Link
+              href="/wardrobe"
+              aria-label="Digital wardrobe"
               className="transition-opacity hover:opacity-60"
             >
               <User {...iconProps} />
-            </button>
+            </Link>
           </>
         )}
 

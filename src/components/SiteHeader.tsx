@@ -1,32 +1,42 @@
 "use client";
 
-"use client";
-
+import { motion } from "framer-motion";
+import Link from "next/link";
 import { HeaderIconNav } from "@/components/HeaderIconNav";
-import { EnterDigitalWardrobeButton } from "@/components/EnterDigitalWardrobeButton";
+import { NavMenuDrawer } from "@/components/NavMenuDrawer";
+import { useScrollDirection } from "@/hooks/useScrollDirection";
 
 export function SiteHeader() {
-  return (
-    <header className="relative border-b border-neutral-200 px-5 py-10 md:px-10 md:py-14">
-      <HeaderIconNav className="absolute top-6 right-5 md:top-8 md:right-10" />
+  const showBrand = useScrollDirection();
 
-      <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between md:pr-36">
-        <div>
-          <p className="mb-3 text-[9px] tracking-[0.5em] text-neutral-400 uppercase">
-            SS26 Collection
-          </p>
-          <h1 className="font-serif text-4xl leading-none tracking-[-0.02em] text-neutral-950 md:text-6xl">
-            Cortis
-            <span className="font-light text-neutral-300"> Style</span>
-          </h1>
+  return (
+    <header className="fixed top-0 left-0 z-50 w-full border-b border-neutral-100 bg-white/90 backdrop-blur-md">
+      <div className="grid h-20 w-full grid-cols-[1fr_auto_1fr] items-center px-5 md:px-10">
+        <div className="justify-self-start">
+          <NavMenuDrawer />
         </div>
 
-        <div className="flex max-w-xs flex-col items-start gap-5 md:items-end">
-          <p className="text-[11px] leading-relaxed tracking-[0.08em] text-neutral-500 md:text-right">
-            An editorial study in form, silhouette, and restraint.
-            Curated looks for the new season.
-          </p>
-          <EnterDigitalWardrobeButton />
+        <div className="pointer-events-none justify-self-center overflow-hidden">
+          <motion.div
+            className="pointer-events-auto"
+            initial={false}
+            animate={{
+              y: showBrand ? "0%" : "-100%",
+              opacity: showBrand ? 1 : 0,
+            }}
+            transition={{ duration: 0.35, ease: "easeInOut" }}
+          >
+            <Link
+              href="/"
+              className="block whitespace-nowrap font-serif text-[13px] tracking-[0.42em] text-neutral-950 uppercase md:text-sm"
+            >
+              Cortis Style
+            </Link>
+          </motion.div>
+        </div>
+
+        <div className="justify-self-end">
+          <HeaderIconNav />
         </div>
       </div>
     </header>
