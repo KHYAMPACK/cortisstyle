@@ -233,7 +233,7 @@ export function WardrobeSaveOutfitModal({
               className="pointer-events-auto w-[min(96vw,920px)] border border-neutral-200 bg-white p-6 shadow-2xl md:p-8"
             >
               {phase === "edit" ? (
-                <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
+                <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] lg:items-start">
                   <div>
                     <p className="mb-3 text-[9px] tracking-[0.4em] text-neutral-400 uppercase">
                       Moodboard Archive
@@ -342,27 +342,24 @@ export function WardrobeSaveOutfitModal({
                     </button>
                   </div>
 
-                  <div className="flex shrink-0 justify-center border border-neutral-100 bg-neutral-50/60 p-4 md:p-5">
-                    <p className="sr-only">Live Preview</p>
-                    <div className="w-full min-w-0">
-                      <p className="mb-4 text-center font-mono text-[9px] tracking-[0.35em] text-neutral-400 uppercase">
-                        Live Preview
-                      </p>
-                      <div className="flex justify-center">
-                        <WardrobeOutfitLivePreviewCard
-                          ref={previewRef}
-                          name={name}
-                          moodImageUrl={moodImageUrl}
-                          lookItems={lookItems}
-                          resolveLayouts={resolveLayouts}
-                          canvasKey={canvasKey}
-                        />
-                      </div>
+                  <div className="border border-neutral-100 bg-neutral-50/60 p-4 md:p-5">
+                    <p className="mb-4 font-mono text-[9px] tracking-[0.35em] text-neutral-400 uppercase">
+                      Live Preview
+                    </p>
+                    <div className="mx-auto max-w-[280px]">
+                      <WardrobeOutfitLivePreviewCard
+                        ref={previewRef}
+                        name={previewName}
+                        moodImageUrl={previewMoodImageUrl}
+                        lookItems={lookItems}
+                        resolveLayouts={resolveLayouts}
+                        canvasKey={canvasKey}
+                      />
                     </div>
                   </div>
                 </div>
               ) : (
-                <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+                <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] lg:items-center">
                   <div>
                     <p className="mb-3 text-[9px] tracking-[0.4em] text-neutral-400 uppercase">
                       Archive Confirmed
@@ -404,21 +401,19 @@ export function WardrobeSaveOutfitModal({
                     ) : null}
                   </div>
 
-                  <div className="flex shrink-0 justify-center border border-neutral-100 bg-neutral-50/60 p-4 md:p-5">
-                    <div className="w-full min-w-0">
-                      <p className="mb-4 text-center font-mono text-[9px] tracking-[0.35em] text-neutral-400 uppercase">
-                        Saved Poster
-                      </p>
-                      <div className="flex justify-center">
-                        <WardrobeOutfitLivePreviewCard
-                          ref={previewRef}
-                          name={previewName}
-                          moodImageUrl={previewMoodImageUrl}
-                          lookItems={lookItems}
-                          resolveLayouts={resolveLayouts}
-                          canvasKey={canvasKey}
-                        />
-                      </div>
+                  <div className="border border-neutral-100 bg-neutral-50/60 p-4 md:p-5">
+                    <p className="mb-4 font-mono text-[9px] tracking-[0.35em] text-neutral-400 uppercase">
+                      Saved Poster
+                    </p>
+                    <div className="mx-auto max-w-[280px]">
+                      <WardrobeOutfitLivePreviewCard
+                        ref={previewRef}
+                        name={previewName}
+                        moodImageUrl={previewMoodImageUrl}
+                        lookItems={lookItems}
+                        resolveLayouts={resolveLayouts}
+                        canvasKey={canvasKey}
+                      />
                     </div>
                   </div>
                 </div>

@@ -2,14 +2,17 @@
 
 import { forwardRef, useCallback, useRef } from "react";
 import { LookCanvas } from "@/components/modal/LookCanvas";
-import {
-  WardrobeCanvasFrame,
-  WARDROBE_PREVIEW_CANVAS_FRAME_CLASS,
-} from "@/components/wardrobe/WardrobeCanvasFrame";
+import { WardrobeMoodImageFrame } from "@/components/wardrobe/WardrobeMoodImageFrame";
 import { WardrobeOutfitMoodboardCard } from "@/components/wardrobe/WardrobeOutfitMoodboardCard";
 import type { CanvasItemLayout } from "@/types/canvas-layout";
 import type { ResolvedLookItem } from "@/types/look";
 import { WARDROBE_BUILDER_LOOK } from "@/types/wardrobe-builder";
+
+/** Matches the verified main wardrobe canvas width — layout math stays identical. */
+const MAIN_CANVAS_WIDTH_PX = 420;
+
+/** Sidebar mask + scale: 420 × 0.76 ≈ 320px wide, 560 × 0.76 ≈ 426px tall. */
+const PREVIEW_SCALE = 0.76;
 
 interface WardrobeOutfitLivePreviewCardProps {
   name: string;
@@ -21,6 +24,8 @@ interface WardrobeOutfitLivePreviewCardProps {
   ) => Record<string, CanvasItemLayout>;
   canvasKey: string;
   className?: string;
+  /** @deprecated Ignored — preview always renders at the main canvas width. */
+  canvasWidthClassName?: string;
 }
 
 export const WardrobeOutfitLivePreviewCard = forwardRef<
@@ -46,33 +51,49 @@ export const WardrobeOutfitLivePreviewCard = forwardRef<
 
   return (
     <div ref={ref} className={`shrink-0 ${className}`.trim()}>
-      <WardrobeOutfitMoodboardCard
-        name={name}
-        containerClassName="w-[340px] shrink-0"
-      >
-        <WardrobeCanvasFrame
-          containerRef={containerRef}
-          moodImageUrl={moodImageUrl}
-          showMoodPlaceholder
-          frameClassName={WARDROBE_PREVIEW_CANVAS_FRAME_CLASS}
+      <div className="relative mx-auto flex h-[426px] w-[320px] items-center justify-center overflow-hidden">
+        <div
+          className="w-[420px] shrink-0 will-change-transform"
+          style={{
+            transform: `scale(${PREVIEW_SCALE})`,
+            transformOrigin: "center",
+          }}
         >
-          <LookCanvas
-            key={canvasKey}
-            bindContainerRef={false}
-            transparentBackdrop
-            className="absolute inset-0 z-30 h-full w-full"
-            look={WARDROBE_BUILDER_LOOK}
-            lookImage=""
-            title="Outfit Preview"
-            items={lookItems}
-            activeItemId={null}
-            isEditMode={false}
-            containerRef={containerRef}
-            onSelectItem={() => {}}
-            resolveLayouts={resolvePreviewLayouts}
-          />
-        </WardrobeCanvasFrame>
-      </WardrobeOutfitMoodboardCard>
+          <WardrobeOutfitMoodboardCard name={name}>
+            <div
+              className="relative mx-auto aspect-[3/4] w-[420px] shrink-0 overflow-hidden border border-neutral-200 bg-white"
+              style={{ width: MAIN_CANVAS_WIDTH_PX }}
+            >
+              <div aria-hidden className="absolute inset-0 z-0 bg-white" />
+
+              <WardrobeMoodImageFrame
+                moodImageUrl={moodImageUrl}
+                showPlaceholder
+              />
+
+              {/*
+                Preview-only blend: white LookCanvas backdrop reveals the mood
+                layer beneath while garment pixels composite on top.
+              */}
+              <div className="pointer-events-none absolute inset-0 z-20 mix-blend-multiply">
+                <LookCanvas
+                  key={canvasKey}
+                  className="absolute inset-0 h-full w-full"
+                  look={WARDROBE_BUILDER_LOOK}
+                  lookImage=""
+                  title="Outfit Preview"
+                  items={lookItems}
+                  activeItemId={null}
+                  isEditMode={false}
+                  containerRef={containerRef}
+                  onSelectItem={() => {}}
+                  resolveLayouts={resolvePreviewLayouts}
+                />
+              </div>
+            </div>
+          </WardrobeOutfitMoodboardCard>
+        </div>
+      </div>
     </div>
   );
 });

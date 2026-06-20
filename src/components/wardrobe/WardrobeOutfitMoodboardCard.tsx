@@ -6,19 +6,17 @@ interface WardrobeOutfitMoodboardCardProps {
   name: string;
   children: ReactNode;
   showFooter?: boolean;
-  containerClassName?: string;
 }
 
 export function WardrobeOutfitMoodboardCard({
   name,
   children,
   showFooter = true,
-  containerClassName = "w-full max-w-[420px] shrink-0",
 }: WardrobeOutfitMoodboardCardProps) {
   const displayName = name.trim() || "UNTITLED LOOK";
 
   return (
-    <div className={containerClassName}>
+    <div className="w-full max-w-[420px] shrink-0">
       {children}
 
       {showFooter ? (
