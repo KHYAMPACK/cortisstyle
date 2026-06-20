@@ -111,7 +111,7 @@ export default function WardrobePage() {
 
           <div className="mt-8">
             {activeTab === "builder" ? (
-              <WardrobeBuilderCanvas />
+              <WardrobeBuilderCanvas ownedClothes={ownedClothes} />
             ) : wardrobeLoading ? (
               <WardrobeLoadingState label="Loading wardrobe collection" />
             ) : activeTab === "looks" ? (
