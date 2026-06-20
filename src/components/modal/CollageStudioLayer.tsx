@@ -25,6 +25,11 @@ import {
   type CanvasItemLayout,
   type CanvasMoveDirection,
 } from "@/lib/canvasLayout";
+import { useLookCanvasReferenceWidth } from "@/context/LookCanvasLayoutContext";
+import {
+  mapPointerToLayoutSpace,
+  resolveLookCanvasLayoutContainer,
+} from "@/lib/lookCanvasReference";
 import { resolveRenderedCanvasZIndex } from "@/lib/canvasLayerStack";
 import { isLocalhostClient } from "@/lib/dev";
 import {
@@ -94,6 +99,7 @@ export function CollageStudioLayer({
   onFreeDragPositionCommit,
   disableCanvasHitTesting = false,
 }: CollageStudioLayerProps) {
+  const layoutReferenceWidth = useLookCanvasReferenceWidth();
   const [layouts, setLayouts] = useState<Record<string, CanvasItemLayout>>({});
   const [isHitboxMode, setIsHitboxMode] = useState(false);
   const [loadedImagesCount, setLoadedImagesCount] = useState(0);
@@ -147,7 +153,8 @@ export function CollageStudioLayer({
     const parent = parentRef.current;
     if (!parent) return;
 
-    const containerWidth = parent.getBoundingClientRect().width;
+    const rect = parent.getBoundingClientRect();
+    const containerWidth = layoutReferenceWidth ?? rect.width;
     if (containerWidth <= 0) return;
 
     const nextLayouts = resolveLayouts
@@ -161,7 +168,7 @@ export function CollageStudioLayer({
 
       return nextLayouts;
     });
-  }, [lookId, items, parentRef, resolveLayouts]);
+  }, [lookId, items, parentRef, resolveLayouts, layoutReferenceWidth]);
 
   useLayoutEffect(() => {
     syncLayoutsFromContainer();
@@ -207,9 +214,16 @@ export function CollageStudioLayer({
       }
 
       const rect = parent.getBoundingClientRect();
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
-      const container = { width: rect.width, height: rect.height };
+      const { x, y } = mapPointerToLayoutSpace(
+        event.clientX,
+        event.clientY,
+        rect,
+        layoutReferenceWidth,
+      );
+      const container = resolveLookCanvasLayoutContainer(
+        layoutReferenceWidth,
+        rect,
+      );
 
       const entries = buildCanvasHitTestEntries(
         layouts,
@@ -253,6 +267,7 @@ export function CollageStudioLayer({
     onSelectCanvasItem,
     onSelectItem,
     isFreeDragMode,
+    layoutReferenceWidth,
   ]);
 
   useEffect(() => {
