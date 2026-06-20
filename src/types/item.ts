@@ -1,3 +1,5 @@
+import type { RarityScore } from "@/types/rarity";
+
 export type ClothingCategory =
   | "headwear"
   | "tops"
@@ -56,4 +58,5 @@ export interface ClothingItem {
   stylingExecution: StylingExecution;
   budgetAlternativeLink: BudgetAlternativeLink;
   displayModel?: string;
+  rarityScore: RarityScore;
 }

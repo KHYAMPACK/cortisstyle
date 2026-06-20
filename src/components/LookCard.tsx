@@ -1,4 +1,6 @@
 import Image from "next/image";
+import { RarityBadge } from "@/components/RarityBadge";
+import { computeOutfitRarityFromLook } from "@/lib/rarity";
 import type { Look } from "@/types/look";
 
 interface LookCardProps {
@@ -8,6 +10,8 @@ interface LookCardProps {
 }
 
 export function LookCard({ look, priority = false, onSelect }: LookCardProps) {
+  const outfitRarity = computeOutfitRarityFromLook(look);
+
   return (
     <button
       type="button"
@@ -25,6 +29,13 @@ export function LookCard({ look, priority = false, onSelect }: LookCardProps) {
           priority={priority}
           className="h-auto w-full object-contain transition-all duration-700 ease-out group-hover:scale-[1.02] group-hover:brightness-[0.72]"
         />
+
+        <div className="absolute top-3 left-3 z-10">
+          <RarityBadge
+            rarity={outfitRarity}
+            className="bg-white/95 backdrop-blur-sm"
+          />
+        </div>
 
         <div
           className="absolute inset-0 bg-black/0 transition-colors duration-500 group-hover:bg-black/20"

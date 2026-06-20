@@ -20,6 +20,8 @@ export interface StyleGuidePageTwo {
   synergyStat: string;
   qrSubtext: string;
   closingQuote: string;
+  outfitRarityLabel: string;
+  outfitRarityScore: number;
 }
 
 export interface StyleGuideDefinition {

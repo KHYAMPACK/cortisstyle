@@ -1,6 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
+import { computeOutfitRarityFromLook, formatRarityBadge } from "@/lib/rarity";
 import { useAuth } from "@/context/AuthContext";
 
 interface ProfileDropdownProps {
@@ -54,15 +55,21 @@ export function ProfileDropdown({ isOpen, onClose }: ProfileDropdownProps) {
                 Loading archive…
               </p>
             ) : purchasedLooks.length > 0 ? (
-              <ul className="max-h-44 space-y-2 overflow-y-auto">
-                {purchasedLooks.map((look) => (
-                  <li
-                    key={look.id}
-                    className="text-[10px] tracking-[0.18em] text-neutral-700 uppercase"
-                  >
-                    {look.title}
-                  </li>
-                ))}
+              <ul className="max-h-44 space-y-3 overflow-y-auto">
+                {purchasedLooks.map((look) => {
+                  const rarity = computeOutfitRarityFromLook(look);
+
+                  return (
+                    <li key={look.id} className="space-y-1">
+                      <p className="text-[10px] tracking-[0.18em] text-neutral-700 uppercase">
+                        {look.title}
+                      </p>
+                      <p className="font-sans text-[8px] tracking-[0.22em] text-neutral-400 uppercase">
+                        {formatRarityBadge(rarity)}
+                      </p>
+                    </li>
+                  );
+                })}
               </ul>
             ) : (
               <p className="text-[10px] tracking-[0.2em] text-neutral-400 uppercase">

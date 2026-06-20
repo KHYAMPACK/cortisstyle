@@ -32,5 +32,7 @@ export const look02StyleGuide: StyleGuideDefinition = {
       "Scan this code to instantly access your interactive Digital Wardrobe dashboard, mix-and-match your inventory, and track your closet value.",
     closingQuote:
       "Color outside the lines. Thank you for curating the archive.",
+    outfitRarityLabel: "EPIC PIECE",
+    outfitRarityScore: 4,
   },
 };

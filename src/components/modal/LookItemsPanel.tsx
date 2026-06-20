@@ -1,9 +1,10 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import type { Look, ResolvedLookItem } from "@/types/look";
 import type { CanvasItemLayout } from "@/lib/canvasLayout";
+import { computeOutfitRarityFromItems } from "@/lib/rarity";
 import { CoordinateEditorExport } from "@/components/modal/CoordinateEditorExport";
 import { DownloadStyleGuideButton } from "@/components/modal/DownloadStyleGuideButton";
 import { LookItemCard } from "@/components/modal/LookItemCard";
@@ -45,6 +46,10 @@ export function LookItemsPanel({
   canvasLayouts,
 }: LookItemsPanelProps) {
   const itemRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
+  const outfitRarity = useMemo(
+    () => computeOutfitRarityFromItems(items),
+    [items],
+  );
 
   useEffect(() => {
     if (!activeItemId || isEditMode || showPreview) return;
@@ -145,6 +150,7 @@ export function LookItemsPanel({
                   investmentRetail={look.investmentRetail}
                   investmentWithGuide={look.investmentWithGuide}
                   versatility={look.versatility}
+                  outfitRarity={outfitRarity}
                 />
               </div>
 

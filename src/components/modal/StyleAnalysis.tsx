@@ -2,18 +2,23 @@
 
 import type { ReactNode } from "react";
 import { motion } from "framer-motion";
+import { RarityBadge } from "@/components/RarityBadge";
 import type { MetricRating, StyleMetrics } from "@/types/style-metrics";
+import type { OutfitRarity } from "@/types/rarity";
 
 const spring = { type: "spring" as const, stiffness: 100, damping: 20 };
 const MAX_DOTS = 5;
 
-interface StyleAnalysisProps extends StyleMetrics {}
+interface StyleAnalysisProps extends StyleMetrics {
+  outfitRarity: OutfitRarity;
+}
 
 export function StyleAnalysis({
   vibe,
   investmentRetail,
   investmentWithGuide,
   versatility,
+  outfitRarity,
 }: StyleAnalysisProps) {
   return (
     <motion.section
@@ -28,6 +33,9 @@ export function StyleAnalysis({
       </p>
 
       <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-x-8 sm:gap-y-4">
+        <MetricItem label="Outfit Rarity">
+          <RarityBadge rarity={outfitRarity} />
+        </MetricItem>
         <MetricItem label="Vibe" value={vibe} />
         <MetricItem label="Original Budget">
           <DotRating value={investmentRetail} muted />

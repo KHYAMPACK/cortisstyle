@@ -1,0 +1,25 @@
+import type { RarityScore } from "@/types/rarity";
+
+/** Editorial rarity assignments per clothing asset (1–5). */
+export const itemRarityScores: Record<string, RarityScore> = {
+  "black-beanie-01": 4,
+  "compression-shirt-01": 2,
+  "bootcut-jeans-02": 2,
+  "black-sunglasses-01": 3,
+  "sneakers-01": 4,
+  "black-bag-01": 2,
+  "sunglasses-02": 3,
+  "necklace-01": 4,
+  "longsleeve-shirt-01": 5,
+  "shorts-01": 4,
+  "black-bag-02": 2,
+  "sneakers-02": 4,
+  "cap-01": 3,
+  "necklace-02": 3,
+  "tank-top-01": 2,
+  "sunglasses-01": 3,
+  "baggy-jeans-01": 2,
+  "bracelet-01": 3,
+  "teal-bag-01": 4,
+  "sneakers-03": 4,
+};

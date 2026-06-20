@@ -58,6 +58,13 @@ export function GuidePageTwoView({
         </section>
 
         <section className="border-t border-neutral-800 pt-2.5">
+          <p className={labelClass}>Outfit Rarity Authentication</p>
+          <p className={`mt-1 font-mono ${bodyClass} ${midBlur}`}>
+            {`[ ${pageTwo.outfitRarityLabel} // SCORE: ${pageTwo.outfitRarityScore}/5 ]`}
+          </p>
+        </section>
+
+        <section className="border-t border-neutral-800 pt-2.5">
           <p className={labelClass}>{pageTwo.synergySectionTitle}</p>
           <p className={`mt-1 ${bodyClass} ${midBlur}`}>{pageTwo.synergyStat}</p>
 

@@ -230,6 +230,15 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     marginTop: 10,
   },
+  rarityStat: {
+    fontSize: 7,
+    lineHeight: 1.45,
+    color: "#D4D4D4",
+    fontFamily: "Courier",
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+    marginTop: 4,
+  },
   synergyStat: {
     fontSize: 7,
     lineHeight: 1.45,
@@ -404,6 +413,13 @@ export function createGuideDocument({ guide }: GuideTemplateProps) {
           <Text style={styles.fieldLabel}>Ledger Logged</Text>
           <Text style={styles.ledgerTimestamp}>
             LEDGER LOGGED: {pageTwo.ledgerTimestamp}
+          </Text>
+        </View>
+
+        <View style={styles.synergySection}>
+          <Text style={styles.sectionLabel}>Outfit Rarity Authentication</Text>
+          <Text style={styles.rarityStat}>
+            {`[ ${pageTwo.outfitRarityLabel} // SCORE: ${pageTwo.outfitRarityScore}/5 ]`}
           </Text>
         </View>
 

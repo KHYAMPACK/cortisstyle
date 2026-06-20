@@ -10,6 +10,7 @@ import {
 } from "@/lib/guideAssetScale";
 import { resolveCanvasLayouts } from "@/lib/canvasLayout";
 import { resolveLookItems } from "@/lib/resolveLookItems";
+import { computeOutfitRarityFromLook } from "@/lib/rarity";
 import type { Look } from "@/types/look";
 import type {
   ResolvedStyleGuide,
@@ -68,6 +69,7 @@ function resolveCanvasWidthPx(
 
 function buildFallbackDefinition(look: Look): StyleGuideDefinition {
   const items = resolveLookItems(look).slice(0, 5);
+  const outfitRarity = computeOutfitRarityFromLook(look);
 
   return {
     lookId: look.id,
@@ -90,6 +92,8 @@ function buildFallbackDefinition(look: Look): StyleGuideDefinition {
         "Scan this code to instantly access your interactive Digital Wardrobe dashboard, mix-and-match your inventory, and track your closet value.",
       closingQuote:
         "Color outside the lines. Thank you for curating the archive.",
+      outfitRarityLabel: outfitRarity.label,
+      outfitRarityScore: outfitRarity.score,
     },
   };
 }
@@ -98,6 +102,7 @@ export function resolveStyleGuide(
   look: Look,
   { buyerName, purchaseDate = new Date() }: ResolveStyleGuideOptions,
 ): ResolvedStyleGuide {
+  const outfitRarity = computeOutfitRarityFromLook(look);
   const definition =
     getStyleGuideDefinition(look.id) ?? buildFallbackDefinition(look);
   const itemIds = definition.pageOne.directoryItemIds;
@@ -124,6 +129,8 @@ export function resolveStyleGuide(
     },
     pageTwo: {
       ...definition.pageTwo,
+      outfitRarityLabel: outfitRarity.label,
+      outfitRarityScore: outfitRarity.score,
       issueSerial: generateIssueSerial(look.id, buyerName),
       ledgerTimestamp: formatLedgerTimestamp(purchaseDate),
     },

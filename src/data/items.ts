@@ -1,8 +1,10 @@
 import type { ClothingCategory, ClothingItem } from "@/types/item";
+import type { RarityScore } from "@/types/rarity";
 import {
   clothingItemFashionMeta,
   defaultFashionVectors,
 } from "@/data/item-metadata";
+import { itemRarityScores } from "@/data/item-rarity";
 
 const REVEAL_VENUES = [
   "Cortis Archive Seoul",
@@ -42,6 +44,7 @@ function defineItem(
     blurredDescription,
     unlockedDescription: unlockedDescription ?? revealDescription(blurredDescription),
     shopUrl: shopUrl ?? `https://shopier.com/cortis/${id}`,
+    rarityScore: itemRarityScores[id] ?? 1,
     ...canvas,
     ...fashion,
   };
