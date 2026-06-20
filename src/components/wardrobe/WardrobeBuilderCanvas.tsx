@@ -2,7 +2,6 @@
 
 import { useCallback, useMemo, useRef, useState } from "react";
 import { LookCanvas } from "@/components/modal/LookCanvas";
-import { LookCanvasViewport } from "@/components/modal/LookCanvasViewport";
 import { WardrobeBuilderBlueprintCell } from "@/components/wardrobe/WardrobeBuilderBlueprintCell";
 import { WardrobeBuilderSlotZone } from "@/components/wardrobe/WardrobeBuilderSlotZone";
 import { WardrobeSelectionDrawer } from "@/components/wardrobe/WardrobeSelectionDrawer";
@@ -126,47 +125,44 @@ export function WardrobeBuilderCanvas({
         </h2>
       </div>
 
-      <div className="relative w-full">
-        <LookCanvasViewport>
-          <div className="relative h-full w-full">
-            <LookCanvas
-              key={outfitCanvasKey}
-              look={WARDROBE_BUILDER_LOOK}
-              lookImage=""
-              title="Wardrobe Builder"
-              items={lookItems}
-              activeItemId={null}
-              isEditMode={false}
-              containerRef={containerRef}
-              onSelectItem={() => {}}
-              resolveLayouts={resolveLayouts}
+      <div className="relative mx-auto aspect-[3/4] w-full max-w-[420px] overflow-hidden border border-neutral-200 bg-white">
+        <LookCanvas
+          key={outfitCanvasKey}
+          className="absolute inset-0 h-full w-full"
+          look={WARDROBE_BUILDER_LOOK}
+          lookImage=""
+          title="Wardrobe Builder"
+          items={lookItems}
+          activeItemId={null}
+          isEditMode={false}
+          containerRef={containerRef}
+          onSelectItem={() => {}}
+          resolveLayouts={resolveLayouts}
+        />
+
+        <div className="pointer-events-none absolute inset-0 z-30 grid h-full w-full grid-cols-3 grid-rows-3">
+          {WARDROBE_MATRIX_SLOTS.map((slot) => (
+            <WardrobeBuilderBlueprintCell
+              key={slot.index}
+              label={slot.label}
+              isEmpty={currentOutfit[slot.index] === null}
             />
+          ))}
+        </div>
 
-            <div className="pointer-events-none absolute inset-0 z-30 grid h-full w-full grid-cols-3 grid-rows-3">
-              {WARDROBE_MATRIX_SLOTS.map((slot) => (
-                <WardrobeBuilderBlueprintCell
-                  key={slot.index}
-                  label={slot.label}
-                  isEmpty={currentOutfit[slot.index] === null}
-                />
-              ))}
-            </div>
-
-            <div className="absolute inset-0 z-40 grid h-full w-full grid-cols-3 grid-rows-3">
-              {WARDROBE_MATRIX_SLOTS.map((slot) => (
-                <WardrobeBuilderSlotZone
-                  key={slot.index}
-                  label={slot.label}
-                  isEmpty={currentOutfit[slot.index] === null}
-                  onClick={() => openDrawerForSlot(slot.index)}
-                />
-              ))}
-            </div>
-          </div>
-        </LookCanvasViewport>
+        <div className="absolute inset-0 z-40 grid h-full w-full grid-cols-3 grid-rows-3">
+          {WARDROBE_MATRIX_SLOTS.map((slot) => (
+            <WardrobeBuilderSlotZone
+              key={slot.index}
+              label={slot.label}
+              isEmpty={currentOutfit[slot.index] === null}
+              onClick={() => openDrawerForSlot(slot.index)}
+            />
+          ))}
+        </div>
       </div>
 
-      <p className="mt-5 w-full text-center font-mono text-[9px] tracking-[0.18em] text-neutral-400 uppercase">
+      <p className="mx-auto mt-5 max-w-[420px] text-center font-mono text-[9px] tracking-[0.18em] text-neutral-400 uppercase">
         {equippedCount > 0
           ? `${equippedCount} / 9 slots equipped`
           : "Tap an empty slot to assign archive assets"}

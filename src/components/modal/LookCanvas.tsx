@@ -30,6 +30,7 @@ interface LookCanvasProps {
     items: ResolvedLookItem[],
     containerWidth: number,
   ) => Record<string, CanvasItemLayout>;
+  className?: string;
 }
 
 export function LookCanvas({
@@ -43,6 +44,7 @@ export function LookCanvas({
   onSelectItem,
   onCanvasLayoutsChange,
   resolveLayouts,
+  className = "",
 }: LookCanvasProps) {
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const useCollage = canRenderCollageLayout(look.layout, items);
@@ -70,7 +72,7 @@ export function LookCanvas({
       ref={containerRef}
       className={`relative h-full w-full ${
         allowBleed ? "overflow-visible" : "overflow-hidden"
-      } ${useCollage ? "bg-white" : ""} ${isEditMode ? "ring-2 ring-blue-400 ring-inset" : ""}`}
+      } ${useCollage ? "bg-white" : ""} ${isEditMode ? "ring-2 ring-blue-400 ring-inset" : ""} ${className}`.trim()}
       style={useCollage ? { backgroundColor: COLLAGE_BACKDROP } : undefined}
     >
       <AnimatePresence>
