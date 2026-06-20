@@ -2,7 +2,9 @@
 
 import { useCallback, useMemo, useRef, useState } from "react";
 import { LookCanvas } from "@/components/modal/LookCanvas";
+import { MatrixBlueprintGrid } from "@/components/modal/MatrixBlueprintGrid";
 import { WardrobeBuilderBlueprintCell } from "@/components/wardrobe/WardrobeBuilderBlueprintCell";
+import { MatrixBlueprintInteractionGrid } from "@/components/wardrobe/MatrixBlueprintInteractionGrid";
 import { WardrobeBuilderSlotZone } from "@/components/wardrobe/WardrobeBuilderSlotZone";
 import { WardrobeSelectionDrawer } from "@/components/wardrobe/WardrobeSelectionDrawer";
 import {
@@ -18,7 +20,6 @@ import {
 import {
   getSlotDefinition,
   WARDROBE_BUILDER_LOOK,
-  WARDROBE_MATRIX_SLOTS,
   type MatrixCategoryFilter,
   type WardrobeEquippedItem,
   type WardrobeMatrixSlotIndex,
@@ -140,26 +141,34 @@ export function WardrobeBuilderCanvas({
           resolveLayouts={resolveLayouts}
         />
 
-        <div className="pointer-events-none absolute inset-0 z-30 grid h-full w-full grid-cols-3 grid-rows-3">
-          {WARDROBE_MATRIX_SLOTS.map((slot) => (
-            <WardrobeBuilderBlueprintCell
-              key={slot.index}
-              label={slot.label}
-              isEmpty={currentOutfit[slot.index] === null}
-            />
-          ))}
-        </div>
+        <MatrixBlueprintGrid
+          className="z-30"
+          renderCell={({ slotIndex }) => {
+            const index = slotIndex as WardrobeMatrixSlotIndex;
+            const slot = getSlotDefinition(index);
+            return (
+              <WardrobeBuilderBlueprintCell
+                label={slot.label}
+                isEmpty={currentOutfit[index] === null}
+              />
+            );
+          }}
+        />
 
-        <div className="absolute inset-0 z-40 grid h-full w-full grid-cols-3 grid-rows-3">
-          {WARDROBE_MATRIX_SLOTS.map((slot) => (
-            <WardrobeBuilderSlotZone
-              key={slot.index}
-              label={slot.label}
-              isEmpty={currentOutfit[slot.index] === null}
-              onClick={() => openDrawerForSlot(slot.index)}
-            />
-          ))}
-        </div>
+        <MatrixBlueprintInteractionGrid
+          className="z-40"
+          renderCell={({ slotIndex }) => {
+            const index = slotIndex as WardrobeMatrixSlotIndex;
+            const slot = getSlotDefinition(index);
+            return (
+              <WardrobeBuilderSlotZone
+                label={slot.label}
+                isEmpty={currentOutfit[index] === null}
+                onClick={() => openDrawerForSlot(index)}
+              />
+            );
+          }}
+        />
       </div>
 
       <p className="mx-auto mt-5 max-w-[420px] text-center font-mono text-[9px] tracking-[0.18em] text-neutral-400 uppercase">

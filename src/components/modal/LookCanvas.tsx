@@ -12,6 +12,7 @@ import {
 } from "@/lib/collageLayout";
 import { CollageStudioLayer } from "@/components/modal/CollageStudioLayer";
 import { EditorGuideOverlay } from "@/components/modal/EditorGuideOverlay";
+import { MatrixBlueprintOverlay } from "@/components/modal/MatrixBlueprintOverlay";
 
 interface LookCanvasProps {
   look: Pick<
@@ -101,6 +102,8 @@ export function LookCanvas({
       ) : (
         <SingleLookImage image={lookImage} title={title} />
       )}
+
+      {useCollage && isEditMode ? <MatrixBlueprintOverlay /> : null}
     </div>
   );
 }
