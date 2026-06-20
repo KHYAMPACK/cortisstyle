@@ -590,8 +590,10 @@ function CanvasAsset({
     <motion.div
       className={`absolute select-none touch-none ${
         isFreeDragMode
-          ? "pointer-events-auto cursor-grab active:cursor-grabbing"
-          : "pointer-events-none"
+          ? isDragging
+            ? "pointer-events-auto cursor-grabbing"
+            : "pointer-events-auto cursor-grab active:cursor-grabbing"
+          : "pointer-events-auto cursor-not-allowed"
       }`}
       style={{
         top: layout.top,
