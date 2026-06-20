@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AuthPopup } from "@/components/AuthPopup";
+import { WardrobeBuilderCanvas } from "@/components/wardrobe/WardrobeBuilderCanvas";
 import { WardrobeItemsGrid } from "@/components/wardrobe/WardrobeItemsGrid";
 import { WardrobeLoadingState } from "@/components/wardrobe/WardrobeLoadingState";
 import { WardrobeLooksGrid } from "@/components/wardrobe/WardrobeLooksGrid";
@@ -21,7 +22,9 @@ export default function WardrobePage() {
     ownedClothes,
     signOut,
   } = useAuth();
-  const [activeTab, setActiveTab] = useState<"looks" | "items">("looks");
+  const [activeTab, setActiveTab] = useState<"builder" | "looks" | "items">(
+    "builder",
+  );
   const [showAuthPopup, setShowAuthPopup] = useState(false);
 
   useEffect(() => {
@@ -107,7 +110,9 @@ export default function WardrobePage() {
           <WardrobeTabs activeTab={activeTab} onChange={setActiveTab} />
 
           <div className="mt-8">
-            {wardrobeLoading ? (
+            {activeTab === "builder" ? (
+              <WardrobeBuilderCanvas />
+            ) : wardrobeLoading ? (
               <WardrobeLoadingState label="Loading wardrobe collection" />
             ) : activeTab === "looks" ? (
               <WardrobeLooksGrid looks={purchasedLooks} />

@@ -1,11 +1,12 @@
 "use client";
 
 interface WardrobeTabsProps {
-  activeTab: "looks" | "items";
-  onChange: (tab: "looks" | "items") => void;
+  activeTab: "builder" | "looks" | "items";
+  onChange: (tab: "builder" | "looks" | "items") => void;
 }
 
 const tabs = [
+  { id: "builder" as const, label: "Outfit Builder" },
   { id: "looks" as const, label: "Unlocked Looks" },
   { id: "items" as const, label: "Clothing Items" },
 ];
