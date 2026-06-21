@@ -2,7 +2,12 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
+import {
+  getCheckoutComingSoonPath,
+  isPurchaseGateEnabled,
+} from "@/lib/launchGates";
 
 const iconTransition = { duration: 0.22, ease: [0.22, 1, 0.36, 1] as const };
 
@@ -10,21 +15,43 @@ interface PurchaseActionBarProps {
   lookId: string;
   guidePrice: number;
   onPurchase: () => void;
+  onGateNavigate?: () => void;
 }
 
 export function PurchaseActionBar({
   lookId,
   guidePrice,
   onPurchase,
+  onGateNavigate,
 }: PurchaseActionBarProps) {
+  const router = useRouter();
   const { cartItems, toggleCartItem } = useCart();
   const isInCart = cartItems.includes(lookId);
+
+  const handlePurchase = () => {
+    if (isPurchaseGateEnabled()) {
+      void fetch("/api/purchase-intent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lookId }),
+        keepalive: true,
+      }).catch(() => {
+        // Non-blocking analytics — checkout gate still opens.
+      });
+
+      onGateNavigate?.();
+      router.push(getCheckoutComingSoonPath(lookId));
+      return;
+    }
+
+    onPurchase();
+  };
 
   return (
     <div className="flex items-stretch gap-2">
       <button
         type="button"
-        onClick={onPurchase}
+        onClick={handlePurchase}
         className="btn-primary flex-1 border border-jet-black px-6 py-4 text-center font-mono text-[10px] tracking-[0.3em]"
       >
         Purchase Style Guide — {guidePrice} TL

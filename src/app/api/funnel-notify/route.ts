@@ -1,13 +1,22 @@
 import {
   insertFunnelNotifySignup,
   isValidNotifyEmail,
+  type FunnelNotifySource,
 } from "@/lib/funnelNotifyDb";
 
 export const runtime = "nodejs";
 
 interface NotifyPayload {
   email?: string;
+  source?: FunnelNotifySource;
+  lookId?: string;
 }
+
+const VALID_SOURCES: FunnelNotifySource[] = [
+  "wardrobe-coming-soon",
+  "archive-extension",
+  "checkout-priority",
+];
 
 export async function POST(request: Request) {
   let payload: NotifyPayload;
@@ -19,6 +28,11 @@ export async function POST(request: Request) {
   }
 
   const email = payload.email?.trim().toLowerCase() ?? "";
+  const source = payload.source ?? "archive-extension";
+
+  if (!VALID_SOURCES.includes(source)) {
+    return Response.json({ error: "Invalid funnel source." }, { status: 400 });
+  }
 
   if (!isValidNotifyEmail(email)) {
     return Response.json({ error: "Enter a valid email address." }, { status: 400 });
@@ -26,7 +40,8 @@ export async function POST(request: Request) {
 
   const result = await insertFunnelNotifySignup({
     email,
-    source: "wardrobe-coming-soon",
+    source,
+    lookId: payload.lookId?.trim(),
   });
 
   if (result.ok) {

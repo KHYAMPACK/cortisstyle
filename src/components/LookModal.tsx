@@ -159,6 +159,7 @@ export function LookModal({ look, onClose }: LookModalProps) {
                 onSelectItem={handleSelectItem}
                 onUnlock={handleUnlock}
                 onPurchase={() => setShowCheckout(true)}
+                onGateNavigate={onClose}
                 onBackToLook={handleBackToLook}
                 onCloseCheckout={() => setShowCheckout(false)}
                 canvasLayouts={canvasLayouts}

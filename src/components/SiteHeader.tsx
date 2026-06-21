@@ -7,18 +7,18 @@ import { useEffect, useState } from "react";
 import { HeaderIconNav } from "@/components/HeaderIconNav";
 import { NavMenuDrawer } from "@/components/NavMenuDrawer";
 import { useScrollDirection } from "@/hooks/useScrollDirection";
-import { isWardrobeComingSoonPath } from "@/lib/wardrobeGate";
+import { isDarkGatePath } from "@/lib/launchGates";
 
 export function SiteHeader() {
   const pathname = usePathname();
   const isHome = pathname === "/";
-  const isComingSoon = isWardrobeComingSoonPath(pathname);
+  const isDarkGate = isDarkGatePath(pathname);
   const showBrand = useScrollDirection();
   const [heroOverlay, setHeroOverlay] = useState(isHome);
 
   useEffect(() => {
     if (!isHome) {
-      setHeroOverlay(isComingSoon);
+      setHeroOverlay(isDarkGate);
       return;
     }
 
@@ -34,9 +34,9 @@ export function SiteHeader() {
       window.removeEventListener("scroll", syncHeroOverlay);
       window.removeEventListener("resize", syncHeroOverlay);
     };
-  }, [isHome, isComingSoon]);
+  }, [isHome, isDarkGate]);
 
-  const inverse = (isHome && heroOverlay) || isComingSoon;
+  const inverse = (isHome && heroOverlay) || isDarkGate;
 
   return (
     <header

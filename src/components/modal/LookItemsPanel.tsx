@@ -27,6 +27,7 @@ interface LookItemsPanelProps {
   onSelectItem: (itemId: string) => void;
   onUnlock: () => void;
   onPurchase: () => void;
+  onGateNavigate?: () => void;
   onBackToLook: () => void;
   onCloseCheckout: () => void;
   canvasLayouts?: Record<string, CanvasItemLayout>;
@@ -42,6 +43,7 @@ export function LookItemsPanel({
   onSelectItem,
   onUnlock,
   onPurchase,
+  onGateNavigate,
   onBackToLook,
   onCloseCheckout,
   canvasLayouts,
@@ -129,6 +131,7 @@ export function LookItemsPanel({
                   lookId={look.id}
                   guidePrice={look.guidePrice}
                   onPurchase={onPurchase}
+                  onGateNavigate={onGateNavigate}
                 />
               </motion.div>
 
