@@ -99,7 +99,6 @@ export function IntroLoader() {
       setPhase("done");
       document.documentElement.classList.remove("intro-loading");
       document.body.style.overflow = "";
-      window.dispatchEvent(new Event("intro-loader-complete"));
     }, EXIT_DURATION_MS);
 
     return () => clearTimeout(timer);

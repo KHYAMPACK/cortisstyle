@@ -4,9 +4,9 @@ import { useState } from "react";
 import { LookGrid } from "@/components/LookGrid";
 import { LookModal } from "@/components/LookModal";
 import {
-  HomeHeroVideo,
+  HomeHero,
   LOOKBOOK_COLLECTION_ID,
-} from "@/components/HomeHeroVideo";
+} from "@/components/HomeHero";
 import type { Look } from "@/types/look";
 
 export default function Home() {
@@ -14,7 +14,7 @@ export default function Home() {
 
   return (
     <div className="min-h-full bg-ice-floor text-jet-black">
-      <HomeHeroVideo />
+      <HomeHero />
 
       <section
         id={LOOKBOOK_COLLECTION_ID}

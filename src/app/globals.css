@@ -85,10 +85,23 @@ html.intro-loading body {
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   }
 
-  .hero-film-grain {
-    opacity: 0.045;
-    mix-blend-mode: overlay;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-    background-size: 128px 128px;
+  .hero-editorial-gradient {
+    background: linear-gradient(
+      180deg,
+      var(--jet-black) 0%,
+      var(--jet-black) 8%,
+      #2d3748 22%,
+      var(--meta-text) 38%,
+      var(--meta-text) 58%,
+      #5a6578 66%,
+      #708090 73%,
+      #8fa3b8 79%,
+      #aec0d4 84%,
+      #c8d8e8 88%,
+      var(--blueprint-border) 92%,
+      var(--blueprint-surface) 95%,
+      #eef2f6 98%,
+      var(--ice-floor) 100%
+    );
   }
 }
