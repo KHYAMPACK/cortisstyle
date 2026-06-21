@@ -421,11 +421,11 @@ export function WardrobeSaveOutfitModal({
                     </button>
                   </div>
 
-                  <div className="surface-blueprint border border-blueprint-border p-4 md:p-5">
+                  <div className="surface-blueprint overflow-hidden border border-blueprint-border p-4 md:p-5">
                     <p className="text-meta mb-4 font-mono text-[9px] tracking-[0.35em] uppercase">
                       Live Preview
                     </p>
-                    <div className="mx-auto max-w-[280px]">
+                    <div className="flex w-full justify-center overflow-hidden">
                       <WardrobeOutfitLivePreviewCard
                         ref={previewRef}
                         outfitName={outfitName}
@@ -489,11 +489,11 @@ export function WardrobeSaveOutfitModal({
                     ) : null}
                   </div>
 
-                  <div className="surface-blueprint border border-blueprint-border p-4 md:p-5">
+                  <div className="surface-blueprint overflow-hidden border border-blueprint-border p-4 md:p-5">
                     <p className="text-meta mb-4 font-mono text-[9px] tracking-[0.35em] uppercase">
                       Saved Poster
                     </p>
-                    <div className="mx-auto max-w-[280px]">
+                    <div className="flex w-full justify-center overflow-hidden">
                       <WardrobeOutfitLivePreviewCard
                         ref={previewRef}
                         outfitName={previewOutfitName}

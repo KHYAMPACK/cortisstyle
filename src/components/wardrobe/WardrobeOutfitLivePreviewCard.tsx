@@ -59,16 +59,15 @@ export const WardrobeOutfitLivePreviewCard = forwardRef<
   );
 
   return (
-    <div ref={ref} className={`shrink-0 ${className}`.trim()}>
+    <div ref={ref} className={`mx-auto w-full max-w-[320px] ${className}`.trim()}>
       <div
-        className="relative mx-auto flex w-[320px] items-center justify-center overflow-hidden"
+        className="relative mx-auto w-full max-w-[320px] overflow-hidden"
         style={{ height: PREVIEW_MASK_HEIGHT_PX }}
       >
         <div
-          className="w-[420px] shrink-0 will-change-transform"
+          className="absolute top-1/2 left-1/2 w-[420px] shrink-0"
           style={{
-            transform: `scale(${PREVIEW_SCALE})`,
-            transformOrigin: "center",
+            transform: `translate(-50%, -50%) scale(${PREVIEW_SCALE})`,
           }}
         >
           <WardrobeOutfitMoodboardCard
