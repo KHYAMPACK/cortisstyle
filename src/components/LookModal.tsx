@@ -1,10 +1,12 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import type { Look, ResolvedLookItem } from "@/types/look";
 import type { CanvasItemLayout } from "@/lib/canvasLayout";
 import { resolveEditableLookItems } from "@/lib/resolveLookItems";
+import { goToCheckoutGate, isPurchaseGateEnabled } from "@/lib/purchaseGateFlow";
 import { LookImagePanel } from "@/components/modal/LookImagePanel";
 import { LookItemsPanel } from "@/components/modal/LookItemsPanel";
 import { HeaderIconNav } from "@/components/HeaderIconNav";
@@ -18,6 +20,7 @@ interface LookModalProps {
 }
 
 export function LookModal({ look, onClose }: LookModalProps) {
+  const router = useRouter();
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(isLocalhostClient);
   const [showPreview, setShowPreview] = useState(false);
@@ -79,6 +82,11 @@ export function LookModal({ look, onClose }: LookModalProps) {
   );
 
   const handleUnlock = () => {
+    if (isPurchaseGateEnabled() && look) {
+      goToCheckoutGate(look.id, router, onClose);
+      return;
+    }
+
     setShowPreview(true);
     setShowCheckout(false);
     setActiveItemId(null);

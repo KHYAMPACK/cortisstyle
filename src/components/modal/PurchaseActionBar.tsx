@@ -4,10 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Check, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
-import {
-  getCheckoutComingSoonPath,
-  isPurchaseGateEnabled,
-} from "@/lib/launchGates";
+import { goToCheckoutGate, isPurchaseGateEnabled } from "@/lib/purchaseGateFlow";
 
 const iconTransition = { duration: 0.22, ease: [0.22, 1, 0.36, 1] as const };
 
@@ -30,17 +27,7 @@ export function PurchaseActionBar({
 
   const handlePurchase = () => {
     if (isPurchaseGateEnabled()) {
-      void fetch("/api/purchase-intent", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lookId }),
-        keepalive: true,
-      }).catch(() => {
-        // Non-blocking analytics — checkout gate still opens.
-      });
-
-      onGateNavigate?.();
-      router.push(getCheckoutComingSoonPath(lookId));
+      goToCheckoutGate(lookId, router, onGateNavigate);
       return;
     }
 
