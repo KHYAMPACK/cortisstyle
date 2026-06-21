@@ -8,6 +8,7 @@ import {
   HomeHero,
   LOOKBOOK_COLLECTION_ID,
 } from "@/components/HomeHero";
+import { SocialLinksRow } from "@/components/SocialLinksRow";
 import type { Look } from "@/types/look";
 
 export default function Home() {
@@ -41,9 +42,18 @@ export default function Home() {
         <LookGrid onSelectLook={setSelectedLook} />
       </section>
 
-      <footer className="flex flex-col items-start justify-between gap-4 border-t border-blueprint-border px-5 py-8 text-meta text-[9px] tracking-[0.4em] uppercase md:flex-row md:items-center md:px-10">
-        <span>Cortis Style © 2026</span>
-        <span>Lookbook — All Rights Reserved</span>
+      <footer className="border-t border-blueprint-border px-5 py-8 md:px-10">
+        <div className="flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
+          <div className="flex flex-col gap-4">
+            <span className="text-meta text-[9px] tracking-[0.4em] uppercase">
+              Cortis Style © 2026
+            </span>
+            <SocialLinksRow tone="light" />
+          </div>
+          <span className="text-meta text-[9px] tracking-[0.4em] uppercase">
+            Lookbook — All Rights Reserved
+          </span>
+        </div>
       </footer>
 
       <LookModal look={selectedLook} onClose={() => setSelectedLook(null)} />

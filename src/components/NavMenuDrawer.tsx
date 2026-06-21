@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { SocialLinksRow } from "@/components/SocialLinksRow";
 import { getWardrobeEntryPath } from "@/lib/wardrobeGate";
 
 const links = [
@@ -87,20 +88,27 @@ export function NavMenuDrawer({ tone = "default" }: { tone?: "default" | "invers
                   </p>
                 </div>
 
-                <div className="px-6 py-10 md:px-8 md:py-12">
-                <ul className="space-y-6">
-                  {links.map((link) => (
-                    <li key={link.href}>
-                      <Link
-                        href={link.href}
-                        onClick={() => setIsOpen(false)}
-                        className="font-serif text-2xl tracking-[0.08em] text-jet-black uppercase transition-opacity hover:opacity-60 md:text-3xl"
-                      >
-                        {link.label}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
+                <div className="flex min-h-0 flex-1 flex-col px-6 py-10 md:px-8 md:py-12">
+                  <ul className="space-y-6">
+                    {links.map((link) => (
+                      <li key={link.href}>
+                        <Link
+                          href={link.href}
+                          onClick={() => setIsOpen(false)}
+                          className="font-serif text-2xl tracking-[0.08em] text-jet-black uppercase transition-opacity hover:opacity-60 md:text-3xl"
+                        >
+                          {link.label}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <div className="mt-auto border-t border-blueprint-border pt-8">
+                    <p className="text-meta mb-4 text-[9px] tracking-[0.45em] uppercase">
+                      Connect
+                    </p>
+                    <SocialLinksRow tone="light" />
+                  </div>
                 </div>
               </div>
             </motion.nav>

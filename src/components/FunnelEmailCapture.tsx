@@ -75,43 +75,59 @@ export function FunnelEmailCapture({
         {label}
       </p>
 
-      <form
-        onSubmit={handleSubmit}
-        className={`mt-4 flex items-end gap-4 border-b pb-2 focus-within:border-jet-black ${
-          isDark
-            ? "border-neutral-700 focus-within:border-white"
-            : "border-blueprint-border"
-        }`}
-      >
-        <input
-          type="email"
-          name="email"
-          autoComplete="email"
-          required
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-          placeholder={placeholder}
-          disabled={status === "loading" || status === "success"}
-          className={`w-full flex-1 bg-transparent font-mono text-xs focus:outline-none disabled:opacity-50 ${
-            isDark
-              ? "text-white placeholder:text-neutral-600"
-              : "text-jet-black placeholder:text-neutral-400"
-          }`}
-        />
-        <button
-          type="submit"
-          disabled={status === "loading" || status === "success"}
-          className={`shrink-0 font-mono text-[10px] tracking-[0.3em] uppercase transition-opacity hover:opacity-60 disabled:opacity-40 ${
-            isDark ? "text-white" : "text-jet-black"
-          }`}
+      {isDark ? (
+        <form
+          onSubmit={handleSubmit}
+          className="my-6 mx-auto flex w-full max-w-[420px] items-stretch border border-white bg-white transition-all duration-300 focus-within:ring-2 focus-within:ring-neutral-400"
         >
-          {status === "loading" ? "Sending" : submitLabel}
-        </button>
-      </form>
+          <input
+            type="email"
+            name="email"
+            autoComplete="email"
+            required
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            placeholder={placeholder}
+            disabled={status === "loading" || status === "success"}
+            className="w-full flex-grow bg-transparent px-4 py-3 font-mono text-xs text-[#0D0D0D] outline-none placeholder:text-neutral-400 disabled:opacity-50"
+          />
+          <button
+            type="submit"
+            disabled={status === "loading" || status === "success"}
+            className="h-full shrink-0 bg-[#0D0D0D] px-6 py-3 font-mono text-[10px] tracking-widest text-white uppercase transition-colors duration-200 hover:bg-neutral-800 disabled:opacity-40"
+          >
+            {status === "loading" ? "Sending" : submitLabel}
+          </button>
+        </form>
+      ) : (
+        <form
+          onSubmit={handleSubmit}
+          className="my-6 mx-auto flex w-full max-w-[420px] items-stretch border border-jet-black bg-white transition-all duration-300 focus-within:ring-2 focus-within:ring-neutral-400"
+        >
+          <input
+            type="email"
+            name="email"
+            autoComplete="email"
+            required
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            placeholder={placeholder}
+            disabled={status === "loading" || status === "success"}
+            className="w-full flex-grow bg-transparent px-4 py-3 font-mono text-xs text-[#0D0D0D] outline-none placeholder:text-neutral-400 disabled:opacity-50"
+          />
+          <button
+            type="submit"
+            disabled={status === "loading" || status === "success"}
+            className="h-full shrink-0 bg-[#0D0D0D] px-6 py-3 font-mono text-[10px] tracking-widest text-white uppercase transition-colors duration-200 hover:bg-neutral-800 disabled:opacity-40"
+          >
+            {status === "loading" ? "Sending" : submitLabel}
+          </button>
+        </form>
+      )}
 
       {message ? (
         <p
-          className={`mt-3 font-mono text-[10px] tracking-[0.12em] ${
+          className={`font-mono text-[10px] tracking-[0.12em] ${
             status === "error"
               ? "text-red-400"
               : isDark

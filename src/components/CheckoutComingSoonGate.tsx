@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { looks } from "@/data/looks";
 import { FunnelEmailCapture } from "@/components/FunnelEmailCapture";
+import { SocialLinksRow } from "@/components/SocialLinksRow";
 
 export function CheckoutComingSoonGate() {
   const searchParams = useSearchParams();
@@ -60,15 +61,17 @@ export function CheckoutComingSoonGate() {
           label="Priority purchase access — enter email"
           submitLabel="Secure Sequence"
           tone="dark"
-          className="mt-8"
+          className="mt-6"
         />
 
         <Link
           href="/"
-          className="mt-12 inline-block font-mono text-[10px] tracking-[0.35em] text-neutral-500 uppercase transition-colors hover:text-white"
+          className="mt-10 inline-block font-mono text-[10px] tracking-[0.35em] text-neutral-500 uppercase transition-colors hover:text-white"
         >
           ← Return to Lookbook
         </Link>
+
+        <SocialLinksRow tone="dark" className="mt-8" />
       </div>
     </section>
   );
