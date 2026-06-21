@@ -76,7 +76,7 @@ export function LookItemsPanel({
       animate={{ x: 0, opacity: 1 }}
       exit={{ x: "100%", opacity: 0 }}
       transition={{ ...spring, delay: 0.12 }}
-      className="relative flex min-h-0 w-full flex-1 flex-col overflow-hidden border-t border-neutral-200 md:h-full md:w-[48%] md:border-t-0 md:border-l"
+      className="relative flex min-h-0 w-full flex-1 flex-col overflow-hidden border-t border-blueprint-border surface-blueprint md:h-full md:w-[48%] md:border-t-0 md:border-l"
     >
       <div ref={scrollContainerRef} className="min-h-0 flex-1 overflow-y-auto">
         <div className="px-4 py-4 md:px-8 md:py-6 md:pt-16 md:pb-6">
@@ -92,18 +92,18 @@ export function LookItemsPanel({
               <button
                 type="button"
                 onClick={onBackToLook}
-                className="mb-6 text-[10px] tracking-[0.3em] text-neutral-400 uppercase transition-colors hover:text-neutral-900"
+                className="text-meta mb-6 text-[10px] tracking-[0.3em] uppercase transition-colors hover:text-jet-black"
               >
                 ← Back to Look
               </button>
 
-              <p className="mb-2 text-[9px] tracking-[0.45em] text-neutral-400 uppercase">
+              <p className="text-meta mb-2 text-[9px] tracking-[0.45em] uppercase">
                 Digital Product
               </p>
               <h2 className="font-serif text-2xl leading-tight tracking-[-0.01em] text-neutral-950 md:text-3xl">
                 {look.title}
               </h2>
-              <p className="mt-2 text-[10px] tracking-[0.35em] text-neutral-500 uppercase">
+              <p className="text-meta mt-2 text-[10px] tracking-[0.35em] uppercase">
                 Style Guide &amp; Source Directory
               </p>
 
@@ -149,13 +149,13 @@ export function LookItemsPanel({
               <RarityBadge rarity={outfitRarity} className="mb-4 md:mb-6" />
 
               <div className="hidden md:block" aria-hidden="true">
-                <p className="mb-2 text-[9px] tracking-[0.45em] text-neutral-400 uppercase">
+                <p className="text-meta mb-2 text-[9px] tracking-[0.45em] uppercase">
                   Styled by
                 </p>
                 <p className="font-serif text-2xl leading-tight tracking-[-0.01em] text-neutral-950 md:text-3xl">
                   {look.title}
                 </p>
-                <p className="mt-2 text-[10px] tracking-[0.35em] text-neutral-500 uppercase">
+                <p className="text-meta mt-2 text-[10px] tracking-[0.35em] uppercase">
                   {look.modelName}
                 </p>
 
@@ -167,7 +167,7 @@ export function LookItemsPanel({
                 />
               </div>
 
-              <div className="mt-4 space-y-3 border-t border-neutral-200 pt-4 md:mt-8 md:pt-8">
+              <div className="mt-4 space-y-3 border-t border-blueprint-border pt-4 md:mt-8 md:pt-8">
                 {items.map((item) => (
                   <LookItemCard
                     key={item.id}
@@ -200,11 +200,11 @@ export function LookItemsPanel({
       </div>
 
       {!showPreview && (
-        <div className="shrink-0 border-t border-neutral-200 bg-white px-4 pt-2 pb-[max(1rem,env(safe-area-inset-bottom))] md:px-8 md:py-5">
+        <div className="shrink-0 border-t border-blueprint-border bg-blueprint-surface px-4 pt-2 pb-[max(1rem,env(safe-area-inset-bottom))] md:px-8 md:py-5">
           <button
             type="button"
             onClick={onUnlock}
-            className="block w-full border border-neutral-900 bg-neutral-900 px-6 py-4 text-center text-[10px] tracking-[0.3em] text-white uppercase transition-colors hover:bg-white hover:text-neutral-900"
+            className="btn-primary block w-full border border-jet-black px-6 py-4 text-center font-mono text-[10px] tracking-[0.3em]"
           >
             Unlock Full Style Guide &amp; Shop Links
           </button>

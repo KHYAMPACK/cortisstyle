@@ -114,7 +114,7 @@ export function LookModal({ look, onClose }: LookModalProps) {
             transition={spring}
             className="pointer-events-none fixed inset-0 z-50 flex items-end justify-center p-0 md:items-center md:p-8"
           >
-            <div className="pointer-events-auto relative flex h-[100dvh] max-h-[100dvh] w-full max-w-5xl flex-col overflow-hidden bg-white shadow-2xl md:h-[90vh] md:max-h-[90vh] md:flex-row">
+            <div className="pointer-events-auto relative flex h-[100dvh] max-h-[100dvh] w-full max-w-5xl flex-col overflow-hidden bg-ice-floor shadow-2xl md:h-[90vh] md:max-h-[90vh] md:flex-row">
               {isLocalhostClient() && !showPreview && (
                 <button
                   type="button"

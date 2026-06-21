@@ -10,7 +10,7 @@ const links = [
   { href: "/wardrobe", label: "Digital Wardrobe" },
 ];
 
-export function NavMenuDrawer() {
+export function NavMenuDrawer({ tone = "default" }: { tone?: "default" | "inverse" }) {
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
@@ -33,6 +33,11 @@ export function NavMenuDrawer() {
     };
   }, [isOpen]);
 
+  const iconClassName =
+    tone === "inverse"
+      ? "h-[18px] w-[18px] text-white"
+      : "h-[18px] w-[18px] text-neutral-900";
+
   return (
     <>
       <button
@@ -43,9 +48,9 @@ export function NavMenuDrawer() {
         className="flex h-10 w-10 items-center justify-center transition-opacity hover:opacity-60"
       >
         {isOpen ? (
-          <X strokeWidth={1.5} className="h-[18px] w-[18px] text-neutral-900" />
+          <X strokeWidth={1.5} className={iconClassName} />
         ) : (
-          <Menu strokeWidth={1.5} className="h-[18px] w-[18px] text-neutral-900" />
+          <Menu strokeWidth={1.5} className={iconClassName} />
         )}
       </button>
 
@@ -69,9 +74,9 @@ export function NavMenuDrawer() {
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ duration: 0.35, ease: "easeInOut" }}
-              className="fixed top-20 bottom-0 left-0 z-40 w-[min(18rem,80vw)] border-r border-neutral-100 bg-white px-6 py-8"
+              className="fixed top-20 bottom-0 left-0 z-40 w-[min(18rem,80vw)] border-r border-blueprint-border surface-blueprint px-6 py-8"
             >
-              <p className="mb-6 text-[9px] tracking-[0.45em] text-neutral-400 uppercase">
+              <p className="text-meta mb-6 text-[9px] tracking-[0.45em] uppercase">
                 Navigation
               </p>
               <ul className="space-y-4">

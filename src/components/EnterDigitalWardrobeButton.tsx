@@ -28,7 +28,7 @@ export function EnterDigitalWardrobeButton() {
       <button
         type="button"
         onClick={handleClick}
-        className="border border-neutral-900 bg-neutral-900 px-5 py-3 text-[10px] tracking-[0.35em] text-white uppercase transition-colors hover:bg-white hover:text-neutral-900"
+        className="btn-primary border border-jet-black px-5 py-3 font-mono text-[10px] tracking-[0.35em]"
       >
         Enter Digital Wardrobe
       </button>

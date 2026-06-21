@@ -27,9 +27,16 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${cormorant.variable} h-full antialiased`}
+      className={`${inter.variable} ${cormorant.variable} intro-loading h-full antialiased`}
     >
-      <body className="min-h-full font-sans">
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: "document.documentElement.classList.add('intro-loading');",
+          }}
+        />
+      </head>
+      <body className="min-h-full bg-ice-floor font-sans text-jet-black">
         <Providers>{children}</Providers>
       </body>
     </html>

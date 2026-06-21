@@ -26,7 +26,7 @@ export function WardrobeLookPreview({ look }: WardrobeLookPreviewProps) {
   const items = resolveEditableLookItems(look);
 
   return (
-    <article className="border border-neutral-200 bg-white">
+    <article className="surface-canvas-paper border border-blueprint-border">
       <div className="p-3 md:p-4">
         <div
           className="relative mx-auto flex w-full max-w-[320px] items-center justify-center overflow-hidden bg-white"
@@ -44,7 +44,7 @@ export function WardrobeLookPreview({ look }: WardrobeLookPreviewProps) {
               }}
             >
               <div
-                className="relative aspect-[2/3] w-[420px] shrink-0 overflow-hidden bg-white"
+                className="relative aspect-[2/3] w-[420px] shrink-0 overflow-hidden border border-blueprint-border surface-canvas-paper"
                 style={{ width: LOOK_CANVAS_REFERENCE_WIDTH }}
               >
                 <LookCanvas
@@ -64,11 +64,11 @@ export function WardrobeLookPreview({ look }: WardrobeLookPreviewProps) {
           </LookCanvasLayoutProvider>
         </div>
       </div>
-      <div className="border-t border-neutral-200 px-3 py-3 md:px-4 md:py-4">
+      <div className="border-t border-blueprint-border px-3 py-3 md:px-4 md:py-4">
         <h2 className="font-serif text-[11px] leading-snug tracking-[0.12em] text-neutral-900 uppercase md:text-xs">
           {look.title}
         </h2>
-        <p className="mt-1 font-mono text-[9px] tracking-[0.3em] text-neutral-400 uppercase">
+        <p className="text-meta mt-1 text-[9px] tracking-[0.3em] uppercase">
           Unlocked
         </p>
       </div>

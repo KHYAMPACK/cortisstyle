@@ -25,7 +25,7 @@ export function PurchaseActionBar({
       <button
         type="button"
         onClick={onPurchase}
-        className="flex-1 border border-neutral-900 bg-neutral-900 px-6 py-4 text-center text-[10px] tracking-[0.3em] text-white uppercase transition-colors hover:bg-white hover:text-neutral-900"
+        className="btn-primary flex-1 border border-jet-black px-6 py-4 text-center font-mono text-[10px] tracking-[0.3em]"
       >
         Purchase Style Guide — {guidePrice} TL
       </button>
@@ -37,10 +37,10 @@ export function PurchaseActionBar({
         }
         aria-pressed={isInCart}
         onClick={() => toggleCartItem(lookId)}
-        className={`flex aspect-square w-[52px] shrink-0 items-center justify-center overflow-hidden border border-neutral-900 transition-colors ${
+        className={`flex aspect-square w-[52px] shrink-0 items-center justify-center overflow-hidden border border-jet-black transition-colors duration-200 ${
           isInCart
-            ? "bg-neutral-900 text-white hover:bg-white hover:text-neutral-900"
-            : "bg-white text-neutral-900 hover:bg-neutral-900 hover:text-white"
+            ? "bg-jet-black text-white hover:bg-neutral-800"
+            : "bg-canvas-paper text-jet-black hover:bg-jet-black hover:text-white"
         }`}
       >
         <AnimatePresence mode="wait" initial={false}>

@@ -106,9 +106,9 @@ export function AuthPopup({
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 10 }}
               transition={spring}
-              className="pointer-events-auto w-[min(92vw,420px)] border border-neutral-200 bg-white p-8 shadow-2xl"
+              className="pointer-events-auto w-[min(92vw,420px)] border border-blueprint-border surface-canvas-paper p-8 shadow-2xl"
             >
-            <p className="mb-3 text-[9px] tracking-[0.4em] text-neutral-400 uppercase">
+            <p className="text-meta mb-3 text-[9px] tracking-[0.4em] uppercase">
               Members Only
             </p>
             <h2
@@ -132,7 +132,7 @@ export function AuthPopup({
                   autoComplete="email"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
-                  className="w-full border border-neutral-200 bg-white px-3 py-3 text-sm text-neutral-900 outline-none transition-colors focus:border-neutral-900"
+                  className="w-full border border-blueprint-border bg-canvas-paper px-3 py-3 text-sm text-neutral-900 outline-none transition-colors focus:border-blueprint-accent"
                   placeholder="you@studio.com"
                 />
               </label>
@@ -150,7 +150,7 @@ export function AuthPopup({
                   }
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
-                  className="w-full border border-neutral-200 bg-white px-3 py-3 text-sm text-neutral-900 outline-none transition-colors focus:border-neutral-900"
+                  className="w-full border border-blueprint-border bg-canvas-paper px-3 py-3 text-sm text-neutral-900 outline-none transition-colors focus:border-blueprint-accent"
                   placeholder="••••••••"
                 />
               </label>
@@ -168,7 +168,7 @@ export function AuthPopup({
               <button
                 type="submit"
                 disabled={isAuthenticating}
-                className="w-full border border-neutral-900 bg-neutral-900 px-5 py-3 text-[10px] tracking-[0.3em] text-white uppercase transition-colors hover:bg-white hover:text-neutral-900 disabled:cursor-not-allowed disabled:opacity-60"
+                className="btn-primary w-full border border-jet-black px-5 py-3 font-mono text-[10px] tracking-[0.3em] disabled:opacity-60"
               >
                 {isAuthenticating
                   ? "Processing…"
@@ -181,7 +181,7 @@ export function AuthPopup({
             <button
               type="button"
               onClick={toggleMode}
-              className="mt-5 w-full text-[10px] tracking-[0.25em] text-neutral-500 uppercase transition-colors hover:text-neutral-900"
+              className="text-meta mt-5 w-full text-[10px] tracking-[0.25em] uppercase transition-colors hover:text-jet-black"
             >
               {mode === "signin"
                 ? "Create Premium Account"
@@ -191,7 +191,7 @@ export function AuthPopup({
             <button
               type="button"
               onClick={onClose}
-              className="mt-4 w-full text-[10px] tracking-[0.3em] text-neutral-400 uppercase transition-colors hover:text-neutral-900"
+              className="text-meta mt-4 w-full text-[10px] tracking-[0.3em] uppercase transition-colors hover:text-jet-black"
             >
               Close
             </button>

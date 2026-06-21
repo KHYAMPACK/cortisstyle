@@ -288,12 +288,12 @@ export function WardrobeSaveOutfitModal({
                 exit={{ opacity: 0, scale: 0.96, y: 10 }}
                 transition={spring}
                 onClick={(event) => event.stopPropagation()}
-                className="w-full max-w-[920px] border border-neutral-200 bg-white p-5 shadow-2xl md:p-8"
+                className="w-full max-w-[920px] border border-blueprint-border surface-canvas-paper p-5 shadow-2xl md:p-8"
               >
               {phase === "edit" ? (
                 <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] lg:items-start">
                   <div>
-                    <p className="mb-3 text-[9px] tracking-[0.4em] text-neutral-400 uppercase">
+                    <p className="text-meta mb-3 text-[9px] tracking-[0.4em] uppercase">
                       Moodboard Archive
                     </p>
                     <h2
@@ -302,13 +302,13 @@ export function WardrobeSaveOutfitModal({
                     >
                       Save Outfit
                     </h2>
-                    <p className="mt-3 font-mono text-[10px] leading-relaxed tracking-[0.12em] text-neutral-500 uppercase">
+                    <p className="text-meta mt-3 font-mono text-[10px] leading-relaxed tracking-[0.12em] uppercase">
                       Name your look and attach an editorial mood reference.
                     </p>
 
                     <form onSubmit={handleSubmit} className="mt-8 space-y-6">
                       <label className="block">
-                        <span className="mb-2 block font-mono text-[9px] tracking-[0.35em] text-neutral-400 uppercase">
+                        <span className="text-meta mb-2 block font-mono text-[9px] tracking-[0.35em] uppercase">
                           Outfit Name
                         </span>
                         <input
@@ -317,12 +317,12 @@ export function WardrobeSaveOutfitModal({
                           value={outfitName}
                           onChange={(event) => setOutfitName(event.target.value)}
                           placeholder="LOOK 01 — CYBER GRUNGE"
-                          className="w-full border border-neutral-200 bg-white px-3 py-3 font-mono text-[11px] tracking-[0.14em] text-neutral-900 uppercase outline-none transition-colors focus:border-neutral-900"
+                          className="w-full border border-blueprint-border bg-canvas-paper px-3 py-3 font-mono text-[11px] tracking-[0.14em] text-neutral-900 uppercase outline-none transition-colors focus:border-blueprint-accent"
                         />
                       </label>
 
                       <label className="block">
-                        <span className="mb-2 block font-mono text-[9px] tracking-[0.35em] text-neutral-400 uppercase">
+                        <span className="text-meta mb-2 block font-mono text-[9px] tracking-[0.35em] uppercase">
                           Moodword
                         </span>
                         <input
@@ -330,12 +330,12 @@ export function WardrobeSaveOutfitModal({
                           value={moodword}
                           onChange={(event) => setMoodword(event.target.value)}
                           placeholder="e.g., CYBER, GRUNGE, AESTHETIC"
-                          className="w-full border border-neutral-200 bg-white px-3 py-3 font-mono text-[11px] tracking-[0.14em] text-neutral-900 uppercase outline-none transition-colors focus:border-neutral-900"
+                          className="w-full border border-blueprint-border bg-canvas-paper px-3 py-3 font-mono text-[11px] tracking-[0.14em] text-neutral-900 uppercase outline-none transition-colors focus:border-blueprint-accent"
                         />
                       </label>
 
                       <div>
-                        <span className="mb-2 block font-mono text-[9px] tracking-[0.35em] text-neutral-400 uppercase">
+                        <span className="text-meta mb-2 block font-mono text-[9px] tracking-[0.35em] uppercase">
                           Mood Image Overlay
                         </span>
                         <button
@@ -349,8 +349,8 @@ export function WardrobeSaveOutfitModal({
                           onDrop={handleDrop}
                           className={`relative flex w-full flex-col items-center justify-center gap-3 border border-dashed px-4 py-8 transition-colors ${
                             isDragging
-                              ? "border-neutral-900 bg-neutral-50"
-                              : "border-neutral-200 bg-white hover:border-neutral-400"
+                              ? "border-blueprint-accent bg-blueprint-selected"
+                              : "border-blueprint-border bg-blueprint-surface/40 hover:border-blueprint-accent"
                           }`}
                         >
                           {moodImageUrl ? (
@@ -406,7 +406,7 @@ export function WardrobeSaveOutfitModal({
                       <button
                         type="submit"
                         disabled={isSaving}
-                        className="w-full border border-neutral-900 bg-neutral-900 px-5 py-3 font-mono text-[10px] tracking-[0.3em] text-white uppercase transition-colors hover:bg-white hover:text-neutral-900 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="btn-primary w-full border border-jet-black px-5 py-3 font-mono text-[10px] tracking-[0.3em] disabled:opacity-60"
                       >
                         {isSaving ? "Saving..." : "Save Outfit Card"}
                       </button>
@@ -415,14 +415,14 @@ export function WardrobeSaveOutfitModal({
                     <button
                       type="button"
                       onClick={onClose}
-                      className="mt-4 w-full font-mono text-[10px] tracking-[0.3em] text-neutral-400 uppercase transition-colors hover:text-neutral-900"
+                      className="text-meta mt-4 w-full font-mono text-[10px] tracking-[0.3em] uppercase transition-colors hover:text-jet-black"
                     >
                       Cancel
                     </button>
                   </div>
 
-                  <div className="border border-neutral-100 bg-neutral-50/60 p-4 md:p-5">
-                    <p className="mb-4 font-mono text-[9px] tracking-[0.35em] text-neutral-400 uppercase">
+                  <div className="surface-blueprint border border-blueprint-border p-4 md:p-5">
+                    <p className="text-meta mb-4 font-mono text-[9px] tracking-[0.35em] uppercase">
                       Live Preview
                     </p>
                     <div className="mx-auto max-w-[280px]">
@@ -441,7 +441,7 @@ export function WardrobeSaveOutfitModal({
               ) : (
                 <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] lg:items-center">
                   <div>
-                    <p className="mb-3 text-[9px] tracking-[0.4em] text-neutral-400 uppercase">
+                    <p className="text-meta mb-3 text-[9px] tracking-[0.4em] uppercase">
                       Archive Confirmed
                     </p>
                     <h2
@@ -450,7 +450,7 @@ export function WardrobeSaveOutfitModal({
                     >
                       Look Card Ready
                     </h2>
-                    <p className="mt-3 font-mono text-[10px] leading-relaxed tracking-[0.12em] text-neutral-500 uppercase">
+                    <p className="text-meta mt-3 font-mono text-[10px] leading-relaxed tracking-[0.12em] uppercase">
                       Your outfit is saved to your archive. Download the look
                       card or return to the builder.
                     </p>
@@ -460,7 +460,7 @@ export function WardrobeSaveOutfitModal({
                         type="button"
                         onClick={handleShareLookCard}
                         disabled={isSharing}
-                        className="w-full border border-neutral-900 bg-neutral-900 px-5 py-3 font-mono text-[10px] tracking-[0.3em] text-white uppercase transition-colors hover:bg-white hover:text-neutral-900 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="btn-primary w-full border border-jet-black px-5 py-3 font-mono text-[10px] tracking-[0.3em] disabled:opacity-60"
                       >
                         {isSharing
                           ? "Generating..."
@@ -489,8 +489,8 @@ export function WardrobeSaveOutfitModal({
                     ) : null}
                   </div>
 
-                  <div className="border border-neutral-100 bg-neutral-50/60 p-4 md:p-5">
-                    <p className="mb-4 font-mono text-[9px] tracking-[0.35em] text-neutral-400 uppercase">
+                  <div className="surface-blueprint border border-blueprint-border p-4 md:p-5">
+                    <p className="text-meta mb-4 font-mono text-[9px] tracking-[0.35em] uppercase">
                       Saved Poster
                     </p>
                     <div className="mx-auto max-w-[280px]">

@@ -6,12 +6,15 @@ import { AuthPopup } from "@/components/AuthPopup";
 import { ProfileDropdown } from "@/components/ProfileDropdown";
 import { useAuth } from "@/context/AuthContext";
 
-const iconProps = {
-  strokeWidth: 1.5,
-  className: "h-[18px] w-[18px] text-neutral-900",
-};
+export function ProfileButton({ tone = "default" }: { tone?: "default" | "inverse" }) {
+  const iconProps = {
+    strokeWidth: 1.5,
+    className:
+      tone === "inverse"
+        ? "h-[18px] w-[18px] text-white"
+        : "h-[18px] w-[18px] text-neutral-900",
+  };
 
-export function ProfileButton() {
   const { isAuthenticated } = useAuth();
   const [showAuthPopup, setShowAuthPopup] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);

@@ -26,7 +26,7 @@ export function WardrobeLooksGrid({
 
   if (!wardrobeLoading && !hasSavedOutfits && !hasUnlockedLooks && !wardrobeError) {
     return (
-      <p className="py-16 text-center text-[11px] tracking-[0.25em] text-neutral-400 uppercase">
+      <p className="text-meta py-16 text-center text-[11px] tracking-[0.25em] uppercase">
         No unlocked looks yet
       </p>
     );
@@ -36,7 +36,7 @@ export function WardrobeLooksGrid({
     <div className="space-y-10">
       {hasSavedOutfits ? (
         <section aria-label="Saved outfits">
-          <p className="mb-4 font-mono text-[9px] tracking-[0.35em] text-neutral-400 uppercase">
+          <p className="text-meta mb-4 font-mono text-[9px] tracking-[0.35em] uppercase">
             Saved Outfits
           </p>
           <div className="columns-1 gap-4 space-y-4 sm:columns-2 lg:columns-3">
@@ -54,7 +54,7 @@ export function WardrobeLooksGrid({
       ) : null}
 
       <section aria-label="Unlocked looks">
-        <p className="mb-4 font-mono text-[9px] tracking-[0.35em] text-neutral-400 uppercase">
+        <p className="text-meta mb-4 font-mono text-[9px] tracking-[0.35em] uppercase">
           Unlocked Looks
         </p>
 

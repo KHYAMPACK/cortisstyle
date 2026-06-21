@@ -39,6 +39,8 @@ interface LookCanvasProps {
   ) => void;
   /** When true, click hit-testing won't intercept outer UI overlays. */
   disableCanvasHitTesting?: boolean;
+  /** Collage canvas fill — defaults to print paper white. */
+  collageBackdrop?: string;
 }
 
 export function LookCanvas({
@@ -56,6 +58,7 @@ export function LookCanvas({
   isFreeDragMode = false,
   onFreeDragPositionCommit,
   disableCanvasHitTesting = false,
+  collageBackdrop = COLLAGE_BACKDROP,
 }: LookCanvasProps) {
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const useCollage = canRenderCollageLayout(look.layout, items);
@@ -83,8 +86,8 @@ export function LookCanvas({
       ref={containerRef}
       className={`relative h-full w-full ${
         allowBleed ? "overflow-visible" : "overflow-hidden"
-      } ${useCollage ? "bg-white" : ""} ${isEditMode ? "ring-2 ring-blue-400 ring-inset" : ""} ${className}`.trim()}
-      style={useCollage ? { backgroundColor: COLLAGE_BACKDROP } : undefined}
+      } ${isEditMode ? "ring-2 ring-blue-400 ring-inset" : ""} ${className}`.trim()}
+      style={useCollage ? { backgroundColor: collageBackdrop } : undefined}
     >
       <AnimatePresence>
         {showEditorGuide && (

@@ -56,7 +56,7 @@ const CANVAS_WIDTH_CLASS =
 const CANVAS_FRAME_CLASS = `relative ${CANVAS_WIDTH_CLASS}`;
 
 const CANVAS_BOUNDARY_CLASS =
-  "relative isolate mx-auto w-full aspect-[3/4] max-w-[360px] xs:max-w-[400px] sm:max-w-[420px] overflow-hidden border border-neutral-200 bg-white md:max-w-[420px] md:shrink-0";
+  "surface-canvas-paper relative isolate mx-auto w-full aspect-[3/4] max-w-[360px] xs:max-w-[400px] sm:max-w-[420px] overflow-hidden border border-blueprint-border md:max-w-[420px] md:shrink-0";
 
 /** Isolated 3:4 coordinate sandbox — percentage math resolves only inside this box. */
 const CANVAS_COORDINATE_SANDBOX_CLASS =
@@ -301,7 +301,7 @@ export function WardrobeBuilderCanvas({
       className="relative flex w-full min-w-0 flex-col items-center overflow-visible"
     >
       <div className="mb-6 w-full text-center">
-        <p className="text-[9px] tracking-[0.42em] text-neutral-400 uppercase">
+        <p className="text-meta text-[9px] tracking-[0.42em] uppercase">
           Core Matrix // 3×3
         </p>
         <h2 className="mt-2 font-serif text-xl tracking-[-0.01em] text-neutral-950 md:text-2xl">
@@ -433,7 +433,7 @@ export function WardrobeBuilderCanvas({
       </div>
 
       <p
-        className={`mt-5 px-1 text-center font-mono text-[9px] tracking-[0.18em] text-neutral-400 uppercase ${CANVAS_WIDTH_CLASS}`}
+        className={`mt-5 px-1 text-center text-meta text-[9px] tracking-[0.18em] uppercase ${CANVAS_WIDTH_CLASS}`}
       >
         {equippedCount > 0
           ? `${equippedCount} / 9 slots equipped`
@@ -444,7 +444,7 @@ export function WardrobeBuilderCanvas({
         type="button"
         onClick={() => setIsSaveModalOpen(true)}
         disabled={equippedCount === 0}
-        className="fixed right-6 bottom-6 z-[60] border border-neutral-900 bg-neutral-900 px-5 py-3 font-mono text-[10px] tracking-[0.3em] text-white uppercase shadow-lg transition-colors hover:bg-white hover:text-neutral-900 disabled:cursor-not-allowed disabled:border-neutral-200 disabled:bg-neutral-200 disabled:text-neutral-400"
+        className="btn-primary fixed right-6 bottom-6 z-[60] border border-jet-black px-5 py-3 font-mono text-[10px] tracking-[0.3em] shadow-lg disabled:border-neutral-200 disabled:bg-neutral-200 disabled:text-neutral-400"
       >
         Save Outfit
       </button>

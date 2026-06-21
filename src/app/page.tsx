@@ -3,18 +3,41 @@
 import { useState } from "react";
 import { LookGrid } from "@/components/LookGrid";
 import { LookModal } from "@/components/LookModal";
-import { HomeHero } from "@/components/HomeHero";
+import {
+  HomeHeroVideo,
+  LOOKBOOK_COLLECTION_ID,
+} from "@/components/HomeHeroVideo";
 import type { Look } from "@/types/look";
 
 export default function Home() {
   const [selectedLook, setSelectedLook] = useState<Look | null>(null);
 
   return (
-    <div className="min-h-full bg-white text-neutral-900">
-      <HomeHero />
-      <LookGrid onSelectLook={setSelectedLook} />
+    <div className="min-h-full bg-ice-floor text-jet-black">
+      <HomeHeroVideo />
 
-      <footer className="flex flex-col items-start justify-between gap-4 border-t border-neutral-200 px-5 py-8 text-[9px] tracking-[0.4em] text-neutral-400 uppercase md:flex-row md:items-center md:px-10">
+      <section
+        id={LOOKBOOK_COLLECTION_ID}
+        className="scroll-mt-0 bg-ice-floor"
+        aria-label="Lookbook collection"
+      >
+        <div className="border-b border-blueprint-border px-5 py-8 md:px-10 md:py-10">
+          <p className="text-meta text-[9px] tracking-[0.5em] uppercase">
+            [ RARE CURATION ]
+          </p>
+          <h2 className="mt-3 font-serif text-2xl leading-none tracking-[-0.02em] text-neutral-950 md:text-3xl">
+            SS26 Lookbook
+          </h2>
+          <p className="text-meta mt-3 max-w-xl text-[11px] leading-relaxed tracking-[0.08em]">
+            An editorial study in form, silhouette, and restraint. Curated
+            looks for the new season.
+          </p>
+        </div>
+
+        <LookGrid onSelectLook={setSelectedLook} />
+      </section>
+
+      <footer className="flex flex-col items-start justify-between gap-4 border-t border-blueprint-border px-5 py-8 text-meta text-[9px] tracking-[0.4em] uppercase md:flex-row md:items-center md:px-10">
         <span>Cortis Style © 2026</span>
         <span>Lookbook — All Rights Reserved</span>
       </footer>

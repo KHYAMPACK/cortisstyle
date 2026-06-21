@@ -5,22 +5,27 @@ import { Search, ShoppingBag } from "lucide-react";
 import { ProfileButton } from "@/components/ProfileButton";
 import { useCart } from "@/context/CartContext";
 
-const iconProps = {
-  strokeWidth: 1.5,
-  className: "h-[18px] w-[18px] text-neutral-900",
-};
-
 interface HeaderIconNavProps {
   className?: string;
   variant?: "default" | "modal";
+  tone?: "default" | "inverse";
 }
 
 export function HeaderIconNav({
   className = "",
   variant = "default",
+  tone = "default",
 }: HeaderIconNavProps) {
   const { count, bounceKey } = useCart();
   const isModal = variant === "modal";
+  const iconClassName =
+    tone === "inverse"
+      ? "h-[18px] w-[18px] text-white"
+      : "h-[18px] w-[18px] text-neutral-900";
+  const iconProps = {
+    strokeWidth: 1.5,
+    className: iconClassName,
+  };
 
   return (
     <nav
@@ -37,7 +42,7 @@ export function HeaderIconNav({
             <Search {...iconProps} />
           </button>
 
-          <ProfileButton />
+          <ProfileButton tone={tone} />
         </>
       )}
 
@@ -52,7 +57,13 @@ export function HeaderIconNav({
       >
         <ShoppingBag {...iconProps} />
         {count > 0 && (
-          <span className="absolute -top-1.5 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-neutral-900 px-1 text-[9px] leading-none text-white">
+          <span
+            className={`absolute -top-1.5 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] leading-none ${
+              tone === "inverse"
+                ? "bg-white text-neutral-900"
+                : "bg-neutral-900 text-white"
+            }`}
+          >
             {count}
           </span>
         )}

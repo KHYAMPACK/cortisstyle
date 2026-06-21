@@ -8,7 +8,7 @@ interface WardrobeItemsGridProps {
 export function WardrobeItemsGrid({ items }: WardrobeItemsGridProps) {
   if (items.length === 0) {
     return (
-      <p className="py-16 text-center text-[11px] tracking-[0.25em] text-neutral-400 uppercase">
+      <p className="text-meta py-16 text-center text-[11px] tracking-[0.25em] uppercase">
         No clothing items yet
       </p>
     );
@@ -22,9 +22,9 @@ export function WardrobeItemsGrid({ items }: WardrobeItemsGridProps) {
       {items.map((item) => (
         <article
           key={item.id}
-          className="flex flex-col border border-neutral-200 bg-white"
+          className="surface-canvas-paper flex flex-col border border-blueprint-border"
         >
-          <div className="relative aspect-square w-full bg-neutral-50">
+          <div className="relative aspect-square w-full bg-blueprint-surface/50">
             {item.canvasImage && (
               <Image
                 src={item.canvasImage}
@@ -36,11 +36,11 @@ export function WardrobeItemsGrid({ items }: WardrobeItemsGridProps) {
               />
             )}
           </div>
-          <div className="border-t border-neutral-200 px-2 py-3">
+          <div className="border-t border-blueprint-border px-2 py-3">
             <p className="font-serif text-[9px] leading-snug tracking-[0.1em] text-neutral-900 uppercase md:text-[10px]">
               {item.name}
             </p>
-            <p className="mt-1 text-[8px] tracking-[0.25em] text-neutral-400 uppercase">
+            <p className="text-meta mt-1 text-[8px] tracking-[0.25em] uppercase">
               {item.category}
             </p>
           </div>

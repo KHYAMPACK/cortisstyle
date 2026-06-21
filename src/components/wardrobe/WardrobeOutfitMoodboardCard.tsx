@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 
 const FOOTER_META_CLASS =
-  "font-mono text-[9px] tracking-widest text-neutral-400 uppercase";
+  "text-meta text-[9px] tracking-widest uppercase";
 
 interface WardrobeOutfitMoodboardCardProps {
   name: string;

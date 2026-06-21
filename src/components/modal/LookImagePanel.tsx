@@ -4,6 +4,7 @@ import { AnimatePresence } from "framer-motion";
 import { useRef } from "react";
 import type { Look, ResolvedLookItem } from "@/types/look";
 import type { CanvasItemLayout } from "@/lib/canvasLayout";
+import { COLLAGE_FLOOR_BACKDROP } from "@/lib/collageLayout";
 import { GuidePreviewCanvas } from "@/components/modal/GuidePreviewCanvas";
 import { LookCanvas } from "@/components/modal/LookCanvas";
 import { LookCanvasViewport } from "@/components/modal/LookCanvasViewport";
@@ -32,7 +33,7 @@ export function LookImagePanel({
     look.layout === "collage" && isEditMode && !showPreview;
 
   return (
-    <div className="flex w-full shrink-0 flex-col items-center bg-white p-4 max-md:px-3 max-md:py-3 md:h-full md:w-[52%] md:p-8">
+    <div className="flex w-full shrink-0 flex-col items-center bg-ice-floor p-4 max-md:px-3 max-md:py-3 md:h-full md:w-[52%] md:p-8">
       <LookCanvasViewport allowBleed={allowDesktopCanvasBleed}>
         <AnimatePresence mode="wait">
           {showPreview ? (
@@ -53,12 +54,13 @@ export function LookImagePanel({
               containerRef={containerRef}
               onSelectItem={onSelectItem}
               onCanvasLayoutsChange={onCanvasLayoutsChange}
+              collageBackdrop={COLLAGE_FLOOR_BACKDROP}
             />
           )}
         </AnimatePresence>
       </LookCanvasViewport>
 
-      <p className="mt-3 w-full text-center text-[9px] tracking-[0.38em] text-neutral-500 uppercase max-md:mt-2 md:hidden">
+      <p className="text-meta mt-3 w-full text-center text-[9px] tracking-[0.38em] uppercase max-md:mt-2 md:hidden">
         {look.title.toUpperCase()} // BY {look.modelName.toUpperCase()}
       </p>
     </div>

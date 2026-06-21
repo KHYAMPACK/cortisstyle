@@ -1,19 +1,94 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #0a0a0a;
+  --background: #f4f6f8;
+  --foreground: #0d0d0d;
+  --ice-floor: #f4f6f8;
+  --canvas-paper: #ffffff;
+  --jet-black: #0d0d0d;
+  --blueprint-surface: #ebf2fa;
+  --blueprint-border: #d0e0f5;
+  --blueprint-selected-bg: #d3e4f5;
+  --blueprint-selected-text: #1e4a85;
+  --meta-text: #4a5568;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-ice-floor: #f4f6f8;
+  --color-canvas-paper: #ffffff;
+  --color-jet-black: #0d0d0d;
+  --color-blueprint-surface: #ebf2fa;
+  --color-blueprint-border: #d0e0f5;
+  --color-blueprint-selected: #d3e4f5;
+  --color-blueprint-accent: #1e4a85;
+  --color-meta: #4a5568;
+  --shadow-canvas-paper: 0 12px 40px rgba(0, 0, 0, 0.02);
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-serif: var(--font-cormorant), ui-serif, Georgia, serif;
   --breakpoint-xs: 30rem;
 }
 
 body {
-  background: var(--background);
+  background: var(--ice-floor);
   color: var(--foreground);
+}
+
+html.intro-loading,
+html.intro-loading body {
+  background: #0d0d0d !important;
+  overflow: hidden;
+}
+
+@layer components {
+  .surface-canvas-paper {
+    background-color: var(--canvas-paper);
+    box-shadow: var(--shadow-canvas-paper);
+  }
+
+  .surface-blueprint {
+    background-color: var(--blueprint-surface);
+    border-color: var(--blueprint-border);
+  }
+
+  .badge-blueprint-active {
+    background-color: var(--blueprint-selected-bg);
+    color: var(--blueprint-selected-text);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .btn-primary {
+    background-color: var(--jet-black);
+    color: #ffffff;
+    border-radius: 0;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    transition-property: color, background-color, border-color;
+    transition-duration: 200ms;
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    background-color: #262626;
+  }
+
+  .btn-primary:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  .text-meta {
+    color: var(--meta-text);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  }
+
+  .hero-film-grain {
+    opacity: 0.045;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 128px 128px;
+  }
 }

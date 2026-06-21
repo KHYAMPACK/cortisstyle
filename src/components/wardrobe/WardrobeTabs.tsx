@@ -15,7 +15,7 @@ export function WardrobeTabs({ activeTab, onChange }: WardrobeTabsProps) {
   return (
     <nav
       aria-label="Wardrobe sections"
-      className="flex gap-8 border-b border-neutral-200"
+      className="flex gap-8 border-b border-blueprint-border"
     >
       {tabs.map((tab) => {
         const isActive = activeTab === tab.id;
@@ -27,8 +27,8 @@ export function WardrobeTabs({ activeTab, onChange }: WardrobeTabsProps) {
             onClick={() => onChange(tab.id)}
             className={`border-b pb-3 text-[10px] tracking-[0.35em] uppercase transition-colors ${
               isActive
-                ? "-mb-px border-neutral-900 text-neutral-900"
-                : "border-transparent text-neutral-400 hover:text-neutral-700"
+                ? "-mb-px border-jet-black text-jet-black"
+                : "text-meta border-transparent hover:text-neutral-700"
             }`}
           >
             {tab.label}

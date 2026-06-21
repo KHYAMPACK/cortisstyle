@@ -76,7 +76,7 @@ export const WardrobeOutfitLivePreviewCard = forwardRef<
             containerClassName="w-[420px] shrink-0"
           >
             <div
-              className="relative mx-auto aspect-[3/4] w-[420px] shrink-0 overflow-hidden border border-neutral-200 bg-white"
+              className="relative mx-auto aspect-[3/4] w-[420px] shrink-0 overflow-hidden border border-blueprint-border surface-canvas-paper"
               style={{ width: MAIN_CANVAS_WIDTH_PX }}
             >
               <div aria-hidden className="absolute inset-0 z-0 bg-white" />

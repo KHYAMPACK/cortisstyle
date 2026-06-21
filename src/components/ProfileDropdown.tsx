@@ -35,18 +35,18 @@ export function ProfileDropdown({ isOpen, onClose }: ProfileDropdownProps) {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -6 }}
           transition={{ duration: 0.28, ease: "easeOut" }}
-          className="absolute top-[calc(100%+0.75rem)] right-0 z-[60] w-80 rounded-none border border-neutral-200 bg-white p-6 shadow-xl"
+          className="absolute top-[calc(100%+0.75rem)] right-0 z-[60] w-80 rounded-none border border-blueprint-border surface-blueprint p-6 shadow-xl"
         >
           <p className="text-[10px] tracking-[0.32em] text-neutral-900 uppercase">
             Merhaba, {emailLabel}
           </p>
 
-          <p className="mt-3 text-[9px] leading-relaxed tracking-[0.22em] text-neutral-400 uppercase">
+          <p className="text-meta mt-3 text-[9px] leading-relaxed tracking-[0.22em] uppercase">
             Name: {nameLabel} // Status: Verified Vault
           </p>
 
-          <div className="mt-6 border-t border-neutral-200 pt-5">
-            <p className="mb-3 text-[9px] tracking-[0.35em] text-neutral-400 uppercase">
+          <div className="mt-6 border-t border-blueprint-border pt-5">
+            <p className="text-meta mb-3 text-[9px] tracking-[0.35em] uppercase">
               Purchase &amp; Unlock History
             </p>
 

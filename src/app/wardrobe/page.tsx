@@ -58,9 +58,9 @@ export default function WardrobePage() {
 
   if (isInitializing) {
     return (
-      <div className="min-h-full bg-white text-neutral-900">
-        <section className="border-b border-neutral-200 px-5 py-8 md:px-10 md:py-10">
-          <p className="text-[9px] tracking-[0.45em] text-neutral-400 uppercase">
+      <div className="min-h-full bg-ice-floor text-jet-black">
+        <section className="border-b border-blueprint-border px-5 py-8 md:px-10 md:py-10">
+          <p className="text-meta text-[9px] tracking-[0.45em] uppercase">
             Wardrobe Archive
           </p>
           <h1 className="mt-2 font-serif text-3xl leading-none tracking-[-0.02em] text-neutral-950 md:text-5xl">
@@ -73,7 +73,7 @@ export default function WardrobePage() {
   }
 
   return (
-    <div className="min-h-full bg-white text-neutral-900">
+    <div className="min-h-full bg-ice-floor text-jet-black">
       <AuthPopup
         isOpen={showAuthPopup && !isAuthenticated}
         onClose={handleAuthClose}
@@ -81,16 +81,16 @@ export default function WardrobePage() {
         description="Join Cortis Style to access your private archive."
       />
 
-      <section className="border-b border-neutral-200 px-5 py-8 md:px-10 md:py-10">
+      <section className="border-b border-blueprint-border px-5 py-8 md:px-10 md:py-10">
         <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
           <div>
             <Link
               href="/"
-              className="mb-4 inline-block text-[9px] tracking-[0.35em] text-neutral-400 uppercase transition-colors hover:text-neutral-900"
+              className="mb-4 inline-block text-meta text-[9px] tracking-[0.35em] uppercase transition-colors hover:text-jet-black"
             >
               ← Lookbook
             </Link>
-            <p className="mb-2 text-[9px] tracking-[0.45em] text-neutral-400 uppercase">
+            <p className="mb-2 text-meta text-[9px] tracking-[0.45em] uppercase">
               Wardrobe Archive // {user?.displayLabel ?? "GUEST"}
             </p>
             <h1 className="font-serif text-3xl leading-none tracking-[-0.02em] text-neutral-950 md:text-5xl">
@@ -102,7 +102,7 @@ export default function WardrobePage() {
             <button
               type="button"
               onClick={handleSignOut}
-              className="self-start text-[10px] tracking-[0.35em] text-neutral-400 uppercase transition-colors hover:text-neutral-900 md:self-auto"
+              className="self-start text-meta text-[10px] tracking-[0.35em] uppercase transition-colors hover:text-jet-black md:self-auto"
             >
               Sign Out
             </button>
@@ -142,13 +142,13 @@ export default function WardrobePage() {
         </main>
       ) : (
         <main className="px-5 py-24 md:px-10">
-          <p className="text-center text-[11px] tracking-[0.25em] text-neutral-400 uppercase">
+          <p className="text-center text-meta text-[11px] tracking-[0.25em] uppercase">
             Sign in to view your archive
           </p>
         </main>
       )}
 
-      <footer className="flex flex-col items-start justify-between gap-4 border-t border-neutral-200 px-5 py-8 text-[9px] tracking-[0.4em] text-neutral-400 uppercase md:flex-row md:items-center md:px-10">
+      <footer className="flex flex-col items-start justify-between gap-4 border-t border-blueprint-border px-5 py-8 text-meta text-[9px] tracking-[0.4em] uppercase md:flex-row md:items-center md:px-10">
         <span>Cortis Style © 2026</span>
         <span>Digital Wardrobe — Private Archive</span>
       </footer>

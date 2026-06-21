@@ -68,7 +68,7 @@ export function WardrobeSavedOutfitPreview({
   );
 
   return (
-    <article className="border border-neutral-200 bg-white">
+    <article className="surface-canvas-paper border border-blueprint-border">
       <div className="p-3 md:p-4">
         <WardrobeOutfitLivePreviewCard
           ref={previewRef}
@@ -80,18 +80,18 @@ export function WardrobeSavedOutfitPreview({
           canvasKey={canvasKey}
         />
       </div>
-      <div className="border-t border-neutral-200 px-3 py-3 md:px-4 md:py-4">
+      <div className="border-t border-blueprint-border px-3 py-3 md:px-4 md:py-4">
         <h2 className="font-serif text-[11px] leading-snug tracking-[0.12em] text-neutral-900 uppercase md:text-xs">
           {safeOutfit.name}
         </h2>
-        <p className="mt-1 font-mono text-[9px] tracking-[0.3em] text-neutral-400 uppercase">
+        <p className="text-meta mt-1 text-[9px] tracking-[0.3em] uppercase">
           Saved Outfit
         </p>
         {onOpenInBuilder ? (
           <button
             type="button"
             onClick={() => onOpenInBuilder(safeOutfit)}
-            className="mt-3 w-full border border-neutral-900 px-3 py-2 font-mono text-[9px] tracking-[0.22em] text-neutral-900 uppercase transition-colors hover:bg-neutral-900 hover:text-white"
+            className="mt-3 w-full border border-jet-black px-3 py-2 font-mono text-[9px] tracking-[0.22em] text-jet-black uppercase transition-colors duration-200 hover:bg-jet-black hover:text-white"
           >
             Open in Builder
           </button>

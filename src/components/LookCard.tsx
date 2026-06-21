@@ -16,7 +16,7 @@ export function LookCard({ look, priority = false, onSelect }: LookCardProps) {
     <button
       type="button"
       onClick={() => onSelect(look)}
-      className="group block w-full cursor-pointer bg-white text-left"
+      className="group surface-canvas-paper block w-full cursor-pointer border border-blueprint-border text-left"
       aria-label={`View ${look.title}`}
     >
       <div className="relative w-full overflow-hidden bg-neutral-100">
@@ -49,7 +49,7 @@ export function LookCard({ look, priority = false, onSelect }: LookCardProps) {
         </div>
       </div>
 
-      <div className="border-t border-neutral-200 px-3 py-3 md:px-4 md:py-4">
+      <div className="border-t border-blueprint-border px-3 py-3 md:px-4 md:py-4">
         <h2 className="font-serif text-[11px] leading-snug tracking-[0.12em] text-neutral-900 uppercase md:text-xs">
           {look.title}
         </h2>
