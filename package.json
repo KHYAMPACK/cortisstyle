@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "item:draft": "tsx scripts/generate-item-draft.mts"
   },
   "dependencies": {
     "@react-pdf/renderer": "^4.5.1",
@@ -27,6 +28,8 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
     "tailwindcss": "^4",
+    "tsx": "^4.20.3",
+    "sharp": "^0.34.3",
     "typescript": "^5"
   }
 }

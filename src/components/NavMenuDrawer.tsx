@@ -4,10 +4,11 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { getWardrobeEntryPath } from "@/lib/wardrobeGate";
 
 const links = [
   { href: "/", label: "Lookbook" },
-  { href: "/wardrobe", label: "Digital Wardrobe" },
+  { href: getWardrobeEntryPath(), label: "Digital Wardrobe" },
 ];
 
 const HEADER_OFFSET = "5rem";

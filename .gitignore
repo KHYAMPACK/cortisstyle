@@ -20,6 +20,9 @@
 # production
 /build
 
+# generated item drafts (review before committing)
+/drafts/
+
 # misc
 .DS_Store
 *.pem

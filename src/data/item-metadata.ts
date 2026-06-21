@@ -2,15 +2,14 @@ import type { ClothingCategory, ItemFashionVectors } from "@/types/item";
 
 export const clothingItemFashionMeta: Record<string, ItemFashionVectors> = {
   "black-beanie-01": {
-    displayModel: "Chanel — Vintage Distressed Ribbed Beanie",
+    displayModel: "Tornado Mart - Lace-up Knit Cap",
     fitGuidance: {
-      type: "Cropped & Snug Crown Fit",
-      fabricWeight: "Fine-gauge merino wool blend",
-      modelSpecs: "Model is 184cm/72kg wearing one-size archive fit",
+      type: "One-size Fit",
+      fabricWeight: "%50 Cotton, %50 Acrylic",
     },
     resaleKeywords: {
-      tags: "Chanel vintage distressed beanie, Y2K ribbed knit",
-      estPriceRange: "$40 - $70 on Grailed/Depop",
+      tags: "Tornado Mart lace-up knit cap, Y2K knit cap",
+      estPriceRange: "$25 - $30",
     },
     stylingExecution: {
       howToWear:

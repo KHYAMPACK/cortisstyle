@@ -4,6 +4,10 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { AuthPopup } from "@/components/AuthPopup";
 import { useAuth } from "@/context/AuthContext";
+import {
+  getWardrobeEntryPath,
+  isWardrobeGateEnabled,
+} from "@/lib/wardrobeGate";
 
 interface EnterDigitalWardrobeButtonProps {
   className?: string;
@@ -17,10 +21,15 @@ export function EnterDigitalWardrobeButton({
   const [showAuthPopup, setShowAuthPopup] = useState(false);
 
   const goToWardrobe = () => {
-    router.push("/wardrobe");
+    router.push(getWardrobeEntryPath());
   };
 
   const handleClick = () => {
+    if (isWardrobeGateEnabled()) {
+      goToWardrobe();
+      return;
+    }
+
     if (isAuthenticated) {
       goToWardrobe();
       return;

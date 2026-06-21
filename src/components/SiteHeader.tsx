@@ -7,16 +7,18 @@ import { useEffect, useState } from "react";
 import { HeaderIconNav } from "@/components/HeaderIconNav";
 import { NavMenuDrawer } from "@/components/NavMenuDrawer";
 import { useScrollDirection } from "@/hooks/useScrollDirection";
+import { isWardrobeComingSoonPath } from "@/lib/wardrobeGate";
 
 export function SiteHeader() {
   const pathname = usePathname();
   const isHome = pathname === "/";
+  const isComingSoon = isWardrobeComingSoonPath(pathname);
   const showBrand = useScrollDirection();
   const [heroOverlay, setHeroOverlay] = useState(isHome);
 
   useEffect(() => {
     if (!isHome) {
-      setHeroOverlay(false);
+      setHeroOverlay(isComingSoon);
       return;
     }
 
@@ -32,9 +34,9 @@ export function SiteHeader() {
       window.removeEventListener("scroll", syncHeroOverlay);
       window.removeEventListener("resize", syncHeroOverlay);
     };
-  }, [isHome]);
+  }, [isHome, isComingSoon]);
 
-  const inverse = isHome && heroOverlay;
+  const inverse = (isHome && heroOverlay) || isComingSoon;
 
   return (
     <header
