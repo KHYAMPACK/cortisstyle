@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { LookGrid } from "@/components/LookGrid";
 import { LookModal } from "@/components/LookModal";
+import { EnterDigitalWardrobeButton } from "@/components/EnterDigitalWardrobeButton";
 import {
   HomeHero,
   LOOKBOOK_COLLECTION_ID,
@@ -32,6 +33,9 @@ export default function Home() {
             An editorial study in form, silhouette, and restraint. Curated
             looks for the new season.
           </p>
+          <div className="mt-8 md:mt-10">
+            <EnterDigitalWardrobeButton className="w-full sm:w-auto" />
+          </div>
         </div>
 
         <LookGrid onSelectLook={setSelectedLook} />

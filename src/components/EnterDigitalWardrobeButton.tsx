@@ -5,7 +5,13 @@ import { useState } from "react";
 import { AuthPopup } from "@/components/AuthPopup";
 import { useAuth } from "@/context/AuthContext";
 
-export function EnterDigitalWardrobeButton() {
+interface EnterDigitalWardrobeButtonProps {
+  className?: string;
+}
+
+export function EnterDigitalWardrobeButton({
+  className = "",
+}: EnterDigitalWardrobeButtonProps) {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
   const [showAuthPopup, setShowAuthPopup] = useState(false);
@@ -28,7 +34,7 @@ export function EnterDigitalWardrobeButton() {
       <button
         type="button"
         onClick={handleClick}
-        className="btn-primary border border-jet-black px-5 py-3 font-mono text-[10px] tracking-[0.35em]"
+        className={`btn-primary border border-jet-black px-8 py-4 font-mono text-[11px] tracking-[0.35em] ${className}`.trim()}
       >
         Enter Digital Wardrobe
       </button>

@@ -10,6 +10,8 @@ const links = [
   { href: "/wardrobe", label: "Digital Wardrobe" },
 ];
 
+const HEADER_OFFSET = "5rem";
+
 export function NavMenuDrawer({ tone = "default" }: { tone?: "default" | "inverse" }) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -35,8 +37,8 @@ export function NavMenuDrawer({ tone = "default" }: { tone?: "default" | "invers
 
   const iconClassName =
     tone === "inverse"
-      ? "h-[18px] w-[18px] text-white"
-      : "h-[18px] w-[18px] text-neutral-900";
+      ? "h-6 w-6 text-white"
+      : "h-6 w-6 text-neutral-900";
 
   return (
     <>
@@ -45,12 +47,12 @@ export function NavMenuDrawer({ tone = "default" }: { tone?: "default" | "invers
         aria-label={isOpen ? "Close navigation menu" : "Open navigation menu"}
         aria-expanded={isOpen}
         onClick={() => setIsOpen((current) => !current)}
-        className="flex h-10 w-10 items-center justify-center transition-opacity hover:opacity-60"
+        className="relative z-[60] -ml-1 flex h-14 w-14 items-center justify-center transition-opacity hover:opacity-60"
       >
         {isOpen ? (
-          <X strokeWidth={1.5} className={iconClassName} />
+          <X strokeWidth={1.25} className={iconClassName} />
         ) : (
-          <Menu strokeWidth={1.5} className={iconClassName} />
+          <Menu strokeWidth={1.25} className={iconClassName} />
         )}
       </button>
 
@@ -65,7 +67,7 @@ export function NavMenuDrawer({ tone = "default" }: { tone?: "default" | "invers
               exit={{ opacity: 0 }}
               transition={{ duration: 0.25 }}
               onClick={() => setIsOpen(false)}
-              className="fixed inset-0 z-40 bg-black/20 backdrop-blur-[2px]"
+              className="fixed top-20 right-0 left-0 z-[38] h-[calc(100dvh-5rem)] bg-black/25 backdrop-blur-[2px]"
             />
 
             <motion.nav
@@ -74,24 +76,32 @@ export function NavMenuDrawer({ tone = "default" }: { tone?: "default" | "invers
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ duration: 0.35, ease: "easeInOut" }}
-              className="fixed top-20 bottom-0 left-0 z-40 w-[min(18rem,80vw)] border-r border-blueprint-border surface-blueprint px-6 py-8"
+              style={{ height: `calc(100dvh - ${HEADER_OFFSET})` }}
+              className="fixed top-20 left-0 z-[40] flex h-[calc(100dvh-5rem)] min-h-[calc(100dvh-5rem)] w-[min(22rem,88vw)] flex-col border-r border-blueprint-border bg-[#F4F6F8] shadow-2xl"
             >
-              <p className="text-meta mb-6 text-[9px] tracking-[0.45em] uppercase">
-                Navigation
-              </p>
-              <ul className="space-y-4">
-                {links.map((link) => (
-                  <li key={link.href}>
-                    <Link
-                      href={link.href}
-                      onClick={() => setIsOpen(false)}
-                      className="font-serif text-xl tracking-[0.08em] text-neutral-900 uppercase transition-opacity hover:opacity-60"
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+              <div className="flex h-full min-h-0 flex-col">
+                <div className="flex h-16 shrink-0 items-center border-b border-blueprint-border px-6 md:px-8">
+                  <p className="text-meta text-[9px] tracking-[0.45em] uppercase">
+                    Navigation
+                  </p>
+                </div>
+
+                <div className="px-6 py-10 md:px-8 md:py-12">
+                <ul className="space-y-6">
+                  {links.map((link) => (
+                    <li key={link.href}>
+                      <Link
+                        href={link.href}
+                        onClick={() => setIsOpen(false)}
+                        className="font-serif text-2xl tracking-[0.08em] text-jet-black uppercase transition-opacity hover:opacity-60 md:text-3xl"
+                      >
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+                </div>
+              </div>
             </motion.nav>
           </>
         )}
