@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronDown } from "lucide-react";
+import { SocialMediaLinks } from "@/components/SocialMediaLinks";
 
 export const LOOKBOOK_COLLECTION_ID = "lookbook-collection";
 
@@ -17,6 +18,12 @@ export function HomeHero() {
       aria-label="Cortis Style editorial hero"
       className="hero-editorial-gradient relative flex h-[100dvh] min-h-[100dvh] w-screen max-w-none flex-col justify-between overflow-hidden"
     >
+      {/* Top-left social strip — mobile: flush under safe area; desktop: upper-left below header */}
+      <SocialMediaLinks
+        tone="hero"
+        className="absolute top-[max(1.35rem,env(safe-area-inset-top))] left-[4.25rem] z-20 md:top-24 md:left-10"
+      />
+
       <div className="relative z-20 flex flex-1 flex-col justify-end px-5 pb-36 pt-28 md:px-10 md:pb-40 md:pt-32">
         <div className="max-w-5xl">
           <p className="font-mono text-[10px] tracking-[0.45em] text-white/75 uppercase md:text-[11px]">

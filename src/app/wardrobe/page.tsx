@@ -4,12 +4,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AuthPopup } from "@/components/AuthPopup";
+import { ArchiveCommunitySignOff } from "@/components/ArchiveCommunitySignOff";
 import { WardrobeBuilderCanvas } from "@/components/wardrobe/WardrobeBuilderCanvas";
 import { WardrobeItemsGrid } from "@/components/wardrobe/WardrobeItemsGrid";
 import { WardrobeLoadingState } from "@/components/wardrobe/WardrobeLoadingState";
 import { WardrobeLooksGrid } from "@/components/wardrobe/WardrobeLooksGrid";
 import { WardrobeTabs } from "@/components/wardrobe/WardrobeTabs";
 import { useAuth } from "@/context/AuthContext";
+import { getNotifyDeployPath, isAuthGateEnabled } from "@/lib/launchGates";
 import type { SavedWardrobeOutfitBlueprint } from "@/types/wardrobe-builder";
 
 export default function WardrobePage() {
@@ -36,9 +38,13 @@ export default function WardrobePage() {
     if (isInitializing) return;
 
     if (!isAuthenticated) {
+      if (isAuthGateEnabled()) {
+        router.replace(getNotifyDeployPath());
+        return;
+      }
       setShowAuthPopup(true);
     }
-  }, [isAuthenticated, isInitializing]);
+  }, [isAuthenticated, isInitializing, router]);
 
   const handleSignOut = async () => {
     try {
@@ -74,12 +80,15 @@ export default function WardrobePage() {
 
   return (
     <div className="min-h-full bg-ice-floor text-jet-black">
-      <AuthPopup
-        isOpen={showAuthPopup && !isAuthenticated}
-        onClose={handleAuthClose}
-        onAuthSuccess={() => setShowAuthPopup(false)}
-        description="Join Cortis Style to access your private archive."
-      />
+      {!isAuthGateEnabled() && (
+        <AuthPopup
+          isOpen={showAuthPopup && !isAuthenticated}
+          onClose={handleAuthClose}
+          onAuthSuccess={() => setShowAuthPopup(false)}
+          description="Join Cortis Style to access your private archive."
+          allowSignUp={false}
+        />
+      )}
 
       <section className="border-b border-blueprint-border px-5 py-8 md:px-10 md:py-10">
         <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
@@ -148,9 +157,12 @@ export default function WardrobePage() {
         </main>
       )}
 
-      <footer className="flex flex-col items-start justify-between gap-4 border-t border-blueprint-border px-5 py-8 text-meta text-[9px] tracking-[0.4em] uppercase md:flex-row md:items-center md:px-10">
-        <span>Cortis Style © 2026</span>
-        <span>Digital Wardrobe — Private Archive</span>
+      <footer className="border-t border-blueprint-border">
+        <div className="flex flex-col items-start justify-between gap-4 px-5 py-8 text-meta text-[9px] tracking-[0.4em] uppercase md:flex-row md:items-center md:px-10">
+          <span>Cortis Style © 2026</span>
+          <span>Digital Wardrobe — Private Archive</span>
+        </div>
+        <ArchiveCommunitySignOff tone="light" className="mt-0 border-t border-blueprint-border pt-10 pb-10" />
       </footer>
     </div>
   );

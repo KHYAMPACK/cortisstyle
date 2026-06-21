@@ -3,7 +3,8 @@ import { getServiceSupabase, isValidNotifyEmail } from "@/lib/supabaseAdmin";
 export type FunnelNotifySource =
   | "wardrobe-coming-soon"
   | "archive-extension"
-  | "checkout-priority";
+  | "checkout-priority"
+  | "member-notify";
 
 export { isValidNotifyEmail };
 
@@ -40,6 +41,19 @@ export async function insertFunnelNotifySignup(input: {
     if (error) {
       if (error.code === "23505") return { ok: false, code: "duplicate" };
       console.error("archive_stream_signups insert failed:", error.message);
+      return { ok: false, code: "error" };
+    }
+    return { ok: true };
+  }
+
+  if (input.source === "member-notify") {
+    const { error } = await supabase.from("member_notify_signups").insert({
+      email: normalized,
+      source: input.source,
+    });
+    if (error) {
+      if (error.code === "23505") return { ok: false, code: "duplicate" };
+      console.error("member_notify_signups insert failed:", error.message);
       return { ok: false, code: "error" };
     }
     return { ok: true };

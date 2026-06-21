@@ -1,12 +1,15 @@
 "use client";
 
 import { User } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { AuthPopup } from "@/components/AuthPopup";
 import { ProfileDropdown } from "@/components/ProfileDropdown";
 import { useAuth } from "@/context/AuthContext";
+import { getNotifyDeployPath, isAuthGateEnabled } from "@/lib/launchGates";
 
 export function ProfileButton({ tone = "default" }: { tone?: "default" | "inverse" }) {
+  const router = useRouter();
   const iconProps = {
     strokeWidth: 1.5,
     className:
@@ -56,6 +59,11 @@ export function ProfileButton({ tone = "default" }: { tone?: "default" | "invers
       return;
     }
 
+    if (isAuthGateEnabled()) {
+      router.push(getNotifyDeployPath());
+      return;
+    }
+
     setShowAuthPopup(true);
   };
 
@@ -79,11 +87,13 @@ export function ProfileButton({ tone = "default" }: { tone?: "default" | "invers
         />
       )}
 
-      <AuthPopup
-        isOpen={showAuthPopup}
-        onClose={() => setShowAuthPopup(false)}
-        onAuthSuccess={() => setShowAuthPopup(false)}
-      />
+      {!isAuthGateEnabled() && (
+        <AuthPopup
+          isOpen={showAuthPopup}
+          onClose={() => setShowAuthPopup(false)}
+          onAuthSuccess={() => setShowAuthPopup(false)}
+        />
+      )}
     </div>
   );
 }

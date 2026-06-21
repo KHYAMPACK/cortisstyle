@@ -1,12 +1,12 @@
 /** Official Cortis Style social routing — single source of truth. */
 export const CORTIS_SOCIAL = {
   instagram: {
-    href: "https://instagram.com/cortisstyl",
-    label: "[ INSTAGRAM ]",
+    href: "https://instagram.com/cortisstyle",
+    label: "// INSTAGRAM",
   },
   tiktok: {
-    href: "https://tiktok.com/@cortisstyl",
-    label: "[ TIKTOK ]",
+    href: "https://tiktok.com/@cortisstyle",
+    label: "// TIKTOK",
   },
 } as const;
 

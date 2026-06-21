@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { SocialLinksRow } from "@/components/SocialLinksRow";
+import { ArchiveCommunitySignOff } from "@/components/ArchiveCommunitySignOff";
 import { getWardrobeEntryPath } from "@/lib/wardrobeGate";
 
 const links = [
@@ -79,16 +79,16 @@ export function NavMenuDrawer({ tone = "default" }: { tone?: "default" | "invers
               exit={{ x: "-100%" }}
               transition={{ duration: 0.35, ease: "easeInOut" }}
               style={{ height: `calc(100dvh - ${HEADER_OFFSET})` }}
-              className="fixed top-20 left-0 z-[40] flex h-[calc(100dvh-5rem)] min-h-[calc(100dvh-5rem)] w-[min(22rem,88vw)] flex-col border-r border-blueprint-border bg-[#F4F6F8] shadow-2xl"
+              className="fixed top-20 left-0 z-[40] flex h-[calc(100dvh-5rem)] min-h-[calc(100dvh-5rem)] w-[min(22rem,88vw)] flex-col overflow-y-auto border-r border-blueprint-border bg-[#F4F6F8] shadow-2xl"
             >
-              <div className="flex h-full min-h-0 flex-col">
+              <div className="flex min-h-full flex-col">
                 <div className="flex h-16 shrink-0 items-center border-b border-blueprint-border px-6 md:px-8">
                   <p className="text-meta text-[9px] tracking-[0.45em] uppercase">
                     Navigation
                   </p>
                 </div>
 
-                <div className="flex min-h-0 flex-1 flex-col px-6 py-10 md:px-8 md:py-12">
+                <div className="flex flex-1 flex-col px-6 py-10 md:px-8 md:py-12">
                   <ul className="space-y-6">
                     {links.map((link) => (
                       <li key={link.href}>
@@ -102,13 +102,13 @@ export function NavMenuDrawer({ tone = "default" }: { tone?: "default" | "invers
                       </li>
                     ))}
                   </ul>
+                </div>
 
-                  <div className="mt-auto border-t border-blueprint-border pt-8">
-                    <p className="text-meta mb-4 text-[9px] tracking-[0.45em] uppercase">
-                      Connect
-                    </p>
-                    <SocialLinksRow tone="light" />
-                  </div>
+                <div className="relative z-10 shrink-0 border-t border-blueprint-border bg-[#F4F6F8] px-2">
+                  <ArchiveCommunitySignOff
+                    tone="light"
+                    className="mt-0 pb-8 pt-6"
+                  />
                 </div>
               </div>
             </motion.nav>

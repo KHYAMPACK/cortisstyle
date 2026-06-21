@@ -8,6 +8,10 @@ import {
   getWardrobeEntryPath,
   isWardrobeGateEnabled,
 } from "@/lib/wardrobeGate";
+import {
+  getNotifyDeployPath,
+  isAuthGateEnabled,
+} from "@/lib/launchGates";
 
 interface EnterDigitalWardrobeButtonProps {
   className?: string;
@@ -35,6 +39,11 @@ export function EnterDigitalWardrobeButton({
       return;
     }
 
+    if (isAuthGateEnabled()) {
+      router.push(getNotifyDeployPath());
+      return;
+    }
+
     setShowAuthPopup(true);
   };
 
@@ -53,6 +62,7 @@ export function EnterDigitalWardrobeButton({
         onClose={() => setShowAuthPopup(false)}
         onAuthSuccess={goToWardrobe}
         description="Join Cortis Style to access your private archive."
+        allowSignUp={!isAuthGateEnabled()}
       />
     </>
   );

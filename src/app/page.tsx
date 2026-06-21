@@ -8,7 +8,7 @@ import {
   HomeHero,
   LOOKBOOK_COLLECTION_ID,
 } from "@/components/HomeHero";
-import { SocialLinksRow } from "@/components/SocialLinksRow";
+import { ArchiveCommunitySignOff } from "@/components/ArchiveCommunitySignOff";
 import type { Look } from "@/types/look";
 
 export default function Home() {
@@ -42,18 +42,13 @@ export default function Home() {
         <LookGrid onSelectLook={setSelectedLook} />
       </section>
 
-      <footer className="border-t border-blueprint-border px-5 py-8 md:px-10">
-        <div className="flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
-          <div className="flex flex-col gap-4">
-            <span className="text-meta text-[9px] tracking-[0.4em] uppercase">
-              Cortis Style © 2026
-            </span>
-            <SocialLinksRow tone="light" />
-          </div>
+      <footer className="border-t border-blueprint-border px-5 md:px-10">
+        <div className="flex flex-col items-center justify-between gap-4 py-8 md:flex-row md:items-end">
           <span className="text-meta text-[9px] tracking-[0.4em] uppercase">
-            Lookbook — All Rights Reserved
+            Cortis Style © 2026 — Lookbook All Rights Reserved
           </span>
         </div>
+        <ArchiveCommunitySignOff tone="light" className="mt-0 border-t border-blueprint-border pt-10 pb-10" />
       </footer>
 
       <LookModal look={selectedLook} onClose={() => setSelectedLook(null)} />

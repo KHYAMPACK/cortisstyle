@@ -2,8 +2,10 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { FormEvent, useEffect, useState } from "react";
+import Link from "next/link";
 import { createPortal } from "react-dom";
 import { useAuth } from "@/context/AuthContext";
+import { getNotifyDeployPath } from "@/lib/launchGates";
 
 const spring = { type: "spring" as const, stiffness: 100, damping: 20 };
 
@@ -12,6 +14,8 @@ interface AuthPopupProps {
   onClose: () => void;
   onAuthSuccess?: () => void;
   description?: string;
+  /** When false, hides sign-up toggle (deploy gate). */
+  allowSignUp?: boolean;
 }
 
 type AuthMode = "signin" | "signup";
@@ -21,6 +25,7 @@ export function AuthPopup({
   onClose,
   onAuthSuccess,
   description = "Join Cortis Style to access your private archive.",
+  allowSignUp = true,
 }: AuthPopupProps) {
   const {
     signInWithPassword,
@@ -63,7 +68,7 @@ export function AuthPopup({
     try {
       if (mode === "signin") {
         await signInWithPassword(email.trim(), password);
-      } else {
+      } else if (allowSignUp) {
         const hasSession = await signUpWithPassword(email.trim(), password);
         if (!hasSession) return;
       }
@@ -121,9 +126,12 @@ export function AuthPopup({
               {description}
             </p>
 
-            <form onSubmit={handleSubmit} className="mt-8 space-y-4">
-              <label className="block">
-                <span className="mb-2 block text-[9px] tracking-[0.35em] text-neutral-400 uppercase">
+            <form
+              onSubmit={handleSubmit}
+              className="mx-auto mt-8 flex w-full max-w-[420px] flex-col items-center text-center"
+            >
+              <label className="block w-full text-left">
+                <span className="mb-2 block text-center text-[9px] tracking-[0.35em] text-neutral-400 uppercase">
                   Email
                 </span>
                 <input
@@ -132,13 +140,13 @@ export function AuthPopup({
                   autoComplete="email"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
-                  className="w-full border border-blueprint-border bg-canvas-paper px-3 py-3 text-sm text-neutral-900 outline-none transition-colors focus:border-blueprint-accent"
+                  className="w-full border border-blueprint-border bg-canvas-paper px-3 py-3 text-center text-sm text-neutral-900 outline-none transition-colors focus:border-jet-black"
                   placeholder="you@studio.com"
                 />
               </label>
 
-              <label className="block">
-                <span className="mb-2 block text-[9px] tracking-[0.35em] text-neutral-400 uppercase">
+              <label className="mt-4 block w-full text-left">
+                <span className="mb-2 block text-center text-[9px] tracking-[0.35em] text-neutral-400 uppercase">
                   Password
                 </span>
                 <input
@@ -150,7 +158,7 @@ export function AuthPopup({
                   }
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
-                  className="w-full border border-blueprint-border bg-canvas-paper px-3 py-3 text-sm text-neutral-900 outline-none transition-colors focus:border-blueprint-accent"
+                  className="w-full border border-blueprint-border bg-canvas-paper px-3 py-3 text-center text-sm text-neutral-900 outline-none transition-colors focus:border-jet-black"
                   placeholder="••••••••"
                 />
               </label>
@@ -159,7 +167,7 @@ export function AuthPopup({
                 <motion.p
                   initial={{ opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="text-[11px] leading-relaxed text-red-600"
+                  className="mt-4 w-full text-center text-[11px] leading-relaxed text-red-600"
                 >
                   {authError}
                 </motion.p>
@@ -168,7 +176,7 @@ export function AuthPopup({
               <button
                 type="submit"
                 disabled={isAuthenticating}
-                className="btn-primary w-full border border-jet-black px-5 py-3 font-mono text-[10px] tracking-[0.3em] disabled:opacity-60"
+                className="btn-primary mt-6 w-full border border-jet-black px-5 py-3 text-center font-mono text-[10px] tracking-[0.3em] disabled:opacity-60"
               >
                 {isAuthenticating
                   ? "Processing…"
@@ -178,15 +186,25 @@ export function AuthPopup({
               </button>
             </form>
 
-            <button
-              type="button"
-              onClick={toggleMode}
-              className="text-meta mt-5 w-full text-[10px] tracking-[0.25em] uppercase transition-colors hover:text-jet-black"
-            >
-              {mode === "signin"
-                ? "Create Premium Account"
-                : "Already have an account? Sign In"}
-            </button>
+            {allowSignUp ? (
+              <button
+                type="button"
+                onClick={toggleMode}
+                className="text-meta mt-5 w-full text-[10px] tracking-[0.25em] uppercase transition-colors hover:text-jet-black"
+              >
+                {mode === "signin"
+                  ? "Create Premium Account"
+                  : "Already have an account? Sign In"}
+              </button>
+            ) : (
+              <Link
+                href={getNotifyDeployPath()}
+                onClick={onClose}
+                className="text-meta mt-5 block w-full text-center text-[10px] tracking-[0.25em] uppercase transition-colors hover:text-jet-black"
+              >
+                Get notified when accounts open →
+              </Link>
+            )}
 
             <button
               type="button"

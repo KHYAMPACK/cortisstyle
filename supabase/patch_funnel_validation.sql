@@ -44,4 +44,18 @@ alter table public.checkout_priority_signups enable row level security;
 alter table public.purchase_intent_events enable row level security;
 alter table public.purchase_intent_stats enable row level security;
 
+-- Profile / member access waitlist (/notify)
+create table if not exists public.member_notify_signups (
+  id uuid primary key default gen_random_uuid(),
+  email text not null,
+  source text not null default 'member-notify',
+  created_at timestamptz not null default timezone('utc', now()),
+  constraint member_notify_signups_email_unique unique (email)
+);
+
+create index if not exists member_notify_signups_created_at_idx
+  on public.member_notify_signups (created_at desc);
+
+alter table public.member_notify_signups enable row level security;
+
 -- Inserts via server API (service role) only.

@@ -16,6 +16,7 @@ const VALID_SOURCES: FunnelNotifySource[] = [
   "wardrobe-coming-soon",
   "archive-extension",
   "checkout-priority",
+  "member-notify",
 ];
 
 export async function POST(request: Request) {

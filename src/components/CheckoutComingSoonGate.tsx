@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { looks } from "@/data/looks";
+import { ArchiveCommunitySignOff } from "@/components/ArchiveCommunitySignOff";
 import { FunnelEmailCapture } from "@/components/FunnelEmailCapture";
-import { SocialLinksRow } from "@/components/SocialLinksRow";
 
 export function CheckoutComingSoonGate() {
   const searchParams = useSearchParams();
@@ -23,8 +23,8 @@ export function CheckoutComingSoonGate() {
         }}
       />
 
-      <div className="relative z-10 w-full max-w-lg">
-        <div className="mb-10 space-y-3 border border-neutral-800 bg-neutral-950/60 p-5">
+      <div className="relative z-10 flex w-full max-w-lg flex-col items-center text-center">
+        <div className="mb-10 w-full space-y-3 border border-neutral-800 bg-neutral-950/60 p-5 text-left">
           <div className="h-3 w-24 bg-neutral-800" aria-hidden />
           <div className="h-2 w-full bg-neutral-900" aria-hidden />
           <div className="h-2 w-5/6 bg-neutral-900" aria-hidden />
@@ -35,22 +35,22 @@ export function CheckoutComingSoonGate() {
           <div className="h-10 w-full border border-neutral-700 bg-neutral-900/20" aria-hidden />
         </div>
 
-        <p className="font-mono text-[10px] tracking-[0.45em] text-neutral-500 uppercase">
+        <p className="w-full font-mono text-[10px] tracking-[0.45em] text-neutral-500 uppercase">
           Secure Checkout Preview
         </p>
 
-        <h1 className="mt-4 font-serif text-[clamp(2rem,7vw,3.25rem)] leading-none tracking-[0.18em] uppercase">
+        <h1 className="mt-4 w-full font-serif text-[clamp(2rem,7vw,3.25rem)] leading-none tracking-[0.18em] uppercase">
           Collection En Route
         </h1>
 
-        <p className="mt-5 max-w-md text-sm leading-relaxed text-neutral-400">
+        <p className="mt-5 w-full max-w-md text-sm leading-relaxed text-neutral-400">
           This exclusive curation package is currently being finalized. Secure
           your priority sequence number below to gain earliest access to purchase
           links.
         </p>
 
         {look ? (
-          <p className="text-meta mt-4 text-[10px] tracking-[0.25em] text-neutral-500 uppercase">
+          <p className="text-meta mt-4 w-full text-[10px] tracking-[0.25em] text-neutral-500 uppercase">
             Intent registered for: {look.title}
           </p>
         ) : null}
@@ -66,12 +66,12 @@ export function CheckoutComingSoonGate() {
 
         <Link
           href="/"
-          className="mt-10 inline-block font-mono text-[10px] tracking-[0.35em] text-neutral-500 uppercase transition-colors hover:text-white"
+          className="mt-10 font-mono text-[10px] tracking-[0.35em] text-neutral-500 uppercase transition-colors hover:text-white"
         >
           ← Return to Lookbook
         </Link>
 
-        <SocialLinksRow tone="dark" className="mt-8" />
+        <ArchiveCommunitySignOff tone="dark" className="mt-0 pb-8" />
       </div>
     </section>
   );
