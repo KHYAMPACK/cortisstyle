@@ -111,32 +111,30 @@ export function IntroLoader() {
 
   return createPortal(
     <AnimatePresence mode="wait">
-      {phase !== "done" && (
+      <motion.div
+        key="intro-loader"
+        role="status"
+        aria-live="polite"
+        aria-label="Loading Cortisstyle"
+        initial={{ opacity: 1, y: 0 }}
+        animate={phase === "exiting" ? exitPanel : { opacity: 1, y: 0 }}
+        className={`fixed inset-0 z-[9999] flex h-screen w-screen flex-col items-center justify-center bg-[#0D0D0D] ${
+          phase === "exiting" ? "pointer-events-none" : "pointer-events-auto"
+        }`}
+      >
         <motion.div
-          key="intro-loader"
-          role="status"
-          aria-live="polite"
-          aria-label="Loading Cortisstyle"
-          initial={{ opacity: 1, y: 0 }}
-          animate={phase === "exiting" ? exitPanel : { opacity: 1, y: 0 }}
-          className={`fixed inset-0 z-[9999] flex h-screen w-screen flex-col items-center justify-center bg-[#0D0D0D] ${
-            phase === "exiting" ? "pointer-events-none" : "pointer-events-auto"
-          }`}
+          {...entrance}
+          className="flex items-center gap-5 px-6 md:gap-8"
         >
-          <motion.div
-            {...entrance}
-            className="flex items-center gap-5 px-6 md:gap-8"
-          >
-            <MasonryFramingLines side="left" />
+          <MasonryFramingLines side="left" />
 
-            <p className="font-serif text-[11px] font-light tracking-[0.55em] text-white uppercase md:text-[13px]">
-              C O R T I S S T Y L E
-            </p>
+          <p className="font-serif text-[11px] font-light tracking-[0.55em] text-white uppercase md:text-[13px]">
+            C O R T I S S T Y L E
+          </p>
 
-            <MasonryFramingLines side="right" />
-          </motion.div>
+          <MasonryFramingLines side="right" />
         </motion.div>
-      )}
+      </motion.div>
     </AnimatePresence>,
     document.body,
   );
