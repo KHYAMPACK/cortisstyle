@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import { Cormorant_Garamond, Inter } from "next/font/google";
 import { Providers } from "@/components/Providers";
 import "./globals.css";
@@ -38,6 +39,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-full bg-ice-floor font-sans text-jet-black">
         <Providers>{children}</Providers>
+        <Analytics />
       </body>
     </html>
   );
