@@ -28,4 +28,10 @@ export const itemRarityScores: Record<string, RarityScore> = {
   "js-eyewear-5052-sunglasses-01": 2,
   "gray-raw-denim-jacket-01": 4,
   "tweed-mini-skirt-with-decorative-belt-01": 2,
+  "women-s-tan-cream-coat-01": 1,
+  "hollister-co-women-s-black-and-navy-shorts-01": 3,
+  "polo-ralph-lauren-women-s-shirt-01": 1,
+  "obosoyo-minimalist-burgundy-faux-leather-tote-ba-01": 2,
+  "the-miu-miu-bayonetta-glasses-01": 3,
+  "zava-black-suede-ballerina-01": 3,
 };

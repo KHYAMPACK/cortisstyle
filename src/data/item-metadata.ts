@@ -569,6 +569,132 @@ export const clothingItemFashionMeta: Record<string, ItemFashionVectors> = {
       url: "https://www2.hm.com/en_us/productpage.1301483002.html",
     },
   },
+"women-s-tan-cream-coat-01": {
+ displayModel: "Nanjun - Oversized Draped Trench Coat",
+ fitGuidance: {
+   type: "Relaxed, Draped Trench Silhouette",
+   fabricWeight: "Mid-weight cotton twill blend",
+ },
+ resaleKeywords: {
+   tags: "Nanjun beige trench, oversized trench coat, minimalist outerwear, Y2K trench",
+   estPriceRange: "$10 on Depop",
+ },
+ stylingExecution: {
+   howToWear:
+     "Cinch the waist with the self-fabric belt for a defined silhouette, or wear open and draped for a fluid, layered effect over tailored separates.",
+   textureSynergy:
+     "Smooth twill surface provides a clean, structured canvas, contrasting effectively with raw denim or textured knitwear for depth.",
+ },
+ budgetAlternativeLink: {
+   name: "ASOS DESIGN Oversized Trench Coat Alternative",
+   url: "https://www.asos.com/weekday/weekday-oversized-trench-coat-in-beige/prd/210245310#colourWayId-210245316",
+ },
+},  
+"hollister-co-women-s-black-and-navy-shorts-01": {
+ displayModel: "Hollister Co. — Y2K Low-Rise Cuffed Chino Shorts",
+ fitGuidance: {
+   type: "Low-Rise Cuffed Silhouette",
+   fabricWeight: "Lightweight cotton twill",
+ },
+ resaleKeywords: {
+   tags: "Hollister low-rise shorts, Y2K chino shorts, cuffed utility shorts, faded black navy shorts",
+   estPriceRange: "$25 - $35 on Depop/Vinted",
+ },
+ stylingExecution: {
+   howToWear:
+     "Pair with a cropped tank or baby tee to emphasize the low-rise cut and expose the midriff.",
+   textureSynergy:
+     "The subtle twill texture grounds sheer or ribbed knit tops, providing a casual yet defined base.",
+ },
+ budgetAlternativeLink: {
+   name: "Y2K Urban Behaviour Pinstripe Blue Denim Low Rise Mini Shorts Sz 27 Grunge Emo Shorts",
+   url: "https://www.ebay.com/itm/318473308516?_skw=low+rise+mini+shorts+y2k&itmmeta=01KVQH7GRYAD98DZ5H7BZ8KK2G&hash=item4a267d0964:g:S88AAeSw9fxqNAsy&itmprp=enc%3AAQALAAAA8GfYFPkwiKCW4ZNSs2u11xAAbORzZPcT5fQOpmi%2FxsYkktbacflXqbpKT3wlQ3nvGdUGHg7vZjR%2Fa2dYuqmQaAxdSOTRF%2Bq5sbh4Fm31F2Ql%2FjZ%2BjGOiaVuSTtQzfkV8jt2iL9sH3k6TjCupUFLZmdh57T--G3LD4hGGgI8YNpy8rj%2FUP2lrGJchOA03d--EAfP7CuxSYugUxeUHswL%2Bza7zC7XUlqJeCD0elyieQRDdS2rjGc4o3ETzcKfwvnZbqaN83ZhXi0w2IiBCwf3nXDPnydf%2BvhfKiOLE91AQdpoJ0G%2FLlXvFmud7lj7h2RoLow%3D%3D%7Ctkp%3ABk9SR9aMnvHdZw",
+ },
+},
+"polo-ralph-lauren-women-s-shirt-01": {
+ displayModel: "Polo Ralph Lauren - Women's Essential V-Neck Shirt",
+ fitGuidance: {
+   type: "Slim-Fit V-Neck Silhouette",
+   fabricWeight: "Lightweight Cotton Jersey",
+ },
+ resaleKeywords: {
+   tags: "Polo Ralph Lauren women's v-neck shirt, classic white v-neck shirt, slim fit cotton jersey",
+   estPriceRange: "$10 on Depop",
+ },
+ stylingExecution: {
+   howToWear:
+     "Layer under structured outerwear to introduce a clean base, or wear solo for minimalist contrast against heavier bottoms.",
+   textureSynergy:
+     "Smooth cotton jersey provides a subtle counterpoint to raw denim or technical fabrics, preventing visual clutter.",
+ },
+ budgetAlternativeLink: {
+   name: "Amazon French Toast Cotton V-Neck Alternative",
+   url: "https://www.amazon.com/French-Toast-Sleeve-Stretch-Standard/dp/B09SVNYV47/ref=sr_1_1?crid=2CZP0VOWT0AL&dib=eyJ2IjoiMSJ9.L_O2lvXk4jJtvWSS8k7AcLS58jxghteLqlbjD9vbpOemnBmDdPLUZCetE8zU5KnL0MSTL2KPtHaqFL3skkM4VnCRYLWcB-0K7BOLj_jfkrtKx4nZ_AAvLaXuVQWB2W690FXLSKGe0-daI_FGP6f4-QjQS3r6Rs9Lo3Cm5L_D_8IGEMBWncRRtT_tSWdZjZmcfy61XC3vtJgFaWpoqO2DG--VWRhq4Vs3NUnB9AMQFUS8fEDj0CXmBdSBWyDR0tCNXIabS690USE9hBJMfO0lK0AnUPQi8LVyNaz8lKS8mtk.81uao7ZYSmXlzzjSyDwGD8__EAT2R39oRmOj1jCC9Bg&dib_tag=se&keywords=womens%2Bwhite%2Bpolo%2Bshirts%2Btriangle&qid=1782127860&sprefix=womens%2Bwhite%2Bpolo%2Bshirts%2Btriang%2Caps%2C393&sr=8-1&th=1&psc=1",
+ },
+},
+"obosoyo-minimalist-burgundy-faux-leather-tote-ba-01": {
+ displayModel: "Obosoyo — Minimalist Burgundy Patent Shoulder Tote",
+ fitGuidance: {
+   type: "Large Work / Travel Shoulder Bag",
+   fabricWeight: "High-gloss patent faux leather",
+ },
+ resaleKeywords: {
+   tags: "Obosoyo minimalist work / travel shoulder bag, burgundy patent faux leather, Y2K hobo bag, vegan leather tote",
+   estPriceRange: "$12 on Depop/eBay",
+ },
+ stylingExecution: {
+   howToWear:
+     "Carry close to the body, allowing the soft, unstructured form to contour against the natural silhouette. Ideal for a high-shoulder drape or hand-carry.",
+   textureSynergy:
+     "The high-sheen patent finish provides a stark, almost wet-look contrast against matte technical fabrics or heavily textured knits, introducing a subtle cyber-glam edge.",
+ },
+ budgetAlternativeLink: {
+   name: "eBay Minimalist Work / Travel Shoulder Bag",
+   url: "https://www.ebay.com/itm/298435853773?itmmeta=01KVKMP25B0TY0TV72FDCDXR5K&hash=item457c29bdcd:i:298435853773&itmprp=enc%3AAQALAAAAwDKQclQvzFwZQpmMrsO4LurzmlWrKohrb%2Bd7VLBehB4vICVPVZHbc1j30sT%2B50PyUp7FcHyc0%2F5JzDO9RhujpAzYhnsAUlOMOAJ2AnMzMwH%2FsWPWyYvdpwJPH0oS1h6PCBHC1jjj8UFrq7EwKdy%2FpQEq1b2oI5JE3o2M7FVrxt55Hp%2Fr1CfbnY1UBOb%2BgTQ1au2JyPmz3TQsCfi3A7q1y0zIpDv2z1qt0joGdrlEk6q4okvruG4BzMRK2PV1Z3JR1g%3D%3D%7Ctkp%3ABk9SR_Si2PTcZw",
+ },
+  },
+"the-miu-miu-bayonetta-glasses-01": {
+ displayModel: "Miu Miu - The Miu Miu Bayonetta Glasses",
+ fitGuidance: {
+   type: "Slim Rectangular Acetate Frames",
+   fabricWeight: "Polished acetate frame",
+ },
+ resaleKeywords: {
+   tags: "Miu Miu Bayonetta glasses, Y2K slim rectangular frames, brown acetate eyewear, archive Miu Miu",
+   estPriceRange: "$150 - $350 on Etsy",
+ },
+ stylingExecution: {
+   howToWear:
+     "Position high on the bridge to accentuate the sharp, elongated silhouette, framing the upper face with a subtle curve.",
+   textureSynergy:
+     "The warm tortoiseshell acetate offers a subtle contrast against cool-toned metallics or muted, technical fabrics, providing depth without harshness.",
+ },
+ budgetAlternativeLink: {
+   name: "Etsy Slim Y2K Glasses",
+   url: "https://www.etsy.com/market/slim_y2k_glasses",
+  },
+},
+"zava-black-suede-ballerina-01": {
+  displayModel: "Zava Black Suede Ballerina",
+  fitGuidance: {
+    type: "Sporty Lace-Up Ballet Flat with Rounded Toe and Sneaker Outsole",
+    fabricWeight: "Black suede upper with flexible rubber outsole",
+  },
+  resaleKeywords: {
+    tags: "Maguire Zava black suede ballerina, sporty ballet flat, lace-up flats, Y2K balletcore",
+    estPriceRange: "$260 on Maguire Shoes",
+  },
+  stylingExecution: {
+    howToWear:
+      "Ground a fluid, wide-leg pant or contrast with structured denim to introduce an unexpected, softened silhouette.",
+    textureSynergy:
+      "Soft suede surface offers a muted contrast to rigid denim or technical fabrics, while the rubber sole grounds the look with utilitarian edge.",
+  },
+  budgetAlternativeLink: {
+    name: "Zara Sporty Lace-Up Ballet Flats",
+    url: "https://www.zara.com/us/en/sporty-lace-up-ballet-flats-p15210710.html?v1=495712196",
+  },
+},
 };
 
 export function defaultFashionVectors(
@@ -595,6 +721,6 @@ export function defaultFashionVectors(
     budgetAlternativeLink: {
       name: `${brand} Budget Alternative`,
       url: "https://www.depop.com/",
-    },
+    },  
   };
 }
