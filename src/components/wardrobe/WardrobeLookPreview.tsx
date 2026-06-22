@@ -44,8 +44,11 @@ export function WardrobeLookPreview({ look }: WardrobeLookPreviewProps) {
               }}
             >
               <div
-                className="relative aspect-[2/3] w-[420px] shrink-0 overflow-hidden border border-blueprint-border surface-canvas-paper"
-                style={{ width: LOOK_CANVAS_REFERENCE_WIDTH }}
+                className="relative box-content shrink-0 overflow-hidden border border-blueprint-border surface-canvas-paper"
+                style={{
+                  width: LOOK_CANVAS_REFERENCE_WIDTH,
+                  height: LOOK_CANVAS_REFERENCE_HEIGHT,
+                }}
               >
                 <LookCanvas
                   look={look}

@@ -440,6 +440,135 @@ export const clothingItemFashionMeta: Record<string, ItemFashionVectors> = {
       url: "https://www.newbalance.com/",
     },
   },
+  "wide-heeeled-boots-01": {
+    displayModel: "Wide-Leg Heeled Boots",
+    fitGuidance: {
+      type: "Knee-High Slouchy Fit with Pointed Toe",
+      fabricWeight: "Faux leather with textile lining",
+    },
+    resaleKeywords: {
+      tags: "Bershka wide heel boots, wide-leg heeled boots, faux leather boots, Y2K inspired footwear",
+      estPriceRange: "$120 - $130 on Bershka",
+    },
+    stylingExecution: {
+      howToWear:
+        "Integrate with slim-fit denim or a midi skirt, allowing the slouchy shaft to create a softened silhouette.",
+      textureSynergy:
+        "The smooth faux leather surface provides a clean base, contrasting with textured knits or rigid denim.",
+    },
+    budgetAlternativeLink: {
+      name: "Zara Slouchy Heeled Boot Alternative",
+      url: "https://www.zara.com/es/es/search?searchTerm=https%3A%2F%2Fwww.zara.com%2Fsearch%3Fq%3DZara%2BSlouchy%2BHeeled%2BBoot%2BAlternative&section=WOMAN",
+    },
+  },
+  "ember-top-black-01": {
+    displayModel: "Susamusa - Ember Top",
+    fitGuidance: {
+      type: "Fluid Draped Adjustable Fit",
+      fabricWeight: "Lightweight fluid crepe",
+    },
+    resaleKeywords: {
+      tags: "Susamusa Ember top, asymmetric draped crepe, Y2K cowl neck, tie-shoulder camisole",
+      estPriceRange: "$110 - $120 on Susamusa",
+    },
+    stylingExecution: {
+      howToWear:
+        "Position the asymmetric neckline to highlight the collarbone or layer over a sheer long-sleeve for textural contrast.",
+      textureSynergy:
+        "The fine crepe's subtle sheen pairs well with matte leather or distressed denim for a balanced material interplay.",
+    },
+    budgetAlternativeLink: {
+      name: "ASOS DESIGN Asymmetric Draped Top Alternative",
+      url: "https://www.asos.com/search/?q=assymetric+draped+top+black&updateTerm=true",
+    },
+  },
+  "studded-oversized-tote-bag-01": {
+    displayModel: "Bopka - Studded Oversized Tote Bag",
+    fitGuidance: {
+      type: "Oversized Carry-All Silhouette",
+      fabricWeight: "Durable vegan leather construction",
+    },
+    resaleKeywords: {
+      tags: "Bopka studded tote, oversized vegan leather bag, cyber grunge carry-all",
+      estPriceRange: "$60 - $70 on Bopka.",
+    },
+    stylingExecution: {
+      howToWear:
+        "Carry slung low to emphasize its slouchy volume, allowing the studded details to catch light against darker layers.",
+      textureSynergy:
+        "The slightly distressed vegan leather and metal hardware provide a tactile contrast to smooth knits or rigid denim.",
+    },
+    budgetAlternativeLink: {
+      name: "Underarm Bag Studded Crossbody Bags PU Leather Handbag for Women",
+      url: "https://www.ebay.co.uk/itm/135742669367",
+    },
+  },
+  "js-eyewear-5052-sunglasses-01": {
+    displayModel: "JS Eyewear 5052 Sunglasses",
+    fitGuidance: {
+      type: "Oversized Wraparound Fit",
+      fabricWeight: "Plastic frame with crystal detailing",
+      modelSpecs: "60mm eye size",
+    },
+    resaleKeywords: {
+      tags: "JS Eyewear 5052, tortoise frame sunglasses, Y2K glam eyewear, brown gradient lenses",
+      estPriceRange: "$18 - $20 on Justsunnies.",
+    },
+    stylingExecution: {
+      howToWear:
+        "Wear low on the bridge to emphasize the soft wrap and frame the upper cheekbones.",
+      textureSynergy:
+        "Plastic frame and crystal details provide a decadent counterpoint to raw denim or distressed leather.",
+    },
+    budgetAlternativeLink: {
+      name: "Oversized Tortoise Frame Sunglasses Alternative",
+      url: "https://www.amazon.com/Oversized-Tortoise-Sunglasses/s?k=Oversized+Tortoise+Sunglasses",
+    },
+  },
+  "gray-raw-denim-jacket-01": {
+    displayModel: "Custom Made - Gray Raw Denim Jacket",
+    fitGuidance: {
+      type: "Structured Cropped Fit",
+      fabricWeight: "12-14oz Raw Selvedge Denim",
+      modelSpecs: "Model is 175cm/60kg wearing Size M",
+    },
+    resaleKeywords: {
+      tags: "Gray raw denim jacket, avant-garde denim jacket, cyber grunge outerwear, cropped denim jacket",
+      estPriceRange: "$160 - $180 on eBay",
+    },
+    stylingExecution: {
+      howToWear:
+        "Wear fully zipped to emphasize the high collar and unique toggle closures, or open over a fitted base layer.",
+      textureSynergy:
+        "Rigid raw denim provides a sharp contrast against fluid jersey or ribbed knits, grounding softer textures.",
+    },
+    budgetAlternativeLink: {
+      name: "Shein Distressed Cropped Denim Jacket Alternative",
+      url: "https://m.shein.co.uk/Slaydiva-Women-s-Casual-Distressed-Cropped-Denim-Jacket-p-50864842.html?attr_ids=&detailBusinessFrom=0-1_50864842%257C0-2&imgRatio=3-4&isAppointMall=&mallCode=1&pageListType=4&showFeedbackRec=1&src_identifier=st%253D2%2560sc%253DCropped%2520Denim%2520Jacket%2520Alternative%2560sr%253D0%2560ps%253D0&src_module=search&src_tab_page_id=page_pre_search1782084566460",
+    },
+  },
+  "tweed-mini-skirt-with-decorative-belt-01": {
+    displayModel: "Mango - Tweed Mini-Skirt with Decorative Belt",
+    fitGuidance: {
+      type: "Mid-Rise Structured Mini-Skirt Fit",
+      fabricWeight: "Cotton and wool blend",
+      modelSpecs: "Model is 187cm/60kg wearing Size S",
+    },
+    resaleKeywords: {
+      tags: "Mango tweed mini skirt, decorative belt skirt, structured mini skirt, Y2K aesthetic mini skirt with belt",
+      estPriceRange: "$40 - $50 on Mango",
+    },
+    stylingExecution: {
+      howToWear:
+        "Emphasize the mid-rise with a tucked-in waistband top, or juxtapose its structure with a fluid blouse.",
+      textureSynergy:
+        "The pronounced tweed surface provides depth against smooth knitwear or matte leather, grounding lighter layers.",
+    },
+    budgetAlternativeLink: {
+      name: "H&M Belted Mini Skirt Alternative",
+      url: "https://www2.hm.com/en_us/productpage.1301483002.html",
+    },
+  },
 };
 
 export function defaultFashionVectors(

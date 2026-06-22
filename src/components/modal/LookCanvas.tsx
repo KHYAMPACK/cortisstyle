@@ -19,7 +19,7 @@ interface LookCanvasProps {
     Look,
     "id" | "outfitId" | "layout" | "editorGuideImage"
   >;
-  lookImage: string;
+  lookImage?: string;
   title: string;
   items: ResolvedLookItem[];
   activeItemId: string | null;
@@ -115,9 +115,9 @@ export function LookCanvas({
           onFreeDragPositionCommit={onFreeDragPositionCommit}
           disableCanvasHitTesting={disableCanvasHitTesting}
         />
-      ) : (
+      ) : lookImage ? (
         <SingleLookImage image={lookImage} title={title} />
-      )}
+      ) : null}
 
       {useCollage && isEditMode ? <MatrixBlueprintOverlay /> : null}
     </div>

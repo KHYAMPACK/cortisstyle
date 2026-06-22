@@ -1,15 +1,13 @@
 /** Canonical collage coordinate width — matches editor + committed JSON calibration. */
 export const LOOK_CANVAS_REFERENCE_WIDTH = 420;
 
-/** Look modal aspect ratio (width : height = 2 : 3). */
+/** Look modal + wardrobe builder aspect ratio (width : height = 2 : 3). */
 export const LOOK_CANVAS_REFERENCE_HEIGHT = Math.round(
   LOOK_CANVAS_REFERENCE_WIDTH * (3 / 2),
 );
 
-/** Wardrobe builder aspect ratio (width : height = 3 : 4). */
-export const WARDROBE_CANVAS_REFERENCE_HEIGHT = Math.round(
-  LOOK_CANVAS_REFERENCE_WIDTH * (4 / 3),
-);
+/** @deprecated Use LOOK_CANVAS_REFERENCE_HEIGHT — wardrobe now shares 2:3 with the editor. */
+export const WARDROBE_CANVAS_REFERENCE_HEIGHT = LOOK_CANVAS_REFERENCE_HEIGHT;
 
 /** Mobile display caps after CSS scale. */
 export const LOOK_CANVAS_MOBILE_DISPLAY_MAX_WIDTH = 272;
@@ -26,7 +24,7 @@ export const LOOK_CANVAS_MOBILE_DISPLAY_HEIGHT = Math.round(
 );
 
 export const WARDROBE_MOBILE_DISPLAY_HEIGHT = Math.round(
-  WARDROBE_CANVAS_REFERENCE_HEIGHT * WARDROBE_MOBILE_SCALE,
+  LOOK_CANVAS_REFERENCE_HEIGHT * WARDROBE_MOBILE_SCALE,
 );
 
 export interface CanvasLayoutReference {

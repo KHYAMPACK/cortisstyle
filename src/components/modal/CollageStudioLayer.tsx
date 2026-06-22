@@ -426,7 +426,13 @@ export function CollageStudioLayer({
       if (!parent) return;
 
       event.preventDefault();
-      const stepPx = event.shiftKey ? 10 : 1;
+      const stepPx = isHitboxMode
+        ? event.shiftKey
+          ? 12
+          : 8
+        : event.shiftKey
+          ? 10
+          : 1;
 
       setLayouts((current) => {
         const layout = current[selectedItemId];
@@ -634,7 +640,6 @@ function CanvasAsset({
           draggable={false}
           sizes={`${Math.ceil(visualWidth)}px`}
           onLoad={reportImageLoad}
-          onLoadingComplete={reportImageLoad}
           className="pointer-events-none block h-auto w-full max-w-none shrink-0 select-none object-contain object-left-top max-md:max-h-none max-md:min-h-0"
         />
       </div>

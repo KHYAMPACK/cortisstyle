@@ -29,11 +29,11 @@ import {
   mergeFreeDragPositions,
   type FreeDragPosition,
 } from "@/lib/wardrobeDragLayout";
-import { LookCanvasLayoutProvider } from "@/context/LookCanvasLayoutContext";
-import { useIsMobileMd } from "@/hooks/useIsMobileMd";
+import { LookCanvasViewport } from "@/components/modal/LookCanvasViewport";
 import {
+  LOOK_CANVAS_REFERENCE_HEIGHT,
   LOOK_CANVAS_REFERENCE_WIDTH,
-  WARDROBE_CANVAS_REFERENCE_HEIGHT,
+  WARDROBE_MOBILE_DISPLAY_MAX_WIDTH,
 } from "@/lib/lookCanvasReference";
 import { normalizeSavedOutfitBlueprint } from "@/lib/normalizeSavedOutfit";
 import {
@@ -56,9 +56,9 @@ const CANVAS_WIDTH_CLASS =
 const CANVAS_FRAME_CLASS = `relative ${CANVAS_WIDTH_CLASS}`;
 
 const CANVAS_BOUNDARY_CLASS =
-  "surface-canvas-paper relative isolate mx-auto w-full aspect-[3/4] max-w-[360px] xs:max-w-[400px] sm:max-w-[420px] overflow-hidden border border-blueprint-border md:max-w-[420px] md:shrink-0";
+  "surface-canvas-paper relative isolate box-content shrink-0 overflow-hidden border border-blueprint-border";
 
-/** Isolated 3:4 coordinate sandbox — percentage math resolves only inside this box. */
+/** Isolated 2:3 coordinate sandbox — percentage math resolves only inside this box. */
 const CANVAS_COORDINATE_SANDBOX_CLASS =
   "absolute inset-0 h-full w-full overflow-hidden";
 
@@ -74,7 +74,6 @@ export function WardrobeBuilderCanvas({
   onBlueprintLoaded,
 }: WardrobeBuilderCanvasProps) {
   const { user, refreshSavedOutfits } = useAuth();
-  const isMobile = useIsMobileMd();
   const containerRef = useRef<HTMLDivElement>(null);
   const [currentOutfit, setCurrentOutfit] = useState<WardrobeOutfitMatrix>(() =>
     Array(9).fill(null),
@@ -350,22 +349,23 @@ export function WardrobeBuilderCanvas({
             </button>
           </div>
 
-          <LookCanvasLayoutProvider
-            referenceWidth={isMobile ? LOOK_CANVAS_REFERENCE_WIDTH : null}
-            referenceHeight={
-              isMobile ? WARDROBE_CANVAS_REFERENCE_HEIGHT : null
-            }
-          >
           <WardrobeOutfitMoodboardCard
-          name={cardMeta.name}
-          showFooter={hasSavedCardMeta}
-          containerClassName={`${CANVAS_FRAME_CLASS} shrink-0`}
-        >
-          <div className="max-md:relative max-md:mx-auto max-md:h-[480px] max-md:w-full max-md:max-w-[360px] md:contents">
-            <div className="max-md:absolute max-md:left-1/2 max-md:top-0 max-md:h-[560px] max-md:w-[420px] max-md:-translate-x-1/2 max-md:origin-top max-md:scale-[calc(360/420)] md:contents">
-          <div
-            className={`${CANVAS_BOUNDARY_CLASS} max-md:mx-0 max-md:aspect-auto max-md:h-[560px] max-md:w-[420px] max-md:max-w-none`}
+            name={cardMeta.name}
+            showFooter={hasSavedCardMeta}
+            containerClassName={`${CANVAS_FRAME_CLASS} shrink-0`}
           >
+            <LookCanvasViewport
+              layout="standalone"
+              mobileDisplayMaxWidth={WARDROBE_MOBILE_DISPLAY_MAX_WIDTH}
+              className={CANVAS_WIDTH_CLASS}
+            >
+              <div
+                className={CANVAS_BOUNDARY_CLASS}
+                style={{
+                  width: LOOK_CANVAS_REFERENCE_WIDTH,
+                  height: LOOK_CANVAS_REFERENCE_HEIGHT,
+                }}
+              >
             <div aria-hidden className="pointer-events-none absolute inset-0 z-0 bg-white" />
 
             <WardrobeCanvasBrandWatermark />
@@ -424,11 +424,9 @@ export function WardrobeBuilderCanvas({
               }}
             />
 
-          </div>
-            </div>
-          </div>
-        </WardrobeOutfitMoodboardCard>
-          </LookCanvasLayoutProvider>
+              </div>
+            </LookCanvasViewport>
+          </WardrobeOutfitMoodboardCard>
         </div>
       </div>
 

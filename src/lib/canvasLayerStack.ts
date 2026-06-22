@@ -5,8 +5,11 @@ import type { MatrixCategoryFilter } from "@/types/wardrobe-builder";
 /** Editorial mood reference — above canvas card, below all garments. */
 export const CANVAS_LAYER_MOOD = 10;
 
-/** Outerwear, tops, bottoms, waist. */
+/** Tops, bottoms, waist. */
 export const CANVAS_LAYER_MID = 20;
+
+/** Outerwear — above mid garments, below accessories and footwear. */
+export const CANVAS_LAYER_OUTER = 25;
 
 /** Footwear, bags, eyewear, hats, head accessories. */
 export const CANVAS_LAYER_TOP = 30;
@@ -25,9 +28,13 @@ const TOP_MATRIX_CATEGORIES = new Set<MatrixCategoryFilter>([
 export function resolveDefaultCanvasLayerZIndexFromMatrix(
   category: MatrixCategoryFilter,
 ): number {
-  return TOP_MATRIX_CATEGORIES.has(category)
-    ? CANVAS_LAYER_TOP
-    : CANVAS_LAYER_MID;
+  if (TOP_MATRIX_CATEGORIES.has(category)) {
+    return CANVAS_LAYER_TOP;
+  }
+  if (category === "OUTER") {
+    return CANVAS_LAYER_OUTER;
+  }
+  return CANVAS_LAYER_MID;
 }
 
 export function resolveDefaultCanvasLayerZIndexFromClothing(
@@ -39,6 +46,10 @@ export function resolveDefaultCanvasLayerZIndexFromClothing(
     category === "accessories"
   ) {
     return CANVAS_LAYER_TOP;
+  }
+
+  if (category === "outerwear") {
+    return CANVAS_LAYER_OUTER;
   }
 
   return CANVAS_LAYER_MID;

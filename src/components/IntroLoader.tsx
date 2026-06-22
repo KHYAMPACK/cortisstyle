@@ -123,15 +123,20 @@ export function IntroLoader() {
       >
         <motion.div
           {...entrance}
-          className="flex items-center gap-5 px-6 md:gap-8"
+          className="flex items-center gap-3 px-4 sm:gap-5 md:gap-8 md:px-6"
         >
-          <MasonryFramingLines side="left" />
+          <div className="hidden sm:block">
+            <MasonryFramingLines side="left" />
+          </div>
 
-          <p className="font-serif text-[11px] font-light tracking-[0.55em] text-white uppercase md:text-[13px]">
-            C O R T I S S T Y L E
+          <p className="font-serif text-[11px] font-light tracking-[0.38em] whitespace-nowrap text-white uppercase sm:text-[12px] sm:tracking-[0.42em] md:text-[13px] md:tracking-[0.55em]">
+            <span className="sm:hidden">CORTISSTYLE</span>
+            <span className="hidden sm:inline">C O R T I S S T Y L E</span>
           </p>
 
-          <MasonryFramingLines side="right" />
+          <div className="hidden sm:block">
+            <MasonryFramingLines side="right" />
+          </div>
         </motion.div>
       </motion.div>
     </AnimatePresence>,

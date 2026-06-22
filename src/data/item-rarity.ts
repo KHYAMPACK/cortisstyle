@@ -22,4 +22,10 @@ export const itemRarityScores: Record<string, RarityScore> = {
   "bracelet-01": 3,
   "teal-bag-01": 4,
   "sneakers-03": 4,
+  "wide-heeeled-boots-01": 1,
+  "ember-top-black-01": 2,
+  "studded-oversized-tote-bag-01": 2,
+  "js-eyewear-5052-sunglasses-01": 2,
+  "gray-raw-denim-jacket-01": 4,
+  "tweed-mini-skirt-with-decorative-belt-01": 2,
 };

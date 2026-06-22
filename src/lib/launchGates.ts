@@ -1,6 +1,6 @@
 import { WARDROBE_COMING_SOON_PATH } from "@/lib/wardrobeGate";
 
-export const HOMEPAGE_LOOK_LIMIT = 3;
+export const HOMEPAGE_LOOK_LIMIT = 4;
 
 export const CHECKOUT_COMING_SOON_PATH = "/checkout-coming-soon";
 

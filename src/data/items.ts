@@ -108,7 +108,7 @@ export const clothingItems: ClothingItem[] = [
   defineItem(
     "black-sunglasses-01",
     "BLACK SUNGLASSES",
-    "accessories",
+    "eyewear",
     "Oliver Peoples",
     "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
     "Purchased from Hanam Vintage Depot — Available at select vintage markets in Apgujeong Private Sale.",
@@ -144,7 +144,7 @@ export const clothingItems: ClothingItem[] = [
   defineItem(
     "black-bag-01",
     "BLACK BAG",
-    "accessories",
+    "bags",
     "Coach Vintage",
     "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
     "Purchased from Dongdaemun Vintage Market — Available at select vintage markets in Itaewon Antiquity Lane.",
@@ -162,7 +162,7 @@ export const clothingItems: ClothingItem[] = [
   defineItem(
     "sunglasses-02",
     "SUNGLASSES",
-    "accessories",
+    "eyewear",
     "Oliver Peoples",
     "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
     "Purchased from Hanam Vintage Depot — Available at select vintage markets in Apgujeong Private Sale.",
@@ -234,7 +234,7 @@ export const clothingItems: ClothingItem[] = [
   defineItem(
     "black-bag-02",
     "BLACK BAG",
-    "accessories",
+    "bags",
     "Coach Vintage",
     "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
     "Purchased from Dongdaemun Vintage Market — Available at select vintage markets in Itaewon Antiquity Lane.",
@@ -270,7 +270,7 @@ export const clothingItems: ClothingItem[] = [
   defineItem(
     "cap-01",
     "CAP",
-    "accessories",
+    "headwear",
     "Supreme",
     "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
     "Purchased from Dongdaemun Vintage Market — Available at select vintage markets in Itaewon Antiquity Lane.",
@@ -324,7 +324,7 @@ export const clothingItems: ClothingItem[] = [
   defineItem(
     "sunglasses-01",
     "SUNGLASSES",
-    "accessories",
+    "eyewear",
     "Oliver Peoples",
     "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
     "Purchased from Hanam Vintage Depot — Available at select vintage markets in Apgujeong Private Sale.",
@@ -378,7 +378,7 @@ export const clothingItems: ClothingItem[] = [
   defineItem(
     "teal-bag-01",
     "TEAL BAG",
-    "accessories",
+    "bags",
     "The Row",
     "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
     "Purchased from Dongdaemun Vintage Market — Available at select vintage markets in Itaewon Antiquity Lane.",
@@ -411,7 +411,114 @@ export const clothingItems: ClothingItem[] = [
       },
     },
   ),
- 
+  defineItem(
+    "wide-heeeled-boots-01",
+    "BOOTS",
+    "shoes",
+    "Bershka",
+    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
+    "Purchased from Bershka — Available at select vintage markets in Cortis Archive Seoul.",
+    "https://www.bershka.com/tr/topuklu-geni%C5%9F-%C3%A7izme-c0p204066994.html?colorId=040",
+    {
+      canvasImage: "/images/clothes/outfit-04/wide-heeeled-boots-01.png",
+      defaultCanvasPosition: {
+        top: "10%",
+        left: "10%",
+        width: "20%",
+        zIndex: 4,
+      },
+    },
+  ),
+  defineItem(
+    "ember-top-black-01",
+    "BLACK TOP",
+    "tops",
+    "Susamusa",
+    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
+    "Purchased from Susamusa — Available at select vintage markets in Cortis Archive Seoul.",
+    "https://www.susamusa.com/products/ember-top-black-1?pr_prod_strat=e5_desc&pr_rec_id=34fc6b456&pr_rec_pid=9972746060079&pr_ref_pid=15327431623038&pr_seq=uniform",
+    {
+      canvasImage: "/images/clothes/outfit-04/ember-top-black-01.png",
+      defaultCanvasPosition: {
+        top: "10%",
+        left: "10%",
+        width: "20%",
+        zIndex: 4,
+      },
+    },
+  ),
+  defineItem(
+    "studded-oversized-tote-bag-01",
+    "WHITE BAG",
+    "bags",
+    "Bopka.",
+    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
+    "Purchased from Cortis Archive Seoul — Available at select vintage markets in Garosu-gil Concept Store.",
+    "https://bopka.com/products/studded-oversized-tote-bag-1?variant=50038626353458&pins_campaign_id=626758906603&utm_campaign=626758906603&utm_medium=PaidSocial&utm_source=Pinterest&utm_content=2680090747487&pp=0&epik=dj0yJnU9TTZtLVlSWm5xZUhtNjlWdmVwRFE4Y1VsZm9lek9yY1omcD0xJm49RERnYlNiYWI3cU1VYkVxb3hfemwyZyZ0PUFBQUFBR28xdGtZ",
+    {
+      canvasImage: "/images/clothes/outfit-04/studded-oversized-tote-bag-01.png",
+      defaultCanvasPosition: {
+        top: "10%",
+        left: "10%",
+        width: "20%",
+        zIndex: 4,
+      },
+    },
+  ),
+  defineItem(
+    "js-eyewear-5052-sunglasses-01",
+    "SUNGLASSES",
+    "eyewear",
+    "Justsunnies.",
+    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
+    "Purchased from Justsunnies — Available at select vintage markets in Cortis Archive Seoul.",
+    "https://www.justsunnies.com.au/js-eyewear-sunglasses/5052-sbllf505210160006?utm_source=Pinterest&utm_medium=organic",
+    {
+      canvasImage: "/images/clothes/outfit-04/js-eyewear-5052-sunglasses-01.png",
+      defaultCanvasPosition: {
+        top: "10%",
+        left: "10%",
+        width: "20%",
+        zIndex: 4,
+      },
+    },
+  ),
+  defineItem(
+    "gray-raw-denim-jacket-01",
+    "JACKET",
+    "outerwear",
+    "Custom Made",
+    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
+    "Purchased from eBay — Available at select vintage markets in Cortis Archive Seoul.",
+    "https://www.ebay.com/itm/317016570665?norover=1&siteid=1&mkevt=1&mkcid=16&chn=psoc&utm_source=Pinterest&utm_medium=organic",
+    {
+      canvasImage: "/images/clothes/outfit-04/gray-raw-denim-jacket-01.png",
+      defaultCanvasPosition: {
+        top: "10%",
+        left: "10%",
+        width: "20%",
+        zIndex: 5,
+      },
+    },
+  ),
+  defineItem(
+    "tweed-mini-skirt-with-decorative-belt-01",
+    "MINI SKIRT",
+    "bottoms",
+    "Mango",
+    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
+    "Purchased from Mango — Available at select vintage markets in Cortis Archive Seoul.",
+    "https://shop.mango.com/us/en/p/women/skirts/short/tweed-mini-skirt-with-decorative-belt/77086759/99/00",
+    {
+      canvasImage: "/images/clothes/outfit-04/tweed-mini-skirt-with-decorative-belt-01.png",
+      defaultCanvasPosition: {
+        top: "10%",
+        left: "10%",
+        width: "20%",
+        zIndex: 4,
+      },
+    },
+  ),
 ];
 
 const clothingItemMap = new Map(

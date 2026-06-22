@@ -2,6 +2,7 @@
 
 import { forwardRef, useCallback, useRef } from "react";
 import { LookCanvas } from "@/components/modal/LookCanvas";
+import { LookCanvasLayoutProvider } from "@/context/LookCanvasLayoutContext";
 import { WardrobeCanvasBrandWatermark } from "@/components/wardrobe/WardrobeCanvasBrandWatermark";
 import { WardrobeMoodImageFrame } from "@/components/wardrobe/WardrobeMoodImageFrame";
 import { WardrobeMoodword } from "@/components/wardrobe/WardrobeMoodword";
@@ -9,13 +10,17 @@ import { WardrobeOutfitMoodboardCard } from "@/components/wardrobe/WardrobeOutfi
 import type { CanvasItemLayout } from "@/types/canvas-layout";
 import type { ResolvedLookItem } from "@/types/look";
 import { WARDROBE_BUILDER_LOOK } from "@/types/wardrobe-builder";
+import {
+  LOOK_CANVAS_REFERENCE_HEIGHT,
+  LOOK_CANVAS_REFERENCE_WIDTH,
+} from "@/lib/lookCanvasReference";
 
 /** Matches the verified main wardrobe canvas width — layout math stays identical. */
 const MAIN_CANVAS_WIDTH_PX = 420;
 
 const PREVIEW_SCALE = 0.76;
 
-const PREVIEW_CANVAS_HEIGHT_PX = Math.round(MAIN_CANVAS_WIDTH_PX * (4 / 3));
+const PREVIEW_CANVAS_HEIGHT_PX = Math.round(MAIN_CANVAS_WIDTH_PX * (3 / 2));
 const PREVIEW_FOOTER_HEIGHT_PX = 40;
 const PREVIEW_MASK_HEIGHT_PX = Math.round(
   (PREVIEW_CANVAS_HEIGHT_PX + PREVIEW_FOOTER_HEIGHT_PX) * PREVIEW_SCALE,
@@ -75,8 +80,11 @@ export const WardrobeOutfitLivePreviewCard = forwardRef<
             containerClassName="w-[420px] shrink-0"
           >
             <div
-              className="relative mx-auto aspect-[3/4] w-[420px] shrink-0 overflow-hidden border border-blueprint-border surface-canvas-paper"
-              style={{ width: MAIN_CANVAS_WIDTH_PX }}
+              className="relative mx-auto box-content shrink-0 overflow-hidden border border-blueprint-border surface-canvas-paper"
+              style={{
+                width: LOOK_CANVAS_REFERENCE_WIDTH,
+                height: LOOK_CANVAS_REFERENCE_HEIGHT,
+              }}
             >
               <div aria-hidden className="absolute inset-0 z-0 bg-white" />
 
@@ -89,6 +97,10 @@ export const WardrobeOutfitLivePreviewCard = forwardRef<
 
               <WardrobeMoodword moodword={moodword} />
 
+              <LookCanvasLayoutProvider
+                referenceWidth={LOOK_CANVAS_REFERENCE_WIDTH}
+                referenceHeight={LOOK_CANVAS_REFERENCE_HEIGHT}
+              >
               {/*
                 Preview-only blend: white LookCanvas backdrop reveals the mood
                 layer beneath while garment pixels composite on top.
@@ -109,6 +121,7 @@ export const WardrobeOutfitLivePreviewCard = forwardRef<
                   disableCanvasHitTesting
                 />
               </div>
+              </LookCanvasLayoutProvider>
             </div>
           </WardrobeOutfitMoodboardCard>
         </div>
