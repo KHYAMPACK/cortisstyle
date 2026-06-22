@@ -9,7 +9,7 @@ export function ArchiveExtensionGate() {
         </p>
 
         <FunnelEmailCapture
-          source="archive-extension"
+          source="member-notify"
           label="Enter your email to unlock the full archive stream when ready"
           submitLabel="Unlock Stream"
           tone="dark"
