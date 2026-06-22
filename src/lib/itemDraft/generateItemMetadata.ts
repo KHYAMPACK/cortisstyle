@@ -73,7 +73,7 @@ Rules:
 - Do NOT use generic filler like "Archive Standard Fit", "Premium fashion-grade construction", or "integrate as a core layer".
 - Every field must be specific to THIS garment.
 - blurredDescription MUST contain exactly two [BLURRED] placeholders.
-- category must be one of: headwear, tops, bottoms, shoes, accessories.
+- category must be one of: headwear, eyewear, tops, outerwear, bottoms, shoes, bags, waist, accessories.
 - budgetAlternativeLink: provide a descriptive alternative name + retailer homepage URL (search URL is built automatically).
 - In guessedFields, list every JSON field you inferred without direct page data (e.g. "fitGuidance.fabricWeight", "resaleKeywords.estPriceRange").
 - llmNotes: one sentence flagging anything uncertain for human review.
@@ -89,7 +89,7 @@ function buildUserPrompt(ctx: ReturnType<typeof buildKnownItemContext>): string 
 Return JSON:
 {
   "brand": "string",
-  "category": "headwear|tops|bottoms|shoes|accessories",
+  "category": "headwear|eyewear|tops|outerwear|bottoms|shoes|bags|waist|accessories",
   "displayModel": "string",
   "fitGuidance": { "type": "string", "fabricWeight": "string", "modelSpecs": "optional string" },
   "resaleKeywords": { "tags": "string", "estPriceRange": "string" },

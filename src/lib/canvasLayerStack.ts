@@ -43,13 +43,19 @@ export function resolveDefaultCanvasLayerZIndexFromClothing(
   if (
     category === "shoes" ||
     category === "headwear" ||
-    category === "accessories"
+    category === "accessories" ||
+    category === "eyewear" ||
+    category === "bags"
   ) {
     return CANVAS_LAYER_TOP;
   }
 
   if (category === "outerwear") {
     return CANVAS_LAYER_OUTER;
+  }
+
+  if (category === "waist") {
+    return CANVAS_LAYER_MID;
   }
 
   return CANVAS_LAYER_MID;

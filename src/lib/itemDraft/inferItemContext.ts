@@ -54,15 +54,17 @@ export function inferRetailerFromUrl(url: string): string {
 
 export function inferCategoryFromName(name: string): ClothingCategory {
   const n = name.toLowerCase();
+  if (/(sunglass|eyewear|glasses)/.test(n)) return "eyewear";
   if (/(beanie|cap|hat|bucket|knit cap|beret)/.test(n)) return "headwear";
+  if (/(jacket|coat|blazer|overshirt|parka)/.test(n)) return "outerwear";
   if (/(jean|denim|pant|trouser|short|skirt)/.test(n)) return "bottoms";
   if (/(sneaker|boot|shoe|loafer|heel|trainer|runner)/.test(n)) return "shoes";
-  if (/(shirt|tee|top|tank|hoodie|jacket|coat|blazer|sweater|knit|compression)/.test(n)) {
+  if (/(bag|tote|backpack)/.test(n)) return "bags";
+  if (/(bracelet|belt|waist)/.test(n)) return "waist";
+  if (/(shirt|tee|top|tank|hoodie|sweater|knit|compression)/.test(n)) {
     return "tops";
   }
-  if (/(bag|necklace|bracelet|sunglasses|eyewear|belt|ring|earring)/.test(n)) {
-    return "accessories";
-  }
+  if (/(necklace|ring|earring)/.test(n)) return "accessories";
   return "accessories";
 }
 

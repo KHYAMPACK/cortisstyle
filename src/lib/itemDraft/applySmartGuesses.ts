@@ -63,9 +63,13 @@ function guessPriceRange(category: ClothingCategory, hintsPrice?: string): strin
   if (hintsPrice) return `$${hintsPrice} retail — check Grailed/Depop for resale`;
   const ranges: Record<ClothingCategory, string> = {
     headwear: "$20 - $60 on Grailed/Depop",
+    eyewear: "$25 - $120 on Grailed/Vestiaire",
     tops: "$35 - $120 on Grailed/Depop",
+    outerwear: "$60 - $250 on Grailed/Vestiaire",
     bottoms: "$45 - $150 on Grailed/Depop",
     shoes: "$80 - $350 on Grailed/GOAT",
+    bags: "$40 - $300 on Grailed/Vestiaire",
+    waist: "$25 - $150 on Grailed/Vestiaire",
     accessories: "$25 - $200 on Grailed/Vestiaire",
   };
   return ranges[category];
@@ -123,9 +127,13 @@ function guessBudgetAlternative(category: ClothingCategory, name: string): {
   }
   const defaults: Record<ClothingCategory, { name: string; url: string }> = {
     headwear: { name: "Uniqlo Knit Cap Alternative", url: "https://www.uniqlo.com/" },
+    eyewear: { name: "ASOS Sunglasses Alternative", url: "https://www.asos.com/" },
     tops: { name: "Uniqlo U Tee Alternative", url: "https://www.uniqlo.com/" },
+    outerwear: { name: "Uniqlo Denim Jacket Alternative", url: "https://www.uniqlo.com/" },
     bottoms: { name: "Uniqlo Wide Trouser Alternative", url: "https://www.uniqlo.com/" },
     shoes: { name: "New Balance 550 Alternative", url: "https://www.newbalance.com/" },
+    bags: { name: "ASOS Tote Bag Alternative", url: "https://www.asos.com/" },
+    waist: { name: "ASOS Belt Alternative", url: "https://www.asos.com/" },
     accessories: { name: "ASOS Accessory Alternative", url: "https://www.asos.com/" },
   };
   return defaults[category];

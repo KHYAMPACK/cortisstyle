@@ -2,9 +2,13 @@ import type { RarityScore } from "@/types/rarity";
 
 export type ClothingCategory =
   | "headwear"
+  | "eyewear"
   | "tops"
+  | "outerwear"
   | "bottoms"
   | "shoes"
+  | "bags"
+  | "waist"
   | "accessories";
 
 export interface CanvasPosition {

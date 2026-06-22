@@ -360,7 +360,7 @@ export const clothingItems: ClothingItem[] = [
   defineItem(
     "bracelet-01",
     "BRACELET",
-    "accessories",
+    "waist",
     "The Row",
     "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
     "Purchased from Dongdaemun Vintage Market — Available at select vintage markets in Itaewon Antiquity Lane.",
