@@ -40,7 +40,10 @@ async function probeEmailExistsViaSignUp(
 ): Promise<{ exists: boolean; signUpDispatched?: boolean }> {
   const { getSupabaseClient } = await import("@/lib/supabaseClient");
   const supabase = getSupabaseClient();
-  const { error } = await supabase.auth.signUp({ email });
+  const { error } = await supabase.auth.signUp({
+    email,
+    password: crypto.randomUUID(),
+  });
 
   if (!error) {
     return { exists: false, signUpDispatched: true };

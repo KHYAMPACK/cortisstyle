@@ -209,20 +209,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const startSignUp = useCallback(async (email: string) => {
     const supabase = getSupabaseClient();
-    const tempPassword = crypto.randomUUID();
-
-    let { error } = await supabase.auth.signUp({ email });
-
-    if (
-      error &&
-      (error.message.toLowerCase().includes("password") ||
-        error.code === "weak_password")
-    ) {
-      ({ error } = await supabase.auth.signUp({
-        email,
-        password: tempPassword,
-      }));
-    }
+    const { error } = await supabase.auth.signUp({
+      email,
+      password: crypto.randomUUID(),
+    });
 
     if (error) throw error;
   }, []);
