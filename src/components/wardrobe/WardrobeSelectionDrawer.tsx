@@ -47,9 +47,9 @@ export function WardrobeSelectionDrawer({
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ duration: 0.35, ease: "easeInOut" }}
-            className="surface-blueprint fixed right-0 bottom-0 left-0 z-[80] max-h-[72vh] border-t shadow-2xl"
+            className="surface-blueprint fixed right-0 bottom-0 left-0 z-[80] flex max-h-[72vh] flex-col overflow-hidden border-t shadow-2xl"
           >
-            <div className="border-b border-blueprint-border px-5 py-4 md:px-8">
+            <div className="shrink-0 border-b border-blueprint-border px-5 py-4 md:px-8">
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <p className="text-meta text-[9px] tracking-[0.4em] uppercase">
@@ -88,7 +88,7 @@ export function WardrobeSelectionDrawer({
               ) : null}
             </div>
 
-            <div className="overflow-y-auto px-5 py-5 md:px-8">
+            <div className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain px-5 py-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] md:px-8">
               {items.length > 0 ? (
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
                   {items.map((item) => {
