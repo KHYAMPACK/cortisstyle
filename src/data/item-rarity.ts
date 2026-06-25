@@ -34,4 +34,11 @@ export const itemRarityScores: Record<string, RarityScore> = {
   "obosoyo-minimalist-burgundy-faux-leather-tote-ba-01": 2,
   "the-miu-miu-bayonetta-glasses-01": 3,
   "zava-black-suede-ballerina-01": 3,
+  "burn-mark-zip-up-hoodi-01": 3,
+  "women-s-green-and-blue-vest-01": 2,
+  "perfect-denims-01": 1,
+  "women-s-brown-belt-01": 3,
+  "women-s-brown-ballet-shoes-01": 4,
+  "bright-yellow-bag-01": 1,
+  "women-s-brown-and-silver-sunglasses-01": 2,
 };

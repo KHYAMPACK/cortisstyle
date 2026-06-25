@@ -17,6 +17,7 @@ const VALID_SOURCES: FunnelNotifySource[] = [
   "archive-extension",
   "checkout-priority",
   "member-notify",
+  "premium-inner-circle",
 ];
 
 export async function POST(request: Request) {

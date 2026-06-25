@@ -34,10 +34,10 @@ function metrics(data: StyleMetrics): StyleMetrics {
   return data;
 }
 
-export const looks: Look[] = [
+const ALL_LOOKS: Look[] = [
   {
     id: "look-01",
-    title: "Look 01 — Cyber Grunge",
+    title: "Look 04 — Cyber Grunge",
     image: "/images/clothes/outfit-01/temp_image_0AD45B1B-0275-4C7F-817B-E22C2700E090.WEBP",
     modelName: "SEONGHYEON",
     shopierUrl: "https://shopier.com/placeholder",
@@ -65,7 +65,7 @@ export const looks: Look[] = [
   },
   {
     id: "look-02",
-    title: "Look 02 — Industrial Poise",
+    title: "Look 05 — Industrial Poise",
     image: "/images/clothes/outfit-02/ootd236.png",
     modelName: "MARTIN",
     shopierUrl: "https://shopier.com/placeholder",
@@ -93,7 +93,7 @@ export const looks: Look[] = [
   },
   {
     id: "look-03",
-    title: "Look 03 — Raw Editorial",
+    title: "Look 06 — Raw Editorial",
     image: "/images/clothes/outfit-03/ootd237.png",
     modelName: "JAMES",
     shopierUrl: "https://shopier.com/placeholder",
@@ -123,7 +123,7 @@ export const looks: Look[] = [
   },
   {
     id: "look-04",
-    title: "Look 04 — Monochrome Silence",
+    title: "Look 01 — Monochrome Silence",
     image: "/images/clothes/outfit-04/ootd278.png",
     modelName: "JUHOON",
     shopierUrl: "https://shopier.com/placeholder",
@@ -151,7 +151,7 @@ export const looks: Look[] = [
   },
   {
     id: "look-05",
-    title: "Look 05 — Vintage Chic",
+    title: "Look 02 — Vintage Chic",
     image: "/images/clothes/outfit-05/ootd279.png",
     modelName: "KEONHO",
     shopierUrl: "https://shopier.com/placeholder",
@@ -179,13 +179,17 @@ export const looks: Look[] = [
   },
   {
     id: "look-06",
-    title: "Look 04 — Void Tailoring",
-    image: "/images/temp_image_41B4D695-9371-4890-BCEC-26F783029E69.WEBP",
-    modelName: "JUHOON",
+    title: "Look 03 — Colorful Contrast",
+    image: "/images/clothes/outfit-06/ootd266.png",
+    modelName: "JAMES",
     shopierUrl: "https://shopier.com/placeholder",
     guidePrice: GUIDE_PRICE_TL,
+    layout: "collage",
+    outfitId: "outfit-06",
+    editorGuideImage:
+      "/images/clothes/outfit-06/ootd266.png",
     ...metrics({
-      vibe: "Architectural / Void Tailoring",
+      vibe: "Colorful Contrast / Vibrant",
       investmentRetail: 5,
       investmentWithGuide: 3,
       versatility: 4,
@@ -193,6 +197,13 @@ export const looks: Look[] = [
     width: IMAGE_WIDTH,
     height: IMAGE_HEIGHT,
     items: [
+      placement("women-s-green-and-blue-vest-01", "54%", "42%", "48%", "28%"),
+      placement("perfect-denims-01", "70%", "48%", "76%", "58%"),
+      placement("women-s-brown-belt-01", "70%", "48%", "76%", "58%"),
+      placement("women-s-brown-ballet-shoes-01", "70%", "48%", "76%", "58%"),
+      placement("bright-yellow-bag-01", "70%", "48%", "76%", "58%"),
+      placement("women-s-brown-and-silver-sunglasses-01", "70%", "48%", "76%", "58%"),
+      placement("burn-mark-zip-up-hoodi-01", "70%", "48%", "76%", "58%"),
     ],
   },
   {
@@ -304,3 +315,26 @@ export const looks: Look[] = [
     ],
   },
 ];
+
+/** Homepage grid order: looks 4–6 first (free), then 1–3 (premium), then the rest. */
+const HOMEPAGE_LOOK_ORDER = [
+  "look-04",
+  "look-05",
+  "look-06",
+  "look-01",
+  "look-02",
+  "look-03",
+  "look-07",
+  "look-08",
+  "look-09",
+  "look-10",
+  "look-11",
+  "look-12",
+] as const;
+
+const looksById = new Map(ALL_LOOKS.map((look) => [look.id, look]));
+
+export const looks: Look[] = HOMEPAGE_LOOK_ORDER.flatMap((id) => {
+  const look = looksById.get(id);
+  return look ? [look] : [];
+});

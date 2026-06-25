@@ -1,10 +1,18 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { ArchiveCommunitySignOff } from "@/components/ArchiveCommunitySignOff";
 import { FunnelEmailCapture } from "@/components/FunnelEmailCapture";
+import {
+  FREE_TIER_ARCHIVE_LIMIT_MESSAGE,
+  isArchiveLimitStatus,
+} from "@/lib/launchGates";
 
 export function ComingSoonGate() {
+  const searchParams = useSearchParams();
+  const isArchiveLimit = isArchiveLimitStatus(searchParams.get("status"));
+
   return (
     <section className="relative flex min-h-[100dvh] flex-col items-center justify-center overflow-hidden bg-[#0D0D0D] px-6 py-24 text-white">
       <div
@@ -19,7 +27,9 @@ export function ComingSoonGate() {
 
       <div className="relative z-10 flex w-full max-w-2xl flex-col items-center text-center">
         <p className="font-mono text-[10px] tracking-[0.45em] text-neutral-400 uppercase">
-          [ STATUS // UNDER DEVELOPMENT FOR SS26 ]
+          {isArchiveLimit
+            ? `[ ${FREE_TIER_ARCHIVE_LIMIT_MESSAGE} ]`
+            : "[ STATUS // UNDER DEVELOPMENT FOR SS26 ]"}
         </p>
 
         <h1 className="mt-8 font-serif text-[clamp(2.75rem,10vw,5.5rem)] leading-[0.92] font-light tracking-[0.22em] uppercase">

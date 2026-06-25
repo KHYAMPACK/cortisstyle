@@ -1,0 +1,5 @@
+# Wardrobe and account sign-up are live by default.
+# Opt in to pre-launch gates with:
+# NEXT_PUBLIC_WARDROBE_GATE_ENABLED=true
+# NEXT_PUBLIC_AUTH_GATE_ENABLED=true
+NEXT_PUBLIC_PURCHASE_GATE_ENABLED=false

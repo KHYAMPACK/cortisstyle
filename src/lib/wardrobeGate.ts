@@ -6,10 +6,10 @@ export const WARDROBE_APP_PATH = "/wardrobe";
 
 /**
  * When true, all wardrobe entry points route to the coming-soon gate.
- * Set `NEXT_PUBLIC_WARDROBE_GATE_ENABLED=false` in `.env.local` to unlock `/wardrobe` during development.
+ * Set `NEXT_PUBLIC_WARDROBE_GATE_ENABLED=true` to keep `/wardrobe` gated pre-launch.
  */
 export function isWardrobeGateEnabled(): boolean {
-  return process.env.NEXT_PUBLIC_WARDROBE_GATE_ENABLED !== "false";
+  return process.env.NEXT_PUBLIC_WARDROBE_GATE_ENABLED === "true";
 }
 
 export function getWardrobeEntryPath(): string {

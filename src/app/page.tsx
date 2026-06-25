@@ -9,10 +9,13 @@ import {
   LOOKBOOK_COLLECTION_ID,
 } from "@/components/HomeHero";
 import { ArchiveCommunitySignOff } from "@/components/ArchiveCommunitySignOff";
+import { PremiumArchivePaywallModal } from "@/components/PremiumArchivePaywallModal";
 import type { Look } from "@/types/look";
 
 export default function Home() {
   const [selectedLook, setSelectedLook] = useState<Look | null>(null);
+  const [paywallLook, setPaywallLook] = useState<Look | null>(null);
+  const [isPaywallOpen, setIsPaywallOpen] = useState(false);
 
   return (
     <div className="min-h-full bg-ice-floor text-jet-black">
@@ -39,7 +42,13 @@ export default function Home() {
           </div>
         </div>
 
-        <LookGrid onSelectLook={setSelectedLook} />
+        <LookGrid
+          onSelectLook={setSelectedLook}
+          onLockedLookClick={(look) => {
+            setPaywallLook(look);
+            setIsPaywallOpen(true);
+          }}
+        />
       </section>
 
       <footer className="border-t border-blueprint-border px-5 md:px-10">
@@ -52,6 +61,15 @@ export default function Home() {
       </footer>
 
       <LookModal look={selectedLook} onClose={() => setSelectedLook(null)} />
+
+      <PremiumArchivePaywallModal
+        isOpen={isPaywallOpen}
+        look={paywallLook}
+        onClose={() => {
+          setIsPaywallOpen(false);
+          setPaywallLook(null);
+        }}
+      />
     </div>
   );
 }

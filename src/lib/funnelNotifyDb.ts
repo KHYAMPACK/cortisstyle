@@ -1,18 +1,56 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { getServiceSupabase, isValidNotifyEmail } from "@/lib/supabaseAdmin";
 
 export type FunnelNotifySource =
   | "wardrobe-coming-soon"
   | "archive-extension"
   | "checkout-priority"
-  | "member-notify";
+  | "member-notify"
+  | "premium-inner-circle";
 
 export { isValidNotifyEmail };
+
+type InsertResult =
+  | { ok: true }
+  | { ok: false; code: "config" | "duplicate" | "error" };
+
+async function insertMemberNotifySignup(
+  supabase: SupabaseClient,
+  input: {
+    email: string;
+    source: FunnelNotifySource;
+    lookId?: string;
+  },
+): Promise<InsertResult> {
+  const row: {
+    email: string;
+    source: string;
+    look_id?: string | null;
+  } = {
+    email: input.email,
+    source: input.source,
+  };
+
+  if (input.lookId) {
+    row.look_id = input.lookId;
+  }
+
+  const { error } = await supabase.from("member_notify_signups").insert(row);
+
+  if (error) {
+    if (error.code === "23505") return { ok: false, code: "duplicate" };
+    console.error("member_notify_signups insert failed:", error.message);
+    return { ok: false, code: "error" };
+  }
+
+  return { ok: true };
+}
 
 export async function insertFunnelNotifySignup(input: {
   email: string;
   source: FunnelNotifySource;
   lookId?: string;
-}): Promise<{ ok: true } | { ok: false; code: "config" | "duplicate" | "error" }> {
+}): Promise<InsertResult> {
   const supabase = getServiceSupabase();
   if (!supabase) {
     return { ok: false, code: "config" };
@@ -33,45 +71,18 @@ export async function insertFunnelNotifySignup(input: {
     return { ok: true };
   }
 
-  if (input.source === "archive-extension") {
-    const { error } = await supabase.from("archive_stream_signups").insert({
+  if (
+    input.source === "archive-extension" ||
+    input.source === "member-notify" ||
+    input.source === "checkout-priority" ||
+    input.source === "premium-inner-circle"
+  ) {
+    return insertMemberNotifySignup(supabase, {
       email: normalized,
       source: input.source,
+      lookId: input.lookId,
     });
-    if (error) {
-      if (error.code === "23505") return { ok: false, code: "duplicate" };
-      console.error("archive_stream_signups insert failed:", error.message);
-      return { ok: false, code: "error" };
-    }
-    return { ok: true };
   }
 
-  if (input.source === "member-notify") {
-    const { error } = await supabase.from("member_notify_signups").insert({
-      email: normalized,
-      source: input.source,
-    });
-    if (error) {
-      if (error.code === "23505") return { ok: false, code: "duplicate" };
-      console.error("member_notify_signups insert failed:", error.message);
-      return { ok: false, code: "error" };
-    }
-    return { ok: true };
-  }
-
-  const { error } = await supabase.from("checkout_priority_signups").insert({
-    email: normalized,
-    look_id: input.lookId ?? null,
-    source: input.source,
-  });
-
-  if (error) {
-    if (error.code === "23505") {
-      return { ok: false, code: "duplicate" };
-    }
-    console.error("checkout_priority_signups insert failed:", error.message);
-    return { ok: false, code: "error" };
-  }
-
-  return { ok: true };
+  return { ok: false, code: "error" };
 }

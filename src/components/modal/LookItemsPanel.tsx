@@ -1,6 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
+import { Check } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
 import type { Look, ResolvedLookItem } from "@/types/look";
 import type { CanvasItemLayout } from "@/lib/canvasLayout";
@@ -25,7 +26,11 @@ interface LookItemsPanelProps {
   showPreview: boolean;
   showCheckout: boolean;
   onSelectItem: (itemId: string) => void;
-  onUnlock: () => void;
+  onAddToWardrobe: () => void;
+  isAddingToWardrobe?: boolean;
+  isInWardrobe?: boolean;
+  wardrobeAddError?: string | null;
+  isMetadataRevealed?: boolean;
   onPurchase: () => void;
   onGateNavigate?: () => void;
   onBackToLook: () => void;
@@ -41,7 +46,11 @@ export function LookItemsPanel({
   showPreview,
   showCheckout,
   onSelectItem,
-  onUnlock,
+  onAddToWardrobe,
+  isAddingToWardrobe = false,
+  isInWardrobe = false,
+  wardrobeAddError = null,
+  isMetadataRevealed = false,
   onPurchase,
   onGateNavigate,
   onBackToLook,
@@ -49,7 +58,7 @@ export function LookItemsPanel({
   canvasLayouts,
 }: LookItemsPanelProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const itemRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
+  const itemRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const outfitRarity = useMemo(
     () => computeOutfitRarityFromItems(items),
     [items],
@@ -183,6 +192,7 @@ export function LookItemsPanel({
                     }}
                     item={item}
                     isActive={activeItemId === item.id}
+                    isMetadataRevealed={isMetadataRevealed}
                     onSelect={onSelectItem}
                   />
                 ))}
@@ -202,15 +212,35 @@ export function LookItemsPanel({
         </div>
       </div>
 
-      {!showPreview && (
+      {!showPreview && isMetadataRevealed && (
         <div className="shrink-0 border-t border-blueprint-border bg-blueprint-surface px-4 pt-2 pb-[max(1rem,env(safe-area-inset-bottom))] md:px-8 md:py-5">
           <button
             type="button"
-            onClick={onUnlock}
-            className="btn-primary block w-full border border-jet-black px-6 py-4 text-center font-mono text-[10px] tracking-[0.3em]"
+            onClick={onAddToWardrobe}
+            disabled={isAddingToWardrobe || isInWardrobe}
+            aria-disabled={isAddingToWardrobe || isInWardrobe}
+            className={`flex w-full items-center justify-center gap-2 border px-6 py-4 text-center font-mono text-[10px] tracking-[0.3em] transition-colors ${
+              isInWardrobe
+                ? "cursor-default border-neutral-300 bg-neutral-100 text-neutral-500"
+                : "btn-primary border-jet-black disabled:opacity-60"
+            }`}
           >
-            Unlock Full Style Guide &amp; Shop Links
+            {isInWardrobe ? (
+              <>
+                <Check className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
+                Already Added
+              </>
+            ) : isAddingToWardrobe ? (
+              "Adding to Wardrobe..."
+            ) : (
+              "Add to Wardrobe"
+            )}
           </button>
+          {wardrobeAddError ? (
+            <p className="mt-3 text-center font-mono text-[9px] tracking-[0.12em] text-red-600 uppercase">
+              {wardrobeAddError}
+            </p>
+          ) : null}
         </div>
       )}
 

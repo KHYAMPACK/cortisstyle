@@ -66,6 +66,54 @@ export async function fetchUserWardrobeLookIds(
   return (data ?? []).map((row) => row.look_id as string);
 }
 
+export async function addLookToUserWardrobe(
+  userId: string,
+  lookId: string,
+): Promise<{ alreadyOwned: boolean }> {
+  const supabase = getSupabaseClient();
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    throw new Error("Sign in to add looks to your wardrobe.");
+  }
+
+  if (user.id !== userId) {
+    throw new Error("Session mismatch. Sign out and sign in again.");
+  }
+
+  await ensureUserProfile(user.id, user.email);
+
+  const { data: existing, error: existingError } = await supabase
+    .from("user_wardrobe")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("look_id", lookId)
+    .maybeSingle();
+
+  if (existingError) {
+    throw existingError;
+  }
+
+  if (existing) {
+    return { alreadyOwned: true };
+  }
+
+  const { error } = await supabase.from("user_wardrobe").insert({
+    user_id: userId,
+    look_id: lookId,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  return { alreadyOwned: false };
+}
+
 export async function ensureUserProfile(userId: string, email?: string | null) {
   const supabase = getSupabaseClient();
 

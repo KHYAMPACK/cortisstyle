@@ -17,6 +17,9 @@ alter table public.user_saved_outfits
 alter table public.user_saved_outfits
   add column if not exists layout_overrides jsonb;
 
+alter table public.user_saved_outfits
+  add column if not exists canvas_bg text;
+
 alter table public.user_saved_outfits enable row level security;
 
 drop policy if exists "Saved outfits are viewable by owner" on public.user_saved_outfits;

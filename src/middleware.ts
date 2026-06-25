@@ -6,7 +6,7 @@ import {
 } from "@/lib/wardrobeGate";
 
 export function middleware(request: NextRequest) {
-  if (process.env.NEXT_PUBLIC_WARDROBE_GATE_ENABLED === "false") {
+  if (process.env.NEXT_PUBLIC_WARDROBE_GATE_ENABLED === "true") {
     return NextResponse.next();
   }
 

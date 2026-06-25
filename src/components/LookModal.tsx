@@ -6,10 +6,13 @@ import { useCallback, useEffect, useState } from "react";
 import type { Look, ResolvedLookItem } from "@/types/look";
 import type { CanvasItemLayout } from "@/lib/canvasLayout";
 import { resolveEditableLookItems } from "@/lib/resolveLookItems";
-import { goToCheckoutGate, isPurchaseGateEnabled } from "@/lib/purchaseGateFlow";
+import { isUnlockedArchiveLook } from "@/lib/launchGates";
+import { WARDROBE_APP_PATH } from "@/lib/wardrobeGate";
+import { addLookToUserWardrobe } from "@/lib/wardrobe";
+import { useAuth } from "@/context/AuthContext";
+import { AuthPopup } from "@/components/AuthPopup";
 import { LookImagePanel } from "@/components/modal/LookImagePanel";
 import { LookItemsPanel } from "@/components/modal/LookItemsPanel";
-import { HeaderIconNav } from "@/components/HeaderIconNav";
 import { isLocalhostClient } from "@/lib/dev";
 
 const spring = { type: "spring" as const, stiffness: 100, damping: 20 };
@@ -21,10 +24,15 @@ interface LookModalProps {
 
 export function LookModal({ look, onClose }: LookModalProps) {
   const router = useRouter();
+  const { user, isAuthenticated, refreshWardrobe, purchasedLooks } = useAuth();
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(isLocalhostClient);
   const [showPreview, setShowPreview] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
+  const [isAddingToWardrobe, setIsAddingToWardrobe] = useState(false);
+  const [wardrobeAddError, setWardrobeAddError] = useState<string | null>(null);
+  const [showAuthPopup, setShowAuthPopup] = useState(false);
+  const [pendingWardrobeAdd, setPendingWardrobeAdd] = useState(false);
   const [editableItems, setEditableItems] = useState<ResolvedLookItem[]>([]);
   const [canvasLayouts, setCanvasLayouts] = useState<
     Record<string, CanvasItemLayout>
@@ -34,6 +42,10 @@ export function LookModal({ look, onClose }: LookModalProps) {
     setActiveItemId(null);
     setShowPreview(false);
     setShowCheckout(false);
+    setWardrobeAddError(null);
+    setIsAddingToWardrobe(false);
+    setShowAuthPopup(false);
+    setPendingWardrobeAdd(false);
     if (look) {
       setEditableItems(resolveEditableLookItems(look));
     } else {
@@ -81,16 +93,55 @@ export function LookModal({ look, onClose }: LookModalProps) {
     [],
   );
 
-  const handleUnlock = () => {
-    if (isPurchaseGateEnabled() && look) {
-      goToCheckoutGate(look.id, router, onClose);
+  const persistLookToWardrobe = useCallback(async () => {
+    if (!look || !user?.id) return;
+
+    if (purchasedLooks.some((entry) => entry.id === look.id)) {
       return;
     }
 
-    setShowPreview(true);
-    setShowCheckout(false);
-    setActiveItemId(null);
-  };
+    setIsAddingToWardrobe(true);
+    setWardrobeAddError(null);
+
+    try {
+      await addLookToUserWardrobe(user.id, look.id);
+      await refreshWardrobe();
+      onClose();
+      router.push(`${WARDROBE_APP_PATH}?tab=looks`);
+    } catch (error) {
+      setWardrobeAddError(
+        error instanceof Error
+          ? error.message
+          : "Unable to add this look to your wardrobe.",
+      );
+    } finally {
+      setIsAddingToWardrobe(false);
+    }
+  }, [look, onClose, purchasedLooks, refreshWardrobe, router, user?.id]);
+
+  const handleAddToWardrobe = useCallback(async () => {
+    if (!look) return;
+
+    if (!isAuthenticated || !user?.id) {
+      setPendingWardrobeAdd(true);
+      setShowAuthPopup(true);
+      return;
+    }
+
+    await persistLookToWardrobe();
+  }, [isAuthenticated, look, persistLookToWardrobe, user?.id]);
+
+  useEffect(() => {
+    if (!pendingWardrobeAdd || !isAuthenticated || !user?.id || !look) return;
+
+    setPendingWardrobeAdd(false);
+    void persistLookToWardrobe();
+  }, [isAuthenticated, look, pendingWardrobeAdd, persistLookToWardrobe, user?.id]);
+
+  const isMetadataRevealed = look ? isUnlockedArchiveLook(look.id) : false;
+  const isInWardrobe = look
+    ? purchasedLooks.some((entry) => entry.id === look.id)
+    : false;
 
   const handleBackToLook = () => {
     setShowPreview(false);
@@ -137,8 +188,6 @@ export function LookModal({ look, onClose }: LookModalProps) {
                 </button>
               )}
 
-      <HeaderIconNav variant="modal" className="absolute top-4 right-[5.25rem] z-20" />
-
               <button
                 type="button"
                 onClick={onClose}
@@ -165,7 +214,11 @@ export function LookModal({ look, onClose }: LookModalProps) {
                 showPreview={showPreview}
                 showCheckout={showCheckout}
                 onSelectItem={handleSelectItem}
-                onUnlock={handleUnlock}
+                onAddToWardrobe={handleAddToWardrobe}
+                isAddingToWardrobe={isAddingToWardrobe}
+                isInWardrobe={isInWardrobe}
+                wardrobeAddError={wardrobeAddError}
+                isMetadataRevealed={isMetadataRevealed}
                 onPurchase={() => setShowCheckout(true)}
                 onGateNavigate={onClose}
                 onBackToLook={handleBackToLook}
@@ -176,6 +229,17 @@ export function LookModal({ look, onClose }: LookModalProps) {
           </motion.div>
         </>
       )}
+
+      <AuthPopup
+        isOpen={showAuthPopup}
+        onClose={() => {
+          setShowAuthPopup(false);
+          setPendingWardrobeAdd(false);
+        }}
+        onAuthSuccess={() => setShowAuthPopup(false)}
+        description="Create an account or sign in to save this look to your wardrobe."
+        allowSignUp
+      />
     </AnimatePresence>
   );
 }

@@ -5,7 +5,7 @@ import type { MatrixCategoryFilter } from "@/types/wardrobe-builder";
 import type { WardrobeClothingItem } from "@/types/user";
 
 
-function inferMatrixCategories(item: ClothingItem): MatrixCategoryFilter[] {
+export function inferMatrixCategories(item: ClothingItem): MatrixCategoryFilter[] {
   if (item.category === "eyewear") return ["EYEWEAR"];
   if (item.category === "headwear") return ["HAT"];
   if (item.category === "accessories") return ["ACC_HEAD"];

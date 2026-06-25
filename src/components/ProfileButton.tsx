@@ -1,7 +1,6 @@
 "use client";
 
 import { User } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { AuthPopup } from "@/components/AuthPopup";
 import { ProfileDropdown } from "@/components/ProfileDropdown";
@@ -9,7 +8,6 @@ import { useAuth } from "@/context/AuthContext";
 import { getNotifyDeployPath, isAuthGateEnabled } from "@/lib/launchGates";
 
 export function ProfileButton({ tone = "default" }: { tone?: "default" | "inverse" }) {
-  const router = useRouter();
   const iconProps = {
     strokeWidth: 1.5,
     className:
@@ -60,7 +58,7 @@ export function ProfileButton({ tone = "default" }: { tone?: "default" | "invers
     }
 
     if (isAuthGateEnabled()) {
-      router.push(getNotifyDeployPath());
+      window.location.assign(getNotifyDeployPath());
       return;
     }
 
@@ -87,13 +85,13 @@ export function ProfileButton({ tone = "default" }: { tone?: "default" | "invers
         />
       )}
 
-      {!isAuthGateEnabled() && (
-        <AuthPopup
-          isOpen={showAuthPopup}
-          onClose={() => setShowAuthPopup(false)}
-          onAuthSuccess={() => setShowAuthPopup(false)}
-        />
-      )}
+      <AuthPopup
+        isOpen={showAuthPopup}
+        onClose={() => setShowAuthPopup(false)}
+        onAuthSuccess={() => setShowAuthPopup(false)}
+        description="Create an account or sign in to access your private wardrobe archive."
+        allowSignUp
+      />
     </div>
   );
 }

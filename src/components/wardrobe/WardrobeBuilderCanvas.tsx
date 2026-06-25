@@ -1,5 +1,6 @@
 "use client";
 
+import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LookCanvas } from "@/components/modal/LookCanvas";
 import { MatrixBlueprintGrid } from "@/components/modal/MatrixBlueprintGrid";
@@ -9,7 +10,8 @@ import { WardrobeBuilderSlotZone } from "@/components/wardrobe/WardrobeBuilderSl
 import { WardrobeCanvasBrandWatermark } from "@/components/wardrobe/WardrobeCanvasBrandWatermark";
 import { WardrobeMoodImageFrame } from "@/components/wardrobe/WardrobeMoodImageFrame";
 import { WardrobeOutfitMoodboardCard } from "@/components/wardrobe/WardrobeOutfitMoodboardCard";
-import { WardrobeSaveOutfitModal } from "@/components/wardrobe/WardrobeSaveOutfitModal";
+import { WardrobeSaveOutfitModal, type WardrobeSaveOutfitPayload } from "@/components/wardrobe/WardrobeSaveOutfitModal";
+import { SavedOutfitArchiveLimitModal } from "@/components/wardrobe/SavedOutfitArchiveLimitModal";
 import { WardrobeSelectionDrawer } from "@/components/wardrobe/WardrobeSelectionDrawer";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -36,6 +38,12 @@ import {
   WARDROBE_MOBILE_DISPLAY_MAX_WIDTH,
 } from "@/lib/lookCanvasReference";
 import { normalizeSavedOutfitBlueprint } from "@/lib/normalizeSavedOutfit";
+import { isPersistedSavedOutfitBlueprint } from "@/lib/lookToWardrobeBlueprint";
+import {
+  CANVAS_BG_DEFAULT,
+  type CanvasBgValue,
+} from "@/lib/wardrobeCanvasBackground";
+import { FREE_TIER_SAVED_OUTFIT_LIMIT } from "@/lib/launchGates";
 import {
   DEFAULT_OUTFIT_CARD_META,
   getSlotDefinition,
@@ -73,7 +81,7 @@ export function WardrobeBuilderCanvas({
   loadBlueprint = null,
   onBlueprintLoaded,
 }: WardrobeBuilderCanvasProps) {
-  const { user, refreshSavedOutfits } = useAuth();
+  const { user, refreshSavedOutfits, savedOutfits } = useAuth();
   const containerRef = useRef<HTMLDivElement>(null);
   const [currentOutfit, setCurrentOutfit] = useState<WardrobeOutfitMatrix>(() =>
     Array(9).fill(null),
@@ -83,14 +91,22 @@ export function WardrobeBuilderCanvas({
   );
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+  const [isArchiveLimitModalOpen, setIsArchiveLimitModalOpen] = useState(false);
+  const [editingOutfitId, setEditingOutfitId] = useState<string | null>(null);
+  const [editingSavedAt, setEditingSavedAt] = useState<string | null>(null);
+  const [editingCanvasBg, setEditingCanvasBg] =
+    useState<CanvasBgValue>(CANVAS_BG_DEFAULT);
   const [activeCategoryFilter, setActiveCategoryFilter] =
     useState<MatrixCategoryFilter | null>(null);
   const [activeSlotIndex, setActiveSlotIndex] =
     useState<WardrobeMatrixSlotIndex | null>(null);
   const [isDragModeActive, setIsDragModeActive] = useState(false);
+  const [showDragHint, setShowDragHint] = useState(true);
   const [customDragPositions, setCustomDragPositions] = useState<
     Record<string, FreeDragPosition>
   >({});
+  const workbenchRef = useRef<HTMLElement>(null);
+  const dragHintAnchorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!loadBlueprint) return;
@@ -104,7 +120,12 @@ export function WardrobeBuilderCanvas({
       moodImageUrl: blueprint.moodImageUrl,
     });
 
-    if (blueprint.layoutOverrides) {
+    const isPersisted = isPersistedSavedOutfitBlueprint(blueprint);
+    setEditingOutfitId(isPersisted ? blueprint.id : null);
+    setEditingSavedAt(isPersisted ? blueprint.savedAt : null);
+    setEditingCanvasBg(blueprint.canvasBg ?? CANVAS_BG_DEFAULT);
+
+    if (isPersisted && blueprint.layoutOverrides) {
       setCustomDragPositions(
         layoutOverridesToDragPositions(blueprint.layoutOverrides),
       );
@@ -116,6 +137,21 @@ export function WardrobeBuilderCanvas({
 
     onBlueprintLoaded?.();
   }, [loadBlueprint, onBlueprintLoaded]);
+
+  useEffect(() => {
+    const workbench = workbenchRef.current;
+    if (!workbench || !showDragHint) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const anchor = dragHintAnchorRef.current;
+      if (anchor?.contains(event.target as Node)) return;
+
+      setShowDragHint(false);
+    };
+
+    workbench.addEventListener("pointerdown", handlePointerDown);
+    return () => workbench.removeEventListener("pointerdown", handlePointerDown);
+  }, [showDragHint]);
 
   const inventory = useMemo(
     () => resolveBuilderInventory(ownedClothes),
@@ -284,18 +320,34 @@ export function WardrobeBuilderCanvas({
 
   const handleSaveSuccess = (
     _blueprint: SavedWardrobeOutfitBlueprint,
-    payload: { name: string; moodword: string; moodImageUrl: string | null },
+    payload: WardrobeSaveOutfitPayload,
   ) => {
     setCardMeta({
       name: payload.name ?? "",
       moodword: payload.moodword ?? "",
       moodImageUrl: payload.moodImageUrl,
     });
+    setEditingOutfitId(null);
+    setEditingSavedAt(null);
+    setEditingCanvasBg(CANVAS_BG_DEFAULT);
     void refreshSavedOutfits();
+  };
+
+  const handleOpenSaveModal = () => {
+    if (
+      !editingOutfitId &&
+      savedOutfits.length >= FREE_TIER_SAVED_OUTFIT_LIMIT
+    ) {
+      setIsArchiveLimitModalOpen(true);
+      return;
+    }
+
+    setIsSaveModalOpen(true);
   };
 
   return (
     <section
+      ref={workbenchRef}
       aria-label="Wardrobe builder matrix"
       className="relative flex w-full min-w-0 flex-col items-center overflow-visible"
     >
@@ -311,42 +363,78 @@ export function WardrobeBuilderCanvas({
       <div className="grid w-full min-w-0 place-items-center">
         <div className={CANVAS_FRAME_CLASS}>
           <div className="mb-3 flex items-center justify-end">
-            <button
-              type="button"
-              role="switch"
-              aria-checked={isDragModeActive}
-              aria-label={
-                isDragModeActive
-                  ? "Free design mode active"
-                  : "Enable drag mode"
-              }
-              onClick={() => setIsDragModeActive((current) => !current)}
-              className="group flex items-center gap-3"
+            <div
+              ref={dragHintAnchorRef}
+              className="relative flex items-center gap-2"
             >
-              <span
-                className={`font-mono text-[9px] tracking-[0.28em] uppercase transition-colors ${
+              <button
+                type="button"
+                role="switch"
+                aria-checked={isDragModeActive}
+                aria-label={
                   isDragModeActive
-                    ? "text-neutral-950"
-                    : "text-neutral-400 group-hover:text-neutral-600"
-                }`}
-              >
-                {isDragModeActive ? "Free Design" : "Drag Mode"}
-              </span>
-              <span
-                aria-hidden
-                className={`relative inline-flex h-5 w-9 shrink-0 border border-neutral-900 transition-colors ${
-                  isDragModeActive ? "bg-neutral-900" : "bg-white"
-                }`}
+                    ? "Free design mode active"
+                    : "Enable drag mode"
+                }
+                onClick={() => setIsDragModeActive((current) => !current)}
+                className="group flex items-center gap-3"
               >
                 <span
-                  className={`absolute top-0.5 h-3.5 w-3.5 bg-neutral-900 transition-transform duration-200 ${
+                  className={`font-mono text-[9px] tracking-[0.28em] uppercase transition-colors ${
                     isDragModeActive
-                      ? "translate-x-[18px] bg-white"
-                      : "translate-x-0.5"
+                      ? "text-neutral-950"
+                      : "text-neutral-400 group-hover:text-neutral-600"
                   }`}
-                />
-              </span>
-            </button>
+                >
+                  {isDragModeActive ? "Free Design" : "Drag Mode"}
+                </span>
+                <span
+                  aria-hidden
+                  className={`relative inline-flex h-5 w-9 shrink-0 border border-neutral-900 transition-colors ${
+                    isDragModeActive ? "bg-neutral-900" : "bg-white"
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 h-3.5 w-3.5 bg-neutral-900 transition-transform duration-200 ${
+                      isDragModeActive
+                        ? "translate-x-[18px] bg-white"
+                        : "translate-x-0.5"
+                    }`}
+                  />
+                </span>
+              </button>
+
+              <button
+                type="button"
+                aria-label={
+                  showDragHint ? "Hide drag mode hint" : "Show drag mode hint"
+                }
+                aria-expanded={showDragHint}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setShowDragHint((current) => !current);
+                }}
+                className="flex h-4 w-4 items-center justify-center rounded-full border border-neutral-400 font-mono text-[9px] text-neutral-500 transition-colors hover:border-black hover:text-black"
+              >
+                ?
+              </button>
+
+              <AnimatePresence>
+                {showDragHint ? (
+                  <motion.div
+                    role="tooltip"
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    transition={{ duration: 0.2, ease: "easeOut" }}
+                    className="absolute top-full right-0 z-50 mt-2 w-48 rounded-none border border-neutral-800 bg-[#0D0D0D] p-3 text-left font-mono text-[10px] tracking-wider text-white uppercase shadow-xl"
+                  >
+                    Toggle drag mode to freely unpin and arrange clothing items
+                    anywhere
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
+            </div>
           </div>
 
           <WardrobeOutfitMoodboardCard
@@ -440,7 +528,7 @@ export function WardrobeBuilderCanvas({
 
       <button
         type="button"
-        onClick={() => setIsSaveModalOpen(true)}
+        onClick={handleOpenSaveModal}
         disabled={equippedCount === 0}
         className="btn-primary fixed right-6 bottom-6 z-[60] border border-jet-black px-5 py-3 font-mono text-[10px] tracking-[0.3em] shadow-lg disabled:border-neutral-200 disabled:bg-neutral-200 disabled:text-neutral-400"
       >
@@ -468,8 +556,21 @@ export function WardrobeBuilderCanvas({
         initialName={cardMeta.name}
         initialMoodword={cardMeta.moodword}
         initialMoodImageUrl={cardMeta.moodImageUrl}
+        initialCanvasBg={editingOutfitId ? editingCanvasBg : CANVAS_BG_DEFAULT}
+        savedOutfitCount={savedOutfits.length}
+        editingOutfitId={editingOutfitId}
+        editingSavedAt={editingSavedAt}
+        onArchiveLimitReached={() => {
+          setIsSaveModalOpen(false);
+          setIsArchiveLimitModalOpen(true);
+        }}
         onClose={() => setIsSaveModalOpen(false)}
         onSaveSuccess={handleSaveSuccess}
+      />
+
+      <SavedOutfitArchiveLimitModal
+        isOpen={isArchiveLimitModalOpen}
+        onClose={() => setIsArchiveLimitModalOpen(false)}
       />
     </section>
   );

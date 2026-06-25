@@ -4,8 +4,11 @@ import {
   createSavedOutfitBlueprint,
   loadSavedWardrobeOutfits,
   persistSavedWardrobeOutfit,
+  removeSavedWardrobeOutfitFromLocal,
+  updateSavedWardrobeOutfitLocally,
 } from "@/lib/savedWardrobeOutfit";
 import { ensureUserProfile } from "@/lib/wardrobe";
+import { normalizeCanvasBg, type CanvasBgValue } from "@/lib/wardrobeCanvasBackground";
 import type {
   LayoutPositionOverride,
   SavedWardrobeOutfitBlueprint,
@@ -18,6 +21,7 @@ export interface UserSavedOutfitRow {
   name: string;
   moodword: string | null;
   mood_image_url: string | null;
+  canvas_bg?: string | null;
   slots: WardrobeOutfitMatrix;
   layout_overrides?: Record<string, LayoutPositionOverride> | null;
   saved_at: string;
@@ -27,6 +31,7 @@ export interface SaveWardrobeOutfitInput {
   name: string;
   moodword: string;
   moodImageUrl: string | null;
+  canvasBg?: CanvasBgValue;
   slots: WardrobeOutfitMatrix;
   layoutOverrides?: Record<string, LayoutPositionOverride>;
 }
@@ -45,6 +50,7 @@ function mapRowToBlueprint(row: UserSavedOutfitRow): SavedWardrobeOutfitBlueprin
     name: row.name,
     moodword: row.moodword ?? "",
     moodImageUrl: row.mood_image_url,
+    canvasBg: normalizeCanvasBg(row.canvas_bg),
     slots: row.slots,
     layoutOverrides: row.layout_overrides ?? undefined,
     savedAt: row.saved_at,
@@ -55,6 +61,12 @@ function isMissingMoodwordColumn(error: unknown): boolean {
   if (!error || typeof error !== "object") return false;
   const message = String((error as { message?: string }).message ?? "");
   return message.includes("moodword") && message.includes("does not exist");
+}
+
+function isMissingCanvasBgColumn(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const message = String((error as { message?: string }).message ?? "");
+  return message.includes("canvas_bg") && message.includes("does not exist");
 }
 
 function isMissingLayoutOverridesColumn(error: unknown): boolean {
@@ -100,16 +112,35 @@ function sanitizeMoodImageUrl(
 function persistLocally(
   input: SaveWardrobeOutfitInput,
   moodImageUrl: string | null,
+  existingOutfitId?: string,
+  existingSavedAt?: string,
 ): SavedWardrobeOutfitBlueprint {
-  const blueprint = createSavedOutfitBlueprint({
-    name: input.name,
-    moodword: input.moodword,
-    moodImageUrl,
-    slots: input.slots,
-    ...(input.layoutOverrides ? { layoutOverrides: input.layoutOverrides } : {}),
-  });
+  const blueprint = existingOutfitId
+    ? normalizeSavedOutfitBlueprint({
+        id: existingOutfitId,
+        name: input.name,
+        moodword: input.moodword,
+        moodImageUrl,
+        canvasBg: input.canvasBg,
+        slots: input.slots,
+        savedAt: existingSavedAt ?? new Date().toISOString(),
+        ...(input.layoutOverrides ? { layoutOverrides: input.layoutOverrides } : {}),
+      })
+    : createSavedOutfitBlueprint({
+        name: input.name,
+        moodword: input.moodword,
+        moodImageUrl,
+        canvasBg: input.canvasBg,
+        slots: input.slots,
+        ...(input.layoutOverrides ? { layoutOverrides: input.layoutOverrides } : {}),
+      });
 
-  persistSavedWardrobeOutfit(blueprint);
+  if (existingOutfitId) {
+    updateSavedWardrobeOutfitLocally(blueprint);
+  } else {
+    persistSavedWardrobeOutfit(blueprint);
+  }
+
   return blueprint;
 }
 
@@ -119,13 +150,27 @@ export async function fetchUserSavedOutfits(
   const supabase = getSupabaseClient();
 
   const fullSelect =
-    "id, user_id, name, moodword, mood_image_url, slots, layout_overrides, saved_at";
+    "id, user_id, name, moodword, mood_image_url, canvas_bg, slots, layout_overrides, saved_at";
 
   let { data, error } = await supabase
     .from("user_saved_outfits")
     .select(fullSelect)
     .eq("user_id", userId)
     .order("saved_at", { ascending: false });
+
+  if (error && isMissingCanvasBgColumn(error)) {
+    const fallback = await supabase
+      .from("user_saved_outfits")
+      .select(
+        "id, user_id, name, moodword, mood_image_url, slots, layout_overrides, saved_at",
+      )
+      .eq("user_id", userId)
+      .order("saved_at", { ascending: false });
+
+    data =
+      fallback.data?.map((row) => ({ ...row, canvas_bg: null })) ?? null;
+    error = fallback.error;
+  }
 
   if (error && isMissingLayoutOverridesColumn(error)) {
     const fallback = await supabase
@@ -135,7 +180,11 @@ export async function fetchUserSavedOutfits(
       .order("saved_at", { ascending: false });
 
     data =
-      fallback.data?.map((row) => ({ ...row, layout_overrides: null })) ?? null;
+      fallback.data?.map((row) => ({
+        ...row,
+        canvas_bg: null,
+        layout_overrides: null,
+      })) ?? null;
     error = fallback.error;
   }
 
@@ -150,6 +199,7 @@ export async function fetchUserSavedOutfits(
       fallback.data?.map((row) => ({
         ...row,
         moodword: null,
+        canvas_bg: null,
         layout_overrides: null,
       })) ?? null;
     error = fallback.error;
@@ -193,6 +243,7 @@ async function persistToDatabase(
   userId: string,
   input: SaveWardrobeOutfitInput,
   moodImageUrl: string | null,
+  existingOutfitId?: string,
 ): Promise<SavedWardrobeOutfitBlueprint> {
   const supabase = getSupabaseClient();
 
@@ -214,8 +265,9 @@ async function persistToDatabase(
   const insertPayload: Record<string, unknown> = {
     user_id: user.id,
     name: input.name,
-    moodword: input.moodword || null,
+    moodword: input.moodword.trim() || null,
     mood_image_url: moodImageUrl,
+    canvas_bg: input.canvasBg ?? null,
     slots: input.slots,
   };
 
@@ -223,13 +275,65 @@ async function persistToDatabase(
     insertPayload.layout_overrides = input.layoutOverrides;
   }
 
+  if (existingOutfitId) {
+    let { data, error } = await supabase
+      .from("user_saved_outfits")
+      .update(insertPayload)
+      .eq("id", existingOutfitId)
+      .eq("user_id", user.id)
+      .select(
+        "id, user_id, name, moodword, mood_image_url, canvas_bg, slots, layout_overrides, saved_at",
+      )
+      .single();
+
+    if (error && isMissingCanvasBgColumn(error)) {
+      const { canvas_bg: _dropped, ...legacyPayload } = insertPayload;
+      const fallback = await supabase
+        .from("user_saved_outfits")
+        .update(legacyPayload)
+        .eq("id", existingOutfitId)
+        .eq("user_id", user.id)
+        .select(
+          "id, user_id, name, moodword, mood_image_url, slots, layout_overrides, saved_at",
+        )
+        .single();
+
+      data = fallback.data
+        ? { ...fallback.data, canvas_bg: input.canvasBg ?? null }
+        : null;
+      error = fallback.error;
+    }
+
+    if (error) {
+      throw error;
+    }
+
+    return mapRowToBlueprint(data as UserSavedOutfitRow);
+  }
+
   let { data, error } = await supabase
     .from("user_saved_outfits")
     .insert(insertPayload)
     .select(
-      "id, user_id, name, moodword, mood_image_url, slots, layout_overrides, saved_at",
+      "id, user_id, name, moodword, mood_image_url, canvas_bg, slots, layout_overrides, saved_at",
     )
     .single();
+
+  if (error && isMissingCanvasBgColumn(error)) {
+    const { canvas_bg: _dropped, ...legacyPayload } = insertPayload;
+    const fallback = await supabase
+      .from("user_saved_outfits")
+      .insert(legacyPayload)
+      .select(
+        "id, user_id, name, moodword, mood_image_url, slots, layout_overrides, saved_at",
+      )
+      .single();
+
+    data = fallback.data
+      ? { ...fallback.data, canvas_bg: input.canvasBg ?? null }
+      : null;
+    error = fallback.error;
+  }
 
   if (error && isMissingLayoutOverridesColumn(error)) {
     const { layout_overrides: _dropped, ...legacyPayload } = insertPayload;
@@ -240,7 +344,11 @@ async function persistToDatabase(
       .single();
 
     data = fallback.data
-      ? { ...fallback.data, layout_overrides: null }
+      ? {
+          ...fallback.data,
+          canvas_bg: input.canvasBg ?? null,
+          layout_overrides: null,
+        }
       : null;
     error = fallback.error;
   }
@@ -255,6 +363,7 @@ async function persistToDatabase(
 export async function persistSavedWardrobeOutfitToDb(
   userId: string,
   input: SaveWardrobeOutfitInput,
+  options?: { existingOutfitId?: string; existingSavedAt?: string },
 ): Promise<PersistSavedOutfitResult> {
   const { url: storedMoodImageUrl, dropped: moodImageDropped } =
     sanitizeMoodImageUrl(input.moodImageUrl);
@@ -269,7 +378,12 @@ export async function persistSavedWardrobeOutfitToDb(
     : undefined;
 
   try {
-    const blueprint = await persistToDatabase(userId, payload, storedMoodImageUrl);
+    const blueprint = await persistToDatabase(
+      userId,
+      payload,
+      storedMoodImageUrl,
+      options?.existingOutfitId,
+    );
 
     return {
       blueprint: {
@@ -285,6 +399,8 @@ export async function persistSavedWardrobeOutfitToDb(
     const blueprint = persistLocally(
       payload,
       input.moodImageUrl ?? storedMoodImageUrl,
+      options?.existingOutfitId,
+      options?.existingSavedAt,
     );
 
     const dbMessage = formatSupabaseError(error);
@@ -292,6 +408,7 @@ export async function persistSavedWardrobeOutfitToDb(
       dbMessage.includes("user_saved_outfits") ||
       dbMessage.includes("moodword") ||
       dbMessage.includes("layout_overrides") ||
+      dbMessage.includes("canvas_bg") ||
       dbMessage.includes("schema cache") ||
       dbMessage.includes("does not exist");
 
@@ -303,4 +420,47 @@ export async function persistSavedWardrobeOutfitToDb(
         : `${dbMessage} Saved locally on this device as a fallback.`,
     };
   }
+}
+
+export async function deleteSavedWardrobeOutfitFromDb(
+  userId: string,
+  outfitId: string,
+): Promise<void> {
+  const supabase = getSupabaseClient();
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    throw new Error("Sign in to manage your archive.");
+  }
+
+  if (user.id !== userId) {
+    throw new Error("Session mismatch. Sign out and sign in again.");
+  }
+
+  const { error } = await supabase
+    .from("user_saved_outfits")
+    .delete()
+    .eq("id", outfitId)
+    .eq("user_id", user.id);
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function deleteSavedWardrobeOutfit(
+  userId: string,
+  outfitId: string,
+): Promise<void> {
+  try {
+    await deleteSavedWardrobeOutfitFromDb(userId, outfitId);
+  } catch (error) {
+    console.error("Supabase outfit delete failed:", error);
+  }
+
+  removeSavedWardrobeOutfitFromLocal(outfitId);
 }

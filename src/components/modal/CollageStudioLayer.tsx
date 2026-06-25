@@ -33,6 +33,9 @@ import {
 import { resolveRenderedCanvasZIndex } from "@/lib/canvasLayerStack";
 import { isLocalhostClient } from "@/lib/dev";
 import {
+  clampDragAnchorPosition,
+  formatClampedDragLayoutPercent,
+  formatDragLayoutPercent,
   formatLayoutPercent,
   parseLayoutPercent,
   type FreeDragPosition,
@@ -117,6 +120,16 @@ export function CollageStudioLayer({
     startTopPct: number;
     startLeftPct: number;
   } | null>(null);
+  const layoutsRef = useRef(layouts);
+  const itemsRef = useRef(items);
+
+  useLayoutEffect(() => {
+    layoutsRef.current = layouts;
+  }, [layouts]);
+
+  useLayoutEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
 
   const layoutsReady = Object.keys(layouts).length > 0;
   const renderableItems = items.filter(
@@ -281,67 +294,118 @@ export function CollageStudioLayer({
       if (!session || !parent) return null;
 
       const rect = parent.getBoundingClientRect();
+      const container = resolveLookCanvasLayoutContainer(layoutReference, rect);
+      const layout = layoutsRef.current[session.itemId];
       const dx = clientX - session.startClientX;
       const dy = clientY - session.startClientY;
 
+      let nextTop = session.startTopPct + (dy / container.height) * 100;
+      let nextLeft = session.startLeftPct + (dx / container.width) * 100;
+
+      if (isFreeDragMode && layout) {
+        const clamped = clampDragAnchorPosition(
+          nextTop,
+          nextLeft,
+          layout,
+          container,
+        );
+        nextTop = clamped.top;
+        nextLeft = clamped.left;
+      }
+
+      const formatPercent = isFreeDragMode
+        ? layout
+          ? formatClampedDragLayoutPercent
+          : formatDragLayoutPercent
+        : formatLayoutPercent;
+
       return {
         itemId: session.itemId,
-        top: formatLayoutPercent(
-          session.startTopPct + (dy / rect.height) * 100,
-        ),
-        left: formatLayoutPercent(
-          session.startLeftPct + (dx / rect.width) * 100,
-        ),
+        top: formatPercent(nextTop),
+        left: formatPercent(nextLeft),
       };
+    },
+    [parentRef, layoutReference, isFreeDragMode],
+  );
+
+  const beginFreeDrag = useCallback(
+    (itemId: string, layout: CanvasItemLayout, event: PointerEvent) => {
+      const parent = parentRef.current;
+      if (!parent) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      parent.setPointerCapture(event.pointerId);
+
+      dragSessionRef.current = {
+        itemId,
+        startClientX: event.clientX,
+        startClientY: event.clientY,
+        startTopPct: parseLayoutPercent(layout.top),
+        startLeftPct: parseLayoutPercent(layout.left),
+      };
+
+      setActiveDrag({
+        itemId,
+        top: layout.top,
+        left: layout.left,
+      });
     },
     [parentRef],
   );
 
-  const handleAssetPointerDown = useCallback(
-    (itemId: string, layout: CanvasItemLayout) =>
-      (event: React.PointerEvent<HTMLDivElement>) => {
-        if (!isFreeDragMode) return;
+  useEffect(() => {
+    const parent = parentRef.current;
+    if (!parent || !isFreeDragMode) return;
 
-        event.preventDefault();
-        event.stopPropagation();
+    const resolveHitItemAt = (clientX: number, clientY: number) => {
+      const rect = parent.getBoundingClientRect();
+      const { x, y } = mapPointerToLayoutSpace(
+        clientX,
+        clientY,
+        rect,
+        layoutReference,
+      );
+      const container = resolveLookCanvasLayoutContainer(layoutReference, rect);
 
-        event.currentTarget.setPointerCapture(event.pointerId);
+      const entries = buildCanvasHitTestEntries(
+        layoutsRef.current,
+        itemsRef.current,
+        { isEditMode, selectedItemId, activeItemId },
+        container,
+      );
 
-        dragSessionRef.current = {
-          itemId,
-          startClientX: event.clientX,
-          startClientY: event.clientY,
-          startTopPct: parseLayoutPercent(layout.top),
-          startLeftPct: parseLayoutPercent(layout.left),
-        };
+      return findTopmostAssetAtPoint(x, y, entries, {
+        allowVisualFallback: false,
+      });
+    };
 
-        setActiveDrag({
-          itemId,
-          top: layout.top,
-          left: layout.left,
-        });
-      },
-    [isFreeDragMode],
-  );
+    const handlePointerDown = (event: PointerEvent) => {
+      if (event.button !== 0 || dragSessionRef.current) return;
 
-  const handleAssetPointerMove = useCallback(
-    (event: React.PointerEvent<HTMLDivElement>) => {
-      if (!isFreeDragMode || !dragSessionRef.current) return;
+      const hitId = resolveHitItemAt(event.clientX, event.clientY);
+      if (!hitId) return;
+
+      const layout = layoutsRef.current[hitId];
+      if (!layout) return;
+
+      beginFreeDrag(hitId, layout, event);
+    };
+
+    const handlePointerMove = (event: PointerEvent) => {
+      if (!dragSessionRef.current) return;
 
       const nextPosition = computeDragPosition(event.clientX, event.clientY);
       if (nextPosition) {
         setActiveDrag(nextPosition);
       }
-    },
-    [computeDragPosition, isFreeDragMode],
-  );
+    };
 
-  const handleAssetPointerUp = useCallback(
-    (event: React.PointerEvent<HTMLDivElement>) => {
+    const finishDrag = (event: PointerEvent) => {
       if (!dragSessionRef.current) return;
 
-      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-        event.currentTarget.releasePointerCapture(event.pointerId);
+      if (parent.hasPointerCapture(event.pointerId)) {
+        parent.releasePointerCapture(event.pointerId);
       }
 
       const nextPosition = computeDragPosition(event.clientX, event.clientY);
@@ -354,9 +418,30 @@ export function CollageStudioLayer({
 
       dragSessionRef.current = null;
       setActiveDrag(null);
-    },
-    [computeDragPosition, onFreeDragPositionCommit],
-  );
+    };
+
+    parent.addEventListener("pointerdown", handlePointerDown);
+    parent.addEventListener("pointermove", handlePointerMove);
+    parent.addEventListener("pointerup", finishDrag);
+    parent.addEventListener("pointercancel", finishDrag);
+
+    return () => {
+      parent.removeEventListener("pointerdown", handlePointerDown);
+      parent.removeEventListener("pointermove", handlePointerMove);
+      parent.removeEventListener("pointerup", finishDrag);
+      parent.removeEventListener("pointercancel", finishDrag);
+    };
+  }, [
+    isFreeDragMode,
+    parentRef,
+    layoutReference,
+    isEditMode,
+    selectedItemId,
+    activeItemId,
+    computeDragPosition,
+    beginFreeDrag,
+    onFreeDragPositionCommit,
+  ]);
 
   useEffect(() => {
     if (!isEditMode || !selectedItemId || isHitboxMode) return;
@@ -538,10 +623,6 @@ export function CollageStudioLayer({
               isEditMode={isEditMode}
               isHitboxMode={isHitboxMode}
               isFreeDragMode={isFreeDragMode}
-              onPointerDown={handleAssetPointerDown(item.id, layout)}
-              onPointerMove={handleAssetPointerMove}
-              onPointerUp={handleAssetPointerUp}
-              onPointerCancel={handleAssetPointerUp}
               onScale={(widthPx) => updateLayout(item.id, { widthPx })}
               onImageLoad={() => handleImageLoad(item.id)}
             />
@@ -563,10 +644,6 @@ interface CanvasAssetProps {
   isEditMode: boolean;
   isHitboxMode: boolean;
   isFreeDragMode: boolean;
-  onPointerDown: (event: React.PointerEvent<HTMLDivElement>) => void;
-  onPointerMove: (event: React.PointerEvent<HTMLDivElement>) => void;
-  onPointerUp: (event: React.PointerEvent<HTMLDivElement>) => void;
-  onPointerCancel: (event: React.PointerEvent<HTMLDivElement>) => void;
   onScale: (widthPx: number) => void;
   onImageLoad: () => void;
 }
@@ -582,10 +659,6 @@ function CanvasAsset({
   isEditMode,
   isHitboxMode,
   isFreeDragMode,
-  onPointerDown,
-  onPointerMove,
-  onPointerUp,
-  onPointerCancel,
   onScale,
   onImageLoad,
 }: CanvasAssetProps) {
@@ -604,13 +677,18 @@ function CanvasAsset({
     onImageLoad();
   };
 
+  const hitboxStyle = {
+    top: hitboxOffset.topPx,
+    left: hitboxOffset.leftPx,
+    width: hitbox.widthPx,
+    height: hitbox.heightPx,
+  };
+
   return (
     <motion.div
       className={`absolute select-none touch-none ${
         isFreeDragMode
-          ? isDragging
-            ? "pointer-events-auto cursor-grabbing"
-            : "pointer-events-auto cursor-grab active:cursor-grabbing"
+          ? "pointer-events-none"
           : "pointer-events-auto cursor-not-allowed"
       }`}
       style={{
@@ -624,10 +702,6 @@ function CanvasAsset({
       }}
       animate={{ opacity: isDimmed ? 0.55 : 1 }}
       transition={{ duration: 0.25 }}
-      onPointerDown={isFreeDragMode ? onPointerDown : undefined}
-      onPointerMove={isFreeDragMode ? onPointerMove : undefined}
-      onPointerUp={isFreeDragMode ? onPointerUp : undefined}
-      onPointerCancel={isFreeDragMode ? onPointerCancel : undefined}
     >
       <div className="relative shrink-0 leading-[0]">
         <Image
@@ -644,16 +718,21 @@ function CanvasAsset({
         />
       </div>
 
+      {isFreeDragMode ? (
+        <div
+          aria-hidden
+          className={`pointer-events-none absolute ${
+            isDragging ? "ring-1 ring-blueprint-accent/50" : ""
+          }`}
+          style={hitboxStyle}
+        />
+      ) : null}
+
       {isEditMode && isSelected && !isHitboxMode && (
         <div
           aria-hidden
           className="pointer-events-none absolute ring-1 ring-blue-500/90"
-          style={{
-            top: hitboxOffset.topPx,
-            left: hitboxOffset.leftPx,
-            width: hitbox.widthPx,
-            height: hitbox.heightPx,
-          }}
+          style={hitboxStyle}
         />
       )}
 
@@ -661,12 +740,7 @@ function CanvasAsset({
         <div
           aria-hidden
           className="pointer-events-none absolute border-2 border-red-500/70 bg-red-500/15"
-          style={{
-            top: hitboxOffset.topPx,
-            left: hitboxOffset.leftPx,
-            width: hitbox.widthPx,
-            height: hitbox.heightPx,
-          }}
+          style={hitboxStyle}
         />
       )}
 

@@ -2,7 +2,7 @@ import type { ClothingCategory, ItemFashionVectors } from "@/types/item";
 
 export const clothingItemFashionMeta: Record<string, ItemFashionVectors> = {
   "black-beanie-01": {
-    displayModel: "Tornado Mart - Lace-up Knit Cap",
+    displayModel: "Lace-up Knit Cap",
     fitGuidance: {
       type: "One-size Fit",
       fabricWeight: "%50 Cotton, %50 Acrylic",
@@ -45,7 +45,7 @@ export const clothingItemFashionMeta: Record<string, ItemFashionVectors> = {
     },
   },
   "bootcut-jeans-02": {
-    displayModel: "Levi's Vintage — 517 Bootcut Denim",
+    displayModel: "517 Bootcut Denim",
     fitGuidance: {
       type: "Mid-Rise Bootcut Silhouette",
       fabricWeight: "14oz Heavyweight Rigid Denim",
@@ -67,7 +67,7 @@ export const clothingItemFashionMeta: Record<string, ItemFashionVectors> = {
     },
   },
   "black-sunglasses-01": {
-    displayModel: "Oliver Peoples — Narrow Acetate Shield Frame",
+    displayModel: "Narrow Acetate Shield Frame",
     fitGuidance: {
       type: "Wide-Lens Shield Proportion",
       fabricWeight: "Hand-polished acetate frame",
@@ -111,7 +111,7 @@ export const clothingItemFashionMeta: Record<string, ItemFashionVectors> = {
     },
   },
   "black-bag-01": {
-    displayModel: "Coach Vintage — Compact Crossbody Archive Bag",
+    displayModel: "Compact Crossbody Archive Bag",
     fitGuidance: {
       type: "Compact Crossbody Carry",
       fabricWeight: "Pebbled leather with archive hardware",
@@ -133,7 +133,7 @@ export const clothingItemFashionMeta: Record<string, ItemFashionVectors> = {
     },
   },
   "sunglasses-02": {
-    displayModel: "Oliver Peoples — Shield Frame 0962 Sun",
+    displayModel: "Shield Frame 0962 Sun",
     fitGuidance: {
       type: "Wide Shield Proportion",
       fabricWeight: "Hand-polished acetate frame",
@@ -155,7 +155,7 @@ export const clothingItemFashionMeta: Record<string, ItemFashionVectors> = {
     },
   },
   "necklace-01": {
-    displayModel: "The Row — Industrial Hardware Chain Collar",
+    displayModel: "Industrial Hardware Chain Collar",
     fitGuidance: {
       type: "Collar-Stack Layering Fit",
       fabricWeight: "Brushed steel hardware on fine chain",
@@ -177,7 +177,7 @@ export const clothingItemFashionMeta: Record<string, ItemFashionVectors> = {
     },
   },
   "longsleeve-shirt-01": {
-    displayModel: "Maison Margiela — Asymmetric Cut Long Sleeve Top",
+    displayModel: "Asymmetric Cut Long Sleeve Top",
     fitGuidance: {
       type: "Drop-Shoulder Oversized Fit",
       fabricWeight: "280gsm washed cotton jersey",
@@ -199,7 +199,7 @@ export const clothingItemFashionMeta: Record<string, ItemFashionVectors> = {
     },
   },
   "shorts-01": {
-    displayModel: "Bottega Veneta — Distressed Technical Shorts",
+    displayModel: "Distressed Technical Shorts",
     fitGuidance: {
       type: "Mid-Thigh Technical Fit",
       fabricWeight: "240gsm distressed cotton twill",
@@ -221,7 +221,7 @@ export const clothingItemFashionMeta: Record<string, ItemFashionVectors> = {
     },
   },
   "black-bag-02": {
-    displayModel: "Coach Vintage — Multi-Pocket Utilitarian Crossbody",
+    displayModel: "Multi-Pocket Utilitarian Crossbody",
     fitGuidance: {
       type: "Crossbody Utility Carry",
       fabricWeight: "Pebbled leather with multi-pocket paneling",
@@ -243,7 +243,7 @@ export const clothingItemFashionMeta: Record<string, ItemFashionVectors> = {
     },
   },
   "sneakers-02": {
-    displayModel: "Balenciaga — Track-Inspired Panel Runner",
+    displayModel: "Track-Inspired Panel Runner",
     fitGuidance: {
       type: "Oversized Runner Volume",
       fabricWeight: "Mixed mesh and rubber panel upper",
@@ -265,7 +265,7 @@ export const clothingItemFashionMeta: Record<string, ItemFashionVectors> = {
     },
   },
   "cap-01": {
-    displayModel: "Supreme — Structured 6-Panel Archive Cap",
+    displayModel: "Structured 6-Panel Archive Cap",
     fitGuidance: {
       type: "Deep Crown Structured Fit",
       fabricWeight: "Cotton twill with structured front panel",
@@ -287,7 +287,7 @@ export const clothingItemFashionMeta: Record<string, ItemFashionVectors> = {
     },
   },
   "necklace-02": {
-    displayModel: "The Row — Fine Chain Layering Necklace",
+    displayModel: "Fine Chain Layering Necklace",
     fitGuidance: {
       type: "Mid-Chest Layering Length",
       fabricWeight: "Fine sterling chain with minimal clasp",
@@ -309,7 +309,7 @@ export const clothingItemFashionMeta: Record<string, ItemFashionVectors> = {
     },
   },
   "tank-top-01": {
-    displayModel: "Supreme — Ribbed Cotton Tank Top",
+    displayModel: "Ribbed Cotton Tank Top",
     fitGuidance: {
       type: "Slim Ribbed Fit",
       fabricWeight: "180gsm ribbed cotton",
@@ -331,7 +331,7 @@ export const clothingItemFashionMeta: Record<string, ItemFashionVectors> = {
     },
   },
   "sunglasses-01": {
-    displayModel: "Oliver Peoples — Slim Rectangular Acetate",
+    displayModel: "Slim Rectangular Acetate",
     fitGuidance: {
       type: "Slim Rectangular Proportion",
       fabricWeight: "Polished acetate frame",
@@ -353,7 +353,7 @@ export const clothingItemFashionMeta: Record<string, ItemFashionVectors> = {
     },
   },
   "baggy-jeans-01": {
-    displayModel: "Levi's Vintage — Relaxed Baggy Denim",
+    displayModel: "Relaxed Baggy Denim",
     fitGuidance: {
       type: "Low-Slung Baggy Fit",
       fabricWeight: "13oz washed denim",
@@ -375,7 +375,7 @@ export const clothingItemFashionMeta: Record<string, ItemFashionVectors> = {
     },
   },
   "bracelet-01": {
-    displayModel: "The Row — Brushed Cuff Bracelet",
+    displayModel: "Brushed Cuff Bracelet",
     fitGuidance: {
       type: "Open Cuff Wrist Fit",
       fabricWeight: "Brushed metal cuff",
@@ -397,7 +397,7 @@ export const clothingItemFashionMeta: Record<string, ItemFashionVectors> = {
     },
   },
   "teal-bag-01": {
-    displayModel: "The Row — Structured Teal Archive Bag",
+    displayModel: "Structured Teal Archive Bag",
     fitGuidance: {
       type: "Structured Shoulder Carry",
       fabricWeight: "Smooth leather with tonal hardware",
@@ -419,7 +419,7 @@ export const clothingItemFashionMeta: Record<string, ItemFashionVectors> = {
     },
   },
   "sneakers-03": {
-    displayModel: "Balenciaga — Panelled Archive Runner",
+    displayModel: "Panelled Archive Runner",
     fitGuidance: {
       type: "Oversized Street Runner Fit",
       fabricWeight: "Mesh and rubber composite upper",
@@ -462,7 +462,7 @@ export const clothingItemFashionMeta: Record<string, ItemFashionVectors> = {
     },
   },
   "ember-top-black-01": {
-    displayModel: "Susamusa - Ember Top",
+    displayModel: "Ember Top",
     fitGuidance: {
       type: "Fluid Draped Adjustable Fit",
       fabricWeight: "Lightweight fluid crepe",
@@ -483,7 +483,7 @@ export const clothingItemFashionMeta: Record<string, ItemFashionVectors> = {
     },
   },
   "studded-oversized-tote-bag-01": {
-    displayModel: "Bopka - Studded Oversized Tote Bag",
+    displayModel: "Studded Oversized Tote Bag",
     fitGuidance: {
       type: "Oversized Carry-All Silhouette",
       fabricWeight: "Durable vegan leather construction",
@@ -500,11 +500,11 @@ export const clothingItemFashionMeta: Record<string, ItemFashionVectors> = {
     },
     budgetAlternativeLink: {
       name: "Underarm Bag Studded Crossbody Bags PU Leather Handbag for Women",
-      url: "https://www.ebay.co.uk/itm/135742669367",
+      url: "https://www.ebay.co.uk/itm/135742669367?var=435059691092",
     },
   },
   "js-eyewear-5052-sunglasses-01": {
-    displayModel: "JS Eyewear 5052 Sunglasses",
+    displayModel: "5052 Sunglasses",
     fitGuidance: {
       type: "Oversized Wraparound Fit",
       fabricWeight: "Plastic frame with crystal detailing",
@@ -526,7 +526,7 @@ export const clothingItemFashionMeta: Record<string, ItemFashionVectors> = {
     },
   },
   "gray-raw-denim-jacket-01": {
-    displayModel: "Custom Made - Gray Raw Denim Jacket",
+    displayModel: "Gray Raw Denim Jacket",
     fitGuidance: {
       type: "Structured Cropped Fit",
       fabricWeight: "12-14oz Raw Selvedge Denim",
@@ -543,12 +543,12 @@ export const clothingItemFashionMeta: Record<string, ItemFashionVectors> = {
         "Rigid raw denim provides a sharp contrast against fluid jersey or ribbed knits, grounding softer textures.",
     },
     budgetAlternativeLink: {
-      name: "Shein Distressed Cropped Denim Jacket Alternative",
-      url: "https://m.shein.co.uk/Slaydiva-Women-s-Casual-Distressed-Cropped-Denim-Jacket-p-50864842.html?attr_ids=&detailBusinessFrom=0-1_50864842%257C0-2&imgRatio=3-4&isAppointMall=&mallCode=1&pageListType=4&showFeedbackRec=1&src_identifier=st%253D2%2560sc%253DCropped%2520Denim%2520Jacket%2520Alternative%2560sr%253D0%2560ps%253D0&src_module=search&src_tab_page_id=page_pre_search1782084566460",
+      name: "Katai Depth Jacket Black",
+      url: "https://ayaisaya.com/products/katai-depth-jacket-black",
     },
   },
   "tweed-mini-skirt-with-decorative-belt-01": {
-    displayModel: "Mango - Tweed Mini-Skirt with Decorative Belt",
+    displayModel: "Tweed Mini-Skirt with Decorative Belt",
     fitGuidance: {
       type: "Mid-Rise Structured Mini-Skirt Fit",
       fabricWeight: "Cotton and wool blend",
@@ -570,7 +570,7 @@ export const clothingItemFashionMeta: Record<string, ItemFashionVectors> = {
     },
   },
 "women-s-tan-cream-coat-01": {
- displayModel: "Nanjun - Oversized Draped Trench Coat",
+ displayModel: "Oversized Draped Trench Coat",
  fitGuidance: {
    type: "Relaxed, Draped Trench Silhouette",
    fabricWeight: "Mid-weight cotton twill blend",
@@ -591,7 +591,7 @@ export const clothingItemFashionMeta: Record<string, ItemFashionVectors> = {
  },
 },  
 "hollister-co-women-s-black-and-navy-shorts-01": {
- displayModel: "Hollister Co. — Y2K Low-Rise Cuffed Chino Shorts",
+ displayModel: "Y2K Low-Rise Cuffed Chino Shorts",
  fitGuidance: {
    type: "Low-Rise Cuffed Silhouette",
    fabricWeight: "Lightweight cotton twill",
@@ -612,7 +612,7 @@ export const clothingItemFashionMeta: Record<string, ItemFashionVectors> = {
  },
 },
 "polo-ralph-lauren-women-s-shirt-01": {
- displayModel: "Polo Ralph Lauren - Women's Essential V-Neck Shirt",
+ displayModel: "Women's Essential Polo Shirt",
  fitGuidance: {
    type: "Slim-Fit V-Neck Silhouette",
    fabricWeight: "Lightweight Cotton Jersey",
@@ -628,12 +628,12 @@ export const clothingItemFashionMeta: Record<string, ItemFashionVectors> = {
      "Smooth cotton jersey provides a subtle counterpoint to raw denim or technical fabrics, preventing visual clutter.",
  },
  budgetAlternativeLink: {
-   name: "Amazon French Toast Cotton V-Neck Alternative",
-   url: "https://www.amazon.com/French-Toast-Sleeve-Stretch-Standard/dp/B09SVNYV47/ref=sr_1_1?crid=2CZP0VOWT0AL&dib=eyJ2IjoiMSJ9.L_O2lvXk4jJtvWSS8k7AcLS58jxghteLqlbjD9vbpOemnBmDdPLUZCetE8zU5KnL0MSTL2KPtHaqFL3skkM4VnCRYLWcB-0K7BOLj_jfkrtKx4nZ_AAvLaXuVQWB2W690FXLSKGe0-daI_FGP6f4-QjQS3r6Rs9Lo3Cm5L_D_8IGEMBWncRRtT_tSWdZjZmcfy61XC3vtJgFaWpoqO2DG--VWRhq4Vs3NUnB9AMQFUS8fEDj0CXmBdSBWyDR0tCNXIabS690USE9hBJMfO0lK0AnUPQi8LVyNaz8lKS8mtk.81uao7ZYSmXlzzjSyDwGD8__EAT2R39oRmOj1jCC9Bg&dib_tag=se&keywords=womens%2Bwhite%2Bpolo%2Bshirts%2Btriangle&qid=1782127860&sprefix=womens%2Bwhite%2Bpolo%2Bshirts%2Btriang%2Caps%2C393&sr=8-1&th=1&psc=1",
+   name: "Women's Vintage Y2K Polo Ralph Lauren White Tee",
+   url: "https://3rdstrike.shop/products/women-s-vintage-y2k-polo-ralph-lauren-white-tee",
  },
 },
 "obosoyo-minimalist-burgundy-faux-leather-tote-ba-01": {
- displayModel: "Obosoyo — Minimalist Burgundy Patent Shoulder Tote",
+displayModel: "Minimalist Burgundy Patent Shoulder Tote",
  fitGuidance: {
    type: "Large Work / Travel Shoulder Bag",
    fabricWeight: "High-gloss patent faux leather",
@@ -654,7 +654,7 @@ export const clothingItemFashionMeta: Record<string, ItemFashionVectors> = {
  },
   },
 "the-miu-miu-bayonetta-glasses-01": {
- displayModel: "Miu Miu - The Miu Miu Bayonetta Glasses",
+ displayModel: "The Miu Miu Bayonetta Glasses",
  fitGuidance: {
    type: "Slim Rectangular Acetate Frames",
    fabricWeight: "Polished acetate frame",
@@ -695,6 +695,155 @@ export const clothingItemFashionMeta: Record<string, ItemFashionVectors> = {
     url: "https://www.zara.com/us/en/sporty-lace-up-ballet-flats-p15210710.html?v1=495712196",
   },
 },
+"burn-mark-zip-up-hoodi-01": {
+    displayModel: "Burn Mark Zip-Up Hoodie",
+    fitGuidance: {
+      type: "Relaxed, Oversized Fit",
+      fabricWeight: "Mid-weight brushed-back cotton-blend fleece",
+    },
+    resaleKeywords: {
+      tags: "Planet Missy zip-up hoodie, Y2K zip-up, graphic oversized sweatshirt, zip-up hoodie",
+      estPriceRange: "$30 - $40 on Planet Missy",
+    },
+    stylingExecution: {
+      howToWear:
+        "Layer open over a graphic tee to showcase inner textures, or zip fully to emphasize the distressed graphic as a focal point.",
+      textureSynergy:
+        "Pair the brushed fleece with rigid denim or technical nylon for a balanced tactile contrast, highlighting the garment's worn-in feel.",
+    },
+    budgetAlternativeLink: {
+      name: "DHGate American Retro Oversize Sweater",
+      url: "https://tr.dhgate.com/product/2025-american-retro-hiphop-oversized-sweatshirt/1078704879.html?skuId=1436406625337491472",
+    },
+  },
+  "women-s-green-and-blue-vest-01": {
+    displayModel: "Teal Cami Tank Top",
+    fitGuidance: {
+      type: "Body-skimming Cami Fit",
+      fabricWeight: "Lightweight cotton-blend rib knit",
+    },
+    resaleKeywords: {
+      tags: "Brandy Melville teal cami, Y2K teal cami tank top",
+      estPriceRange: "$20 on Depop",
+    },
+    stylingExecution: {
+      howToWear:
+        "Layer under open shirting or wear standalone with low-rise denim for a Y2K aesthetic, allowing the button placket to peek through.",
+      textureSynergy:
+        "The soft rib-knit surface provides subtle texture contrast against rigid denim or technical outerwear, preventing a flat silhouette.",
+    },
+    budgetAlternativeLink: {
+      name: "Brandy Melville Women's Blue and Green Vest",
+      url: "https://www.depop.com/products/ilovecookies1y3456-teal-tank-rare-brandy-melville-ca04/",
+    },
+  },
+  "perfect-denims-01": {
+    displayModel: "Siolin Perfect Denims — Relaxed Wide-Leg",
+    fitGuidance: {
+      type: "Relaxed Wide-Leg Fit",
+      fabricWeight: "13.5oz Rigid Indigo Denim",
+    },
+    resaleKeywords: {
+      tags: "Siolin Perfect Denims, wide-leg indigo jeans, cyber grunge denim, relaxed fit",
+      estPriceRange: "$68 on Siolin",
+    },
+    stylingExecution: {
+      howToWear:
+        "Pair with cropped outerwear or a tucked top to balance the relaxed silhouette, allowing the hem to subtly stack over footwear.",
+      textureSynergy:
+        "The deep indigo rigid denim provides a foundational texture against softer knits or technical fabrics, anchoring the overall look.",
+    },
+    budgetAlternativeLink: {
+      name: "H&M Relaxed Fit Jeans Alternative",
+      url: "https://www2.hm.com/en_us/productpage.1045459069.html",
+    },
+  },
+  "women-s-brown-belt-01": {
+    displayModel: "00's Vintage Textured Brown Leather Belt With Silver Buckle",
+    fitGuidance: {
+      type: "Adjustable Waist Fit",
+      fabricWeight: "Distressed full-grain leather",
+      modelSpecs: "Fits sizes 27-35",
+    },
+    resaleKeywords: {
+      tags: "y2k vintage oakley beltbuckle western leather belt, silver buckle, black accessory, unisex belt, versatile style, minimal design, casual wear, grunge aesthetic, y2k vibe, streetwear accessory, western",
+      estPriceRange: "$58 on Etsy",
+    },
+    stylingExecution: {
+      howToWear:
+        "Cinch over low-rise denim or drape over tailored trousers to define the waistline, allowing the buckle to act as a focal point.",
+      textureSynergy:
+        "The worn leather texture grounds polished hardware, creating depth against raw denim or sleek technical fabrics without overwhelming the silhouette.",
+    },
+    budgetAlternativeLink: {
+      name: "Y2K Wave Oval Buckle Belt",
+      url: "https://www.depop.com/products/illgnsells-brown-leather-belt-with-oval-033d/",
+    },
+  },
+  "women-s-brown-ballet-shoes-01": {
+    displayModel: "Women's Brown Ballet-shoes",
+    fitGuidance: {
+      type: "Classic Slip-On Ballet Flat with Rounded Toe",
+      fabricWeight: "Supple quilted lambskin",
+    },
+    resaleKeywords: {
+      tags: "Chanel ballet flats, quilted lambskin, vintage Chanel shoes, designer balletcore, Y2K balletcore",
+      estPriceRange: "$495 on Depop",
+    },
+    stylingExecution: {
+      howToWear:
+        "Pair with tailored trousers or a flowing midi skirt, allowing the delicate silhouette to ground the look, while the rounded toe adds a touch of softness and comfort.",
+      textureSynergy:
+        "Soft quilted lambskin offers a tactile contrast against crisp cottons or structured denim, providing depth without harshness.",
+    },
+    budgetAlternativeLink: {
+      name: "M&S Suede Bow Flat Ballet Pumps",
+      url: "https://www.marksandspencer.com/suede-bow-flat-ballet-pumps/p/clp61220752#intid=pid_pg1pip24g4r1c3",
+    },
+  },
+  "bright-yellow-bag-01": {
+    displayModel: "Yellow Sculpted Drawstring Shoulder Bag",
+    fitGuidance: {
+      type: "Soft-Structured Shoulder Carry",
+      fabricWeight: "Supple, matte-grain leather",
+    },
+    resaleKeywords: {
+      tags: "MLC yellow leather bag, Y2K slouch bag, bright shoulder bag, drawstring hobo bag",
+      estPriceRange: "$10 on Depop",
+    },
+    stylingExecution: {
+      howToWear:
+        "Carry slung low over the shoulder to introduce a pop of saturated color against muted tones, allowing the soft structure to drape naturally.",
+      textureSynergy:
+        "The bag's supple, matte leather surface provides a tactile contrast to rigid denim, technical outerwear, or crisp cotton shirting.",
+    },
+    budgetAlternativeLink: {
+      name: "The Real Real Cole Haan Leather Shoulder Bag",
+      url: "https://www.therealreal.com/products/women/handbags/shoulder-bags/cole-haan-leather-shoulder-bag-sba1o",
+    },
+  },
+  "women-s-brown-and-silver-sunglasses-01": {
+    displayModel: "Brighton '5313' Rectangular Acetate Frame",
+    fitGuidance: {
+      type: "Narrow Rectangular Silhouette",
+      fabricWeight: "Polished brown acetate with silver-tone metal accents",
+      modelSpecs: "Lens width 50-54mm recommended for balanced fit",
+    },
+    resaleKeywords: {
+      tags: "Brighton 5313 sunglasses, Y2K rectangular frame, brown acetate eyewear, silver detail sunglasses",
+      estPriceRange: "$25 on Depop",
+    },
+    stylingExecution: {
+      howToWear:
+        "Position high on the bridge to accentuate the narrow, elongated lens profile and sharpen facial lines.",
+      textureSynergy:
+        "Glossy acetate and subtle metal details provide a refined contrast against distressed denim or matte leather textures.",
+    },
+    budgetAlternativeLink: {
+      name: "Vintage Small Rectangle Sunglasses",
+      url: "https://www.depop.com/products/bww77065-vintage-small-rectangle-sunglasses-5467/",
+    },
+  },
 };
 
 export function defaultFashionVectors(

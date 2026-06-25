@@ -10,7 +10,10 @@ interface WardrobeLooksGridProps {
   inventory?: WardrobeClothingItem[];
   wardrobeLoading?: boolean;
   wardrobeError?: string | null;
-  onOpenOutfitInBuilder?: (outfit: SavedWardrobeOutfitBlueprint) => void;
+  onEditSavedOutfit?: (outfit: SavedWardrobeOutfitBlueprint) => void;
+  onDeleteSavedOutfit?: (outfit: SavedWardrobeOutfitBlueprint) => void;
+  onCopyLookToEditor?: (look: WardrobeLook) => void;
+  deletingOutfitId?: string | null;
 }
 
 export function WardrobeLooksGrid({
@@ -19,7 +22,10 @@ export function WardrobeLooksGrid({
   inventory = [],
   wardrobeLoading = false,
   wardrobeError = null,
-  onOpenOutfitInBuilder,
+  onEditSavedOutfit,
+  onDeleteSavedOutfit,
+  onCopyLookToEditor,
+  deletingOutfitId = null,
 }: WardrobeLooksGridProps) {
   const hasSavedOutfits = savedOutfits.length > 0;
   const hasUnlockedLooks = looks.length > 0;
@@ -34,25 +40,6 @@ export function WardrobeLooksGrid({
 
   return (
     <div className="space-y-10">
-      {hasSavedOutfits ? (
-        <section aria-label="Saved outfits">
-          <p className="text-meta mb-4 font-mono text-[9px] tracking-[0.35em] uppercase">
-            Saved Outfits
-          </p>
-          <div className="columns-1 gap-4 space-y-4 sm:columns-2 lg:columns-3">
-            {savedOutfits.map((outfit) => (
-              <div key={outfit.id} className="mb-4 break-inside-avoid">
-                <WardrobeSavedOutfitPreview
-                  outfit={outfit}
-                  inventory={inventory}
-                  onOpenInBuilder={onOpenOutfitInBuilder}
-                />
-              </div>
-            ))}
-          </div>
-        </section>
-      ) : null}
-
       <section aria-label="Unlocked looks">
         <p className="text-meta mb-4 font-mono text-[9px] tracking-[0.35em] uppercase">
           Unlocked Looks
@@ -68,7 +55,10 @@ export function WardrobeLooksGrid({
           <div className="columns-1 gap-4 space-y-4 sm:columns-2 lg:columns-3">
             {looks.map((look) => (
               <div key={look.id} className="mb-4 break-inside-avoid">
-                <WardrobeLookPreview look={look} />
+                <WardrobeLookPreview
+                  look={look}
+                  onCopyToEditor={onCopyLookToEditor}
+                />
               </div>
             ))}
           </div>
@@ -78,6 +68,27 @@ export function WardrobeLooksGrid({
           </p>
         )}
       </section>
+
+      {hasSavedOutfits ? (
+        <section aria-label="Saved outfits">
+          <p className="text-meta mb-4 font-mono text-[9px] tracking-[0.35em] uppercase">
+            Saved Outfits
+          </p>
+          <div className="columns-1 gap-4 space-y-4 sm:columns-2 lg:columns-3">
+            {savedOutfits.map((outfit) => (
+              <div key={outfit.id} className="mb-4 break-inside-avoid">
+                <WardrobeSavedOutfitPreview
+                  outfit={outfit}
+                  inventory={inventory}
+                  onEdit={onEditSavedOutfit}
+                  onDelete={onDeleteSavedOutfit}
+                  isDeleting={deletingOutfitId === outfit.id}
+                />
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }

@@ -1,19 +1,24 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import Image from "next/image";
 import {
   useCallback,
   useEffect,
   useRef,
   useState,
-  type DragEvent,
   type FormEvent,
 } from "react";
 import { createPortal } from "react-dom";
 import { WardrobeOutfitLivePreviewCard } from "@/components/wardrobe/WardrobeOutfitLivePreviewCard";
+import { CanvasBackgroundPalette } from "@/components/wardrobe/CanvasBackgroundPalette";
+import { MoodImageInputMatrix } from "@/components/wardrobe/MoodImageInputMatrix";
 import { compressMoodImageFile } from "@/lib/compressMoodImage";
+import {
+  CANVAS_BG_DEFAULT,
+  type CanvasBgValue,
+} from "@/lib/wardrobeCanvasBackground";
 import { exportLookCardAsPng } from "@/lib/exportLookCardPng";
+import { FREE_TIER_SAVED_OUTFIT_LIMIT } from "@/lib/launchGates";
 import { persistSavedWardrobeOutfitToDb, formatSupabaseError } from "@/lib/savedWardrobeOutfitDb";
 import type { CanvasItemLayout } from "@/types/canvas-layout";
 import type { ResolvedLookItem } from "@/types/look";
@@ -29,6 +34,7 @@ export interface WardrobeSaveOutfitPayload {
   name: string;
   moodword: string;
   moodImageUrl: string | null;
+  canvasBg: CanvasBgValue;
 }
 
 type ModalPhase = "edit" | "success";
@@ -47,6 +53,11 @@ interface WardrobeSaveOutfitModalProps {
   initialName?: string;
   initialMoodword?: string;
   initialMoodImageUrl?: string | null;
+  initialCanvasBg?: CanvasBgValue;
+  savedOutfitCount?: number;
+  editingOutfitId?: string | null;
+  editingSavedAt?: string | null;
+  onArchiveLimitReached?: () => void;
   onClose: () => void;
   onSaveSuccess: (
     blueprint: SavedWardrobeOutfitBlueprint,
@@ -74,6 +85,11 @@ export function WardrobeSaveOutfitModal({
   initialName = "",
   initialMoodword = "",
   initialMoodImageUrl = null,
+  initialCanvasBg = CANVAS_BG_DEFAULT,
+  savedOutfitCount = 0,
+  editingOutfitId = null,
+  editingSavedAt = null,
+  onArchiveLimitReached,
   onClose,
   onSaveSuccess,
 }: WardrobeSaveOutfitModalProps) {
@@ -83,6 +99,7 @@ export function WardrobeSaveOutfitModal({
   const [moodImageUrl, setMoodImageUrl] = useState<string | null>(
     initialMoodImageUrl,
   );
+  const [canvasBg, setCanvasBg] = useState<CanvasBgValue>(CANVAS_BG_DEFAULT);
   const [savedBlueprint, setSavedBlueprint] =
     useState<SavedWardrobeOutfitBlueprint | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -90,11 +107,9 @@ export function WardrobeSaveOutfitModal({
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveWarning, setSaveWarning] = useState<string | null>(null);
   const [shareError, setShareError] = useState<string | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
   const [isProcessingMoodImage, setIsProcessingMoodImage] = useState(false);
   const [moodImageError, setMoodImageError] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
   const saveInFlightRef = useRef(false);
   const wasOpenRef = useRef(false);
@@ -117,6 +132,7 @@ export function WardrobeSaveOutfitModal({
     setOutfitName(initialName);
     setMoodword(initialMoodword);
     setMoodImageUrl(initialMoodImageUrl);
+    setCanvasBg(initialCanvasBg);
     setSavedBlueprint(null);
     setIsSaving(false);
     setIsSharing(false);
@@ -125,7 +141,7 @@ export function WardrobeSaveOutfitModal({
     setSaveWarning(null);
     setMoodImageError(null);
     setIsProcessingMoodImage(false);
-  }, [isOpen, initialName, initialMoodword, initialMoodImageUrl]);
+  }, [isOpen, initialName, initialMoodword, initialMoodImageUrl, initialCanvasBg]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -158,23 +174,10 @@ export function WardrobeSaveOutfitModal({
     }
   }, []);
 
-  const handleFileChange = async (
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    await applyImageFile(file);
-    event.target.value = "";
-  };
-
-  const handleDrop = async (event: DragEvent<HTMLButtonElement>) => {
-    event.preventDefault();
-    setIsDragging(false);
-
-    const file = event.dataTransfer.files?.[0];
-    if (!file) return;
-    await applyImageFile(file);
-  };
+  const handleSelectLibraryAsset = useCallback((url: string) => {
+    setMoodImageError(null);
+    setMoodImageUrl(url);
+  }, []);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -188,10 +191,20 @@ export function WardrobeSaveOutfitModal({
       return;
     }
 
+    const isNewArchiveSlot = !editingOutfitId;
+    if (
+      isNewArchiveSlot &&
+      savedOutfitCount >= FREE_TIER_SAVED_OUTFIT_LIMIT
+    ) {
+      onArchiveLimitReached?.();
+      return;
+    }
+
     const payload: WardrobeSaveOutfitPayload = {
       name: (outfitName ?? "").trim().toUpperCase(),
       moodword: (moodword ?? "").trim().toUpperCase(),
       moodImageUrl,
+      canvasBg,
     };
 
     saveInFlightRef.current = true;
@@ -200,13 +213,23 @@ export function WardrobeSaveOutfitModal({
     setSaveWarning(null);
 
     try {
-      const result = await persistSavedWardrobeOutfitToDb(userId, {
-        name: payload.name,
-        moodword: payload.moodword,
-        moodImageUrl: payload.moodImageUrl,
-        slots,
-        ...(layoutOverrides ? { layoutOverrides } : {}),
-      });
+      const result = await persistSavedWardrobeOutfitToDb(
+        userId,
+        {
+          name: payload.name,
+          moodword: payload.moodword,
+          moodImageUrl: payload.moodImageUrl,
+          canvasBg: payload.canvasBg,
+          slots,
+          ...(layoutOverrides ? { layoutOverrides } : {}),
+        },
+        editingOutfitId
+          ? {
+              existingOutfitId: editingOutfitId,
+              existingSavedAt: editingSavedAt ?? undefined,
+            }
+          : undefined,
+      );
 
       setSavedBlueprint(result.blueprint);
       setPhase("success");
@@ -321,9 +344,15 @@ export function WardrobeSaveOutfitModal({
                         />
                       </label>
 
+                      <CanvasBackgroundPalette
+                        value={canvasBg}
+                        onChange={setCanvasBg}
+                      />
+
                       <label className="block">
                         <span className="text-meta mb-2 block font-mono text-[9px] tracking-[0.35em] uppercase">
-                          Moodword
+                          Moodword{" "}
+                          <span className="text-neutral-400">(Optional)</span>
                         </span>
                         <input
                           type="text"
@@ -334,68 +363,14 @@ export function WardrobeSaveOutfitModal({
                         />
                       </label>
 
-                      <div>
-                        <span className="text-meta mb-2 block font-mono text-[9px] tracking-[0.35em] uppercase">
-                          Mood Image Overlay
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => fileInputRef.current?.click()}
-                          onDragOver={(event) => {
-                            event.preventDefault();
-                            setIsDragging(true);
-                          }}
-                          onDragLeave={() => setIsDragging(false)}
-                          onDrop={handleDrop}
-                          className={`relative flex w-full flex-col items-center justify-center gap-3 border border-dashed px-4 py-8 transition-colors ${
-                            isDragging
-                              ? "border-blueprint-accent bg-blueprint-selected"
-                              : "border-blueprint-border bg-blueprint-surface/40 hover:border-blueprint-accent"
-                          }`}
-                        >
-                          {moodImageUrl ? (
-                            <div className="relative aspect-[3/4] w-[100px] overflow-hidden border border-neutral-100">
-                              <Image
-                                src={moodImageUrl}
-                                alt="Mood preview"
-                                fill
-                                unoptimized
-                                sizes="100px"
-                                className="object-cover"
-                              />
-                            </div>
-                          ) : null}
-                          <span className="font-mono text-[9px] tracking-[0.2em] text-neutral-400 uppercase">
-                            {isProcessingMoodImage
-                              ? "Processing..."
-                              : moodImageUrl
-                                ? "Replace Mood Image"
-                                : "Drag & Drop or Click to Upload"}
-                          </span>
-                        </button>
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={handleFileChange}
-                          disabled={isProcessingMoodImage}
-                        />
-                        {moodImageError ? (
-                          <p className="mt-2 font-mono text-[10px] tracking-[0.12em] text-red-600 uppercase">
-                            {moodImageError}
-                          </p>
-                        ) : null}
-                        {moodImageUrl ? (
-                          <button
-                            type="button"
-                            onClick={() => setMoodImageUrl(null)}
-                            className="mt-2 font-mono text-[9px] tracking-[0.2em] text-neutral-400 uppercase transition-colors hover:text-neutral-900"
-                          >
-                            Remove Mood Image
-                          </button>
-                        ) : null}
-                      </div>
+                      <MoodImageInputMatrix
+                        moodImageUrl={moodImageUrl}
+                        isProcessing={isProcessingMoodImage}
+                        error={moodImageError}
+                        onSelectLibraryAsset={handleSelectLibraryAsset}
+                        onUploadFile={applyImageFile}
+                        onClear={() => setMoodImageUrl(null)}
+                      />
 
                       {saveError ? (
                         <p className="font-mono text-[10px] tracking-[0.12em] text-red-600 uppercase">
@@ -431,6 +406,8 @@ export function WardrobeSaveOutfitModal({
                         outfitName={outfitName}
                         moodword={moodword}
                         moodImageUrl={moodImageUrl}
+                        canvasBg={canvasBg}
+                        showMoodPlaceholders
                         lookItems={lookItems}
                         resolveLayouts={resolveLayouts}
                         canvasKey={canvasKey}
@@ -499,6 +476,9 @@ export function WardrobeSaveOutfitModal({
                         outfitName={previewOutfitName}
                         moodword={previewMoodword}
                         moodImageUrl={previewMoodImageUrl}
+                        canvasBg={
+                          savedBlueprint?.canvasBg ?? canvasBg
+                        }
                         lookItems={lookItems}
                         resolveLayouts={resolveLayouts}
                         canvasKey={canvasKey}

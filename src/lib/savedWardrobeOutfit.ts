@@ -30,6 +30,27 @@ export function persistSavedWardrobeOutfit(
   localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
 }
 
+export function removeSavedWardrobeOutfitFromLocal(outfitId: string): void {
+  if (typeof window === "undefined") return;
+
+  const next = loadSavedWardrobeOutfits().filter((entry) => entry.id !== outfitId);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+}
+
+export function updateSavedWardrobeOutfitLocally(
+  blueprint: SavedWardrobeOutfitBlueprint,
+): void {
+  if (typeof window === "undefined") return;
+
+  const existing = loadSavedWardrobeOutfits();
+  const hasEntry = existing.some((entry) => entry.id === blueprint.id);
+  const next = hasEntry
+    ? existing.map((entry) => (entry.id === blueprint.id ? blueprint : entry))
+    : [blueprint, ...existing];
+
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+}
+
 export function createSavedOutfitBlueprint(
   blueprint: Omit<SavedWardrobeOutfitBlueprint, "id" | "savedAt">,
 ): SavedWardrobeOutfitBlueprint {

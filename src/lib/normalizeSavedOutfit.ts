@@ -1,4 +1,5 @@
 import { normalizeLayoutOverrides } from "@/lib/wardrobeDragLayout";
+import { normalizeCanvasBg } from "@/lib/wardrobeCanvasBackground";
 import type { SavedWardrobeOutfitBlueprint, WardrobeOutfitMatrix } from "@/types/wardrobe-builder";
 
 export function normalizeOutfitMatrix(
@@ -21,6 +22,7 @@ export function normalizeSavedOutfitBlueprint(
     name: raw.name ?? "",
     moodword: raw.moodword ?? "",
     moodImageUrl: raw.moodImageUrl ?? null,
+    canvasBg: normalizeCanvasBg(raw.canvasBg),
     slots: normalizeOutfitMatrix(raw.slots),
     savedAt: raw.savedAt ?? new Date().toISOString(),
     ...(layoutOverrides ? { layoutOverrides } : {}),

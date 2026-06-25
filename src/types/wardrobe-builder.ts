@@ -1,5 +1,7 @@
 export type WardrobeMatrixSlotIndex = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 
+import type { CanvasBgValue } from "@/lib/wardrobeCanvasBackground";
+
 export type MatrixCategoryFilter =
   | "ACC_HEAD"
   | "HAT"
@@ -114,6 +116,7 @@ export interface SavedWardrobeOutfitBlueprint extends WardrobeOutfitCardMeta {
   id: string;
   slots: WardrobeOutfitMatrix;
   savedAt: string;
+  canvasBg?: CanvasBgValue;
   layoutOverrides?: Record<string, LayoutPositionOverride>;
 }
 

@@ -1,32 +1,38 @@
-import { looks } from "@/data/looks";
 import { ArchiveExtensionGate } from "@/components/ArchiveExtensionGate";
 import { LookCard } from "@/components/LookCard";
-import { HOMEPAGE_LOOK_LIMIT } from "@/lib/launchGates";
+import { getPublicHomepageLooks, isHomepageLookLocked } from "@/lib/launchGates";
 import type { Look } from "@/types/look";
 
 interface LookGridProps {
   onSelectLook: (look: Look) => void;
+  onLockedLookClick: (look: Look) => void;
 }
 
-export function LookGrid({ onSelectLook }: LookGridProps) {
-  const featuredLooks = looks.slice(0, HOMEPAGE_LOOK_LIMIT);
+export function LookGrid({ onSelectLook, onLockedLookClick }: LookGridProps) {
+  const publicLooks = getPublicHomepageLooks();
 
   return (
-    <section
-      className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 md:grid-cols-3"
-      aria-label="Fashion lookbook"
-    >
-      {featuredLooks.map((look, index) => (
-        <article key={look.id}>
-          <LookCard
-            look={look}
-            priority={index < 2}
-            onSelect={onSelectLook}
-          />
-        </article>
-      ))}
+    <section aria-label="Fashion lookbook" className="px-4 pb-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+        {publicLooks.map((look, index) => {
+          const isLockedLook = isHomepageLookLocked(index);
 
-      <ArchiveExtensionGate />
+          return (
+            <article key={look.id}>
+              <LookCard
+                look={look}
+                priority={index < 2}
+                isLockedLook={isLockedLook}
+                onSelect={isLockedLook ? onLockedLookClick : onSelectLook}
+              />
+            </article>
+          );
+        })}
+      </div>
+
+      <div className="mt-4">
+        <ArchiveExtensionGate />
+      </div>
     </section>
   );
 }

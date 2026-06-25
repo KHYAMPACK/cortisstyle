@@ -10,10 +10,12 @@ import { WardrobeOutfitMoodboardCard } from "@/components/wardrobe/WardrobeOutfi
 import type { CanvasItemLayout } from "@/types/canvas-layout";
 import type { ResolvedLookItem } from "@/types/look";
 import { WARDROBE_BUILDER_LOOK } from "@/types/wardrobe-builder";
+import { COLLAGE_BACKDROP } from "@/lib/collageLayout";
 import {
   LOOK_CANVAS_REFERENCE_HEIGHT,
   LOOK_CANVAS_REFERENCE_WIDTH,
 } from "@/lib/lookCanvasReference";
+import { isDarkCanvasBackground } from "@/lib/wardrobeCanvasBackground";
 
 /** Matches the verified main wardrobe canvas width — layout math stays identical. */
 const MAIN_CANVAS_WIDTH_PX = 420;
@@ -36,6 +38,9 @@ interface WardrobeOutfitLivePreviewCardProps {
     containerWidth: number,
   ) => Record<string, CanvasItemLayout>;
   canvasKey: string;
+  canvasBg?: string;
+  /** When false, mood image placeholder and empty moodword are hidden. */
+  showMoodPlaceholders?: boolean;
   className?: string;
   /** @deprecated Ignored — preview always renders at the main canvas width. */
   canvasWidthClassName?: string;
@@ -52,11 +57,15 @@ export const WardrobeOutfitLivePreviewCard = forwardRef<
     lookItems,
     resolveLayouts,
     canvasKey,
+    canvasBg = "#FFFFFF",
+    showMoodPlaceholders = false,
     className = "",
   },
   ref,
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const isDarkCanvas = isDarkCanvasBackground(canvasBg);
+  const moodwordFallback = showMoodPlaceholders ? "EDITORIAL" : undefined;
 
   const resolvePreviewLayouts = useCallback(
     (items: ResolvedLookItem[], width: number) => resolveLayouts(items, width),
@@ -80,32 +89,53 @@ export const WardrobeOutfitLivePreviewCard = forwardRef<
             containerClassName="w-[420px] shrink-0"
           >
             <div
-              className="relative mx-auto box-content shrink-0 overflow-hidden border border-blueprint-border surface-canvas-paper"
+              className={`relative mx-auto box-content shrink-0 overflow-hidden border ${
+                isDarkCanvas
+                  ? "border-neutral-700"
+                  : "border-blueprint-border surface-canvas-paper"
+              }`}
               style={{
                 width: LOOK_CANVAS_REFERENCE_WIDTH,
                 height: LOOK_CANVAS_REFERENCE_HEIGHT,
               }}
             >
-              <div aria-hidden className="absolute inset-0 z-0 bg-white" />
+              <div
+                aria-hidden
+                className="absolute inset-0 z-0"
+                style={{ backgroundColor: canvasBg }}
+              />
 
-              <WardrobeCanvasBrandWatermark />
+              {isDarkCanvas ? (
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0 z-[1] bg-[radial-gradient(circle_at_center,transparent_42%,rgba(255,255,255,0.06)_100%)]"
+                />
+              ) : null}
+
+              <WardrobeCanvasBrandWatermark onDarkCanvas={isDarkCanvas} />
 
               <WardrobeMoodImageFrame
                 moodImageUrl={moodImageUrl}
-                showPlaceholder
+                showPlaceholder={showMoodPlaceholders}
               />
 
-              <WardrobeMoodword moodword={moodword} />
+              <WardrobeMoodword
+                moodword={moodword}
+                emptyFallback={moodwordFallback}
+                onDarkCanvas={isDarkCanvas}
+              />
 
               <LookCanvasLayoutProvider
                 referenceWidth={LOOK_CANVAS_REFERENCE_WIDTH}
                 referenceHeight={LOOK_CANVAS_REFERENCE_HEIGHT}
               >
-              {/*
-                Preview-only blend: white LookCanvas backdrop reveals the mood
-                layer beneath while garment pixels composite on top.
-              */}
-              <div className="pointer-events-none absolute inset-0 z-20 mix-blend-multiply">
+              <div
+                className={`pointer-events-none absolute inset-0 z-20 ${
+                  isDarkCanvas
+                    ? "[&_img]:drop-shadow-[0_0_1px_rgba(255,255,255,0.95)] [&_img]:drop-shadow-[0_0_5px_rgba(255,255,255,0.28)]"
+                    : "mix-blend-multiply"
+                }`}
+              >
                 <LookCanvas
                   key={canvasKey}
                   className="absolute inset-0 h-full w-full"
@@ -119,6 +149,9 @@ export const WardrobeOutfitLivePreviewCard = forwardRef<
                   onSelectItem={() => {}}
                   resolveLayouts={resolvePreviewLayouts}
                   disableCanvasHitTesting
+                  collageBackdrop={
+                    isDarkCanvas ? "transparent" : COLLAGE_BACKDROP
+                  }
                 />
               </div>
               </LookCanvasLayoutProvider>

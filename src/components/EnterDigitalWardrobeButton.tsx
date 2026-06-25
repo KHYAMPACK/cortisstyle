@@ -4,14 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { AuthPopup } from "@/components/AuthPopup";
 import { useAuth } from "@/context/AuthContext";
-import {
-  getWardrobeEntryPath,
-  isWardrobeGateEnabled,
-} from "@/lib/wardrobeGate";
-import {
-  getNotifyDeployPath,
-  isAuthGateEnabled,
-} from "@/lib/launchGates";
+import { WARDROBE_APP_PATH } from "@/lib/wardrobeGate";
 
 interface EnterDigitalWardrobeButtonProps {
   className?: string;
@@ -25,22 +18,12 @@ export function EnterDigitalWardrobeButton({
   const [showAuthPopup, setShowAuthPopup] = useState(false);
 
   const goToWardrobe = () => {
-    router.push(getWardrobeEntryPath());
+    router.push(WARDROBE_APP_PATH);
   };
 
   const handleClick = () => {
-    if (isWardrobeGateEnabled()) {
-      goToWardrobe();
-      return;
-    }
-
     if (isAuthenticated) {
       goToWardrobe();
-      return;
-    }
-
-    if (isAuthGateEnabled()) {
-      router.push(getNotifyDeployPath());
       return;
     }
 
@@ -61,8 +44,8 @@ export function EnterDigitalWardrobeButton({
         isOpen={showAuthPopup}
         onClose={() => setShowAuthPopup(false)}
         onAuthSuccess={goToWardrobe}
-        description="Join Cortis Style to access your private archive."
-        allowSignUp={!isAuthGateEnabled()}
+        description="Create an account or sign in to access your private wardrobe archive."
+        allowSignUp
       />
     </>
   );

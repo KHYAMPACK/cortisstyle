@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 import { AuthPopup } from "@/components/AuthPopup";
 import { ArchiveCommunitySignOff } from "@/components/ArchiveCommunitySignOff";
 import { WardrobeBuilderCanvas } from "@/components/wardrobe/WardrobeBuilderCanvas";
@@ -11,11 +11,14 @@ import { WardrobeLoadingState } from "@/components/wardrobe/WardrobeLoadingState
 import { WardrobeLooksGrid } from "@/components/wardrobe/WardrobeLooksGrid";
 import { WardrobeTabs } from "@/components/wardrobe/WardrobeTabs";
 import { useAuth } from "@/context/AuthContext";
-import { getNotifyDeployPath, isAuthGateEnabled } from "@/lib/launchGates";
+import { deleteSavedWardrobeOutfit } from "@/lib/savedWardrobeOutfitDb";
+import { lookToBuilderBlueprint } from "@/lib/lookToWardrobeBlueprint";
 import type { SavedWardrobeOutfitBlueprint } from "@/types/wardrobe-builder";
+import type { WardrobeLook } from "@/types/user";
 
-export default function WardrobePage() {
+function WardrobePageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const {
     isAuthenticated,
     isInitializing,
@@ -26,25 +29,30 @@ export default function WardrobePage() {
     wardrobeLoadError,
     ownedClothes,
     signOut,
+    refreshSavedOutfits,
   } = useAuth();
   const [activeTab, setActiveTab] = useState<"builder" | "looks" | "items">(
     "builder",
   );
   const [builderLoadBlueprint, setBuilderLoadBlueprint] =
     useState<SavedWardrobeOutfitBlueprint | null>(null);
+  const [deletingOutfitId, setDeletingOutfitId] = useState<string | null>(null);
   const [showAuthPopup, setShowAuthPopup] = useState(false);
+
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab === "builder" || tab === "looks" || tab === "items") {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (isInitializing) return;
 
     if (!isAuthenticated) {
-      if (isAuthGateEnabled()) {
-        router.replace(getNotifyDeployPath());
-        return;
-      }
       setShowAuthPopup(true);
     }
-  }, [isAuthenticated, isInitializing, router]);
+  }, [isAuthenticated, isInitializing]);
 
   const handleSignOut = async () => {
     try {
@@ -59,6 +67,41 @@ export default function WardrobePage() {
     setShowAuthPopup(false);
     if (!isAuthenticated) {
       router.push("/");
+    }
+  };
+
+  const handleEditSavedOutfit = (outfit: SavedWardrobeOutfitBlueprint) => {
+    setBuilderLoadBlueprint(outfit);
+    setActiveTab("builder");
+  };
+
+  const handleCopyLookToEditor = (look: WardrobeLook) => {
+    setBuilderLoadBlueprint(lookToBuilderBlueprint(look));
+    setActiveTab("builder");
+  };
+
+  const handleDeleteSavedOutfit = async (
+    outfit: SavedWardrobeOutfitBlueprint,
+  ) => {
+    if (!user?.id) return;
+
+    const purgeStartedAt = Date.now();
+    const minPurgeDurationMs = 450;
+
+    setDeletingOutfitId(outfit.id);
+    try {
+      await deleteSavedWardrobeOutfit(user.id, outfit.id);
+
+      const elapsed = Date.now() - purgeStartedAt;
+      if (elapsed < minPurgeDurationMs) {
+        await new Promise((resolve) => {
+          window.setTimeout(resolve, minPurgeDurationMs - elapsed);
+        });
+      }
+
+      await refreshSavedOutfits();
+    } finally {
+      setDeletingOutfitId(null);
     }
   };
 
@@ -80,15 +123,13 @@ export default function WardrobePage() {
 
   return (
     <div className="min-h-full bg-ice-floor text-jet-black">
-      {!isAuthGateEnabled() && (
-        <AuthPopup
-          isOpen={showAuthPopup && !isAuthenticated}
-          onClose={handleAuthClose}
-          onAuthSuccess={() => setShowAuthPopup(false)}
-          description="Join Cortis Style to access your private archive."
-          allowSignUp={false}
-        />
-      )}
+      <AuthPopup
+        isOpen={showAuthPopup && !isAuthenticated}
+        onClose={handleAuthClose}
+        onAuthSuccess={() => setShowAuthPopup(false)}
+        description="Create an account or sign in to access your private wardrobe archive."
+        allowSignUp
+      />
 
       <section className="border-b border-blueprint-border px-5 py-8 md:px-10 md:py-10">
         <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
@@ -137,10 +178,10 @@ export default function WardrobePage() {
                 inventory={ownedClothes}
                 wardrobeLoading={wardrobeLoading}
                 wardrobeError={wardrobeLoadError}
-                onOpenOutfitInBuilder={(outfit) => {
-                  setBuilderLoadBlueprint(outfit);
-                  setActiveTab("builder");
-                }}
+                onEditSavedOutfit={handleEditSavedOutfit}
+                onDeleteSavedOutfit={handleDeleteSavedOutfit}
+                onCopyLookToEditor={handleCopyLookToEditor}
+                deletingOutfitId={deletingOutfitId}
               />
             ) : wardrobeLoading ? (
               <WardrobeLoadingState label="Loading wardrobe collection" />
@@ -165,5 +206,13 @@ export default function WardrobePage() {
         <ArchiveCommunitySignOff tone="light" className="mt-0 border-t border-blueprint-border pt-10 pb-10" />
       </footer>
     </div>
+  );
+}
+
+export default function WardrobePage() {
+  return (
+    <Suspense fallback={<WardrobeLoadingState label="Loading wardrobe" />}>
+      <WardrobePageContent />
+    </Suspense>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { Copy } from "lucide-react";
 import { useRef } from "react";
 import { LookCanvas } from "@/components/modal/LookCanvas";
 import { LookCanvasLayoutProvider } from "@/context/LookCanvasLayoutContext";
@@ -17,63 +18,78 @@ const PREVIEW_MASK_HEIGHT_PX = Math.round(
   LOOK_CANVAS_REFERENCE_HEIGHT * PREVIEW_SCALE,
 );
 
+const actionButtonClass =
+  "flex items-center gap-1.5 rounded-full border border-neutral-200/80 bg-white/90 px-2.5 py-1 font-mono text-[8px] tracking-[0.16em] text-neutral-950 uppercase shadow-sm transition-all duration-200 hover:border-neutral-400 hover:bg-white hover:shadow-md";
+
 interface WardrobeLookPreviewProps {
   look: WardrobeLook;
+  onCopyToEditor?: (look: WardrobeLook) => void;
 }
 
-export function WardrobeLookPreview({ look }: WardrobeLookPreviewProps) {
+export function WardrobeLookPreview({
+  look,
+  onCopyToEditor,
+}: WardrobeLookPreviewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const items = resolveEditableLookItems(look);
 
   return (
-    <article className="surface-canvas-paper border border-blueprint-border">
-      <div className="p-3 md:p-4">
-        <div
-          className="relative mx-auto flex w-full max-w-[320px] items-center justify-center overflow-hidden bg-white"
-          style={{ height: PREVIEW_MASK_HEIGHT_PX }}
-        >
-          <LookCanvasLayoutProvider
-            referenceWidth={LOOK_CANVAS_REFERENCE_WIDTH}
-            referenceHeight={LOOK_CANVAS_REFERENCE_HEIGHT}
+    <article className="relative overflow-hidden border border-blueprint-border bg-transparent">
+      <div className="relative">
+        {onCopyToEditor ? (
+          <div className="absolute top-3 right-3 z-[60]">
+            <button
+              type="button"
+              aria-label={`Copy ${look.title} to editor`}
+              onClick={() => onCopyToEditor(look)}
+              className={actionButtonClass}
+            >
+              <Copy className="h-3 w-3 stroke-current" strokeWidth={1.75} />
+              Copy to Editor
+            </button>
+          </div>
+        ) : null}
+
+        <div className="p-3 md:p-4">
+          <div
+            className="relative mx-auto flex w-full max-w-[320px] items-center justify-center overflow-hidden bg-white"
+            style={{ height: PREVIEW_MASK_HEIGHT_PX }}
           >
-            <div
-              className="w-[420px] shrink-0 will-change-transform"
-              style={{
-                transform: `scale(${PREVIEW_SCALE})`,
-                transformOrigin: "center",
-              }}
+            <LookCanvasLayoutProvider
+              referenceWidth={LOOK_CANVAS_REFERENCE_WIDTH}
+              referenceHeight={LOOK_CANVAS_REFERENCE_HEIGHT}
             >
               <div
-                className="relative box-content shrink-0 overflow-hidden border border-blueprint-border surface-canvas-paper"
+                className="w-[420px] shrink-0 will-change-transform"
                 style={{
-                  width: LOOK_CANVAS_REFERENCE_WIDTH,
-                  height: LOOK_CANVAS_REFERENCE_HEIGHT,
+                  transform: `scale(${PREVIEW_SCALE})`,
+                  transformOrigin: "center",
                 }}
               >
-                <LookCanvas
-                  look={look}
-                  lookImage={look.image}
-                  title={look.title}
-                  items={items}
-                  activeItemId={null}
-                  isEditMode={false}
-                  containerRef={containerRef}
-                  onSelectItem={() => {}}
-                  disableCanvasHitTesting
-                  className="absolute inset-0 h-full w-full"
-                />
+                <div
+                  className="relative box-content shrink-0 overflow-hidden border border-blueprint-border surface-canvas-paper"
+                  style={{
+                    width: LOOK_CANVAS_REFERENCE_WIDTH,
+                    height: LOOK_CANVAS_REFERENCE_HEIGHT,
+                  }}
+                >
+                  <LookCanvas
+                    look={look}
+                    lookImage={look.image}
+                    title={look.title}
+                    items={items}
+                    activeItemId={null}
+                    isEditMode={false}
+                    containerRef={containerRef}
+                    onSelectItem={() => {}}
+                    disableCanvasHitTesting
+                    className="absolute inset-0 h-full w-full"
+                  />
+                </div>
               </div>
-            </div>
-          </LookCanvasLayoutProvider>
+            </LookCanvasLayoutProvider>
+          </div>
         </div>
-      </div>
-      <div className="border-t border-blueprint-border px-3 py-3 md:px-4 md:py-4">
-        <h2 className="font-serif text-[11px] leading-snug tracking-[0.12em] text-neutral-900 uppercase md:text-xs">
-          {look.title}
-        </h2>
-        <p className="text-meta mt-1 text-[9px] tracking-[0.3em] uppercase">
-          Unlocked
-        </p>
       </div>
     </article>
   );
