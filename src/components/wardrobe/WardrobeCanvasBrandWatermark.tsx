@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 
-const WATERMARK_SRC = "/brand/cortisstyle-logo-light.png";
+const LOGO_SRC = "/brand/cortisstyle-logo-light.png";
 
 export function WardrobeCanvasBrandWatermark({
   onDarkCanvas = false,
@@ -15,12 +15,13 @@ export function WardrobeCanvasBrandWatermark({
       className="pointer-events-none absolute inset-0 z-[5] flex items-center justify-center overflow-hidden"
     >
       <Image
-        src={WATERMARK_SRC}
+        src={LOGO_SRC}
         alt=""
-        width={512}
-        height={512}
-        className={`h-[min(48%,18rem)] w-auto select-none ${
-          onDarkCanvas ? "opacity-[0.1] invert" : "opacity-[0.07]"
+        width={1024}
+        height={1024}
+        unoptimized
+        className={`h-[min(56%,22rem)] w-auto select-none ${
+          onDarkCanvas ? "opacity-[0.1]" : "opacity-[0.07] invert"
         }`}
       />
     </div>

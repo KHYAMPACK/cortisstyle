@@ -685,7 +685,7 @@ export const clothingItems: ClothingItem[] = [
     "women-s-brown-belt-01",
     "BELT",
     "waist",
-    "Custom Made",
+    "Guess",
     "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
     "Purchased from Depop — Available at select vintage markets.",
     "https://www.etsy.com/listing/1666046257/00s-vintage-guess-textured-brown-leather",

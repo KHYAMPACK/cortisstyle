@@ -1,7 +1,6 @@
 "use client";
 
 import { ChevronDown } from "lucide-react";
-import { BrandLogo } from "@/components/BrandLogo";
 import { SocialMediaLinks } from "@/components/SocialMediaLinks";
 
 export const LOOKBOOK_COLLECTION_ID = "lookbook-collection";
@@ -30,12 +29,11 @@ export function HomeHero() {
           <p className="font-mono text-[10px] tracking-[0.45em] text-white/75 uppercase md:text-[11px]">
             SS26 Collection // Talent Personified
           </p>
-          <h1 className="sr-only">Cortisstyle SS26 Collection</h1>
-          <BrandLogo
-            variant="dark"
-            priority
-            className="h-[min(52vw,14rem)] w-auto md:h-[min(36vw,16rem)]"
-          />
+
+          <h1 className="mt-5 font-serif text-[clamp(3rem,11vw,7.5rem)] leading-[0.88] font-light tracking-[0.06em] text-white uppercase md:mt-6">
+            <span className="block">Cortis</span>
+            <span className="block font-normal">Style</span>
+          </h1>
         </div>
       </div>
 

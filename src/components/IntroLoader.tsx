@@ -108,9 +108,9 @@ export function IntroLoader() {
       >
         <motion.div {...entrance} className="px-6">
           <BrandLogo
-            variant="dark"
+            variant="onDark"
             priority
-            className="h-[min(42vw,11rem)] w-auto"
+            className="h-[min(52vw,14rem)] w-auto md:h-[min(36vw,16rem)]"
           />
         </motion.div>
       </motion.div>

@@ -149,86 +149,90 @@ export function LookModal({ look, onClose }: LookModalProps) {
   };
 
   return (
-    <AnimatePresence>
-      {look && (
-        <>
-          <motion.button
-            type="button"
-            aria-label="Close look detail"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={spring}
-            onClick={onClose}
-            className="fixed inset-0 z-50 cursor-default bg-black/40 backdrop-blur-md"
-          />
+    <>
+      <AnimatePresence>
+        {look ? (
+          <>
+            <motion.button
+              key="look-modal-backdrop"
+              type="button"
+              aria-label="Close look detail"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={spring}
+              onClick={onClose}
+              className="fixed inset-0 z-50 cursor-default bg-black/40 backdrop-blur-md"
+            />
 
-          <motion.div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="look-modal-title"
-            initial={{ opacity: 0, scale: 0.92, y: 28 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: 16 }}
-            transition={spring}
-            className="pointer-events-none fixed inset-0 z-50 flex items-end justify-center p-0 md:items-center md:p-8"
-          >
-            <div className="pointer-events-auto relative flex h-[100dvh] max-h-[100dvh] w-full max-w-5xl flex-col overflow-hidden bg-ice-floor shadow-2xl md:h-[90vh] md:max-h-[90vh] md:flex-row">
-              {isLocalhostClient() && !showPreview && (
+            <motion.div
+              key="look-modal-panel"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="look-modal-title"
+              initial={{ opacity: 0, scale: 0.92, y: 28 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 16 }}
+              transition={spring}
+              className="pointer-events-none fixed inset-0 z-50 flex items-end justify-center p-0 md:items-center md:p-8"
+            >
+              <div className="pointer-events-auto relative flex h-[100dvh] max-h-[100dvh] w-full max-w-5xl flex-col overflow-hidden bg-ice-floor shadow-2xl md:h-[90vh] md:max-h-[90vh] md:flex-row">
+                {isLocalhostClient() && !showPreview && (
+                  <button
+                    type="button"
+                    onClick={() => setIsEditMode((current) => !current)}
+                    className={`absolute top-4 left-4 z-20 border px-3 py-2 font-sans text-[9px] tracking-[0.3em] uppercase transition-colors ${
+                      isEditMode
+                        ? "border-blue-600 bg-blue-600 text-white"
+                        : "border-neutral-300 bg-white text-neutral-500 hover:border-neutral-900 hover:text-neutral-900"
+                    }`}
+                  >
+                    {isEditMode ? "Editor On" : "Editor Off"}
+                  </button>
+                )}
+
                 <button
                   type="button"
-                  onClick={() => setIsEditMode((current) => !current)}
-                  className={`absolute top-4 left-4 z-20 border px-3 py-2 font-sans text-[9px] tracking-[0.3em] uppercase transition-colors ${
-                    isEditMode
-                      ? "border-blue-600 bg-blue-600 text-white"
-                      : "border-neutral-300 bg-white text-neutral-500 hover:border-neutral-900 hover:text-neutral-900"
-                  }`}
+                  onClick={onClose}
+                  className="absolute top-4 right-4 z-20 font-sans text-[10px] tracking-[0.35em] text-neutral-400 uppercase transition-colors hover:text-neutral-900"
                 >
-                  {isEditMode ? "Editor On" : "Editor Off"}
+                  Close
                 </button>
-              )}
 
-              <button
-                type="button"
-                onClick={onClose}
-                className="absolute top-4 right-4 z-20 font-sans text-[10px] tracking-[0.35em] text-neutral-400 uppercase transition-colors hover:text-neutral-900"
-              >
-                Close
-              </button>
+                <LookImagePanel
+                  look={look}
+                  items={editableItems}
+                  activeItemId={activeItemId}
+                  isEditMode={isEditMode && !showPreview}
+                  showPreview={showPreview}
+                  onSelectItem={handleSelectItem}
+                  onCanvasLayoutsChange={handleCanvasLayoutsChange}
+                />
 
-              <LookImagePanel
-                look={look}
-                items={editableItems}
-                activeItemId={activeItemId}
-                isEditMode={isEditMode && !showPreview}
-                showPreview={showPreview}
-                onSelectItem={handleSelectItem}
-                onCanvasLayoutsChange={handleCanvasLayoutsChange}
-              />
-
-              <LookItemsPanel
-                look={look}
-                items={editableItems}
-                activeItemId={activeItemId}
-                isEditMode={isEditMode && !showPreview}
-                showPreview={showPreview}
-                showCheckout={showCheckout}
-                onSelectItem={handleSelectItem}
-                onAddToWardrobe={handleAddToWardrobe}
-                isAddingToWardrobe={isAddingToWardrobe}
-                isInWardrobe={isInWardrobe}
-                wardrobeAddError={wardrobeAddError}
-                isMetadataRevealed={isMetadataRevealed}
-                onPurchase={() => setShowCheckout(true)}
-                onGateNavigate={onClose}
-                onBackToLook={handleBackToLook}
-                onCloseCheckout={() => setShowCheckout(false)}
-                canvasLayouts={canvasLayouts}
-              />
-            </div>
-          </motion.div>
-        </>
-      )}
+                <LookItemsPanel
+                  look={look}
+                  items={editableItems}
+                  activeItemId={activeItemId}
+                  isEditMode={isEditMode && !showPreview}
+                  showPreview={showPreview}
+                  showCheckout={showCheckout}
+                  onSelectItem={handleSelectItem}
+                  onAddToWardrobe={handleAddToWardrobe}
+                  isAddingToWardrobe={isAddingToWardrobe}
+                  isInWardrobe={isInWardrobe}
+                  wardrobeAddError={wardrobeAddError}
+                  isMetadataRevealed={isMetadataRevealed}
+                  onPurchase={() => setShowCheckout(true)}
+                  onGateNavigate={onClose}
+                  onBackToLook={handleBackToLook}
+                  onCloseCheckout={() => setShowCheckout(false)}
+                  canvasLayouts={canvasLayouts}
+                />
+              </div>
+            </motion.div>
+          </>
+        ) : null}
+      </AnimatePresence>
 
       <AuthPopup
         isOpen={showAuthPopup}
@@ -240,6 +244,6 @@ export function LookModal({ look, onClose }: LookModalProps) {
         description="Create an account or sign in to save this look to your wardrobe."
         allowSignUp
       />
-    </AnimatePresence>
+    </>
   );
 }

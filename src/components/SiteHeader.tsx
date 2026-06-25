@@ -64,10 +64,8 @@ export function SiteHeader() {
           >
             <Link href="/" className="pointer-events-auto block">
               <BrandLogo
-                variant={inverse ? "dark" : "light"}
-                className={`h-8 w-auto md:h-9 ${
-                  inverse ? "brightness-[2.75] contrast-125" : ""
-                }`}
+                variant={inverse ? "onDark" : "onLight"}
+                className="h-10 w-auto md:h-12"
               />
             </Link>
           </motion.div>

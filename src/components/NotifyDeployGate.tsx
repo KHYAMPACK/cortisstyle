@@ -19,7 +19,7 @@ export function NotifyDeployGate() {
       />
 
       <div className="relative z-10 flex w-full max-w-2xl flex-col items-center text-center">
-        <BrandLogo variant="dark" className="mb-10 h-24 w-auto md:h-28" />
+        <BrandLogo variant="onDark" className="mb-10 h-28 w-auto md:h-32" />
 
         <p className="font-mono text-[10px] tracking-[0.45em] text-neutral-400 uppercase">
           [ MEMBERS // DEPLOYING SOON ]

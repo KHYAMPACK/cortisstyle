@@ -90,9 +90,10 @@ export function AuthPopup({
 
   return createPortal(
     <AnimatePresence>
-      {isOpen && (
+      {isOpen ? (
         <>
           <motion.button
+            key="auth-popup-backdrop"
             type="button"
             aria-label="Close sign in prompt"
             initial={{ opacity: 0 }}
@@ -105,6 +106,7 @@ export function AuthPopup({
 
           <div className="pointer-events-none fixed inset-0 z-[60] flex items-center justify-center p-4">
             <motion.div
+              key="auth-popup-panel"
               role="dialog"
               aria-modal="true"
               aria-labelledby="auth-popup-title"
@@ -115,7 +117,7 @@ export function AuthPopup({
               className="pointer-events-auto w-[min(92vw,420px)] border border-blueprint-border surface-canvas-paper p-8 shadow-2xl"
             >
             <div className="mb-6 flex justify-center">
-              <BrandLogo variant="light" className="h-16 w-auto" />
+              <BrandLogo variant="onLight" className="h-20 w-auto md:h-24" />
             </div>
             <p className="text-meta mb-3 text-[9px] tracking-[0.4em] uppercase">
               Members Only
@@ -220,7 +222,7 @@ export function AuthPopup({
             </motion.div>
           </div>
         </>
-      )}
+      ) : null}
     </AnimatePresence>,
     document.body,
   );

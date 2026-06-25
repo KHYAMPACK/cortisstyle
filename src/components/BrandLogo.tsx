@@ -1,31 +1,31 @@
 import Image from "next/image";
 
-const LOGO_PATHS = {
-  light: "/brand/cortisstyle-logo-light.png",
-  dark: "/brand/cortisstyle-logo-dark.png",
-} as const;
+/** White mark on black tile — uploaded at public/brand/cortisstyle-logo-light.png */
+const LOGO_SRC = "/brand/cortisstyle-logo-light.png";
 
-export type BrandLogoVariant = keyof typeof LOGO_PATHS;
+export type BrandLogoVariant = "onLight" | "onDark";
 
 interface BrandLogoProps {
+  /** `onLight` = dark mark for light surfaces. `onDark` = light mark for dark surfaces. */
   variant?: BrandLogoVariant;
   className?: string;
   priority?: boolean;
 }
 
 export function BrandLogo({
-  variant = "light",
-  className = "h-9 w-auto",
+  variant = "onLight",
+  className = "h-10 w-auto",
   priority = false,
 }: BrandLogoProps) {
   return (
     <Image
-      src={LOGO_PATHS[variant]}
+      src={LOGO_SRC}
       alt="Cortisstyle"
-      width={512}
-      height={512}
+      width={1024}
+      height={1024}
       priority={priority}
-      className={className}
+      unoptimized
+      className={`${className} ${variant === "onLight" ? "invert" : ""}`}
     />
   );
 }

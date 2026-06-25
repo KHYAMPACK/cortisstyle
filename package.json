@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "item:draft": "tsx scripts/generate-item-draft.mts"
+    "item:draft": "tsx scripts/generate-item-draft.mts",
+    "favicon:generate": "tsx scripts/generate-favicon.mts"
   },
   "dependencies": {
     "@react-pdf/renderer": "^4.5.1",

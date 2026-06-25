@@ -76,7 +76,7 @@ export function PremiumArchivePaywallModal({
               Close
             </button>
 
-            <BrandLogo variant="dark" className="mx-auto mb-6 h-20 w-auto" />
+            <BrandLogo variant="onDark" className="mx-auto mb-6 h-24 w-auto md:h-28" />
 
             <p className="font-mono text-[10px] tracking-[0.45em] text-neutral-500 uppercase">
               Premium Matrix // Access Gate
