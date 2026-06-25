@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { BrandLogo } from "@/components/BrandLogo";
 import { useAuth } from "@/context/AuthContext";
@@ -17,31 +18,81 @@ const fieldTransition = {
   transition: { duration: 0.28, ease: [0.22, 1, 0.36, 1] as const },
 };
 
+const monoInputClass =
+  "w-full border border-jet-black bg-white px-4 py-4 text-center font-mono text-[11px] tracking-[0.12em] text-neutral-900 outline-none transition-colors placeholder:text-neutral-400 focus:border-jet-black disabled:opacity-60";
+
+const primaryButtonClass =
+  "mt-6 w-full border border-jet-black bg-jet-black px-5 py-4 text-center font-mono text-[10px] tracking-[0.32em] text-white uppercase transition-opacity hover:opacity-90 disabled:opacity-60";
+
 interface AuthPopupProps {
   isOpen: boolean;
   onClose: () => void;
   onAuthSuccess?: () => void;
   description?: string;
-  /** When false, hides OTP entry (deploy gate). */
+  /** When false, hides sign-up entry (deploy gate). */
   allowSignUp?: boolean;
+}
+
+function ResetAnchor({ onReset }: { onReset: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onReset}
+      className="text-meta mt-4 w-full text-[10px] tracking-[0.22em] uppercase transition-colors hover:text-jet-black"
+    >
+      [ GO BACK // RESET FORM ]
+    </button>
+  );
 }
 
 export function AuthPopup({
   isOpen,
   onClose,
   onAuthSuccess,
-  description = "Drop your email below. We'll send a 6-digit access token to join the archive.",
+  description = "Enter your email to sign in or create your curator archive profile.",
   allowSignUp = true,
 }: AuthPopupProps) {
-  const { requestEmailOtp, verifyEmailOtp, isAuthenticating, authError, clearAuthError } =
-    useAuth();
+  const router = useRouter();
+  const {
+    resolveEmailAuthRoute,
+    signInWithPassword,
+    verifySignUpOtp,
+    setAccountPassword,
+    isAuthenticating,
+    authError,
+    clearAuthError,
+  } = useAuth();
 
   const [email, setEmail] = useState("");
-  const [isTokenSent, setIsTokenSent] = useState(false);
+  const [password, setPassword] = useState("");
   const [otpToken, setOtpToken] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [isLoginMode, setIsLoginMode] = useState(false);
+  const [isTokenSent, setIsTokenSent] = useState(false);
+  const [isSettingPassword, setIsSettingPassword] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
   const normalizedEmail = email.trim().toLowerCase();
+
+  const resetForm = () => {
+    clearAuthError();
+    setPassword("");
+    setOtpToken("");
+    setNewPassword("");
+    setIsLoginMode(false);
+    setIsTokenSent(false);
+    setIsSettingPassword(false);
+  };
+
+  const completeAuth = () => {
+    onAuthSuccess?.();
+    onClose();
+  };
+
+  const enterWardrobe = () => {
+    completeAuth();
+    router.push("/wardrobe");
+  };
 
   useEffect(() => {
     setIsMounted(true);
@@ -50,9 +101,7 @@ export function AuthPopup({
   useEffect(() => {
     if (!isOpen) {
       setEmail("");
-      setOtpToken("");
-      setIsTokenSent(false);
-      clearAuthError();
+      resetForm();
       return;
     }
 
@@ -69,8 +118,26 @@ export function AuthPopup({
     clearAuthError();
 
     try {
-      await requestEmailOtp(normalizedEmail);
+      const route = await resolveEmailAuthRoute(normalizedEmail);
+
+      if (route === "login") {
+        setIsLoginMode(true);
+        return;
+      }
+
       setIsTokenSent(true);
+    } catch {
+      // Error state is handled in AuthContext.
+    }
+  };
+
+  const handleLoginSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    clearAuthError();
+
+    try {
+      await signInWithPassword(normalizedEmail, password);
+      enterWardrobe();
     } catch {
       // Error state is handled in AuthContext.
     }
@@ -81,13 +148,48 @@ export function AuthPopup({
     clearAuthError();
 
     try {
-      await verifyEmailOtp(normalizedEmail, otpToken.trim());
-      onAuthSuccess?.();
-      onClose();
+      await verifySignUpOtp(normalizedEmail, otpToken.trim());
+      setIsSettingPassword(true);
     } catch {
       // Error state is handled in AuthContext.
     }
   };
+
+  const handlePasswordSetupSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    clearAuthError();
+
+    try {
+      await setAccountPassword(newPassword);
+      enterWardrobe();
+    } catch {
+      // Error state is handled in AuthContext.
+    }
+  };
+
+  const title = isSettingPassword
+    ? "Secure Your Archive"
+    : isTokenSent
+      ? "Verify Identity"
+      : isLoginMode
+        ? "Welcome Back"
+        : "Join the Community";
+
+  const subtitle = isSettingPassword
+    ? "Create a permanent password for future sign-ins."
+    : isTokenSent
+      ? `Enter the 6-digit token we sent to ${normalizedEmail}.`
+      : isLoginMode
+        ? `Sign in to ${normalizedEmail} with your curator password.`
+        : description;
+
+  const activePhase = isSettingPassword
+    ? "set-password"
+    : isTokenSent
+      ? "otp"
+      : isLoginMode
+        ? "login"
+        : "email";
 
   if (!isMounted) return null;
 
@@ -131,18 +233,16 @@ export function AuthPopup({
                 id="auth-popup-title"
                 className="text-center font-serif text-2xl leading-tight text-neutral-950"
               >
-                {isTokenSent ? "Verify Identity" : "Join the Community"}
+                {title}
               </h2>
 
               <p className="mt-4 text-center text-sm leading-relaxed text-neutral-600">
-                {isTokenSent
-                  ? `Enter the 6-digit token we sent to ${normalizedEmail}.`
-                  : description}
+                {subtitle}
               </p>
 
               {allowSignUp ? (
                 <AnimatePresence mode="wait">
-                  {!isTokenSent ? (
+                  {activePhase === "email" ? (
                     <motion.form
                       key="email-phase"
                       {...fieldTransition}
@@ -161,19 +261,61 @@ export function AuthPopup({
                         value={email}
                         onChange={(event) => setEmail(event.target.value)}
                         disabled={isAuthenticating}
-                        className="w-full border border-jet-black bg-white px-4 py-4 text-center font-mono text-[11px] tracking-[0.12em] text-neutral-900 outline-none transition-colors placeholder:text-neutral-400 focus:border-jet-black disabled:opacity-60"
+                        className={monoInputClass}
                         placeholder="Enter your email..."
                       />
 
                       <button
                         type="submit"
                         disabled={isAuthenticating}
-                        className="mt-6 w-full border border-jet-black bg-jet-black px-5 py-4 text-center font-mono text-[10px] tracking-[0.32em] text-white uppercase transition-opacity hover:opacity-90 disabled:opacity-60"
+                        className={primaryButtonClass}
                       >
-                        {isAuthenticating ? "SENDING..." : "JOIN US"}
+                        {isAuthenticating ? "CHECKING..." : "CONTINUE"}
                       </button>
                     </motion.form>
-                  ) : (
+                  ) : null}
+
+                  {activePhase === "login" ? (
+                    <motion.form
+                      key="login-phase"
+                      {...fieldTransition}
+                      onSubmit={handleLoginSubmit}
+                      className="mx-auto mt-8 flex w-full max-w-[420px] flex-col"
+                    >
+                      <label className="sr-only" htmlFor="community-password">
+                        Password
+                      </label>
+                      <input
+                        id="community-password"
+                        type="password"
+                        required
+                        minLength={6}
+                        autoComplete="current-password"
+                        value={password}
+                        onChange={(event) => setPassword(event.target.value)}
+                        disabled={isAuthenticating}
+                        className={monoInputClass}
+                        placeholder="ENTER YOUR PASSWORD..."
+                      />
+
+                      <button
+                        type="submit"
+                        disabled={isAuthenticating || password.length < 6}
+                        className={primaryButtonClass}
+                      >
+                        {isAuthenticating ? "SIGNING IN..." : "SIGN IN"}
+                      </button>
+
+                      <ResetAnchor
+                        onReset={() => {
+                          resetForm();
+                          setEmail("");
+                        }}
+                      />
+                    </motion.form>
+                  ) : null}
+
+                  {activePhase === "otp" ? (
                     <motion.form
                       key="otp-phase"
                       {...fieldTransition}
@@ -213,24 +355,59 @@ export function AuthPopup({
                       <button
                         type="submit"
                         disabled={isAuthenticating || otpToken.length !== 6}
-                        className="mt-6 w-full border border-jet-black bg-jet-black px-5 py-4 text-center font-mono text-[10px] tracking-[0.32em] text-white uppercase transition-opacity hover:opacity-90 disabled:opacity-60"
+                        className={primaryButtonClass}
                       >
                         {isAuthenticating ? "VERIFYING..." : "VERIFY IDENTITY ACCESS"}
                       </button>
 
-                      <button
-                        type="button"
-                        onClick={() => {
-                          clearAuthError();
-                          setIsTokenSent(false);
-                          setOtpToken("");
+                      <ResetAnchor
+                        onReset={() => {
+                          resetForm();
+                          setEmail("");
                         }}
-                        className="text-meta mt-4 w-full text-[10px] tracking-[0.25em] uppercase transition-colors hover:text-jet-black"
-                      >
-                        Use a different email
-                      </button>
+                      />
                     </motion.form>
-                  )}
+                  ) : null}
+
+                  {activePhase === "set-password" ? (
+                    <motion.form
+                      key="set-password-phase"
+                      {...fieldTransition}
+                      onSubmit={handlePasswordSetupSubmit}
+                      className="mx-auto mt-8 flex w-full max-w-[420px] flex-col"
+                    >
+                      <label className="sr-only" htmlFor="community-new-password">
+                        Curator password
+                      </label>
+                      <input
+                        id="community-new-password"
+                        type="password"
+                        required
+                        minLength={6}
+                        autoComplete="new-password"
+                        value={newPassword}
+                        onChange={(event) => setNewPassword(event.target.value)}
+                        disabled={isAuthenticating}
+                        className={monoInputClass}
+                        placeholder="CREATE YOUR CURATOR PASSWORD..."
+                      />
+
+                      <button
+                        type="submit"
+                        disabled={isAuthenticating || newPassword.length < 6}
+                        className={primaryButtonClass}
+                      >
+                        {isAuthenticating ? "SAVING..." : "CONFIRM PROFILE"}
+                      </button>
+
+                      <ResetAnchor
+                        onReset={() => {
+                          resetForm();
+                          setEmail("");
+                        }}
+                      />
+                    </motion.form>
+                  ) : null}
                 </AnimatePresence>
               ) : (
                 <Link
