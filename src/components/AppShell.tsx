@@ -2,12 +2,17 @@
 
 import { usePathname } from "next/navigation";
 import { SiteHeader } from "@/components/SiteHeader";
-import { isDarkGatePath } from "@/lib/launchGates";
+import { isDarkGatePath, isMaintenancePath } from "@/lib/launchGates";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isHome = pathname === "/";
   const isDarkGate = isDarkGatePath(pathname);
+  const isMaintenance = isMaintenancePath(pathname);
+
+  if (isMaintenance) {
+    return <>{children}</>;
+  }
 
   return (
     <>

@@ -49,6 +49,17 @@ export const CHECKOUT_COMING_SOON_PATH = "/checkout-coming-soon";
 
 export const NOTIFY_DEPLOY_PATH = "/notify";
 
+export const MAINTENANCE_PATH = "/maintenance";
+
+/** When true, all routes redirect to the maintenance gate except static assets. */
+export function isMaintenanceModeEnabled(): boolean {
+  return process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true";
+}
+
+export function isMaintenancePath(pathname: string): boolean {
+  return pathname === MAINTENANCE_PATH;
+}
+
 /** When true, sign-up is disabled and profile routes to /notify. */
 export function isAuthGateEnabled(): boolean {
   return process.env.NEXT_PUBLIC_AUTH_GATE_ENABLED === "true";
@@ -71,6 +82,7 @@ const DARK_GATE_PATHS = [
   WARDROBE_COMING_SOON_PATH,
   CHECKOUT_COMING_SOON_PATH,
   NOTIFY_DEPLOY_PATH,
+  MAINTENANCE_PATH,
 ] as const;
 
 export function isDarkGatePath(pathname: string): boolean {
