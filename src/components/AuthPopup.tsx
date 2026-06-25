@@ -206,10 +206,10 @@ export function AuthPopup({
             exit={{ opacity: 0 }}
             transition={spring}
             onClick={onClose}
-            className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm"
+            className="fixed inset-0 z-[110] bg-black/40 backdrop-blur-sm"
           />
 
-          <div className="pointer-events-none fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="pointer-events-none fixed inset-0 z-[110] flex items-center justify-center p-4">
             <motion.div
               key="auth-popup-panel"
               role="dialog"

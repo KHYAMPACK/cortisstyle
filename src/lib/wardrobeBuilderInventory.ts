@@ -1,4 +1,3 @@
-import { clothingItems } from "@/data/items";
 import { looks } from "@/data/looks";
 import type { ClothingItem } from "@/types/item";
 import type { MatrixCategoryFilter } from "@/types/wardrobe-builder";
@@ -32,14 +31,7 @@ export function resolveItemSourceLookId(itemId: string): string {
 export function resolveBuilderInventory(
   ownedClothes: WardrobeClothingItem[],
 ): WardrobeClothingItem[] {
-  if (ownedClothes.length > 0) {
-    return ownedClothes;
-  }
-
-  return clothingItems.map((item) => ({
-    ...item,
-    sourceLookId: resolveItemSourceLookId(item.id),
-  }));
+  return ownedClothes;
 }
 
 export function itemMatchesMatrixCategory(

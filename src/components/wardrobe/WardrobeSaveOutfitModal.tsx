@@ -253,6 +253,7 @@ export function WardrobeSaveOutfitModal({
       await exportLookCardAsPng(
         previewRef.current,
         savedBlueprint?.name ?? outfitName,
+        { backgroundColor: "#ffffff" },
       );
     } catch (error) {
       setShareError(
