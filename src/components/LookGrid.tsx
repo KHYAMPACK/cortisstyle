@@ -1,4 +1,3 @@
-import { ArchiveExtensionGate } from "@/components/ArchiveExtensionGate";
 import { LookCard } from "@/components/LookCard";
 import { getPublicHomepageLooks, isHomepageLookLocked } from "@/lib/launchGates";
 import type { Look } from "@/types/look";
@@ -28,10 +27,6 @@ export function LookGrid({ onSelectLook, onLockedLookClick }: LookGridProps) {
             </article>
           );
         })}
-      </div>
-
-      <div className="mt-4">
-        <ArchiveExtensionGate />
       </div>
     </section>
   );

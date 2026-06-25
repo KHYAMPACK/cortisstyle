@@ -21,7 +21,7 @@ interface AuthPopupProps {
 export function AuthPopup({
   isOpen,
   onClose,
-  description = "Enter your curator email to receive a secure studio access link.",
+  description = "Drop your email below. We'll send you a secure link to join the archive and access your wardrobe.",
   allowSignUp = true,
 }: AuthPopupProps) {
   const { signInWithMagicLink, isAuthenticating, authError, clearAuthError } =
@@ -56,7 +56,7 @@ export function AuthPopup({
     clearAuthError();
 
     try {
-      await signInWithMagicLink(email.trim());
+      await signInWithMagicLink(email.trim().toLowerCase());
       setLinkDispatched(true);
     } catch {
       // Error state is handled in AuthContext.
@@ -98,14 +98,14 @@ export function AuthPopup({
               </div>
 
               <p className="text-meta mb-3 text-center text-[9px] tracking-[0.4em] uppercase">
-                Premium Workspace Entry
+                Community Archive
               </p>
 
               <h2
                 id="auth-popup-title"
                 className="text-center font-serif text-2xl leading-tight text-neutral-950"
               >
-                Request Studio Access
+                Join the Community
               </h2>
 
               <p className="mt-4 text-center text-sm leading-relaxed text-neutral-600">
@@ -117,19 +117,20 @@ export function AuthPopup({
                   onSubmit={handleSubmit}
                   className="mx-auto mt-8 flex w-full max-w-[420px] flex-col"
                 >
-                  <label className="sr-only" htmlFor="curator-email">
-                    Curator email
+                  <label className="sr-only" htmlFor="community-email">
+                    Email address
                   </label>
                   <input
-                    id="curator-email"
+                    id="community-email"
                     type="email"
                     required
                     autoComplete="email"
+                    spellCheck={false}
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
                     disabled={linkDispatched || isAuthenticating}
-                    className="w-full border border-jet-black bg-white px-4 py-4 text-center font-mono text-[11px] tracking-[0.18em] text-neutral-900 uppercase outline-none transition-colors placeholder:text-neutral-400 focus:border-jet-black disabled:opacity-60"
-                    placeholder="ENTER YOUR CURATOR EMAIL..."
+                    className="w-full border border-jet-black bg-white px-4 py-4 text-center font-mono text-[11px] tracking-[0.12em] text-neutral-900 outline-none transition-colors placeholder:text-neutral-400 focus:border-jet-black disabled:opacity-60"
+                    placeholder="Enter your email..."
                   />
 
                   {linkDispatched ? (
@@ -138,7 +139,7 @@ export function AuthPopup({
                       animate={{ opacity: 1, y: 0 }}
                       className="mt-5 text-center font-mono text-[10px] leading-relaxed tracking-[0.22em] text-neutral-800 uppercase"
                     >
-                      [ ACCESS LINK SECURELY DISPATCHED TO YOUR INBOX ]
+                      [ YOUR JOIN LINK IS ON ITS WAY — CHECK YOUR INBOX ]
                     </motion.p>
                   ) : null}
 
@@ -158,9 +159,7 @@ export function AuthPopup({
                       disabled={isAuthenticating}
                       className="mt-6 w-full border border-jet-black bg-jet-black px-5 py-4 text-center font-mono text-[10px] tracking-[0.32em] text-white uppercase transition-opacity hover:opacity-90 disabled:opacity-60"
                     >
-                      {isAuthenticating
-                        ? "DISPATCHING..."
-                        : "REQUEST ENTRY ACCESS"}
+                      {isAuthenticating ? "SENDING..." : "JOIN US"}
                     </button>
                   ) : null}
                 </form>
