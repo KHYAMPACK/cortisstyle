@@ -50,12 +50,12 @@ export function MoodImageInputMatrix({
   };
 
   return (
-    <div>
-      <span className="text-meta mb-2 block font-mono text-[9px] tracking-[0.35em] uppercase">
+    <div className="min-w-0">
+      <span className="text-meta mb-2 block font-mono text-[9px] tracking-[0.25em] uppercase sm:tracking-[0.35em]">
         Mood Image Overlay
       </span>
 
-      <div className="grid grid-cols-3 border border-blueprint-border">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-0 sm:border sm:border-blueprint-border">
         {MODE_OPTIONS.map((option) => {
           const isActive = mode === option.id;
 
@@ -64,7 +64,7 @@ export function MoodImageInputMatrix({
               key={option.id}
               type="button"
               onClick={() => setMode(option.id)}
-              className={`border-r border-blueprint-border px-2 py-2 font-mono text-[7px] leading-snug tracking-[0.12em] uppercase transition-colors last:border-r-0 ${
+              className={`border border-blueprint-border px-2 py-2 font-mono text-[8px] leading-snug tracking-[0.1em] uppercase transition-colors sm:border-0 sm:border-r sm:px-2 sm:text-[7px] sm:tracking-[0.12em] sm:last:border-r-0 ${
                 isActive
                   ? "bg-blueprint-selected text-jet-black"
                   : "bg-canvas-paper text-neutral-500 hover:bg-blueprint-surface"
@@ -76,7 +76,7 @@ export function MoodImageInputMatrix({
         })}
       </div>
 
-      <div className="border border-t-0 border-blueprint-border bg-blueprint-surface/30 px-3 py-3">
+      <div className="min-w-0 border border-blueprint-border border-t-0 bg-blueprint-surface/30 px-3 py-3 sm:border-t-0">
         {mode === "library" ? (
           <div className="flex gap-2 overflow-x-auto pb-1">
             {MOOD_IMAGE_LIBRARY.map((asset) => {

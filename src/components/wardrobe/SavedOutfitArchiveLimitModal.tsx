@@ -4,7 +4,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { FunnelEmailCapture } from "@/components/FunnelEmailCapture";
 import {
   FREE_TIER_ARCHIVE_LIMIT_MESSAGE,
   getWardrobeArchiveLimitPath,
@@ -92,13 +91,9 @@ export function SavedOutfitArchiveLimitModal({
               {FREE_TIER_ARCHIVE_LIMIT_MESSAGE}
             </p>
 
-            <FunnelEmailCapture
-              source="premium-inner-circle"
-              label="JOIN THE PREMIUM INNER CIRCLE"
-              submitLabel="JOIN THE PREMIUM INNER CIRCLE"
-              tone="dark"
-              className="mt-8"
-            />
+            <p className="text-meta mt-8 text-center font-mono text-[10px] tracking-[0.28em] text-neutral-500 uppercase">
+              [ PREMIUM ACCESS EN ROUTE — STANDBY ]
+            </p>
 
             <Link
               href={getWardrobeArchiveLimitPath()}

@@ -3,9 +3,12 @@
 import {
   forwardRef,
   useCallback,
+  useEffect,
   useImperativeHandle,
   useRef,
+  useState,
 } from "react";
+import { createPortal } from "react-dom";
 import { LookCanvas } from "@/components/modal/LookCanvas";
 import { LookCanvasLayoutProvider } from "@/context/LookCanvasLayoutContext";
 import { WardrobeCanvasBrandWatermark } from "@/components/wardrobe/WardrobeCanvasBrandWatermark";
@@ -22,15 +25,20 @@ import {
 } from "@/lib/lookCanvasReference";
 import { isDarkCanvasBackground } from "@/lib/wardrobeCanvasBackground";
 
-/** Matches the verified main wardrobe canvas width — layout math stays identical. */
-const PREVIEW_SCALE = 0.76;
+const PREVIEW_MAX_SCALE = 0.76;
 
 /** Footer row (name + cortisstyle.com watermark). */
 export const MOODBOARD_FOOTER_HEIGHT_PX = 56;
 
-const PREVIEW_MASK_HEIGHT_PX = Math.round(
-  (LOOK_CANVAS_REFERENCE_HEIGHT + MOODBOARD_FOOTER_HEIGHT_PX) * PREVIEW_SCALE,
-);
+const PREVIEW_TOTAL_HEIGHT_PX =
+  LOOK_CANVAS_REFERENCE_HEIGHT + MOODBOARD_FOOTER_HEIGHT_PX;
+
+function resolvePreviewScale(containerWidth: number): number {
+  if (containerWidth <= 0) return PREVIEW_MAX_SCALE;
+
+  const fitScale = containerWidth / LOOK_CANVAS_REFERENCE_WIDTH;
+  return Math.min(PREVIEW_MAX_SCALE, fitScale);
+}
 
 interface OutfitMoodboardRenderProps {
   outfitName: string;
@@ -69,16 +77,15 @@ function OutfitMoodboardRender({
   return (
     <WardrobeOutfitMoodboardCard
       name={outfitName}
-      containerClassName="w-[420px] shrink-0 bg-white"
+      containerClassName="w-[420px] max-w-none shrink-0 bg-white"
     >
       <div
-        className={`relative mx-auto box-content shrink-0 overflow-hidden border ${
+        className={`relative box-content w-[420px] shrink-0 overflow-hidden border ${
           isDarkCanvas
             ? "border-neutral-700"
             : "border-blueprint-border surface-canvas-paper"
         }`}
         style={{
-          width: LOOK_CANVAS_REFERENCE_WIDTH,
           height: LOOK_CANVAS_REFERENCE_HEIGHT,
         }}
       >
@@ -180,8 +187,31 @@ export const WardrobeOutfitLivePreviewCard = forwardRef<
   const displayContainerRef = useRef<HTMLDivElement>(null);
   const exportContainerRef = useRef<HTMLDivElement>(null);
   const exportRef = useRef<HTMLDivElement>(null);
+  const measureRef = useRef<HTMLDivElement>(null);
+  const [previewScale, setPreviewScale] = useState(PREVIEW_MAX_SCALE);
+  const [isMounted, setIsMounted] = useState(false);
 
   useImperativeHandle(ref, () => exportRef.current as HTMLDivElement);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    const measureTarget = measureRef.current;
+    if (!measureTarget) return;
+
+    const updateScale = () => {
+      setPreviewScale(resolvePreviewScale(measureTarget.clientWidth));
+    };
+
+    updateScale();
+
+    const observer = new ResizeObserver(updateScale);
+    observer.observe(measureTarget);
+
+    return () => observer.disconnect();
+  }, []);
 
   const sharedRenderProps = {
     outfitName,
@@ -194,37 +224,54 @@ export const WardrobeOutfitLivePreviewCard = forwardRef<
     showMoodPlaceholders,
   };
 
-  return (
-    <div className={`mx-auto w-full max-w-[320px] ${className}`.trim()}>
-      <div
-        className="relative mx-auto w-full max-w-[320px] overflow-hidden"
-        style={{ height: PREVIEW_MASK_HEIGHT_PX }}
-        aria-hidden={false}
-      >
-        <div
-          className="absolute top-1/2 left-1/2 w-[420px] shrink-0"
-          style={{
-            transform: `translate(-50%, -50%) scale(${PREVIEW_SCALE})`,
-          }}
-        >
-          <OutfitMoodboardRender
-            {...sharedRenderProps}
-            containerRef={displayContainerRef}
-          />
-        </div>
-      </div>
+  const scaledWidth = Math.round(LOOK_CANVAS_REFERENCE_WIDTH * previewScale);
+  const previewMaskHeight = Math.round(PREVIEW_TOTAL_HEIGHT_PX * previewScale);
 
+  const exportLayer =
+    isMounted &&
+    createPortal(
       <div
         ref={exportRef}
         data-look-card-export
         aria-hidden
-        className="pointer-events-none fixed top-0 left-[-10000px] z-[-1] w-[420px] bg-white"
+        className="pointer-events-none fixed top-0 left-0 -z-[1] w-[420px] bg-white opacity-0"
+        style={{ clipPath: "inset(100%)" }}
       >
         <OutfitMoodboardRender
           {...sharedRenderProps}
           containerRef={exportContainerRef}
         />
+      </div>,
+      document.body,
+    );
+
+  return (
+    <>
+      <div className={`mx-auto w-full min-w-0 max-w-full ${className}`.trim()}>
+        <div ref={measureRef} className="w-full min-w-0">
+          <div
+            className="mx-auto overflow-hidden"
+            style={{
+              width: scaledWidth,
+              height: previewMaskHeight,
+            }}
+          >
+            <div
+              className="origin-top-left"
+              style={{
+                width: LOOK_CANVAS_REFERENCE_WIDTH,
+                transform: `scale(${previewScale})`,
+              }}
+            >
+              <OutfitMoodboardRender
+                {...sharedRenderProps}
+                containerRef={displayContainerRef}
+              />
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
+      {exportLayer}
+    </>
   );
 });

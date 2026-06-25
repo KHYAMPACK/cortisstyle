@@ -15,8 +15,8 @@ export function CanvasBackgroundPalette({
   onChange,
 }: CanvasBackgroundPaletteProps) {
   return (
-    <div>
-      <span className="text-meta mb-2 block font-mono text-[9px] tracking-[0.35em] uppercase">
+    <div className="min-w-0">
+      <span className="text-meta mb-2 block font-mono text-[9px] tracking-[0.25em] uppercase sm:tracking-[0.35em]">
         Canvas Background
       </span>
       <div className="flex flex-wrap gap-2">
@@ -29,7 +29,7 @@ export function CanvasBackgroundPalette({
               type="button"
               onClick={() => onChange(option.value)}
               aria-pressed={isActive}
-              className={`flex items-center gap-2 border px-2.5 py-1.5 transition-colors ${
+              className={`flex items-center gap-2 border px-2 py-1.5 transition-colors max-[360px]:w-full max-[360px]:justify-start ${
                 isActive
                   ? "border-jet-black bg-canvas-paper"
                   : "border-blueprint-border bg-canvas-paper hover:border-neutral-400"

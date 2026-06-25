@@ -122,7 +122,7 @@ function WardrobePageContent() {
   }
 
   return (
-    <div className="min-h-full bg-ice-floor text-jet-black">
+    <div className="min-h-full overflow-x-hidden bg-ice-floor text-jet-black">
       <AuthPopup
         isOpen={showAuthPopup && !isAuthenticated}
         onClose={handleAuthClose}

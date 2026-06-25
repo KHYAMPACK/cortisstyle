@@ -147,10 +147,16 @@ export function WardrobeSaveOutfitModal({
     if (!isOpen) return;
 
     const previousOverflow = document.body.style.overflow;
+    const previousOverflowX = document.body.style.overflowX;
+    const previousHtmlOverflowX = document.documentElement.style.overflowX;
     document.body.style.overflow = "hidden";
+    document.body.style.overflowX = "hidden";
+    document.documentElement.style.overflowX = "hidden";
 
     return () => {
       document.body.style.overflow = previousOverflow;
+      document.body.style.overflowX = previousOverflowX;
+      document.documentElement.style.overflowX = previousHtmlOverflowX;
     };
   }, [isOpen]);
 
@@ -286,7 +292,7 @@ export function WardrobeSaveOutfitModal({
   return createPortal(
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[90]">
+        <div className="fixed inset-0 z-[90] overflow-x-hidden">
           <motion.button
             type="button"
             aria-label="Close save outfit modal"
@@ -302,7 +308,7 @@ export function WardrobeSaveOutfitModal({
             className="absolute inset-0 touch-pan-y overflow-x-hidden overflow-y-auto overscroll-contain"
             onClick={(event) => handleBackdropDismiss(event, onClose)}
           >
-            <div className="flex min-h-full justify-center px-4 py-6 md:items-center">
+            <div className="flex min-h-full w-full max-w-[100vw] justify-center px-3 py-4 sm:px-4 sm:py-6 md:items-center">
               <motion.div
                 role="dialog"
                 aria-modal="true"
@@ -312,11 +318,11 @@ export function WardrobeSaveOutfitModal({
                 exit={{ opacity: 0, scale: 0.96, y: 10 }}
                 transition={spring}
                 onClick={(event) => event.stopPropagation()}
-                className="w-full max-w-[920px] border border-blueprint-border surface-canvas-paper p-5 shadow-2xl md:p-8"
+                className="box-border w-full max-w-[min(920px,calc(100vw-1.5rem))] min-w-0 overflow-x-hidden border border-blueprint-border surface-canvas-paper p-4 shadow-2xl sm:p-5 md:p-8"
               >
               {phase === "edit" ? (
-                <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] lg:items-start">
-                  <div>
+                <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] lg:items-start lg:gap-8">
+                  <div className="min-w-0">
                     <p className="text-meta mb-3 text-[9px] tracking-[0.4em] uppercase">
                       Moodboard Archive
                     </p>
@@ -326,11 +332,11 @@ export function WardrobeSaveOutfitModal({
                     >
                       Save Outfit
                     </h2>
-                    <p className="text-meta mt-3 font-mono text-[10px] leading-relaxed tracking-[0.12em] uppercase">
+                    <p className="text-meta mt-3 font-mono text-[10px] leading-relaxed tracking-[0.08em] uppercase sm:tracking-[0.12em]">
                       Name your look and attach an editorial mood reference.
                     </p>
 
-                    <form onSubmit={handleSubmit} className="mt-8 space-y-6">
+                    <form onSubmit={handleSubmit} className="mt-6 min-w-0 space-y-5 sm:mt-8 sm:space-y-6">
                       <label className="block">
                         <span className="text-meta mb-2 block font-mono text-[9px] tracking-[0.35em] uppercase">
                           Outfit Name
@@ -341,7 +347,7 @@ export function WardrobeSaveOutfitModal({
                           value={outfitName}
                           onChange={(event) => setOutfitName(event.target.value)}
                           placeholder="LOOK 01 — CYBER GRUNGE"
-                          className="w-full border border-blueprint-border bg-canvas-paper px-3 py-3 font-mono text-[11px] tracking-[0.14em] text-neutral-900 uppercase outline-none transition-colors focus:border-blueprint-accent"
+                          className="box-border w-full min-w-0 border border-blueprint-border bg-canvas-paper px-3 py-3 font-mono text-[11px] tracking-[0.08em] text-neutral-900 uppercase outline-none transition-colors focus:border-blueprint-accent sm:tracking-[0.14em]"
                         />
                       </label>
 
@@ -360,7 +366,7 @@ export function WardrobeSaveOutfitModal({
                           value={moodword}
                           onChange={(event) => setMoodword(event.target.value)}
                           placeholder="e.g., CYBER, GRUNGE, AESTHETIC"
-                          className="w-full border border-blueprint-border bg-canvas-paper px-3 py-3 font-mono text-[11px] tracking-[0.14em] text-neutral-900 uppercase outline-none transition-colors focus:border-blueprint-accent"
+                          className="box-border w-full min-w-0 border border-blueprint-border bg-canvas-paper px-3 py-3 font-mono text-[11px] tracking-[0.08em] text-neutral-900 uppercase outline-none transition-colors focus:border-blueprint-accent sm:tracking-[0.14em]"
                         />
                       </label>
 
@@ -397,11 +403,11 @@ export function WardrobeSaveOutfitModal({
                     </button>
                   </div>
 
-                  <div className="surface-blueprint overflow-hidden border border-blueprint-border p-4 md:p-5">
+                  <div className="surface-blueprint min-w-0 overflow-hidden border border-blueprint-border p-3 sm:p-4 md:p-5">
                     <p className="text-meta mb-4 font-mono text-[9px] tracking-[0.35em] uppercase">
                       Live Preview
                     </p>
-                    <div className="flex w-full justify-center overflow-hidden">
+                    <div className="flex w-full min-w-0 justify-center overflow-hidden">
                       <WardrobeOutfitLivePreviewCard
                         ref={previewRef}
                         outfitName={outfitName}
@@ -417,8 +423,8 @@ export function WardrobeSaveOutfitModal({
                   </div>
                 </div>
               ) : (
-                <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] lg:items-center">
-                  <div>
+                <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] lg:items-center lg:gap-8">
+                  <div className="min-w-0">
                     <p className="text-meta mb-3 text-[9px] tracking-[0.4em] uppercase">
                       Archive Confirmed
                     </p>
@@ -467,11 +473,11 @@ export function WardrobeSaveOutfitModal({
                     ) : null}
                   </div>
 
-                  <div className="surface-blueprint overflow-hidden border border-blueprint-border p-4 md:p-5">
+                  <div className="surface-blueprint min-w-0 overflow-hidden border border-blueprint-border p-3 sm:p-4 md:p-5">
                     <p className="text-meta mb-4 font-mono text-[9px] tracking-[0.35em] uppercase">
                       Saved Poster
                     </p>
-                    <div className="flex w-full justify-center overflow-hidden">
+                    <div className="flex w-full min-w-0 justify-center overflow-hidden">
                       <WardrobeOutfitLivePreviewCard
                         ref={previewRef}
                         outfitName={previewOutfitName}
