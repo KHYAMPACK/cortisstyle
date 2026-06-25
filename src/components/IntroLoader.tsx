@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { BrandLogo } from "@/components/BrandLogo";
 
 const MIN_DISPLAY_MS = 2000;
 const MAX_LOAD_WAIT_MS = 5000;
@@ -19,22 +20,6 @@ const exitPanel = {
   y: -28,
   transition: { duration: EXIT_DURATION_MS / 1000, ease: [0.22, 1, 0.36, 1] as const },
 };
-
-function MasonryFramingLines({ side }: { side: "left" | "right" }) {
-  const align = side === "left" ? "items-end" : "items-start";
-  const lines = ["w-8 md:w-11", "w-14 md:w-20", "w-6 md:w-9"];
-
-  return (
-    <div className={`flex flex-col gap-2.5 ${align}`} aria-hidden>
-      {lines.map((widthClass) => (
-        <span
-          key={`${side}-${widthClass}`}
-          className={`block h-px ${widthClass} bg-white`}
-        />
-      ))}
-    </div>
-  );
-}
 
 export function IntroLoader() {
   const [isMounted, setIsMounted] = useState(false);
@@ -121,22 +106,12 @@ export function IntroLoader() {
           phase === "exiting" ? "pointer-events-none" : "pointer-events-auto"
         }`}
       >
-        <motion.div
-          {...entrance}
-          className="flex items-center gap-3 px-4 sm:gap-5 md:gap-8 md:px-6"
-        >
-          <div className="hidden sm:block">
-            <MasonryFramingLines side="left" />
-          </div>
-
-          <p className="font-serif text-[11px] font-light tracking-[0.38em] whitespace-nowrap text-white uppercase sm:text-[12px] sm:tracking-[0.42em] md:text-[13px] md:tracking-[0.55em]">
-            <span className="sm:hidden">CORTISSTYLE</span>
-            <span className="hidden sm:inline">C O R T I S S T Y L E</span>
-          </p>
-
-          <div className="hidden sm:block">
-            <MasonryFramingLines side="right" />
-          </div>
+        <motion.div {...entrance} className="px-6">
+          <BrandLogo
+            variant="dark"
+            priority
+            className="h-[min(42vw,11rem)] w-auto"
+          />
         </motion.div>
       </motion.div>
     </AnimatePresence>,

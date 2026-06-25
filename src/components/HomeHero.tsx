@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronDown } from "lucide-react";
+import { BrandLogo } from "@/components/BrandLogo";
 import { SocialMediaLinks } from "@/components/SocialMediaLinks";
 
 export const LOOKBOOK_COLLECTION_ID = "lookbook-collection";
@@ -15,7 +16,7 @@ export function HomeHero() {
 
   return (
     <section
-      aria-label="Cortis Style editorial hero"
+      aria-label="Cortisstyle editorial hero"
       className="hero-editorial-gradient relative flex h-[100dvh] min-h-[100dvh] w-screen max-w-none flex-col justify-between overflow-hidden"
     >
       {/* Top-left social strip — mobile: flush under safe area; desktop: upper-left below header */}
@@ -29,10 +30,12 @@ export function HomeHero() {
           <p className="font-mono text-[10px] tracking-[0.45em] text-white/75 uppercase md:text-[11px]">
             SS26 Collection // Talent Personified
           </p>
-          <h1 className="mt-5 font-serif text-[clamp(3.25rem,12vw,8rem)] leading-[0.9] font-light tracking-[-0.04em] text-white uppercase">
-            Cortis
-            <span className="block font-normal">Style</span>
-          </h1>
+          <h1 className="sr-only">Cortisstyle SS26 Collection</h1>
+          <BrandLogo
+            variant="dark"
+            priority
+            className="h-[min(52vw,14rem)] w-auto md:h-[min(36vw,16rem)]"
+          />
         </div>
       </div>
 

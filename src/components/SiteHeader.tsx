@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { BrandLogo } from "@/components/BrandLogo";
 import { HeaderIconNav } from "@/components/HeaderIconNav";
 import { NavMenuDrawer } from "@/components/NavMenuDrawer";
 import { useScrollDirection } from "@/hooks/useScrollDirection";
@@ -61,13 +62,13 @@ export function SiteHeader() {
             }}
             transition={{ duration: 0.35, ease: "easeInOut" }}
           >
-            <Link
-              href="/"
-              className={`block whitespace-nowrap font-serif text-[13px] tracking-[0.42em] uppercase md:text-sm ${
-                inverse ? "text-white" : "text-neutral-950"
-              }`}
-            >
-              Cortis Style
+            <Link href="/" className="pointer-events-auto block">
+              <BrandLogo
+                variant={inverse ? "dark" : "light"}
+                className={`h-8 w-auto md:h-9 ${
+                  inverse ? "brightness-[2.75] contrast-125" : ""
+                }`}
+              />
             </Link>
           </motion.div>
         </div>

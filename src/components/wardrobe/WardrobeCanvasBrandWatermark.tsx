@@ -1,5 +1,9 @@
 "use client";
 
+import Image from "next/image";
+
+const WATERMARK_SRC = "/brand/cortisstyle-logo-light.png";
+
 export function WardrobeCanvasBrandWatermark({
   onDarkCanvas = false,
 }: {
@@ -10,15 +14,15 @@ export function WardrobeCanvasBrandWatermark({
       aria-hidden
       className="pointer-events-none absolute inset-0 z-[5] flex items-center justify-center overflow-hidden"
     >
-      <p
-        className={`select-none font-mono text-[26px] tracking-[0.55em] uppercase ${
-          onDarkCanvas
-            ? "text-white opacity-[0.08]"
-            : "text-neutral-900 opacity-[0.06]"
+      <Image
+        src={WATERMARK_SRC}
+        alt=""
+        width={512}
+        height={512}
+        className={`h-[min(48%,18rem)] w-auto select-none ${
+          onDarkCanvas ? "opacity-[0.1] invert" : "opacity-[0.07]"
         }`}
-      >
-        C O R T I S S T Y L E
-      </p>
+      />
     </div>
   );
 }

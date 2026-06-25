@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ArchiveCommunitySignOff } from "@/components/ArchiveCommunitySignOff";
+import { BrandLogo } from "@/components/BrandLogo";
 import { FunnelEmailCapture } from "@/components/FunnelEmailCapture";
 
 export function NotifyDeployGate() {
@@ -18,6 +19,8 @@ export function NotifyDeployGate() {
       />
 
       <div className="relative z-10 flex w-full max-w-2xl flex-col items-center text-center">
+        <BrandLogo variant="dark" className="mb-10 h-24 w-auto md:h-28" />
+
         <p className="font-mono text-[10px] tracking-[0.45em] text-neutral-400 uppercase">
           [ MEMBERS // DEPLOYING SOON ]
         </p>

@@ -17,8 +17,12 @@ const cormorant = Cormorant_Garamond({
 });
 
 export const metadata: Metadata = {
-  title: "Cortis Style — Lookbook",
-  description: "An editorial fashion lookbook by Cortis Style.",
+  title: "Cortisstyle — Lookbook",
+  description: "An editorial fashion lookbook by Cortisstyle.",
+  icons: {
+    icon: "/brand/cortisstyle-logo-light.png",
+    apple: "/brand/cortisstyle-logo-light.png",
+  },
 };
 
 export default function RootLayout({

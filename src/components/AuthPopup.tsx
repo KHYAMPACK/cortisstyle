@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { createPortal } from "react-dom";
+import { BrandLogo } from "@/components/BrandLogo";
 import { useAuth } from "@/context/AuthContext";
 import { getNotifyDeployPath } from "@/lib/launchGates";
 
@@ -113,6 +114,9 @@ export function AuthPopup({
               transition={spring}
               className="pointer-events-auto w-[min(92vw,420px)] border border-blueprint-border surface-canvas-paper p-8 shadow-2xl"
             >
+            <div className="mb-6 flex justify-center">
+              <BrandLogo variant="light" className="h-16 w-auto" />
+            </div>
             <p className="text-meta mb-3 text-[9px] tracking-[0.4em] uppercase">
               Members Only
             </p>

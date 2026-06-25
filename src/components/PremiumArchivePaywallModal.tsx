@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { FunnelEmailCapture } from "@/components/FunnelEmailCapture";
+import { BrandLogo } from "@/components/BrandLogo";
 import type { Look } from "@/types/look";
 
 interface PremiumArchivePaywallModalProps {
@@ -74,6 +75,8 @@ export function PremiumArchivePaywallModal({
             >
               Close
             </button>
+
+            <BrandLogo variant="dark" className="mx-auto mb-6 h-20 w-auto" />
 
             <p className="font-mono text-[10px] tracking-[0.45em] text-neutral-500 uppercase">
               Premium Matrix // Access Gate
