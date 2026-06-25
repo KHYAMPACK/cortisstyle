@@ -259,7 +259,10 @@ export function WardrobeSaveOutfitModal({
       await exportLookCardAsPng(
         previewRef.current,
         savedBlueprint?.name ?? outfitName,
-        { backgroundColor: "#ffffff" },
+        {
+          backgroundColor: "#ffffff",
+          preferNativeShare: true,
+        },
       );
     } catch (error) {
       setShareError(

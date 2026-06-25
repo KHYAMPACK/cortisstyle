@@ -234,8 +234,8 @@ export const WardrobeOutfitLivePreviewCard = forwardRef<
         ref={exportRef}
         data-look-card-export
         aria-hidden
-        className="pointer-events-none fixed top-0 left-0 -z-[1] w-[420px] bg-white opacity-0"
-        style={{ clipPath: "inset(100%)" }}
+        className="pointer-events-none fixed top-0 left-0 -z-[1] w-[420px] bg-white"
+        style={{ visibility: "hidden" }}
       >
         <OutfitMoodboardRender
           {...sharedRenderProps}
