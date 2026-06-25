@@ -10,26 +10,38 @@ import { getNotifyDeployPath } from "@/lib/launchGates";
 
 const spring = { type: "spring" as const, stiffness: 100, damping: 20 };
 
+const fieldTransition = {
+  initial: { opacity: 0, y: 12 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -10 },
+  transition: { duration: 0.28, ease: [0.22, 1, 0.36, 1] as const },
+};
+
 interface AuthPopupProps {
   isOpen: boolean;
   onClose: () => void;
+  onAuthSuccess?: () => void;
   description?: string;
-  /** When false, hides magic-link entry (deploy gate). */
+  /** When false, hides OTP entry (deploy gate). */
   allowSignUp?: boolean;
 }
 
 export function AuthPopup({
   isOpen,
   onClose,
-  description = "Drop your email below. We'll send you a secure link to join the archive and access your wardrobe.",
+  onAuthSuccess,
+  description = "Drop your email below. We'll send a 6-digit access token to join the archive.",
   allowSignUp = true,
 }: AuthPopupProps) {
-  const { signInWithMagicLink, isAuthenticating, authError, clearAuthError } =
+  const { requestEmailOtp, verifyEmailOtp, isAuthenticating, authError, clearAuthError } =
     useAuth();
 
   const [email, setEmail] = useState("");
-  const [linkDispatched, setLinkDispatched] = useState(false);
+  const [isTokenSent, setIsTokenSent] = useState(false);
+  const [otpToken, setOtpToken] = useState("");
   const [isMounted, setIsMounted] = useState(false);
+
+  const normalizedEmail = email.trim().toLowerCase();
 
   useEffect(() => {
     setIsMounted(true);
@@ -38,7 +50,8 @@ export function AuthPopup({
   useEffect(() => {
     if (!isOpen) {
       setEmail("");
-      setLinkDispatched(false);
+      setOtpToken("");
+      setIsTokenSent(false);
       clearAuthError();
       return;
     }
@@ -51,13 +64,26 @@ export function AuthPopup({
     };
   }, [isOpen, clearAuthError]);
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleEmailSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     clearAuthError();
 
     try {
-      await signInWithMagicLink(email.trim().toLowerCase());
-      setLinkDispatched(true);
+      await requestEmailOtp(normalizedEmail);
+      setIsTokenSent(true);
+    } catch {
+      // Error state is handled in AuthContext.
+    }
+  };
+
+  const handleOtpSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    clearAuthError();
+
+    try {
+      await verifyEmailOtp(normalizedEmail, otpToken.trim());
+      onAuthSuccess?.();
+      onClose();
     } catch {
       // Error state is handled in AuthContext.
     }
@@ -105,64 +131,107 @@ export function AuthPopup({
                 id="auth-popup-title"
                 className="text-center font-serif text-2xl leading-tight text-neutral-950"
               >
-                Join the Community
+                {isTokenSent ? "Verify Identity" : "Join the Community"}
               </h2>
 
               <p className="mt-4 text-center text-sm leading-relaxed text-neutral-600">
-                {description}
+                {isTokenSent
+                  ? `Enter the 6-digit token we sent to ${normalizedEmail}.`
+                  : description}
               </p>
 
               {allowSignUp ? (
-                <form
-                  onSubmit={handleSubmit}
-                  className="mx-auto mt-8 flex w-full max-w-[420px] flex-col"
-                >
-                  <label className="sr-only" htmlFor="community-email">
-                    Email address
-                  </label>
-                  <input
-                    id="community-email"
-                    type="email"
-                    required
-                    autoComplete="email"
-                    spellCheck={false}
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                    disabled={linkDispatched || isAuthenticating}
-                    className="w-full border border-jet-black bg-white px-4 py-4 text-center font-mono text-[11px] tracking-[0.12em] text-neutral-900 outline-none transition-colors placeholder:text-neutral-400 focus:border-jet-black disabled:opacity-60"
-                    placeholder="Enter your email..."
-                  />
-
-                  {linkDispatched ? (
-                    <motion.p
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="mt-5 text-center font-mono text-[10px] leading-relaxed tracking-[0.22em] text-neutral-800 uppercase"
+                <AnimatePresence mode="wait">
+                  {!isTokenSent ? (
+                    <motion.form
+                      key="email-phase"
+                      {...fieldTransition}
+                      onSubmit={handleEmailSubmit}
+                      className="mx-auto mt-8 flex w-full max-w-[420px] flex-col"
                     >
-                      [ YOUR JOIN LINK IS ON ITS WAY — CHECK YOUR INBOX ]
-                    </motion.p>
-                  ) : null}
+                      <label className="sr-only" htmlFor="community-email">
+                        Email address
+                      </label>
+                      <input
+                        id="community-email"
+                        type="email"
+                        required
+                        autoComplete="email"
+                        spellCheck={false}
+                        value={email}
+                        onChange={(event) => setEmail(event.target.value)}
+                        disabled={isAuthenticating}
+                        className="w-full border border-jet-black bg-white px-4 py-4 text-center font-mono text-[11px] tracking-[0.12em] text-neutral-900 outline-none transition-colors placeholder:text-neutral-400 focus:border-jet-black disabled:opacity-60"
+                        placeholder="Enter your email..."
+                      />
 
-                  {authError ? (
-                    <motion.p
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="mt-4 text-center text-[11px] leading-relaxed text-red-600"
+                      <button
+                        type="submit"
+                        disabled={isAuthenticating}
+                        className="mt-6 w-full border border-jet-black bg-jet-black px-5 py-4 text-center font-mono text-[10px] tracking-[0.32em] text-white uppercase transition-opacity hover:opacity-90 disabled:opacity-60"
+                      >
+                        {isAuthenticating ? "SENDING..." : "JOIN US"}
+                      </button>
+                    </motion.form>
+                  ) : (
+                    <motion.form
+                      key="otp-phase"
+                      {...fieldTransition}
+                      onSubmit={handleOtpSubmit}
+                      className="mx-auto mt-8 flex w-full max-w-[420px] flex-col"
                     >
-                      {authError}
-                    </motion.p>
-                  ) : null}
+                      <motion.p
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mb-4 text-center font-mono text-[10px] leading-relaxed tracking-[0.22em] text-neutral-800 uppercase"
+                      >
+                        [ 6-DIGIT ACCESS TOKEN DISPATCHED TO YOUR INBOX ]
+                      </motion.p>
 
-                  {!linkDispatched ? (
-                    <button
-                      type="submit"
-                      disabled={isAuthenticating}
-                      className="mt-6 w-full border border-jet-black bg-jet-black px-5 py-4 text-center font-mono text-[10px] tracking-[0.32em] text-white uppercase transition-opacity hover:opacity-90 disabled:opacity-60"
-                    >
-                      {isAuthenticating ? "SENDING..." : "JOIN US"}
-                    </button>
-                  ) : null}
-                </form>
+                      <label className="sr-only" htmlFor="community-otp">
+                        Six digit access token
+                      </label>
+                      <input
+                        id="community-otp"
+                        type="text"
+                        inputMode="numeric"
+                        autoComplete="one-time-code"
+                        pattern="[0-9]{6}"
+                        maxLength={6}
+                        required
+                        value={otpToken}
+                        onChange={(event) =>
+                          setOtpToken(
+                            event.target.value.replace(/\D/g, "").slice(0, 6),
+                          )
+                        }
+                        disabled={isAuthenticating}
+                        className="w-full border border-jet-black bg-white px-4 py-5 text-center font-mono text-[clamp(1.1rem,5vw,1.45rem)] tracking-[0.55em] text-neutral-900 outline-none transition-colors placeholder:text-neutral-400 placeholder:tracking-[0.22em] focus:border-jet-black disabled:opacity-60"
+                        placeholder="ENTER 6-DIGIT TOKEN..."
+                      />
+
+                      <button
+                        type="submit"
+                        disabled={isAuthenticating || otpToken.length !== 6}
+                        className="mt-6 w-full border border-jet-black bg-jet-black px-5 py-4 text-center font-mono text-[10px] tracking-[0.32em] text-white uppercase transition-opacity hover:opacity-90 disabled:opacity-60"
+                      >
+                        {isAuthenticating ? "VERIFYING..." : "VERIFY IDENTITY ACCESS"}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          clearAuthError();
+                          setIsTokenSent(false);
+                          setOtpToken("");
+                        }}
+                        className="text-meta mt-4 w-full text-[10px] tracking-[0.25em] uppercase transition-colors hover:text-jet-black"
+                      >
+                        Use a different email
+                      </button>
+                    </motion.form>
+                  )}
+                </AnimatePresence>
               ) : (
                 <Link
                   href={getNotifyDeployPath()}
@@ -172,6 +241,16 @@ export function AuthPopup({
                   Get notified when accounts open →
                 </Link>
               )}
+
+              {authError ? (
+                <motion.p
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mt-4 text-center text-[11px] leading-relaxed text-red-600"
+                >
+                  {authError}
+                </motion.p>
+              ) : null}
 
               <button
                 type="button"

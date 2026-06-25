@@ -10,7 +10,6 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { getMagicLinkRedirectUrl } from "@/lib/authRedirect";
 import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabaseClient";
 import {
   ensureUserProfile,
@@ -39,7 +38,8 @@ interface AuthContextValue {
   savedOutfits: SavedWardrobeOutfitBlueprint[];
   wardrobeLoadError: string | null;
   ownedClothes: WardrobeClothingItem[];
-  signInWithMagicLink: (email: string) => Promise<void>;
+  requestEmailOtp: (email: string) => Promise<void>;
+  verifyEmailOtp: (email: string, token: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshWardrobe: () => Promise<void>;
   refreshSavedOutfits: () => Promise<void>;
@@ -204,7 +204,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await refreshSavedOutfits(userId);
   }, [refreshSavedOutfits, userId]);
 
-  const signInWithMagicLink = useCallback(async (email: string) => {
+  const requestEmailOtp = useCallback(async (email: string) => {
     if (!isSupabaseConfigured()) {
       setAuthError("Supabase is not configured.");
       return;
@@ -218,7 +218,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: getMagicLinkRedirectUrl(),
           shouldCreateUser: true,
         },
       });
@@ -226,7 +225,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) throw error;
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Unable to dispatch access link.";
+        error instanceof Error ? error.message : "Unable to dispatch access token.";
+      setAuthError(message);
+      throw error;
+    } finally {
+      setIsAuthenticating(false);
+    }
+  }, []);
+
+  const verifyEmailOtp = useCallback(async (email: string, token: string) => {
+    if (!isSupabaseConfigured()) {
+      setAuthError("Supabase is not configured.");
+      return;
+    }
+
+    setIsAuthenticating(true);
+    setAuthError(null);
+
+    try {
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase.auth.verifyOtp({
+        email,
+        token,
+        type: "email",
+      });
+
+      if (error) throw error;
+
+      if (data.user) {
+        await syncProfile(data.user);
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unable to verify access token.";
       setAuthError(message);
       throw error;
     } finally {
@@ -277,7 +308,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       savedOutfits,
       wardrobeLoadError,
       ownedClothes,
-      signInWithMagicLink,
+      requestEmailOtp,
+      verifyEmailOtp,
       signOut,
       refreshWardrobe: refreshWardrobeForSession,
       refreshSavedOutfits: refreshSavedOutfitsForSession,
@@ -296,7 +328,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       savedOutfits,
       wardrobeLoadError,
       ownedClothes,
-      signInWithMagicLink,
+      requestEmailOtp,
+      verifyEmailOtp,
       signOut,
       refreshWardrobeForSession,
       refreshSavedOutfitsForSession,
