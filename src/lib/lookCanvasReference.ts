@@ -6,6 +6,9 @@ export const LOOK_CANVAS_REFERENCE_HEIGHT = Math.round(
   LOOK_CANVAS_REFERENCE_WIDTH * (3 / 2),
 );
 
+/** Footer row on exported look cards (name + cortisstyle.com). */
+export const MOODBOARD_FOOTER_HEIGHT_PX = 56;
+
 /** @deprecated Use LOOK_CANVAS_REFERENCE_HEIGHT — wardrobe now shares 2:3 with the editor. */
 export const WARDROBE_CANVAS_REFERENCE_HEIGHT = LOOK_CANVAS_REFERENCE_HEIGHT;
 

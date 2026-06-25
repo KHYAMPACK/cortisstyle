@@ -1,4 +1,9 @@
 import html2canvas from "html2canvas-pro";
+import {
+  LOOK_CANVAS_REFERENCE_HEIGHT,
+  LOOK_CANVAS_REFERENCE_WIDTH,
+  MOODBOARD_FOOTER_HEIGHT_PX,
+} from "@/lib/lookCanvasReference";
 
 export interface ExportLookCardOptions {
   /** Letterbox color behind transparent export areas (footer strip). */
@@ -9,8 +14,20 @@ export interface ExportLookCardOptions {
 
 const EXPORT_TIMEOUT_MS = 45_000;
 const SHARE_TIMEOUT_MS = 12_000;
+const MOODBOARD_EXPORT_HEIGHT_PX =
+  LOOK_CANVAS_REFERENCE_HEIGHT + MOODBOARD_FOOTER_HEIGHT_PX;
 
 const UNSUPPORTED_COLOR_PATTERN = /(lab|oklch|oklab|lch|color)\(/i;
+
+interface StyleSnapshot {
+  element: HTMLElement;
+  transform: string;
+  width: string;
+  height: string;
+  overflow: string;
+  opacity: string;
+  visibility: string;
+}
 
 function sanitizeFileName(name: string): string {
   const trimmed = name.trim() || "untitled-look";
@@ -81,79 +98,55 @@ async function waitForImages(root: HTMLElement): Promise<void> {
   );
 }
 
-function stripUnsupportedStylesheets(doc: Document): void {
-  doc
-    .querySelectorAll('link[rel="stylesheet"], style[data-nextjs-href], style')
-    .forEach((node) => {
-      node.parentNode?.removeChild(node);
-    });
-}
+async function waitForCollageReady(root: HTMLElement): Promise<void> {
+  const deadline = Date.now() + 12_000;
 
-function sanitizeElementColors(element: HTMLElement, view: Window): void {
-  const computed = view.getComputedStyle(element);
-  const colorProps = [
-    "color",
-    "background-color",
-    "border-top-color",
-    "border-right-color",
-    "border-bottom-color",
-    "border-left-color",
-    "outline-color",
-    "text-decoration-color",
-  ] as const;
-
-  for (const prop of colorProps) {
-    const value = computed.getPropertyValue(prop);
-    if (!value || value === "transparent" || value === "rgba(0, 0, 0, 0)") {
-      continue;
-    }
-
-    element.style.setProperty(prop, toCanvasSafeColor(value, view));
+  while (Date.now() < deadline) {
+    const busy = root.querySelector('[aria-busy="true"]');
+    if (!busy) return;
+    await new Promise<void>((resolve) => window.setTimeout(resolve, 80));
   }
 }
 
-function inlineExportSubtreeStyles(root: HTMLElement, view: Window): void {
-  const elements = [root, ...Array.from(root.querySelectorAll<HTMLElement>("*"))];
+function suspendScaledAncestors(target: HTMLElement): () => void {
+  const snapshots: StyleSnapshot[] = [];
+  let ancestor: HTMLElement | null = target.parentElement;
 
-  for (const element of elements) {
-    const computed = view.getComputedStyle(element);
+  while (ancestor) {
+    const computed = window.getComputedStyle(ancestor);
 
-    sanitizeElementColors(element, view);
+    if (computed.transform !== "none") {
+      snapshots.push({
+        element: ancestor,
+        transform: ancestor.style.transform,
+        width: ancestor.style.width,
+        height: ancestor.style.height,
+        overflow: ancestor.style.overflow,
+        opacity: ancestor.style.opacity,
+        visibility: ancestor.style.visibility,
+      });
 
-    element.style.fontFamily = computed.fontFamily;
-    element.style.fontSize = computed.fontSize;
-    element.style.fontWeight = computed.fontWeight;
-    element.style.letterSpacing = computed.letterSpacing;
-    element.style.lineHeight = computed.lineHeight;
-    element.style.textAlign = computed.textAlign;
-    element.style.textTransform = computed.textTransform;
+      ancestor.style.transform = "none";
+      ancestor.style.width = `${LOOK_CANVAS_REFERENCE_WIDTH}px`;
+      ancestor.style.height = `${MOODBOARD_EXPORT_HEIGHT_PX}px`;
+      ancestor.style.overflow = "visible";
+      ancestor.style.opacity = "1";
+      ancestor.style.visibility = "visible";
+    }
 
-    if (!element.style.width && computed.width) {
-      element.style.width = computed.width;
-    }
-    if (!element.style.height && computed.height) {
-      element.style.height = computed.height;
-    }
-    if (!element.style.display && computed.display) {
-      element.style.display = computed.display;
-    }
-    if (!element.style.position && computed.position) {
-      element.style.position = computed.position;
-    }
-    if (!element.style.border && computed.borderStyle !== "none") {
-      element.style.borderWidth = computed.borderWidth;
-      element.style.borderStyle = computed.borderStyle;
-    }
-    if (!element.style.padding && computed.padding !== "0px") {
-      element.style.padding = computed.padding;
-    }
-    if (!element.style.margin && computed.margin !== "0px") {
-      element.style.margin = computed.margin;
-    }
-    if (!element.style.objectFit && computed.objectFit) {
-      element.style.objectFit = computed.objectFit;
-    }
+    ancestor = ancestor.parentElement;
   }
+
+  return () => {
+    for (const snapshot of snapshots) {
+      snapshot.element.style.transform = snapshot.transform;
+      snapshot.element.style.width = snapshot.width;
+      snapshot.element.style.height = snapshot.height;
+      snapshot.element.style.overflow = snapshot.overflow;
+      snapshot.element.style.opacity = snapshot.opacity;
+      snapshot.element.style.visibility = snapshot.visibility;
+    }
+  };
 }
 
 function prepareClonedExportRoot(
@@ -163,26 +156,34 @@ function prepareClonedExportRoot(
   const view = clonedDocument.defaultView;
   if (!view) return;
 
-  inlineExportSubtreeStyles(clonedRoot, view);
-  stripUnsupportedStylesheets(clonedDocument);
-
-  clonedRoot.style.position = "static";
-  clonedRoot.style.left = "auto";
-  clonedRoot.style.top = "auto";
   clonedRoot.style.transform = "none";
   clonedRoot.style.opacity = "1";
   clonedRoot.style.visibility = "visible";
-  clonedRoot.style.overflow = "visible";
-  clonedRoot.style.maxHeight = "none";
-  clonedRoot.style.height = "auto";
-  clonedRoot.style.clipPath = "none";
 
   clonedRoot.querySelectorAll<HTMLElement>("*").forEach((element) => {
-    element.style.overflow = "visible";
-    element.style.maxHeight = "none";
-    element.style.visibility = "visible";
     element.style.opacity = "1";
-    sanitizeElementColors(element, view);
+    element.style.visibility = "visible";
+
+    const computed = view.getComputedStyle(element);
+    const colorProps = [
+      "color",
+      "background-color",
+      "border-top-color",
+      "border-right-color",
+      "border-bottom-color",
+      "border-left-color",
+    ] as const;
+
+    for (const prop of colorProps) {
+      const value = computed.getPropertyValue(prop);
+      if (!value || value === "transparent" || value === "rgba(0, 0, 0, 0)") {
+        continue;
+      }
+
+      if (UNSUPPORTED_COLOR_PATTERN.test(value)) {
+        element.style.setProperty(prop, toCanvasSafeColor(value, view));
+      }
+    }
 
     if (element.classList.contains("mix-blend-multiply")) {
       element.style.mixBlendMode = "normal";
@@ -287,30 +288,36 @@ async function exportLookCardAsPngInternal(
   options: ExportLookCardOptions,
 ): Promise<void> {
   const backgroundColor = options.backgroundColor ?? "#ffffff";
+  const restoreAncestors = suspendScaledAncestors(element);
 
-  await waitForImages(element);
-  await new Promise<void>((resolve) => {
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => resolve());
+  try {
+    await waitForCollageReady(element);
+    await waitForImages(element);
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => resolve());
+      });
     });
-  });
 
-  const canvas = await captureLookCardCanvas(element, backgroundColor);
+    const canvas = await captureLookCardCanvas(element, backgroundColor);
 
-  const blob = await new Promise<Blob | null>((resolve) => {
-    canvas.toBlob((result) => resolve(result), "image/png", 1);
-  });
+    const blob = await new Promise<Blob | null>((resolve) => {
+      canvas.toBlob((result) => resolve(result), "image/png", 1);
+    });
 
-  if (!blob) {
-    throw new Error("Unable to generate look card image.");
+    if (!blob) {
+      throw new Error("Unable to generate look card image.");
+    }
+
+    if (options.preferNativeShare) {
+      const shared = await tryNativeShare(blob, fileName);
+      if (shared) return;
+    }
+
+    downloadBlob(blob, fileName);
+  } finally {
+    restoreAncestors();
   }
-
-  if (options.preferNativeShare) {
-    const shared = await tryNativeShare(blob, fileName);
-    if (shared) return;
-  }
-
-  downloadBlob(blob, fileName);
 }
 
 export async function exportLookCardAsPng(

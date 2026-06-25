@@ -8,7 +8,6 @@ import {
   useRef,
   useState,
 } from "react";
-import { createPortal } from "react-dom";
 import { LookCanvas } from "@/components/modal/LookCanvas";
 import { LookCanvasLayoutProvider } from "@/context/LookCanvasLayoutContext";
 import { WardrobeCanvasBrandWatermark } from "@/components/wardrobe/WardrobeCanvasBrandWatermark";
@@ -22,13 +21,11 @@ import { COLLAGE_BACKDROP } from "@/lib/collageLayout";
 import {
   LOOK_CANVAS_REFERENCE_HEIGHT,
   LOOK_CANVAS_REFERENCE_WIDTH,
+  MOODBOARD_FOOTER_HEIGHT_PX,
 } from "@/lib/lookCanvasReference";
 import { isDarkCanvasBackground } from "@/lib/wardrobeCanvasBackground";
 
 const PREVIEW_MAX_SCALE = 0.76;
-
-/** Footer row (name + cortisstyle.com watermark). */
-export const MOODBOARD_FOOTER_HEIGHT_PX = 56;
 
 const PREVIEW_TOTAL_HEIGHT_PX =
   LOOK_CANVAS_REFERENCE_HEIGHT + MOODBOARD_FOOTER_HEIGHT_PX;
@@ -185,17 +182,11 @@ export const WardrobeOutfitLivePreviewCard = forwardRef<
   ref,
 ) {
   const displayContainerRef = useRef<HTMLDivElement>(null);
-  const exportContainerRef = useRef<HTMLDivElement>(null);
-  const exportRef = useRef<HTMLDivElement>(null);
+  const moodboardRef = useRef<HTMLDivElement>(null);
   const measureRef = useRef<HTMLDivElement>(null);
   const [previewScale, setPreviewScale] = useState(PREVIEW_MAX_SCALE);
-  const [isMounted, setIsMounted] = useState(false);
 
-  useImperativeHandle(ref, () => exportRef.current as HTMLDivElement);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
+  useImperativeHandle(ref, () => moodboardRef.current as HTMLDivElement);
 
   useEffect(() => {
     const measureTarget = measureRef.current;
@@ -213,7 +204,7 @@ export const WardrobeOutfitLivePreviewCard = forwardRef<
     return () => observer.disconnect();
   }, []);
 
-  const sharedRenderProps = {
+  const renderProps = {
     outfitName,
     moodword,
     moodImageUrl,
@@ -227,51 +218,36 @@ export const WardrobeOutfitLivePreviewCard = forwardRef<
   const scaledWidth = Math.round(LOOK_CANVAS_REFERENCE_WIDTH * previewScale);
   const previewMaskHeight = Math.round(PREVIEW_TOTAL_HEIGHT_PX * previewScale);
 
-  const exportLayer =
-    isMounted &&
-    createPortal(
-      <div
-        ref={exportRef}
-        data-look-card-export
-        aria-hidden
-        className="pointer-events-none fixed top-0 left-0 -z-[1] w-[420px] bg-white"
-        style={{ visibility: "hidden" }}
-      >
-        <OutfitMoodboardRender
-          {...sharedRenderProps}
-          containerRef={exportContainerRef}
-        />
-      </div>,
-      document.body,
-    );
-
   return (
-    <>
-      <div className={`mx-auto w-full min-w-0 max-w-full ${className}`.trim()}>
-        <div ref={measureRef} className="w-full min-w-0">
+    <div className={`mx-auto w-full min-w-0 max-w-full ${className}`.trim()}>
+      <div ref={measureRef} className="w-full min-w-0">
+        <div
+          className="mx-auto overflow-hidden"
+          style={{
+            width: scaledWidth,
+            height: previewMaskHeight,
+          }}
+        >
           <div
-            className="mx-auto overflow-hidden"
+            className="origin-top-left"
             style={{
-              width: scaledWidth,
-              height: previewMaskHeight,
+              width: LOOK_CANVAS_REFERENCE_WIDTH,
+              transform: `scale(${previewScale})`,
             }}
           >
             <div
-              className="origin-top-left"
-              style={{
-                width: LOOK_CANVAS_REFERENCE_WIDTH,
-                transform: `scale(${previewScale})`,
-              }}
+              ref={moodboardRef}
+              data-look-card-export
+              className="w-[420px]"
             >
               <OutfitMoodboardRender
-                {...sharedRenderProps}
+                {...renderProps}
                 containerRef={displayContainerRef}
               />
             </div>
           </div>
         </div>
       </div>
-      {exportLayer}
-    </>
+    </div>
   );
 });
