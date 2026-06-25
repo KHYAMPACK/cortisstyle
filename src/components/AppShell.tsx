@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { SiteHeader } from "@/components/SiteHeader";
+import { isAuthCallbackPath } from "@/lib/authRedirect";
 import { isDarkGatePath, isMaintenancePath } from "@/lib/launchGates";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -9,8 +10,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isHome = pathname === "/";
   const isDarkGate = isDarkGatePath(pathname);
   const isMaintenance = isMaintenancePath(pathname);
+  const isAuthCallback = isAuthCallbackPath(pathname);
 
-  if (isMaintenance) {
+  if (isMaintenance || isAuthCallback) {
     return <>{children}</>;
   }
 

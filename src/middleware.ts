@@ -11,7 +11,7 @@ function isMaintenanceModeEnabled(): boolean {
 }
 
 function isAllowedDuringMaintenance(pathname: string): boolean {
-  if (pathname === MAINTENANCE_PATH) {
+  if (pathname === MAINTENANCE_PATH || pathname.startsWith("/auth/callback")) {
     return true;
   }
 

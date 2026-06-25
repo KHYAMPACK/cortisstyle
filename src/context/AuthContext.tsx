@@ -10,6 +10,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { getMagicLinkRedirectUrl } from "@/lib/authRedirect";
 import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabaseClient";
 import {
   ensureUserProfile,
@@ -30,6 +31,7 @@ interface AuthContextValue {
   isAuthenticated: boolean;
   isInitializing: boolean;
   isAuthenticating: boolean;
+  isResolvingAuthRedirect: boolean;
   wardrobeLoading: boolean;
   authError: string | null;
   user: WardrobeUser | null;
@@ -37,12 +39,12 @@ interface AuthContextValue {
   savedOutfits: SavedWardrobeOutfitBlueprint[];
   wardrobeLoadError: string | null;
   ownedClothes: WardrobeClothingItem[];
-  signInWithPassword: (email: string, password: string) => Promise<void>;
-  signUpWithPassword: (email: string, password: string) => Promise<boolean>;
+  signInWithMagicLink: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshWardrobe: () => Promise<void>;
   refreshSavedOutfits: () => Promise<void>;
   clearAuthError: () => void;
+  setIsResolvingAuthRedirect: (value: boolean) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -55,6 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [isResolvingAuthRedirect, setIsResolvingAuthRedirect] = useState(false);
   const [wardrobeLoading, setWardrobeLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [purchasedLookIds, setPurchasedLookIds] = useState<string[]>([]);
@@ -119,8 +122,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    } = supabase.auth.onAuthStateChange((event, nextSession) => {
       setSession(nextSession);
+
+      if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+        setIsResolvingAuthRedirect(false);
+      }
 
       if (nextSession?.user) {
         // Defer Supabase DB calls so getSession() is not deadlocked.
@@ -197,79 +204,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await refreshSavedOutfits(userId);
   }, [refreshSavedOutfits, userId]);
 
-  const signInWithPassword = useCallback(
-    async (email: string, password: string) => {
-      if (!isSupabaseConfigured()) {
-        setAuthError("Supabase is not configured.");
-        return;
-      }
+  const signInWithMagicLink = useCallback(async (email: string) => {
+    if (!isSupabaseConfigured()) {
+      setAuthError("Supabase is not configured.");
+      return;
+    }
 
-      setIsAuthenticating(true);
-      setAuthError(null);
+    setIsAuthenticating(true);
+    setAuthError(null);
 
-      try {
-        const supabase = getSupabaseClient();
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
+    try {
+      const supabase = getSupabaseClient();
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: getMagicLinkRedirectUrl(),
+          shouldCreateUser: true,
+        },
+      });
 
-        if (error) throw error;
-
-        if (data.user) {
-          await syncProfile(data.user);
-        }
-      } catch (error) {
-        const message =
-          error instanceof Error ? error.message : "Sign in failed.";
-        setAuthError(message);
-        throw error;
-      } finally {
-        setIsAuthenticating(false);
-      }
-    },
-    [],
-  );
-
-  const signUpWithPassword = useCallback(
-    async (email: string, password: string) => {
-      if (!isSupabaseConfigured()) {
-        setAuthError("Supabase is not configured.");
-        return false;
-      }
-
-      setIsAuthenticating(true);
-      setAuthError(null);
-
-      try {
-        const supabase = getSupabaseClient();
-        const { data, error } = await supabase.auth.signUp({ email, password });
-
-        if (error) throw error;
-
-        if (data.user) {
-          await syncProfile(data.user);
-        }
-
-        if (!data.session) {
-          setAuthError(
-            "Account created. Check your email to confirm, then sign in.",
-          );
-          return false;
-        }
-
-        return true;
-      } catch (error) {
-        const message =
-          error instanceof Error ? error.message : "Sign up failed.";
-        setAuthError(message);
-        throw error;
-      } finally {
-        setIsAuthenticating(false);
-      }
-    },
-    [],
-  );
+      if (error) throw error;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unable to dispatch access link.";
+      setAuthError(message);
+      throw error;
+    } finally {
+      setIsAuthenticating(false);
+    }
+  }, []);
 
   const signOut = useCallback(async () => {
     if (!isSupabaseConfigured()) return;
@@ -306,6 +269,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated: Boolean(session?.user),
       isInitializing,
       isAuthenticating,
+      isResolvingAuthRedirect,
       wardrobeLoading,
       authError,
       user,
@@ -313,17 +277,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       savedOutfits,
       wardrobeLoadError,
       ownedClothes,
-      signInWithPassword,
-      signUpWithPassword,
+      signInWithMagicLink,
       signOut,
       refreshWardrobe: refreshWardrobeForSession,
       refreshSavedOutfits: refreshSavedOutfitsForSession,
       clearAuthError,
+      setIsResolvingAuthRedirect,
     }),
     [
       session,
       isInitializing,
       isAuthenticating,
+      isResolvingAuthRedirect,
       wardrobeLoading,
       authError,
       user,
@@ -331,8 +296,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       savedOutfits,
       wardrobeLoadError,
       ownedClothes,
-      signInWithPassword,
-      signUpWithPassword,
+      signInWithMagicLink,
       signOut,
       refreshWardrobeForSession,
       refreshSavedOutfitsForSession,

@@ -43,7 +43,6 @@ export function EnterDigitalWardrobeButton({
       <AuthPopup
         isOpen={showAuthPopup}
         onClose={() => setShowAuthPopup(false)}
-        onAuthSuccess={goToWardrobe}
         description="Create an account or sign in to access your private wardrobe archive."
         allowSignUp
       />

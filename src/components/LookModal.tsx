@@ -240,7 +240,6 @@ export function LookModal({ look, onClose }: LookModalProps) {
           setShowAuthPopup(false);
           setPendingWardrobeAdd(false);
         }}
-        onAuthSuccess={() => setShowAuthPopup(false)}
         description="Create an account or sign in to save this look to your wardrobe."
         allowSignUp
       />

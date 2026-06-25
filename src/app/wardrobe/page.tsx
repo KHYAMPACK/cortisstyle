@@ -126,7 +126,6 @@ function WardrobePageContent() {
       <AuthPopup
         isOpen={showAuthPopup && !isAuthenticated}
         onClose={handleAuthClose}
-        onAuthSuccess={() => setShowAuthPopup(false)}
         description="Create an account or sign in to access your private wardrobe archive."
         allowSignUp
       />

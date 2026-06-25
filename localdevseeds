@@ -1,6 +1,19 @@
-# Wardrobe and account sign-up are live by default.
-# Opt in to pre-launch gates with:
+# Public site URL (magic-link redirects + auth callback)
+NEXT_PUBLIC_SITE_URL=https://cortisstyle.com
+
+# Supabase (client)
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+
+# Custom SMTP — configure matching values in Supabase Dashboard → Auth → SMTP
+# so magic-link emails send from noreply@cortisstyle.com instead of noreply@supabase.co
+SUPABASE_SMTP_HOST=
+SUPABASE_SMTP_PORT=
+SUPABASE_SMTP_USER=
+SUPABASE_SMTP_PASS=
+
+# Launch gates (opt-in)
+# NEXT_PUBLIC_MAINTENANCE_MODE=true
 # NEXT_PUBLIC_WARDROBE_GATE_ENABLED=true
 # NEXT_PUBLIC_AUTH_GATE_ENABLED=true
-# NEXT_PUBLIC_MAINTENANCE_MODE=true
 NEXT_PUBLIC_PURCHASE_GATE_ENABLED=false

@@ -13,32 +13,22 @@ const spring = { type: "spring" as const, stiffness: 100, damping: 20 };
 interface AuthPopupProps {
   isOpen: boolean;
   onClose: () => void;
-  onAuthSuccess?: () => void;
   description?: string;
-  /** When false, hides sign-up toggle (deploy gate). */
+  /** When false, hides magic-link entry (deploy gate). */
   allowSignUp?: boolean;
 }
-
-type AuthMode = "signin" | "signup";
 
 export function AuthPopup({
   isOpen,
   onClose,
-  onAuthSuccess,
-  description = "Join Cortis Style to access your private archive.",
+  description = "Enter your curator email to receive a secure studio access link.",
   allowSignUp = true,
 }: AuthPopupProps) {
-  const {
-    signInWithPassword,
-    signUpWithPassword,
-    isAuthenticating,
-    authError,
-    clearAuthError,
-  } = useAuth();
+  const { signInWithMagicLink, isAuthenticating, authError, clearAuthError } =
+    useAuth();
 
-  const [mode, setMode] = useState<AuthMode>("signin");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [linkDispatched, setLinkDispatched] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -48,8 +38,7 @@ export function AuthPopup({
   useEffect(() => {
     if (!isOpen) {
       setEmail("");
-      setPassword("");
-      setMode("signin");
+      setLinkDispatched(false);
       clearAuthError();
       return;
     }
@@ -67,23 +56,11 @@ export function AuthPopup({
     clearAuthError();
 
     try {
-      if (mode === "signin") {
-        await signInWithPassword(email.trim(), password);
-      } else if (allowSignUp) {
-        const hasSession = await signUpWithPassword(email.trim(), password);
-        if (!hasSession) return;
-      }
-
-      onAuthSuccess?.();
-      onClose();
+      await signInWithMagicLink(email.trim());
+      setLinkDispatched(true);
     } catch {
       // Error state is handled in AuthContext.
     }
-  };
-
-  const toggleMode = () => {
-    clearAuthError();
-    setMode((current) => (current === "signin" ? "signup" : "signin"));
   };
 
   if (!isMounted) return null;
@@ -114,111 +91,96 @@ export function AuthPopup({
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 10 }}
               transition={spring}
-              className="pointer-events-auto w-[min(92vw,420px)] border border-blueprint-border surface-canvas-paper p-8 shadow-2xl"
+              className="pointer-events-auto w-[min(92vw,440px)] border border-blueprint-border bg-white p-8 shadow-2xl md:p-10"
             >
-            <div className="mb-6 flex justify-center">
-              <BrandLogo variant="onLight" className="h-20 w-auto md:h-24" />
-            </div>
-            <p className="text-meta mb-3 text-[9px] tracking-[0.4em] uppercase">
-              Members Only
-            </p>
-            <h2
-              id="auth-popup-title"
-              className="font-serif text-2xl leading-tight text-neutral-950"
-            >
-              {mode === "signin" ? "Welcome Back" : "Join Cortis Style"}
-            </h2>
-            <p className="mt-4 text-sm leading-relaxed text-neutral-600">
-              {description}
-            </p>
+              <div className="mb-6 flex justify-center">
+                <BrandLogo variant="onLight" className="h-20 w-auto md:h-24" />
+              </div>
 
-            <form
-              onSubmit={handleSubmit}
-              className="mx-auto mt-8 flex w-full max-w-[420px] flex-col items-center text-center"
-            >
-              <label className="block w-full text-left">
-                <span className="mb-2 block text-center text-[9px] tracking-[0.35em] text-neutral-400 uppercase">
-                  Email
-                </span>
-                <input
-                  type="email"
-                  required
-                  autoComplete="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  className="w-full border border-blueprint-border bg-canvas-paper px-3 py-3 text-center text-sm text-neutral-900 outline-none transition-colors focus:border-jet-black"
-                  placeholder="you@studio.com"
-                />
-              </label>
+              <p className="text-meta mb-3 text-center text-[9px] tracking-[0.4em] uppercase">
+                Premium Workspace Entry
+              </p>
 
-              <label className="mt-4 block w-full text-left">
-                <span className="mb-2 block text-center text-[9px] tracking-[0.35em] text-neutral-400 uppercase">
-                  Password
-                </span>
-                <input
-                  type="password"
-                  required
-                  minLength={6}
-                  autoComplete={
-                    mode === "signin" ? "current-password" : "new-password"
-                  }
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  className="w-full border border-blueprint-border bg-canvas-paper px-3 py-3 text-center text-sm text-neutral-900 outline-none transition-colors focus:border-jet-black"
-                  placeholder="••••••••"
-                />
-              </label>
+              <h2
+                id="auth-popup-title"
+                className="text-center font-serif text-2xl leading-tight text-neutral-950"
+              >
+                Request Studio Access
+              </h2>
 
-              {authError && (
-                <motion.p
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="mt-4 w-full text-center text-[11px] leading-relaxed text-red-600"
+              <p className="mt-4 text-center text-sm leading-relaxed text-neutral-600">
+                {description}
+              </p>
+
+              {allowSignUp ? (
+                <form
+                  onSubmit={handleSubmit}
+                  className="mx-auto mt-8 flex w-full max-w-[420px] flex-col"
                 >
-                  {authError}
-                </motion.p>
+                  <label className="sr-only" htmlFor="curator-email">
+                    Curator email
+                  </label>
+                  <input
+                    id="curator-email"
+                    type="email"
+                    required
+                    autoComplete="email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    disabled={linkDispatched || isAuthenticating}
+                    className="w-full border border-jet-black bg-white px-4 py-4 text-center font-mono text-[11px] tracking-[0.18em] text-neutral-900 uppercase outline-none transition-colors placeholder:text-neutral-400 focus:border-jet-black disabled:opacity-60"
+                    placeholder="ENTER YOUR CURATOR EMAIL..."
+                  />
+
+                  {linkDispatched ? (
+                    <motion.p
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mt-5 text-center font-mono text-[10px] leading-relaxed tracking-[0.22em] text-neutral-800 uppercase"
+                    >
+                      [ ACCESS LINK SECURELY DISPATCHED TO YOUR INBOX ]
+                    </motion.p>
+                  ) : null}
+
+                  {authError ? (
+                    <motion.p
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mt-4 text-center text-[11px] leading-relaxed text-red-600"
+                    >
+                      {authError}
+                    </motion.p>
+                  ) : null}
+
+                  {!linkDispatched ? (
+                    <button
+                      type="submit"
+                      disabled={isAuthenticating}
+                      className="mt-6 w-full border border-jet-black bg-jet-black px-5 py-4 text-center font-mono text-[10px] tracking-[0.32em] text-white uppercase transition-opacity hover:opacity-90 disabled:opacity-60"
+                    >
+                      {isAuthenticating
+                        ? "DISPATCHING..."
+                        : "REQUEST ENTRY ACCESS"}
+                    </button>
+                  ) : null}
+                </form>
+              ) : (
+                <Link
+                  href={getNotifyDeployPath()}
+                  onClick={onClose}
+                  className="text-meta mt-8 block w-full text-center text-[10px] tracking-[0.25em] uppercase transition-colors hover:text-jet-black"
+                >
+                  Get notified when accounts open →
+                </Link>
               )}
 
               <button
-                type="submit"
-                disabled={isAuthenticating}
-                className="btn-primary mt-6 w-full border border-jet-black px-5 py-3 text-center font-mono text-[10px] tracking-[0.3em] disabled:opacity-60"
-              >
-                {isAuthenticating
-                  ? "Processing…"
-                  : mode === "signin"
-                    ? "Sign In"
-                    : "Create Premium Account"}
-              </button>
-            </form>
-
-            {allowSignUp ? (
-              <button
                 type="button"
-                onClick={toggleMode}
-                className="text-meta mt-5 w-full text-[10px] tracking-[0.25em] uppercase transition-colors hover:text-jet-black"
-              >
-                {mode === "signin"
-                  ? "Create Premium Account"
-                  : "Already have an account? Sign In"}
-              </button>
-            ) : (
-              <Link
-                href={getNotifyDeployPath()}
                 onClick={onClose}
-                className="text-meta mt-5 block w-full text-center text-[10px] tracking-[0.25em] uppercase transition-colors hover:text-jet-black"
+                className="text-meta mt-6 w-full text-[10px] tracking-[0.3em] uppercase transition-colors hover:text-jet-black"
               >
-                Get notified when accounts open →
-              </Link>
-            )}
-
-            <button
-              type="button"
-              onClick={onClose}
-              className="text-meta mt-4 w-full text-[10px] tracking-[0.3em] uppercase transition-colors hover:text-jet-black"
-            >
-              Close
-            </button>
+                Close
+              </button>
             </motion.div>
           </div>
         </>

@@ -88,7 +88,6 @@ export function ProfileButton({ tone = "default" }: { tone?: "default" | "invers
       <AuthPopup
         isOpen={showAuthPopup}
         onClose={() => setShowAuthPopup(false)}
-        onAuthSuccess={() => setShowAuthPopup(false)}
         description="Create an account or sign in to access your private wardrobe archive."
         allowSignUp
       />

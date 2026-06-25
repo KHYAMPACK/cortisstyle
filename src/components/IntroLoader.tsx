@@ -21,7 +21,16 @@ const exitPanel = {
   transition: { duration: EXIT_DURATION_MS / 1000, ease: [0.22, 1, 0.36, 1] as const },
 };
 
-export function IntroLoader() {
+interface IntroLoaderProps {
+  /** Keeps the mask visible until the parent unmounts (auth callback bridge). */
+  forceActive?: boolean;
+  statusLabel?: string;
+}
+
+export function IntroLoader({
+  forceActive = false,
+  statusLabel,
+}: IntroLoaderProps) {
   const [isMounted, setIsMounted] = useState(false);
   const [phase, setPhase] = useState<"visible" | "exiting" | "done">("visible");
 
@@ -30,7 +39,7 @@ export function IntroLoader() {
   }, []);
 
   useEffect(() => {
-    if (!isMounted) return;
+    if (!isMounted || forceActive) return;
 
     document.documentElement.classList.add("intro-loading");
     const previousOverflow = document.body.style.overflow;
@@ -75,10 +84,10 @@ export function IntroLoader() {
       document.documentElement.classList.remove("intro-loading");
       document.body.style.overflow = previousOverflow;
     };
-  }, [isMounted]);
+  }, [forceActive, isMounted]);
 
   useEffect(() => {
-    if (phase !== "exiting") return;
+    if (forceActive || phase !== "exiting") return;
 
     const timer = setTimeout(() => {
       setPhase("done");
@@ -87,9 +96,22 @@ export function IntroLoader() {
     }, EXIT_DURATION_MS);
 
     return () => clearTimeout(timer);
-  }, [phase]);
+  }, [forceActive, phase]);
 
-  if (!isMounted || phase === "done") {
+  useEffect(() => {
+    if (!forceActive || !isMounted) return;
+
+    document.documentElement.classList.add("intro-loading");
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.documentElement.classList.remove("intro-loading");
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [forceActive, isMounted]);
+
+  if (!isMounted || (!forceActive && phase === "done")) {
     return null;
   }
 
@@ -99,19 +121,33 @@ export function IntroLoader() {
         key="intro-loader"
         role="status"
         aria-live="polite"
-        aria-label="Loading Cortisstyle"
+        aria-label={statusLabel ?? "Loading Cortisstyle"}
         initial={{ opacity: 1, y: 0 }}
-        animate={phase === "exiting" ? exitPanel : { opacity: 1, y: 0 }}
+        animate={
+          !forceActive && phase === "exiting"
+            ? exitPanel
+            : { opacity: 1, y: 0 }
+        }
         className={`fixed inset-0 z-[9999] flex h-screen w-screen flex-col items-center justify-center bg-[#0D0D0D] ${
-          phase === "exiting" ? "pointer-events-none" : "pointer-events-auto"
+          !forceActive && phase === "exiting"
+            ? "pointer-events-none"
+            : "pointer-events-auto"
         }`}
       >
-        <motion.div {...entrance} className="px-6">
+        <motion.div
+          {...entrance}
+          className="flex flex-col items-center gap-6 px-6"
+        >
           <BrandLogo
             variant="onDark"
             priority
             className="h-[min(52vw,14rem)] w-auto md:h-[min(36vw,16rem)]"
           />
+          {statusLabel ? (
+            <p className="font-mono text-[10px] tracking-[0.42em] text-white/75 uppercase sm:text-[11px]">
+              [ {statusLabel} ]
+            </p>
+          ) : null}
         </motion.div>
       </motion.div>
     </AnimatePresence>,
