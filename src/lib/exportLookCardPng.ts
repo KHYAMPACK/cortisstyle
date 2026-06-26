@@ -177,27 +177,28 @@ async function fetchImageAsDataUrl(absoluteSrc: string): Promise<string | null> 
   }
 }
 
-async function resolveImageDataUrl(img: HTMLImageElement): Promise<string> {
-  const src = resolveImageSource(img);
-
-  if (!src) {
+async function resolveExportableDataUrl(src: string): Promise<string> {
+  const trimmed = src.trim();
+  if (!trimmed) {
     throw new Error("Look card export found an image without a source URL.");
   }
 
-  if (src.startsWith("data:")) {
-    return src;
+  if (trimmed.startsWith("data:")) {
+    const loaded = await loadImageElement(trimmed);
+    const rasterized = rasterizeImageElement(loaded);
+    if (rasterized) {
+      return rasterized;
+    }
+
+    throw new Error("Unable to prepare uploaded mood image for export.");
   }
 
-  const absoluteSrc = resolveAbsoluteImageUrl(src);
-  img.removeAttribute("crossorigin");
+  const absoluteSrc = resolveAbsoluteImageUrl(trimmed);
 
   const fetched = await fetchImageAsDataUrl(absoluteSrc);
   if (fetched?.startsWith("data:")) {
-    return fetched;
-  }
-
-  if (img.complete && img.naturalWidth > 0) {
-    const rasterized = rasterizeImageElement(img);
+    const loaded = await loadImageElement(fetched);
+    const rasterized = rasterizeImageElement(loaded);
     if (rasterized) {
       return rasterized;
     }
@@ -214,11 +215,51 @@ async function resolveImageDataUrl(img: HTMLImageElement): Promise<string> {
   );
 }
 
+async function prepareMoodImageFrames(root: HTMLElement): Promise<Map<string, string>> {
+  const moodSources = new Map<string, string>();
+  const frames = root.querySelectorAll<HTMLElement>("[data-mood-image-frame]");
+
+  for (const frame of frames) {
+    const src = frame.getAttribute("data-mood-image-src")?.trim();
+    if (!src) continue;
+
+    const dataUrl = await resolveExportableDataUrl(src);
+    moodSources.set(src, dataUrl);
+    moodSources.set(resolveAbsoluteImageUrl(src), dataUrl);
+
+    const img = frame.querySelector("img");
+    if (img) {
+      img.removeAttribute("crossorigin");
+      img.removeAttribute("srcset");
+      img.removeAttribute("sizes");
+      img.src = dataUrl;
+    }
+  }
+
+  if (moodSources.size > 0) {
+    await waitForImages(root);
+  }
+
+  return moodSources;
+}
+
+async function resolveImageDataUrl(img: HTMLImageElement): Promise<string> {
+  const src = resolveImageSource(img);
+
+  if (!src) {
+    throw new Error("Look card export found an image without a source URL.");
+  }
+
+  img.removeAttribute("crossorigin");
+  return resolveExportableDataUrl(src);
+}
+
 async function inlineAllImagesOnLiveRoot(root: HTMLElement): Promise<{
   restore: () => void;
   dataUrlByAbsoluteSrc: Map<string, string>;
   dataUrlsInOrder: string[];
 }> {
+  const moodSources = await prepareMoodImageFrames(root);
   const images = Array.from(root.querySelectorAll("img"));
   const snapshots: LiveImageInlineSnapshot[] = [];
 
@@ -249,7 +290,7 @@ async function inlineAllImagesOnLiveRoot(root: HTMLElement): Promise<{
     await document.fonts.ready;
   }
 
-  const dataUrlByAbsoluteSrc = new Map<string, string>();
+  const dataUrlByAbsoluteSrc = new Map<string, string>(moodSources);
   for (const snapshot of snapshots) {
     dataUrlByAbsoluteSrc.set(snapshot.absoluteSrc, snapshot.dataUrl);
     dataUrlByAbsoluteSrc.set(snapshot.dataUrl, snapshot.dataUrl);
@@ -492,6 +533,47 @@ function prepareClonedExportRoot(
   });
 
   sanitizeClonedImages(clonedRoot, dataUrlByAbsoluteSrc, dataUrlsInOrder);
+  rebuildMoodImageFrames(clonedDocument, clonedRoot, dataUrlByAbsoluteSrc);
+}
+
+function rebuildMoodImageFrames(
+  clonedDocument: Document,
+  clonedRoot: HTMLElement,
+  dataUrlByAbsoluteSrc: Map<string, string>,
+): void {
+  clonedRoot.querySelectorAll<HTMLElement>("[data-mood-image-frame]").forEach((frame) => {
+    const src = frame.getAttribute("data-mood-image-src")?.trim();
+    if (!src) return;
+
+    const dataUrl =
+      dataUrlByAbsoluteSrc.get(src) ??
+      dataUrlByAbsoluteSrc.get(resolveAbsoluteImageUrl(src));
+
+    if (!dataUrl?.startsWith("data:")) {
+      frame.remove();
+      return;
+    }
+
+    frame.replaceChildren();
+    frame.style.position = "absolute";
+    frame.style.top = "1rem";
+    frame.style.right = "1rem";
+    frame.style.zIndex = "10";
+    frame.style.width = "120px";
+    frame.style.aspectRatio = "3 / 4";
+    frame.style.overflow = "hidden";
+
+    const img = clonedDocument.createElement("img");
+    img.src = dataUrl;
+    img.alt = "";
+    img.style.position = "absolute";
+    img.style.inset = "0";
+    img.style.width = "100%";
+    img.style.height = "100%";
+    img.style.objectFit = "cover";
+
+    frame.appendChild(img);
+  });
 }
 
 function downloadBlob(blob: Blob, fileName: string): void {
