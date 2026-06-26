@@ -103,7 +103,7 @@ export function LookCard({
             {look.vibe}
           </p>
           <p className="text-meta text-[9px] tracking-[0.28em] uppercase">
-            By {look.modelName} // {look.guidePrice} TL
+            By {look.modelName}
           </p>
         </div>
       </div>
