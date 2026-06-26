@@ -10,7 +10,6 @@ import {
 } from "react";
 import { LookCanvas } from "@/components/modal/LookCanvas";
 import { LookCanvasLayoutProvider } from "@/context/LookCanvasLayoutContext";
-import { WardrobeCanvasBrandWatermark } from "@/components/wardrobe/WardrobeCanvasBrandWatermark";
 import { WardrobeMoodImageFrame } from "@/components/wardrobe/WardrobeMoodImageFrame";
 import { WardrobeMoodword } from "@/components/wardrobe/WardrobeMoodword";
 import { WardrobeOutfitMoodboardCard } from "@/components/wardrobe/WardrobeOutfitMoodboardCard";
@@ -100,11 +99,6 @@ function OutfitMoodboardRender({
             className="pointer-events-none absolute inset-0 z-[1] bg-[radial-gradient(circle_at_center,transparent_42%,rgba(255,255,255,0.06)_100%)]"
           />
         ) : null}
-
-        <WardrobeCanvasBrandWatermark
-          onDarkCanvas={isDarkCanvas}
-          imagePriority={eagerImageLoading}
-        />
 
         <WardrobeMoodImageFrame
           moodImageUrl={moodImageUrl}

@@ -7,7 +7,6 @@ import { MatrixBlueprintGrid } from "@/components/modal/MatrixBlueprintGrid";
 import { WardrobeBuilderBlueprintCell } from "@/components/wardrobe/WardrobeBuilderBlueprintCell";
 import { MatrixBlueprintInteractionGrid } from "@/components/wardrobe/MatrixBlueprintInteractionGrid";
 import { WardrobeBuilderSlotZone } from "@/components/wardrobe/WardrobeBuilderSlotZone";
-import { WardrobeCanvasBrandWatermark } from "@/components/wardrobe/WardrobeCanvasBrandWatermark";
 import { WardrobeMoodImageFrame } from "@/components/wardrobe/WardrobeMoodImageFrame";
 import { WardrobeOutfitMoodboardCard } from "@/components/wardrobe/WardrobeOutfitMoodboardCard";
 import { WardrobeSaveOutfitModal, type WardrobeSaveOutfitPayload } from "@/components/wardrobe/WardrobeSaveOutfitModal";
@@ -455,8 +454,6 @@ export function WardrobeBuilderCanvas({
                 }}
               >
             <div aria-hidden className="pointer-events-none absolute inset-0 z-0 bg-white" />
-
-            <WardrobeCanvasBrandWatermark />
 
             <WardrobeMoodImageFrame moodImageUrl={cardMeta.moodImageUrl} />
 
