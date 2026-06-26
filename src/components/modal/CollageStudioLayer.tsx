@@ -61,6 +61,8 @@ interface CollageStudioLayerProps {
     position: FreeDragPosition,
   ) => void;
   disableCanvasHitTesting?: boolean;
+  /** Load collage assets immediately (used by off-screen export render). */
+  eagerImageLoading?: boolean;
 }
 
 const ARROW_KEY_DIRECTION: Record<string, CanvasMoveDirection> = {
@@ -101,6 +103,7 @@ export function CollageStudioLayer({
   isFreeDragMode = false,
   onFreeDragPositionCommit,
   disableCanvasHitTesting = false,
+  eagerImageLoading = false,
 }: CollageStudioLayerProps) {
   const layoutReference = useLookCanvasLayoutReference();
   const [layouts, setLayouts] = useState<Record<string, CanvasItemLayout>>({});
@@ -623,6 +626,7 @@ export function CollageStudioLayer({
               isEditMode={isEditMode}
               isHitboxMode={isHitboxMode}
               isFreeDragMode={isFreeDragMode}
+              eagerImageLoading={eagerImageLoading}
               onScale={(widthPx) => updateLayout(item.id, { widthPx })}
               onImageLoad={() => handleImageLoad(item.id)}
             />
@@ -644,6 +648,7 @@ interface CanvasAssetProps {
   isEditMode: boolean;
   isHitboxMode: boolean;
   isFreeDragMode: boolean;
+  eagerImageLoading: boolean;
   onScale: (widthPx: number) => void;
   onImageLoad: () => void;
 }
@@ -659,6 +664,7 @@ function CanvasAsset({
   isEditMode,
   isHitboxMode,
   isFreeDragMode,
+  eagerImageLoading,
   onScale,
   onImageLoad,
 }: CanvasAssetProps) {
@@ -711,6 +717,7 @@ function CanvasAsset({
           width={1200}
           height={1200}
           unoptimized
+          priority={eagerImageLoading}
           draggable={false}
           sizes={`${Math.ceil(visualWidth)}px`}
           onLoad={reportImageLoad}

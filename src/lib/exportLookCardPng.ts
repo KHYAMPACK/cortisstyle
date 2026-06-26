@@ -31,12 +31,38 @@ interface StyleSnapshot {
   visibility: string;
 }
 
+interface LiveImageInlineSnapshot {
+  element: HTMLImageElement;
+  originalSrc: string;
+  originalSrcset: string | null;
+  originalCrossOrigin: string | null;
+  dataUrl: string;
+  absoluteSrc: string;
+}
+
 function sanitizeFileName(name: string): string {
   const trimmed = name.trim() || "untitled-look";
   return trimmed
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
+}
+
+function resolveAbsoluteImageUrl(src: string): string {
+  if (src.startsWith("data:") || src.startsWith("blob:")) {
+    return src;
+  }
+
+  return new URL(src, window.location.href).href;
+}
+
+function resolveImageSource(img: HTMLImageElement): string {
+  return (
+    img.getAttribute("src") ||
+    img.currentSrc ||
+    img.src ||
+    ""
+  ).trim();
 }
 
 function toCanvasSafeColor(color: string, view: Window): string {
@@ -81,27 +107,178 @@ function readBlobAsDataUrl(blob: Blob): Promise<string> {
   });
 }
 
-async function inlineImageSrc(img: HTMLImageElement): Promise<string | null> {
-  const src =
-    img.currentSrc || img.getAttribute("src") || img.src || "";
+function rasterizeImageElement(img: HTMLImageElement): string | null {
+  const width = img.naturalWidth || img.width;
+  const height = img.naturalHeight || img.height;
 
-  if (!src) return null;
-  if (src.startsWith("data:")) return src;
+  if (width <= 0 || height <= 0) {
+    return null;
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+
+  const context = canvas.getContext("2d");
+  if (!context) {
+    return null;
+  }
 
   try {
-    const response = await fetch(src);
-    if (!response.ok) return src;
-    return await readBlobAsDataUrl(await response.blob());
+    context.drawImage(img, 0, 0, width, height);
+    return canvas.toDataURL("image/png");
   } catch {
-    return src;
+    return null;
   }
 }
 
-async function buildInlineImageSources(root: HTMLElement): Promise<string[]> {
-  const images = Array.from(root.querySelectorAll("img"));
-  return Promise.all(
-    images.map(async (img) => (await inlineImageSrc(img)) ?? ""),
+function loadImageElement(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.decoding = "async";
+
+    image.onload = () => resolve(image);
+    image.onerror = () => {
+      reject(new Error(`Unable to load image: ${src}`));
+    };
+
+    image.src = src;
+  });
+}
+
+async function fetchImageAsDataUrl(absoluteSrc: string): Promise<string | null> {
+  if (absoluteSrc.startsWith("data:")) {
+    return absoluteSrc;
+  }
+
+  if (absoluteSrc.startsWith("blob:")) {
+    try {
+      const response = await fetch(absoluteSrc);
+      if (!response.ok) return null;
+      return await readBlobAsDataUrl(await response.blob());
+    } catch {
+      return null;
+    }
+  }
+
+  try {
+    const response = await fetch(absoluteSrc, {
+      credentials: "same-origin",
+      cache: "force-cache",
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    return await readBlobAsDataUrl(await response.blob());
+  } catch {
+    return null;
+  }
+}
+
+async function resolveImageDataUrl(img: HTMLImageElement): Promise<string> {
+  const src = resolveImageSource(img);
+
+  if (!src) {
+    throw new Error("Look card export found an image without a source URL.");
+  }
+
+  if (src.startsWith("data:")) {
+    return src;
+  }
+
+  const absoluteSrc = resolveAbsoluteImageUrl(src);
+  img.removeAttribute("crossorigin");
+
+  const fetched = await fetchImageAsDataUrl(absoluteSrc);
+  if (fetched?.startsWith("data:")) {
+    return fetched;
+  }
+
+  if (img.complete && img.naturalWidth > 0) {
+    const rasterized = rasterizeImageElement(img);
+    if (rasterized) {
+      return rasterized;
+    }
+  }
+
+  const loaded = await loadImageElement(absoluteSrc);
+  const rasterized = rasterizeImageElement(loaded);
+  if (rasterized) {
+    return rasterized;
+  }
+
+  throw new Error(
+    `Unable to prepare image for export: ${absoluteSrc}. Reload and try again.`,
   );
+}
+
+async function inlineAllImagesOnLiveRoot(root: HTMLElement): Promise<{
+  restore: () => void;
+  dataUrlByAbsoluteSrc: Map<string, string>;
+  dataUrlsInOrder: string[];
+}> {
+  const images = Array.from(root.querySelectorAll("img"));
+  const snapshots: LiveImageInlineSnapshot[] = [];
+
+  for (const img of images) {
+    const originalSrc = resolveImageSource(img);
+    const dataUrl = await resolveImageDataUrl(img);
+
+    snapshots.push({
+      element: img,
+      originalSrc,
+      originalSrcset: img.getAttribute("srcset"),
+      originalCrossOrigin: img.getAttribute("crossorigin"),
+      dataUrl,
+      absoluteSrc: resolveAbsoluteImageUrl(originalSrc || dataUrl),
+    });
+  }
+
+  for (const snapshot of snapshots) {
+    snapshot.element.removeAttribute("crossorigin");
+    snapshot.element.removeAttribute("srcset");
+    snapshot.element.removeAttribute("sizes");
+    snapshot.element.src = snapshot.dataUrl;
+  }
+
+  await waitForImages(root);
+
+  if (typeof document !== "undefined" && "fonts" in document) {
+    await document.fonts.ready;
+  }
+
+  const dataUrlByAbsoluteSrc = new Map<string, string>();
+  for (const snapshot of snapshots) {
+    dataUrlByAbsoluteSrc.set(snapshot.absoluteSrc, snapshot.dataUrl);
+    dataUrlByAbsoluteSrc.set(snapshot.dataUrl, snapshot.dataUrl);
+  }
+
+  return {
+    restore: () => {
+      for (const snapshot of snapshots) {
+        snapshot.element.src = snapshot.originalSrc;
+
+        if (snapshot.originalSrcset) {
+          snapshot.element.setAttribute("srcset", snapshot.originalSrcset);
+        } else {
+          snapshot.element.removeAttribute("srcset");
+        }
+
+        if (snapshot.originalCrossOrigin) {
+          snapshot.element.setAttribute(
+            "crossorigin",
+            snapshot.originalCrossOrigin,
+          );
+        } else {
+          snapshot.element.removeAttribute("crossorigin");
+        }
+      }
+    },
+    dataUrlByAbsoluteSrc,
+    dataUrlsInOrder: snapshots.map((snapshot) => snapshot.dataUrl),
+  };
 }
 
 async function waitForImages(root: HTMLElement): Promise<void> {
@@ -229,27 +406,45 @@ function prepareElementForExportCapture(target: HTMLElement): () => void {
   };
 }
 
-function applyInlineImagesToClone(
+function sanitizeClonedImages(
   clonedRoot: HTMLElement,
-  inlineSources: string[],
+  dataUrlByAbsoluteSrc: Map<string, string>,
+  dataUrlsInOrder: string[],
 ): void {
-  const clonedImages = clonedRoot.querySelectorAll("img");
+  clonedRoot.querySelectorAll("img").forEach((img, index) => {
+    const orderedDataUrl = dataUrlsInOrder[index];
+    const rawSrc = img.getAttribute("src") || img.src || "";
+    let dataUrl = orderedDataUrl;
 
-  clonedImages.forEach((clonedImage, index) => {
-    const inlineSrc = inlineSources[index];
-    if (!inlineSrc) return;
+    if (!dataUrl?.startsWith("data:") && rawSrc) {
+      try {
+        dataUrl =
+          dataUrlByAbsoluteSrc.get(resolveAbsoluteImageUrl(rawSrc)) ?? dataUrl;
+      } catch {
+        dataUrl = dataUrlByAbsoluteSrc.get(rawSrc) ?? dataUrl;
+      }
+    }
 
-    clonedImage.removeAttribute("crossorigin");
-    clonedImage.removeAttribute("srcset");
-    clonedImage.removeAttribute("sizes");
-    clonedImage.src = inlineSrc;
+    img.removeAttribute("crossorigin");
+    img.removeAttribute("srcset");
+    img.removeAttribute("sizes");
+
+    if (dataUrl?.startsWith("data:")) {
+      img.src = dataUrl;
+      return;
+    }
+
+    img.style.opacity = "0";
+    img.style.visibility = "hidden";
+    img.removeAttribute("src");
   });
 }
 
 function prepareClonedExportRoot(
   clonedDocument: Document,
   clonedRoot: HTMLElement,
-  inlineSources: string[],
+  dataUrlByAbsoluteSrc: Map<string, string>,
+  dataUrlsInOrder: string[],
 ): void {
   const view = clonedDocument.defaultView;
   if (!view) return;
@@ -266,8 +461,8 @@ function prepareClonedExportRoot(
   });
 
   clonedRoot.querySelectorAll<HTMLElement>("*").forEach((element) => {
-    element.style.opacity = "1";
-    element.style.visibility = "visible";
+    element.style.opacity = element.style.opacity || "1";
+    element.style.visibility = element.style.visibility || "visible";
 
     const computed = view.getComputedStyle(element);
     const colorProps = [
@@ -289,9 +484,14 @@ function prepareClonedExportRoot(
         element.style.setProperty(prop, toCanvasSafeColor(value, view));
       }
     }
+
+    const backgroundImage = computed.backgroundImage;
+    if (backgroundImage && backgroundImage.includes("url(")) {
+      element.style.backgroundImage = "none";
+    }
   });
 
-  applyInlineImagesToClone(clonedRoot, inlineSources);
+  sanitizeClonedImages(clonedRoot, dataUrlByAbsoluteSrc, dataUrlsInOrder);
 }
 
 function downloadBlob(blob: Blob, fileName: string): void {
@@ -362,7 +562,8 @@ function resolveCaptureScale(): number {
 
 async function captureLookCardCanvas(
   sourceElement: HTMLElement,
-  inlineSources: string[],
+  dataUrlByAbsoluteSrc: Map<string, string>,
+  dataUrlsInOrder: string[],
   backgroundColor: string,
 ): Promise<HTMLCanvasElement> {
   return html2canvas(sourceElement, {
@@ -373,7 +574,12 @@ async function captureLookCardCanvas(
     logging: false,
     imageTimeout: 15_000,
     onclone: (clonedDocument, clonedRoot) => {
-      prepareClonedExportRoot(clonedDocument, clonedRoot, inlineSources);
+      prepareClonedExportRoot(
+        clonedDocument,
+        clonedRoot,
+        dataUrlByAbsoluteSrc,
+        dataUrlsInOrder,
+      );
     },
   });
 }
@@ -403,6 +609,7 @@ async function exportLookCardAsPngInternal(
 ): Promise<void> {
   const backgroundColor = options.backgroundColor ?? "#ffffff";
   const restoreCaptureStyles = prepareElementForExportCapture(element);
+  let restoreInlineImages = () => {};
 
   try {
     await waitForCollageReady(element);
@@ -413,10 +620,13 @@ async function exportLookCardAsPngInternal(
       });
     });
 
-    const inlineSources = await buildInlineImageSources(element);
+    const inlineResult = await inlineAllImagesOnLiveRoot(element);
+    restoreInlineImages = inlineResult.restore;
+
     const canvas = await captureLookCardCanvas(
       element,
-      inlineSources,
+      inlineResult.dataUrlByAbsoluteSrc,
+      inlineResult.dataUrlsInOrder,
       backgroundColor,
     );
     const blob = await canvasToPngBlob(canvas);
@@ -428,6 +638,7 @@ async function exportLookCardAsPngInternal(
 
     downloadBlob(blob, fileName);
   } finally {
+    restoreInlineImages();
     restoreCaptureStyles();
   }
 }

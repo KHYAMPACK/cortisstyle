@@ -41,6 +41,8 @@ interface LookCanvasProps {
   disableCanvasHitTesting?: boolean;
   /** Collage canvas fill — defaults to print paper white. */
   collageBackdrop?: string;
+  /** Load collage assets immediately (used by off-screen export render). */
+  eagerImageLoading?: boolean;
 }
 
 export function LookCanvas({
@@ -59,6 +61,7 @@ export function LookCanvas({
   onFreeDragPositionCommit,
   disableCanvasHitTesting = false,
   collageBackdrop = COLLAGE_BACKDROP,
+  eagerImageLoading = false,
 }: LookCanvasProps) {
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const useCollage = canRenderCollageLayout(look.layout, items);
@@ -114,6 +117,7 @@ export function LookCanvas({
           isFreeDragMode={isFreeDragMode}
           onFreeDragPositionCommit={onFreeDragPositionCommit}
           disableCanvasHitTesting={disableCanvasHitTesting}
+          eagerImageLoading={eagerImageLoading}
         />
       ) : lookImage ? (
         <SingleLookImage image={lookImage} title={title} />

@@ -50,6 +50,7 @@ interface OutfitMoodboardRenderProps {
   canvasBg: string;
   showMoodPlaceholders: boolean;
   containerRef: React.RefObject<HTMLDivElement | null>;
+  eagerImageLoading?: boolean;
 }
 
 function OutfitMoodboardRender({
@@ -62,6 +63,7 @@ function OutfitMoodboardRender({
   canvasBg,
   showMoodPlaceholders,
   containerRef,
+  eagerImageLoading = false,
 }: OutfitMoodboardRenderProps) {
   const isDarkCanvas = isDarkCanvasBackground(canvasBg);
   const moodwordFallback = showMoodPlaceholders ? "EDITORIAL" : undefined;
@@ -99,11 +101,15 @@ function OutfitMoodboardRender({
           />
         ) : null}
 
-        <WardrobeCanvasBrandWatermark onDarkCanvas={isDarkCanvas} />
+        <WardrobeCanvasBrandWatermark
+          onDarkCanvas={isDarkCanvas}
+          imagePriority={eagerImageLoading}
+        />
 
         <WardrobeMoodImageFrame
           moodImageUrl={moodImageUrl}
           showPlaceholder={showMoodPlaceholders}
+          imagePriority={eagerImageLoading}
         />
 
         <WardrobeMoodword
@@ -138,6 +144,7 @@ function OutfitMoodboardRender({
               resolveLayouts={resolvePreviewLayouts}
               disableCanvasHitTesting
               collageBackdrop={isDarkCanvas ? "transparent" : COLLAGE_BACKDROP}
+              eagerImageLoading={eagerImageLoading}
             />
           </div>
         </LookCanvasLayoutProvider>
@@ -231,6 +238,7 @@ export const WardrobeOutfitLivePreviewCard = forwardRef<
         <OutfitMoodboardRender
           {...renderProps}
           containerRef={exportContainerRef}
+          eagerImageLoading
         />
       </div>
 

@@ -5,11 +5,13 @@ import Image from "next/image";
 interface WardrobeMoodImageFrameProps {
   moodImageUrl: string | null;
   showPlaceholder?: boolean;
+  imagePriority?: boolean;
 }
 
 export function WardrobeMoodImageFrame({
   moodImageUrl,
   showPlaceholder = false,
+  imagePriority = false,
 }: WardrobeMoodImageFrameProps) {
   if (!moodImageUrl && !showPlaceholder) {
     return null;
@@ -30,6 +32,7 @@ export function WardrobeMoodImageFrame({
           alt=""
           fill
           unoptimized
+          priority={imagePriority}
           sizes="120px"
           className="object-cover"
         />

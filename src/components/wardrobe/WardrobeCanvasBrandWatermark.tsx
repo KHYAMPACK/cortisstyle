@@ -6,8 +6,10 @@ const LOGO_SRC = "/brand/cortisstyle-logo-light.png";
 
 export function WardrobeCanvasBrandWatermark({
   onDarkCanvas = false,
+  imagePriority = false,
 }: {
   onDarkCanvas?: boolean;
+  imagePriority?: boolean;
 }) {
   return (
     <div
@@ -20,6 +22,7 @@ export function WardrobeCanvasBrandWatermark({
         width={1024}
         height={1024}
         unoptimized
+        priority={imagePriority}
         className={`h-[min(56%,22rem)] w-auto select-none ${
           onDarkCanvas ? "opacity-[0.1]" : "opacity-[0.07] invert"
         }`}
