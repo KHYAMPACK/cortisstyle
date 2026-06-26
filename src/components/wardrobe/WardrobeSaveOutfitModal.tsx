@@ -10,7 +10,6 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { WardrobeOutfitLivePreviewCard } from "@/components/wardrobe/WardrobeOutfitLivePreviewCard";
-import { SharingComingSoonModal } from "@/components/wardrobe/SharingComingSoonModal";
 import { CanvasBackgroundPalette } from "@/components/wardrobe/CanvasBackgroundPalette";
 import { MoodImageInputMatrix } from "@/components/wardrobe/MoodImageInputMatrix";
 import { compressMoodImageFile } from "@/lib/compressMoodImage";
@@ -19,6 +18,7 @@ import {
   type CanvasBgValue,
 } from "@/lib/wardrobeCanvasBackground";
 import { FREE_TIER_SAVED_OUTFIT_LIMIT } from "@/lib/launchGates";
+import { exportLookCardAsPng } from "@/lib/exportLookCardPng";
 import { persistSavedWardrobeOutfitToDb, formatSupabaseError } from "@/lib/savedWardrobeOutfitDb";
 import type { CanvasItemLayout } from "@/types/canvas-layout";
 import type { ResolvedLookItem } from "@/types/look";
@@ -103,9 +103,10 @@ export function WardrobeSaveOutfitModal({
   const [savedBlueprint, setSavedBlueprint] =
     useState<SavedWardrobeOutfitBlueprint | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [isSharingComingSoonOpen, setIsSharingComingSoonOpen] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveWarning, setSaveWarning] = useState<string | null>(null);
+  const [shareError, setShareError] = useState<string | null>(null);
   const [isProcessingMoodImage, setIsProcessingMoodImage] = useState(false);
   const [moodImageError, setMoodImageError] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
@@ -134,8 +135,9 @@ export function WardrobeSaveOutfitModal({
     setCanvasBg(initialCanvasBg);
     setSavedBlueprint(null);
     setIsSaving(false);
-    setIsSharingComingSoonOpen(false);
+    setIsSharing(false);
     setSaveError(null);
+    setShareError(null);
     setSaveWarning(null);
     setMoodImageError(null);
     setIsProcessingMoodImage(false);
@@ -247,8 +249,30 @@ export function WardrobeSaveOutfitModal({
     }
   };
 
-  const handleShareLookCard = () => {
-    setIsSharingComingSoonOpen(true);
+  const handleShareLookCard = async () => {
+    if (!previewRef.current) return;
+
+    setIsSharing(true);
+    setShareError(null);
+
+    try {
+      await exportLookCardAsPng(
+        previewRef.current,
+        savedBlueprint?.name ?? outfitName,
+        {
+          backgroundColor: "#ffffff",
+          preferNativeShare: true,
+        },
+      );
+    } catch (error) {
+      setShareError(
+        error instanceof Error
+          ? error.message
+          : "Unable to export look card image.",
+      );
+    } finally {
+      setIsSharing(false);
+    }
   };
 
   const handleDone = () => {
@@ -422,9 +446,12 @@ export function WardrobeSaveOutfitModal({
                       <button
                         type="button"
                         onClick={handleShareLookCard}
-                        className="btn-primary w-full border border-jet-black px-5 py-3 font-mono text-[10px] tracking-[0.3em]"
+                        disabled={isSharing}
+                        className="btn-primary w-full border border-jet-black px-5 py-3 font-mono text-[10px] tracking-[0.3em] disabled:opacity-60"
                       >
-                        Share / Download Look Card
+                        {isSharing
+                          ? "Generating..."
+                          : "Share / Download Look Card"}
                       </button>
 
                       <button
@@ -439,6 +466,12 @@ export function WardrobeSaveOutfitModal({
                     {saveWarning ? (
                       <p className="mt-4 font-mono text-[10px] leading-relaxed tracking-[0.12em] text-amber-700 uppercase">
                         {saveWarning}
+                      </p>
+                    ) : null}
+
+                    {shareError ? (
+                      <p className="mt-4 font-mono text-[10px] tracking-[0.12em] text-red-600 uppercase">
+                        {shareError}
                       </p>
                     ) : null}
                   </div>
@@ -469,10 +502,6 @@ export function WardrobeSaveOutfitModal({
           </div>
         </div>
       )}
-      <SharingComingSoonModal
-        isOpen={isSharingComingSoonOpen}
-        onClose={() => setIsSharingComingSoonOpen(false)}
-      />
     </AnimatePresence>,
     document.body,
   );

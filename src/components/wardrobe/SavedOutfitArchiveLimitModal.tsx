@@ -88,7 +88,7 @@ export function SavedOutfitArchiveLimitModal({
             </p>
 
             <p className="text-meta mt-8 text-center font-mono text-[10px] tracking-[0.28em] text-neutral-500 uppercase">
-              [ SHARING COMING SOON — STANDBY ]
+              [ PREMIUM ACCESS EN ROUTE — STANDBY ]
             </p>
 
             <button

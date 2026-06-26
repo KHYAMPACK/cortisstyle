@@ -24,6 +24,8 @@ interface StyleSnapshot {
   transform: string;
   width: string;
   height: string;
+  maxWidth: string;
+  minWidth: string;
   overflow: string;
   opacity: string;
   visibility: string;
@@ -71,7 +73,7 @@ async function waitForImages(root: HTMLElement): Promise<void> {
     images.map(
       (img) =>
         new Promise<void>((resolve) => {
-          if (img.complete) {
+          if (img.complete && img.naturalWidth > 0) {
             resolve();
             return;
           }
@@ -108,19 +110,46 @@ async function waitForCollageReady(root: HTMLElement): Promise<void> {
   }
 }
 
-function suspendScaledAncestors(target: HTMLElement): () => void {
+function ancestorNeedsExportPrep(computed: CSSStyleDeclaration): boolean {
+  if (computed.transform !== "none") return true;
+  if (computed.overflow !== "visible") return true;
+  if (computed.overflowX !== "visible" && computed.overflowX !== "clip") {
+    return true;
+  }
+  if (computed.overflowY !== "visible") return true;
+
+  const maxWidth = Number.parseFloat(computed.maxWidth);
+  if (
+    computed.maxWidth !== "none" &&
+    !Number.isNaN(maxWidth) &&
+    maxWidth < LOOK_CANVAS_REFERENCE_WIDTH
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * The live preview scales the moodboard down with CSS transform + overflow
+ * clipping. html2canvas captures the unscaled DOM box, so ancestors must be
+ * expanded before capture or the PNG gets cropped / misaligned.
+ */
+function prepareElementForExportCapture(target: HTMLElement): () => void {
   const snapshots: StyleSnapshot[] = [];
   let ancestor: HTMLElement | null = target.parentElement;
 
-  while (ancestor) {
+  while (ancestor && ancestor !== document.body) {
     const computed = window.getComputedStyle(ancestor);
 
-    if (computed.transform !== "none") {
+    if (ancestorNeedsExportPrep(computed)) {
       snapshots.push({
         element: ancestor,
         transform: ancestor.style.transform,
         width: ancestor.style.width,
         height: ancestor.style.height,
+        maxWidth: ancestor.style.maxWidth,
+        minWidth: ancestor.style.minWidth,
         overflow: ancestor.style.overflow,
         opacity: ancestor.style.opacity,
         visibility: ancestor.style.visibility,
@@ -129,6 +158,8 @@ function suspendScaledAncestors(target: HTMLElement): () => void {
       ancestor.style.transform = "none";
       ancestor.style.width = `${LOOK_CANVAS_REFERENCE_WIDTH}px`;
       ancestor.style.height = `${MOODBOARD_EXPORT_HEIGHT_PX}px`;
+      ancestor.style.maxWidth = "none";
+      ancestor.style.minWidth = `${LOOK_CANVAS_REFERENCE_WIDTH}px`;
       ancestor.style.overflow = "visible";
       ancestor.style.opacity = "1";
       ancestor.style.visibility = "visible";
@@ -142,6 +173,8 @@ function suspendScaledAncestors(target: HTMLElement): () => void {
       snapshot.element.style.transform = snapshot.transform;
       snapshot.element.style.width = snapshot.width;
       snapshot.element.style.height = snapshot.height;
+      snapshot.element.style.maxWidth = snapshot.maxWidth;
+      snapshot.element.style.minWidth = snapshot.minWidth;
       snapshot.element.style.overflow = snapshot.overflow;
       snapshot.element.style.opacity = snapshot.opacity;
       snapshot.element.style.visibility = snapshot.visibility;
@@ -149,7 +182,38 @@ function suspendScaledAncestors(target: HTMLElement): () => void {
   };
 }
 
+function syncClonedImages(sourceRoot: HTMLElement, clonedRoot: HTMLElement): void {
+  const sourceImages = sourceRoot.querySelectorAll("img");
+  const clonedImages = clonedRoot.querySelectorAll("img");
+
+  sourceImages.forEach((sourceImage, index) => {
+    const clonedImage = clonedImages[index];
+    if (!clonedImage) return;
+
+    const resolvedSrc =
+      sourceImage.currentSrc ||
+      sourceImage.getAttribute("src") ||
+      sourceImage.src;
+
+    if (resolvedSrc) {
+      clonedImage.src = resolvedSrc;
+    }
+
+    clonedImage.crossOrigin = "anonymous";
+    clonedImage.removeAttribute("srcset");
+    clonedImage.removeAttribute("sizes");
+
+    const computed = window.getComputedStyle(sourceImage);
+    clonedImage.style.width = computed.width;
+    clonedImage.style.height = computed.height;
+    clonedImage.style.maxWidth = computed.maxWidth;
+    clonedImage.style.objectFit = computed.objectFit;
+    clonedImage.style.objectPosition = computed.objectPosition;
+  });
+}
+
 function prepareClonedExportRoot(
+  sourceRoot: HTMLElement,
   clonedDocument: Document,
   clonedRoot: HTMLElement,
 ): void {
@@ -159,6 +223,11 @@ function prepareClonedExportRoot(
   clonedRoot.style.transform = "none";
   clonedRoot.style.opacity = "1";
   clonedRoot.style.visibility = "visible";
+  clonedRoot.style.width = `${LOOK_CANVAS_REFERENCE_WIDTH}px`;
+
+  clonedRoot.querySelectorAll<HTMLElement>('[aria-busy="true"]').forEach((node) => {
+    node.closest('[class*="absolute"]')?.remove();
+  });
 
   clonedRoot.querySelectorAll<HTMLElement>("*").forEach((element) => {
     element.style.opacity = "1";
@@ -184,19 +253,9 @@ function prepareClonedExportRoot(
         element.style.setProperty(prop, toCanvasSafeColor(value, view));
       }
     }
-
-    if (element.classList.contains("mix-blend-multiply")) {
-      element.style.mixBlendMode = "normal";
-    }
-
-    if (element.dataset.exportBlendLayer !== undefined) {
-      element.style.mixBlendMode = "normal";
-    }
   });
 
-  clonedRoot.querySelectorAll("img").forEach((img) => {
-    img.crossOrigin = "anonymous";
-  });
+  syncClonedImages(sourceRoot, clonedRoot);
 }
 
 function downloadBlob(blob: Blob, fileName: string): void {
@@ -266,18 +325,20 @@ function resolveCaptureScale(): number {
 }
 
 async function captureLookCardCanvas(
-  element: HTMLElement,
+  sourceElement: HTMLElement,
   backgroundColor: string,
 ): Promise<HTMLCanvasElement> {
-  return html2canvas(element, {
+  return html2canvas(sourceElement, {
     backgroundColor,
     scale: resolveCaptureScale(),
     useCORS: true,
     allowTaint: false,
     logging: false,
     imageTimeout: 15_000,
+    width: LOOK_CANVAS_REFERENCE_WIDTH,
+    height: sourceElement.scrollHeight || MOODBOARD_EXPORT_HEIGHT_PX,
     onclone: (clonedDocument, clonedRoot) => {
-      prepareClonedExportRoot(clonedDocument, clonedRoot);
+      prepareClonedExportRoot(sourceElement, clonedDocument, clonedRoot);
     },
   });
 }
@@ -288,7 +349,7 @@ async function exportLookCardAsPngInternal(
   options: ExportLookCardOptions,
 ): Promise<void> {
   const backgroundColor = options.backgroundColor ?? "#ffffff";
-  const restoreAncestors = suspendScaledAncestors(element);
+  const restoreAncestors = prepareElementForExportCapture(element);
 
   try {
     await waitForCollageReady(element);
