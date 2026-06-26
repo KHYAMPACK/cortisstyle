@@ -181,12 +181,13 @@ export const WardrobeOutfitLivePreviewCard = forwardRef<
   },
   ref,
 ) {
-  const displayContainerRef = useRef<HTMLDivElement>(null);
-  const moodboardRef = useRef<HTMLDivElement>(null);
+  const previewContainerRef = useRef<HTMLDivElement>(null);
+  const exportContainerRef = useRef<HTMLDivElement>(null);
+  const exportRootRef = useRef<HTMLDivElement>(null);
   const measureRef = useRef<HTMLDivElement>(null);
   const [previewScale, setPreviewScale] = useState(PREVIEW_MAX_SCALE);
 
-  useImperativeHandle(ref, () => moodboardRef.current as HTMLDivElement);
+  useImperativeHandle(ref, () => exportRootRef.current as HTMLDivElement);
 
   useEffect(() => {
     const measureTarget = measureRef.current;
@@ -220,6 +221,19 @@ export const WardrobeOutfitLivePreviewCard = forwardRef<
 
   return (
     <div className={`mx-auto w-full min-w-0 max-w-full ${className}`.trim()}>
+      <div
+        ref={exportRootRef}
+        data-look-card-export
+        aria-hidden
+        className="pointer-events-none fixed top-0 -left-[10000px] w-[420px] overflow-hidden bg-white"
+        style={{ height: PREVIEW_TOTAL_HEIGHT_PX }}
+      >
+        <OutfitMoodboardRender
+          {...renderProps}
+          containerRef={exportContainerRef}
+        />
+      </div>
+
       <div ref={measureRef} className="w-full min-w-0">
         <div
           className="mx-auto overflow-hidden"
@@ -235,14 +249,10 @@ export const WardrobeOutfitLivePreviewCard = forwardRef<
               transform: `scale(${previewScale})`,
             }}
           >
-            <div
-              ref={moodboardRef}
-              data-look-card-export
-              className="w-[420px]"
-            >
+            <div className="w-[420px]">
               <OutfitMoodboardRender
                 {...renderProps}
-                containerRef={displayContainerRef}
+                containerRef={previewContainerRef}
               />
             </div>
           </div>

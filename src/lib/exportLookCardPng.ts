@@ -66,6 +66,44 @@ function toCanvasSafeColor(color: string, view: Window): string {
   }
 }
 
+function readBlobAsDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        resolve(reader.result);
+        return;
+      }
+      reject(new Error("Unable to read image data."));
+    };
+    reader.onerror = () => reject(new Error("Unable to read image data."));
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function inlineImageSrc(img: HTMLImageElement): Promise<string | null> {
+  const src =
+    img.currentSrc || img.getAttribute("src") || img.src || "";
+
+  if (!src) return null;
+  if (src.startsWith("data:")) return src;
+
+  try {
+    const response = await fetch(src);
+    if (!response.ok) return src;
+    return await readBlobAsDataUrl(await response.blob());
+  } catch {
+    return src;
+  }
+}
+
+async function buildInlineImageSources(root: HTMLElement): Promise<string[]> {
+  const images = Array.from(root.querySelectorAll("img"));
+  return Promise.all(
+    images.map(async (img) => (await inlineImageSrc(img)) ?? ""),
+  );
+}
+
 async function waitForImages(root: HTMLElement): Promise<void> {
   const images = Array.from(root.querySelectorAll("img"));
 
@@ -130,13 +168,18 @@ function ancestorNeedsExportPrep(computed: CSSStyleDeclaration): boolean {
   return false;
 }
 
-/**
- * The live preview scales the moodboard down with CSS transform + overflow
- * clipping. html2canvas captures the unscaled DOM box, so ancestors must be
- * expanded before capture or the PNG gets cropped / misaligned.
- */
 function prepareElementForExportCapture(target: HTMLElement): () => void {
   const snapshots: StyleSnapshot[] = [];
+  const targetSnapshot = {
+    width: target.style.width,
+    height: target.style.height,
+    overflow: target.style.overflow,
+  };
+
+  target.style.width = `${LOOK_CANVAS_REFERENCE_WIDTH}px`;
+  target.style.height = `${MOODBOARD_EXPORT_HEIGHT_PX}px`;
+  target.style.overflow = "hidden";
+
   let ancestor: HTMLElement | null = target.parentElement;
 
   while (ancestor && ancestor !== document.body) {
@@ -169,6 +212,10 @@ function prepareElementForExportCapture(target: HTMLElement): () => void {
   }
 
   return () => {
+    target.style.width = targetSnapshot.width;
+    target.style.height = targetSnapshot.height;
+    target.style.overflow = targetSnapshot.overflow;
+
     for (const snapshot of snapshots) {
       snapshot.element.style.transform = snapshot.transform;
       snapshot.element.style.width = snapshot.width;
@@ -182,40 +229,27 @@ function prepareElementForExportCapture(target: HTMLElement): () => void {
   };
 }
 
-function syncClonedImages(sourceRoot: HTMLElement, clonedRoot: HTMLElement): void {
-  const sourceImages = sourceRoot.querySelectorAll("img");
+function applyInlineImagesToClone(
+  clonedRoot: HTMLElement,
+  inlineSources: string[],
+): void {
   const clonedImages = clonedRoot.querySelectorAll("img");
 
-  sourceImages.forEach((sourceImage, index) => {
-    const clonedImage = clonedImages[index];
-    if (!clonedImage) return;
+  clonedImages.forEach((clonedImage, index) => {
+    const inlineSrc = inlineSources[index];
+    if (!inlineSrc) return;
 
-    const resolvedSrc =
-      sourceImage.currentSrc ||
-      sourceImage.getAttribute("src") ||
-      sourceImage.src;
-
-    if (resolvedSrc) {
-      clonedImage.src = resolvedSrc;
-    }
-
-    clonedImage.crossOrigin = "anonymous";
+    clonedImage.removeAttribute("crossorigin");
     clonedImage.removeAttribute("srcset");
     clonedImage.removeAttribute("sizes");
-
-    const computed = window.getComputedStyle(sourceImage);
-    clonedImage.style.width = computed.width;
-    clonedImage.style.height = computed.height;
-    clonedImage.style.maxWidth = computed.maxWidth;
-    clonedImage.style.objectFit = computed.objectFit;
-    clonedImage.style.objectPosition = computed.objectPosition;
+    clonedImage.src = inlineSrc;
   });
 }
 
 function prepareClonedExportRoot(
-  sourceRoot: HTMLElement,
   clonedDocument: Document,
   clonedRoot: HTMLElement,
+  inlineSources: string[],
 ): void {
   const view = clonedDocument.defaultView;
   if (!view) return;
@@ -224,6 +258,8 @@ function prepareClonedExportRoot(
   clonedRoot.style.opacity = "1";
   clonedRoot.style.visibility = "visible";
   clonedRoot.style.width = `${LOOK_CANVAS_REFERENCE_WIDTH}px`;
+  clonedRoot.style.height = `${MOODBOARD_EXPORT_HEIGHT_PX}px`;
+  clonedRoot.style.overflow = "hidden";
 
   clonedRoot.querySelectorAll<HTMLElement>('[aria-busy="true"]').forEach((node) => {
     node.closest('[class*="absolute"]')?.remove();
@@ -255,7 +291,7 @@ function prepareClonedExportRoot(
     }
   });
 
-  syncClonedImages(sourceRoot, clonedRoot);
+  applyInlineImagesToClone(clonedRoot, inlineSources);
 }
 
 function downloadBlob(blob: Blob, fileName: string): void {
@@ -326,21 +362,38 @@ function resolveCaptureScale(): number {
 
 async function captureLookCardCanvas(
   sourceElement: HTMLElement,
+  inlineSources: string[],
   backgroundColor: string,
 ): Promise<HTMLCanvasElement> {
   return html2canvas(sourceElement, {
     backgroundColor,
     scale: resolveCaptureScale(),
-    useCORS: true,
+    useCORS: false,
     allowTaint: false,
     logging: false,
     imageTimeout: 15_000,
-    width: LOOK_CANVAS_REFERENCE_WIDTH,
-    height: sourceElement.scrollHeight || MOODBOARD_EXPORT_HEIGHT_PX,
     onclone: (clonedDocument, clonedRoot) => {
-      prepareClonedExportRoot(sourceElement, clonedDocument, clonedRoot);
+      prepareClonedExportRoot(clonedDocument, clonedRoot, inlineSources);
     },
   });
+}
+
+async function canvasToPngBlob(canvas: HTMLCanvasElement): Promise<Blob> {
+  const blob = await new Promise<Blob | null>((resolve, reject) => {
+    try {
+      canvas.toBlob((result) => resolve(result), "image/png", 1);
+    } catch (error) {
+      reject(error);
+    }
+  });
+
+  if (!blob) {
+    throw new Error(
+      "Unable to export look card image. An image asset blocked canvas export.",
+    );
+  }
+
+  return blob;
 }
 
 async function exportLookCardAsPngInternal(
@@ -349,7 +402,7 @@ async function exportLookCardAsPngInternal(
   options: ExportLookCardOptions,
 ): Promise<void> {
   const backgroundColor = options.backgroundColor ?? "#ffffff";
-  const restoreAncestors = prepareElementForExportCapture(element);
+  const restoreCaptureStyles = prepareElementForExportCapture(element);
 
   try {
     await waitForCollageReady(element);
@@ -360,15 +413,13 @@ async function exportLookCardAsPngInternal(
       });
     });
 
-    const canvas = await captureLookCardCanvas(element, backgroundColor);
-
-    const blob = await new Promise<Blob | null>((resolve) => {
-      canvas.toBlob((result) => resolve(result), "image/png", 1);
-    });
-
-    if (!blob) {
-      throw new Error("Unable to generate look card image.");
-    }
+    const inlineSources = await buildInlineImageSources(element);
+    const canvas = await captureLookCardCanvas(
+      element,
+      inlineSources,
+      backgroundColor,
+    );
+    const blob = await canvasToPngBlob(canvas);
 
     if (options.preferNativeShare) {
       const shared = await tryNativeShare(blob, fileName);
@@ -377,7 +428,7 @@ async function exportLookCardAsPngInternal(
 
     downloadBlob(blob, fileName);
   } finally {
-    restoreAncestors();
+    restoreCaptureStyles();
   }
 }
 
