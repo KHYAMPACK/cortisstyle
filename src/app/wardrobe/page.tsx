@@ -28,7 +28,6 @@ function WardrobePageContent() {
     savedOutfits,
     wardrobeLoadError,
     ownedClothes,
-    signOut,
     refreshSavedOutfits,
   } = useAuth();
   const [activeTab, setActiveTab] = useState<"builder" | "looks" | "items">(
@@ -53,15 +52,6 @@ function WardrobePageContent() {
       setShowAuthPopup(true);
     }
   }, [isAuthenticated, isInitializing]);
-
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-      router.push("/");
-    } catch {
-      // Error surfaced via auth context.
-    }
-  };
 
   const handleAuthClose = () => {
     setShowAuthPopup(false);
@@ -131,31 +121,19 @@ function WardrobePageContent() {
       />
 
       <section className="border-b border-blueprint-border px-5 py-8 md:px-10 md:py-10">
-        <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-          <div>
-            <Link
-              href="/"
-              className="mb-4 inline-block text-meta text-[9px] tracking-[0.35em] uppercase transition-colors hover:text-jet-black"
-            >
-              ← Lookbook
-            </Link>
-            <p className="mb-2 text-meta text-[9px] tracking-[0.45em] uppercase">
-              Wardrobe Archive // {user?.displayLabel ?? "GUEST"}
-            </p>
-            <h1 className="font-serif text-3xl leading-none tracking-[-0.02em] text-neutral-950 md:text-5xl">
-              Digital Wardrobe
-            </h1>
-          </div>
-
-          {isAuthenticated && (
-            <button
-              type="button"
-              onClick={handleSignOut}
-              className="self-start text-meta text-[10px] tracking-[0.35em] uppercase transition-colors hover:text-jet-black md:self-auto"
-            >
-              Sign Out
-            </button>
-          )}
+        <div>
+          <Link
+            href="/"
+            className="mb-4 inline-block text-meta text-[9px] tracking-[0.35em] uppercase transition-colors hover:text-jet-black"
+          >
+            ← Lookbook
+          </Link>
+          <p className="mb-2 text-meta text-[9px] tracking-[0.45em] uppercase">
+            Wardrobe Archive // {user?.displayLabel ?? "GUEST"}
+          </p>
+          <h1 className="font-serif text-3xl leading-none tracking-[-0.02em] text-neutral-950 md:text-5xl">
+            Digital Wardrobe
+          </h1>
         </div>
       </section>
 
