@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import Image from "next/image";
+import Link from "next/link";
 import type { MatrixCategoryFilter } from "@/types/wardrobe-builder";
 import type { WardrobeClothingItem } from "@/types/user";
 
@@ -10,6 +11,7 @@ interface WardrobeSelectionDrawerProps {
   categoryFilter: MatrixCategoryFilter | null;
   items: WardrobeClothingItem[];
   equippedItem: WardrobeClothingItem | null;
+  addClothingHref?: string | null;
   onClose: () => void;
   onSelectItem: (item: WardrobeClothingItem) => void;
   onRemoveItem: () => void;
@@ -20,6 +22,7 @@ export function WardrobeSelectionDrawer({
   categoryFilter,
   items,
   equippedItem,
+  addClothingHref = null,
   onClose,
   onSelectItem,
   onRemoveItem,
@@ -139,9 +142,20 @@ export function WardrobeSelectionDrawer({
                   })}
                 </div>
               ) : (
-                <p className="text-meta py-12 text-center text-[10px] tracking-[0.28em] uppercase">
-                  No items available for this matrix slot
-                </p>
+                <div className="flex flex-col items-center py-12 text-center">
+                  <p className="text-meta max-w-xs text-[10px] leading-relaxed tracking-[0.22em] uppercase">
+                    No items in your archive for this slot yet
+                  </p>
+                  {addClothingHref ? (
+                    <Link
+                      href={addClothingHref}
+                      onClick={onClose}
+                      className="btn-primary mt-6 border border-jet-black px-5 py-3 font-mono text-[10px] tracking-[0.3em]"
+                    >
+                      Add More Clothing
+                    </Link>
+                  ) : null}
+                </div>
               )}
             </div>
           </motion.aside>

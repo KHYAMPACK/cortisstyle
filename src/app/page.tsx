@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { LookGrid } from "@/components/LookGrid";
 import { LookModal } from "@/components/LookModal";
 import { EnterDigitalWardrobeButton } from "@/components/EnterDigitalWardrobeButton";
@@ -10,12 +11,24 @@ import {
 } from "@/components/HomeHero";
 import { ArchiveCommunitySignOff } from "@/components/ArchiveCommunitySignOff";
 import { PremiumArchivePaywallModal } from "@/components/PremiumArchivePaywallModal";
+import { looks } from "@/data/looks";
 import type { Look } from "@/types/look";
 
-export default function Home() {
+function HomePageContent() {
+  const searchParams = useSearchParams();
   const [selectedLook, setSelectedLook] = useState<Look | null>(null);
   const [paywallLook, setPaywallLook] = useState<Look | null>(null);
   const [isPaywallOpen, setIsPaywallOpen] = useState(false);
+
+  useEffect(() => {
+    const lookId = searchParams.get("look")?.trim();
+    if (!lookId) return;
+
+    const look = looks.find((entry) => entry.id === lookId);
+    if (look) {
+      setSelectedLook(look);
+    }
+  }, [searchParams]);
 
   return (
     <div className="min-h-full bg-ice-floor text-jet-black">
@@ -71,5 +84,13 @@ export default function Home() {
         }}
       />
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={<div className="min-h-full bg-ice-floor" />}>
+      <HomePageContent />
+    </Suspense>
   );
 }

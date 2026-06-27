@@ -15,8 +15,10 @@ import { WardrobeSelectionDrawer } from "@/components/wardrobe/WardrobeSelection
 import { useAuth } from "@/context/AuthContext";
 import {
   filterInventoryByCategory,
+  getLookbookLookPath,
   resolveBuilderInventory,
   resolveItemSourceLookId,
+  resolveLookCardForMatrixCategory,
 } from "@/lib/wardrobeBuilderInventory";
 import {
   buildWardrobeBuilderCategoryFilterMap,
@@ -161,6 +163,13 @@ export function WardrobeBuilderCanvas({
     () => filterInventoryByCategory(inventory, activeCategoryFilter),
     [inventory, activeCategoryFilter],
   );
+
+  const addClothingHref = useMemo(() => {
+    if (!activeCategoryFilter) return null;
+
+    const look = resolveLookCardForMatrixCategory(activeCategoryFilter);
+    return look ? getLookbookLookPath(look.id) : null;
+  }, [activeCategoryFilter]);
 
   const equippedItemInActiveSlot = useMemo(() => {
     if (activeSlotIndex === null) return null;
@@ -537,6 +546,7 @@ export function WardrobeBuilderCanvas({
         categoryFilter={activeCategoryFilter}
         items={drawerItems}
         equippedItem={equippedItemInActiveSlot}
+        addClothingHref={addClothingHref}
         onClose={closeDrawer}
         onSelectItem={handleSelectItem}
         onRemoveItem={handleRemoveItem}
