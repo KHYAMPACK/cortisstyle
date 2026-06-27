@@ -5,6 +5,7 @@ import look_03 from "./look-03.json";
 import look_04 from "./look-04.json";
 import look_05 from "./look-05.json";
 import look_06 from "./look-06.json";
+import look_07 from "./look-07.json";
 import type { CanvasItemLayout } from "@/types/canvas-layout";
 
 export const committedCanvasLayouts: Record<
@@ -17,4 +18,5 @@ export const committedCanvasLayouts: Record<
   "look-04": look_04,
   "look-05": look_05,
   "look-06": look_06,
+  "look-07": look_07,
 };

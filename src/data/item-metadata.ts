@@ -971,24 +971,6 @@ displayModel: "Minimalist Burgundy Patent Shoulder Tote",
       url: "https://pretavoir.co.uk/products/dior-verydior-m1u-10a0?shpxid=b2bc2faf-98ef-4919-84b7-c17c183bade4",
     },
   },
-  defineItem(
-    "verydior-m1u-wrap-around-acetate-sunglasses-01",
-    "SUNGLASSES",
-    "eyewear",
-    "Dior",
-    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
-    "Purchased from Dior — Available at select vintage markets in Garosu-gil Concept Store.",
-    "https://www.net-a-porter.com/en-us/shop/product/dior-eyewear/accessories/d-frame/verydior-m1u-wrap-around-acetate-sunglasses/1647597349607219?epik=dj0yJnU9b2FRb21udjRUUmR3N3RRSVUweTlIdUdFcnRFTDFKcTYmcD0wJm49bmRsUS1XbjByQ2RNZ0FRdTVUQVNOdyZ0PUFBQUFBR285RjJj",
-    {
-      canvasImage: "/images/clothes/outfit-07/verydior-m1u-wrap-around-acetate-sunglasses-01.png",
-      defaultCanvasPosition: {
-        top: "10%",
-        left: "10%",
-        width: "20%",
-        zIndex: 4,
-      },
-    },
-  ),
   "linen-cotton-blend-striped-shirt-01": {
     displayModel: "Linen Cotton Blend Striped Shirt",
     fitGuidance: {
