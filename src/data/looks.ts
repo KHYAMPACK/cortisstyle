@@ -208,13 +208,17 @@ const ALL_LOOKS: Look[] = [
   },
   {
     id: "look-07",
-    title: "Look 07 — Soft Brutalism",
-    image: "/images/temp_image_70A042D0-CAC6-4AC8-A1E1-676876DD6FEE.WEBP",
-    modelName: "JUHOON",
+    title: "Look 07 — Street Style Old Money",
+    image: "/images/clothes/outfit-07/ootd281.png",
+    modelName: "MARTIN",
     shopierUrl: "https://shopier.com/placeholder",
     guidePrice: GUIDE_PRICE_TL,
+    layout: "collage",
+    outfitId: "outfit-07",
+    editorGuideImage:
+      "/images/clothes/outfit-07/ootd281.png",
     ...metrics({
-      vibe: "Soft Brutalism / Minimal Form",
+      vibe: "Street Style Old Money / Minimal Form",
       investmentRetail: 4,
       investmentWithGuide: 2,
       versatility: 4,
@@ -222,6 +226,14 @@ const ALL_LOOKS: Look[] = [
     width: IMAGE_WIDTH,
     height: IMAGE_HEIGHT,
     items: [
+      placement("linen-cotton-blend-striped-shirt-01", "54%", "42%", "48%", "28%"),
+      placement("glass-piece-necklaces-01", "70%", "48%", "76%", "58%"),
+      placement("verydior-m1u-wrap-around-acetate-sunglasses-01", "70%", "48%", "76%", "58%"),
+      placement("scallop-shoulder-bag-01", "70%", "48%", "76%", "58%"),
+      placement("black-soft-knee-length-wide-leg-jorts-01", "70%", "48%", "76%", "58%"),
+      placement("label-knit-wool-leg-warmers-01", "70%", "48%", "76%", "58%"),
+      placement("v-neck-racerback-tank-01", "70%", "48%", "76%", "58%"),
+      placement("women-s-black-ballet-shoes-01", "70%", "48%", "76%", "58%"),
     ],
   },
   {

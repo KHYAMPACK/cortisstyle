@@ -19,10 +19,10 @@ export function isArchiveLimitStatus(
 }
 
 /** First N looks visible on the public homepage stream. */
-export const HOMEPAGE_PUBLIC_LOOK_COUNT = 6;
+export const HOMEPAGE_PUBLIC_LOOK_COUNT = 7;
 
 /** First N visible looks are fully interactive (indices 0..N-1). */
-export const HOMEPAGE_FREE_LOOK_COUNT = 3;
+export const HOMEPAGE_FREE_LOOK_COUNT = 6;
 
 /** @deprecated Use full `looks` stream with `isHomepageLookLocked(index)` instead. */
 export const HOMEPAGE_LOOK_LIMIT = HOMEPAGE_FREE_LOOK_COUNT;

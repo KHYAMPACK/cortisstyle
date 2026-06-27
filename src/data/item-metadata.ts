@@ -844,6 +844,193 @@ displayModel: "Minimalist Burgundy Patent Shoulder Tote",
       url: "https://www.depop.com/products/bww77065-vintage-small-rectangle-sunglasses-5467/",
     },
   },
+  "women-s-black-ballet-shoes-01": {
+    displayModel: "Bliss Lace-Up Sneakers",
+    fitGuidance: {
+      type: "Streamlined Flat Silhouette",
+      fabricWeight: "Supple faux leather construction",
+    },
+    resaleKeywords: {
+      tags: "vintage ballet flats, square toe flats, lace-up balletcore, Y2K ballet shoes, depop find",
+      estPriceRange: "$94 on Musinsa",
+    },
+    stylingExecution: {
+      howToWear:
+        "Ground a wide-leg trouser or midi skirt silhouette with the delicate lace-up detailing, allowing the square toe to anchor the foot.",
+      textureSynergy:
+        "The smooth faux leather surface offers a clean, understated base, providing a subtle contrast against raw denim or brushed knit textures.",
+    },
+    budgetAlternativeLink: {
+      name: "Depop Women's Black Ballet-shoes",
+      url: "https://www.depop.com/products/curatedbyjoyo-faux-leather-vintage-ballet-flats-03ac/",
+    },
+  },
+  "v-neck-racerback-tank-01": {
+    displayModel: "Ribbed V-Neck Racerback Tank",
+    fitGuidance: {
+      type: "Body-skimming Slim Fit",
+      fabricWeight: "180gsm lightweight ribbed cotton-modal blend",
+      modelSpecs: "Model is 175cm/55kg wearing Size S",
+    },
+    resaleKeywords: {
+      tags: "Eterne ribbed tank, cream racerback, minimalist staple, luxury basics, Y2K tank",
+      estPriceRange: "$125 on Eterne",
+    },
+    stylingExecution: {
+      howToWear:
+        "Layer as a foundational piece under open shirting or sheer knits to expose the racerback detail.",
+      textureSynergy:
+        "Fine ribbed texture offers a subtle tactile contrast against rigid denim or technical outerwear.",
+    },
+    budgetAlternativeLink: {
+      name: "Dendama V-Neck Racerback Tank",
+      url: "https://dendama.com/products/13068367-v-neck-racerback-tank-cream",
+    },
+  },
+  "label-knit-wool-leg-warmers-01": {
+    displayModel: "Label Knit Wool Leg Warmers",
+    fitGuidance: {
+      type: "Flexible, Adjustable Scrunch Fit",
+      fabricWeight: "Mid-weight ribbed wool knit",
+    },
+    resaleKeywords: {
+      tags: "WConcept knit leg warmers, wool leg warmers, Y2K leg warmers, balletcore accessories",
+      estPriceRange: "$52 on WConcept",
+    },
+    stylingExecution: {
+      howToWear:
+        "Layer over slim-fit bottoms or directly on bare legs, allowing for intentional scrunching at the ankle or calf.",
+      textureSynergy:
+        "Ribbed wool offers tactile contrast against smooth leather boots or matte technical fabrics, adding depth to layered looks.",
+    },
+    budgetAlternativeLink: {
+      name: "Skating Boutique Mondor 276 Leg Warmers",
+      url: "https://skatingboutique.com/products/mondor-276-leg-warmers?variant=41036464357571&country=AE&currency=CAD&utm_medium=product_sync&utm_source=google&utm_content=sag_organic&utm_campaign=sag_organic&srsltid=AfmBOoqJnqOF9DtgKXKvzs82Wvm9S8d_gY37wxpW2Q422cjpUb8tGF_byyE",
+    },
+  },
+  "black-soft-knee-length-wide-leg-jorts-01": {
+    displayModel: "Black Soft Wide-Leg Knee-Length Jorts",
+    fitGuidance: {
+      type: "High-Waist Wide-Leg Knee-Length Fit",
+      fabricWeight: "Lightweight draping polyester",
+    },
+    resaleKeywords: {
+      tags: "Daxuen wide-leg jorts, knee-length shorts, minimalist polyester shorts, cyber grunge bottoms",
+      estPriceRange: "$57 on Daxuen",
+    },
+    stylingExecution: {
+      howToWear:
+        "Pair with cropped tops to emphasize the high-waist and wide-leg drape, or layer under oversized outerwear for a structured, layered silhouette.",
+      textureSynergy:
+        "The smooth, matte polyester surface contrasts sharply with textured knitwear or distressed denim, creating a dynamic material interplay.",
+    },
+    budgetAlternativeLink: {
+      name: "Bershka Bermuda Culottes with Elasticated Waistband",
+      url: "https://www.bershka.com/us/bermuda-culottes-with-elasticated-waistband-c0p229336783.html?colorId=800",
+    },
+  },
+  "scallop-shoulder-bag-01": {
+    displayModel: "Scallop Shoulder Bag — Angora Pebble Grained Leather",
+    fitGuidance: {
+      type: "Compact Shoulder/Tote Hybrid",
+      fabricWeight: "Pebble Grained Leather",
+    },
+    resaleKeywords: {
+      tags: "Yuzefi Scallop bag, pebble grain leather, minimalist shoulder bag, drawstring detail",
+      estPriceRange: "$560 on Yuzefi",
+    },
+    stylingExecution: {
+      howToWear:
+        "Carry close to the body, allowing the drawstring detail to create a soft, sculptural drape.",
+      textureSynergy:
+        "The soft, pebbled leather provides a tactile counterpoint to structured tailoring or flowing silks.",
+    },
+    budgetAlternativeLink: {
+      name: "Sometime Mandu Mini Bag",
+      url: "https://www.sometime.asia/collections/canvas-tote-bag/products/mandu-mini-bag?variant=62374198116721",
+    },
+  },
+  "verydior-m1u-wrap-around-acetate-sunglasses-01": {
+    displayModel: "VeryDior M1U Wrap-Around Acetate Sunglasses",
+    fitGuidance: {
+      type: "Futuristic Wrap-Around Shield Fit",
+      fabricWeight: "Gloss black acetate frame with dark tinted lenses",
+    },
+    resaleKeywords: {
+      tags: "Dior VeryDior M1U, wrap-around sunglasses, Y2K shield eyewear, black acetate frames",
+      estPriceRange: "$690 on Dior",
+    },
+    stylingExecution: {
+      howToWear:
+        "Position high on the bridge to accentuate the futuristic wrap-around profile, complementing structured outerwear.",
+      textureSynergy:
+        "The high-gloss acetate provides a sharp contrast against matte technical fabrics or distressed denim, adding a sleek edge.",
+    },
+    budgetAlternativeLink: {
+      name: "Pretavoir Dior VeryDior M1U",
+      url: "https://pretavoir.co.uk/products/dior-verydior-m1u-10a0?shpxid=b2bc2faf-98ef-4919-84b7-c17c183bade4",
+    },
+  },
+  defineItem(
+    "verydior-m1u-wrap-around-acetate-sunglasses-01",
+    "SUNGLASSES",
+    "eyewear",
+    "Dior",
+    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
+    "Purchased from Dior — Available at select vintage markets in Garosu-gil Concept Store.",
+    "https://www.net-a-porter.com/en-us/shop/product/dior-eyewear/accessories/d-frame/verydior-m1u-wrap-around-acetate-sunglasses/1647597349607219?epik=dj0yJnU9b2FRb21udjRUUmR3N3RRSVUweTlIdUdFcnRFTDFKcTYmcD0wJm49bmRsUS1XbjByQ2RNZ0FRdTVUQVNOdyZ0PUFBQUFBR285RjJj",
+    {
+      canvasImage: "/images/clothes/outfit-07/verydior-m1u-wrap-around-acetate-sunglasses-01.png",
+      defaultCanvasPosition: {
+        top: "10%",
+        left: "10%",
+        width: "20%",
+        zIndex: 4,
+      },
+    },
+  ),
+  "linen-cotton-blend-striped-shirt-01": {
+    displayModel: "Linen Cotton Blend Striped Shirt",
+    fitGuidance: {
+      type: "Relaxed Regular Fit",
+      fabricWeight: "Lightweight linen-cotton blend",
+    },
+    resaleKeywords: {
+      tags: "M&S classic striped shirt, linen blend button-down, summer shirting",
+      estPriceRange: "$62 on Marks & Spencer",
+    },
+    stylingExecution: {
+      howToWear:
+        "Wear untucked for a relaxed, elongated silhouette, or half-tucked to expose waist hardware.",
+      textureSynergy:
+        "The crisp, breathable linen blend offers a clean contrast against textured knits or heavy, faded denim.",
+    },
+    budgetAlternativeLink: {
+      name: "H&M Striped Linen Shirt Alternative",
+      url: "https://www.hm.com/search?q=H%26M+Striped+Linen+Shirt+Alternative",
+    },
+  },
+  "glass-piece-necklaces-01": {
+    displayModel: "Zara — Layered Glass Bead Necklace Set",
+    fitGuidance: {
+      type: "Adjustable Layered Fit",
+      fabricWeight: "Small polished glass beads on silver-tone alloy chains",
+    },
+    resaleKeywords: {
+      tags: "Zara layered necklace, glass bead choker set, minimalist silver tone jewelry, Y2K accessory",
+      estPriceRange: "$20 - $30 on Zara",
+    },
+    stylingExecution: {
+      howToWear:
+        "Layer over high-neck tops or tuck into open collars to highlight the dual-strand design, allowing the shorter piece to sit as a choker.",
+      textureSynergy:
+        "The reflective glass surface provides a subtle glint against matte knits or structured denim, adding a delicate focal point.",
+    },
+    budgetAlternativeLink: {
+      name: "Glass Piece Necklaces",
+      url: "https://www.zara.com/ae/en/pack-of-2-glass-piece-necklaces-p01011209.html",
+    },
+  },
 };
 
 export function defaultFashionVectors(

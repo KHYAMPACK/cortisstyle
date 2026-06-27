@@ -41,4 +41,12 @@ export const itemRarityScores: Record<string, RarityScore> = {
   "women-s-brown-ballet-shoes-01": 4,
   "bright-yellow-bag-01": 1,
   "women-s-brown-and-silver-sunglasses-01": 2,
+  "women-s-black-ballet-shoes-01": 2,
+  "v-neck-racerback-tank-01": 1,
+  "label-knit-wool-leg-warmers-01": 1,
+  "black-soft-knee-length-wide-leg-jorts-01": 2,
+  "scallop-shoulder-bag-01": 3,
+  "verydior-m1u-wrap-around-acetate-sunglasses-01": 2,
+  "linen-cotton-blend-striped-shirt-01": 3,
+  "glass-piece-necklaces-01": 1,
 };
