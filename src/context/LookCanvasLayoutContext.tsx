@@ -29,8 +29,3 @@ export function LookCanvasLayoutProvider({
 export function useLookCanvasLayoutReference(): CanvasLayoutReference | null {
   return useContext(LookCanvasLayoutContext);
 }
-
-/** @deprecated Use useLookCanvasLayoutReference().width */
-export function useLookCanvasReferenceWidth(): number | null {
-  return useContext(LookCanvasLayoutContext)?.width ?? null;
-}

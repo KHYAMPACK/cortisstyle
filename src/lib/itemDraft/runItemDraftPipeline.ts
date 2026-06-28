@@ -1,11 +1,8 @@
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { extname, join, resolve } from "node:path";
-import { itemRarityScores } from "@/data/item-rarity";
+import { clothingItems } from "@/data/items";
 import { extractProductFromUrl } from "@/lib/itemDraft/extractProductFromUrl";
-import {
-  formatItemDraftSnippets,
-  revealDescription,
-} from "@/lib/itemDraft/formatSnippets";
+import { formatItemDraftSnippets } from "@/lib/itemDraft/formatSnippets";
 import { generateItemMetadataWithLlm } from "@/lib/itemDraft/generateItemMetadata";
 import { loadProjectEnv } from "@/lib/itemDraft/loadEnv";
 import { prepareImageForLlm } from "@/lib/itemDraft/prepareImageForLlm";
@@ -17,7 +14,7 @@ import type {
 } from "@/lib/itemDraft/types";
 
 function existingItemIds(): Set<string> {
-  return new Set(Object.keys(itemRarityScores));
+  return new Set(clothingItems.map((item) => item.id));
 }
 
 function detectImageMime(pngPath: string): string {
@@ -97,16 +94,15 @@ export async function runItemDraftPipeline(
     copiedImagePath = destPath;
   }
 
-  const blurredDescription = llmResult.blurredDescription;
   const draft = {
     id,
     name: input.name,
     shopUrl: input.shopUrl,
     brand: llmResult.brand,
     category: llmResult.category,
-    blurredDescription,
-    unlockedDescription: revealDescription(blurredDescription),
-    fashionVectors: llmResult.fashionVectors,
+    displayModel: llmResult.displayModel,
+    estPriceRange: llmResult.estPriceRange,
+    budgetAlternativeUrl: llmResult.budgetAlternativeUrl,
     suggestedRarityScore: llmResult.suggestedRarityScore,
     canvasImage,
     productHints,

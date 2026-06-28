@@ -103,7 +103,7 @@ export const LookItemCard = forwardRef<HTMLDivElement, LookItemCardProps>(
         {isMetadataRevealed ? (
           <div className="mt-3 space-y-3">
             <p className="text-meta text-[10px] tracking-[0.28em] uppercase">
-              Est. Price // {item.resaleKeywords.estPriceRange}
+              Est. Price // {item.estPriceRange}
             </p>
 
             <div className="flex flex-wrap gap-2">
@@ -117,7 +117,7 @@ export const LookItemCard = forwardRef<HTMLDivElement, LookItemCardProps>(
                 Original Purchase
               </a>
               <a
-                href={item.budgetAlternativeLink.url}
+                href={item.budgetAlternativeUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(event) => event.stopPropagation()}
@@ -136,11 +136,7 @@ export const LookItemCard = forwardRef<HTMLDivElement, LookItemCardProps>(
               </p>
             </div>
           </div>
-        ) : (
-          <p className={`text-meta mt-2 text-xs leading-relaxed ${LOCKED_METADATA_BLUR}`}>
-            {item.blurredDescription}
-          </p>
-        )}
+        ) : null}
       </motion.div>
     );
   },

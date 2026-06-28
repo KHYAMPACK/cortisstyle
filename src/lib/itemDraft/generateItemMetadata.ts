@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { ClothingCategory, ItemFashionVectors } from "@/types/item";
+import type { ClothingCategory } from "@/types/item";
 import type { RarityScore } from "@/types/rarity";
 import { applySmartGuesses } from "@/lib/itemDraft/applySmartGuesses";
 import {
@@ -16,17 +16,18 @@ import {
 import type { ProductPageHints } from "@/lib/itemDraft/types";
 
 function fewShotExamples(cwd = process.cwd()): string {
-  return readFileSync(join(cwd, "src/data/item-metadata.ts"), "utf8")
+  return readFileSync(join(cwd, "src/data/items.ts"), "utf8")
     .split("\n")
-    .slice(3, 90)
+    .slice(53, 73)
     .join("\n");
 }
 
 export interface LlmMetadataResult {
   brand: string;
   category: ClothingCategory;
-  fashionVectors: ItemFashionVectors;
-  blurredDescription: string;
+  displayModel: string;
+  estPriceRange: string;
+  budgetAlternativeUrl: string;
   suggestedRarityScore: RarityScore;
   guessedFields: string[];
   llmNotes?: string;
@@ -36,24 +37,8 @@ interface LlmJsonPayload {
   brand?: string;
   category?: string;
   displayModel?: string;
-  fitGuidance?: {
-    type?: string;
-    fabricWeight?: string;
-    modelSpecs?: string;
-  };
-  resaleKeywords?: {
-    tags?: string;
-    estPriceRange?: string;
-  };
-  stylingExecution?: {
-    howToWear?: string;
-    textureSynergy?: string;
-  };
-  budgetAlternativeLink?: {
-    name?: string;
-    url?: string;
-  };
-  blurredDescription?: string;
+  estPriceRange?: string;
+  budgetAlternativeUrl?: string;
   suggestedRarityScore?: number;
   guessedFields?: string[];
   llmNotes?: string;
@@ -70,12 +55,11 @@ Your job is to fill EVERY metadata field. Use scraped data when present. When da
 Rules:
 - NEVER rename the product. The provided name is canonical.
 - Write in Cortis archive voice: precise, fashion-literate, cyber-grunge editorial.
-- Do NOT use generic filler like "Archive Standard Fit", "Premium fashion-grade construction", or "integrate as a core layer".
+- Do NOT use generic filler.
 - Every field must be specific to THIS garment.
-- blurredDescription MUST contain exactly two [BLURRED] placeholders.
 - category must be one of: headwear, eyewear, tops, outerwear, bottoms, shoes, bags, waist, accessories.
-- budgetAlternativeLink: provide a descriptive alternative name + retailer homepage URL (search URL is built automatically).
-- In guessedFields, list every JSON field you inferred without direct page data (e.g. "fitGuidance.fabricWeight", "resaleKeywords.estPriceRange").
+- budgetAlternativeUrl: retailer homepage or search URL for a budget alternative.
+- In guessedFields, list every JSON field you inferred without direct page data (e.g. "estPriceRange").
 - llmNotes: one sentence flagging anything uncertain for human review.
 - Return ONLY valid JSON.
 
@@ -91,11 +75,8 @@ Return JSON:
   "brand": "string",
   "category": "headwear|eyewear|tops|outerwear|bottoms|shoes|bags|waist|accessories",
   "displayModel": "string",
-  "fitGuidance": { "type": "string", "fabricWeight": "string", "modelSpecs": "optional string" },
-  "resaleKeywords": { "tags": "string", "estPriceRange": "string" },
-  "stylingExecution": { "howToWear": "string", "textureSynergy": "string" },
-  "budgetAlternativeLink": { "name": "Store Product Alternative", "url": "https://www.forever21.com/" },
-  "blurredDescription": "string with two [BLURRED] tokens",
+  "estPriceRange": "string",
+  "budgetAlternativeUrl": "https://www.forever21.com/",
   "suggestedRarityScore": 1,
   "guessedFields": ["field.names.you.inferred"],
   "llmNotes": "one sentence for human reviewer"
@@ -314,8 +295,9 @@ export async function generateItemMetadataWithLlm(input: {
   return {
     brand: guessed.brand,
     category: guessed.category ?? inferCategoryFromName(input.name),
-    fashionVectors: guessed.fashionVectors,
-    blurredDescription: guessed.blurredDescription,
+    displayModel: guessed.displayModel,
+    estPriceRange: guessed.estPriceRange,
+    budgetAlternativeUrl: guessed.budgetAlternativeUrl,
     suggestedRarityScore: guessed.suggestedRarityScore,
     guessedFields: guessed.guessedFields,
     llmNotes: guessed.llmNotes,

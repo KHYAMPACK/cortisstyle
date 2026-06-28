@@ -1,26 +1,17 @@
-import type { ClothingCategory, ClothingItem } from "@/types/item";
+import type { ClothingCategory, ClothingItem, CanvasPosition } from "@/types/item";
 import type { RarityScore } from "@/types/rarity";
-import {
-  clothingItemFashionMeta,
-  defaultFashionVectors,
-} from "@/data/item-metadata";
-import { itemRarityScores } from "@/data/item-rarity";
 
-const REVEAL_VENUES = [
-  "Cortis Archive Seoul",
-  "Garosu-gil Concept Store",
-  "Dongdaemun Vintage Market",
-  "Itaewon Antiquity Lane",
-  "Hanam Vintage Depot",
-  "Apgujeong Private Sale",
-];
+const DEFAULT_EST_PRICE_RANGE = "Contact archive for pricing";
+const DEFAULT_BUDGET_ALTERNATIVE_URL = "https://www.forever21.com/";
 
-function revealDescription(blurredDescription: string): string {
-  let index = 0;
-  return blurredDescription.replace(
-    /\[BLURRED\]/g,
-    () => REVEAL_VENUES[index++ % REVEAL_VENUES.length],
-  );
+interface DefineItemOptions {
+  shopUrl?: string;
+  displayModel?: string;
+  estPriceRange?: string;
+  budgetAlternativeUrl?: string;
+  rarityScore?: RarityScore;
+  canvasImage?: string;
+  defaultCanvasPosition?: CanvasPosition;
 }
 
 function defineItem(
@@ -28,25 +19,31 @@ function defineItem(
   name: string,
   category: ClothingCategory,
   brand: string,
-  blurredDescription: string,
-  unlockedDescription?: string,
-  shopUrl?: string,
-  canvas?: Pick<ClothingItem, "canvasImage" | "defaultCanvasPosition">,
+  options: DefineItemOptions = {},
 ): ClothingItem {
-  const fashion =
-    clothingItemFashionMeta[id] ?? defaultFashionVectors(name, brand, category);
+  const {
+    shopUrl,
+    displayModel,
+    estPriceRange,
+    budgetAlternativeUrl,
+    rarityScore,
+    canvasImage,
+    defaultCanvasPosition,
+  } = options;
 
   return {
     id,
     name,
     category,
     brand,
-    blurredDescription,
-    unlockedDescription: unlockedDescription ?? revealDescription(blurredDescription),
     shopUrl: shopUrl ?? `https://shopier.com/cortis/${id}`,
-    rarityScore: itemRarityScores[id] ?? 1,
-    ...canvas,
-    ...fashion,
+    displayModel,
+    estPriceRange: estPriceRange ?? DEFAULT_EST_PRICE_RANGE,
+    budgetAlternativeUrl:
+      budgetAlternativeUrl ?? DEFAULT_BUDGET_ALTERNATIVE_URL,
+    rarityScore: rarityScore ?? 1,
+    canvasImage,
+    defaultCanvasPosition,
   };
 }
 
@@ -56,10 +53,11 @@ export const clothingItems: ClothingItem[] = [
     "BLACK BEANIE",
     "headwear",
     "Chanel",
-    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
-    "Purchased from Cortis Archive Seoul — Available at select vintage markets in Dongdaemun Vintage Market.",
-    undefined,
     {
+      displayModel: "Lace-up Knit Cap",
+      estPriceRange: "$25 - $30",
+      budgetAlternativeUrl: "https://www.zara.com/",
+      rarityScore: 4,
       canvasImage: "/images/clothes/outfit-01/black-beanie-01.png",
       defaultCanvasPosition: {
         top: "2.34%",
@@ -74,10 +72,11 @@ export const clothingItems: ClothingItem[] = [
     "COMPRESSION SHIRT",
     "tops",
     "Archive Atelier",
-    "Sourced via [BLURRED] archive — Limited restock at [BLURRED] concept store.",
-    "Sourced via Cortis Archive Seoul — Limited restock at Garosu-gil Concept Store.",
-    undefined,
     {
+      displayModel: "Archive Atelier — Second-Skin Compression Top",
+      estPriceRange: "$35 - $85 on Grailed/Depop",
+      budgetAlternativeUrl: "https://www.uniqlo.com/",
+      rarityScore: 2,
       canvasImage: "/images/clothes/outfit-01/compression-shirt-01.png",
       defaultCanvasPosition: {
         top: "28%",
@@ -92,10 +91,11 @@ export const clothingItems: ClothingItem[] = [
     "BOOTCUT JEANS",
     "bottoms",
     "Levi's Vintage",
-    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
-    "Purchased from Itaewon Antiquity Lane — Available at select vintage markets in Dongdaemun Vintage Market.",
-    undefined,
     {
+      displayModel: "517 Bootcut Denim",
+      estPriceRange: "$55 - $120 on Grailed/Depop",
+      budgetAlternativeUrl: "https://www.asos.com/",
+      rarityScore: 2,
       canvasImage: "/images/clothes/outfit-01/bootcut-jeans-02.png",
       defaultCanvasPosition: {
         top: "48%",
@@ -110,10 +110,11 @@ export const clothingItems: ClothingItem[] = [
     "BLACK SUNGLASSES",
     "eyewear",
     "Oliver Peoples",
-    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
-    "Purchased from Hanam Vintage Depot — Available at select vintage markets in Apgujeong Private Sale.",
-    undefined,
     {
+      displayModel: "Narrow Acetate Shield Frame",
+      estPriceRange: "$90 - $220 on Grailed/Vestiaire",
+      budgetAlternativeUrl: "https://www.retrosuperfuture.com/",
+      rarityScore: 3,
       canvasImage: "/images/clothes/outfit-01/black-sunglasses-01.png",
       defaultCanvasPosition: {
         top: "6%",
@@ -128,10 +129,11 @@ export const clothingItems: ClothingItem[] = [
     "SNEAKERS",
     "shoes",
     "Balenciaga",
-    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
-    "Purchased from Garosu-gil Concept Store — Available at select vintage markets in Cortis Archive Seoul.",
-    undefined,
     {
+      displayModel: "Balenciaga — Oversized Panelled Runner",
+      estPriceRange: "$180 - $450 on Grailed/GOAT",
+      budgetAlternativeUrl: "https://www.nike.com/",
+      rarityScore: 4,
       canvasImage: "/images/clothes/outfit-01/sneakers-01.png",
       defaultCanvasPosition: {
         top: "72%",
@@ -146,10 +148,11 @@ export const clothingItems: ClothingItem[] = [
     "BLACK BAG",
     "bags",
     "Coach Vintage",
-    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
-    "Purchased from Dongdaemun Vintage Market — Available at select vintage markets in Itaewon Antiquity Lane.",
-    undefined,
     {
+      displayModel: "Compact Crossbody Archive Bag",
+      estPriceRange: "$45 - $110 on Depop/Grailed",
+      budgetAlternativeUrl: "https://www.carhartt-wip.com/",
+      rarityScore: 2,
       canvasImage: "/images/clothes/outfit-01/black-bag-01.png",
       defaultCanvasPosition: {
         top: "58%",
@@ -158,16 +161,17 @@ export const clothingItems: ClothingItem[] = [
         zIndex: 4,
       },
     },
-  ), 
+  ),
   defineItem(
     "sunglasses-02",
     "SUNGLASSES",
     "eyewear",
     "Oliver Peoples",
-    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
-    "Purchased from Hanam Vintage Depot — Available at select vintage markets in Apgujeong Private Sale.",
-    undefined,
     {
+      displayModel: "Shield Frame 0962 Sun",
+      estPriceRange: "$90 - $240 on Grailed/Vestiaire",
+      budgetAlternativeUrl: "https://www.retrosuperfuture.com/",
+      rarityScore: 3,
       canvasImage: "/images/clothes/outfit-02/sunglasses-02.png",
       defaultCanvasPosition: {
         top: "10%",
@@ -182,10 +186,11 @@ export const clothingItems: ClothingItem[] = [
     "NECKLACE",
     "accessories",
     "The Row",
-    "Tailored through [BLURRED] atelier — Exclusive drop on [BLURRED].",
-    "Tailored through Cortis Archive Seoul atelier — Exclusive drop on Garosu-gil Concept Store.",
-    undefined,
     {
+      displayModel: "Industrial Hardware Chain Collar",
+      estPriceRange: "$120 - $380 on Vestiaire/Grailed",
+      budgetAlternativeUrl: "https://www.cos.com/",
+      rarityScore: 4,
       canvasImage: "/images/clothes/outfit-02/necklace-01.png",
       defaultCanvasPosition: {
         top: "10%",
@@ -200,10 +205,11 @@ export const clothingItems: ClothingItem[] = [
     "LONG-SLEEVE SHIRT",
     "tops",
     "Margiela",
-    "Purchased from [BLURRED] — Restocked monthly at [BLURRED] flagship.",
-    "Purchased from Dongdaemun Vintage Market — Restocked monthly at Apgujeong Private Sale flagship.",
-    undefined,
     {
+      displayModel: "Asymmetric Cut Long Sleeve Top",
+      estPriceRange: "$140 - $420 on Grailed/Vestiaire",
+      budgetAlternativeUrl: "https://www.uniqlo.com/",
+      rarityScore: 5,
       canvasImage: "/images/clothes/outfit-02/longsleeve-shirt-01.png",
       defaultCanvasPosition: {
         top: "10%",
@@ -218,10 +224,11 @@ export const clothingItems: ClothingItem[] = [
     "SHORTS",
     "bottoms",
     "Bottega Veneta",
-    "Hand-finished by [BLURRED] — Available at [BLURRED] accessories hall.",
-    "Hand-finished by Itaewon Antiquity Lane — Available at Hanam Vintage Depot accessories hall.",
-    undefined,
     {
+      displayModel: "Distressed Technical Shorts",
+      estPriceRange: "$80 - $260 on Grailed/Vestiaire",
+      budgetAlternativeUrl: "https://www.asos.com/",
+      rarityScore: 4,
       canvasImage: "/images/clothes/outfit-02/shorts-01.png",
       defaultCanvasPosition: {
         top: "10%",
@@ -236,10 +243,11 @@ export const clothingItems: ClothingItem[] = [
     "BLACK BAG",
     "bags",
     "Coach Vintage",
-    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
-    "Purchased from Dongdaemun Vintage Market — Available at select vintage markets in Itaewon Antiquity Lane.",
-    undefined,
     {
+      displayModel: "Multi-Pocket Utilitarian Crossbody",
+      estPriceRange: "$50 - $130 on Depop/Grailed",
+      budgetAlternativeUrl: "https://www.carhartt-wip.com/",
+      rarityScore: 2,
       canvasImage: "/images/clothes/outfit-02/black-bag-02.png",
       defaultCanvasPosition: {
         top: "10%",
@@ -254,10 +262,11 @@ export const clothingItems: ClothingItem[] = [
     "SNEAKERS",
     "shoes",
     "Balenciaga",
-    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
-    "Purchased from Garosu-gil Concept Store — Available at select vintage markets in Cortis Archive Seoul.",
-    undefined,
     {
+      displayModel: "Track-Inspired Panel Runner",
+      estPriceRange: "$190 - $480 on Grailed/GOAT",
+      budgetAlternativeUrl: "https://www.nike.com/",
+      rarityScore: 4,
       canvasImage: "/images/clothes/outfit-02/sneakers-02.png",
       defaultCanvasPosition: {
         top: "10%",
@@ -272,10 +281,11 @@ export const clothingItems: ClothingItem[] = [
     "CAP",
     "headwear",
     "Supreme",
-    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
-    "Purchased from Dongdaemun Vintage Market — Available at select vintage markets in Itaewon Antiquity Lane.",
-    undefined,
     {
+      displayModel: "Structured 6-Panel Archive Cap",
+      estPriceRange: "$60 - $180 on Grailed/Depop",
+      budgetAlternativeUrl: "https://www.carhartt-wip.com/",
+      rarityScore: 3,
       canvasImage: "/images/clothes/outfit-03/cap-01.png",
       defaultCanvasPosition: {
         top: "10%",
@@ -290,10 +300,11 @@ export const clothingItems: ClothingItem[] = [
     "NECKLACE",
     "accessories",
     "The Row",
-    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
-    "Purchased from Dongdaemun Vintage Market — Available at select vintage markets in Itaewon Antiquity Lane.",
-    undefined,
     {
+      displayModel: "Fine Chain Layering Necklace",
+      estPriceRange: "$110 - $340 on Vestiaire/Grailed",
+      budgetAlternativeUrl: "https://www.cos.com/",
+      rarityScore: 3,
       canvasImage: "/images/clothes/outfit-03/necklace-02.png",
       defaultCanvasPosition: {
         top: "10%",
@@ -302,23 +313,24 @@ export const clothingItems: ClothingItem[] = [
         zIndex: 4,
       },
     },
-  ),  
+  ),
   defineItem(
     "tank-top-01",
     "TANK TOP",
     "tops",
     "Supreme",
-    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
-    "Purchased from Dongdaemun Vintage Market — Available at select vintage markets in Itaewon Antiquity Lane.",
-    undefined,
     {
+      displayModel: "Ribbed Cotton Tank Top",
+      estPriceRange: "$40 - $120 on Grailed/Depop",
+      budgetAlternativeUrl: "https://www.uniqlo.com/",
+      rarityScore: 2,
       canvasImage: "/images/clothes/outfit-03/tank-top-01.png",
       defaultCanvasPosition: {
         top: "10%",
         left: "10%",
         width: "20%",
         zIndex: 4,
-      },  
+      },
     },
   ),
   defineItem(
@@ -326,28 +338,30 @@ export const clothingItems: ClothingItem[] = [
     "SUNGLASSES",
     "eyewear",
     "Oliver Peoples",
-    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
-    "Purchased from Hanam Vintage Depot — Available at select vintage markets in Apgujeong Private Sale.",
-    undefined,
     {
+      displayModel: "Slim Rectangular Acetate",
+      estPriceRange: "$85 - $210 on Grailed/Vestiaire",
+      budgetAlternativeUrl: "https://moscot.com/",
+      rarityScore: 3,
       canvasImage: "/images/clothes/outfit-03/sunglasses-01.png",
       defaultCanvasPosition: {
         top: "10%",
         left: "10%",
         width: "20%",
         zIndex: 4,
-      },  
+      },
     },
   ),
   defineItem(
-    "baggy-jeans-01", 
+    "baggy-jeans-01",
     "BAGGY JEANS",
     "bottoms",
     "Levi's Vintage",
-    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
-    "Purchased from Dongdaemun Vintage Market — Available at select vintage markets in Itaewon Antiquity Lane.",
-    undefined,
     {
+      displayModel: "Relaxed Baggy Denim",
+      estPriceRange: "$50 - $130 on Grailed/Depop",
+      budgetAlternativeUrl: "https://www.weekday.com/",
+      rarityScore: 2,
       canvasImage: "/images/clothes/outfit-03/baggy-jeans-01.png",
       defaultCanvasPosition: {
         top: "10%",
@@ -362,10 +376,11 @@ export const clothingItems: ClothingItem[] = [
     "BRACELET",
     "waist",
     "The Row",
-    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
-    "Purchased from Dongdaemun Vintage Market — Available at select vintage markets in Itaewon Antiquity Lane.",
-    undefined,
     {
+      displayModel: "Brushed Cuff Bracelet",
+      estPriceRange: "$90 - $280 on Vestiaire/Grailed",
+      budgetAlternativeUrl: "https://www.cos.com/",
+      rarityScore: 3,
       canvasImage: "/images/clothes/outfit-03/bracelet-01.png",
       defaultCanvasPosition: {
         top: "10%",
@@ -380,10 +395,11 @@ export const clothingItems: ClothingItem[] = [
     "TEAL BAG",
     "bags",
     "The Row",
-    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
-    "Purchased from Dongdaemun Vintage Market — Available at select vintage markets in Itaewon Antiquity Lane.",
-    undefined,
     {
+      displayModel: "Structured Teal Archive Bag",
+      estPriceRange: "$200 - $600 on Vestiaire/Grailed",
+      budgetAlternativeUrl: "https://staud.clothing/",
+      rarityScore: 4,
       canvasImage: "/images/clothes/outfit-03/teal-bag-01.png",
       defaultCanvasPosition: {
         top: "10%",
@@ -393,15 +409,16 @@ export const clothingItems: ClothingItem[] = [
       },
     },
   ),
-    defineItem(
-      "sneakers-03",
+  defineItem(
+    "sneakers-03",
     "SNEAKERS",
     "shoes",
     "Balenciaga",
-    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
-    "Purchased from Garosu-gil Concept Store — Available at select vintage markets in Cortis Archive Seoul.",
-    undefined,
     {
+      displayModel: "Panelled Archive Runner",
+      estPriceRange: "$175 - $460 on Grailed/GOAT",
+      budgetAlternativeUrl: "https://www.newbalance.com/",
+      rarityScore: 4,
       canvasImage: "/images/clothes/outfit-03/sneakers-03.png",
       defaultCanvasPosition: {
         top: "10%",
@@ -416,10 +433,11 @@ export const clothingItems: ClothingItem[] = [
     "BOOTS",
     "shoes",
     "Bershka",
-    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
-    "Purchased from Bershka — Available at select vintage markets in Cortis Archive Seoul.",
-    "https://www.bershka.com/tr/topuklu-geni%C5%9F-%C3%A7izme-c0p204066994.html?colorId=040",
     {
+      shopUrl: "https://www.bershka.com/tr/topuklu-geni%C5%9F-%C3%A7izme-c0p204066994.html?colorId=040",
+      displayModel: "Wide-Leg Heeled Boots",
+      estPriceRange: "$120 - $130 on Bershka",
+      budgetAlternativeUrl: "https://www.zara.com/es/es/search?searchTerm=https%3A%2F%2Fwww.zara.com%2Fsearch%3Fq%3DZara%2BSlouchy%2BHeeled%2BBoot%2BAlternative&section=WOMAN",
       canvasImage: "/images/clothes/outfit-04/wide-heeeled-boots-01.png",
       defaultCanvasPosition: {
         top: "10%",
@@ -434,10 +452,12 @@ export const clothingItems: ClothingItem[] = [
     "BLACK TOP",
     "tops",
     "Susamusa",
-    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
-    "Purchased from Susamusa — Available at select vintage markets in Cortis Archive Seoul.",
-    "https://www.susamusa.com/products/ember-top-black-1?pr_prod_strat=e5_desc&pr_rec_id=34fc6b456&pr_rec_pid=9972746060079&pr_ref_pid=15327431623038&pr_seq=uniform",
     {
+      shopUrl: "https://www.susamusa.com/products/ember-top-black-1?pr_prod_strat=e5_desc&pr_rec_id=34fc6b456&pr_rec_pid=9972746060079&pr_ref_pid=15327431623038&pr_seq=uniform",
+      displayModel: "Ember Top",
+      estPriceRange: "$110 - $120 on Susamusa",
+      budgetAlternativeUrl: "https://www.asos.com/search/?q=assymetric+draped+top+black&updateTerm=true",
+      rarityScore: 2,
       canvasImage: "/images/clothes/outfit-04/ember-top-black-01.png",
       defaultCanvasPosition: {
         top: "10%",
@@ -452,10 +472,12 @@ export const clothingItems: ClothingItem[] = [
     "WHITE BAG",
     "bags",
     "Bopka.",
-    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
-    "Purchased from Cortis Archive Seoul — Available at select vintage markets in Garosu-gil Concept Store.",
-    "https://bopka.com/products/studded-oversized-tote-bag-1?variant=50038626353458&pins_campaign_id=626758906603&utm_campaign=626758906603&utm_medium=PaidSocial&utm_source=Pinterest&utm_content=2680090747487&pp=0&epik=dj0yJnU9TTZtLVlSWm5xZUhtNjlWdmVwRFE4Y1VsZm9lek9yY1omcD0xJm49RERnYlNiYWI3cU1VYkVxb3hfemwyZyZ0PUFBQUFBR28xdGtZ",
     {
+      shopUrl: "https://bopka.com/products/studded-oversized-tote-bag-1?variant=50038626353458&pins_campaign_id=626758906603&utm_campaign=626758906603&utm_medium=PaidSocial&utm_source=Pinterest&utm_content=2680090747487&pp=0&epik=dj0yJnU9TTZtLVlSWm5xZUhtNjlWdmVwRFE4Y1VsZm9lek9yY1omcD0xJm49RERnYlNiYWI3cU1VYkVxb3hfemwyZyZ0PUFBQUFBR28xdGtZ",
+      displayModel: "Studded Oversized Tote Bag",
+      estPriceRange: "$60 - $70 on Bopka.",
+      budgetAlternativeUrl: "https://www.ebay.co.uk/itm/135742669367?var=435059691092",
+      rarityScore: 2,
       canvasImage: "/images/clothes/outfit-04/studded-oversized-tote-bag-01.png",
       defaultCanvasPosition: {
         top: "10%",
@@ -470,10 +492,12 @@ export const clothingItems: ClothingItem[] = [
     "SUNGLASSES",
     "eyewear",
     "Justsunnies.",
-    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
-    "Purchased from Justsunnies — Available at select vintage markets in Cortis Archive Seoul.",
-    "https://www.justsunnies.com.au/js-eyewear-sunglasses/5052-sbllf505210160006?utm_source=Pinterest&utm_medium=organic",
     {
+      shopUrl: "https://www.justsunnies.com.au/js-eyewear-sunglasses/5052-sbllf505210160006?utm_source=Pinterest&utm_medium=organic",
+      displayModel: "5052 Sunglasses",
+      estPriceRange: "$18 - $20 on Justsunnies.",
+      budgetAlternativeUrl: "https://www.amazon.com/Oversized-Tortoise-Sunglasses/s?k=Oversized+Tortoise+Sunglasses",
+      rarityScore: 2,
       canvasImage: "/images/clothes/outfit-04/js-eyewear-5052-sunglasses-01.png",
       defaultCanvasPosition: {
         top: "10%",
@@ -488,10 +512,12 @@ export const clothingItems: ClothingItem[] = [
     "JACKET",
     "outerwear",
     "Custom Made",
-    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
-    "Purchased from eBay — Available at select vintage markets in Cortis Archive Seoul.",
-    "https://www.ebay.com/itm/317016570665?norover=1&siteid=1&mkevt=1&mkcid=16&chn=psoc&utm_source=Pinterest&utm_medium=organic",
     {
+      shopUrl: "https://www.ebay.com/itm/317016570665?norover=1&siteid=1&mkevt=1&mkcid=16&chn=psoc&utm_source=Pinterest&utm_medium=organic",
+      displayModel: "Gray Raw Denim Jacket",
+      estPriceRange: "$160 - $180 on eBay",
+      budgetAlternativeUrl: "https://ayaisaya.com/products/katai-depth-jacket-black",
+      rarityScore: 4,
       canvasImage: "/images/clothes/outfit-04/gray-raw-denim-jacket-01.png",
       defaultCanvasPosition: {
         top: "10%",
@@ -506,10 +532,12 @@ export const clothingItems: ClothingItem[] = [
     "MINI SKIRT",
     "bottoms",
     "Mango",
-    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
-    "Purchased from Mango — Available at select vintage markets in Cortis Archive Seoul.",
-    "https://shop.mango.com/us/en/p/women/skirts/short/tweed-mini-skirt-with-decorative-belt/77086759/99/00",
     {
+      shopUrl: "https://shop.mango.com/us/en/p/women/skirts/short/tweed-mini-skirt-with-decorative-belt/77086759/99/00",
+      displayModel: "Tweed Mini-Skirt with Decorative Belt",
+      estPriceRange: "$40 - $50 on Mango",
+      budgetAlternativeUrl: "https://www2.hm.com/en_us/productpage.1301483002.html",
+      rarityScore: 2,
       canvasImage: "/images/clothes/outfit-04/tweed-mini-skirt-with-decorative-belt-01.png",
       defaultCanvasPosition: {
         top: "10%",
@@ -524,10 +552,11 @@ export const clothingItems: ClothingItem[] = [
     "TRENCH COAT",
     "outerwear",
     "Nanjun",
-    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
-    "Purchased from Depop — Available at select vintage markets.",
-    "https://www.depop.com/products/h14k8-nanjun-beige-trench-coat-size-e416/",
     {
+      shopUrl: "https://www.depop.com/products/h14k8-nanjun-beige-trench-coat-size-e416/",
+      displayModel: "Oversized Draped Trench Coat",
+      estPriceRange: "$10 on Depop",
+      budgetAlternativeUrl: "https://www.asos.com/weekday/weekday-oversized-trench-coat-in-beige/prd/210245310#colourWayId-210245316",
       canvasImage: "/images/clothes/outfit-05/women-s-tan-cream-coat-01.png",
       defaultCanvasPosition: {
         top: "10%",
@@ -542,10 +571,12 @@ export const clothingItems: ClothingItem[] = [
     "SHORTS",
     "bottoms",
     "Hollister Co.",
-    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
-    "Purchased from Depop — Available at select vintage markets.",
-    "https://www.depop.com/products/g8am_grave-vintage-y2k-hollister-low-rise-ac4a/",
     {
+      shopUrl: "https://www.depop.com/products/g8am_grave-vintage-y2k-hollister-low-rise-ac4a/",
+      displayModel: "Y2K Low-Rise Cuffed Chino Shorts",
+      estPriceRange: "$25 - $35 on Depop/Vinted",
+      budgetAlternativeUrl: "https://www.ebay.com/itm/318473308516?_skw=low+rise+mini+shorts+y2k&itmmeta=01KVQH7GRYAD98DZ5H7BZ8KK2G&hash=item4a267d0964:g:S88AAeSw9fxqNAsy&itmprp=enc%3AAQALAAAA8GfYFPkwiKCW4ZNSs2u11xAAbORzZPcT5fQOpmi%2FxsYkktbacflXqbpKT3wlQ3nvGdUGHg7vZjR%2Fa2dYuqmQaAxdSOTRF%2Bq5sbh4Fm31F2Ql%2FjZ%2BjGOiaVuSTtQzfkV8jt2iL9sH3k6TjCupUFLZmdh57T--G3LD4hGGgI8YNpy8rj%2FUP2lrGJchOA03d--EAfP7CuxSYugUxeUHswL%2Bza7zC7XUlqJeCD0elyieQRDdS2rjGc4o3ETzcKfwvnZbqaN83ZhXi0w2IiBCwf3nXDPnydf%2BvhfKiOLE91AQdpoJ0G%2FLlXvFmud7lj7h2RoLow%3D%3D%7Ctkp%3ABk9SR9aMnvHdZw",
+      rarityScore: 3,
       canvasImage: "/images/clothes/outfit-05/hollister-co-women-s-black-and-navy-shorts-01.png",
       defaultCanvasPosition: {
         top: "10%",
@@ -560,10 +591,11 @@ export const clothingItems: ClothingItem[] = [
     "SHIRT",
     "tops",
     "Ralph Lauren",
-    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
-    "Purchased from Depop — Available at select vintage markets.",
-    "https://www.depop.com/products/lavagnomg-white-polo-ralph-lauren-v-neck-3052/",
     {
+      shopUrl: "https://www.depop.com/products/lavagnomg-white-polo-ralph-lauren-v-neck-3052/",
+      displayModel: "Women's Essential Polo Shirt",
+      estPriceRange: "$10 on Depop",
+      budgetAlternativeUrl: "https://3rdstrike.shop/products/women-s-vintage-y2k-polo-ralph-lauren-white-tee",
       canvasImage: "/images/clothes/outfit-05/polo-ralph-lauren-women-s-shirt-01.png",
       defaultCanvasPosition: {
         top: "10%",
@@ -578,10 +610,12 @@ export const clothingItems: ClothingItem[] = [
     "BAG",
     "bags",
     "Obosoyo",
-    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
-    "Purchased from Depop — Available at select vintage markets.",
-    "https://www.depop.com/products/lenaadaz9-obosoyo-minimalist-burgundy-faux-leather-d29c/",
     {
+      shopUrl: "https://www.depop.com/products/lenaadaz9-obosoyo-minimalist-burgundy-faux-leather-d29c/",
+      displayModel: "Minimalist Burgundy Patent Shoulder Tote",
+      estPriceRange: "$12 on Depop/eBay",
+      budgetAlternativeUrl: "https://www.ebay.com/itm/298435853773?itmmeta=01KVKMP25B0TY0TV72FDCDXR5K&hash=item457c29bdcd:i:298435853773&itmprp=enc%3AAQALAAAAwDKQclQvzFwZQpmMrsO4LurzmlWrKohrb%2Bd7VLBehB4vICVPVZHbc1j30sT%2B50PyUp7FcHyc0%2F5JzDO9RhujpAzYhnsAUlOMOAJ2AnMzMwH%2FsWPWyYvdpwJPH0oS1h6PCBHC1jjj8UFrq7EwKdy%2FpQEq1b2oI5JE3o2M7FVrxt55Hp%2Fr1CfbnY1UBOb%2BgTQ1au2JyPmz3TQsCfi3A7q1y0zIpDv2z1qt0joGdrlEk6q4okvruG4BzMRK2PV1Z3JR1g%3D%3D%7Ctkp%3ABk9SR_Si2PTcZw",
+      rarityScore: 2,
       canvasImage: "/images/clothes/outfit-05/obosoyo-minimalist-burgundy-faux-leather-tote-ba-01.png",
       defaultCanvasPosition: {
         top: "10%",
@@ -596,10 +630,12 @@ export const clothingItems: ClothingItem[] = [
     "GLASSES",
     "eyewear",
     "Miumiu",
-    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
-    "Purchased from Etsy — Available at select vintage markets.",
-    "https://www.etsy.com/ca/listing/1639380514/the-miu-miu-bayonetta-glasses?utm_source=Pinterest&utm_medium=organic&epik=dj0yJnU9VW5KUXlvUU9LY2JYZEV5UThibzdoS0ExOEdHQjYteTEmcD0wJm49X3ZnX05ZUmJGRWJzdTd6MDkyMExvZyZ0PUFBQUFBR28zOHdV",
     {
+      shopUrl: "https://www.etsy.com/ca/listing/1639380514/the-miu-miu-bayonetta-glasses?utm_source=Pinterest&utm_medium=organic&epik=dj0yJnU9VW5KUXlvUU9LY2JYZEV5UThibzdoS0ExOEdHQjYteTEmcD0wJm49X3ZnX05ZUmJGRWJzdTd6MDkyMExvZyZ0PUFBQUFBR28zOHdV",
+      displayModel: "The Miu Miu Bayonetta Glasses",
+      estPriceRange: "$150 - $350 on Etsy",
+      budgetAlternativeUrl: "https://www.etsy.com/market/slim_y2k_glasses",
+      rarityScore: 3,
       canvasImage: "/images/clothes/outfit-05/the-miu-miu-bayonetta-glasses-01.png",
       defaultCanvasPosition: {
         top: "10%",
@@ -614,10 +650,12 @@ export const clothingItems: ClothingItem[] = [
     "SHOES",
     "shoes",
     "Maguire",
-    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
-    "Purchased from Maguire Shoes — Available at select vintage markets.",
-    "https://maguireshoes.com/products/zava-black-suede-ballerina?utm_source=Pinterest&utm_medium=organic",
     {
+      shopUrl: "https://maguireshoes.com/products/zava-black-suede-ballerina?utm_source=Pinterest&utm_medium=organic",
+      displayModel: "Zava Black Suede Ballerina",
+      estPriceRange: "$260 on Maguire Shoes",
+      budgetAlternativeUrl: "https://www.zara.com/us/en/sporty-lace-up-ballet-flats-p15210710.html?v1=495712196",
+      rarityScore: 3,
       canvasImage: "/images/clothes/outfit-05/zava-black-suede-ballerina-01.png",
       defaultCanvasPosition: {
         top: "10%",
@@ -632,10 +670,12 @@ export const clothingItems: ClothingItem[] = [
     "ZIP-UP HOODIE",
     "outerwear",
     "Planet Missy",
-    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
-    "Purchased from Cortis Archive Seoul — Available at select vintage markets in Garosu-gil Concept Store.",
-    "https://www.planetmissy.com/products/2025-american-retro-hip-hop-oversized-sweatshirt-with-original-style-letter-print-design-long-sleeved-y2k-street-sweatshirt",
     {
+      shopUrl: "https://www.planetmissy.com/products/2025-american-retro-hip-hop-oversized-sweatshirt-with-original-style-letter-print-design-long-sleeved-y2k-street-sweatshirt",
+      displayModel: "Burn Mark Zip-Up Hoodie",
+      estPriceRange: "$30 - $40 on Planet Missy",
+      budgetAlternativeUrl: "https://tr.dhgate.com/product/2025-american-retro-hiphop-oversized-sweatshirt/1078704879.html?skuId=1436406625337491472",
+      rarityScore: 3,
       canvasImage: "/images/clothes/outfit-06/burn-mark-zip-up-hoodi-01.png",
       defaultCanvasPosition: {
         top: "10%",
@@ -650,10 +690,12 @@ export const clothingItems: ClothingItem[] = [
     "VEST",
     "tops",
     "Brandy Melville",
-    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
-    "Purchased from Depop — Available at select vintage markets.",
-    "https://www.depop.com/products/depopsellery8e-teal-brandy-melville-tank-top-de8c/",
     {
+      shopUrl: "https://www.depop.com/products/depopsellery8e-teal-brandy-melville-tank-top-de8c/",
+      displayModel: "Teal Cami Tank Top",
+      estPriceRange: "$20 on Depop",
+      budgetAlternativeUrl: "https://www.depop.com/products/ilovecookies1y3456-teal-tank-rare-brandy-melville-ca04/",
+      rarityScore: 2,
       canvasImage: "/images/clothes/outfit-06/women-s-green-and-blue-vest-01.png",
       defaultCanvasPosition: {
         top: "10%",
@@ -668,10 +710,11 @@ export const clothingItems: ClothingItem[] = [
     "JEANS",
     "bottoms",
     "Siolin",
-    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
-    "Purchased from Siolin — Available at select vintage markets.",
-    "https://siolin.com/products/jeans-blank?utm_source=Pinterest&utm_medium=organic",
     {
+      shopUrl: "https://siolin.com/products/jeans-blank?utm_source=Pinterest&utm_medium=organic",
+      displayModel: "Siolin Perfect Denims — Relaxed Wide-Leg",
+      estPriceRange: "$68 on Siolin",
+      budgetAlternativeUrl: "https://www2.hm.com/en_us/productpage.1045459069.html",
       canvasImage: "/images/clothes/outfit-06/perfect-denims-01.png",
       defaultCanvasPosition: {
         top: "10%",
@@ -686,10 +729,12 @@ export const clothingItems: ClothingItem[] = [
     "BELT",
     "waist",
     "Guess",
-    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
-    "Purchased from Depop — Available at select vintage markets.",
-    "https://www.etsy.com/listing/1666046257/00s-vintage-guess-textured-brown-leather",
     {
+      shopUrl: "https://www.etsy.com/listing/1666046257/00s-vintage-guess-textured-brown-leather",
+      displayModel: "00's Vintage Textured Brown Leather Belt With Silver Buckle",
+      estPriceRange: "$58 on Etsy",
+      budgetAlternativeUrl: "https://www.depop.com/products/illgnsells-brown-leather-belt-with-oval-033d/",
+      rarityScore: 3,
       canvasImage: "/images/clothes/outfit-06/women-s-brown-belt-01.png",
       defaultCanvasPosition: {
         top: "10%",
@@ -704,10 +749,12 @@ export const clothingItems: ClothingItem[] = [
     "Women's Brown Ballet-shoes",
     "shoes",
     "Chanel",
-    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
-    "Purchased from Depop — Available at select vintage markets.",
-    "https://www.depop.com/products/ddol6129-chanel-quilted-tan-brown-lambskin-4432/",
     {
+      shopUrl: "https://www.depop.com/products/ddol6129-chanel-quilted-tan-brown-lambskin-4432/",
+      displayModel: "Women's Brown Ballet-shoes",
+      estPriceRange: "$495 on Depop",
+      budgetAlternativeUrl: "https://www.marksandspencer.com/suede-bow-flat-ballet-pumps/p/clp61220752#intid=pid_pg1pip24g4r1c3",
+      rarityScore: 4,
       canvasImage: "/images/clothes/outfit-06/women-s-brown-ballet-shoes-01.png",
       defaultCanvasPosition: {
         top: "10%",
@@ -722,10 +769,11 @@ export const clothingItems: ClothingItem[] = [
     "BAG",
     "bags",
     "MLC",
-    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
-    "Purchased from Cortis Archive Seoul — Available at select vintage markets in Garosu-gil Concept Store.",
-    "https://www.depop.com/products/maggielu9ia-cool-bright-greenish-yellow-bag-d2a6/",
     {
+      shopUrl: "https://www.depop.com/products/maggielu9ia-cool-bright-greenish-yellow-bag-d2a6/",
+      displayModel: "Yellow Sculpted Drawstring Shoulder Bag",
+      estPriceRange: "$10 on Depop",
+      budgetAlternativeUrl: "https://www.therealreal.com/products/women/handbags/shoulder-bags/cole-haan-leather-shoulder-bag-sba1o",
       canvasImage: "/images/clothes/outfit-06/bright-yellow-bag-01.png",
       defaultCanvasPosition: {
         top: "10%",
@@ -740,10 +788,12 @@ export const clothingItems: ClothingItem[] = [
     "SUNGLASSES",
     "eyewear",
     "Brighton",
-    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
-    "Purchased from Depop — Available at select vintage markets.",
-    "https://www.depop.com/products/baylie88-brighton-5313-brown-gray-598f/",
     {
+      shopUrl: "https://www.depop.com/products/baylie88-brighton-5313-brown-gray-598f/",
+      displayModel: "Brighton '5313' Rectangular Acetate Frame",
+      estPriceRange: "$25 on Depop",
+      budgetAlternativeUrl: "https://www.depop.com/products/bww77065-vintage-small-rectangle-sunglasses-5467/",
+      rarityScore: 2,
       canvasImage: "/images/clothes/outfit-06/women-s-brown-and-silver-sunglasses-01.png",
       defaultCanvasPosition: {
         top: "10%",
@@ -758,10 +808,12 @@ export const clothingItems: ClothingItem[] = [
     "SHOES",
     "shoes",
     "Musinsa",
-    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
-    "Purchased from Musinsa — Available at select vintage markets in Garosu-gil Concept Store.",
-    "https://global.musinsa.com/tw/goods/3982328",
     {
+      shopUrl: "https://global.musinsa.com/tw/goods/3982328",
+      displayModel: "Bliss Lace-Up Sneakers",
+      estPriceRange: "$94 on Musinsa",
+      budgetAlternativeUrl: "https://www.depop.com/products/curatedbyjoyo-faux-leather-vintage-ballet-flats-03ac/",
+      rarityScore: 2,
       canvasImage: "/images/clothes/outfit-07/women-s-black-ballet-shoes-01.png",
       defaultCanvasPosition: {
         top: "10%",
@@ -776,10 +828,11 @@ export const clothingItems: ClothingItem[] = [
     "TANK TOP",
     "tops",
     "Eterne",
-    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
-    "Purchased from Eterne — Available at select vintage markets in Garosu-gil Concept Store.",
-    "https://eterne.com/products/v-neck-racerback-tank-cream?variant=51814336200935&utm_source=Pinterest&utm_medium=organic",
     {
+      shopUrl: "https://eterne.com/products/v-neck-racerback-tank-cream?variant=51814336200935&utm_source=Pinterest&utm_medium=organic",
+      displayModel: "Ribbed V-Neck Racerback Tank",
+      estPriceRange: "$125 on Eterne",
+      budgetAlternativeUrl: "https://dendama.com/products/13068367-v-neck-racerback-tank-cream",
       canvasImage: "/images/clothes/outfit-07/v-neck-racerback-tank-01.png",
       defaultCanvasPosition: {
         top: "10%",
@@ -794,10 +847,11 @@ export const clothingItems: ClothingItem[] = [
     "LEG WARMERS",
     "accessories",
     "WConcept",
-    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
-    "Purchased from WConcept — Available at select vintage markets in Garosu-gil Concept Store.",
-    "https://www.wconcept.com/product/label-knit-wool-leg-warmers-4color-/720828122.html?utm_source=Pinterest&utm_medium=organic",
     {
+      shopUrl: "https://www.wconcept.com/product/label-knit-wool-leg-warmers-4color-/720828122.html?utm_source=Pinterest&utm_medium=organic",
+      displayModel: "Label Knit Wool Leg Warmers",
+      estPriceRange: "$52 on WConcept",
+      budgetAlternativeUrl: "https://skatingboutique.com/products/mondor-276-leg-warmers?variant=41036464357571&country=AE&currency=CAD&utm_medium=product_sync&utm_source=google&utm_content=sag_organic&utm_campaign=sag_organic&srsltid=AfmBOoqJnqOF9DtgKXKvzs82Wvm9S8d_gY37wxpW2Q422cjpUb8tGF_byyE",
       canvasImage: "/images/clothes/outfit-07/label-knit-wool-leg-warmers-01.png",
       defaultCanvasPosition: {
         top: "10%",
@@ -812,10 +866,12 @@ export const clothingItems: ClothingItem[] = [
     "JORTS",
     "bottoms",
     "Daxuen",
-    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
-    "Purchased from Daxuen — Available at select vintage markets in Garosu-gil Concept Store.",
-    "https://www.daxuen.com/products/black-soft-knee-length-wide-leg-jorts?utm_source=Pinterest&utm_medium=organic&variant=45038010597572",
     {
+      shopUrl: "https://www.daxuen.com/products/black-soft-knee-length-wide-leg-jorts?utm_source=Pinterest&utm_medium=organic&variant=45038010597572",
+      displayModel: "Black Soft Wide-Leg Knee-Length Jorts",
+      estPriceRange: "$57 on Daxuen",
+      budgetAlternativeUrl: "https://www.bershka.com/us/bermuda-culottes-with-elasticated-waistband-c0p229336783.html?colorId=800",
+      rarityScore: 2,
       canvasImage: "/images/clothes/outfit-07/black-soft-knee-length-wide-leg-jorts-01.png",
       defaultCanvasPosition: {
         top: "10%",
@@ -830,10 +886,12 @@ export const clothingItems: ClothingItem[] = [
     "BAG",
     "bags",
     "Yuzefi",
-    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
-    "Purchased from Yuzefi — Available at select vintage markets in Garosu-gil Concept Store.",
-    "https://yuzefi.com/products/scallop-shoulder-bag-angora-pebble-grained-leather",
     {
+      shopUrl: "https://yuzefi.com/products/scallop-shoulder-bag-angora-pebble-grained-leather",
+      displayModel: "Scallop Shoulder Bag — Angora Pebble Grained Leather",
+      estPriceRange: "$560 on Yuzefi",
+      budgetAlternativeUrl: "https://www.sometime.asia/collections/canvas-tote-bag/products/mandu-mini-bag?variant=62374198116721",
+      rarityScore: 3,
       canvasImage: "/images/clothes/outfit-07/scallop-shoulder-bag-01.png",
       defaultCanvasPosition: {
         top: "10%",
@@ -848,10 +906,12 @@ export const clothingItems: ClothingItem[] = [
     "BUTTON-DOWN SHIRT",
     "outerwear",
     "Marks & Spencer",
-    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
-    "Purchased from Marks & Spencer — Available at select vintage markets in Garosu-gil Concept Store.",
-    "https://www.marksandspencer.com/us/linen-cotton-blend-striped-shirt/p/P60766622.html#index=0?pid_pip36g4r6c4",
     {
+      shopUrl: "https://www.marksandspencer.com/us/linen-cotton-blend-striped-shirt/p/P60766622.html#index=0?pid_pip36g4r6c4",
+      displayModel: "Linen Cotton Blend Striped Shirt",
+      estPriceRange: "$62 on Marks & Spencer",
+      budgetAlternativeUrl: "https://www.hm.com/search?q=H%26M+Striped+Linen+Shirt+Alternative",
+      rarityScore: 3,
       canvasImage: "/images/clothes/outfit-07/linen-cotton-blend-striped-shirt-01.png",
       defaultCanvasPosition: {
         top: "10%",
@@ -866,10 +926,11 @@ export const clothingItems: ClothingItem[] = [
     "NECKLACE",
     "accessories",
     "Zara",
-    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
-      "Purchased from Zara — Available at select vintage markets in Garosu-gil Concept Store.",
-    "https://www.zara.com/tr/en/pack-of-2-glass-piece-necklaces-p01011209.html?v1=555430245",
     {
+      shopUrl: "https://www.zara.com/tr/en/pack-of-2-glass-piece-necklaces-p01011209.html?v1=555430245",
+      displayModel: "Zara — Layered Glass Bead Necklace Set",
+      estPriceRange: "$20 - $30 on Zara",
+      budgetAlternativeUrl: "https://www.zara.com/ae/en/pack-of-2-glass-piece-necklaces-p01011209.html",
       canvasImage: "/images/clothes/outfit-07/glass-piece-necklaces-01.png",
       defaultCanvasPosition: {
         top: "10%",
@@ -884,10 +945,12 @@ export const clothingItems: ClothingItem[] = [
     "SUNGLASSES",
     "eyewear",
     "Dior",
-    "Purchased from [BLURRED] — Available at select vintage markets in [BLURRED].",
-    "Purchased from Dior — Available at select vintage markets in Garosu-gil Concept Store.",
-    "https://www.net-a-porter.com/en-us/shop/product/dior-eyewear/accessories/d-frame/verydior-m1u-wrap-around-acetate-sunglasses/1647597349607219?epik=dj0yJnU9b2FRb21udjRUUmR3N3RRSVUweTlIdUdFcnRFTDFKcTYmcD0wJm49bmRsUS1XbjByQ2RNZ0FRdTVUQVNOdyZ0PUFBQUFBR285RjJj",
     {
+      shopUrl: "https://www.net-a-porter.com/en-us/shop/product/dior-eyewear/accessories/d-frame/verydior-m1u-wrap-around-acetate-sunglasses/1647597349607219?epik=dj0yJnU9b2FRb21udjRUUmR3N3RRSVUweTlIdUdFcnRFTDFKcTYmcD0wJm49bmRsUS1XbjByQ2RNZ0FRdTVUQVNOdyZ0PUFBQUFBR285RjJj",
+      displayModel: "VeryDior M1U Wrap-Around Acetate Sunglasses",
+      estPriceRange: "$690 on Dior",
+      budgetAlternativeUrl: "https://pretavoir.co.uk/products/dior-verydior-m1u-10a0?shpxid=b2bc2faf-98ef-4919-84b7-c17c183bade4",
+      rarityScore: 2,
       canvasImage: "/images/clothes/outfit-07/verydior-m1u-wrap-around-acetate-sunglasses-01.png",
       defaultCanvasPosition: {
         top: "10%",

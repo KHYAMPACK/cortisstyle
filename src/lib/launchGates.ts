@@ -8,10 +8,6 @@ export const FREE_TIER_SAVED_OUTFIT_LIMIT = 3;
 export const FREE_TIER_ARCHIVE_LIMIT_MESSAGE =
   "FREE TIER LIMIT REACHED // UPGRADE TO UNLOCK UNLIMITED ARCHIVE SLOTS";
 
-export function getWardrobeArchiveLimitPath(): string {
-  return `${WARDROBE_COMING_SOON_PATH}?status=free-tier-limit`;
-}
-
 export function isArchiveLimitStatus(
   status: string | null | undefined,
 ): boolean {
@@ -22,10 +18,7 @@ export function isArchiveLimitStatus(
 export const HOMEPAGE_PUBLIC_LOOK_COUNT = 7;
 
 /** First N visible looks are fully interactive (indices 0..N-1). */
-export const HOMEPAGE_FREE_LOOK_COUNT = 7;
-
-/** @deprecated Use full `looks` stream with `isHomepageLookLocked(index)` instead. */
-export const HOMEPAGE_LOOK_LIMIT = HOMEPAGE_FREE_LOOK_COUNT;
+export const HOMEPAGE_FREE_LOOK_COUNT = 6;
 
 export function getPublicHomepageLooks(): Look[] {
   return looks.slice(0, HOMEPAGE_PUBLIC_LOOK_COUNT);
@@ -67,15 +60,6 @@ export function isAuthGateEnabled(): boolean {
 
 export function getNotifyDeployPath(): string {
   return NOTIFY_DEPLOY_PATH;
-}
-
-/** When true, purchase actions route to checkout coming-soon + intent tracking. */
-export function isPurchaseGateEnabled(): boolean {
-  return process.env.NEXT_PUBLIC_PURCHASE_GATE_ENABLED !== "false";
-}
-
-export function getCheckoutComingSoonPath(lookId: string): string {
-  return `${CHECKOUT_COMING_SOON_PATH}?look=${encodeURIComponent(lookId)}`;
 }
 
 const DARK_GATE_PATHS = [

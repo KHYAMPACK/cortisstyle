@@ -3,7 +3,6 @@ import path from "path";
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
-  serverExternalPackages: ["@react-pdf/renderer"],
   turbopack: {
     resolveAlias: {
       html2canvas: path.resolve(process.cwd(), "node_modules/html2canvas-pro"),

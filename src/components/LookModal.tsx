@@ -27,8 +27,6 @@ export function LookModal({ look, onClose }: LookModalProps) {
   const { user, isAuthenticated, refreshWardrobe, purchasedLooks } = useAuth();
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(isLocalhostClient);
-  const [showPreview, setShowPreview] = useState(false);
-  const [showCheckout, setShowCheckout] = useState(false);
   const [isAddingToWardrobe, setIsAddingToWardrobe] = useState(false);
   const [wardrobeAddError, setWardrobeAddError] = useState<string | null>(null);
   const [showAuthPopup, setShowAuthPopup] = useState(false);
@@ -40,8 +38,6 @@ export function LookModal({ look, onClose }: LookModalProps) {
 
   useEffect(() => {
     setActiveItemId(null);
-    setShowPreview(false);
-    setShowCheckout(false);
     setWardrobeAddError(null);
     setIsAddingToWardrobe(false);
     setShowAuthPopup(false);
@@ -58,19 +54,9 @@ export function LookModal({ look, onClose }: LookModalProps) {
     if (!look) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
-
-      if (showCheckout) {
-        setShowCheckout(false);
-        return;
+      if (event.key === "Escape") {
+        onClose();
       }
-
-      if (showPreview) {
-        setShowPreview(false);
-        return;
-      }
-
-      onClose();
     };
 
     document.body.style.overflow = "hidden";
@@ -80,7 +66,7 @@ export function LookModal({ look, onClose }: LookModalProps) {
       document.body.style.overflow = "";
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [look, onClose, showPreview, showCheckout]);
+  }, [look, onClose]);
 
   const handleSelectItem = (itemId: string) => {
     setActiveItemId(itemId);
@@ -143,11 +129,6 @@ export function LookModal({ look, onClose }: LookModalProps) {
     ? purchasedLooks.some((entry) => entry.id === look.id)
     : false;
 
-  const handleBackToLook = () => {
-    setShowPreview(false);
-    setShowCheckout(false);
-  };
-
   return (
     <>
       <AnimatePresence>
@@ -177,7 +158,7 @@ export function LookModal({ look, onClose }: LookModalProps) {
               className="pointer-events-none fixed inset-0 z-50 flex items-end justify-center p-0 md:items-center md:p-8"
             >
               <div className="pointer-events-auto relative flex h-[100dvh] max-h-[100dvh] w-full max-w-5xl flex-col overflow-hidden bg-ice-floor shadow-2xl md:h-[90vh] md:max-h-[90vh] md:flex-row">
-                {isLocalhostClient() && !showPreview && (
+                {isLocalhostClient() && (
                   <button
                     type="button"
                     onClick={() => setIsEditMode((current) => !current)}
@@ -203,8 +184,7 @@ export function LookModal({ look, onClose }: LookModalProps) {
                   look={look}
                   items={editableItems}
                   activeItemId={activeItemId}
-                  isEditMode={isEditMode && !showPreview}
-                  showPreview={showPreview}
+                  isEditMode={isEditMode}
                   onSelectItem={handleSelectItem}
                   onCanvasLayoutsChange={handleCanvasLayoutsChange}
                 />
@@ -213,19 +193,13 @@ export function LookModal({ look, onClose }: LookModalProps) {
                   look={look}
                   items={editableItems}
                   activeItemId={activeItemId}
-                  isEditMode={isEditMode && !showPreview}
-                  showPreview={showPreview}
-                  showCheckout={showCheckout}
+                  isEditMode={isEditMode}
                   onSelectItem={handleSelectItem}
                   onAddToWardrobe={handleAddToWardrobe}
                   isAddingToWardrobe={isAddingToWardrobe}
                   isInWardrobe={isInWardrobe}
                   wardrobeAddError={wardrobeAddError}
                   isMetadataRevealed={isMetadataRevealed}
-                  onPurchase={() => setShowCheckout(true)}
-                  onGateNavigate={onClose}
-                  onBackToLook={handleBackToLook}
-                  onCloseCheckout={() => setShowCheckout(false)}
                   canvasLayouts={canvasLayouts}
                 />
               </div>

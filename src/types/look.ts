@@ -25,8 +25,6 @@ export interface Look extends StyleMetrics {
   title: string;
   image: string;
   modelName: string;
-  shopierUrl: string;
-  guidePrice: number;
   width: number;
   height: number;
   layout?: "collage" | "single-image";

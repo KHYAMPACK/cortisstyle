@@ -161,8 +161,6 @@ interface WardrobeOutfitLivePreviewCardProps {
   /** When false, mood image placeholder and empty moodword are hidden. */
   showMoodPlaceholders?: boolean;
   className?: string;
-  /** @deprecated Ignored — preview always renders at the main canvas width. */
-  canvasWidthClassName?: string;
 }
 
 export const WardrobeOutfitLivePreviewCard = forwardRef<

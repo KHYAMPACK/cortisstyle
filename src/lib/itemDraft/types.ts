@@ -1,4 +1,4 @@
-import type { ClothingCategory, ItemFashionVectors } from "@/types/item";
+import type { ClothingCategory } from "@/types/item";
 import type { RarityScore } from "@/types/rarity";
 
 export interface ItemDraftInput {
@@ -28,9 +28,9 @@ export interface GeneratedItemDraft {
   shopUrl: string;
   brand: string;
   category: ClothingCategory;
-  blurredDescription: string;
-  unlockedDescription: string;
-  fashionVectors: ItemFashionVectors;
+  displayModel?: string;
+  estPriceRange: string;
+  budgetAlternativeUrl: string;
   suggestedRarityScore: RarityScore;
   canvasImage: string;
   productHints: ProductPageHints;
