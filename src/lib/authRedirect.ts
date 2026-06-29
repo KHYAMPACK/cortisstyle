@@ -1,6 +1,6 @@
 import { WARDROBE_APP_PATH } from "@/lib/wardrobeGate";
 
-const DEFAULT_SITE_URL = "https://cortisstyle.com";
+const DEFAULT_SITE_URL = "https://www.cortisstyle.com";
 
 export function getSiteUrl(): string {
   if (process.env.NEXT_PUBLIC_SITE_URL) {

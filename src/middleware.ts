@@ -1,10 +1,17 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { MAINTENANCE_PATH } from "@/lib/launchGates";
+import { handleStudioPreflight } from "@/lib/studioApiCors";
 import {
   WARDROBE_APP_PATH,
   WARDROBE_COMING_SOON_PATH,
 } from "@/lib/wardrobeGate";
+
+const STUDIO_API_PREFIX = "/api/studio";
+
+function isStudioApiPath(pathname: string): boolean {
+  return pathname.startsWith(STUDIO_API_PREFIX);
+}
 
 function isMaintenanceModeEnabled(): boolean {
   return process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true";
@@ -33,7 +40,16 @@ function isAllowedDuringMaintenance(pathname: string): boolean {
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  if (isMaintenanceModeEnabled() && !isAllowedDuringMaintenance(pathname)) {
+  if (isStudioApiPath(pathname) && request.method === "OPTIONS") {
+    const preflight = handleStudioPreflight(request);
+    if (preflight) return preflight;
+  }
+
+  if (
+    isMaintenanceModeEnabled() &&
+    !isAllowedDuringMaintenance(pathname) &&
+    !isStudioApiPath(pathname)
+  ) {
     return NextResponse.redirect(new URL(MAINTENANCE_PATH, request.url));
   }
 
