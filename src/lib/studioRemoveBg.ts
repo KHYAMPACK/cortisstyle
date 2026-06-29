@@ -16,7 +16,7 @@ export async function removeGarmentBackground(params: {
   const formData = new FormData();
   formData.append(
     "image_file",
-    new Blob([params.bytes], { type: params.mimeType }),
+    new Blob([new Uint8Array(params.bytes)], { type: params.mimeType }),
     params.filename,
   );
   formData.append("crop", "true");
