@@ -1,4 +1,4 @@
-import type { User } from "@supabase/supabase-js";
+import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { getServiceSupabase } from "@/lib/supabaseAdmin";
 
 function parseCuratorEmailAllowlist(): Set<string> {
@@ -21,14 +21,14 @@ function isOnEmailAllowlist(user: User): boolean {
   return Boolean(email && allowlist.has(email));
 }
 
-async function isOnCuratorRoster(user: User): Promise<boolean> {
-  const admin = getServiceSupabase();
-  if (!admin) return false;
-
-  const { data, error } = await admin
+async function isOnCuratorRosterForUser(
+  userSupabase: SupabaseClient,
+  userId: string,
+): Promise<boolean> {
+  const { data, error } = await userSupabase
     .from("studio_curators")
     .select("user_id")
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .maybeSingle();
 
   if (error) {
@@ -39,10 +39,40 @@ async function isOnCuratorRoster(user: User): Promise<boolean> {
   return Boolean(data);
 }
 
-/** True when the user may use Lookbook Studio (env allowlist OR studio_curators row). */
-export async function isStudioCurator(user: User): Promise<boolean> {
+async function isOnCuratorRosterViaServiceRole(userId: string): Promise<boolean> {
+  const admin = getServiceSupabase();
+  if (!admin) return false;
+
+  const { data, error } = await admin
+    .from("studio_curators")
+    .select("user_id")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("[studio-curator] service roster lookup failed:", error);
+    return false;
+  }
+
+  return Boolean(data);
+}
+
+/**
+ * Curator if env allowlist OR a `studio_curators` row exists for this auth user.
+ * Prefer the user's JWT + RLS (works without service role on Vercel).
+ */
+export async function isStudioCurator(
+  user: User,
+  userSupabase?: SupabaseClient,
+): Promise<boolean> {
   if (isOnEmailAllowlist(user)) return true;
-  return isOnCuratorRoster(user);
+
+  if (userSupabase) {
+    const onRoster = await isOnCuratorRosterForUser(userSupabase, user.id);
+    if (onRoster) return true;
+  }
+
+  return isOnCuratorRosterViaServiceRole(user.id);
 }
 
 export const STUDIO_ACCESS_DENIED_MESSAGE =

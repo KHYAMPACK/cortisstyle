@@ -17,7 +17,16 @@ function allowedStudioOrigins(): Set<string> {
 
 export function isAllowedStudioOrigin(origin: string | null): boolean {
   if (!origin) return false;
-  return allowedStudioOrigins().has(origin);
+  if (allowedStudioOrigins().has(origin)) return true;
+
+  try {
+    const { hostname } = new URL(origin);
+    if (hostname.endsWith(".vercel.app")) return true;
+  } catch {
+    return false;
+  }
+
+  return false;
 }
 
 export function studioCorsHeaders(request: Request): HeadersInit {

@@ -58,7 +58,7 @@ export async function requireStudioUser(
     };
   }
 
-  if (!(await isStudioCurator(user))) {
+  if (!(await isStudioCurator(user, supabase))) {
     return {
       ok: false,
       response: Response.json(
