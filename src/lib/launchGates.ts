@@ -1,5 +1,5 @@
 import { WARDROBE_COMING_SOON_PATH } from "@/lib/wardrobeGate";
-import { looks } from "@/data/looks";
+import { getLooks } from "@/data/looks";
 import type { Look } from "@/types/look";
 
 /** Free wardrobe tier: max saved outfit blueprints in archive. */
@@ -15,13 +15,13 @@ export function isArchiveLimitStatus(
 }
 
 /** First N looks visible on the public homepage stream. */
-export const HOMEPAGE_PUBLIC_LOOK_COUNT = 7;
+export const HOMEPAGE_PUBLIC_LOOK_COUNT = 8;
 
 /** First N visible looks are fully interactive (indices 0..N-1). */
-export const HOMEPAGE_FREE_LOOK_COUNT = 6;
+export const HOMEPAGE_FREE_LOOK_COUNT = 8;
 
 export function getPublicHomepageLooks(): Look[] {
-  return looks.slice(0, HOMEPAGE_PUBLIC_LOOK_COUNT);
+  return getLooks().slice(0, HOMEPAGE_PUBLIC_LOOK_COUNT);
 }
 
 export function isHomepageLookLocked(streamIndex: number): boolean {
@@ -29,7 +29,7 @@ export function isHomepageLookLocked(streamIndex: number): boolean {
 }
 
 export function getHomepageLookStreamIndex(lookId: string): number {
-  return looks.findIndex((look) => look.id === lookId);
+  return getLooks().findIndex((look) => look.id === lookId);
 }
 
 export function isUnlockedArchiveLook(lookId: string): boolean {

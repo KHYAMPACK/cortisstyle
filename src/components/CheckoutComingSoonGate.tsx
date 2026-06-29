@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { looks } from "@/data/looks";
+import { getLooks } from "@/data/looks";
 import { ArchiveCommunitySignOff } from "@/components/ArchiveCommunitySignOff";
 import { FunnelEmailCapture } from "@/components/FunnelEmailCapture";
 
 export function CheckoutComingSoonGate() {
   const searchParams = useSearchParams();
   const lookId = searchParams.get("look")?.trim() ?? "";
-  const look = looks.find((entry) => entry.id === lookId);
+  const look = getLooks().find((entry) => entry.id === lookId);
 
   return (
     <section className="relative flex min-h-[100dvh] flex-col items-center justify-center overflow-hidden bg-[#0D0D0D] px-6 py-24 text-white">

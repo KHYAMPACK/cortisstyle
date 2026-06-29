@@ -962,10 +962,33 @@ export const clothingItems: ClothingItem[] = [
   ),
 ];
 
-const clothingItemMap = new Map(
-  clothingItems.map((item) => [item.id, item]),
-);
+import {
+  buildClothingItemMap,
+  getDynamicCatalog,
+} from "@/lib/dynamicLooks/registry";
+
+let clothingItemMapCache: Map<string, ClothingItem> | null = null;
+
+function resolveClothingItemMap(): Map<string, ClothingItem> {
+  if (!clothingItemMapCache) {
+    clothingItemMapCache = buildClothingItemMap(
+      clothingItems,
+      getDynamicCatalog().items,
+    );
+  }
+
+  return clothingItemMapCache;
+}
+
+/** Rebuild item registry after server-side disk crawl (see buildCatalogFromDisk). */
+export function refreshClothingItemRegistry(): void {
+  clothingItemMapCache = null;
+}
 
 export function getClothingItem(id: string): ClothingItem | undefined {
-  return clothingItemMap.get(id);
+  return resolveClothingItemMap().get(id);
+}
+
+export function getAllClothingItems(): ClothingItem[] {
+  return [...resolveClothingItemMap().values()];
 }

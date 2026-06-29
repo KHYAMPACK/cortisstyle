@@ -3,6 +3,8 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Cormorant_Garamond, Inter } from "next/font/google";
 import { Providers } from "@/components/Providers";
+import { DynamicCatalogProvider } from "@/context/DynamicCatalogProvider";
+import { buildCatalogFromDisk } from "@/data/catalog";
 import "./globals.css";
 
 const inter = Inter({
@@ -26,6 +28,8 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const catalog = buildCatalogFromDisk();
+
   return (
     <html
       lang="en"
@@ -39,7 +43,9 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-full bg-ice-floor font-sans text-jet-black">
-        <Providers>{children}</Providers>
+        <DynamicCatalogProvider bundle={catalog}>
+          <Providers>{children}</Providers>
+        </DynamicCatalogProvider>
         <Analytics />
         <SpeedInsights />
       </body>

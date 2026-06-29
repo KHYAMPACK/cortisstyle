@@ -1,5 +1,11 @@
 import type { ItemCoordinates, Look, LookItemPlacement } from "@/types/look";
 import type { StyleMetrics } from "@/types/style-metrics";
+import {
+  buildLooksById,
+  getDynamicCatalog,
+  mergeHomepageLookOrder,
+  resolveLooksStream,
+} from "@/lib/dynamicLooks/registry";
 
 const IMAGE_WIDTH = 1700;
 const IMAGE_HEIGHT = 2500;
@@ -36,7 +42,7 @@ function metrics(data: StyleMetrics): StyleMetrics {
 const ALL_LOOKS: Look[] = [
   {
     id: "look-01",
-    title: "Look 04 — Cyber Grunge",
+    title: "Cyber Grunge",
     image: "/images/clothes/outfit-01/temp_image_0AD45B1B-0275-4C7F-817B-E22C2700E090.WEBP",
     modelName: "SEONGHYEON",
     layout: "collage",
@@ -62,7 +68,7 @@ const ALL_LOOKS: Look[] = [
   },
   {
     id: "look-02",
-    title: "Look 05 — Industrial Poise",
+    title: "Industrial Poise",
     image: "/images/clothes/outfit-02/ootd236.png",
     modelName: "MARTIN",
     layout: "collage",
@@ -88,7 +94,7 @@ const ALL_LOOKS: Look[] = [
   },
   {
     id: "look-03",
-    title: "Look 06 — Raw Editorial",
+    title: "Raw Editorial",
     image: "/images/clothes/outfit-03/ootd237.png",
     modelName: "JAMES",
     layout: "collage",
@@ -116,7 +122,7 @@ const ALL_LOOKS: Look[] = [
   },
   {
     id: "look-04",
-    title: "Look 01 — Monochrome Silence",
+    title: "Monochrome Silence",
     image: "/images/clothes/outfit-04/ootd278.png",
     modelName: "JUHOON",
     layout: "collage",
@@ -142,7 +148,7 @@ const ALL_LOOKS: Look[] = [
   },
   {
     id: "look-05",
-    title: "Look 02 — Vintage Chic",
+    title: "Vintage Chic",
     image: "/images/clothes/outfit-05/ootd279.png",
     modelName: "KEONHO",
     layout: "collage",
@@ -168,7 +174,7 @@ const ALL_LOOKS: Look[] = [
   },
   {
     id: "look-06",
-    title: "Look 03 — Colorful Contrast",
+    title: "Colorful Contrast",
     image: "/images/clothes/outfit-06/ootd266.png",
     modelName: "JAMES",
     layout: "collage",
@@ -195,7 +201,7 @@ const ALL_LOOKS: Look[] = [
   },
   {
     id: "look-07",
-    title: "Look 07 — Street Style Old Money",
+    title: "Street Style Old Money",
     image: "/images/clothes/outfit-07/ootd281.png",
     modelName: "MARTIN",
     layout: "collage",
@@ -223,7 +229,7 @@ const ALL_LOOKS: Look[] = [
   },
   {
     id: "look-08",
-    title: "Look 07 — Nocturnal Layer",
+    title: "Nocturnal Layer",
     image: "/images/temp_image_7603B699-F9F9-40F3-AF43-8EA5ACD24F72.WEBP",
     modelName: "SEONGHYEON",
     ...metrics({
@@ -239,7 +245,7 @@ const ALL_LOOKS: Look[] = [
   },
   {
     id: "look-09",
-    title: "Look 08 — Concrete Romance",
+    title: "Concrete Romance",
     image: "/images/temp_image_76EADAD7-87D4-4649-9923-B3D060ACD1BA.WEBP",
     modelName: "JUHOON",
     ...metrics({
@@ -255,7 +261,7 @@ const ALL_LOOKS: Look[] = [
   },
   {
     id: "look-10",
-    title: "Look 10 — Pale Structure",
+    title: "Pale Structure",
     image: "/images/temp_image_BA9895CE-E202-4395-A8F9-F1887D40902E.WEBP",
     modelName: "JUHOON",
     ...metrics({
@@ -271,7 +277,7 @@ const ALL_LOOKS: Look[] = [
   },
   {
     id: "look-11",
-    title: "Look 11 — Dissolved Form",
+    title: "Dissolved Form",
     image: "/images/temp_image_BFD792D8-8457-4412-905C-9FE51B6AA168.WEBP",
     modelName: "SEONGHYEON",
     ...metrics({
@@ -287,7 +293,7 @@ const ALL_LOOKS: Look[] = [
   },
   {
     id: "look-12",
-    title: "Look 12 — Final Frame",
+    title: "Final Frame",
     image: "/images/temp_image_F2334FB9-4D25-4EC6-9821-BE54537B0E98.WEBP",
     modelName: "JUHOON",
     ...metrics({
@@ -319,9 +325,33 @@ const HOMEPAGE_LOOK_ORDER = [
   "look-12",
 ] as const;
 
-const looksById = new Map(ALL_LOOKS.map((look) => [look.id, look]));
+export const LEGACY_LOOKS: Look[] = ALL_LOOKS;
 
-export const looks: Look[] = HOMEPAGE_LOOK_ORDER.flatMap((id) => {
-  const look = looksById.get(id);
-  return look ? [look] : [];
-});
+export const LEGACY_HOMEPAGE_LOOK_ORDER: readonly string[] = HOMEPAGE_LOOK_ORDER;
+
+let looksCache: Look[] | null = null;
+
+function resolveLooks(): Look[] {
+  const dynamic = getDynamicCatalog();
+  const looksById = buildLooksById(LEGACY_LOOKS, dynamic.looks);
+  const order = mergeHomepageLookOrder(
+    LEGACY_HOMEPAGE_LOOK_ORDER,
+    dynamic.lookOrderAdditions,
+  );
+
+  return resolveLooksStream(order, looksById);
+}
+
+/** Rebuild look stream after server-side disk crawl (see buildCatalogFromDisk). */
+export function refreshLooksRegistry(): void {
+  looksCache = null;
+}
+
+/** Homepage + modal look stream (legacy hardcoded + dynamic JSON imports). */
+export function getLooks(): Look[] {
+  if (!looksCache) {
+    looksCache = resolveLooks();
+  }
+
+  return looksCache;
+}

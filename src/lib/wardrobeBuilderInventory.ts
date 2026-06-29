@@ -1,4 +1,4 @@
-import { looks } from "@/data/looks";
+import { getLooks } from "@/data/looks";
 import { getClothingItem } from "@/data/items";
 import { isUnlockedArchiveLook } from "@/lib/launchGates";
 import type { ClothingItem } from "@/types/item";
@@ -22,7 +22,7 @@ export function inferMatrixCategories(item: ClothingItem): MatrixCategoryFilter[
 }
 
 export function resolveItemSourceLookId(itemId: string): string {
-  for (const look of looks) {
+  for (const look of getLooks()) {
     if (look.items.some((placement) => placement.itemId === itemId)) {
       return look.id;
     }
@@ -67,7 +67,7 @@ export function lookHasMatrixCategory(
 export function resolveLookCardForMatrixCategory(
   categoryFilter: MatrixCategoryFilter,
 ): Look | null {
-  const unlockedLooks = looks.filter((look) => isUnlockedArchiveLook(look.id));
+  const unlockedLooks = getLooks().filter((look) => isUnlockedArchiveLook(look.id));
 
   const categoryMatch = unlockedLooks.find((look) =>
     lookHasMatrixCategory(look, categoryFilter),

@@ -1,14 +1,26 @@
 import { LookCard } from "@/components/LookCard";
-import { getPublicHomepageLooks, isHomepageLookLocked } from "@/lib/launchGates";
+import {
+  getPublicHomepageLooks,
+  HOMEPAGE_PUBLIC_LOOK_COUNT,
+  isHomepageLookLocked,
+} from "@/lib/launchGates";
 import type { Look } from "@/types/look";
 
 interface LookGridProps {
+  /** When provided (e.g. from server disk crawl), overrides module-resolved looks. */
+  looks?: Look[];
   onSelectLook: (look: Look) => void;
   onLockedLookClick: (look: Look) => void;
 }
 
-export function LookGrid({ onSelectLook, onLockedLookClick }: LookGridProps) {
-  const publicLooks = getPublicHomepageLooks();
+export function LookGrid({
+  looks,
+  onSelectLook,
+  onLockedLookClick,
+}: LookGridProps) {
+  const publicLooks = looks
+    ? looks.slice(0, HOMEPAGE_PUBLIC_LOOK_COUNT)
+    : getPublicHomepageLooks();
 
   return (
     <section aria-label="Fashion lookbook" className="px-4 pb-4">

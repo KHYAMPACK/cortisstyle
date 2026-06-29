@@ -1,0 +1,112 @@
+{
+  "items": [
+    {
+      "id": "aire-tortoiseshell-aviator-sunglasses",
+      "name": "SUNGLASSES",
+      "category": "eyewear",
+      "brand": "Whirlpool",
+      "shopUrl": "https://www.nordstrom.com/s/aire-whirlpool-53mm-aviator-sunglasses/6713030?color=TORT+%2F+KHAKI+TINT&utm_medium=organic&utm_source=Pinterest&utm_id=120218074889790380&utm_content=120218355594080380&utm_term=120218315886220380&utm_campaign=120218074889790380&fbclid=PAZXh0bgNhZW0BMABhZGlkAasZ9jedr9wBppBPTlAm-5fi3TWjFYAbtLmMlnZMEvKJnVXctU6eJeM_XRE27Ibt0PLBNg_aem_EI5zVgfBNct2Z50wQP51Yw&epik=dj0yJnU9bV9qN0gweEVpUkVjaDVvSmE4cjdDRVZUMmJyY3NkenkmcD0wJm49ejhxb040RlZCYmJvM3Q1d0p5YXV0USZ0PUFBQUFBR285b1Jz",
+      "displayModel": "Whirlpool 53mm Aviator Sunglasses",
+      "estPriceRange": "$49",
+      "budgetAlternativeUrl": "https://www.forever21.com/",
+      "rarityScore": 1,
+      "canvasImage": "/images/clothes/outfit-010efe85/aire-tortoiseshell-aviator-sunglasses.png",
+      "defaultCanvasPosition": {
+        "top": "8.73%",
+        "left": "2.38%",
+        "width": "25%",
+        "zIndex": 30
+      }
+    },
+    {
+      "id": "cca-distressed-ribbed-tank-top-with-pendant",
+      "name": "TANK TOP",
+      "category": "tops",
+      "brand": "racer",
+      "shopUrl": "https://www.racerworldwide.net/products/core-top?variant=54150462144857",
+      "displayModel": "Core Top",
+      "estPriceRange": "$45",
+      "budgetAlternativeUrl": "https://www.racerworldwide.net/products/core-top?variant=54150462144857",
+      "rarityScore": 1,
+      "canvasImage": "/images/clothes/outfit-010efe85/cca-distressed-ribbed-tank-top-with-pendant.png",
+      "defaultCanvasPosition": {
+        "top": "12.86%",
+        "left": "37.14%",
+        "width": "25.952380952380956%",
+        "zIndex": 22
+      }
+    },
+    {
+      "id": "green-ribbed-zip-sweater",
+      "name": "ZIPPER",
+      "category": "outerwear",
+      "brand": "BEA",
+      "shopUrl": "https://www.weekday.com/de-de/p/women/knitwear/cardigans/bea-zip-cardigan-dark-green-002/",
+      "displayModel": "BEA Cardigan with Zipper",
+      "estPriceRange": "$60 - $80",
+      "budgetAlternativeUrl": "https://en.aboutyou.de/p/leger-by-lena-gercke/knit-cardigan-cindy-27074782",
+      "rarityScore": 1,
+      "canvasImage": "/images/clothes/outfit-010efe85/green-ribbed-zip-sweater.png",
+      "defaultCanvasPosition": {
+        "top": "17.94%",
+        "left": "-8.33%",
+        "width": "52.61904761904762%",
+        "zIndex": 25
+      }
+    },
+    {
+      "id": "brown-wool-trousers",
+      "name": "PANTS",
+      "category": "bottoms",
+      "brand": "Mango",
+      "shopUrl": "https://shop.mango.com/us/en/p/women/trousers/smart/straight-suit-pants-with-stitching-details/37091450/99/00",
+      "displayModel": "Straight Suit Pants with Stitching Details",
+      "estPriceRange": "$200",
+      "budgetAlternativeUrl": "https://www.amazon.com/cotzfoz-Womens-Straight-Pants-Suit/dp/B0H3VF63MM/ref=sr_1_11?crid=P5N5AA39IIPV&dib=eyJ2IjoiMSJ9.OeEFw-GsOUXzVTPqmsX4I_3vSbuT8NBRrR7ZABWIlgUOCEd_ai9wk26vqJp3DOdY6iD2l0jfxZZsu9N0hpbSzUUcN6-dXa7kKuBPDWw4RIkhrfT9U6EJJkCuctrDYrnUIgn8yPEhwlwXo3b697fQRVxUopOB9iU5GELfY5cNgIqP183cZe0E1HSSeAflaKoJLNDHB-NdpL9wSXpXZSrsj9Df9NgkeKbNK9GgFgsvHEqq3KfObmvYvDlVYuxZQuM8AW4fl4dvx3V9z7icrVaqAJ759eQoWb8Dyeukn3EBhjo.4S7DqlTnqPNNQtpr7RRVTm4hU1f703O6F2a4CmxASYw&dib_tag=se&keywords=womens%2Bsuit%2Bpants%2Bstraight%2Bleg%2Bbrown&qid=1782732795&sprefix=womens%2Bsuit%2Bpants%2Bstraight%2Bleg%2Bbro%2Caps%2C256&sr=8-11&th=1&psc=1",
+      "rarityScore": 1,
+      "canvasImage": "/images/clothes/outfit-010efe85/brown-wool-trousers.png",
+      "defaultCanvasPosition": {
+        "top": "42.54%",
+        "left": "35.00%",
+        "width": "32.142857142857146%",
+        "zIndex": 20
+      }
+    },
+    {
+      "id": "draft-1782731944957",
+      "name": "BAG",
+      "category": "bags",
+      "brand": "Zara",
+      "shopUrl": "https://www.zara.com/fr/fr/sac-shopper-ceinture-p13356720.html",
+      "displayModel": "Belted Tote Bag",
+      "estPriceRange": "£25",
+      "budgetAlternativeUrl": "https://tr.dhgate.com/product/manu-atelier-retro-tote-handbag-with-large/1058948071.html?skuId=1387105829523689498",
+      "rarityScore": 1,
+      "canvasImage": "/images/clothes/outfit-010efe85/draft-1782731944957.png",
+      "defaultCanvasPosition": {
+        "top": "33.81%",
+        "left": "68.10%",
+        "width": "29.28571428571429%",
+        "zIndex": 30
+      }
+    },
+    {
+      "id": "draft-1782731985540",
+      "name": "SANDALS",
+      "category": "shoes",
+      "brand": "SODA",
+      "shopUrl": "https://www.tillys.com/product/soda-womens-thong-flatform-sandals/428371100.html?utm_source=Pinterest&utm_medium=organic&epik=dj0yJnU9WTlMMlFKVzZFb1p4Vm1iVmNNTFlpMHliemp0YXFoN3MmcD0wJm49aVVCQ3NDMU4tMU1tMDFYQy0yS0lWUSZ0PUFBQUFBR285bmY4",
+      "displayModel": "Womens Thong Flatform Sandals",
+      "estPriceRange": "$27",
+      "budgetAlternativeUrl": "https://www.amazon.com/coleyn-Platform-Leather-Comfortable-Vacation/dp/B0GT41RZNH/ref=sr_1_1?crid=BMYHLUS2OC8W&dib=eyJ2IjoiMSJ9.pc37TqgstS94golf-12V6iVILr2tDMvvu7w88irQwtU4f0-4Xi0cFwlsZ1CiPP2M9Qcz2CI_6DQOER35CSZvcDImpDjdLuWbpSqfSudkK5gB8xVrb0XgxqNhyOr9D4QncuCFO0xu4wmAtCTMKTNVg9WTFdEK5IIm0gZcVYMZDUfsbd1etOmJmQO2VG7KSrZ4frTrgCiL1mSAeNDeeRGHMKis0pQE4ZvDIfDsyHZZKTOcn9JJTbXzgFC-QrHowII3MJwxlzCju6yMA1lo-8MVgUfG3sD6k2w5qV6Dm1bPj70.ofS2qvThgU8D7NQcgQc1qJA5sf8d7Wd1HnYlARxwmOA&dib_tag=se&keywords=Womens%2BThong%2BFlatform%2BSandals&qid=1782733959&sprefix=womens%2Bthong%2Bflatform%2Bsandals%2Caps%2C229&sr=8-1&th=1&psc=1",
+      "rarityScore": 1,
+      "canvasImage": "/images/clothes/outfit-010efe85/draft-1782731985540.png",
+      "defaultCanvasPosition": {
+        "top": "85.08%",
+        "left": "5.00%",
+        "width": "39.285714285714285%",
+        "zIndex": 30
+      }
+    }
+  ]
+}

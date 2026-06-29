@@ -1,4 +1,5 @@
 import { committedCanvasLayouts } from "@/data/canvas-layouts";
+import { getDynamicCanvasLayouts } from "@/lib/dynamicLooks/registry";
 import {
   applyFlatLayLayerStackFromClothingItems,
   resolveRenderedCanvasZIndex,
@@ -194,7 +195,11 @@ export function resolveCanvasLayouts(
   containerWidth: number,
 ): Record<string, CanvasItemLayout> {
   const defaults = buildInitialCanvasLayouts(items, containerWidth);
-  const committed = stripLegacyModelLayers(committedCanvasLayouts[lookId] ?? {});
+  const committed = stripLegacyModelLayers(
+    committedCanvasLayouts[lookId] ??
+      getDynamicCanvasLayouts(lookId) ??
+      {},
+  );
   let merged = mergeLayoutRecords(defaults, committed);
 
   if (isLocalhostClient()) {

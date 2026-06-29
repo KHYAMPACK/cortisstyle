@@ -1,5 +1,5 @@
 import { getClothingItem } from "@/data/items";
-import { looks } from "@/data/looks";
+import { getLooks } from "@/data/looks";
 import { getSupabaseClient } from "@/lib/supabaseClient";
 import type { WardrobeClothingItem, WardrobeLook } from "@/types/user";
 
@@ -12,7 +12,7 @@ export interface UserWardrobeRow {
 
 export function resolvePurchasedLooks(lookIds: string[]): WardrobeLook[] {
   return lookIds
-    .map((lookId) => looks.find((look) => look.id === lookId))
+    .map((lookId) => getLooks().find((look) => look.id === lookId))
     .filter((look): look is WardrobeLook => Boolean(look))
     .map((look) => ({ ...look, unlocked: true as const }));
 }
@@ -23,7 +23,7 @@ export function resolveOwnedClothesFromLooks(
   const items = new Map<string, WardrobeClothingItem>();
 
   for (const lookId of purchasedLookIds) {
-    const look = looks.find((entry) => entry.id === lookId);
+    const look = getLooks().find((entry) => entry.id === lookId);
     if (!look) continue;
 
     for (const placement of look.items) {

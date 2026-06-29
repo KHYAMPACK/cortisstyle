@@ -109,6 +109,7 @@ export function CollageStudioLayer({
   const [layouts, setLayouts] = useState<Record<string, CanvasItemLayout>>({});
   const [isHitboxMode, setIsHitboxMode] = useState(false);
   const [loadedImagesCount, setLoadedImagesCount] = useState(0);
+  const [loadTimedOut, setLoadTimedOut] = useState(false);
   const [activeDrag, setActiveDrag] = useState<{
     itemId: string;
     top: string;
@@ -141,6 +142,7 @@ export function CollageStudioLayer({
   const totalImagesToLoad = renderableItems.length;
   const isFullyLoaded =
     isEditMode ||
+    loadTimedOut ||
     (layoutsReady &&
       (totalImagesToLoad === 0 || loadedImagesCount >= totalImagesToLoad));
 
@@ -156,7 +158,18 @@ export function CollageStudioLayer({
   useEffect(() => {
     loadedImageIdsRef.current.clear();
     setLoadedImagesCount(0);
+    setLoadTimedOut(false);
   }, [lookId, activeItemSignature]);
+
+  useEffect(() => {
+    if (isFullyLoaded) return;
+
+    const timeoutId = window.setTimeout(() => {
+      setLoadTimedOut(true);
+    }, 8_000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [isFullyLoaded, lookId, activeItemSignature]);
 
   const handleImageLoad = useCallback((itemId: string) => {
     if (loadedImageIdsRef.current.has(itemId)) return;
@@ -188,6 +201,12 @@ export function CollageStudioLayer({
 
   useLayoutEffect(() => {
     syncLayoutsFromContainer();
+
+    const frameId = window.requestAnimationFrame(() => {
+      syncLayoutsFromContainer();
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
   }, [syncLayoutsFromContainer]);
 
   useEffect(() => {
@@ -629,6 +648,7 @@ export function CollageStudioLayer({
               eagerImageLoading={eagerImageLoading}
               onScale={(widthPx) => updateLayout(item.id, { widthPx })}
               onImageLoad={() => handleImageLoad(item.id)}
+              onImageError={() => handleImageLoad(item.id)}
             />
           );
         })}
@@ -651,6 +671,7 @@ interface CanvasAssetProps {
   eagerImageLoading: boolean;
   onScale: (widthPx: number) => void;
   onImageLoad: () => void;
+  onImageError: () => void;
 }
 
 function CanvasAsset({
@@ -667,6 +688,7 @@ function CanvasAsset({
   eagerImageLoading,
   onScale,
   onImageLoad,
+  onImageError,
 }: CanvasAssetProps) {
   const hitbox = resolveHitboxDimensions(layout);
   const hitboxOffset = resolveHitboxOffset(layout);
@@ -681,6 +703,12 @@ function CanvasAsset({
     if (hasReportedLoadRef.current) return;
     hasReportedLoadRef.current = true;
     onImageLoad();
+  };
+
+  const reportImageError = () => {
+    if (hasReportedLoadRef.current) return;
+    hasReportedLoadRef.current = true;
+    onImageError();
   };
 
   const hitboxStyle = {
@@ -721,6 +749,7 @@ function CanvasAsset({
           draggable={false}
           sizes={`${Math.ceil(visualWidth)}px`}
           onLoad={reportImageLoad}
+          onError={reportImageError}
           className="pointer-events-none block h-auto w-full max-w-none shrink-0 select-none object-contain object-left-top max-md:max-h-none max-md:min-h-0"
         />
       </div>

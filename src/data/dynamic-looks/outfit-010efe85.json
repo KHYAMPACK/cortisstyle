@@ -1,0 +1,157 @@
+{
+  "id": "look-010efe85",
+  "title": "Silent Earth",
+  "image": "/images/clothes/outfit-010efe85/hero.png",
+  "modelName": "JAMES   ",
+  "layout": "collage",
+  "outfitId": "outfit-010efe85",
+  "vibe": "Quite Luxury/Earthy",
+  "investmentRetail": 3,
+  "investmentWithGuide": 2,
+  "versatility": 3,
+  "width": 1700,
+  "height": 2500,
+  "homepageOrder": "prepend",
+  "items": [
+    {
+      "itemId": "aire-tortoiseshell-aviator-sunglasses",
+      "coordinates": {
+        "from": {
+          "top": "16.73%",
+          "left": "10.38%"
+        },
+        "to": {
+          "top": "20.73%",
+          "left": "-3.62%"
+        }
+      }
+    },
+    {
+      "itemId": "cca-distressed-ribbed-tank-top-with-pendant",
+      "coordinates": {
+        "from": {
+          "top": "20.86%",
+          "left": "45.14%"
+        },
+        "to": {
+          "top": "24.86%",
+          "left": "31.14%"
+        }
+      }
+    },
+    {
+      "itemId": "green-ribbed-zip-sweater",
+      "coordinates": {
+        "from": {
+          "top": "25.94%",
+          "left": "-0.33%"
+        },
+        "to": {
+          "top": "29.94%",
+          "left": "-14.33%"
+        }
+      }
+    },
+    {
+      "itemId": "brown-wool-trousers",
+      "coordinates": {
+        "from": {
+          "top": "50.54%",
+          "left": "43.00%"
+        },
+        "to": {
+          "top": "54.54%",
+          "left": "29.00%"
+        }
+      }
+    },
+    {
+      "itemId": "draft-1782731944957",
+      "coordinates": {
+        "from": {
+          "top": "41.81%",
+          "left": "76.10%"
+        },
+        "to": {
+          "top": "45.81%",
+          "left": "62.10%"
+        }
+      }
+    },
+    {
+      "itemId": "draft-1782731985540",
+      "coordinates": {
+        "from": {
+          "top": "93.08%",
+          "left": "13.00%"
+        },
+        "to": {
+          "top": "97.08%",
+          "left": "-1.00%"
+        }
+      }
+    }
+  ],
+  "canvasLayouts": {
+    "aire-tortoiseshell-aviator-sunglasses": {
+      "top": "8.73%",
+      "left": "2.38%",
+      "widthPx": 105,
+      "zIndex": 30,
+      "hitboxWidthPx": 105,
+      "hitboxHeightPx": 42,
+      "hitboxOffsetTopPx": 0,
+      "hitboxOffsetLeftPx": 0
+    },
+    "cca-distressed-ribbed-tank-top-with-pendant": {
+      "top": "12.86%",
+      "left": "37.14%",
+      "widthPx": 109,
+      "zIndex": 22,
+      "hitboxWidthPx": 109,
+      "hitboxHeightPx": 176,
+      "hitboxOffsetTopPx": 0,
+      "hitboxOffsetLeftPx": 0
+    },
+    "green-ribbed-zip-sweater": {
+      "top": "17.94%",
+      "left": "-8.33%",
+      "widthPx": 221,
+      "zIndex": 25,
+      "hitboxWidthPx": 221,
+      "hitboxHeightPx": 269,
+      "hitboxOffsetTopPx": 0,
+      "hitboxOffsetLeftPx": 0
+    },
+    "brown-wool-trousers": {
+      "top": "42.54%",
+      "left": "35.00%",
+      "widthPx": 135,
+      "zIndex": 20,
+      "hitboxWidthPx": 135,
+      "hitboxHeightPx": 365,
+      "hitboxOffsetTopPx": 0,
+      "hitboxOffsetLeftPx": 0
+    },
+    "draft-1782731944957": {
+      "top": "33.81%",
+      "left": "68.10%",
+      "widthPx": 123,
+      "zIndex": 30,
+      "hitboxWidthPx": 123,
+      "hitboxHeightPx": 138,
+      "hitboxOffsetTopPx": 0,
+      "hitboxOffsetLeftPx": 0
+    },
+    "draft-1782731985540": {
+      "top": "85.08%",
+      "left": "5.00%",
+      "widthPx": 165,
+      "zIndex": 30,
+      "hitboxWidthPx": 165,
+      "hitboxHeightPx": 65,
+      "hitboxOffsetTopPx": 0,
+      "hitboxOffsetLeftPx": 0
+    }
+  }
+}
