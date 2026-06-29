@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { createSharedAuthStorage } from "@/lib/supabaseCookieStorage";
 
 let browserClient: SupabaseClient | null = null;
 
@@ -18,6 +19,7 @@ export function getSupabaseClient(): SupabaseClient {
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true,
+        storage: createSharedAuthStorage(),
       },
     });
   }

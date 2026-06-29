@@ -1,3 +1,4 @@
+import { resolveEmailAuthStatusServer } from "@/lib/authEmailStatus.server";
 import { getServiceSupabase, isValidNotifyEmail } from "@/lib/supabaseAdmin";
 
 export const runtime = "nodejs";
@@ -34,19 +35,24 @@ export async function POST(request: Request) {
     );
   }
 
-  const { data, error } = await admin
-    .from("profiles")
-    .select("id")
-    .eq("email", email)
-    .maybeSingle();
+  try {
+    const status = await resolveEmailAuthStatusServer(email);
 
-  if (error) {
+    if (!status) {
+      return Response.json(
+        { error: "Unable to resolve email status.", fallback: true },
+        { status: 503 },
+      );
+    }
+
+    return Response.json({
+      route: status.route,
+    });
+  } catch (error) {
     console.error("Auth email check failed:", error);
     return Response.json(
       { error: "Unable to verify email address." },
       { status: 500 },
     );
   }
-
-  return Response.json({ exists: Boolean(data) });
 }

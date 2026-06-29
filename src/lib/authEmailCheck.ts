@@ -1,3 +1,5 @@
+import type { EmailAuthRoute, EmailAuthStatus } from "@/lib/authTypes";
+
 function isAlreadyRegisteredError(message: string, code?: string): boolean {
   const normalized = message.toLowerCase();
   return (
@@ -8,10 +10,9 @@ function isAlreadyRegisteredError(message: string, code?: string): boolean {
   );
 }
 
-export async function checkEmailExists(email: string): Promise<{
-  exists: boolean;
-  signUpDispatched?: boolean;
-}> {
+export async function resolveEmailAuthStatus(
+  email: string,
+): Promise<EmailAuthStatus> {
   const response = await fetch("/api/auth/check-email", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -19,25 +20,26 @@ export async function checkEmailExists(email: string): Promise<{
   });
 
   const body = (await response.json().catch(() => ({}))) as {
-    exists?: boolean;
+    route?: EmailAuthRoute;
     error?: string;
     fallback?: boolean;
   };
 
-  if (response.ok) {
-    return { exists: Boolean(body.exists) };
+  if (response.ok && body.route) {
+    return { route: body.route };
   }
 
   if (response.status === 503 && body.fallback) {
-    return probeEmailExistsViaSignUp(email);
+    return probeEmailAuthStatusViaSignUp(email);
   }
 
   throw new Error(body.error ?? "Unable to verify email address.");
 }
 
-async function probeEmailExistsViaSignUp(
+/** Client fallback when service-role lookup is unavailable. */
+async function probeEmailAuthStatusViaSignUp(
   email: string,
-): Promise<{ exists: boolean; signUpDispatched?: boolean }> {
+): Promise<EmailAuthStatus> {
   const { getSupabaseClient } = await import("@/lib/supabaseClient");
   const supabase = getSupabaseClient();
   const { error } = await supabase.auth.signUp({
@@ -46,11 +48,12 @@ async function probeEmailExistsViaSignUp(
   });
 
   if (!error) {
-    return { exists: false, signUpDispatched: true };
+    return { route: "signup" };
   }
 
   if (isAlreadyRegisteredError(error.message, error.code)) {
-    return { exists: true };
+    // Auth user exists — likely unverified signup. Never assume password login.
+    return { route: "verify_signup" };
   }
 
   throw new Error(error.message);

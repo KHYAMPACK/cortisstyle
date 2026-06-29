@@ -16,7 +16,7 @@ export function ProfileButton({ tone = "default" }: { tone?: "default" | "invers
         : "h-[18px] w-[18px] text-neutral-900",
   };
 
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, needsPasswordSetup } = useAuth();
   const [showAuthPopup, setShowAuthPopup] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -52,6 +52,11 @@ export function ProfileButton({ tone = "default" }: { tone?: "default" | "invers
   }, [isAuthenticated]);
 
   const handleClick = () => {
+    if (isAuthenticated && needsPasswordSetup) {
+      setShowAuthPopup(true);
+      return;
+    }
+
     if (isAuthenticated) {
       setShowDropdown((current) => !current);
       return;
@@ -78,7 +83,7 @@ export function ProfileButton({ tone = "default" }: { tone?: "default" | "invers
         <User {...iconProps} />
       </button>
 
-      {isAuthenticated && (
+      {isAuthenticated && !needsPasswordSetup && (
         <ProfileDropdown
           isOpen={showDropdown}
           onClose={() => setShowDropdown(false)}

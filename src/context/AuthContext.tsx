@@ -10,7 +10,9 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { checkEmailExists } from "@/lib/authEmailCheck";
+import { resolveEmailAuthStatus } from "@/lib/authEmailCheck";
+import { isPasswordSetInMetadata, type EmailAuthRoute } from "@/lib/authTypes";
+import { getPasswordResetRedirectUrl } from "@/lib/authRedirect";
 import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabaseClient";
 import {
   ensureUserProfile,
@@ -39,10 +41,14 @@ interface AuthContextValue {
   savedOutfits: SavedWardrobeOutfitBlueprint[];
   wardrobeLoadError: string | null;
   ownedClothes: WardrobeClothingItem[];
-  resolveEmailAuthRoute: (email: string) => Promise<"login" | "signup">;
+  resolveEmailAuthRoute: (email: string) => Promise<EmailAuthRoute>;
+  dispatchSignUpOtp: (email: string) => Promise<void>;
+  resendSignUpOtp: (email: string) => Promise<void>;
   signInWithPassword: (email: string, password: string) => Promise<void>;
   verifySignUpOtp: (email: string, token: string) => Promise<void>;
   setAccountPassword: (password: string) => Promise<void>;
+  requestPasswordReset: (email: string) => Promise<void>;
+  needsPasswordSetup: boolean;
   signOut: () => Promise<void>;
   refreshWardrobe: () => Promise<void>;
   refreshSavedOutfits: () => Promise<void>;
@@ -54,6 +60,16 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 async function syncProfile(user: User) {
   await ensureUserProfile(user.id, user.email);
+}
+
+function isAlreadyRegisteredAuthError(message: string, code?: string): boolean {
+  const normalized = message.toLowerCase();
+  return (
+    code === "user_already_exists" ||
+    normalized.includes("already registered") ||
+    normalized.includes("already been registered") ||
+    normalized.includes("user already exists")
+  );
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -84,6 +100,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setWardrobeLoadError(null);
 
     try {
+      const supabase = getSupabaseClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user || user.id !== userId) {
+        setPurchasedLookIds([]);
+        return;
+      }
+
       const lookIds = await fetchUserWardrobeLookIds(userId);
       setPurchasedLookIds(lookIds);
     } catch (error) {
@@ -133,12 +159,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (nextSession?.user) {
-        // Defer Supabase DB calls so getSession() is not deadlocked.
-        window.setTimeout(() => {
-          void syncProfile(nextSession.user).catch((error) => {
-            console.error("Profile sync failed:", error);
-          });
-        }, 0);
+        const passwordSet = isPasswordSetInMetadata(
+          nextSession.user.user_metadata as Record<string, unknown> | undefined,
+        );
+
+        if (passwordSet) {
+          window.setTimeout(() => {
+            void syncProfile(nextSession.user).catch((error) => {
+              console.error("Profile sync failed:", error);
+            });
+          }, 0);
+        }
       } else {
         setPurchasedLookIds([]);
         setSavedOutfits([]);
@@ -214,11 +245,76 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password: crypto.randomUUID(),
     });
 
-    if (error) throw error;
+    if (error && !isAlreadyRegisteredAuthError(error.message, error.code)) {
+      throw error;
+    }
   }, []);
 
+  const resendSignUpOtp = useCallback(async (email: string) => {
+    if (!isSupabaseConfigured()) {
+      setAuthError("Supabase is not configured.");
+      return;
+    }
+
+    setIsAuthenticating(true);
+    setAuthError(null);
+
+    try {
+      const supabase = getSupabaseClient();
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email,
+      });
+
+      if (error) throw error;
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Unable to resend verification code.";
+      setAuthError(message);
+      throw error;
+    } finally {
+      setIsAuthenticating(false);
+    }
+  }, []);
+
+  const dispatchSignUpOtp = useCallback(
+    async (email: string) => {
+      if (!isSupabaseConfigured()) {
+        setAuthError("Supabase is not configured.");
+        return;
+      }
+
+      setIsAuthenticating(true);
+      setAuthError(null);
+
+      try {
+        await startSignUp(email);
+      } catch (error) {
+        if (
+          error instanceof Error &&
+          isAlreadyRegisteredAuthError(error.message)
+        ) {
+          await resendSignUpOtp(email);
+          return;
+        }
+
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Unable to send verification code.";
+        setAuthError(message);
+        throw error;
+      } finally {
+        setIsAuthenticating(false);
+      }
+    },
+    [resendSignUpOtp, startSignUp],
+  );
+
   const resolveEmailAuthRoute = useCallback(
-    async (email: string): Promise<"login" | "signup"> => {
+    async (email: string): Promise<EmailAuthRoute> => {
       if (!isSupabaseConfigured()) {
         setAuthError("Supabase is not configured.");
         throw new Error("Supabase is not configured.");
@@ -228,17 +324,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setAuthError(null);
 
       try {
-        const result = await checkEmailExists(email);
+        const status = await resolveEmailAuthStatus(email);
 
-        if (result.exists) {
-          return "login";
+        if (status.route === "signup" || status.route === "verify_signup") {
+          if (status.route === "signup") {
+            await dispatchSignUpOtp(email);
+          } else {
+            await resendSignUpOtp(email);
+          }
         }
 
-        if (!result.signUpDispatched) {
-          await startSignUp(email);
-        }
-
-        return "signup";
+        return status.route;
       } catch (error) {
         const message =
           error instanceof Error
@@ -250,7 +346,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsAuthenticating(false);
       }
     },
-    [startSignUp],
+    [dispatchSignUpOtp, resendSignUpOtp],
   );
 
   const signInWithPassword = useCallback(async (email: string, password: string) => {
@@ -273,6 +369,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (data.user) {
         await syncProfile(data.user);
+      }
+
+      // Legacy accounts may predate password_set metadata.
+      if (
+        data.user &&
+        !isPasswordSetInMetadata(
+          data.user.user_metadata as Record<string, unknown> | undefined,
+        )
+      ) {
+        await supabase.auth.updateUser({ data: { password_set: true } });
       }
     } catch (error) {
       const message =
@@ -302,10 +408,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (error) throw error;
-
-      if (data.user) {
-        await syncProfile(data.user);
-      }
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Unable to verify access token.";
@@ -327,7 +429,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     try {
       const supabase = getSupabaseClient();
-      const { data, error } = await supabase.auth.updateUser({ password });
+      const { data, error } = await supabase.auth.updateUser({
+        password,
+        data: { password_set: true },
+      });
 
       if (error) throw error;
 
@@ -337,6 +442,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Unable to save password.";
+      setAuthError(message);
+      throw error;
+    } finally {
+      setIsAuthenticating(false);
+    }
+  }, []);
+
+  const requestPasswordReset = useCallback(async (email: string) => {
+    if (!isSupabaseConfigured()) {
+      setAuthError("Supabase is not configured.");
+      return;
+    }
+
+    setIsAuthenticating(true);
+    setAuthError(null);
+
+    try {
+      const supabase = getSupabaseClient();
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: getPasswordResetRedirectUrl(),
+      });
+
+      if (error) throw error;
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Unable to send password reset email.";
       setAuthError(message);
       throw error;
     } finally {
@@ -374,6 +507,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [purchasedLookIds],
   );
 
+  const needsPasswordSetup = useMemo(() => {
+    if (!session?.user) return false;
+    return !isPasswordSetInMetadata(
+      session.user.user_metadata as Record<string, unknown> | undefined,
+    );
+  }, [session?.user]);
+
   const value = useMemo(
     () => ({
       isAuthenticated: Boolean(session?.user),
@@ -388,9 +528,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       wardrobeLoadError,
       ownedClothes,
       resolveEmailAuthRoute,
+      dispatchSignUpOtp,
+      resendSignUpOtp,
       signInWithPassword,
       verifySignUpOtp,
       setAccountPassword,
+      requestPasswordReset,
+      needsPasswordSetup,
       signOut,
       refreshWardrobe: refreshWardrobeForSession,
       refreshSavedOutfits: refreshSavedOutfitsForSession,
@@ -410,9 +554,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       wardrobeLoadError,
       ownedClothes,
       resolveEmailAuthRoute,
+      dispatchSignUpOtp,
+      resendSignUpOtp,
       signInWithPassword,
       verifySignUpOtp,
       setAccountPassword,
+      requestPasswordReset,
+      needsPasswordSetup,
       signOut,
       refreshWardrobeForSession,
       refreshSavedOutfitsForSession,

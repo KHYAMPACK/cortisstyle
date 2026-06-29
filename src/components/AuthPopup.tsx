@@ -24,6 +24,18 @@ const monoInputClass =
 const primaryButtonClass =
   "mt-6 w-full border border-jet-black bg-jet-black px-5 py-4 text-center font-mono text-[10px] tracking-[0.32em] text-white uppercase transition-opacity hover:opacity-90 disabled:opacity-60";
 
+const textLinkClass =
+  "text-meta mt-4 w-full text-[10px] tracking-[0.22em] uppercase transition-colors hover:text-jet-black";
+
+type AuthPhase =
+  | "email"
+  | "login"
+  | "otp"
+  | "set-password"
+  | "complete-signup"
+  | "forgot-password"
+  | "forgot-password-sent";
+
 interface AuthPopupProps {
   isOpen: boolean;
   onClose: () => void;
@@ -33,14 +45,16 @@ interface AuthPopupProps {
   allowSignUp?: boolean;
 }
 
-function ResetAnchor({ onReset }: { onReset: () => void }) {
+function ResetAnchor({
+  onReset,
+  label = "[ GO BACK // RESET FORM ]",
+}: {
+  onReset: () => void;
+  label?: string;
+}) {
   return (
-    <button
-      type="button"
-      onClick={onReset}
-      className="text-meta mt-4 w-full text-[10px] tracking-[0.22em] uppercase transition-colors hover:text-jet-black"
-    >
-      [ GO BACK // RESET FORM ]
+    <button type="button" onClick={onReset} className={textLinkClass}>
+      {label}
     </button>
   );
 }
@@ -54,10 +68,14 @@ export function AuthPopup({
 }: AuthPopupProps) {
   const router = useRouter();
   const {
+    user,
     resolveEmailAuthRoute,
+    resendSignUpOtp,
     signInWithPassword,
     verifySignUpOtp,
     setAccountPassword,
+    requestPasswordReset,
+    needsPasswordSetup,
     isAuthenticating,
     authError,
     clearAuthError,
@@ -67,21 +85,23 @@ export function AuthPopup({
   const [password, setPassword] = useState("");
   const [otpToken, setOtpToken] = useState("");
   const [newPassword, setNewPassword] = useState("");
-  const [isLoginMode, setIsLoginMode] = useState(false);
-  const [isTokenSent, setIsTokenSent] = useState(false);
-  const [isSettingPassword, setIsSettingPassword] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [phase, setPhase] = useState<AuthPhase>("email");
   const [isMounted, setIsMounted] = useState(false);
 
   const normalizedEmail = email.trim().toLowerCase();
 
-  const resetForm = () => {
+  const resetFields = () => {
     clearAuthError();
     setPassword("");
     setOtpToken("");
     setNewPassword("");
-    setIsLoginMode(false);
-    setIsTokenSent(false);
-    setIsSettingPassword(false);
+    setConfirmPassword("");
+  };
+
+  const goToEmailPhase = () => {
+    resetFields();
+    setPhase("email");
   };
 
   const completeAuth = () => {
@@ -101,8 +121,15 @@ export function AuthPopup({
   useEffect(() => {
     if (!isOpen) {
       setEmail("");
-      resetForm();
+      resetFields();
+      setPhase("email");
       return;
+    }
+
+    if (needsPasswordSetup && user?.email) {
+      setEmail(user.email);
+      resetFields();
+      setPhase("set-password");
     }
 
     const previousOverflow = document.body.style.overflow;
@@ -111,7 +138,7 @@ export function AuthPopup({
     return () => {
       document.body.style.overflow = previousOverflow;
     };
-  }, [isOpen, clearAuthError]);
+  }, [isOpen, clearAuthError, needsPasswordSetup, user?.email]);
 
   const handleEmailSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -121,11 +148,16 @@ export function AuthPopup({
       const route = await resolveEmailAuthRoute(normalizedEmail);
 
       if (route === "login") {
-        setIsLoginMode(true);
+        setPhase("login");
         return;
       }
 
-      setIsTokenSent(true);
+      if (route === "complete_signup") {
+        setPhase("complete-signup");
+        return;
+      }
+
+      setPhase("otp");
     } catch {
       // Error state is handled in AuthContext.
     }
@@ -149,7 +181,7 @@ export function AuthPopup({
 
     try {
       await verifySignUpOtp(normalizedEmail, otpToken.trim());
-      setIsSettingPassword(true);
+      setPhase("set-password");
     } catch {
       // Error state is handled in AuthContext.
     }
@@ -159,6 +191,10 @@ export function AuthPopup({
     event.preventDefault();
     clearAuthError();
 
+    if (newPassword !== confirmPassword) {
+      return;
+    }
+
     try {
       await setAccountPassword(newPassword);
       enterWardrobe();
@@ -167,29 +203,60 @@ export function AuthPopup({
     }
   };
 
-  const title = isSettingPassword
-    ? "Secure Your Archive"
-    : isTokenSent
-      ? "Verify Identity"
-      : isLoginMode
-        ? "Welcome Back"
-        : "Join the Community";
+  const handleResendOtp = async () => {
+    clearAuthError();
 
-  const subtitle = isSettingPassword
-    ? "Create a permanent password for future sign-ins."
-    : isTokenSent
-      ? `Enter the 6-digit token we sent to ${normalizedEmail}.`
-      : isLoginMode
-        ? `Sign in to ${normalizedEmail} with your curator password.`
-        : description;
+    try {
+      await resendSignUpOtp(normalizedEmail);
+    } catch {
+      // Error state is handled in AuthContext.
+    }
+  };
 
-  const activePhase = isSettingPassword
-    ? "set-password"
-    : isTokenSent
-      ? "otp"
-      : isLoginMode
-        ? "login"
-        : "email";
+  const handleForgotPasswordSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    clearAuthError();
+
+    try {
+      await requestPasswordReset(normalizedEmail);
+      setPhase("forgot-password-sent");
+    } catch {
+      // Error state is handled in AuthContext.
+    }
+  };
+
+  const handleCompleteSignupLink = async () => {
+    clearAuthError();
+
+    try {
+      await requestPasswordReset(normalizedEmail);
+      setPhase("forgot-password-sent");
+    } catch {
+      // Error state is handled in AuthContext.
+    }
+  };
+
+  const titleByPhase: Record<AuthPhase, string> = {
+    email: "Join the Community",
+    login: "Welcome Back",
+    otp: "Verify Identity",
+    "set-password": "Secure Your Archive",
+    "complete-signup": "Finish Your Profile",
+    "forgot-password": "Reset Password",
+    "forgot-password-sent": "Check Your Inbox",
+  };
+
+  const subtitleByPhase: Record<AuthPhase, string> = {
+    email: description,
+    login: `Sign in to ${normalizedEmail || "your account"} with your curator password.`,
+    otp: `Enter the 6-digit token we sent to ${normalizedEmail}.`,
+    "set-password": "Create a permanent password for future sign-ins.",
+    "complete-signup":
+      "Your email is verified, but you still need to set a curator password before signing in.",
+    "forgot-password":
+      "We will email you a secure link to choose a new password.",
+    "forgot-password-sent": `If an account exists for ${normalizedEmail}, a reset link is on its way.`,
+  };
 
   if (!isMounted) return null;
 
@@ -233,16 +300,16 @@ export function AuthPopup({
                 id="auth-popup-title"
                 className="text-center font-serif text-2xl leading-tight text-neutral-950"
               >
-                {title}
+                {titleByPhase[phase]}
               </h2>
 
               <p className="mt-4 text-center text-sm leading-relaxed text-neutral-600">
-                {subtitle}
+                {subtitleByPhase[phase]}
               </p>
 
               {allowSignUp ? (
                 <AnimatePresence mode="wait">
-                  {activePhase === "email" ? (
+                  {phase === "email" ? (
                     <motion.form
                       key="email-phase"
                       {...fieldTransition}
@@ -275,7 +342,7 @@ export function AuthPopup({
                     </motion.form>
                   ) : null}
 
-                  {activePhase === "login" ? (
+                  {phase === "login" ? (
                     <motion.form
                       key="login-phase"
                       {...fieldTransition}
@@ -306,16 +373,27 @@ export function AuthPopup({
                         {isAuthenticating ? "SIGNING IN..." : "SIGN IN"}
                       </button>
 
+                      <button
+                        type="button"
+                        onClick={() => {
+                          clearAuthError();
+                          setPhase("forgot-password");
+                        }}
+                        className={textLinkClass}
+                      >
+                        [ FORGOT PASSWORD? ]
+                      </button>
+
                       <ResetAnchor
                         onReset={() => {
-                          resetForm();
+                          goToEmailPhase();
                           setEmail("");
                         }}
                       />
                     </motion.form>
                   ) : null}
 
-                  {activePhase === "otp" ? (
+                  {phase === "otp" ? (
                     <motion.form
                       key="otp-phase"
                       {...fieldTransition}
@@ -360,16 +438,25 @@ export function AuthPopup({
                         {isAuthenticating ? "VERIFYING..." : "VERIFY IDENTITY ACCESS"}
                       </button>
 
+                      <button
+                        type="button"
+                        onClick={() => void handleResendOtp()}
+                        disabled={isAuthenticating}
+                        className={textLinkClass}
+                      >
+                        {isAuthenticating ? "SENDING..." : "[ RESEND CODE ]"}
+                      </button>
+
                       <ResetAnchor
                         onReset={() => {
-                          resetForm();
+                          goToEmailPhase();
                           setEmail("");
                         }}
                       />
                     </motion.form>
                   ) : null}
 
-                  {activePhase === "set-password" ? (
+                  {phase === "set-password" ? (
                     <motion.form
                       key="set-password-phase"
                       {...fieldTransition}
@@ -391,22 +478,131 @@ export function AuthPopup({
                         className={monoInputClass}
                         placeholder="CREATE YOUR CURATOR PASSWORD..."
                       />
+                      <input
+                        id="community-confirm-password"
+                        type="password"
+                        required
+                        minLength={6}
+                        autoComplete="new-password"
+                        value={confirmPassword}
+                        onChange={(event) => setConfirmPassword(event.target.value)}
+                        disabled={isAuthenticating}
+                        className={monoInputClass}
+                        placeholder="CONFIRM YOUR PASSWORD..."
+                      />
+
+                      {newPassword.length >= 6 &&
+                      confirmPassword.length >= 6 &&
+                      newPassword !== confirmPassword ? (
+                        <p className="mt-3 text-center text-[11px] text-red-600">
+                          Passwords do not match.
+                        </p>
+                      ) : null}
 
                       <button
                         type="submit"
-                        disabled={isAuthenticating || newPassword.length < 6}
+                        disabled={
+                          isAuthenticating ||
+                          newPassword.length < 6 ||
+                          newPassword !== confirmPassword
+                        }
                         className={primaryButtonClass}
                       >
                         {isAuthenticating ? "SAVING..." : "CONFIRM PROFILE"}
                       </button>
 
+                      {!needsPasswordSetup ? (
+                        <ResetAnchor
+                          onReset={() => {
+                            goToEmailPhase();
+                            setEmail("");
+                          }}
+                        />
+                      ) : null}
+                    </motion.form>
+                  ) : null}
+
+                  {phase === "complete-signup" ? (
+                    <motion.div
+                      key="complete-signup-phase"
+                      {...fieldTransition}
+                      className="mx-auto mt-8 flex w-full max-w-[420px] flex-col"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => void handleCompleteSignupLink()}
+                        disabled={isAuthenticating}
+                        className={primaryButtonClass}
+                      >
+                        {isAuthenticating ? "SENDING..." : "SEND PASSWORD SETUP LINK"}
+                      </button>
+
                       <ResetAnchor
                         onReset={() => {
-                          resetForm();
+                          goToEmailPhase();
                           setEmail("");
                         }}
                       />
+                    </motion.div>
+                  ) : null}
+
+                  {phase === "forgot-password" ? (
+                    <motion.form
+                      key="forgot-password-phase"
+                      {...fieldTransition}
+                      onSubmit={handleForgotPasswordSubmit}
+                      className="mx-auto mt-8 flex w-full max-w-[420px] flex-col"
+                    >
+                      <label className="sr-only" htmlFor="forgot-password-email">
+                        Email address
+                      </label>
+                      <input
+                        id="forgot-password-email"
+                        type="email"
+                        required
+                        autoComplete="email"
+                        value={email}
+                        onChange={(event) => setEmail(event.target.value)}
+                        disabled={isAuthenticating}
+                        className={monoInputClass}
+                        placeholder="Enter your email..."
+                      />
+
+                      <button
+                        type="submit"
+                        disabled={isAuthenticating}
+                        className={primaryButtonClass}
+                      >
+                        {isAuthenticating ? "SENDING..." : "SEND RESET LINK"}
+                      </button>
+
+                      <ResetAnchor
+                        label="[ BACK TO SIGN IN ]"
+                        onReset={() => {
+                          clearAuthError();
+                          setPhase("login");
+                        }}
+                      />
                     </motion.form>
+                  ) : null}
+
+                  {phase === "forgot-password-sent" ? (
+                    <motion.div
+                      key="forgot-password-sent-phase"
+                      {...fieldTransition}
+                      className="mx-auto mt-8 flex w-full max-w-[420px] flex-col"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          goToEmailPhase();
+                          setEmail("");
+                        }}
+                        className={primaryButtonClass}
+                      >
+                        BACK TO SIGN IN
+                      </button>
+                    </motion.div>
                   ) : null}
                 </AnimatePresence>
               ) : (

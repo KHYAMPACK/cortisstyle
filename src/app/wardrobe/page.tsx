@@ -13,6 +13,7 @@ import { WardrobeTabs } from "@/components/wardrobe/WardrobeTabs";
 import { useAuth } from "@/context/AuthContext";
 import { deleteSavedWardrobeOutfit } from "@/lib/savedWardrobeOutfitDb";
 import { lookToBuilderBlueprint } from "@/lib/lookToWardrobeBlueprint";
+import { getStudioEntryPath } from "@/lib/studioRedirect";
 import type { SavedWardrobeOutfitBlueprint } from "@/types/wardrobe-builder";
 import type { WardrobeLook } from "@/types/user";
 
@@ -22,6 +23,7 @@ function WardrobePageContent() {
   const {
     isAuthenticated,
     isInitializing,
+    needsPasswordSetup,
     wardrobeLoading,
     user,
     purchasedLooks,
@@ -48,14 +50,14 @@ function WardrobePageContent() {
   useEffect(() => {
     if (isInitializing) return;
 
-    if (!isAuthenticated) {
+    if (!isAuthenticated || needsPasswordSetup) {
       setShowAuthPopup(true);
     }
-  }, [isAuthenticated, isInitializing]);
+  }, [isAuthenticated, isInitializing, needsPasswordSetup]);
 
   const handleAuthClose = () => {
     setShowAuthPopup(false);
-    if (!isAuthenticated) {
+    if (!isAuthenticated || needsPasswordSetup) {
       router.push("/");
     }
   };
@@ -114,30 +116,41 @@ function WardrobePageContent() {
   return (
     <div className="min-h-full overflow-x-hidden bg-ice-floor text-jet-black">
       <AuthPopup
-        isOpen={showAuthPopup && !isAuthenticated}
+        isOpen={showAuthPopup && (!isAuthenticated || needsPasswordSetup)}
         onClose={handleAuthClose}
         description="Join the community to access your private wardrobe archive."
         allowSignUp
       />
 
       <section className="border-b border-blueprint-border px-5 py-8 md:px-10 md:py-10">
-        <div>
-          <Link
-            href="/"
-            className="mb-4 inline-block text-meta text-[9px] tracking-[0.35em] uppercase transition-colors hover:text-jet-black"
-          >
-            ← Lookbook
-          </Link>
-          <p className="mb-2 text-meta text-[9px] tracking-[0.45em] uppercase">
-            Wardrobe Archive // {user?.displayLabel ?? "GUEST"}
-          </p>
-          <h1 className="font-serif text-3xl leading-none tracking-[-0.02em] text-neutral-950 md:text-5xl">
-            Digital Wardrobe
-          </h1>
+        <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+          <div>
+            <Link
+              href="/"
+              className="mb-4 inline-block text-meta text-[9px] tracking-[0.35em] uppercase transition-colors hover:text-jet-black"
+            >
+              ← Lookbook
+            </Link>
+            <p className="mb-2 text-meta text-[9px] tracking-[0.45em] uppercase">
+              Wardrobe Archive // {user?.displayLabel ?? "GUEST"}
+            </p>
+            <h1 className="font-serif text-3xl leading-none tracking-[-0.02em] text-neutral-950 md:text-5xl">
+              Digital Wardrobe
+            </h1>
+          </div>
+
+          {isAuthenticated && !needsPasswordSetup ? (
+            <Link
+              href={getStudioEntryPath()}
+              className="inline-block shrink-0 border border-jet-black px-6 py-3.5 font-mono text-[10px] tracking-[0.32em] text-jet-black uppercase transition-colors hover:bg-jet-black hover:text-white"
+            >
+              Become a Creator
+            </Link>
+          ) : null}
         </div>
       </section>
 
-      {isAuthenticated ? (
+      {isAuthenticated && !needsPasswordSetup ? (
         <main className="min-w-0 overflow-x-hidden px-5 py-8 md:px-10 md:py-10">
           <WardrobeTabs activeTab={activeTab} onChange={setActiveTab} />
 

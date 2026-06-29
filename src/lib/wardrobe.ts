@@ -48,7 +48,11 @@ export async function fetchUserWardrobeLookIds(
   } = await supabase.auth.getUser();
 
   if (authError || !user) {
-    throw new Error("Sign in to load your wardrobe archive.");
+    return [];
+  }
+
+  if (user.id !== userId) {
+    return [];
   }
 
   await ensureUserProfile(user.id, user.email);

@@ -11,7 +11,7 @@ function isMaintenanceModeEnabled(): boolean {
 }
 
 function isAllowedDuringMaintenance(pathname: string): boolean {
-  if (pathname === MAINTENANCE_PATH || pathname.startsWith("/auth/callback")) {
+  if (pathname === MAINTENANCE_PATH || pathname.startsWith("/auth/callback") || pathname.startsWith("/auth/studio") || pathname.startsWith("/auth/reset-password")) {
     return true;
   }
 
