@@ -1,5 +1,6 @@
 import { rmbg, createBriaaiModel, type RMBGModel } from "rmbg";
 import sharp from "sharp";
+import { getLocalBgRemovalCacheDir } from "@/lib/bgRemovalConfig";
 
 let briaaiModel: RMBGModel | null = null;
 
@@ -11,7 +12,16 @@ function getBriaaiModel(): RMBGModel {
 }
 
 async function trimTransparentPng(png: Buffer): Promise<Buffer> {
-  return sharp(png).trim().png().toBuffer();
+  try {
+    const meta = await sharp(png).metadata();
+    if ((meta.width ?? 0) < 3 || (meta.height ?? 0) < 3) {
+      return png;
+    }
+
+    return sharp(png).trim().png().toBuffer();
+  } catch {
+    return png;
+  }
 }
 
 /** Bria RMBG @ 1024px — highest quality model in the `rmbg` SDK */
@@ -33,6 +43,8 @@ export async function removeGarmentBackgroundLocal(
       model: getBriaaiModel(),
       maxResolution: 2048,
       abortController,
+      cacheDir: getLocalBgRemovalCacheDir(),
+      enableCache: true,
     });
 
     return trimTransparentPng(matted);

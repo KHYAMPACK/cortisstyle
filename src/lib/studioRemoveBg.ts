@@ -1,5 +1,4 @@
 import { getBgRemovalProvider } from "@/lib/bgRemovalConfig";
-import { removeGarmentBackgroundLocal } from "@/lib/localBgRemoval";
 
 const PHOTOROOM_SEGMENT_URL = "https://sdk.photoroom.com/v1/segment";
 
@@ -51,7 +50,24 @@ export async function removeGarmentBackground(params: {
     return removeGarmentBackgroundPhotoroom(params);
   }
 
-  return removeGarmentBackgroundLocal(params.bytes, params.signal);
+  try {
+    const { removeGarmentBackgroundLocal } = await import("@/lib/localBgRemoval");
+    return removeGarmentBackgroundLocal(params.bytes, params.signal);
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : "Local background removal failed";
+    const hasPhotoroomKey = Boolean(
+      process.env.PHOTOROOM_API_KEY ?? process.env.VITE_PHOTOROOM_API_KEY,
+    );
+
+    if (hasPhotoroomKey) {
+      console.warn("[studio/remove-bg] local matting unavailable, falling back to Photoroom:", detail);
+      return removeGarmentBackgroundPhotoroom(params);
+    }
+
+    throw new Error(
+      `${detail}. Local matting needs native ONNX support on the server. On Vercel, redeploy after this update or set PHOTOROOM_API_KEY with BG_REMOVAL_PROVIDER=photoroom.`,
+    );
+  }
 }
 
 export async function fetchRemoteImageBuffer(

@@ -6,3 +6,16 @@ export function getBgRemovalProvider(): BgRemovalProvider {
   if (raw === "photoroom") return "photoroom";
   return "local";
 }
+
+/** Writable model cache — Vercel only persists `/tmp` across warm invocations. */
+export function getLocalBgRemovalCacheDir(): string | undefined {
+  if (process.env.RMBG_CACHE_DIR?.trim()) {
+    return process.env.RMBG_CACHE_DIR.trim();
+  }
+
+  if (process.env.VERCEL) {
+    return "/tmp/rmbg-cache";
+  }
+
+  return undefined;
+}

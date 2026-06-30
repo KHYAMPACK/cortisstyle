@@ -1,0 +1,8 @@
+{
+  "functions": {
+    "src/app/api/studio/remove-bg/route.ts": {
+      "maxDuration": 60,
+      "memory": 3008
+    }
+  }
+}
