@@ -1,14 +1,19 @@
+import { getBgRemovalProvider } from "@/lib/bgRemovalConfig";
+import { removeGarmentBackgroundLocal } from "@/lib/localBgRemoval";
+
 const PHOTOROOM_SEGMENT_URL = "https://sdk.photoroom.com/v1/segment";
 
 function getPhotoroomApiKey(): string {
   const apiKey = process.env.PHOTOROOM_API_KEY ?? process.env.VITE_PHOTOROOM_API_KEY;
   if (!apiKey) {
-    throw new Error("PHOTOROOM_API_KEY is not configured on the server.");
+    throw new Error(
+      "PHOTOROOM_API_KEY is not configured. Set BG_REMOVAL_PROVIDER=local or add PHOTOROOM_API_KEY.",
+    );
   }
   return apiKey;
 }
 
-export async function removeGarmentBackground(params: {
+async function removeGarmentBackgroundPhotoroom(params: {
   bytes: Buffer;
   filename: string;
   mimeType: string;
@@ -34,6 +39,19 @@ export async function removeGarmentBackground(params: {
   }
 
   return Buffer.from(await response.arrayBuffer());
+}
+
+export async function removeGarmentBackground(params: {
+  bytes: Buffer;
+  filename: string;
+  mimeType: string;
+  signal?: AbortSignal;
+}): Promise<Buffer> {
+  if (getBgRemovalProvider() === "photoroom") {
+    return removeGarmentBackgroundPhotoroom(params);
+  }
+
+  return removeGarmentBackgroundLocal(params.bytes, params.signal);
 }
 
 export async function fetchRemoteImageBuffer(

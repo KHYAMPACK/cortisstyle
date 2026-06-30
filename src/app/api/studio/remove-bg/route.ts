@@ -38,7 +38,12 @@ export async function POST(request: Request) {
         return new Response("No image file or URL provided.", { status: 400 });
       }
 
-      const result = await removeGarmentBackground({ bytes, filename, mimeType });
+      const result = await removeGarmentBackground({
+        bytes,
+        filename,
+        mimeType,
+        signal: request.signal,
+      });
 
       return new Response(new Uint8Array(result), {
         status: 200,
