@@ -173,6 +173,10 @@ function drawGarmentLayers(
 ): void {
   const sorted = [...items].sort((a, b) => a.zIndex - b.zIndex)
 
+  ctx.save()
+  ctx.imageSmoothingEnabled = true
+  ctx.imageSmoothingQuality = 'high'
+
   for (const item of sorted) {
     const image = images.get(item.id)
     if (!image) continue
@@ -182,11 +186,12 @@ function drawGarmentLayers(
     const width = item.widthPx * sx
     const height = displayHeight(item) * sy
 
-    ctx.save()
-    ctx.globalCompositeOperation = 'multiply'
+    // Opaque stack — matches LookCardPreview + Fabric artboard (not multiply).
+    ctx.globalCompositeOperation = 'source-over'
     ctx.drawImage(image, x, y, width, height)
-    ctx.restore()
   }
+
+  ctx.restore()
 }
 
 function drawFooter(
@@ -293,6 +298,7 @@ export async function renderLookCardPngBytes(input: RenderLookCardInput): Promis
 
   drawMoodFrame(ctx, moodImage, moodLayout)
   drawCreatorName(ctx, input.lookParams.modelName, moodLayout, SCALE_X)
+  // Garments last — always above mood frame + creator label (matches preview z-10 stack).
   drawGarmentLayers(ctx, input.artboardItems, SCALE_X, SCALE_Y, garmentImages)
 
   if (includeFooter) {
