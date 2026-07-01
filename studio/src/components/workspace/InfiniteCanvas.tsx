@@ -117,7 +117,7 @@ export function InfiniteCanvas({ onImportFile }: InfiniteCanvasProps) {
     <div
       ref={stageRef}
       className={`relative h-full w-full overflow-hidden bg-[#0D0D0D] outline-none ${
-        isDragOver ? 'ring-1 ring-inset ring-white/10' : ''
+        isDragOver ? 'ring-1 ring-inset ring-blueprint-accent/40' : ''
       }`}
       tabIndex={0}
       onDragOver={(event) => {

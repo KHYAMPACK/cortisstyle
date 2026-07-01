@@ -1,5 +1,13 @@
 import { useGarmentLibrary } from '../../hooks/useGarmentLibrary'
-import { STUDIO_LABEL, STUDIO_RULE, STUDIO_SECTION_TITLE } from '../../lib/studioUiTokens'
+import {
+  STUDIO_BTN_GHOST,
+  STUDIO_CHROME_BG,
+  STUDIO_KICKER,
+  STUDIO_LABEL,
+  STUDIO_RULE,
+  STUDIO_SECTION_TITLE,
+  STUDIO_SURFACE,
+} from '../../lib/studioUiTokens'
 import type { StudioImportCacheRecord } from '../../lib/studioImportCacheApi'
 
 function formatRelativeTime(iso: string): string {
@@ -38,9 +46,9 @@ function GarmentLibraryItem({
       type="button"
       onClick={onPlace}
       disabled={isPlacing}
-      className="group flex w-full items-center gap-3 border border-transparent px-3 py-2.5 text-left transition-colors hover:border-white/[0.08] hover:bg-white/[0.03] disabled:opacity-50"
+      className={`group mx-3 mb-2 flex w-[calc(100%-1.5rem)] items-center gap-3 border border-blueprint-border ${STUDIO_SURFACE} p-2.5 text-left transition-colors hover:border-jet-black disabled:opacity-50`}
     >
-      <span className="relative flex h-14 w-11 shrink-0 items-center justify-center overflow-hidden border border-white/[0.08] bg-[linear-gradient(45deg,#1a1a1c_25%,transparent_25%,transparent_75%,#1a1a1c_75%,#1a1a1c),linear-gradient(45deg,#1a1a1c_25%,transparent_25%,transparent_75%,#1a1a1c_75%,#1a1a1c)] bg-[length:8px_8px] bg-[position:0_0,4px_4px]">
+      <span className="relative flex h-14 w-11 shrink-0 items-center justify-center overflow-hidden border border-blueprint-border bg-neutral-100">
         <img
           src={record.assetUrl}
           alt=""
@@ -50,19 +58,17 @@ function GarmentLibraryItem({
       </span>
 
       <span className="min-w-0 flex-1">
-        <span className="block truncate font-sans text-[12px] text-zinc-200 group-hover:text-white">
+        <span className="block truncate font-serif text-[11px] tracking-[0.08em] text-neutral-900 uppercase group-hover:text-jet-black">
           {title}
         </span>
         <span className="mt-1 flex flex-wrap items-center gap-1.5">
           {record.category ? (
-            <span className="font-sans text-[10px] uppercase tracking-[0.08em] text-zinc-500">
-              {record.category}
-            </span>
+            <span className={STUDIO_LABEL}>{record.category}</span>
           ) : null}
-          <span className="font-sans text-[10px] text-zinc-600">
+          <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-neutral-400">
             {record.pipeline === 'segmented' ? 'cutout' : 'raw'}
           </span>
-          <span className="font-sans text-[10px] text-zinc-600">
+          <span className="font-mono text-[9px] text-neutral-400">
             · {formatRelativeTime(record.lastUsedAt)}
           </span>
         </span>
@@ -76,31 +82,32 @@ export function GarmentLibraryPanel() {
 
   return (
     <aside
-      className={`flex w-64 shrink-0 flex-col border-r ${STUDIO_RULE} bg-[#0F0F10]/95 backdrop-blur-md lg:w-72`}
+      className={`flex w-64 shrink-0 flex-col border-r ${STUDIO_RULE} ${STUDIO_CHROME_BG} lg:w-72`}
     >
-      <div className={`flex items-center justify-between border-b ${STUDIO_RULE} px-4 py-3`}>
+      <div className={`flex items-start justify-between border-b ${STUDIO_RULE} px-4 py-4`}>
         <div>
-          <p className={STUDIO_SECTION_TITLE}>Garment library</p>
-          <p className={`mt-1 ${STUDIO_LABEL}`}>Re-place without re-segmenting</p>
+          <p className={STUDIO_KICKER}>Import Archive</p>
+          <h2 className={`mt-1 ${STUDIO_SECTION_TITLE}`}>Garment Library</h2>
+          <p className={`mt-2 ${STUDIO_LABEL}`}>Re-place without re-segmenting</p>
         </div>
         <button
           type="button"
           onClick={() => void library.refresh()}
           disabled={library.isLoading}
-          className="font-sans text-[10px] uppercase tracking-[0.1em] text-zinc-500 transition-colors hover:text-zinc-300 disabled:opacity-40"
+          className={`${STUDIO_BTN_GHOST} shrink-0 disabled:opacity-40`}
         >
           Refresh
         </button>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto py-2">
+      <div className="min-h-0 flex-1 overflow-y-auto py-3">
         {library.isLoading && library.records.length === 0 ? (
-          <p className="px-4 py-6 font-sans text-[12px] text-zinc-600">Loading archive…</p>
+          <p className={`px-4 py-6 ${STUDIO_LABEL}`}>Loading archive…</p>
         ) : null}
 
         {!library.isLoading && library.records.length === 0 ? (
           <div className="px-4 py-6">
-            <p className="font-sans text-[12px] leading-relaxed text-zinc-500">
+            <p className="font-sans text-[12px] leading-relaxed text-meta">
               Imported garments appear here. Paste or upload once — next time click to place for
               free.
             </p>
@@ -108,7 +115,9 @@ export function GarmentLibraryPanel() {
         ) : null}
 
         {library.error ? (
-          <p className="px-4 py-2 font-sans text-[11px] text-red-400/90">{library.error}</p>
+          <p className="px-4 py-2 font-mono text-[10px] uppercase tracking-[0.12em] text-red-700">
+            {library.error}
+          </p>
         ) : null}
 
         <div className="flex flex-col">

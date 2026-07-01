@@ -16,7 +16,7 @@ export function EditorialArtboard({ onSelectClear }: EditorialArtboardProps) {
 
   return (
     <div
-      className="relative shrink-0 shadow-[0_32px_120px_rgba(0,0,0,0.55)] ring-1 ring-white/[0.04]"
+      className="relative shrink-0 border border-blueprint-border shadow-[var(--shadow-canvas-paper),0_32px_120px_rgba(0,0,0,0.55)]"
       style={{
         width: LOOK_CANVAS_REFERENCE_WIDTH,
         height: LOOK_CANVAS_REFERENCE_HEIGHT,

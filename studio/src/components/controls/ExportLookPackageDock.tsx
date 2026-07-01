@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react'
 import { useWorkspaceStore, resolveLinkedGarments } from '../../store/workspaceStore'
 import { exportLookPackageZip, resolveOutfitId } from '../../lib/exportLookPackage'
-import { STUDIO_BTN_PRIMARY } from '../../lib/studioUiTokens'
+import { STUDIO_BTN_PRIMARY, STUDIO_LABEL } from '../../lib/studioUiTokens'
 
 export function ExportLookPackageDock() {
   const assignNewLookId = useWorkspaceStore((s) => s.assignNewLookId)
@@ -37,16 +37,14 @@ export function ExportLookPackageDock() {
         {busy ? 'Packaging…' : 'Download Outfit Package'}
       </button>
 
-      <p className="font-sans text-[11px] normal-case leading-relaxed tracking-normal text-zinc-600">
+      <p className="font-sans text-[11px] leading-relaxed text-meta">
         Downloads a zip with your layout, item details, and garment cutouts. Send the file to
         Cortisstyle when you are done.
       </p>
 
-      {status && (
-        <p className="font-sans text-[11px] normal-case tracking-normal text-zinc-500">
-          {status}
-        </p>
-      )}
+      {status ? (
+        <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-meta">{status}</p>
+      ) : null}
     </div>
   )
 }

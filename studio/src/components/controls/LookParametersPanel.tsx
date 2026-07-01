@@ -3,8 +3,11 @@ import { useWorkspaceStore } from '../../store/workspaceStore'
 import { LookCardPreview } from './LookCardPreview'
 import {
   STUDIO_INPUT,
+  STUDIO_KICKER,
   STUDIO_LABEL,
-  STUDIO_SECTION_TITLE,
+  STUDIO_RULE,
+  STUDIO_SECTION_TITLE_SM,
+  STUDIO_SURFACE_BLUEPRINT,
 } from '../../lib/studioUiTokens'
 import { uploadDataUrlAsset } from '../../lib/studioApi'
 
@@ -45,11 +48,14 @@ export function LookParametersPanel() {
   )
 
   return (
-    <div className="space-y-5">
-      <p className={STUDIO_SECTION_TITLE}>About This Look</p>
+    <div className="space-y-6">
+      <div>
+        <p className={STUDIO_KICKER}>Look Metadata</p>
+        <p className={`mt-1 ${STUDIO_SECTION_TITLE_SM}`}>About This Look</p>
+      </div>
 
       <div className="space-y-0">
-        <label className="block border-b border-white/[0.04] py-2">
+        <label className={`block border-b ${STUDIO_RULE} py-2.5`}>
           <span className={STUDIO_LABEL}>Look Name</span>
           <input
             className={STUDIO_INPUT}
@@ -59,7 +65,7 @@ export function LookParametersPanel() {
           />
         </label>
 
-        <label className="block border-b border-white/[0.04] py-2">
+        <label className={`block border-b ${STUDIO_RULE} py-2.5`}>
           <span className={STUDIO_LABEL}>Look Vibe</span>
           <input
             className={STUDIO_INPUT}
@@ -69,7 +75,7 @@ export function LookParametersPanel() {
           />
         </label>
 
-        <label className="block border-b border-white/[0.04] py-2">
+        <label className={`block border-b ${STUDIO_RULE} py-2.5`}>
           <span className={STUDIO_LABEL}>By Who</span>
           <input
             className={STUDIO_INPUT}
@@ -83,7 +89,7 @@ export function LookParametersPanel() {
       <div className="space-y-2">
         <span className={STUDIO_LABEL}>Mood Image</span>
         <div
-          className="flex min-h-[72px] cursor-pointer flex-col items-center justify-center border border-dashed border-white/[0.08] bg-[#050506]/60 p-3 text-center transition-all duration-300 hover:border-white/[0.14] hover:bg-[#050506]"
+          className={`flex min-h-[80px] cursor-pointer flex-col items-center justify-center border border-dashed border-blueprint-border ${STUDIO_SURFACE_BLUEPRINT} p-3 text-center transition-colors hover:border-blueprint-accent`}
           onDragOver={(e) => e.preventDefault()}
           onDrop={(e) => {
             e.preventDefault()
@@ -98,7 +104,7 @@ export function LookParametersPanel() {
               className="max-h-24 max-w-full object-contain"
             />
           ) : (
-            <span className="font-sans text-[10px] text-zinc-500">
+            <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-meta">
               Drop mood image or click to upload
             </span>
           )}

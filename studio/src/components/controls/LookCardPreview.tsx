@@ -7,6 +7,7 @@ import {
   MOODBOARD_FOOTER_HEIGHT_PX,
 } from '../../lib/lookCanvasReference'
 import { CreatorNameOverlay, MoodImageFrame } from '../workspace/MoodImageFrame'
+import { STUDIO_LABEL, STUDIO_RULE, STUDIO_SECTION_TITLE_SM, STUDIO_SURFACE } from '../../lib/studioUiTokens'
 
 /** Sidebar preview width — hero keeps 2:3 (420×630 ≡ 1700×2500) */
 const PREVIEW_WIDTH = 248
@@ -71,7 +72,12 @@ export function LookCardPreview({
 
   return (
     <div className="space-y-3">
-      <div className="overflow-hidden border border-white/[0.06]" style={{ width: PREVIEW_WIDTH }}>
+      <p className={STUDIO_LABEL}>Live Preview</p>
+
+      <div
+        className={`overflow-hidden border border-blueprint-border ${STUDIO_SURFACE}`}
+        style={{ width: PREVIEW_WIDTH }}
+      >
         <div
           className="relative overflow-hidden bg-white"
           style={{ width: PREVIEW_WIDTH, height: PREVIEW_HERO_HEIGHT }}
@@ -102,7 +108,7 @@ export function LookCardPreview({
         </div>
 
         <footer
-          className="flex items-center justify-between border-t border-black/[0.06] bg-gradient-to-b from-[#FAFAFA] to-[#F4F4F4] px-3 font-sans uppercase text-neutral-600"
+          className="flex items-center justify-between border-t border-blueprint-border bg-gradient-to-b from-[#FAFAFA] to-[#F4F4F4] px-3 font-sans uppercase text-neutral-600"
           style={{ height: PREVIEW_FOOTER_HEIGHT }}
         >
           <span className="max-w-[55%] truncate text-[7px] tracking-[0.14em] text-neutral-700">
@@ -114,14 +120,10 @@ export function LookCardPreview({
         </footer>
       </div>
 
-      <div className="border border-white/[0.06] bg-[#050506] px-3 py-3">
-        <p className="font-serif text-[11px] leading-snug tracking-[0.1em] text-zinc-300 uppercase">
-          {title}
-        </p>
-        <p className="mt-1.5 font-sans text-[9px] uppercase tracking-[0.12em] text-zinc-500">
-          {vibeText}
-        </p>
-        <p className="mt-1 font-sans text-[9px] uppercase tracking-[0.16em] text-zinc-600">
+      <div className={`border ${STUDIO_RULE} ${STUDIO_SURFACE} px-3 py-3`}>
+        <p className={STUDIO_SECTION_TITLE_SM}>{title}</p>
+        <p className={`mt-1.5 ${STUDIO_LABEL}`}>{vibeText}</p>
+        <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.22em] text-meta">
           By {creator}
         </p>
       </div>

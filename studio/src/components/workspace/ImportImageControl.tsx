@@ -1,4 +1,5 @@
 import { useRef } from 'react'
+import { STUDIO_BTN_SECONDARY } from '../../lib/studioUiTokens'
 
 interface ImportImageControlProps {
   onImportFile: (file: File) => void
@@ -22,7 +23,7 @@ export function ImportImageControl({ onImportFile }: ImportImageControlProps) {
       />
       <button
         type="button"
-        className="border border-white/[0.1] px-3 py-1.5 font-sans text-[11px] font-medium tracking-[0.04em] text-zinc-300 transition-all duration-300 hover:border-white/25 hover:bg-white hover:text-black"
+        className={STUDIO_BTN_SECONDARY}
         onClick={() => inputRef.current?.click()}
       >
         Import File

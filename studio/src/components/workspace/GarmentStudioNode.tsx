@@ -7,8 +7,8 @@ import {
   STUDIO_CARD,
   STUDIO_INPUT,
   STUDIO_LABEL,
-  STUDIO_SECTION_TITLE,
-  STUDIO_SELECT,
+  STUDIO_RULE,
+  STUDIO_SECTION_TITLE_SM,
   STUDIO_SURFACE,
 } from '../../lib/studioUiTokens'
 
@@ -29,7 +29,7 @@ function InlineField({
   children: ReactNode
 }) {
   return (
-    <label className="block border-b border-white/[0.04] py-1.5 last:border-b-0">
+    <label className={`block border-b ${STUDIO_RULE} py-1.5 last:border-b-0`}>
       <span className={STUDIO_LABEL}>{label}</span>
       <div className="mt-0.5">{children}</div>
     </label>
@@ -56,21 +56,21 @@ export const GarmentStudioNode = memo(function GarmentStudioNode({
         isDragging ? '' : 'transition-[border-color,box-shadow] duration-300'
       } ${
         isSelected
-          ? 'border-white/[0.12] ring-1 ring-white/[0.08]'
-          : 'border-white/[0.06] hover:border-white/[0.08]'
+          ? 'border-blueprint-accent ring-1 ring-blueprint-accent/20'
+          : 'border-blueprint-border hover:border-jet-black/30'
       }`}
       style={{ left: node.worldX, top: node.worldY }}
       onPointerDown={() => selectLinkedGarment(node.id)}
     >
       <div
-        className="flex cursor-grab items-center justify-between border-b border-white/[0.04] px-4 py-2.5 active:cursor-grabbing"
+        className={`flex cursor-grab items-center justify-between border-b ${STUDIO_RULE} px-4 py-2.5 active:cursor-grabbing`}
         onPointerDown={(event) => {
           event.stopPropagation()
           onDragHandlePointerDown(node.id, event.clientX, event.clientY)
         }}
       >
-        <span className={STUDIO_SECTION_TITLE}>Garment</span>
-        <span className="font-sans text-[9px] uppercase tracking-[0.1em] text-zinc-600">
+        <span className={STUDIO_SECTION_TITLE_SM}>Garment</span>
+        <span className="font-mono text-[9px] uppercase tracking-[0.28em] text-meta">
           Linked
         </span>
       </div>
@@ -78,7 +78,7 @@ export const GarmentStudioNode = memo(function GarmentStudioNode({
       <div className="grid grid-cols-[88px_1fr] gap-4 px-4 pt-3 pb-1">
         <div className="relative">
           <div
-            className="relative flex aspect-square items-center justify-center overflow-hidden bg-[#FAFAFA]"
+            className="relative flex aspect-square items-center justify-center overflow-hidden border border-blueprint-border bg-neutral-100"
             title="Linked artboard preview"
           >
             {previewImageUrl ? (
@@ -89,7 +89,7 @@ export const GarmentStudioNode = memo(function GarmentStudioNode({
                 className="relative z-[1] max-h-full max-w-full object-contain mix-blend-multiply"
               />
             ) : (
-              <span className="font-mono text-[7px] uppercase tracking-[0.12em] text-zinc-400">
+              <span className="font-mono text-[7px] uppercase tracking-[0.12em] text-neutral-400">
                 —
               </span>
             )}
@@ -149,7 +149,7 @@ export const GarmentStudioNode = memo(function GarmentStudioNode({
 
           <InlineField label="Category">
             <select
-              className={STUDIO_SELECT}
+              className={`${STUDIO_INPUT} cursor-pointer`}
               value={node.category}
               onChange={(e) =>
                 updateStudioNode(node.id, { category: e.target.value as ClothingCategory })

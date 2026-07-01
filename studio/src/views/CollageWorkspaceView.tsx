@@ -5,6 +5,14 @@ import { ImportImageControl } from '../components/workspace/ImportImageControl'
 import { RemoveBackgroundToggle } from '../components/workspace/RemoveBackgroundToggle'
 import { useGarmentIngestion } from '../hooks/useGarmentIngestion'
 import type { DraftSaveState } from '../hooks/useDraftAutosave'
+import {
+  STUDIO_CHROME_BG,
+  STUDIO_BTN_GHOST,
+  STUDIO_KICKER,
+  STUDIO_LABEL,
+  STUDIO_RULE,
+  STUDIO_SECTION_TITLE,
+} from '../lib/studioUiTokens'
 
 interface CollageWorkspaceViewProps {
   userEmail: string | null
@@ -40,34 +48,33 @@ export function CollageWorkspaceView({
   const statusLabel = saveStateLabel(saveState, saveError)
 
   return (
-    <div className="flex h-screen w-screen flex-col overflow-hidden bg-[#0D0D0D] text-zinc-200">
-      <header className="flex h-11 shrink-0 items-center justify-between border-b border-white/[0.06] bg-[#0D0D0D]/90 px-6 backdrop-blur-md">
-        <div className="flex min-w-0 items-center gap-4">
-          <span className="font-sans text-[12px] font-medium tracking-[0.06em] text-zinc-400">
-            Cortis Collage Builder
-          </span>
+    <div className={`flex h-screen w-screen flex-col overflow-hidden ${STUDIO_CHROME_BG} text-jet-black`}>
+      <header
+        className={`flex h-14 shrink-0 items-center justify-between border-b ${STUDIO_RULE} ${STUDIO_CHROME_BG} px-5 md:px-6`}
+      >
+        <div className="flex min-w-0 items-center gap-5">
+          <div>
+            <p className={STUDIO_KICKER}>Lookbook Studio // Collage</p>
+            <h1 className={`mt-1 ${STUDIO_SECTION_TITLE}`}>Outfit Builder</h1>
+          </div>
           {statusLabel ? (
-            <span className="hidden truncate font-sans text-[10px] tracking-[0.08em] text-zinc-600 sm:inline">
+            <span className={`hidden truncate sm:inline ${STUDIO_LABEL}`}>
               {statusLabel}
               {draftId ? ` · ${draftId.slice(0, 8)}` : ''}
             </span>
           ) : null}
         </div>
 
-        <div className="flex items-center gap-3">
-          <span className="hidden font-sans text-[11px] normal-case tracking-normal text-zinc-600 sm:inline">
-            Import file · drag-drop · paste image
+        <div className="flex items-center gap-3 md:gap-4">
+          <span className={`hidden lg:inline ${STUDIO_LABEL}`}>
+            Import · drag-drop · paste
           </span>
           {userEmail ? (
-            <span className="hidden max-w-[180px] truncate font-sans text-[10px] text-zinc-500 md:inline">
+            <span className="hidden max-w-[180px] truncate font-sans text-[11px] text-meta md:inline">
               {userEmail}
             </span>
           ) : null}
-          <button
-            type="button"
-            onClick={onSignOut}
-            className="font-sans text-[10px] uppercase tracking-[0.12em] text-zinc-500 transition-colors hover:text-zinc-300"
-          >
+          <button type="button" onClick={onSignOut} className={STUDIO_BTN_GHOST}>
             Sign out
           </button>
           <RemoveBackgroundToggle />

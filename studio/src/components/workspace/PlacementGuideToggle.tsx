@@ -1,4 +1,5 @@
 import { useWorkspaceStore } from '../../store/workspaceStore'
+import { STUDIO_CANVAS_CONTROL, STUDIO_CANVAS_CONTROL_LABEL } from '../../lib/studioUiTokens'
 
 export function PlacementGuideToggle() {
   const showPlacementGuide = useWorkspaceStore((s) => s.showPlacementGuide)
@@ -9,22 +10,29 @@ export function PlacementGuideToggle() {
       type="button"
       role="switch"
       aria-checked={showPlacementGuide}
-      className="group flex items-center gap-2.5 border border-white/[0.08] bg-[#141416]/80 px-3 py-2 backdrop-blur-md transition-all duration-300 hover:border-white/[0.14]"
+      className={`group flex items-center gap-3 ${STUDIO_CANVAS_CONTROL}`}
       onClick={() => setShowPlacementGuide(!showPlacementGuide)}
     >
-      <span className="font-sans text-[11px] tracking-[0.04em] text-zinc-400 transition-colors duration-300 group-hover:text-zinc-300">
+      <span
+        className={`${STUDIO_CANVAS_CONTROL_LABEL} ${
+          showPlacementGuide
+            ? 'text-jet-black'
+            : 'text-neutral-400 group-hover:text-neutral-600'
+        }`}
+      >
         Placement guide
       </span>
       <span
-        className={`relative h-[18px] w-[32px] shrink-0 rounded-full transition-colors duration-300 ${
-          showPlacementGuide ? 'bg-white/90' : 'bg-zinc-700/80'
+        aria-hidden
+        className={`relative inline-flex h-5 w-9 shrink-0 border border-jet-black transition-colors ${
+          showPlacementGuide ? 'bg-jet-black' : 'bg-white'
         }`}
       >
         <span
-          className={`absolute top-[2px] left-[2px] h-[14px] w-[14px] rounded-full transition-all duration-300 ease-out ${
+          className={`absolute top-0.5 h-3.5 w-3.5 transition-transform duration-200 ${
             showPlacementGuide
-              ? 'translate-x-[14px] bg-neutral-800'
-              : 'translate-x-0 bg-zinc-400'
+              ? 'translate-x-[18px] bg-white'
+              : 'translate-x-0.5 bg-jet-black'
           }`}
         />
       </span>
