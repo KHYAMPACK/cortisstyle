@@ -1,6 +1,6 @@
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { extname, join, resolve } from "node:path";
-import { clothingItems } from "@/data/items";
+import { loadDynamicLooksFromDisk } from "@/lib/dynamicLooks/loadFromDisk";
 import { extractProductFromUrl } from "@/lib/itemDraft/extractProductFromUrl";
 import { formatItemDraftSnippets } from "@/lib/itemDraft/formatSnippets";
 import { generateItemMetadataWithLlm } from "@/lib/itemDraft/generateItemMetadata";
@@ -14,7 +14,8 @@ import type {
 } from "@/lib/itemDraft/types";
 
 function existingItemIds(): Set<string> {
-  return new Set(clothingItems.map((item) => item.id));
+  const bundle = loadDynamicLooksFromDisk();
+  return new Set(bundle.items.map((item) => item.id));
 }
 
 function detectImageMime(pngPath: string): string {

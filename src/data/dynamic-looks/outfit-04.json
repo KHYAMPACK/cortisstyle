@@ -1,0 +1,157 @@
+{
+  "id": "look-04",
+  "title": "Monochrome Silence",
+  "image": "/images/clothes/outfit-04/ootd278.png",
+  "modelName": "JUHOON",
+  "layout": "collage",
+  "outfitId": "outfit-04",
+  "editorGuideImage": "/images/clothes/outfit-04/ootd278.png",
+  "vibe": "Quiet Luxury / Monochrome",
+  "investmentRetail": 4,
+  "investmentWithGuide": 2,
+  "versatility": 5,
+  "width": 1700,
+  "height": 2500,
+  "items": [
+    {
+      "itemId": "ember-top-black-01",
+      "coordinates": {
+        "from": {
+          "top": "54%",
+          "left": "42%"
+        },
+        "to": {
+          "top": "48%",
+          "left": "28%"
+        }
+      }
+    },
+    {
+      "itemId": "studded-oversized-tote-bag-01",
+      "coordinates": {
+        "from": {
+          "top": "70%",
+          "left": "48%"
+        },
+        "to": {
+          "top": "76%",
+          "left": "58%"
+        }
+      }
+    },
+    {
+      "itemId": "js-eyewear-5052-sunglasses-01",
+      "coordinates": {
+        "from": {
+          "top": "70%",
+          "left": "48%"
+        },
+        "to": {
+          "top": "76%",
+          "left": "58%"
+        }
+      }
+    },
+    {
+      "itemId": "gray-raw-denim-jacket-01",
+      "coordinates": {
+        "from": {
+          "top": "70%",
+          "left": "48%"
+        },
+        "to": {
+          "top": "76%",
+          "left": "58%"
+        }
+      }
+    },
+    {
+      "itemId": "tweed-mini-skirt-with-decorative-belt-01",
+      "coordinates": {
+        "from": {
+          "top": "70%",
+          "left": "48%"
+        },
+        "to": {
+          "top": "76%",
+          "left": "58%"
+        }
+      }
+    },
+    {
+      "itemId": "wide-heeeled-boots-01",
+      "coordinates": {
+        "from": {
+          "top": "70%",
+          "left": "48%"
+        },
+        "to": {
+          "top": "76%",
+          "left": "58%"
+        }
+      }
+    }
+  ],
+  "canvasLayouts": {
+    "ember-top-black-01": {
+      "top": "-19.14%",
+      "left": "-0.15%",
+      "widthPx": 423,
+      "zIndex": 20,
+      "hitboxWidthPx": 111,
+      "hitboxHeightPx": 171,
+      "hitboxOffsetTopPx": 208,
+      "hitboxOffsetLeftPx": 152
+    },
+    "studded-oversized-tote-bag-01": {
+      "top": "2.32%",
+      "left": "33.46%",
+      "widthPx": 423,
+      "zIndex": 20,
+      "hitboxWidthPx": 139,
+      "hitboxHeightPx": 151,
+      "hitboxOffsetTopPx": 264,
+      "hitboxOffsetLeftPx": 128
+    },
+    "js-eyewear-5052-sunglasses-01": {
+      "top": "-39.31%",
+      "left": "-31.35%",
+      "widthPx": 415,
+      "zIndex": 20,
+      "hitboxWidthPx": 115,
+      "hitboxHeightPx": 52,
+      "hitboxOffsetTopPx": 292,
+      "hitboxOffsetLeftPx": 155
+    },
+    "gray-raw-denim-jacket-01": {
+      "top": "-13.33%",
+      "left": "-27.30%",
+      "widthPx": 423,
+      "zIndex": 25,
+      "hitboxWidthPx": 155,
+      "hitboxHeightPx": 239,
+      "hitboxOffsetTopPx": 184,
+      "hitboxOffsetLeftPx": 120
+    },
+    "tweed-mini-skirt-with-decorative-belt-01": {
+      "top": "1.29%",
+      "left": "2.27%",
+      "widthPx": 407,
+      "zIndex": 20,
+      "hitboxWidthPx": 147,
+      "hitboxHeightPx": 111,
+      "hitboxOffsetTopPx": 256,
+      "hitboxOffsetLeftPx": 128
+    },
+    "wide-heeeled-boots-01": {
+      "top": "28.12%",
+      "left": "-28.90%",
+      "widthPx": 423,
+      "zIndex": 30,
+      "hitboxWidthPx": 119,
+      "hitboxHeightPx": 215,
+      "hitboxOffsetTopPx": 220,
+      "hitboxOffsetLeftPx": 146
+    }
+  }
+}

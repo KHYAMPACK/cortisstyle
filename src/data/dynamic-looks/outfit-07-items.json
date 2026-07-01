@@ -1,0 +1,148 @@
+{
+  "items": [
+    {
+      "id": "linen-cotton-blend-striped-shirt-01",
+      "name": "BUTTON-DOWN SHIRT",
+      "category": "outerwear",
+      "brand": "Marks & Spencer",
+      "shopUrl": "https://www.marksandspencer.com/us/linen-cotton-blend-striped-shirt/p/P60766622.html#index=0?pid_pip36g4r6c4",
+      "estPriceRange": "$62 on Marks & Spencer",
+      "budgetAlternativeUrl": "https://www.hm.com/search?q=H%26M+Striped+Linen+Shirt+Alternative",
+      "rarityScore": 3,
+      "displayModel": "Linen Cotton Blend Striped Shirt",
+      "canvasImage": "/images/clothes/outfit-07/linen-cotton-blend-striped-shirt-01.png",
+      "defaultCanvasPosition": {
+        "top": "10%",
+        "left": "10%",
+        "width": "20%",
+        "zIndex": 4
+      }
+    },
+    {
+      "id": "glass-piece-necklaces-01",
+      "name": "NECKLACE",
+      "category": "accessories",
+      "brand": "Zara",
+      "shopUrl": "https://www.zara.com/tr/en/pack-of-2-glass-piece-necklaces-p01011209.html?v1=555430245",
+      "estPriceRange": "$20 - $30 on Zara",
+      "budgetAlternativeUrl": "https://www.zara.com/ae/en/pack-of-2-glass-piece-necklaces-p01011209.html",
+      "rarityScore": 1,
+      "displayModel": "Zara — Layered Glass Bead Necklace Set",
+      "canvasImage": "/images/clothes/outfit-07/glass-piece-necklaces-01.png",
+      "defaultCanvasPosition": {
+        "top": "10%",
+        "left": "10%",
+        "width": "20%",
+        "zIndex": 4
+      }
+    },
+    {
+      "id": "verydior-m1u-wrap-around-acetate-sunglasses-01",
+      "name": "SUNGLASSES",
+      "category": "eyewear",
+      "brand": "Dior",
+      "shopUrl": "https://www.net-a-porter.com/en-us/shop/product/dior-eyewear/accessories/d-frame/verydior-m1u-wrap-around-acetate-sunglasses/1647597349607219?epik=dj0yJnU9b2FRb21udjRUUmR3N3RRSVUweTlIdUdFcnRFTDFKcTYmcD0wJm49bmRsUS1XbjByQ2RNZ0FRdTVUQVNOdyZ0PUFBQUFBR285RjJj",
+      "estPriceRange": "$690 on Dior",
+      "budgetAlternativeUrl": "https://pretavoir.co.uk/products/dior-verydior-m1u-10a0?shpxid=b2bc2faf-98ef-4919-84b7-c17c183bade4",
+      "rarityScore": 2,
+      "displayModel": "VeryDior M1U Wrap-Around Acetate Sunglasses",
+      "canvasImage": "/images/clothes/outfit-07/verydior-m1u-wrap-around-acetate-sunglasses-01.png",
+      "defaultCanvasPosition": {
+        "top": "10%",
+        "left": "10%",
+        "width": "20%",
+        "zIndex": 4
+      }
+    },
+    {
+      "id": "scallop-shoulder-bag-01",
+      "name": "BAG",
+      "category": "bags",
+      "brand": "Yuzefi",
+      "shopUrl": "https://yuzefi.com/products/scallop-shoulder-bag-angora-pebble-grained-leather",
+      "estPriceRange": "$560 on Yuzefi",
+      "budgetAlternativeUrl": "https://www.sometime.asia/collections/canvas-tote-bag/products/mandu-mini-bag?variant=62374198116721",
+      "rarityScore": 3,
+      "displayModel": "Scallop Shoulder Bag — Angora Pebble Grained Leather",
+      "canvasImage": "/images/clothes/outfit-07/scallop-shoulder-bag-01.png",
+      "defaultCanvasPosition": {
+        "top": "10%",
+        "left": "10%",
+        "width": "20%",
+        "zIndex": 4
+      }
+    },
+    {
+      "id": "black-soft-knee-length-wide-leg-jorts-01",
+      "name": "JORTS",
+      "category": "bottoms",
+      "brand": "Daxuen",
+      "shopUrl": "https://www.daxuen.com/products/black-soft-knee-length-wide-leg-jorts?utm_source=Pinterest&utm_medium=organic&variant=45038010597572",
+      "estPriceRange": "$57 on Daxuen",
+      "budgetAlternativeUrl": "https://www.bershka.com/us/bermuda-culottes-with-elasticated-waistband-c0p229336783.html?colorId=800",
+      "rarityScore": 2,
+      "displayModel": "Black Soft Wide-Leg Knee-Length Jorts",
+      "canvasImage": "/images/clothes/outfit-07/black-soft-knee-length-wide-leg-jorts-01.png",
+      "defaultCanvasPosition": {
+        "top": "10%",
+        "left": "10%",
+        "width": "20%",
+        "zIndex": 4
+      }
+    },
+    {
+      "id": "label-knit-wool-leg-warmers-01",
+      "name": "LEG WARMERS",
+      "category": "accessories",
+      "brand": "WConcept",
+      "shopUrl": "https://www.wconcept.com/product/label-knit-wool-leg-warmers-4color-/720828122.html?utm_source=Pinterest&utm_medium=organic",
+      "estPriceRange": "$52 on WConcept",
+      "budgetAlternativeUrl": "https://skatingboutique.com/products/mondor-276-leg-warmers?variant=41036464357571&country=AE&currency=CAD&utm_medium=product_sync&utm_source=google&utm_content=sag_organic&utm_campaign=sag_organic&srsltid=AfmBOoqJnqOF9DtgKXKvzs82Wvm9S8d_gY37wxpW2Q422cjpUb8tGF_byyE",
+      "rarityScore": 1,
+      "displayModel": "Label Knit Wool Leg Warmers",
+      "canvasImage": "/images/clothes/outfit-07/label-knit-wool-leg-warmers-01.png",
+      "defaultCanvasPosition": {
+        "top": "10%",
+        "left": "10%",
+        "width": "20%",
+        "zIndex": 4
+      }
+    },
+    {
+      "id": "v-neck-racerback-tank-01",
+      "name": "TANK TOP",
+      "category": "tops",
+      "brand": "Eterne",
+      "shopUrl": "https://eterne.com/products/v-neck-racerback-tank-cream?variant=51814336200935&utm_source=Pinterest&utm_medium=organic",
+      "estPriceRange": "$125 on Eterne",
+      "budgetAlternativeUrl": "https://dendama.com/products/13068367-v-neck-racerback-tank-cream",
+      "rarityScore": 1,
+      "displayModel": "Ribbed V-Neck Racerback Tank",
+      "canvasImage": "/images/clothes/outfit-07/v-neck-racerback-tank-01.png",
+      "defaultCanvasPosition": {
+        "top": "10%",
+        "left": "10%",
+        "width": "20%",
+        "zIndex": 4
+      }
+    },
+    {
+      "id": "women-s-black-ballet-shoes-01",
+      "name": "SHOES",
+      "category": "shoes",
+      "brand": "Musinsa",
+      "shopUrl": "https://global.musinsa.com/tw/goods/3982328",
+      "estPriceRange": "$94 on Musinsa",
+      "budgetAlternativeUrl": "https://www.depop.com/products/curatedbyjoyo-faux-leather-vintage-ballet-flats-03ac/",
+      "rarityScore": 2,
+      "displayModel": "Bliss Lace-Up Sneakers",
+      "canvasImage": "/images/clothes/outfit-07/women-s-black-ballet-shoes-01.png",
+      "defaultCanvasPosition": {
+        "top": "10%",
+        "left": "10%",
+        "width": "20%",
+        "zIndex": 4
+      }
+    }
+  ]
+}

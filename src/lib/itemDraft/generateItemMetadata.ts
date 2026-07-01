@@ -16,10 +16,17 @@ import {
 import type { ProductPageHints } from "@/lib/itemDraft/types";
 
 function fewShotExamples(cwd = process.cwd()): string {
-  return readFileSync(join(cwd, "src/data/items.ts"), "utf8")
-    .split("\n")
-    .slice(53, 73)
-    .join("\n");
+  const samplePath = join(
+    cwd,
+    "src/data/dynamic-looks/outfit-01-items.json",
+  );
+  const raw = JSON.parse(readFileSync(samplePath, "utf8")) as {
+    items?: Array<Record<string, unknown>>;
+  };
+  const sample = raw.items?.[0];
+  if (!sample) return "";
+
+  return JSON.stringify(sample, null, 2);
 }
 
 export interface LlmMetadataResult {

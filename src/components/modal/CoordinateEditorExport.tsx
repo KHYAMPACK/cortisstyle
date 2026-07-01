@@ -196,11 +196,12 @@ defaultCanvasPosition: {
                   : "Save Layout to Codebase"}
             </button>
             <p className="text-[9px] leading-relaxed text-neutral-500">
-              Writes{" "}
+              Writes canvas layouts into the matching{" "}
               <span className="font-mono">
-                src/data/canvas-layouts/{lookId}.json
+                src/data/dynamic-looks/*.json
               </span>{" "}
-              and reloads so committed layouts load for everyone on deploy.
+              look file and reloads so committed layouts load for everyone on
+              deploy.
             </p>
             {saveState === "error" && saveError && (
               <p className="text-[9px] leading-relaxed text-red-600">

@@ -1,0 +1,112 @@
+{
+  "items": [
+    {
+      "id": "sunglasses-02",
+      "name": "SUNGLASSES",
+      "category": "eyewear",
+      "brand": "Oliver Peoples",
+      "shopUrl": "https://shopier.com/cortis/sunglasses-02",
+      "estPriceRange": "$90 - $240 on Grailed/Vestiaire",
+      "budgetAlternativeUrl": "https://www.retrosuperfuture.com/",
+      "rarityScore": 3,
+      "displayModel": "Shield Frame 0962 Sun",
+      "canvasImage": "/images/clothes/outfit-02/sunglasses-02.png",
+      "defaultCanvasPosition": {
+        "top": "10%",
+        "left": "10%",
+        "width": "20%",
+        "zIndex": 4
+      }
+    },
+    {
+      "id": "necklace-01",
+      "name": "NECKLACE",
+      "category": "accessories",
+      "brand": "The Row",
+      "shopUrl": "https://shopier.com/cortis/necklace-01",
+      "estPriceRange": "$120 - $380 on Vestiaire/Grailed",
+      "budgetAlternativeUrl": "https://www.cos.com/",
+      "rarityScore": 4,
+      "displayModel": "Industrial Hardware Chain Collar",
+      "canvasImage": "/images/clothes/outfit-02/necklace-01.png",
+      "defaultCanvasPosition": {
+        "top": "10%",
+        "left": "10%",
+        "width": "20%",
+        "zIndex": 4
+      }
+    },
+    {
+      "id": "longsleeve-shirt-01",
+      "name": "LONG-SLEEVE SHIRT",
+      "category": "tops",
+      "brand": "Margiela",
+      "shopUrl": "https://shopier.com/cortis/longsleeve-shirt-01",
+      "estPriceRange": "$140 - $420 on Grailed/Vestiaire",
+      "budgetAlternativeUrl": "https://www.uniqlo.com/",
+      "rarityScore": 5,
+      "displayModel": "Asymmetric Cut Long Sleeve Top",
+      "canvasImage": "/images/clothes/outfit-02/longsleeve-shirt-01.png",
+      "defaultCanvasPosition": {
+        "top": "10%",
+        "left": "10%",
+        "width": "20%",
+        "zIndex": 4
+      }
+    },
+    {
+      "id": "shorts-01",
+      "name": "SHORTS",
+      "category": "bottoms",
+      "brand": "Bottega Veneta",
+      "shopUrl": "https://shopier.com/cortis/shorts-01",
+      "estPriceRange": "$80 - $260 on Grailed/Vestiaire",
+      "budgetAlternativeUrl": "https://www.asos.com/",
+      "rarityScore": 4,
+      "displayModel": "Distressed Technical Shorts",
+      "canvasImage": "/images/clothes/outfit-02/shorts-01.png",
+      "defaultCanvasPosition": {
+        "top": "10%",
+        "left": "10%",
+        "width": "20%",
+        "zIndex": 4
+      }
+    },
+    {
+      "id": "black-bag-02",
+      "name": "BLACK BAG",
+      "category": "bags",
+      "brand": "Coach Vintage",
+      "shopUrl": "https://shopier.com/cortis/black-bag-02",
+      "estPriceRange": "$50 - $130 on Depop/Grailed",
+      "budgetAlternativeUrl": "https://www.carhartt-wip.com/",
+      "rarityScore": 2,
+      "displayModel": "Multi-Pocket Utilitarian Crossbody",
+      "canvasImage": "/images/clothes/outfit-02/black-bag-02.png",
+      "defaultCanvasPosition": {
+        "top": "10%",
+        "left": "10%",
+        "width": "20%",
+        "zIndex": 4
+      }
+    },
+    {
+      "id": "sneakers-02",
+      "name": "SNEAKERS",
+      "category": "shoes",
+      "brand": "Balenciaga",
+      "shopUrl": "https://shopier.com/cortis/sneakers-02",
+      "estPriceRange": "$190 - $480 on Grailed/GOAT",
+      "budgetAlternativeUrl": "https://www.nike.com/",
+      "rarityScore": 4,
+      "displayModel": "Track-Inspired Panel Runner",
+      "canvasImage": "/images/clothes/outfit-02/sneakers-02.png",
+      "defaultCanvasPosition": {
+        "top": "10%",
+        "left": "10%",
+        "width": "20%",
+        "zIndex": 4
+      }
+    }
+  ]
+}

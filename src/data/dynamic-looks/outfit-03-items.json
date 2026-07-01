@@ -1,0 +1,148 @@
+{
+  "items": [
+    {
+      "id": "tank-top-01",
+      "name": "TANK TOP",
+      "category": "tops",
+      "brand": "Supreme",
+      "shopUrl": "https://shopier.com/cortis/tank-top-01",
+      "estPriceRange": "$40 - $120 on Grailed/Depop",
+      "budgetAlternativeUrl": "https://www.uniqlo.com/",
+      "rarityScore": 2,
+      "displayModel": "Ribbed Cotton Tank Top",
+      "canvasImage": "/images/clothes/outfit-03/tank-top-01.png",
+      "defaultCanvasPosition": {
+        "top": "10%",
+        "left": "10%",
+        "width": "20%",
+        "zIndex": 4
+      }
+    },
+    {
+      "id": "baggy-jeans-01",
+      "name": "BAGGY JEANS",
+      "category": "bottoms",
+      "brand": "Levi's Vintage",
+      "shopUrl": "https://shopier.com/cortis/baggy-jeans-01",
+      "estPriceRange": "$50 - $130 on Grailed/Depop",
+      "budgetAlternativeUrl": "https://www.weekday.com/",
+      "rarityScore": 2,
+      "displayModel": "Relaxed Baggy Denim",
+      "canvasImage": "/images/clothes/outfit-03/baggy-jeans-01.png",
+      "defaultCanvasPosition": {
+        "top": "10%",
+        "left": "10%",
+        "width": "20%",
+        "zIndex": 4
+      }
+    },
+    {
+      "id": "bracelet-01",
+      "name": "BRACELET",
+      "category": "waist",
+      "brand": "The Row",
+      "shopUrl": "https://shopier.com/cortis/bracelet-01",
+      "estPriceRange": "$90 - $280 on Vestiaire/Grailed",
+      "budgetAlternativeUrl": "https://www.cos.com/",
+      "rarityScore": 3,
+      "displayModel": "Brushed Cuff Bracelet",
+      "canvasImage": "/images/clothes/outfit-03/bracelet-01.png",
+      "defaultCanvasPosition": {
+        "top": "10%",
+        "left": "10%",
+        "width": "20%",
+        "zIndex": 4
+      }
+    },
+    {
+      "id": "sneakers-03",
+      "name": "SNEAKERS",
+      "category": "shoes",
+      "brand": "Balenciaga",
+      "shopUrl": "https://shopier.com/cortis/sneakers-03",
+      "estPriceRange": "$175 - $460 on Grailed/GOAT",
+      "budgetAlternativeUrl": "https://www.newbalance.com/",
+      "rarityScore": 4,
+      "displayModel": "Panelled Archive Runner",
+      "canvasImage": "/images/clothes/outfit-03/sneakers-03.png",
+      "defaultCanvasPosition": {
+        "top": "10%",
+        "left": "10%",
+        "width": "20%",
+        "zIndex": 4
+      }
+    },
+    {
+      "id": "sunglasses-01",
+      "name": "SUNGLASSES",
+      "category": "eyewear",
+      "brand": "Oliver Peoples",
+      "shopUrl": "https://shopier.com/cortis/sunglasses-01",
+      "estPriceRange": "$85 - $210 on Grailed/Vestiaire",
+      "budgetAlternativeUrl": "https://moscot.com/",
+      "rarityScore": 3,
+      "displayModel": "Slim Rectangular Acetate",
+      "canvasImage": "/images/clothes/outfit-03/sunglasses-01.png",
+      "defaultCanvasPosition": {
+        "top": "10%",
+        "left": "10%",
+        "width": "20%",
+        "zIndex": 4
+      }
+    },
+    {
+      "id": "cap-01",
+      "name": "CAP",
+      "category": "headwear",
+      "brand": "Supreme",
+      "shopUrl": "https://shopier.com/cortis/cap-01",
+      "estPriceRange": "$60 - $180 on Grailed/Depop",
+      "budgetAlternativeUrl": "https://www.carhartt-wip.com/",
+      "rarityScore": 3,
+      "displayModel": "Structured 6-Panel Archive Cap",
+      "canvasImage": "/images/clothes/outfit-03/cap-01.png",
+      "defaultCanvasPosition": {
+        "top": "10%",
+        "left": "10%",
+        "width": "20%",
+        "zIndex": 4
+      }
+    },
+    {
+      "id": "necklace-02",
+      "name": "NECKLACE",
+      "category": "accessories",
+      "brand": "The Row",
+      "shopUrl": "https://shopier.com/cortis/necklace-02",
+      "estPriceRange": "$110 - $340 on Vestiaire/Grailed",
+      "budgetAlternativeUrl": "https://www.cos.com/",
+      "rarityScore": 3,
+      "displayModel": "Fine Chain Layering Necklace",
+      "canvasImage": "/images/clothes/outfit-03/necklace-02.png",
+      "defaultCanvasPosition": {
+        "top": "10%",
+        "left": "10%",
+        "width": "20%",
+        "zIndex": 4
+      }
+    },
+    {
+      "id": "teal-bag-01",
+      "name": "TEAL BAG",
+      "category": "bags",
+      "brand": "The Row",
+      "shopUrl": "https://shopier.com/cortis/teal-bag-01",
+      "estPriceRange": "$200 - $600 on Vestiaire/Grailed",
+      "budgetAlternativeUrl": "https://staud.clothing/",
+      "rarityScore": 4,
+      "displayModel": "Structured Teal Archive Bag",
+      "canvasImage": "/images/clothes/outfit-03/teal-bag-01.png",
+      "defaultCanvasPosition": {
+        "top": "10%",
+        "left": "10%",
+        "width": "20%",
+        "zIndex": 4
+      }
+    }
+  ]
+}

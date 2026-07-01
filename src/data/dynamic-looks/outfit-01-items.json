@@ -1,0 +1,112 @@
+{
+  "items": [
+    {
+      "id": "black-beanie-01",
+      "name": "BLACK BEANIE",
+      "category": "headwear",
+      "brand": "Chanel",
+      "shopUrl": "https://shopier.com/cortis/black-beanie-01",
+      "estPriceRange": "$25 - $30",
+      "budgetAlternativeUrl": "https://www.zara.com/",
+      "rarityScore": 4,
+      "displayModel": "Lace-up Knit Cap",
+      "canvasImage": "/images/clothes/outfit-01/black-beanie-01.png",
+      "defaultCanvasPosition": {
+        "top": "2.34%",
+        "left": "17.96%",
+        "width": "20%",
+        "zIndex": 4
+      }
+    },
+    {
+      "id": "compression-shirt-01",
+      "name": "COMPRESSION SHIRT",
+      "category": "tops",
+      "brand": "Archive Atelier",
+      "shopUrl": "https://shopier.com/cortis/compression-shirt-01",
+      "estPriceRange": "$35 - $85 on Grailed/Depop",
+      "budgetAlternativeUrl": "https://www.uniqlo.com/",
+      "rarityScore": 2,
+      "displayModel": "Archive Atelier — Second-Skin Compression Top",
+      "canvasImage": "/images/clothes/outfit-01/compression-shirt-01.png",
+      "defaultCanvasPosition": {
+        "top": "28%",
+        "left": "30%",
+        "width": "40%",
+        "zIndex": 6
+      }
+    },
+    {
+      "id": "bootcut-jeans-02",
+      "name": "BOOTCUT JEANS",
+      "category": "bottoms",
+      "brand": "Levi's Vintage",
+      "shopUrl": "https://shopier.com/cortis/bootcut-jeans-02",
+      "estPriceRange": "$55 - $120 on Grailed/Depop",
+      "budgetAlternativeUrl": "https://www.asos.com/",
+      "rarityScore": 2,
+      "displayModel": "517 Bootcut Denim",
+      "canvasImage": "/images/clothes/outfit-01/bootcut-jeans-02.png",
+      "defaultCanvasPosition": {
+        "top": "48%",
+        "left": "25%",
+        "width": "38%",
+        "zIndex": 4
+      }
+    },
+    {
+      "id": "black-sunglasses-01",
+      "name": "BLACK SUNGLASSES",
+      "category": "eyewear",
+      "brand": "Oliver Peoples",
+      "shopUrl": "https://shopier.com/cortis/black-sunglasses-01",
+      "estPriceRange": "$90 - $220 on Grailed/Vestiaire",
+      "budgetAlternativeUrl": "https://www.retrosuperfuture.com/",
+      "rarityScore": 3,
+      "displayModel": "Narrow Acetate Shield Frame",
+      "canvasImage": "/images/clothes/outfit-01/black-sunglasses-01.png",
+      "defaultCanvasPosition": {
+        "top": "6%",
+        "left": "5%",
+        "width": "24%",
+        "zIndex": 4
+      }
+    },
+    {
+      "id": "sneakers-01",
+      "name": "SNEAKERS",
+      "category": "shoes",
+      "brand": "Balenciaga",
+      "shopUrl": "https://shopier.com/cortis/sneakers-01",
+      "estPriceRange": "$180 - $450 on Grailed/GOAT",
+      "budgetAlternativeUrl": "https://www.nike.com/",
+      "rarityScore": 4,
+      "displayModel": "Balenciaga — Oversized Panelled Runner",
+      "canvasImage": "/images/clothes/outfit-01/sneakers-01.png",
+      "defaultCanvasPosition": {
+        "top": "72%",
+        "left": "8%",
+        "width": "32%",
+        "zIndex": 4
+      }
+    },
+    {
+      "id": "black-bag-01",
+      "name": "BLACK BAG",
+      "category": "bags",
+      "brand": "Coach Vintage",
+      "shopUrl": "https://shopier.com/cortis/black-bag-01",
+      "estPriceRange": "$45 - $110 on Depop/Grailed",
+      "budgetAlternativeUrl": "https://www.carhartt-wip.com/",
+      "rarityScore": 2,
+      "displayModel": "Compact Crossbody Archive Bag",
+      "canvasImage": "/images/clothes/outfit-01/black-bag-01.png",
+      "defaultCanvasPosition": {
+        "top": "58%",
+        "left": "62%",
+        "width": "28%",
+        "zIndex": 4
+      }
+    }
+  ]
+}

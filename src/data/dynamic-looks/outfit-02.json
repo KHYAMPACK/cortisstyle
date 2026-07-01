@@ -1,0 +1,157 @@
+{
+  "id": "look-02",
+  "title": "Industrial Poise",
+  "image": "/images/clothes/outfit-02/ootd236.png",
+  "modelName": "MARTIN",
+  "layout": "collage",
+  "outfitId": "outfit-02",
+  "editorGuideImage": "/images/clothes/outfit-02/temp_image_BFD792D8-8457-4412-905C-9FE51B6AA168.WEBP",
+  "vibe": "Industrial / Utility Poise",
+  "investmentRetail": 4,
+  "investmentWithGuide": 2,
+  "versatility": 5,
+  "width": 1700,
+  "height": 2500,
+  "items": [
+    {
+      "itemId": "sunglasses-02",
+      "coordinates": {
+        "from": {
+          "top": "20%",
+          "left": "48%"
+        },
+        "to": {
+          "top": "14%",
+          "left": "62%"
+        }
+      }
+    },
+    {
+      "itemId": "necklace-01",
+      "coordinates": {
+        "from": {
+          "top": "20%",
+          "left": "48%"
+        },
+        "to": {
+          "top": "14%",
+          "left": "62%"
+        }
+      }
+    },
+    {
+      "itemId": "longsleeve-shirt-01",
+      "coordinates": {
+        "from": {
+          "top": "54%",
+          "left": "42%"
+        },
+        "to": {
+          "top": "48%",
+          "left": "28%"
+        }
+      }
+    },
+    {
+      "itemId": "shorts-01",
+      "coordinates": {
+        "from": {
+          "top": "70%",
+          "left": "48%"
+        },
+        "to": {
+          "top": "76%",
+          "left": "58%"
+        }
+      }
+    },
+    {
+      "itemId": "black-bag-02",
+      "coordinates": {
+        "from": {
+          "top": "70%",
+          "left": "48%"
+        },
+        "to": {
+          "top": "76%",
+          "left": "58%"
+        }
+      }
+    },
+    {
+      "itemId": "sneakers-02",
+      "coordinates": {
+        "from": {
+          "top": "70%",
+          "left": "48%"
+        },
+        "to": {
+          "top": "76%",
+          "left": "58%"
+        }
+      }
+    }
+  ],
+  "canvasLayouts": {
+    "sunglasses-02": {
+      "top": "2.64%",
+      "left": "8.25%",
+      "widthPx": 102,
+      "zIndex": 30,
+      "hitboxWidthPx": 126,
+      "hitboxHeightPx": 72,
+      "hitboxOffsetTopPx": 24,
+      "hitboxOffsetLeftPx": -3
+    },
+    "necklace-01": {
+      "top": "-22.42%",
+      "left": "35.49%",
+      "widthPx": 411,
+      "zIndex": 30,
+      "hitboxWidthPx": 84,
+      "hitboxHeightPx": 156,
+      "hitboxOffsetTopPx": 204,
+      "hitboxOffsetLeftPx": 162
+    },
+    "longsleeve-shirt-01": {
+      "top": "-8.50%",
+      "left": "12.13%",
+      "widthPx": 334,
+      "zIndex": 20,
+      "hitboxWidthPx": 146,
+      "hitboxHeightPx": 184,
+      "hitboxOffsetTopPx": 136,
+      "hitboxOffsetLeftPx": 96
+    },
+    "shorts-01": {
+      "top": "8.34%",
+      "left": "10.10%",
+      "widthPx": 342,
+      "zIndex": 20,
+      "hitboxWidthPx": 158,
+      "hitboxHeightPx": 88,
+      "hitboxOffsetTopPx": 218,
+      "hitboxOffsetLeftPx": 91
+    },
+    "black-bag-02": {
+      "top": "10.64%",
+      "left": "36.17%",
+      "widthPx": 382,
+      "zIndex": 30,
+      "hitboxWidthPx": 142,
+      "hitboxHeightPx": 104,
+      "hitboxOffsetTopPx": 244,
+      "hitboxOffsetLeftPx": 124
+    },
+    "sneakers-02": {
+      "top": "38.14%",
+      "left": "-21.68%",
+      "widthPx": 392,
+      "zIndex": 30,
+      "hitboxWidthPx": 150,
+      "hitboxHeightPx": 120,
+      "hitboxOffsetTopPx": 235,
+      "hitboxOffsetLeftPx": 125
+    }
+  }
+}

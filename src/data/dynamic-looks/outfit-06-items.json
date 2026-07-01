@@ -1,0 +1,130 @@
+{
+  "items": [
+    {
+      "id": "women-s-green-and-blue-vest-01",
+      "name": "VEST",
+      "category": "tops",
+      "brand": "Brandy Melville",
+      "shopUrl": "https://www.depop.com/products/depopsellery8e-teal-brandy-melville-tank-top-de8c/",
+      "estPriceRange": "$20 on Depop",
+      "budgetAlternativeUrl": "https://www.depop.com/products/ilovecookies1y3456-teal-tank-rare-brandy-melville-ca04/",
+      "rarityScore": 2,
+      "displayModel": "Teal Cami Tank Top",
+      "canvasImage": "/images/clothes/outfit-06/women-s-green-and-blue-vest-01.png",
+      "defaultCanvasPosition": {
+        "top": "10%",
+        "left": "10%",
+        "width": "20%",
+        "zIndex": 4
+      }
+    },
+    {
+      "id": "perfect-denims-01",
+      "name": "JEANS",
+      "category": "bottoms",
+      "brand": "Siolin",
+      "shopUrl": "https://siolin.com/products/jeans-blank?utm_source=Pinterest&utm_medium=organic",
+      "estPriceRange": "$68 on Siolin",
+      "budgetAlternativeUrl": "https://www2.hm.com/en_us/productpage.1045459069.html",
+      "rarityScore": 1,
+      "displayModel": "Siolin Perfect Denims — Relaxed Wide-Leg",
+      "canvasImage": "/images/clothes/outfit-06/perfect-denims-01.png",
+      "defaultCanvasPosition": {
+        "top": "10%",
+        "left": "10%",
+        "width": "20%",
+        "zIndex": 4
+      }
+    },
+    {
+      "id": "women-s-brown-belt-01",
+      "name": "BELT",
+      "category": "waist",
+      "brand": "Guess",
+      "shopUrl": "https://www.etsy.com/listing/1666046257/00s-vintage-guess-textured-brown-leather",
+      "estPriceRange": "$58 on Etsy",
+      "budgetAlternativeUrl": "https://www.depop.com/products/illgnsells-brown-leather-belt-with-oval-033d/",
+      "rarityScore": 3,
+      "displayModel": "00's Vintage Textured Brown Leather Belt With Silver Buckle",
+      "canvasImage": "/images/clothes/outfit-06/women-s-brown-belt-01.png",
+      "defaultCanvasPosition": {
+        "top": "10%",
+        "left": "10%",
+        "width": "20%",
+        "zIndex": 4
+      }
+    },
+    {
+      "id": "women-s-brown-ballet-shoes-01",
+      "name": "Women's Brown Ballet-shoes",
+      "category": "shoes",
+      "brand": "Chanel",
+      "shopUrl": "https://www.depop.com/products/ddol6129-chanel-quilted-tan-brown-lambskin-4432/",
+      "estPriceRange": "$495 on Depop",
+      "budgetAlternativeUrl": "https://www.marksandspencer.com/suede-bow-flat-ballet-pumps/p/clp61220752#intid=pid_pg1pip24g4r1c3",
+      "rarityScore": 4,
+      "displayModel": "Women's Brown Ballet-shoes",
+      "canvasImage": "/images/clothes/outfit-06/women-s-brown-ballet-shoes-01.png",
+      "defaultCanvasPosition": {
+        "top": "10%",
+        "left": "10%",
+        "width": "20%",
+        "zIndex": 4
+      }
+    },
+    {
+      "id": "bright-yellow-bag-01",
+      "name": "BAG",
+      "category": "bags",
+      "brand": "MLC",
+      "shopUrl": "https://www.depop.com/products/maggielu9ia-cool-bright-greenish-yellow-bag-d2a6/",
+      "estPriceRange": "$10 on Depop",
+      "budgetAlternativeUrl": "https://www.therealreal.com/products/women/handbags/shoulder-bags/cole-haan-leather-shoulder-bag-sba1o",
+      "rarityScore": 1,
+      "displayModel": "Yellow Sculpted Drawstring Shoulder Bag",
+      "canvasImage": "/images/clothes/outfit-06/bright-yellow-bag-01.png",
+      "defaultCanvasPosition": {
+        "top": "10%",
+        "left": "10%",
+        "width": "20%",
+        "zIndex": 4
+      }
+    },
+    {
+      "id": "women-s-brown-and-silver-sunglasses-01",
+      "name": "SUNGLASSES",
+      "category": "eyewear",
+      "brand": "Brighton",
+      "shopUrl": "https://www.depop.com/products/baylie88-brighton-5313-brown-gray-598f/",
+      "estPriceRange": "$25 on Depop",
+      "budgetAlternativeUrl": "https://www.depop.com/products/bww77065-vintage-small-rectangle-sunglasses-5467/",
+      "rarityScore": 2,
+      "displayModel": "Brighton '5313' Rectangular Acetate Frame",
+      "canvasImage": "/images/clothes/outfit-06/women-s-brown-and-silver-sunglasses-01.png",
+      "defaultCanvasPosition": {
+        "top": "10%",
+        "left": "10%",
+        "width": "20%",
+        "zIndex": 4
+      }
+    },
+    {
+      "id": "burn-mark-zip-up-hoodi-01",
+      "name": "ZIP-UP HOODIE",
+      "category": "outerwear",
+      "brand": "Planet Missy",
+      "shopUrl": "https://www.planetmissy.com/products/2025-american-retro-hip-hop-oversized-sweatshirt-with-original-style-letter-print-design-long-sleeved-y2k-street-sweatshirt",
+      "estPriceRange": "$30 - $40 on Planet Missy",
+      "budgetAlternativeUrl": "https://tr.dhgate.com/product/2025-american-retro-hiphop-oversized-sweatshirt/1078704879.html?skuId=1436406625337491472",
+      "rarityScore": 3,
+      "displayModel": "Burn Mark Zip-Up Hoodie",
+      "canvasImage": "/images/clothes/outfit-06/burn-mark-zip-up-hoodi-01.png",
+      "defaultCanvasPosition": {
+        "top": "10%",
+        "left": "10%",
+        "width": "20%",
+        "zIndex": 4
+      }
+    }
+  ]
+}

@@ -39,6 +39,8 @@ export interface DynamicCatalogBundle {
   looks: Look[];
   lookOrderAdditions: Array<{ id: string; placement: HomepageOrderPlacement }>;
   canvasLayoutsByLookId: Record<string, Record<string, CanvasItemLayout>>;
+  /** Explicit homepage stream when homepage-order.json is present. */
+  homepageOrder?: string[];
 }
 
 export const EMPTY_DYNAMIC_CATALOG: DynamicCatalogBundle = {
