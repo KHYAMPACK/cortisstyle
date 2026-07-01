@@ -1,6 +1,11 @@
 import { requireStudioUser } from "@/lib/studioApiAuth";
 import { studioRoute } from "@/lib/studioApiCors";
 import { uploadStudioAsset } from "@/lib/studioAssetStorage";
+import {
+  isStudioImportPipeline,
+  isValidSourceHash,
+  type StudioImportPipeline,
+} from "@/types/studioImportCache";
 
 export const runtime = "nodejs";
 
@@ -36,6 +41,9 @@ export async function POST(request: Request) {
 
     const draftIdRaw = formData.get("draftId");
     const itemIdRaw = formData.get("itemId");
+    const libraryRaw = formData.get("library");
+    const sourceHashRaw = formData.get("sourceHash");
+    const pipelineRaw = formData.get("pipeline");
     const draftId =
       typeof draftIdRaw === "string" && draftIdRaw.trim()
         ? draftIdRaw.trim()
@@ -45,6 +53,23 @@ export async function POST(request: Request) {
         ? itemIdRaw.trim()
         : "asset";
 
+    const useLibrary = libraryRaw === "true" || libraryRaw === "1";
+    const sourceHash =
+      typeof sourceHashRaw === "string" ? sourceHashRaw.trim().toLowerCase() : "";
+    const pipeline =
+      typeof pipelineRaw === "string" ? pipelineRaw.trim() : "";
+
+    if (useLibrary) {
+      if (!isValidSourceHash(sourceHash) || !isStudioImportPipeline(pipeline)) {
+        return Response.json(
+          { error: "Library uploads require sourceHash and pipeline." },
+          { status: 400 },
+        );
+      }
+    }
+
+    const libraryPipeline = pipeline as StudioImportPipeline;
+
     try {
       const bytes = Buffer.from(await file.arrayBuffer());
       const uploaded = await uploadStudioAsset({
@@ -53,6 +78,9 @@ export async function POST(request: Request) {
         itemId,
         bytes,
         contentType,
+        library: useLibrary
+          ? { sourceHash, pipeline: libraryPipeline }
+          : undefined,
       });
 
       return Response.json({

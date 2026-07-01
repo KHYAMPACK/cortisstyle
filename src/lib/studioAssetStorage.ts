@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { getServiceSupabase } from "@/lib/supabaseAdmin";
+import type { StudioImportPipeline } from "@/types/studioImportCache";
 
 export const STUDIO_ASSETS_BUCKET = "studio-assets";
 
@@ -20,6 +21,15 @@ export function buildStudioAssetPath(
   return `${sanitizeSegment(userId)}/${folder}/${fileName}`;
 }
 
+export function buildStudioLibraryAssetPath(
+  userId: string,
+  sourceHash: string,
+  pipeline: StudioImportPipeline,
+  extension = "png",
+): string {
+  return `${sanitizeSegment(userId)}/library/${sourceHash}-${pipeline}.${extension}`;
+}
+
 export function getStudioAssetPublicUrl(storagePath: string): string {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   if (!url) {
@@ -35,6 +45,10 @@ export async function uploadStudioAsset(params: {
   itemId: string;
   bytes: Buffer;
   contentType: string;
+  library?: {
+    sourceHash: string;
+    pipeline: StudioImportPipeline;
+  };
 }): Promise<{ url: string; path: string }> {
   const admin = getServiceSupabase();
 
@@ -49,18 +63,25 @@ export async function uploadStudioAsset(params: {
   }
 
   const extension = params.contentType.includes("jpeg") ? "jpg" : "png";
-  const path = buildStudioAssetPath(
-    params.userId,
-    params.draftId ?? null,
-    params.itemId,
-    extension,
-  );
+  const path = params.library
+    ? buildStudioLibraryAssetPath(
+        params.userId,
+        params.library.sourceHash,
+        params.library.pipeline,
+        extension,
+      )
+    : buildStudioAssetPath(
+        params.userId,
+        params.draftId ?? null,
+        params.itemId,
+        extension,
+      );
 
   const { error } = await admin.storage
     .from(STUDIO_ASSETS_BUCKET)
     .upload(path, params.bytes, {
       contentType: params.contentType,
-      upsert: false,
+      upsert: Boolean(params.library),
     });
 
   if (error) {

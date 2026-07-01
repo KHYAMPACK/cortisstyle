@@ -2,8 +2,19 @@ import { uploadBlobAsset } from '../lib/studioApi'
 import { useWorkspaceStore } from '../store/workspaceStore'
 import { uniqueItemId } from '../lib/uniqueItemId'
 import { nextNodeWorldPosition } from '../lib/linkedGarment'
-import { resolveIngestImageBlob, type IngestImagePayload } from '../lib/imageIngestion'
+import {
+  ingestPayloadLabel,
+  resolveIngestImageBlob,
+  type IngestImagePayload,
+} from '../lib/imageIngestion'
 import type { ClothingCategory } from '../types/item'
+import { hashSourceBytes } from '../lib/sourceImageHash'
+import {
+  lookupImportCache,
+  registerImportCache,
+  type StudioImportPipeline,
+} from '../lib/studioImportCacheApi'
+import { notifyImportCacheUpdated, placeGarmentFromCacheRecord } from '../lib/placeGarmentFromCache'
 import { loadImageDimensions, segmentGarment, slugifyItemId } from './photoroomApi'
 import { analyzeGarmentImage } from './garmentVisionApi'
 
@@ -17,30 +28,90 @@ function toSegmentPayload(payload: IngestImagePayload) {
   return { imageUrl: payload.imageUrl }
 }
 
+function sourceMetadata(payload: IngestImagePayload): {
+  sourceUrl: string | null
+  sourceFilename: string | null
+} {
+  if (payload.kind === 'file') {
+    return {
+      sourceUrl: null,
+      sourceFilename: payload.file.name || null,
+    }
+  }
+
+  return {
+    sourceUrl: payload.imageUrl,
+    sourceFilename: null,
+  }
+}
+
+function spawnFromIngestion(params: {
+  id: string
+  imageUrl: string
+  width: number
+  height: number
+  name?: string
+  category?: ClothingCategory
+  brand?: string
+}): void {
+  const nodes = useWorkspaceStore.getState().studioNodes
+  const { worldX, worldY } = nextNodeWorldPosition(nodes)
+
+  useWorkspaceStore.getState().spawnLinkedTwin({
+    id: params.id,
+    imageUrl: params.imageUrl,
+    naturalWidth: params.width,
+    naturalHeight: params.height,
+    worldX,
+    worldY,
+    name: params.name,
+    category: params.category,
+    brand: params.brand,
+  })
+}
+
 export async function runGarmentIngestion(
   payload: IngestImagePayload,
   signal?: AbortSignal,
 ): Promise<void> {
   const { setIngestionStatus, removeBackgroundOnImport } = useWorkspaceStore.getState()
+  const pipeline: StudioImportPipeline = removeBackgroundOnImport ? 'segmented' : 'raw'
 
-  let objectUrl: string
-  let blob: Blob
+  setIngestionStatus('processing', null, 'Checking import archive…')
+
+  const source = await resolveIngestImageBlob(payload, signal)
+  const sourceHash = await hashSourceBytes(source.blob)
+
+  let cached: StudioImportCacheRecord | null = null
+
+  try {
+    cached = await lookupImportCache(sourceHash, pipeline)
+  } catch (error) {
+    console.warn('[garment-ingestion] import cache lookup skipped:', error)
+  }
+
+  if (cached) {
+    setIngestionStatus('processing', null, 'Reused archived cutout')
+    placeGarmentFromCacheRecord(cached)
+    notifyImportCacheUpdated()
+    setIngestionStatus('idle', null, `Reused ${ingestPayloadLabel(payload)}`)
+    return
+  }
+
+  const existingIds = new Set(useWorkspaceStore.getState().studioNodes.map((node) => node.id))
+
+  let objectUrl = source.objectUrl
+  let blob = source.blob
 
   if (removeBackgroundOnImport) {
     setIngestionStatus('processing', null, 'Removing background…')
     const segmented = await segmentGarment(toSegmentPayload(payload), signal)
     objectUrl = segmented.objectUrl
     blob = segmented.blob
-  } else {
-    setIngestionStatus('processing', null, 'Preparing image…')
-    const resolved = await resolveIngestImageBlob(payload, signal)
-    objectUrl = resolved.objectUrl
-    blob = resolved.blob
   }
 
   const { width, height } = await loadImageDimensions(objectUrl)
 
-  const existingIds = new Set(useWorkspaceStore.getState().studioNodes.map((node) => node.id))
   let id = uniqueItemId(`draft-${Date.now()}`, existingIds)
   let name: string | undefined
   let category: ClothingCategory | undefined
@@ -60,33 +131,56 @@ export async function runGarmentIngestion(
     id = uniqueItemId(slugifyItemId(`draft-${Date.now()}`), existingIds)
   }
 
-  const nodes = useWorkspaceStore.getState().studioNodes
-  const { worldX, worldY } = nextNodeWorldPosition(nodes)
-
   let imageUrl = objectUrl
+  let storagePath: string | null = null
 
   try {
     setIngestionStatus('processing', null, 'Uploading garment to archive…')
-    const draftId = useWorkspaceStore.getState().draftId
-    imageUrl = await uploadBlobAsset({
+    const uploaded = await uploadBlobAsset({
       blob,
       itemId: id,
-      draftId,
       fileName: `${id}.png`,
+      library: { sourceHash, pipeline },
     })
+    imageUrl = uploaded.url
+    storagePath = uploaded.path
   } catch (error) {
     console.warn('[garment-ingestion] CDN upload skipped:', error)
   }
 
-  useWorkspaceStore.getState().spawnLinkedTwin({
+  if (storagePath) {
+    const meta = sourceMetadata(payload)
+
+    try {
+      await registerImportCache({
+        sourceHash,
+        pipeline,
+        assetUrl: imageUrl,
+        storagePath,
+        productName: name ?? null,
+        category: category ?? null,
+        brand: brand ?? null,
+        itemIdSlug: id,
+        width,
+        height,
+        sourceUrl: meta.sourceUrl,
+        sourceFilename: meta.sourceFilename,
+      })
+      notifyImportCacheUpdated()
+    } catch (error) {
+      console.warn('[garment-ingestion] import cache register skipped:', error)
+    }
+  }
+
+  spawnFromIngestion({
     id,
     imageUrl,
-    naturalWidth: width,
-    naturalHeight: height,
-    worldX,
-    worldY,
+    width,
+    height,
     name,
     category,
     brand,
   })
+
+  setIngestionStatus('idle')
 }

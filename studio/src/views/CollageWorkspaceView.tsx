@@ -1,5 +1,6 @@
 import { InfiniteCanvas } from '../components/workspace/InfiniteCanvas'
 import { PropertiesPanel } from '../components/controls/PropertiesPanel'
+import { GarmentLibraryPanel } from '../components/library/GarmentLibraryPanel'
 import { ImportImageControl } from '../components/workspace/ImportImageControl'
 import { RemoveBackgroundToggle } from '../components/workspace/RemoveBackgroundToggle'
 import { useGarmentIngestion } from '../hooks/useGarmentIngestion'
@@ -75,6 +76,8 @@ export function CollageWorkspaceView({
       </header>
 
       <div className="flex min-h-0 flex-1">
+        <GarmentLibraryPanel />
+
         <main className="relative min-w-0 flex-1">
           <InfiniteCanvas onImportFile={ingestFile} />
         </main>

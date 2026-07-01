@@ -105,7 +105,11 @@ export async function uploadStudioAsset(params: {
   fileName: string
   draftId?: string | null
   itemId: string
-}): Promise<string> {
+  library?: {
+    sourceHash: string
+    pipeline: 'segmented' | 'raw'
+  }
+}): Promise<{ url: string; path: string }> {
   const token = await getAccessToken()
 
   if (!token) {
@@ -116,7 +120,11 @@ export async function uploadStudioAsset(params: {
   formData.append('file', params.file, params.fileName)
   formData.append('itemId', params.itemId)
 
-  if (params.draftId) {
+  if (params.library) {
+    formData.append('library', 'true')
+    formData.append('sourceHash', params.library.sourceHash)
+    formData.append('pipeline', params.library.pipeline)
+  } else if (params.draftId) {
     formData.append('draftId', params.draftId)
   }
 
@@ -141,8 +149,7 @@ export async function uploadStudioAsset(params: {
     throw new Error(message)
   }
 
-  const data = (await response.json()) as { url: string }
-  return data.url
+  return (await response.json()) as { url: string; path: string }
 }
 
 export async function uploadBlobAsset(params: {
@@ -150,12 +157,17 @@ export async function uploadBlobAsset(params: {
   itemId: string
   draftId?: string | null
   fileName?: string
-}): Promise<string> {
+  library?: {
+    sourceHash: string
+    pipeline: 'segmented' | 'raw'
+  }
+}): Promise<{ url: string; path: string }> {
   return uploadStudioAsset({
     file: params.blob,
     fileName: params.fileName ?? `${params.itemId}.png`,
     draftId: params.draftId,
     itemId: params.itemId,
+    library: params.library,
   })
 }
 
@@ -173,5 +185,5 @@ export async function uploadDataUrlAsset(params: {
     itemId: params.itemId,
     draftId: params.draftId,
     fileName: `${params.itemId}.${extension}`,
-  })
+  }).then((result) => result.url)
 }
