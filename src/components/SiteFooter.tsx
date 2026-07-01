@@ -4,6 +4,17 @@ import { siteLegal } from "@/lib/siteLegal";
 const linkClass =
   "text-meta transition-colors hover:text-jet-black underline-offset-2 hover:underline";
 
+const navRowClass =
+  "flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[10px] tracking-[0.22em] uppercase";
+
+function NavDot() {
+  return (
+    <span className="text-neutral-300" aria-hidden>
+      ·
+    </span>
+  );
+}
+
 interface SiteFooterProps {
   className?: string;
 }
@@ -13,45 +24,60 @@ export function SiteFooter({ className = "" }: SiteFooterProps) {
     <footer
       className={`border-t border-blueprint-border bg-ice-floor px-5 py-8 md:px-10 ${className}`}
     >
-      <div className="mx-auto flex max-w-4xl flex-col gap-4">
+      <div className="mx-auto flex max-w-4xl flex-col items-center gap-4 text-center">
         <p className="text-meta text-[9px] tracking-[0.35em] uppercase">
           © 2026 {siteLegal.siteName} — All rights reserved
         </p>
 
-        <nav
-          aria-label="Site"
-          className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] tracking-[0.22em] uppercase"
-        >
-          <Link href="/about" className={linkClass}>
-            About
-          </Link>
-          <span className="text-neutral-300" aria-hidden>
-            ·
-          </span>
-          <Link href="/contact" className={linkClass}>
-            Contact
-          </Link>
-        </nav>
+        <nav aria-label="Site and legal" className="w-full">
+          {/* Mobile: About · Contact · PP — then Terms · Affiliate */}
+          <div className="flex flex-col items-center gap-2 md:hidden">
+            <div className={navRowClass}>
+              <Link href="/about" className={linkClass}>
+                About
+              </Link>
+              <NavDot />
+              <Link href="/contact" className={linkClass}>
+                Contact
+              </Link>
+              <NavDot />
+              <Link href="/privacy" className={linkClass}>
+                Privacy Policy
+              </Link>
+            </div>
+            <div className={navRowClass}>
+              <Link href="/terms" className={linkClass}>
+                Terms of Use
+              </Link>
+              <NavDot />
+              <Link href="/affiliate-disclosure" className={linkClass}>
+                Affiliate Disclosure
+              </Link>
+            </div>
+          </div>
 
-        <nav
-          aria-label="Legal"
-          className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] tracking-[0.22em] uppercase"
-        >
-          <Link href="/privacy" className={linkClass}>
-            Privacy Policy
-          </Link>
-          <span className="text-neutral-300" aria-hidden>
-            ·
-          </span>
-          <Link href="/terms" className={linkClass}>
-            Terms of Use
-          </Link>
-          <span className="text-neutral-300" aria-hidden>
-            ·
-          </span>
-          <Link href="/affiliate-disclosure" className={linkClass}>
-            Affiliate Disclosure
-          </Link>
+          {/* Desktop: single centered row */}
+          <div className={`${navRowClass} hidden md:flex`}>
+            <Link href="/about" className={linkClass}>
+              About
+            </Link>
+            <NavDot />
+            <Link href="/contact" className={linkClass}>
+              Contact
+            </Link>
+            <NavDot />
+            <Link href="/privacy" className={linkClass}>
+              Privacy Policy
+            </Link>
+            <NavDot />
+            <Link href="/terms" className={linkClass}>
+              Terms of Use
+            </Link>
+            <NavDot />
+            <Link href="/affiliate-disclosure" className={linkClass}>
+              Affiliate Disclosure
+            </Link>
+          </div>
         </nav>
 
         <p className="max-w-xl text-[11px] leading-relaxed text-meta">
