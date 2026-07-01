@@ -2,19 +2,19 @@ import type { ArtboardItem } from '../types/item'
 import type { LookParameters } from '../types/export'
 import { displayHeight } from './canvasLayout'
 import {
-  LOOK_CANVAS_REFERENCE_HEIGHT,
-  LOOK_CANVAS_REFERENCE_WIDTH,
   LOOK_HERO_EXPORT_HEIGHT,
   LOOK_HERO_EXPORT_WIDTH,
+  LOOK_CANVAS_REFERENCE_HEIGHT,
+  LOOK_CANVAS_REFERENCE_WIDTH,
   MOODBOARD_FOOTER_HEIGHT_PX,
 } from './lookCanvasReference'
-
-const MOOD_FRAME_WIDTH = 120
-const MOOD_FRAME_HEIGHT = 160
-const MOOD_FRAME_INSET = 16
-const CREATOR_TOP = 184
-const CREATOR_WIDTH = 120
-const CREATOR_FONT_SIZE = 22
+import {
+  MOOD_CREATOR_FONT_SIZE_PX,
+  MOOD_CREATOR_TOP_PX,
+  MOOD_FRAME_HEIGHT_PX,
+  MOOD_FRAME_INSET_PX,
+  MOOD_FRAME_WIDTH_PX,
+} from './moodLayout'
 
 const SCALE_X = LOOK_HERO_EXPORT_WIDTH / LOOK_CANVAS_REFERENCE_WIDTH
 const SCALE_Y = LOOK_HERO_EXPORT_HEIGHT / LOOK_CANVAS_REFERENCE_HEIGHT
@@ -28,6 +28,32 @@ export interface RenderLookCardInput {
   lookParams: Pick<LookParameters, 'lookTitle' | 'modelName' | 'moodImageUrl'>
   /** Include moodboard footer strip (look name + cortisstyle.com). */
   includeFooter?: boolean
+}
+
+interface MoodBlockLayout {
+  frameX: number
+  frameY: number
+  frameW: number
+  frameH: number
+  creatorY: number
+  creatorMaxWidth: number
+}
+
+function resolveMoodBlockLayout(sx: number, sy: number): MoodBlockLayout {
+  const frameW = MOOD_FRAME_WIDTH_PX * sx
+  const frameH = MOOD_FRAME_HEIGHT_PX * sy
+  const frameX = LOOK_HERO_EXPORT_WIDTH - MOOD_FRAME_INSET_PX * sx - frameW
+  const frameY = MOOD_FRAME_INSET_PX * sy
+  const creatorY = MOOD_CREATOR_TOP_PX * sy
+
+  return {
+    frameX,
+    frameY,
+    frameW,
+    frameH,
+    creatorY,
+    creatorMaxWidth: frameW,
+  }
 }
 
 async function loadImage(url: string): Promise<HTMLImageElement> {
@@ -52,7 +78,7 @@ async function loadImage(url: string): Promise<HTMLImageElement> {
 }
 
 async function ensureCreatorFont(scale: number): Promise<void> {
-  const size = Math.round(CREATOR_FONT_SIZE * scale)
+  const size = Math.round(MOOD_CREATOR_FONT_SIZE_PX * scale)
   try {
     await document.fonts.load(`600 ${size}px "Cormorant Garamond"`)
   } catch {
@@ -63,30 +89,32 @@ async function ensureCreatorFont(scale: number): Promise<void> {
 function drawMoodFrame(
   ctx: CanvasRenderingContext2D,
   moodImage: HTMLImageElement | null,
-  sx: number,
-  sy: number,
+  layout: MoodBlockLayout,
 ): void {
-  const frameW = MOOD_FRAME_WIDTH * sx
-  const frameH = MOOD_FRAME_HEIGHT * sy
-  const x = LOOK_HERO_EXPORT_WIDTH - MOOD_FRAME_INSET * sx - frameW
-  const y = MOOD_FRAME_INSET * sy
+  const { frameX, frameY, frameW, frameH } = layout
 
   ctx.save()
   ctx.fillStyle = '#fafafa'
   ctx.strokeStyle = 'rgba(0, 0, 0, 0.08)'
-  ctx.lineWidth = Math.max(1, sx * 0.5)
-  ctx.fillRect(x, y, frameW, frameH)
-  ctx.strokeRect(x, y, frameW, frameH)
+  ctx.lineWidth = Math.max(1, SCALE_X * 0.5)
+  ctx.fillRect(frameX, frameY, frameW, frameH)
+  ctx.strokeRect(frameX, frameY, frameW, frameH)
 
   if (moodImage) {
     ctx.save()
     ctx.beginPath()
-    ctx.rect(x, y, frameW, frameH)
+    ctx.rect(frameX, frameY, frameW, frameH)
     ctx.clip()
     const scale = Math.max(frameW / moodImage.naturalWidth, frameH / moodImage.naturalHeight)
     const drawW = moodImage.naturalWidth * scale
     const drawH = moodImage.naturalHeight * scale
-    ctx.drawImage(moodImage, x + (frameW - drawW) / 2, y + (frameH - drawH) / 2, drawW, drawH)
+    ctx.drawImage(
+      moodImage,
+      frameX + (frameW - drawW) / 2,
+      frameY + (frameH - drawH) / 2,
+      drawW,
+      drawH,
+    )
     ctx.restore()
   }
 
@@ -96,21 +124,20 @@ function drawMoodFrame(
 function drawCreatorName(
   ctx: CanvasRenderingContext2D,
   name: string,
+  layout: MoodBlockLayout,
   sx: number,
-  sy: number,
 ): void {
   const trimmed = name.trim()
   if (!trimmed) return
 
-  const fontSize = Math.round(CREATOR_FONT_SIZE * sx)
-  const x = LOOK_HERO_EXPORT_WIDTH - MOOD_FRAME_INSET * sx
-  const y = CREATOR_TOP * sy
-  const maxWidth = CREATOR_WIDTH * sx
+  const fontSize = Math.round(MOOD_CREATOR_FONT_SIZE_PX * sx)
+  const centerX = layout.frameX + layout.frameW / 2
+  const { creatorY, creatorMaxWidth } = layout
 
   ctx.save()
   ctx.font = `600 ${fontSize}px "Cormorant Garamond", Georgia, serif`
   ctx.fillStyle = '#0a0a0a'
-  ctx.textAlign = 'right'
+  ctx.textAlign = 'center'
   ctx.textBaseline = 'top'
 
   const upper = trimmed.toUpperCase()
@@ -120,7 +147,7 @@ function drawCreatorName(
 
   for (const word of words) {
     const candidate = current ? `${current} ${word}` : word
-    if (ctx.measureText(candidate).width <= maxWidth) {
+    if (ctx.measureText(candidate).width <= creatorMaxWidth) {
       current = candidate
     } else {
       if (current) lines.push(current)
@@ -131,7 +158,7 @@ function drawCreatorName(
 
   const lineHeight = fontSize * 0.95
   for (let i = 0; i < lines.length; i += 1) {
-    ctx.fillText(lines[i]!, x, y + i * lineHeight, maxWidth)
+    ctx.fillText(lines[i]!, centerX, creatorY + i * lineHeight, creatorMaxWidth)
   }
 
   ctx.restore()
@@ -238,6 +265,8 @@ export async function renderLookCardPngBytes(input: RenderLookCardInput): Promis
 
   await ensureCreatorFont(SCALE_X)
 
+  const moodLayout = resolveMoodBlockLayout(SCALE_X, SCALE_Y)
+
   const garmentImages = new Map<string, HTMLImageElement>()
   await Promise.all(
     input.artboardItems.map(async (item) => {
@@ -262,8 +291,8 @@ export async function renderLookCardPngBytes(input: RenderLookCardInput): Promis
   ctx.fillStyle = '#ffffff'
   ctx.fillRect(0, 0, canvas.width, canvas.height)
 
-  drawMoodFrame(ctx, moodImage, SCALE_X, SCALE_Y)
-  drawCreatorName(ctx, input.lookParams.modelName, SCALE_X, SCALE_Y)
+  drawMoodFrame(ctx, moodImage, moodLayout)
+  drawCreatorName(ctx, input.lookParams.modelName, moodLayout, SCALE_X)
   drawGarmentLayers(ctx, input.artboardItems, SCALE_X, SCALE_Y, garmentImages)
 
   if (includeFooter) {

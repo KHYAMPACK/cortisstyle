@@ -1,10 +1,16 @@
+import {
+  MOOD_CREATOR_TOP_PX,
+  MOOD_FRAME_HEIGHT_PX,
+  MOOD_FRAME_WIDTH_PX,
+} from '../../lib/moodLayout'
+
 interface MoodImageFrameProps {
   moodImageUrl: string | null
   showPlaceholder?: boolean
   className?: string
 }
 
-/** 120×160 mood frame — mirrors cortisstyle `WardrobeMoodImageFrame` */
+/** Mood frame — 3:4 portrait inset top-right on the artboard */
 export function MoodImageFrame({
   moodImageUrl,
   showPlaceholder = false,
@@ -15,7 +21,11 @@ export function MoodImageFrame({
   return (
     <div
       aria-hidden={!moodImageUrl}
-      className={`aspect-[3/4] w-[120px] overflow-hidden border border-neutral-200/80 bg-neutral-50 ${className}`}
+      className={`overflow-hidden border border-neutral-200/80 bg-neutral-50 ${className}`}
+      style={{
+        width: MOOD_FRAME_WIDTH_PX,
+        height: MOOD_FRAME_HEIGHT_PX,
+      }}
     >
       {moodImageUrl ? (
         <img
@@ -33,10 +43,10 @@ export function MoodImageFrame({
   )
 }
 
-/** Creator credit below mood frame — mirrors cortis homepage look card */
+/** Creator credit centered below mood frame */
 export function CreatorNameOverlay({
   name,
-  className = 'absolute top-[184px] right-4 z-10 w-[120px]',
+  className,
 }: {
   name: string
   className?: string
@@ -47,7 +57,11 @@ export function CreatorNameOverlay({
   return (
     <p
       aria-hidden
-      className={`pointer-events-none text-right font-serif text-[22px] font-semibold leading-none tracking-[-0.02em] text-neutral-950 uppercase ${className}`}
+      className={`pointer-events-none absolute right-4 z-10 text-center font-serif text-[22px] font-semibold leading-none tracking-[-0.02em] text-neutral-950 uppercase ${className ?? ''}`}
+      style={{
+        top: MOOD_CREATOR_TOP_PX,
+        width: MOOD_FRAME_WIDTH_PX,
+      }}
     >
       {trimmed}
     </p>
