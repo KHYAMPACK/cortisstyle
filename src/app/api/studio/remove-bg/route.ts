@@ -43,7 +43,6 @@ export async function POST(request: Request) {
         bytes,
         filename,
         mimeType,
-        signal: request.signal,
       });
 
       return new Response(new Uint8Array(result), {
