@@ -21,11 +21,11 @@ export function StageIngestionOverlay() {
         )}
 
         {status === 'error' && (
-          <div className={`space-y-4 border border-blueprint-border ${STUDIO_SURFACE} px-6 py-5`}>
-            <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-red-700">
+          <div className={`space-y-4 border border-white/[0.08] ${STUDIO_SURFACE} px-6 py-5`}>
+            <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-red-400/90">
               Segmentation failed
             </p>
-            <p className="font-sans text-[12px] leading-relaxed text-meta">{error}</p>
+            <p className="font-sans text-[12px] leading-relaxed text-zinc-400">{error}</p>
             <button
               type="button"
               className={STUDIO_BTN_SECONDARY}

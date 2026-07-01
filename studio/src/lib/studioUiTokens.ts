@@ -1,52 +1,51 @@
-/** Cortisstyle editorial blueprint tokens — matches homepage / wardrobe */
+/** Cortisstyle studio — dark editorial chrome */
 
-/** Infinite canvas zone — kept dark per product direction */
 export const STUDIO_CANVAS_BG = 'bg-[#0D0D0D]'
 
-/** Shell chrome (header + sidebars) */
-export const STUDIO_CHROME_BG = 'bg-ice-floor'
-export const STUDIO_SURFACE = 'surface-canvas-paper bg-canvas-paper'
-export const STUDIO_SURFACE_BLUEPRINT = 'bg-blueprint-surface border border-blueprint-border'
-export const STUDIO_RULE = 'border-blueprint-border'
+export const STUDIO_CHROME_BG = 'bg-[#0D0D0D]'
+export const STUDIO_BG = STUDIO_CHROME_BG
 
-/** Typography */
+export const STUDIO_SURFACE = 'bg-[#141416]/80 backdrop-blur-md'
+export const STUDIO_SURFACE_SOLID = 'bg-[#141416]'
+export const STUDIO_SURFACE_BLUEPRINT = 'bg-[#1a1a1c] border border-white/[0.08]'
+
+export const STUDIO_RULE = 'border-white/[0.06]'
+export const STUDIO_RULE_SUBTLE = 'border-white/[0.04]'
+
 export const STUDIO_LABEL =
-  'text-meta font-mono text-[9px] uppercase tracking-[0.35em] text-meta'
+  'font-sans text-[10px] uppercase tracking-[0.12em] text-zinc-500'
 
 export const STUDIO_KICKER =
-  'text-meta font-mono text-[9px] uppercase tracking-[0.42em] text-meta'
+  'font-sans text-[9px] uppercase tracking-[0.42em] text-zinc-500'
 
 export const STUDIO_SECTION_TITLE =
-  'font-serif text-lg tracking-[-0.01em] text-jet-black uppercase md:text-xl'
+  'font-sans text-[11px] uppercase tracking-[0.12em] text-zinc-400 md:text-xs'
 
 export const STUDIO_SECTION_TITLE_SM =
-  'font-serif text-[11px] tracking-[0.1em] text-neutral-900 uppercase'
+  'font-sans text-[11px] uppercase tracking-[0.12em] text-zinc-400'
 
-/** Form fields */
 export const STUDIO_INPUT =
-  'w-full border-0 border-b border-blueprint-border bg-transparent px-0 py-1.5 font-sans text-[12px] normal-case tracking-normal text-jet-black outline-none placeholder:text-neutral-400 focus:border-blueprint-accent focus:ring-0 transition-colors duration-200'
+  'w-full border-0 border-b border-white/[0.04] bg-transparent px-0 py-1.5 font-sans text-[12px] normal-case tracking-normal text-zinc-200 outline-none placeholder:text-zinc-600 focus:border-white/20 focus:ring-0 transition-colors duration-200'
 
 export const STUDIO_SELECT = `${STUDIO_INPUT} cursor-pointer`
 
-/** Buttons */
 export const STUDIO_BTN_PRIMARY =
-  'btn-primary w-full px-4 py-2.5 font-mono text-[10px] font-medium tracking-[0.12em]'
+  'w-full border border-white/[0.12] bg-transparent py-2.5 font-sans text-[12px] font-medium tracking-[0.06em] text-zinc-200 transition-all duration-300 hover:border-white/30 hover:bg-white hover:text-black disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-zinc-200'
 
 export const STUDIO_BTN_SECONDARY =
-  'border border-blueprint-border bg-canvas-paper px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.2em] text-jet-black transition-colors duration-200 hover:border-jet-black'
+  'w-full border border-white/[0.12] bg-transparent px-3 py-2 font-sans text-[11px] uppercase tracking-[0.12em] text-zinc-300 transition-colors duration-200 hover:border-white/30 hover:bg-white/[0.04]'
 
 export const STUDIO_BTN_GHOST =
-  'text-meta font-mono text-[10px] uppercase tracking-[0.28em] transition-colors hover:text-jet-black'
+  'font-sans text-[11px] tracking-[0.04em] text-zinc-500 transition-all duration-300 hover:text-zinc-200'
 
 export const STUDIO_BTN_DANGER =
-  'w-full border-t border-blueprint-border py-2.5 font-mono text-[10px] uppercase tracking-[0.15em] text-meta transition-colors hover:bg-red-50 hover:text-red-700'
+  'w-full border-t border-white/[0.04] py-2.5 font-sans text-[11px] tracking-[0.06em] text-zinc-500 transition-all duration-300 hover:bg-white/[0.03] hover:text-red-400/90'
 
-/** Cards */
-export const STUDIO_CARD = 'border border-blueprint-border shadow-[var(--shadow-canvas-paper)]'
+export const STUDIO_CARD =
+  'border border-white/[0.06] shadow-[0_24px_80px_rgba(0,0,0,0.45)]'
 
-/** Floating controls on the dark canvas */
 export const STUDIO_CANVAS_CONTROL =
-  'surface-canvas-paper border border-blueprint-border px-3 py-2 shadow-[var(--shadow-canvas-paper)]'
+  'bg-[#141416]/90 backdrop-blur-md border border-white/[0.08] px-3 py-2 shadow-[0_24px_80px_rgba(0,0,0,0.45)]'
 
 export const STUDIO_CANVAS_CONTROL_LABEL =
-  'font-mono text-[9px] uppercase tracking-[0.28em] transition-colors'
+  'font-sans text-[9px] uppercase tracking-[0.28em] transition-colors'

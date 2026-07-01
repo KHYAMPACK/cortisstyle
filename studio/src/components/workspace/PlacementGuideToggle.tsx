@@ -16,23 +16,23 @@ export function PlacementGuideToggle() {
       <span
         className={`${STUDIO_CANVAS_CONTROL_LABEL} ${
           showPlacementGuide
-            ? 'text-jet-black'
-            : 'text-neutral-400 group-hover:text-neutral-600'
+            ? 'text-zinc-200'
+            : 'text-zinc-600 group-hover:text-zinc-400'
         }`}
       >
         Placement guide
       </span>
       <span
         aria-hidden
-        className={`relative inline-flex h-5 w-9 shrink-0 border border-jet-black transition-colors ${
-          showPlacementGuide ? 'bg-jet-black' : 'bg-white'
+        className={`relative inline-flex h-5 w-9 shrink-0 border border-white/20 transition-colors ${
+          showPlacementGuide ? 'bg-white' : 'bg-transparent'
         }`}
       >
         <span
           className={`absolute top-0.5 h-3.5 w-3.5 transition-transform duration-200 ${
             showPlacementGuide
-              ? 'translate-x-[18px] bg-white'
-              : 'translate-x-0.5 bg-jet-black'
+              ? 'translate-x-[18px] bg-[#0D0D0D]'
+              : 'translate-x-0.5 bg-zinc-400'
           }`}
         />
       </span>

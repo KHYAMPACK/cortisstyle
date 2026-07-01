@@ -56,8 +56,8 @@ export const GarmentStudioNode = memo(function GarmentStudioNode({
         isDragging ? '' : 'transition-[border-color,box-shadow] duration-300'
       } ${
         isSelected
-          ? 'border-blueprint-accent ring-1 ring-blueprint-accent/20'
-          : 'border-blueprint-border hover:border-jet-black/30'
+          ? 'border-white/30 ring-1 ring-white/10'
+          : 'border-white/[0.06] hover:border-white/20'
       }`}
       style={{ left: node.worldX, top: node.worldY }}
       onPointerDown={() => selectLinkedGarment(node.id)}
@@ -70,7 +70,7 @@ export const GarmentStudioNode = memo(function GarmentStudioNode({
         }}
       >
         <span className={STUDIO_SECTION_TITLE_SM}>Garment</span>
-        <span className="font-mono text-[9px] uppercase tracking-[0.28em] text-meta">
+        <span className="font-mono text-[9px] uppercase tracking-[0.28em] text-zinc-500">
           Linked
         </span>
       </div>
@@ -78,7 +78,7 @@ export const GarmentStudioNode = memo(function GarmentStudioNode({
       <div className="grid grid-cols-[88px_1fr] gap-4 px-4 pt-3 pb-1">
         <div className="relative">
           <div
-            className="relative flex aspect-square items-center justify-center overflow-hidden border border-blueprint-border bg-neutral-100"
+            className="relative flex aspect-square items-center justify-center overflow-hidden border border-white/[0.06] bg-[#1a1a1c]"
             title="Linked artboard preview"
           >
             {previewImageUrl ? (

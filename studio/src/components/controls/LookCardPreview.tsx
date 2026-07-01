@@ -75,7 +75,7 @@ export function LookCardPreview({
       <p className={STUDIO_LABEL}>Live Preview</p>
 
       <div
-        className={`overflow-hidden border border-blueprint-border ${STUDIO_SURFACE}`}
+        className={`overflow-hidden border border-white/[0.08] ${STUDIO_SURFACE}`}
         style={{ width: PREVIEW_WIDTH }}
       >
         <div
@@ -123,7 +123,7 @@ export function LookCardPreview({
       <div className={`border ${STUDIO_RULE} ${STUDIO_SURFACE} px-3 py-3`}>
         <p className={STUDIO_SECTION_TITLE_SM}>{title}</p>
         <p className={`mt-1.5 ${STUDIO_LABEL}`}>{vibeText}</p>
-        <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.22em] text-meta">
+        <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.22em] text-zinc-500">
           By {creator}
         </p>
       </div>

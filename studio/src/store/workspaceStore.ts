@@ -7,7 +7,7 @@ import type {
 } from '../types/item'
 import { defaultShopUrl } from '../types/item'
 import type { IngestionStatus, ViewportState } from '../types/workspace'
-import { DEFAULT_REMOVE_BACKGROUND_ON_IMPORT, DEFAULT_SHOW_PLACEMENT_GUIDE, DEFAULT_VIEWPORT } from '../types/workspace'
+import { DEFAULT_SHOW_PLACEMENT_GUIDE, DEFAULT_VIEWPORT } from '../types/workspace'
 import type { LookParameters } from '../types/export'
 import type { StudioDraftPayload } from '../lib/draftPayload'
 import {
@@ -48,7 +48,6 @@ interface WorkspaceStore {
   lookId: string
   draftId: string | null
   showPlacementGuide: boolean
-  removeBackgroundOnImport: boolean
 
   spawnLinkedTwin: (payload: TwinIngestPayload) => void
   updateStudioNode: (id: string, patch: Partial<CatalogItemMetadata>) => void
@@ -72,7 +71,6 @@ interface WorkspaceStore {
   setViewport: (patch: Partial<ViewportState>) => void
   setIngestionStatus: (status: IngestionStatus, error?: string | null, label?: string) => void
   setShowPlacementGuide: (show: boolean) => void
-  setRemoveBackgroundOnImport: (remove: boolean) => void
 }
 
 function catalogDefaults(id: string): CatalogItemMetadata {
@@ -115,7 +113,6 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
   lookId: 'look-01',
   draftId: null,
   showPlacementGuide: DEFAULT_SHOW_PLACEMENT_GUIDE,
-  removeBackgroundOnImport: DEFAULT_REMOVE_BACKGROUND_ON_IMPORT,
 
   spawnLinkedTwin: (payload) => {
     const stackIndex = get().studioNodes.length
@@ -271,8 +268,6 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
     })),
 
   setShowPlacementGuide: (show) => set({ showPlacementGuide: show }),
-
-  setRemoveBackgroundOnImport: (remove) => set({ removeBackgroundOnImport: remove }),
 }))
 
 /** Merge linked node metadata with artboard layout for export */

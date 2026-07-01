@@ -89,7 +89,7 @@ export function LookParametersPanel() {
       <div className="space-y-2">
         <span className={STUDIO_LABEL}>Mood Image</span>
         <div
-          className={`flex min-h-[80px] cursor-pointer flex-col items-center justify-center border border-dashed border-blueprint-border ${STUDIO_SURFACE_BLUEPRINT} p-3 text-center transition-colors hover:border-blueprint-accent`}
+          className={`flex min-h-[80px] cursor-pointer flex-col items-center justify-center border border-dashed border-white/[0.12] ${STUDIO_SURFACE_BLUEPRINT} p-3 text-center transition-colors hover:border-white/25`}
           onDragOver={(e) => e.preventDefault()}
           onDrop={(e) => {
             e.preventDefault()
@@ -104,7 +104,7 @@ export function LookParametersPanel() {
               className="max-h-24 max-w-full object-contain"
             />
           ) : (
-            <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-meta">
+            <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-zinc-500">
               Drop mood image or click to upload
             </span>
           )}

@@ -37,13 +37,13 @@ export function ExportLookPackageDock() {
         {busy ? 'Packaging…' : 'Download Outfit Package'}
       </button>
 
-      <p className="font-sans text-[11px] leading-relaxed text-meta">
+      <p className="font-sans text-[11px] leading-relaxed text-zinc-500">
         Downloads a zip with your layout, item details, and garment cutouts. Send the file to
         Cortisstyle when you are done.
       </p>
 
       {status ? (
-        <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-meta">{status}</p>
+        <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-zinc-500">{status}</p>
       ) : null}
     </div>
   )

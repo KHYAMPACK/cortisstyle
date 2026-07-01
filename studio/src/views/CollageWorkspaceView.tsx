@@ -1,8 +1,6 @@
 import { InfiniteCanvas } from '../components/workspace/InfiniteCanvas'
 import { PropertiesPanel } from '../components/controls/PropertiesPanel'
 import { GarmentLibraryPanel } from '../components/library/GarmentLibraryPanel'
-import { ImportImageControl } from '../components/workspace/ImportImageControl'
-import { RemoveBackgroundToggle } from '../components/workspace/RemoveBackgroundToggle'
 import { useGarmentIngestion } from '../hooks/useGarmentIngestion'
 import type { DraftSaveState } from '../hooks/useDraftAutosave'
 import {
@@ -48,7 +46,7 @@ export function CollageWorkspaceView({
   const statusLabel = saveStateLabel(saveState, saveError)
 
   return (
-    <div className={`flex h-screen w-screen flex-col overflow-hidden ${STUDIO_CHROME_BG} text-jet-black`}>
+    <div className={`flex h-screen w-screen flex-col overflow-hidden ${STUDIO_CHROME_BG} text-zinc-200`}>
       <header
         className={`flex h-14 shrink-0 items-center justify-between border-b ${STUDIO_RULE} ${STUDIO_CHROME_BG} px-5 md:px-6`}
       >
@@ -67,23 +65,21 @@ export function CollageWorkspaceView({
 
         <div className="flex items-center gap-3 md:gap-4">
           <span className={`hidden lg:inline ${STUDIO_LABEL}`}>
-            Import · drag-drop · paste
+            Drag-drop · paste on canvas
           </span>
           {userEmail ? (
-            <span className="hidden max-w-[180px] truncate font-sans text-[11px] text-meta md:inline">
+            <span className="hidden max-w-[180px] truncate font-sans text-[11px] text-zinc-500 md:inline">
               {userEmail}
             </span>
           ) : null}
           <button type="button" onClick={onSignOut} className={STUDIO_BTN_GHOST}>
             Sign out
           </button>
-          <RemoveBackgroundToggle />
-          <ImportImageControl onImportFile={ingestFile} />
         </div>
       </header>
 
       <div className="flex min-h-0 flex-1">
-        <GarmentLibraryPanel />
+        <GarmentLibraryPanel onImportFile={ingestFile} />
 
         <main className="relative min-w-0 flex-1">
           <InfiniteCanvas onImportFile={ingestFile} />

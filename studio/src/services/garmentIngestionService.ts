@@ -74,8 +74,8 @@ export async function runGarmentIngestion(
   payload: IngestImagePayload,
   signal?: AbortSignal,
 ): Promise<void> {
-  const { setIngestionStatus, removeBackgroundOnImport } = useWorkspaceStore.getState()
-  const pipeline: StudioImportPipeline = removeBackgroundOnImport ? 'segmented' : 'raw'
+  const { setIngestionStatus } = useWorkspaceStore.getState()
+  const pipeline: StudioImportPipeline = 'segmented'
 
   setIngestionStatus('processing', null, 'Checking import archive…')
 
@@ -103,12 +103,10 @@ export async function runGarmentIngestion(
   let objectUrl = source.objectUrl
   let blob = source.blob
 
-  if (removeBackgroundOnImport) {
-    setIngestionStatus('processing', null, 'Removing background…')
-    const segmented = await segmentGarment(toSegmentPayload(payload), signal)
-    objectUrl = segmented.objectUrl
-    blob = segmented.blob
-  }
+  setIngestionStatus('processing', null, 'Removing background…')
+  const segmented = await segmentGarment(toSegmentPayload(payload), signal)
+  objectUrl = segmented.objectUrl
+  blob = segmented.blob
 
   const { width, height } = await loadImageDimensions(objectUrl)
 

@@ -14,8 +14,5 @@ export const DEFAULT_VIEWPORT: ViewportState = {
 
 export const DEFAULT_SHOW_PLACEMENT_GUIDE = true
 
-/** Photoroom segmentation on import — off for PNGs that already have transparency */
-export const DEFAULT_REMOVE_BACKGROUND_ON_IMPORT = true
-
 /** Default crisp white artboard — production site applies mix-blend-multiply per layer in CSS */
 export const DEFAULT_CANVAS_BG = '#FFFFFF'

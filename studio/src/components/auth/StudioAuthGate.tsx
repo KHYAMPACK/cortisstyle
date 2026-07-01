@@ -14,11 +14,11 @@ import {
 function StudioLoadingScreen({ message }: { message?: string }) {
   return (
     <div
-      className={`flex h-screen w-screen flex-col items-center justify-center gap-3 ${STUDIO_CHROME_BG} text-jet-black`}
+      className={`flex h-screen w-screen flex-col items-center justify-center gap-3 ${STUDIO_CHROME_BG} text-zinc-200`}
     >
       <p className={STUDIO_LABEL}>Validating studio access…</p>
       {message ? (
-        <p className="max-w-sm px-6 text-center font-sans text-[12px] text-meta">{message}</p>
+        <p className="max-w-sm px-6 text-center font-sans text-[12px] text-zinc-500">{message}</p>
       ) : null}
     </div>
   )
@@ -91,9 +91,9 @@ export function StudioAuthGate() {
 
   if (draft.loadState === 'error') {
     return (
-      <div className={`flex h-screen w-screen flex-col items-center justify-center gap-3 ${STUDIO_CHROME_BG} px-6 text-center text-jet-black`}>
+      <div className={`flex h-screen w-screen flex-col items-center justify-center gap-3 ${STUDIO_CHROME_BG} px-6 text-center text-zinc-200`}>
         <p className={STUDIO_SECTION_TITLE}>Unable to load draft</p>
-        <p className="font-sans text-[12px] text-meta">{draft.loadError}</p>
+        <p className="font-sans text-[12px] text-zinc-500">{draft.loadError}</p>
         <button type="button" onClick={() => window.location.reload()} className={STUDIO_BTN_GHOST}>
           Retry
         </button>
