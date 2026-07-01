@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { AuthPopup } from "@/components/AuthPopup";
 import { ArchiveCommunitySignOff } from "@/components/ArchiveCommunitySignOff";
+import { SiteFooter } from "@/components/SiteFooter";
 import { WardrobeBuilderCanvas } from "@/components/wardrobe/WardrobeBuilderCanvas";
 import { WardrobeItemsGrid } from "@/components/wardrobe/WardrobeItemsGrid";
 import { WardrobeLoadingState } from "@/components/wardrobe/WardrobeLoadingState";
@@ -188,12 +189,9 @@ function WardrobePageContent() {
         </main>
       )}
 
-      <footer className="border-t border-blueprint-border">
-        <div className="flex flex-col items-start justify-between gap-4 px-5 py-8 text-meta text-[9px] tracking-[0.4em] uppercase md:flex-row md:items-center md:px-10">
-          <span>Cortis Style © 2026</span>
-          <span>Digital Wardrobe — Private Archive</span>
-        </div>
-        <ArchiveCommunitySignOff tone="light" className="mt-0 border-t border-blueprint-border pt-10 pb-10" />
+      <footer>
+        <ArchiveCommunitySignOff tone="light" className="border-t border-blueprint-border px-5 pt-10 pb-10 md:px-10" />
+        <SiteFooter />
       </footer>
     </div>
   );

@@ -10,6 +10,7 @@ import {
   LOOKBOOK_COLLECTION_ID,
 } from "@/components/HomeHero";
 import { ArchiveCommunitySignOff } from "@/components/ArchiveCommunitySignOff";
+import { SiteFooter } from "@/components/SiteFooter";
 import { PremiumArchivePaywallModal } from "@/components/PremiumArchivePaywallModal";
 import type { Look } from "@/types/look";
 
@@ -68,13 +69,9 @@ function HomePageContent({ looks }: HomePageClientProps) {
         />
       </section>
 
-      <footer className="border-t border-blueprint-border px-5 md:px-10">
-        <div className="flex flex-col items-center justify-between gap-4 py-8 md:flex-row md:items-end">
-          <span className="text-meta text-[9px] tracking-[0.4em] uppercase">
-            Cortis Style © 2026 — Lookbook All Rights Reserved
-          </span>
-        </div>
-        <ArchiveCommunitySignOff tone="light" className="mt-0 border-t border-blueprint-border pt-10 pb-10" />
+      <footer>
+        <ArchiveCommunitySignOff tone="light" className="border-t border-blueprint-border px-5 pt-10 pb-10 md:px-10" />
+        <SiteFooter />
       </footer>
 
       <LookModal look={selectedLook} onClose={() => setSelectedLook(null)} />

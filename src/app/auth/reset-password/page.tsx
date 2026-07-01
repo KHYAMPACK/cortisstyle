@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BrandLogo } from "@/components/BrandLogo";
+import { SiteFooter } from "@/components/SiteFooter";
 import { useAuth } from "@/context/AuthContext";
 
 const monoInputClass =
@@ -81,8 +82,9 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-ice-floor px-4 py-10">
-      <div className="w-full max-w-md border border-blueprint-border bg-white p-8 shadow-2xl md:p-10">
+    <div className="flex min-h-screen flex-col bg-ice-floor">
+      <div className="flex flex-1 items-center justify-center px-4 py-10">
+        <div className="w-full max-w-md border border-blueprint-border bg-white p-8 shadow-2xl md:p-10">
         <div className="mb-6 flex justify-center">
           <BrandLogo variant="onLight" className="h-20 w-auto" />
         </div>
@@ -151,7 +153,9 @@ export default function ResetPasswordPage() {
             </button>
           </form>
         ) : null}
+        </div>
       </div>
+      <SiteFooter />
     </div>
   );
 }

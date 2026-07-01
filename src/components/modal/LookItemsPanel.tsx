@@ -8,7 +8,9 @@ import type { CanvasItemLayout } from "@/lib/canvasLayout";
 import { computeOutfitRarityFromItems } from "@/lib/rarity";
 import { CoordinateEditorExport } from "@/components/modal/CoordinateEditorExport";
 import { LookItemCard } from "@/components/modal/LookItemCard";
+import { AffiliateShopDisclosure } from "@/components/legal/AffiliateShopDisclosure";
 import { StyleAnalysis } from "@/components/modal/StyleAnalysis";
+import { itemsIncludeAmazonLink } from "@/lib/affiliateUrls";
 import { RarityBadge } from "@/components/RarityBadge";
 
 const spring = { type: "spring" as const, stiffness: 100, damping: 20 };
@@ -45,6 +47,10 @@ export function LookItemsPanel({
   const outfitRarity = useMemo(
     () => computeOutfitRarityFromItems(items),
     [items],
+  );
+  const showAmazonDisclosure = useMemo(
+    () => isMetadataRevealed && itemsIncludeAmazonLink(items),
+    [isMetadataRevealed, items],
   );
 
   useEffect(() => {
@@ -107,6 +113,13 @@ export function LookItemsPanel({
             </div>
 
             <div className="mt-4 space-y-3 border-t border-blueprint-border pt-4 md:mt-8 md:pt-8">
+              {isMetadataRevealed ? (
+                <AffiliateShopDisclosure
+                  showAmazonSentence={showAmazonDisclosure}
+                  className="mb-4"
+                />
+              ) : null}
+
               {items.map((item) => (
                 <LookItemCard
                   key={item.id}

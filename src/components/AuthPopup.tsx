@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { BrandLogo } from "@/components/BrandLogo";
+import { AuthTermsNotice } from "@/components/legal/AuthTermsNotice";
 import { useAuth } from "@/context/AuthContext";
 import { getNotifyDeployPath } from "@/lib/launchGates";
 
@@ -339,6 +340,7 @@ export function AuthPopup({
                       >
                         {isAuthenticating ? "CHECKING..." : "CONTINUE"}
                       </button>
+                      <AuthTermsNotice />
                     </motion.form>
                   ) : null}
 
@@ -438,6 +440,8 @@ export function AuthPopup({
                         {isAuthenticating ? "VERIFYING..." : "VERIFY IDENTITY ACCESS"}
                       </button>
 
+                      <AuthTermsNotice />
+
                       <button
                         type="button"
                         onClick={() => void handleResendOtp()}
@@ -510,6 +514,8 @@ export function AuthPopup({
                       >
                         {isAuthenticating ? "SAVING..." : "CONFIRM PROFILE"}
                       </button>
+
+                      <AuthTermsNotice />
 
                       {!needsPasswordSetup ? (
                         <ResetAnchor

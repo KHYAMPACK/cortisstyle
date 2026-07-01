@@ -49,6 +49,14 @@ function isAllowedDuringMaintenance(pathname: string): boolean {
     return true;
   }
 
+  if (
+    pathname === "/privacy" ||
+    pathname === "/terms" ||
+    pathname === "/affiliate-disclosure"
+  ) {
+    return true;
+  }
+
   if (pathname.startsWith(STUDIO_APP_PREFIX)) {
     return true;
   }
