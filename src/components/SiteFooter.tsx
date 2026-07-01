@@ -19,6 +19,21 @@ export function SiteFooter({ className = "" }: SiteFooterProps) {
         </p>
 
         <nav
+          aria-label="Site"
+          className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] tracking-[0.22em] uppercase"
+        >
+          <Link href="/about" className={linkClass}>
+            About
+          </Link>
+          <span className="text-neutral-300" aria-hidden>
+            ·
+          </span>
+          <Link href="/contact" className={linkClass}>
+            Contact
+          </Link>
+        </nav>
+
+        <nav
           aria-label="Legal"
           className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] tracking-[0.22em] uppercase"
         >

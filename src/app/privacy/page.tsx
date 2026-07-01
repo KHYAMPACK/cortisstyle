@@ -193,13 +193,36 @@ export default function PrivacyPolicyPage() {
         sites.
       </LegalParagraph>
 
-      <LegalHeading>11. Changes</LegalHeading>
+      <LegalHeading id="cookies">11. Cookies</LegalHeading>
+      <LegalParagraph>
+        We use cookies and similar technologies as follows:
+      </LegalParagraph>
+      <LegalList>
+        <li>
+          <strong>Supabase auth cookies</strong> on <code>.cortisstyle.com</code>{" "}
+          — keep you signed in (essential).
+        </li>
+        <li>
+          <strong>localStorage</strong> — saved outfit fallback and functional
+          wardrobe features.
+        </li>
+        <li>
+          <strong>Vercel Analytics</strong> — aggregated usage metrics to improve
+          the site.
+        </li>
+      </LegalList>
+      <LegalParagraph>
+        You can control cookies through your browser settings. Disabling essential
+        cookies may affect sign-in and wardrobe features.
+      </LegalParagraph>
+
+      <LegalHeading>12. Changes</LegalHeading>
       <LegalParagraph>
         We may update this policy. We will post the new effective date at the top.
         Material changes may be communicated via the site or email where appropriate.
       </LegalParagraph>
 
-      <LegalHeading>12. Contact</LegalHeading>
+      <LegalHeading>13. Contact</LegalHeading>
       <LegalParagraph>
         {siteLegal.operatorName}
         <br />

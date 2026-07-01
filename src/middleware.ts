@@ -52,7 +52,9 @@ function isAllowedDuringMaintenance(pathname: string): boolean {
   if (
     pathname === "/privacy" ||
     pathname === "/terms" ||
-    pathname === "/affiliate-disclosure"
+    pathname === "/affiliate-disclosure" ||
+    pathname === "/about" ||
+    pathname === "/contact"
   ) {
     return true;
   }
