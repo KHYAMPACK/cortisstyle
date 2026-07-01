@@ -1,0 +1,50 @@
+---
+description: Implementation recommendations — modular, configurable, minimal-but-quality code
+alwaysApply: true
+---
+
+# Implementation Recommendations
+
+These are **guiding principles**, not rigid rules. Use judgment; break them only when there is a clear reason.
+
+## 1. Prefer configuration over hardcoding
+
+- Pull values from **env vars**, **shared constants**, **data files**, or **registries** instead of scattering literals in components or routes.
+- Hardcode only when the value is truly universal and unlikely to change (e.g. HTTP status codes, math constants, stable protocol strings).
+- When a value appears twice or might vary by environment, product area, or future feature — extract it once.
+
+```typescript
+// Prefer
+const studioUrl = process.env.NEXT_PUBLIC_STUDIO_URL?.trim();
+
+// Avoid (unless it's a one-off prototype you'll delete)
+const studioUrl = "https://studio.cortisstyle.com";
+```
+
+## 2. Minimal code, maximum functionality
+
+- Solve the **actual** requirement; don't add speculative features, abstractions, or error paths for scenarios that don't exist yet.
+- Reuse existing `src/lib/`, hooks, types, and patterns before creating parallel utilities.
+- One clear function or module beats three thin wrappers around the same logic.
+
+## 3. Quality over brevity
+
+- **Short ≠ good.** Never sacrifice readability, types, naming, or separation of concerns just to reduce line count.
+- If extracting a module makes the behavior easier to test, extend, or reason about — do it, even if it adds files.
+- Match the documentation and abstraction level of surrounding code.
+
+## 4. Build for the future — clean and modular
+
+- **UI** renders and delegates; **lib/** holds business logic, transforms, and integrations.
+- Prefer small, composable units with explicit inputs/outputs over large "god" components or route handlers.
+- Extend via **registries**, **types**, and **narrow interfaces** (see `src/lib/dynamicLooks/`) rather than `if/else` chains that will grow forever.
+- New features should feel like they belong in the existing architecture, not bolted on.
+
+## 5. Before adding code, ask
+
+1. Does something similar already exist?
+2. Will this need to change when we add the next feature in this area?
+3. Is this the smallest change that stays easy to extend?
+4. Would a teammate understand this in six months without extra context?
+
+When unsure, favor **clarity and modularity** over cleverness.

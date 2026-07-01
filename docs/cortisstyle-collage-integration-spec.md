@@ -484,19 +484,17 @@ At reference width 420, `"40%"` → `168 px`.
 
 | Constant                       | Value | Meaning                            |
 | ------------------------------ | ----- | ---------------------------------- |
-| `HOMEPAGE_PUBLIC_LOOK_COUNT`   | 7     | Looks shown on homepage grid       |
-| `HOMEPAGE_FREE_LOOK_COUNT`     | 6     | Fully interactive (unlocked) looks |
+| Homepage looks                 | all with `items.length > 0` | Shown on homepage grid |
 | `FREE_TIER_SAVED_OUTFIT_LIMIT` | 3     | Max saved outfits per user         |
 
 
 **Look stream order:** `HOMEPAGE_LOOK_ORDER` in `src/data/looks.ts` — currently looks 4–6 first (free), then 1–3 (premium), then 7–12.
 
 
-| User action                     | Behavior                                                   |
-| ------------------------------- | ---------------------------------------------------------- |
-| Click unlocked look (index 0–5) | Opens `LookModal` with full collage + item metadata        |
-| Click locked look (index 6+)    | Opens `PremiumArchivePaywallModal` — no look modal         |
-| Item metadata in modal          | Only revealed for unlocked looks (`isUnlockedArchiveLook`) |
+| User action              | Behavior                                                   |
+| ------------------------ | ---------------------------------------------------------- |
+| Click any homepage look  | Opens `LookModal` with full collage + item metadata        |
+| Item metadata in modal   | Shown for all public homepage looks (`isUnlockedArchiveLook`) |
 
 
 Deep link: `/?look=look-01#lookbook-collection` opens the look modal directly (bypasses grid click handler).

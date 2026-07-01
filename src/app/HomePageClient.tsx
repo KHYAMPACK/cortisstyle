@@ -11,7 +11,6 @@ import {
 } from "@/components/HomeHero";
 import { ArchiveCommunitySignOff } from "@/components/ArchiveCommunitySignOff";
 import { SiteFooter } from "@/components/SiteFooter";
-import { PremiumArchivePaywallModal } from "@/components/PremiumArchivePaywallModal";
 import type { Look } from "@/types/look";
 
 interface HomePageClientProps {
@@ -21,8 +20,6 @@ interface HomePageClientProps {
 function HomePageContent({ looks }: HomePageClientProps) {
   const searchParams = useSearchParams();
   const [selectedLook, setSelectedLook] = useState<Look | null>(null);
-  const [paywallLook, setPaywallLook] = useState<Look | null>(null);
-  const [isPaywallOpen, setIsPaywallOpen] = useState(false);
 
   useEffect(() => {
     const lookId = searchParams.get("look")?.trim();
@@ -59,14 +56,7 @@ function HomePageContent({ looks }: HomePageClientProps) {
           </div>
         </div>
 
-        <LookGrid
-          looks={looks}
-          onSelectLook={setSelectedLook}
-          onLockedLookClick={(look) => {
-            setPaywallLook(look);
-            setIsPaywallOpen(true);
-          }}
-        />
+        <LookGrid looks={looks} onSelectLook={setSelectedLook} />
       </section>
 
       <footer>
@@ -75,15 +65,6 @@ function HomePageContent({ looks }: HomePageClientProps) {
       </footer>
 
       <LookModal look={selectedLook} onClose={() => setSelectedLook(null)} />
-
-      <PremiumArchivePaywallModal
-        isOpen={isPaywallOpen}
-        look={paywallLook}
-        onClose={() => {
-          setIsPaywallOpen(false);
-          setPaywallLook(null);
-        }}
-      />
     </div>
   );
 }

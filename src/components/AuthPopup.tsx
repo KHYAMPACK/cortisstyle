@@ -2,14 +2,11 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { FormEvent, useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { BrandLogo } from "@/components/BrandLogo";
 import { AuthTermsNotice } from "@/components/legal/AuthTermsNotice";
 import { useAuth } from "@/context/AuthContext";
-import { getNotifyDeployPath } from "@/lib/launchGates";
-
 const spring = { type: "spring" as const, stiffness: 100, damping: 20 };
 
 const fieldTransition = {
@@ -42,8 +39,6 @@ interface AuthPopupProps {
   onClose: () => void;
   onAuthSuccess?: () => void;
   description?: string;
-  /** When false, hides sign-up entry (deploy gate). */
-  allowSignUp?: boolean;
 }
 
 function ResetAnchor({
@@ -65,7 +60,6 @@ export function AuthPopup({
   onClose,
   onAuthSuccess,
   description = "Enter your email to sign in or create your curator archive profile.",
-  allowSignUp = true,
 }: AuthPopupProps) {
   const router = useRouter();
   const {
@@ -308,8 +302,7 @@ export function AuthPopup({
                 {subtitleByPhase[phase]}
               </p>
 
-              {allowSignUp ? (
-                <AnimatePresence mode="wait">
+              <AnimatePresence mode="wait">
                   {phase === "email" ? (
                     <motion.form
                       key="email-phase"
@@ -610,16 +603,7 @@ export function AuthPopup({
                       </button>
                     </motion.div>
                   ) : null}
-                </AnimatePresence>
-              ) : (
-                <Link
-                  href={getNotifyDeployPath()}
-                  onClick={onClose}
-                  className="text-meta mt-8 block w-full text-center text-[10px] tracking-[0.25em] uppercase transition-colors hover:text-jet-black"
-                >
-                  Get notified when accounts open →
-                </Link>
-              )}
+              </AnimatePresence>
 
               {authError ? (
                 <motion.p

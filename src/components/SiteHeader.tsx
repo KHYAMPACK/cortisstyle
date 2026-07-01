@@ -8,18 +8,18 @@ import { BrandLogo } from "@/components/BrandLogo";
 import { HeaderIconNav } from "@/components/HeaderIconNav";
 import { NavMenuDrawer } from "@/components/NavMenuDrawer";
 import { useScrollDirection } from "@/hooks/useScrollDirection";
-import { isDarkGatePath } from "@/lib/launchGates";
+import { isMaintenancePath } from "@/lib/launchGates";
 
 export function SiteHeader() {
   const pathname = usePathname();
   const isHome = pathname === "/";
-  const isDarkGate = isDarkGatePath(pathname);
+  const isMaintenance = isMaintenancePath(pathname);
   const showBrand = useScrollDirection();
   const [heroOverlay, setHeroOverlay] = useState(isHome);
 
   useEffect(() => {
     if (!isHome) {
-      setHeroOverlay(isDarkGate);
+      setHeroOverlay(isMaintenance);
       return;
     }
 
@@ -35,9 +35,9 @@ export function SiteHeader() {
       window.removeEventListener("scroll", syncHeroOverlay);
       window.removeEventListener("resize", syncHeroOverlay);
     };
-  }, [isHome, isDarkGate]);
+  }, [isHome, isMaintenance]);
 
-  const inverse = (isHome && heroOverlay) || isDarkGate;
+  const inverse = (isHome && heroOverlay) || isMaintenance;
 
   return (
     <header

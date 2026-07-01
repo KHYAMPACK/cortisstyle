@@ -215,7 +215,6 @@ export function LookModal({ look, onClose }: LookModalProps) {
           setPendingWardrobeAdd(false);
         }}
         description="Join the community to save this look to your wardrobe."
-        allowSignUp
       />
     </>
   );

@@ -44,7 +44,6 @@ export function EnterDigitalWardrobeButton({
         isOpen={showAuthPopup}
         onClose={() => setShowAuthPopup(false)}
         description="Join the community to access your private wardrobe archive."
-        allowSignUp
       />
     </>
   );

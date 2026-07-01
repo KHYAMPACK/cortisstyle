@@ -120,7 +120,6 @@ function WardrobePageContent() {
         isOpen={showAuthPopup && (!isAuthenticated || needsPasswordSetup)}
         onClose={handleAuthClose}
         description="Join the community to access your private wardrobe archive."
-        allowSignUp
       />
 
       <section className="border-b border-blueprint-border px-5 py-8 md:px-10 md:py-10">

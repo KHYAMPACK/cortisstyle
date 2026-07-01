@@ -5,8 +5,6 @@ import { useEffect, useRef, useState } from "react";
 import { AuthPopup } from "@/components/AuthPopup";
 import { ProfileDropdown } from "@/components/ProfileDropdown";
 import { useAuth } from "@/context/AuthContext";
-import { getNotifyDeployPath, isAuthGateEnabled } from "@/lib/launchGates";
-
 export function ProfileButton({ tone = "default" }: { tone?: "default" | "inverse" }) {
   const iconProps = {
     strokeWidth: 1.5,
@@ -62,11 +60,6 @@ export function ProfileButton({ tone = "default" }: { tone?: "default" | "invers
       return;
     }
 
-    if (isAuthGateEnabled()) {
-      window.location.assign(getNotifyDeployPath());
-      return;
-    }
-
     setShowAuthPopup(true);
   };
 
@@ -94,7 +87,6 @@ export function ProfileButton({ tone = "default" }: { tone?: "default" | "invers
         isOpen={showAuthPopup}
         onClose={() => setShowAuthPopup(false)}
         description="Join the community to access your private wardrobe archive."
-        allowSignUp
       />
     </div>
   );

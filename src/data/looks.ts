@@ -227,89 +227,9 @@ const ALL_LOOKS: Look[] = [
       placement("women-s-black-ballet-shoes-01", "70%", "48%", "76%", "58%"),
     ],
   },
-  {
-    id: "look-08",
-    title: "Nocturnal Layer",
-    image: "/images/temp_image_7603B699-F9F9-40F3-AF43-8EA5ACD24F72.WEBP",
-    modelName: "SEONGHYEON",
-    ...metrics({
-      vibe: "Nocturnal / Layered Silk",
-      investmentRetail: 4,
-      investmentWithGuide: 2,
-      versatility: 3,
-    }),
-    width: IMAGE_WIDTH,
-    height: IMAGE_HEIGHT,
-    items: [
-    ],
-  },
-  {
-    id: "look-09",
-    title: "Concrete Romance",
-    image: "/images/temp_image_76EADAD7-87D4-4649-9923-B3D060ACD1BA.WEBP",
-    modelName: "JUHOON",
-    ...metrics({
-      vibe: "Romantic Brutalism / Drape",
-      investmentRetail: 5,
-      investmentWithGuide: 3,
-      versatility: 3,
-    }),
-    width: IMAGE_WIDTH,
-    height: IMAGE_HEIGHT,
-    items: [
-    ],
-  },
-  {
-    id: "look-10",
-    title: "Pale Structure",
-    image: "/images/temp_image_BA9895CE-E202-4395-A8F9-F1887D40902E.WEBP",
-    modelName: "JUHOON",
-    ...metrics({
-      vibe: "Pale Structure / Ivory Form",
-      investmentRetail: 4,
-      investmentWithGuide: 2,
-      versatility: 4,
-    }),
-    width: IMAGE_WIDTH,
-    height: IMAGE_HEIGHT,
-    items: [
-    ],
-  },
-  {
-    id: "look-11",
-    title: "Dissolved Form",
-    image: "/images/temp_image_BFD792D8-8457-4412-905C-9FE51B6AA168.WEBP",
-    modelName: "SEONGHYEON",
-    ...metrics({
-      vibe: "Dissolved Form / Fluid Denim",
-      investmentRetail: 4,
-      investmentWithGuide: 3,
-      versatility: 3,
-    }),
-    width: IMAGE_WIDTH,
-    height: IMAGE_HEIGHT,
-    items: [
-    ],
-  },
-  {
-    id: "look-12",
-    title: "Final Frame",
-    image: "/images/temp_image_F2334FB9-4D25-4EC6-9821-BE54537B0E98.WEBP",
-    modelName: "JUHOON",
-    ...metrics({
-      vibe: "Classic / Final Frame",
-      investmentRetail: 5,
-      investmentWithGuide: 2,
-      versatility: 5,
-    }),
-    width: IMAGE_WIDTH,
-    height: IMAGE_HEIGHT,
-    items: [
-    ],
-  },
 ];
 
-/** Homepage grid order: looks 4–6 first (free), then 1–3 (premium), then the rest. */
+/** Homepage grid order: looks 4–6 first, then 1–3, then 7. */
 const HOMEPAGE_LOOK_ORDER = [
   "look-04",
   "look-05",
@@ -318,11 +238,6 @@ const HOMEPAGE_LOOK_ORDER = [
   "look-02",
   "look-03",
   "look-07",
-  "look-08",
-  "look-09",
-  "look-10",
-  "look-11",
-  "look-12",
 ] as const;
 
 export const LEGACY_LOOKS: Look[] = ALL_LOOKS;

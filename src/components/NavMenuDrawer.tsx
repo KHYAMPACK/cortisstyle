@@ -5,11 +5,11 @@ import { Menu, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ArchiveCommunitySignOff } from "@/components/ArchiveCommunitySignOff";
-import { getWardrobeEntryPath } from "@/lib/wardrobeGate";
+import { WARDROBE_APP_PATH } from "@/lib/wardrobeGate";
 
 const links = [
   { href: "/", label: "Lookbook" },
-  { href: getWardrobeEntryPath(), label: "Digital Wardrobe" },
+  { href: WARDROBE_APP_PATH, label: "Digital Wardrobe" },
 ];
 
 const HEADER_OFFSET = "5rem";
