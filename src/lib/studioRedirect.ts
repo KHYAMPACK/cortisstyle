@@ -1,11 +1,13 @@
-/** Redirect helpers for lookbook-studio auth on studio.cortisstyle.com */
+import { getSiteUrl } from "@/lib/authRedirect";
 
-const DEFAULT_STUDIO_URL = "https://studio.cortisstyle.com";
+/** Lookbook Studio — integrated at /studio on the main site by default */
+
+const LEGACY_STUDIO_SUBDOMAIN = "https://studio.cortisstyle.com";
 
 export function getStudioAppUrl(): string {
   const configured = process.env.NEXT_PUBLIC_STUDIO_URL?.trim();
   if (configured) return configured.replace(/\/$/, "");
-  return DEFAULT_STUDIO_URL;
+  return `${getSiteUrl()}/studio`;
 }
 
 export function isAllowedReturnTo(value: string): boolean {
@@ -63,8 +65,26 @@ export function buildStudioSessionHandoffUrl(
   return url.toString();
 }
 
-/** Wardrobe / site CTA → lookbook-studio with session handoff when already signed in. */
+/** Wardrobe / site CTA → lookbook studio (same-origin when integrated). */
 export function getStudioEntryPath(): string {
-  const studioUrl = resolveStudioReturnTo(getStudioAppUrl());
-  return `/auth/studio?returnTo=${encodeURIComponent(studioUrl)}`;
+  const studioUrl = getStudioAppUrl();
+
+  try {
+    const siteOrigin = new URL(getSiteUrl()).origin;
+    const studio = new URL(studioUrl);
+
+    if (studio.origin === siteOrigin) {
+      return studio.pathname || "/studio";
+    }
+  } catch {
+    // fall through to auth handoff
+  }
+
+  const returnTo = resolveStudioReturnTo(studioUrl);
+  return `/auth/studio?returnTo=${encodeURIComponent(returnTo)}`;
+}
+
+/** @deprecated Legacy subdomain URL — kept for redirects during migration */
+export function getLegacyStudioSubdomainUrl(): string {
+  return LEGACY_STUDIO_SUBDOMAIN;
 }

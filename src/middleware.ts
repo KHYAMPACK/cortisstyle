@@ -8,9 +8,28 @@ import {
 } from "@/lib/wardrobeGate";
 
 const STUDIO_API_PREFIX = "/api/studio";
+const STUDIO_APP_PREFIX = "/studio";
 
 function isStudioApiPath(pathname: string): boolean {
   return pathname.startsWith(STUDIO_API_PREFIX);
+}
+
+function isStudioStaticAsset(pathname: string): boolean {
+  return (
+    pathname.startsWith(`${STUDIO_APP_PREFIX}/assets/`) ||
+    pathname === `${STUDIO_APP_PREFIX}/favicon.svg` ||
+    pathname === `${STUDIO_APP_PREFIX}/icons.svg`
+  );
+}
+
+function shouldServeStudioSpa(pathname: string): boolean {
+  if (!pathname.startsWith(STUDIO_APP_PREFIX)) return false;
+  if (isStudioStaticAsset(pathname)) return false;
+  if (pathname === STUDIO_APP_PREFIX || pathname === `${STUDIO_APP_PREFIX}/`) {
+    return true;
+  }
+  if (pathname === `${STUDIO_APP_PREFIX}/index.html`) return false;
+  return !/\.[a-z0-9]+$/i.test(pathname);
 }
 
 function isMaintenanceModeEnabled(): boolean {
@@ -18,7 +37,19 @@ function isMaintenanceModeEnabled(): boolean {
 }
 
 function isAllowedDuringMaintenance(pathname: string): boolean {
-  if (pathname === MAINTENANCE_PATH || pathname.startsWith("/auth/callback") || pathname.startsWith("/auth/studio") || pathname.startsWith("/auth/reset-password")) {
+  if (pathname === MAINTENANCE_PATH) {
+    return true;
+  }
+
+  if (
+    pathname.startsWith("/auth/callback") ||
+    pathname.startsWith("/auth/studio") ||
+    pathname.startsWith("/auth/reset-password")
+  ) {
+    return true;
+  }
+
+  if (pathname.startsWith(STUDIO_APP_PREFIX)) {
     return true;
   }
 
@@ -59,6 +90,10 @@ export function middleware(request: NextRequest) {
         new URL(WARDROBE_COMING_SOON_PATH, request.url),
       );
     }
+  }
+
+  if (shouldServeStudioSpa(pathname)) {
+    return NextResponse.rewrite(new URL("/studio/index.html", request.url));
   }
 
   return NextResponse.next();

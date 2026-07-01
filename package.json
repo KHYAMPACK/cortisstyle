@@ -4,7 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "dev:studio": "vite --config studio/vite.config.ts",
+    "build:studio": "vite build --config studio/vite.config.ts",
+    "build": "npm run build:studio && next build",
     "start": "next start",
     "lint": "eslint",
     "item:draft": "tsx scripts/generate-item-draft.mts",
@@ -14,24 +16,34 @@
     "@supabase/supabase-js": "^2.108.2",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
+    "busboy": "^1.6.0",
+    "fabric": "^7.4.0",
+    "fflate": "^0.8.3",
     "framer-motion": "^12.40.0",
     "html2canvas-pro": "^2.2.0",
     "lucide-react": "^1.21.0",
     "next": "16.2.9",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "sharp": "^0.34.3"
+    "sharp": "^0.34.3",
+    "uuid": "^14.0.1",
+    "zustand": "^5.0.14"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@tailwindcss/vite": "^4.3.1",
+    "@types/busboy": "^1.5.4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/uuid": "^10.0.0",
+    "@vitejs/plugin-react": "^6.0.2",
     "babel-plugin-react-compiler": "1.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
     "tailwindcss": "^4",
     "tsx": "^4.20.3",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vite": "^8.1.0"
   }
 }

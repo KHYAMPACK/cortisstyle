@@ -98,7 +98,12 @@ function StudioAuthContent() {
       return;
     }
 
-    router.replace(returnTo);
+    try {
+      const destination = new URL(returnTo);
+      router.replace(`${destination.pathname}${destination.search}`);
+    } catch {
+      router.replace(returnTo.startsWith("/") ? returnTo : "/studio");
+    }
   }, [returnTo, router]);
 
   useEffect(() => {

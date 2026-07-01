@@ -19,6 +19,7 @@
 
 # production
 /build
+/public/studio
 
 # generated item drafts (review before committing)
 /drafts/
