@@ -18,6 +18,7 @@ import {
   LOOK_HERO_EXPORT_HEIGHT,
   LOOK_HERO_EXPORT_WIDTH,
 } from './lookCanvasReference'
+import { renderLookCardPngBytes, renderLookHeroPngBytes } from './exportLookCardCanvas'
 import { zipSync, strToU8 } from 'fflate'
 
 export function generateLookId(): string {
@@ -120,10 +121,18 @@ export async function exportLookPackageZip(
   const outfitId = resolveOutfitId(lookId, params.outfitId)
   const lookJson = buildDynamicLookJson(lookId, { ...params, outfitId }, linked)
   const itemsJson = buildDynamicItemsJson(linked, outfitId)
+  const artboardItems = linked.map((entry) => entry.layout)
+
+  const [lookCardPng, heroPng] = await Promise.all([
+    renderLookCardPngBytes({ artboardItems, lookParams: params }),
+    renderLookHeroPngBytes({ artboardItems, lookParams: params }),
+  ])
 
   const zipEntries: Record<string, Uint8Array> = {
     [`${outfitId}.json`]: strToU8(JSON.stringify(lookJson, null, 2)),
     [`${outfitId}-items.json`]: strToU8(JSON.stringify(itemsJson, null, 2)),
+    'images/look-card.png': lookCardPng,
+    'images/hero.png': heroPng,
   }
 
   for (const { layout } of linked) {

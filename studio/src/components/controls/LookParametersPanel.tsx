@@ -1,4 +1,3 @@
-import { useCallback, useRef } from 'react'
 import { useWorkspaceStore } from '../../store/workspaceStore'
 import { LookCardPreview } from './LookCardPreview'
 import {
@@ -7,51 +6,20 @@ import {
   STUDIO_LABEL,
   STUDIO_RULE,
   STUDIO_SECTION_TITLE_SM,
-  STUDIO_SURFACE_BLUEPRINT,
 } from '../../lib/studioUiTokens'
-import { uploadDataUrlAsset } from '../../lib/studioApi'
-
-async function readImageFile(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(String(reader.result))
-    reader.onerror = () => reject(new Error('Failed to read mood image'))
-    reader.readAsDataURL(file)
-  })
-}
 
 export function LookParametersPanel() {
   const lookParams = useWorkspaceStore((s) => s.lookParams)
-  const draftId = useWorkspaceStore((s) => s.draftId)
   const setLookParams = useWorkspaceStore((s) => s.setLookParams)
-  const fileRef = useRef<HTMLInputElement>(null)
-
-  const onMoodFile = useCallback(
-    async (file: File | null) => {
-      if (!file) return
-
-      const dataUrl = await readImageFile(file)
-      setLookParams({ moodImageUrl: dataUrl })
-
-      try {
-        const url = await uploadDataUrlAsset({
-          dataUrl,
-          itemId: 'mood-image',
-          draftId,
-        })
-        setLookParams({ moodImageUrl: url })
-      } catch (error) {
-        console.warn('[mood-image] CDN upload skipped:', error)
-      }
-    },
-    [draftId, setLookParams],
-  )
 
   return (
     <div className="space-y-6">
       <div>
-        <p className={STUDIO_KICKER}>Look Metadata</p>
+        <p className={STUDIO_KICKER}>Export Metadata</p>
         <p className={`mt-1 ${STUDIO_SECTION_TITLE_SM}`}>About This Look</p>
+        <p className="mt-2 font-sans text-[11px] leading-relaxed text-meta">
+          These fields are written into your JSON files and appear on the exported look card.
+        </p>
       </div>
 
       <div className="space-y-0">
@@ -86,45 +54,10 @@ export function LookParametersPanel() {
         </label>
       </div>
 
-      <div className="space-y-2">
-        <span className={STUDIO_LABEL}>Mood Image</span>
-        <div
-          className={`flex min-h-[80px] cursor-pointer flex-col items-center justify-center border border-dashed border-white/[0.12] ${STUDIO_SURFACE_BLUEPRINT} p-3 text-center transition-colors hover:border-white/25`}
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={(e) => {
-            e.preventDefault()
-            void onMoodFile(e.dataTransfer.files[0] ?? null)
-          }}
-          onClick={() => fileRef.current?.click()}
-        >
-          {lookParams.moodImageUrl ? (
-            <img
-              src={lookParams.moodImageUrl}
-              alt="Mood preview"
-              className="max-h-24 max-w-full object-contain"
-            />
-          ) : (
-            <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-zinc-500">
-              Drop mood image or click to upload
-            </span>
-          )}
-        </div>
-        <input
-          ref={fileRef}
-          type="file"
-          accept="image/png,image/jpeg,image/webp"
-          className="hidden"
-          onChange={(e) => {
-            void onMoodFile(e.target.files?.[0] ?? null)
-          }}
-        />
-      </div>
-
       <LookCardPreview
         lookTitle={lookParams.lookTitle}
         vibe={lookParams.vibe}
         modelName={lookParams.modelName}
-        moodImageUrl={lookParams.moodImageUrl}
       />
     </div>
   )

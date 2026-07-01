@@ -1,10 +1,24 @@
 import { useCallback, useState } from 'react'
 import { useWorkspaceStore, resolveLinkedGarments } from '../../store/workspaceStore'
 import { exportLookPackageZip, resolveOutfitId } from '../../lib/exportLookPackage'
+import { LOOK_CARD_FULL_EXPORT_HEIGHT } from '../../lib/exportLookCardCanvas'
+import {
+  LOOK_HERO_EXPORT_HEIGHT,
+  LOOK_HERO_EXPORT_WIDTH,
+} from '../../lib/lookCanvasReference'
 import { STUDIO_BTN_PRIMARY, STUDIO_LABEL } from '../../lib/studioUiTokens'
+
+const PACKAGE_FILES = [
+  '{outfitId}.json — look metadata + canvas layout',
+  '{outfitId}-items.json — item definitions',
+  'images/look-card.png — full look card with footer',
+  `images/hero.png — ${LOOK_HERO_EXPORT_WIDTH}×${LOOK_HERO_EXPORT_HEIGHT} hero (2:3)`,
+  'images/{itemId}.png — one cutout per garment',
+] as const
 
 export function ExportLookPackageDock() {
   const assignNewLookId = useWorkspaceStore((s) => s.assignNewLookId)
+  const outfitId = useWorkspaceStore((s) => s.lookParams.outfitId)
 
   const [status, setStatus] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -26,6 +40,8 @@ export function ExportLookPackageDock() {
     }
   }, [assignNewLookId])
 
+  const previewOutfitId = outfitId || 'outfit-xx'
+
   return (
     <div className="space-y-3">
       <button
@@ -37,13 +53,27 @@ export function ExportLookPackageDock() {
         {busy ? 'Packaging…' : 'Download Outfit Package'}
       </button>
 
-      <p className="font-sans text-[11px] leading-relaxed text-zinc-500">
-        Downloads a zip with your layout, item details, and garment cutouts. Send the file to
-        Cortisstyle when you are done.
-      </p>
+      <div className="space-y-2">
+        <p className={STUDIO_LABEL}>Package includes</p>
+        <ul className="space-y-1.5 font-sans text-[11px] leading-relaxed text-meta">
+          {PACKAGE_FILES.map((line) => (
+            <li key={line} className="flex gap-2">
+              <span aria-hidden className="text-blueprint-accent">
+                ·
+              </span>
+              <span>{line.replace('{outfitId}', previewOutfitId)}</span>
+            </li>
+          ))}
+        </ul>
+        <p className="font-sans text-[11px] leading-relaxed text-meta">
+          Look card is rendered at {LOOK_HERO_EXPORT_WIDTH}×{LOOK_HERO_EXPORT_HEIGHT} (2:3 hero)
+          {` + ${LOOK_CARD_FULL_EXPORT_HEIGHT - LOOK_HERO_EXPORT_HEIGHT}px footer`} in
+          look-card.png. Mood image and creator name appear when set in the preview panel.
+        </p>
+      </div>
 
       {status ? (
-        <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-zinc-500">{status}</p>
+        <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-meta">{status}</p>
       ) : null}
     </div>
   )

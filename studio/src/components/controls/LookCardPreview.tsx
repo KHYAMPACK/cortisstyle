@@ -1,13 +1,21 @@
-import { useMemo } from 'react'
+import { useCallback, useMemo, useRef } from 'react'
 import { useWorkspaceStore } from '../../store/workspaceStore'
 import { displayHeight } from '../../lib/canvasLayout'
 import {
+  LOOK_HERO_EXPORT_HEIGHT,
+  LOOK_HERO_EXPORT_WIDTH,
   LOOK_CANVAS_REFERENCE_HEIGHT,
   LOOK_CANVAS_REFERENCE_WIDTH,
   MOODBOARD_FOOTER_HEIGHT_PX,
 } from '../../lib/lookCanvasReference'
 import { CreatorNameOverlay, MoodImageFrame } from '../workspace/MoodImageFrame'
-import { STUDIO_LABEL, STUDIO_RULE, STUDIO_SECTION_TITLE_SM, STUDIO_SURFACE } from '../../lib/studioUiTokens'
+import {
+  STUDIO_KICKER,
+  STUDIO_LABEL,
+  STUDIO_RULE,
+  STUDIO_SURFACE,
+  STUDIO_SURFACE_BLUEPRINT,
+} from '../../lib/studioUiTokens'
 
 /** Sidebar preview width — hero keeps 2:3 (420×630 ≡ 1700×2500) */
 const PREVIEW_WIDTH = 248
@@ -19,7 +27,15 @@ interface LookCardPreviewProps {
   lookTitle: string
   vibe: string
   modelName: string
-  moodImageUrl: string | null
+}
+
+async function readImageFile(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result))
+    reader.onerror = () => reject(new Error('Failed to read mood image'))
+    reader.readAsDataURL(file)
+  })
 }
 
 function PreviewGarmentLayers() {
@@ -58,24 +74,81 @@ function PreviewGarmentLayers() {
 }
 
 /**
- * Homepage look card preview — white 2:3 hero plus moodboard footer (preview-only).
+ * Homepage look card reference — visual only. Export package is JSON + garment PNGs.
  */
-export function LookCardPreview({
-  lookTitle,
-  vibe,
-  modelName,
-  moodImageUrl,
-}: LookCardPreviewProps) {
+export function LookCardPreview({ lookTitle, vibe, modelName }: LookCardPreviewProps) {
+  const moodImageUrl = useWorkspaceStore((s) => s.lookParams.moodImageUrl)
+  const setLookParams = useWorkspaceStore((s) => s.setLookParams)
+  const fileRef = useRef<HTMLInputElement>(null)
+
+  const onMoodFile = useCallback(
+    async (file: File | null) => {
+      if (!file) return
+      const dataUrl = await readImageFile(file)
+      setLookParams({ moodImageUrl: dataUrl })
+    },
+    [setLookParams],
+  )
+
   const title = (lookTitle ?? '').trim() || 'Look name'
-  const vibeText = (vibe ?? '').trim() || 'Look vibe'
   const creator = (modelName ?? '').trim() || 'Creator'
 
   return (
-    <div className="space-y-3">
-      <p className={STUDIO_LABEL}>Live Preview</p>
+    <div className="space-y-3 border-t border-blueprint-border pt-5">
+      <div>
+        <p className={STUDIO_KICKER}>Look Card Export</p>
+        <p className={`mt-1 ${STUDIO_LABEL}`}>Included in look-card.png export</p>
+        <p className="mt-2 font-sans text-[11px] leading-relaxed text-meta">
+          Renders at {LOOK_HERO_EXPORT_WIDTH}×{LOOK_HERO_EXPORT_HEIGHT} (2:3) plus moodboard
+          footer. Matches the homepage look card layout.
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        <span className={STUDIO_LABEL}>Mood image (optional)</span>
+        <div
+          className={`flex min-h-[72px] cursor-pointer flex-col items-center justify-center border border-dashed border-blueprint-border ${STUDIO_SURFACE_BLUEPRINT} p-3 text-center transition-colors hover:border-blueprint-accent`}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => {
+            e.preventDefault()
+            void onMoodFile(e.dataTransfer.files[0] ?? null)
+          }}
+          onClick={() => fileRef.current?.click()}
+        >
+          {moodImageUrl ? (
+            <img
+              src={moodImageUrl}
+              alt="Mood preview"
+              className="max-h-20 max-w-full object-contain"
+            />
+          ) : (
+            <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-meta">
+              Drop mood image for preview
+            </span>
+          )}
+        </div>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/png,image/jpeg,image/webp"
+          className="hidden"
+          onChange={(e) => {
+            void onMoodFile(e.target.files?.[0] ?? null)
+          }}
+        />
+        {moodImageUrl ? (
+          <button
+            type="button"
+            className="font-mono text-[9px] uppercase tracking-[0.2em] text-meta transition-colors hover:text-jet-black"
+            onClick={() => setLookParams({ moodImageUrl: null })}
+          >
+            Clear mood preview
+          </button>
+        ) : null}
+      </div>
 
       <div
-        className={`overflow-hidden border border-white/[0.08] ${STUDIO_SURFACE}`}
+        className={`overflow-hidden border border-blueprint-border ${STUDIO_SURFACE}`}
         style={{ width: PREVIEW_WIDTH }}
       >
         <div
@@ -120,13 +193,11 @@ export function LookCardPreview({
         </footer>
       </div>
 
-      <div className={`border ${STUDIO_RULE} ${STUDIO_SURFACE} px-3 py-3`}>
-        <p className={STUDIO_SECTION_TITLE_SM}>{title}</p>
-        <p className={`mt-1.5 ${STUDIO_LABEL}`}>{vibeText}</p>
-        <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.22em] text-zinc-500">
-          By {creator}
+      {(vibe ?? '').trim() ? (
+        <p className={`border ${STUDIO_RULE} ${STUDIO_SURFACE} px-3 py-2 font-mono text-[9px] uppercase tracking-[0.22em] text-meta`}>
+          {(vibe ?? '').trim()}
         </p>
-      </div>
+      ) : null}
     </div>
   )
 }
