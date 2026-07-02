@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { AwinSiteVerificationMeta } from "@/components/legal/AwinSiteVerificationMeta";
 import { ImpactSiteVerificationMeta } from "@/components/legal/ImpactSiteVerificationMeta";
 import { Providers } from "@/components/Providers";
 import { DynamicCatalogProvider } from "@/context/DynamicCatalogProvider";
@@ -27,6 +28,7 @@ export default async function RootLayout({
       className="intro-loading h-full antialiased"
     >
       <head>
+        <AwinSiteVerificationMeta />
         <ImpactSiteVerificationMeta />
         <script
           dangerouslySetInnerHTML={{
