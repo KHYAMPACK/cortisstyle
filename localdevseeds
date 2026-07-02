@@ -12,5 +12,8 @@ SUPABASE_SMTP_PORT=
 SUPABASE_SMTP_USER=
 SUPABASE_SMTP_PASS=
 
+# Impact (CJ / partner network) — homepage meta verification token
+# IMPACT_SITE_VERIFICATION=your-token-from-impact-dashboard
+
 # Launch gates (opt-in)
 # NEXT_PUBLIC_MAINTENANCE_MODE=true

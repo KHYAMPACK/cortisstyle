@@ -17,6 +17,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const catalog = buildCatalogFromDisk();
+  const impactSiteVerification = process.env.IMPACT_SITE_VERIFICATION?.trim();
 
   return (
     <html
@@ -24,6 +25,12 @@ export default function RootLayout({
       className="intro-loading h-full antialiased"
     >
       <head>
+        {impactSiteVerification ? (
+          <meta
+            name="impact-site-verification"
+            value={impactSiteVerification}
+          />
+        ) : null}
         <script
           dangerouslySetInnerHTML={{
             __html: "document.documentElement.classList.add('intro-loading');",
