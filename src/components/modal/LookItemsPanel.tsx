@@ -113,13 +113,6 @@ export function LookItemsPanel({
             </div>
 
             <div className="mt-4 space-y-3 border-t border-blueprint-border pt-4 md:mt-8 md:pt-8">
-              {isMetadataRevealed ? (
-                <AffiliateShopDisclosure
-                  showAmazonSentence={showAmazonDisclosure}
-                  className="mb-4"
-                />
-              ) : null}
-
               {items.map((item) => (
                 <LookItemCard
                   key={item.id}
@@ -136,6 +129,13 @@ export function LookItemsPanel({
                   onSelect={onSelectItem}
                 />
               ))}
+
+              {isMetadataRevealed ? (
+                <AffiliateShopDisclosure
+                  showAmazonSentence={showAmazonDisclosure}
+                  className="mt-4"
+                />
+              ) : null}
             </div>
 
             {isEditMode && (
