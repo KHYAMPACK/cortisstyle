@@ -1,26 +1,20 @@
 import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { ImpactSiteVerificationMeta } from "@/components/legal/ImpactSiteVerificationMeta";
 import { Providers } from "@/components/Providers";
 import { DynamicCatalogProvider } from "@/context/DynamicCatalogProvider";
 import { buildCatalogFromDisk } from "@/data/catalog";
 import "./globals.css";
 
-const impactSiteVerification = process.env.IMPACT_SITE_VERIFICATION?.trim();
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Cortisstyle — Lookbook",
   description: "An editorial fashion lookbook by Cortisstyle.",
-  ...(impactSiteVerification
-    ? {
-        other: {
-          "impact-site-verification": impactSiteVerification,
-        },
-      }
-    : {}),
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
@@ -33,6 +27,7 @@ export default function RootLayout({
       className="intro-loading h-full antialiased"
     >
       <head>
+        <ImpactSiteVerificationMeta />
         <script
           dangerouslySetInnerHTML={{
             __html: "document.documentElement.classList.add('intro-loading');",
