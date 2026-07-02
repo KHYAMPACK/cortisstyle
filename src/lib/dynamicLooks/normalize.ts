@@ -40,6 +40,13 @@ function readString(value: unknown): string | undefined {
     : undefined;
 }
 
+function readUrlField(value: unknown, fallback: string): string {
+  if (typeof value === "string") {
+    return value.trim();
+  }
+  return fallback;
+}
+
 function readNumber(value: unknown): number | undefined {
   return typeof value === "number" && Number.isFinite(value) ? value : undefined;
 }
@@ -134,12 +141,13 @@ function normalizeClothingItem(value: unknown): ClothingItem | null {
     name,
     category,
     brand,
-    shopUrl:
-      readString(value.shopUrl) ?? `https://shopier.com/cortis/${id}`,
+    shopUrl: readUrlField(value.shopUrl, `https://shopier.com/cortis/${id}`),
     displayModel: readString(value.displayModel),
     estPriceRange: readString(value.estPriceRange) ?? DEFAULT_EST_PRICE_RANGE,
-    budgetAlternativeUrl:
-      readString(value.budgetAlternativeUrl) ?? DEFAULT_BUDGET_ALTERNATIVE_URL,
+    budgetAlternativeUrl: readUrlField(
+      value.budgetAlternativeUrl,
+      DEFAULT_BUDGET_ALTERNATIVE_URL,
+    ),
     rarityScore: (readNumber(value.rarityScore) ?? 1) as ClothingItem["rarityScore"],
     canvasImage: readString(value.canvasImage),
     defaultCanvasPosition: normalizeCanvasPosition(value.defaultCanvasPosition),

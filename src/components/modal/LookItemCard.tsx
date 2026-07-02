@@ -1,7 +1,11 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { forwardRef, type KeyboardEvent } from "react";
+import { forwardRef, type KeyboardEvent, type MouseEvent } from "react";
+import {
+  itemDisplayTitle,
+  resolveItemPurchaseState,
+} from "@/lib/itemPurchaseState";
 import {
   formatItemRarityIndicator,
   LOCKED_ITEM_RARITY_PLACEHOLDER,
@@ -14,6 +18,12 @@ const CARD_IDLE_CLASS =
   "border-blueprint-border bg-blueprint-surface hover:border-blueprint-accent";
 const CARD_ACTIVE_CLASS =
   "border-blueprint-accent bg-blueprint-selected shadow-[0_0_0_1px_rgba(30,74,133,0.12)]";
+
+const META_LINE_CLASS =
+  "text-meta text-[10px] tracking-[0.28em] uppercase";
+
+const LINK_BUTTON_CLASS =
+  "border border-blueprint-border bg-white px-3 py-1.5 font-mono text-[9px] tracking-[0.22em] uppercase transition-colors hover:border-jet-black";
 
 interface LookItemCardProps {
   item: ResolvedLookItem;
@@ -40,6 +50,34 @@ function LegendaryRarityPulse() {
   );
 }
 
+function PurchaseLinkButton({
+  href,
+  label,
+  tone = "primary",
+  onClick,
+}: {
+  href: string;
+  label: string;
+  tone?: "primary" | "secondary";
+  onClick: (event: MouseEvent<HTMLAnchorElement>) => void;
+}) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={onClick}
+      className={`${LINK_BUTTON_CLASS} ${
+        tone === "primary"
+          ? "text-neutral-900"
+          : "text-neutral-600 hover:text-neutral-900"
+      }`}
+    >
+      {label}
+    </a>
+  );
+}
+
 export const LookItemCard = forwardRef<HTMLDivElement, LookItemCardProps>(
   function LookItemCard(
     { item, isActive, isMetadataRevealed = false, onSelect },
@@ -52,12 +90,21 @@ export const LookItemCard = forwardRef<HTMLDivElement, LookItemCardProps>(
       }
     };
 
+    const purchaseState = resolveItemPurchaseState(item);
+    const isEditorial = purchaseState === "editorial";
+    const isAlternativeOnly = purchaseState === "alternative-only";
+    const title = isEditorial ? itemDisplayTitle(item) : item.name;
+
     const isLegendary = isMetadataRevealed && item.rarityScore === 5;
     const surfaceClass = isLegendary
       ? getLegendaryFrameClass(isActive)
       : isActive
         ? CARD_ACTIVE_CLASS
         : CARD_IDLE_CLASS;
+
+    const stopPropagation = (event: MouseEvent<HTMLAnchorElement>) => {
+      event.stopPropagation();
+    };
 
     return (
       <motion.div
@@ -97,40 +144,58 @@ export const LookItemCard = forwardRef<HTMLDivElement, LookItemCardProps>(
         )}
 
         <h3 className="pr-28 font-serif text-sm tracking-[0.06em] text-neutral-900 uppercase md:pr-32 md:text-base">
-          {item.name}
+          {title}
         </h3>
 
         {isMetadataRevealed ? (
           <div className="mt-3 space-y-3">
-            <p className="text-meta text-[10px] tracking-[0.28em] uppercase">
-              Est. Price // {item.estPriceRange}
-            </p>
+            {purchaseState === "editorial" ? (
+              <p className={`${META_LINE_CLASS} leading-relaxed text-neutral-500`}>
+                Status // Out of stock or editorial piece
+              </p>
+            ) : null}
 
-            <div className="flex flex-wrap gap-2">
-              <a
-                href={item.shopUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(event) => event.stopPropagation()}
-                className="border border-blueprint-border bg-white px-3 py-1.5 font-mono text-[9px] tracking-[0.22em] text-neutral-900 uppercase transition-colors hover:border-jet-black"
-              >
-                Original Purchase
-              </a>
-              <a
-                href={item.budgetAlternativeUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(event) => event.stopPropagation()}
-                className="border border-blueprint-border bg-white px-3 py-1.5 font-mono text-[9px] tracking-[0.22em] text-neutral-600 uppercase transition-colors hover:border-jet-black hover:text-neutral-900"
-              >
-                Budget Alternative
-              </a>
-            </div>
+            {isAlternativeOnly ? (
+              <p className={`${META_LINE_CLASS} leading-relaxed text-neutral-500`}>
+                Availability // Original unavailable — alternative recommended
+              </p>
+            ) : null}
+
+            {purchaseState === "shoppable" ? (
+              <p className={META_LINE_CLASS}>
+                Est. Price // {item.estPriceRange}
+              </p>
+            ) : null}
+
+            {purchaseState === "shoppable" || isAlternativeOnly ? (
+              <div className="flex flex-wrap gap-2">
+                {purchaseState === "shoppable" && item.shopUrl.trim() ? (
+                  <PurchaseLinkButton
+                    href={item.shopUrl}
+                    label="Original Purchase"
+                    tone="primary"
+                    onClick={stopPropagation}
+                  />
+                ) : null}
+                {item.budgetAlternativeUrl.trim() ? (
+                  <PurchaseLinkButton
+                    href={item.budgetAlternativeUrl}
+                    label="Alternative Link"
+                    tone={isAlternativeOnly ? "primary" : "secondary"}
+                    onClick={stopPropagation}
+                  />
+                ) : null}
+              </div>
+            ) : null}
 
             <div className="flex items-end justify-between gap-4 pt-1">
-              <p className="text-meta min-w-0 text-[9px] leading-relaxed tracking-[0.12em] text-neutral-500">
-                {item.displayModel ?? item.name}
-              </p>
+              {!isEditorial ? (
+                <p className="text-meta min-w-0 text-[9px] leading-relaxed tracking-[0.12em] text-neutral-500">
+                  {item.displayModel ?? item.name}
+                </p>
+              ) : (
+                <span className="min-w-0" />
+              )}
               <p className="shrink-0 text-right font-serif text-[10px] leading-none tracking-[0.16em] text-neutral-400 uppercase">
                 {item.brand}
               </p>
