@@ -13,6 +13,7 @@ import {
 import { readDraftIdFromUrl, setDraftIdInUrl } from '../lib/authRedirect'
 import { isStudioDraftPayload } from '../lib/draftPayload'
 import { useWorkspaceStore } from '../store/workspaceStore'
+import { syncImportCacheMetadata } from '../lib/syncImportCacheMetadata'
 
 const AUTOSAVE_MS = 2500
 
@@ -75,6 +76,10 @@ export function useDraftAutosave(enabled: boolean) {
       clearLocalDraftBackup(activeDraftId)
       lastSavedRef.current = JSON.stringify(payload)
       setSaveState('saved')
+
+      syncImportCacheMetadata(payload.studioNodes).catch((err) =>
+        console.warn('[autosave] import cache sync skipped:', err),
+      )
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Autosave failed'
       setSaveError(message)

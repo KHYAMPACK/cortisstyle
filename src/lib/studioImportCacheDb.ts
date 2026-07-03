@@ -16,6 +16,11 @@ interface ImportCacheRow {
   height: number;
   source_url: string | null;
   source_filename: string | null;
+  shop_url: string | null;
+  display_model: string | null;
+  est_price_range: string | null;
+  budget_alternative_url: string | null;
+  rarity_score: number;
   created_at: string;
   last_used_at: string;
 }
@@ -35,6 +40,11 @@ function mapImportCacheRow(row: ImportCacheRow): StudioImportCacheRecord {
     height: row.height,
     sourceUrl: row.source_url,
     sourceFilename: row.source_filename,
+    shopUrl: row.shop_url,
+    displayModel: row.display_model,
+    estPriceRange: row.est_price_range,
+    budgetAlternativeUrl: row.budget_alternative_url,
+    rarityScore: row.rarity_score ?? 1,
     createdAt: row.created_at,
     lastUsedAt: row.last_used_at,
   };
@@ -81,6 +91,11 @@ export interface RegisterStudioImportCacheInput {
   height: number;
   sourceUrl?: string | null;
   sourceFilename?: string | null;
+  shopUrl?: string | null;
+  displayModel?: string | null;
+  estPriceRange?: string | null;
+  budgetAlternativeUrl?: string | null;
+  rarityScore?: number;
 }
 
 export async function registerStudioImportCache(
@@ -102,6 +117,11 @@ export async function registerStudioImportCache(
     height: input.height,
     source_url: input.sourceUrl ?? null,
     source_filename: input.sourceFilename ?? null,
+    shop_url: input.shopUrl ?? null,
+    display_model: input.displayModel ?? null,
+    est_price_range: input.estPriceRange ?? null,
+    budget_alternative_url: input.budgetAlternativeUrl ?? null,
+    rarity_score: input.rarityScore ?? 1,
     last_used_at: new Date().toISOString(),
   };
 
@@ -112,6 +132,50 @@ export async function registerStudioImportCache(
     .single();
 
   if (error) throw error;
+
+  return mapImportCacheRow(data as ImportCacheRow);
+}
+
+export interface UpdateStudioImportCacheMetadataInput {
+  productName?: string | null;
+  category?: string | null;
+  brand?: string | null;
+  shopUrl?: string | null;
+  displayModel?: string | null;
+  estPriceRange?: string | null;
+  budgetAlternativeUrl?: string | null;
+  rarityScore?: number;
+}
+
+export async function updateStudioImportCacheMetadata(
+  supabase: SupabaseClient,
+  userId: string,
+  id: string,
+  input: UpdateStudioImportCacheMetadataInput,
+): Promise<StudioImportCacheRecord | null> {
+  const patch: Record<string, unknown> = {
+    last_used_at: new Date().toISOString(),
+  };
+
+  if (input.productName !== undefined) patch.product_name = input.productName;
+  if (input.category !== undefined) patch.category = input.category;
+  if (input.brand !== undefined) patch.brand = input.brand;
+  if (input.shopUrl !== undefined) patch.shop_url = input.shopUrl;
+  if (input.displayModel !== undefined) patch.display_model = input.displayModel;
+  if (input.estPriceRange !== undefined) patch.est_price_range = input.estPriceRange;
+  if (input.budgetAlternativeUrl !== undefined) patch.budget_alternative_url = input.budgetAlternativeUrl;
+  if (input.rarityScore !== undefined) patch.rarity_score = input.rarityScore;
+
+  const { data, error } = await supabase
+    .from("studio_import_cache")
+    .update(patch)
+    .eq("id", id)
+    .eq("user_id", userId)
+    .select("*")
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) return null;
 
   return mapImportCacheRow(data as ImportCacheRow);
 }

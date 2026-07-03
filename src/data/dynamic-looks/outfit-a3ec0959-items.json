@@ -1,0 +1,94 @@
+{
+  "items": [
+    {
+      "id": "cider-maroon-striped-short-sleeve-shirt",
+      "name": "SHIRT",
+      "category": "tops",
+      "brand": "Cider",
+      "shopUrl": "https://www.shopcider.com/goods/polo-collar-texture-button-up-shirt-114649680?style_id=2175871&gaListId=blouses--shirts-copy-85786&gaListName=%E3%83%96%E3%83%A9%E3%82%A6%E3%82%B9&ciderListId=2&ciderListName=%E3%83%96%E3%83%A9%E3%82%A6%E3%82%B9&selectSkuIndex=0&moduleTitle=1&p=114649680&shopPage=1&shopIndex=15&navTitle=%E3%83%96%E3%83%A9%E3%82%A6%E3%82%B9&navId=blouses--shirts-copy-85786&listSort=&listId=9183&listAttribute=&operationContent=&operationImage=&linkUrl=&operationpageTitle=&operationPosition=&operationType=&productPosition=16&strategyNameList=reco_req_time%3A1783094827865-all_user_exp_2607%3Abase-collectionId%3A9183%3AControl&businessTracking=eyJmaXJzdEltYWdlVHlwZSI6Iuato%20mdouWbviIsIml0ZW1UeXBlIjowLCJsaXN0SWQiOjkxODMsImxpc3RUaXRsZSI6IuODluODqeOCpuOCuSIsImxpc3RUeXBlIjoyLCJtb2R1bGVJZCI6MywibW9kdWxlVHlwZSI6IkNPTExFQ1RJT05fT0ZGTElORSxHRU5FUkFMX0hPVCIsInByb2R1Y3RQcmltYXJ5SW1hZ2VGbGFnIjp0cnVlLCJzYWxlUHJpY2UiOjMyLjkwLCJzY2VuZSI6IkNBVEVHT1JZX0NPTExFQ1RJT04iLCJza2NGaXJzdEltZyI6IjE3NTEyNzM3NDgwMDAtWUh5N0R0LmpwZyIsInNwdSI6MTE0NjQ5NjgwLCJzcHVDb2RlIjoiQ0QyMDI1MDQwMTYwODE4OUJaIiwic3RyYXRlZ3lOYW1lIjoicmVjb19yZXFfdGltZToxNzgzMDk0ODI3ODY1LWFsbF91c2VyX2V4cF8yNjA3OmJhc2UtY29sbGVjdGlvbklkOjkxODM6Q29udHJvbCIsInRyYWNraW5nSWQiOiI4ZWRiYTRmNy04NDMyLTRjYmEtYjkwNC0xNDg3ZGMyMTExMTYifQ%3D%3D&listType=2&listTitle=%E3%83%96%E3%83%A9%E3%82%A6%E3%82%B9",
+      "displayModel": "Polo Collar Texture Button Up Shirt",
+      "estPriceRange": "$32 on Cider",
+      "budgetAlternativeUrl": "",
+      "rarityScore": 1,
+      "canvasImage": "/images/clothes/outfit-a3ec0959/cider-maroon-striped-short-sleeve-shirt.png",
+      "defaultCanvasPosition": {
+        "top": "13.02%",
+        "left": "32.86%",
+        "width": "33.095238095238095%",
+        "zIndex": 22
+      }
+    },
+    {
+      "id": "minga-washed-black-star-cutout-jeans",
+      "name": "JEANS",
+      "category": "bottoms",
+      "brand": "Minga London",
+      "shopUrl": "https://us.mingalondon.com/products/starburst-black-baggy-jeans",
+      "displayModel": "Starburst Black Baggy Jeans",
+      "estPriceRange": "$88 on Minga London",
+      "budgetAlternativeUrl": "https://us.shein.com/SHEIN-Girlism-Tween-Girl-Y2K-Fashionable-Stonewashed-Baggy-Denim-Jeans-With-Star-Shaped-Patched-Detail-Fall-Back-To-School-Streetwear-Baggy-Star-Jeans-Black-Baggy-Jeans-Y2k-Jeans-Emo-Jeans-Winter-p-146076355.html",
+      "rarityScore": 1,
+      "canvasImage": "/images/clothes/outfit-a3ec0959/minga-washed-black-star-cutout-jeans.png",
+      "defaultCanvasPosition": {
+        "top": "42.22%",
+        "left": "21.67%",
+        "width": "56.666666666666664%",
+        "zIndex": 20
+      }
+    },
+    {
+      "id": "nike-dunk-low-white-burgundy",
+      "name": "SHOES",
+      "category": "shoes",
+      "brand": "Nike",
+      "shopUrl": "https://stockx.com/nike-dunk-low-redwood?country=US&currencyCode=USD&size=10.5&size-conversion=us+m&utm_source=google&utm_medium=cpc&utm_campaign=od_sneakers_lowcm_(us)newcustomer&utm_campaignid=21802225651&content=770378268613&keyword=&utm_content=184357886619&gad_source=1&gad_campaignid=21802225651&gbraid=0AAAAADePu3ABP0NPSj3j6M1dmhv2pMQ8W&gclid=EAIaIQobChMIx42TwvK2lQMVwSvUAR3RzBSMEAQYAiABEgIyw_D_BwE",
+      "displayModel": "Nike Dunk Low",
+      "estPriceRange": "$61 on StockX",
+      "budgetAlternativeUrl": "https://us.shein.com/goods-p-307819425.html?goods_id=307819425&test=5051&url_from=adhub2066826258469371904&scene=1&pf=google&ad_type=DPA&language=en&siteuid=us&version_bid=102311026,101991876,102310816,102353676,101991731,102310756,102310741,102310681,102310801&version_eid=100902896&landing_page_id=1510&ad_test_id=51160&requestId=olw-5ultyx6hya4b&cid=22906143827&popup_login=false&gad_source=1&target_population_enum_id=11456&network=g&gad_campaignid=22906143827&adid=813064313464&tv_b=2&activity_id=11221&currency=USD&lang=us&skucode=I4daq2xxs45z&product_set_id=36055&onelink=0/googlefeed_us&gclid=EAIaIQobChMIkeLd9fe2lQMVhG5_AB26HD3HEAQYAiABEgLervD_BwE&ismg=81970499245fe88b61254eab2a4165c4c7312d0d11f9e29cecece411253bedfe_01_1783078158&geoid=9026921&gbraid=0AAAAADm0yO5AbmklpKDmR2k-Fd0UV9QGo&setid=194771087942&kwd=pla-297852453264&ad_material_id=2,36055",
+      "rarityScore": 1,
+      "canvasImage": "/images/clothes/outfit-a3ec0959/nike-dunk-low-white-burgundy.png",
+      "defaultCanvasPosition": {
+        "top": "84.92%",
+        "left": "2.62%",
+        "width": "44.285714285714285%",
+        "zIndex": 30
+      }
+    },
+    {
+      "id": "buckle-detail-shoulder-bag",
+      "name": "BAG",
+      "category": "bags",
+      "brand": "Nova Chick",
+      "shopUrl": "https://us.shein.com/1PC-Y2K-Gothic-Fashionable-Type-Rivet-Decoration-Vintage-Block-Decoration-Women-s-Shoulder-Bags-Are-Adjusted-For-Daily-Travel-Perfect-For-Music-Festival-Rock-Style-Bag-For-Women-Fashionable-Burgundy-Bag-Retro-Inspired-Bag-For-Women-Red-Bag-Burgundy-Bag-p-28698776.html",
+      "displayModel": "Y2K Gothic Rivet Shoulder Bag",
+      "estPriceRange": "$15 on Shein",
+      "budgetAlternativeUrl": "https://www.etsy.com/listing/4332640231/y2k-gothic-rivet-shoulder-bag-burgundy",
+      "rarityScore": 1,
+      "canvasImage": "/images/clothes/outfit-a3ec0959/buckle-detail-shoulder-bag.png",
+      "defaultCanvasPosition": {
+        "top": "38.73%",
+        "left": "65.71%",
+        "width": "34.285714285714285%",
+        "zIndex": 30
+      }
+    },
+    {
+      "id": "black-leather-belt-with-gold-buckle",
+      "name": "BELT",
+      "category": "waist",
+      "brand": "Mango",
+      "shopUrl": "https://shop.mango.com/us/en/p/women/belts/basics/faux-leather-belt-with-buckle/17051132/99/00",
+      "displayModel": "Faux-Leather Belt with Buckle",
+      "estPriceRange": "$18 on Mango",
+      "budgetAlternativeUrl": "https://www.amazon.com/WANTESS-Skinny-Leather-Fashion-Silver/dp/B0DMSLFCWJ?th=1&psc=1",
+      "rarityScore": 1,
+      "canvasImage": "/images/clothes/outfit-a3ec0959/black-leather-belt-with-gold-buckle.png",
+      "defaultCanvasPosition": {
+        "top": "69.21%",
+        "left": "64.52%",
+        "width": "30.238095238095237%",
+        "zIndex": 21
+      }
+    }
+  ]
+}

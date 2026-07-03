@@ -33,6 +33,12 @@ export interface TwinIngestPayload {
   name?: string
   category?: ClothingCategory
   brand?: string
+  shopUrl?: string
+  displayModel?: string
+  estPriceRange?: string
+  budgetAlternativeUrl?: string
+  rarityScore?: number
+  importCacheId?: string
 }
 
 interface WorkspaceStore {
@@ -116,11 +122,17 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
 
   spawnLinkedTwin: (payload) => {
     const stackIndex = get().studioNodes.length
+    const defaults = catalogDefaults(payload.id)
     const metadata: CatalogItemMetadata = {
-      ...catalogDefaults(payload.id),
+      ...defaults,
       name: (payload.name ?? payload.id.replace(/-/g, ' ')).toUpperCase(),
       category: payload.category ?? 'tops',
       brand: payload.brand ?? '',
+      shopUrl: payload.shopUrl ?? defaults.shopUrl,
+      displayModel: payload.displayModel,
+      estPriceRange: payload.estPriceRange ?? defaults.estPriceRange,
+      budgetAlternativeUrl: payload.budgetAlternativeUrl ?? defaults.budgetAlternativeUrl,
+      rarityScore: payload.rarityScore ?? defaults.rarityScore,
     }
 
     const node: StudioNode = {
@@ -128,6 +140,7 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
       ...metadata,
       worldX: payload.worldX,
       worldY: payload.worldY,
+      importCacheId: payload.importCacheId,
     }
 
     const placement = artboardCenterPlacement(

@@ -1,4 +1,6 @@
 import Image from "next/image";
+import type { KeyboardEvent, MouseEvent } from "react";
+import { LookCardCredits } from "@/components/LookCardCredits";
 import { RarityBadge } from "@/components/RarityBadge";
 import { computeOutfitRarityFromLook } from "@/lib/rarity";
 import type { Look } from "@/types/look";
@@ -16,11 +18,24 @@ export function LookCard({
 }: LookCardProps) {
   const outfitRarity = computeOutfitRarityFromLook(look);
 
+  const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      onSelect(look);
+    }
+  };
+
+  const stopCardActivation = (event: MouseEvent<HTMLAnchorElement>) => {
+    event.stopPropagation();
+  };
+
   return (
-    <button
-      type="button"
+    <article
+      role="button"
+      tabIndex={0}
       onClick={() => onSelect(look)}
-      className="group surface-canvas-paper block w-full cursor-pointer border border-blueprint-border text-left"
+      onKeyDown={handleKeyDown}
+      className="group surface-canvas-paper block w-full cursor-pointer border border-blueprint-border text-left outline-none focus-visible:ring-2 focus-visible:ring-blueprint-accent focus-visible:ring-offset-2"
       aria-label={`View ${look.title}`}
     >
       <div className="relative w-full overflow-hidden bg-neutral-100">
@@ -60,15 +75,8 @@ export function LookCard({
           {look.title}
         </h2>
 
-        <div className="mt-2 space-y-1">
-          <p className="text-meta text-[9px] tracking-[0.22em] uppercase">
-            {look.vibe}
-          </p>
-          <p className="text-meta text-[9px] tracking-[0.28em] uppercase">
-            By {look.modelName}
-          </p>
-        </div>
+        <LookCardCredits look={look} onTikTokClick={stopCardActivation} />
       </div>
-    </button>
+    </article>
   );
 }

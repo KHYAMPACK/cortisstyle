@@ -25,6 +25,8 @@ export interface Look extends StyleMetrics {
   title: string;
   image: string;
   modelName: string;
+  /** TikTok @handle for credit link — defaults to cortisstyl. */
+  tiktokHandle?: string;
   width: number;
   height: number;
   layout?: "collage" | "single-image";

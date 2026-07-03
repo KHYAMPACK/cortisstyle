@@ -37,6 +37,7 @@ export interface StudioNode extends CatalogItemMetadata {
   id: string
   worldX: number
   worldY: number
+  importCacheId?: string
 }
 
 /** Spatial visual instance on the 420×630 artboard */

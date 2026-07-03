@@ -34,6 +34,11 @@ export async function POST(request: Request) {
       height?: number;
       sourceUrl?: string | null;
       sourceFilename?: string | null;
+      shopUrl?: string | null;
+      displayModel?: string | null;
+      estPriceRange?: string | null;
+      budgetAlternativeUrl?: string | null;
+      rarityScore?: number;
     };
 
     const sourceHash = record.sourceHash?.trim().toLowerCase() ?? "";
@@ -83,6 +88,11 @@ export async function POST(request: Request) {
           height,
           sourceUrl: record.sourceUrl ?? null,
           sourceFilename: record.sourceFilename ?? null,
+          shopUrl: record.shopUrl ?? null,
+          displayModel: record.displayModel ?? null,
+          estPriceRange: record.estPriceRange ?? null,
+          budgetAlternativeUrl: record.budgetAlternativeUrl ?? null,
+          rarityScore: record.rarityScore ?? 1,
         },
       );
 

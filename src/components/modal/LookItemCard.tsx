@@ -2,10 +2,7 @@
 
 import { motion } from "framer-motion";
 import { forwardRef, type KeyboardEvent, type MouseEvent } from "react";
-import {
-  itemDisplayTitle,
-  resolveItemPurchaseState,
-} from "@/lib/itemPurchaseState";
+import { resolveItemPurchaseState } from "@/lib/itemPurchaseState";
 import {
   formatItemRarityIndicator,
   LOCKED_ITEM_RARITY_PLACEHOLDER,
@@ -91,9 +88,7 @@ export const LookItemCard = forwardRef<HTMLDivElement, LookItemCardProps>(
     };
 
     const purchaseState = resolveItemPurchaseState(item);
-    const isEditorial = purchaseState === "editorial";
     const isAlternativeOnly = purchaseState === "alternative-only";
-    const title = isEditorial ? itemDisplayTitle(item) : item.name;
 
     const isLegendary = isMetadataRevealed && item.rarityScore === 5;
     const surfaceClass = isLegendary
@@ -144,7 +139,7 @@ export const LookItemCard = forwardRef<HTMLDivElement, LookItemCardProps>(
         )}
 
         <h3 className="pr-28 font-serif text-sm tracking-[0.06em] text-neutral-900 uppercase md:pr-32 md:text-base">
-          {title}
+          {item.name}
         </h3>
 
         {isMetadataRevealed ? (
@@ -189,13 +184,9 @@ export const LookItemCard = forwardRef<HTMLDivElement, LookItemCardProps>(
             ) : null}
 
             <div className="flex items-end justify-between gap-4 pt-1">
-              {!isEditorial ? (
-                <p className="text-meta min-w-0 text-[9px] leading-relaxed tracking-[0.12em] text-neutral-500">
-                  {item.displayModel ?? item.name}
-                </p>
-              ) : (
-                <span className="min-w-0" />
-              )}
+              <p className="text-meta min-w-0 text-[9px] leading-relaxed tracking-[0.12em] text-neutral-500">
+                {item.displayModel ?? item.name}
+              </p>
               <p className="shrink-0 text-right font-serif text-[10px] leading-none tracking-[0.16em] text-neutral-400 uppercase">
                 {item.brand}
               </p>

@@ -16,9 +16,3 @@ export function resolveItemPurchaseState(
   if (!hasShop && hasAlt) return "alternative-only";
   return "shoppable";
 }
-
-export function itemDisplayTitle(
-  item: Pick<ClothingItem, "name" | "displayModel">,
-): string {
-  return (item.displayModel ?? item.name).trim() || item.name;
-}

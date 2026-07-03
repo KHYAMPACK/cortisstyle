@@ -16,6 +16,11 @@ export interface StudioImportCacheRecord {
   height: number;
   sourceUrl: string | null;
   sourceFilename: string | null;
+  shopUrl: string | null;
+  displayModel: string | null;
+  estPriceRange: string | null;
+  budgetAlternativeUrl: string | null;
+  rarityScore: number;
   createdAt: string;
   lastUsedAt: string;
 }

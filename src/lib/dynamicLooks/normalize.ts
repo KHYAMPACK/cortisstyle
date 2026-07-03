@@ -281,6 +281,7 @@ export function parseDynamicLookPayload(
     title,
     image,
     modelName,
+    tiktokHandle: readString(payload.tiktokHandle),
     layout: payload.layout === "single-image" ? "single-image" : "collage",
     outfitId: readString(payload.outfitId),
     editorGuideImage: readString(payload.editorGuideImage),

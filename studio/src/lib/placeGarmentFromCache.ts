@@ -19,6 +19,12 @@ export function placeGarmentFromCacheRecord(record: StudioImportCacheRecord): st
     name: record.productName ?? undefined,
     category: categoryFromCache(record.category),
     brand: record.brand || undefined,
+    shopUrl: record.shopUrl || undefined,
+    displayModel: record.displayModel || undefined,
+    estPriceRange: record.estPriceRange || undefined,
+    budgetAlternativeUrl: record.budgetAlternativeUrl || undefined,
+    rarityScore: record.rarityScore ?? undefined,
+    importCacheId: record.id,
   })
 
   return id

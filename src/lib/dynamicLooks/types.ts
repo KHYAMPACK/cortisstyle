@@ -9,6 +9,8 @@ export interface DynamicLookJson {
   title: string;
   image: string;
   modelName: string;
+  /** TikTok @handle for credit link — defaults to cortisstyl. */
+  tiktokHandle?: string;
   layout?: "collage" | "single-image";
   outfitId?: string;
   editorGuideImage?: string;

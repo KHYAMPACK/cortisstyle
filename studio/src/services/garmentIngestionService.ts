@@ -53,6 +53,7 @@ function spawnFromIngestion(params: {
   name?: string
   category?: ClothingCategory
   brand?: string
+  importCacheId?: string
 }): void {
   const nodes = useWorkspaceStore.getState().studioNodes
   const { worldX, worldY } = nextNodeWorldPosition(nodes)
@@ -67,6 +68,7 @@ function spawnFromIngestion(params: {
     name: params.name,
     category: params.category,
     brand: params.brand,
+    importCacheId: params.importCacheId,
   })
 }
 
@@ -146,11 +148,13 @@ export async function runGarmentIngestion(
     console.warn('[garment-ingestion] CDN upload skipped:', error)
   }
 
+  let importCacheId: string | undefined
+
   if (storagePath) {
     const meta = sourceMetadata(payload)
 
     try {
-      await registerImportCache({
+      const registered = await registerImportCache({
         sourceHash,
         pipeline,
         assetUrl: imageUrl,
@@ -164,6 +168,7 @@ export async function runGarmentIngestion(
         sourceUrl: meta.sourceUrl,
         sourceFilename: meta.sourceFilename,
       })
+      importCacheId = registered.id
       notifyImportCacheUpdated()
     } catch (error) {
       console.warn('[garment-ingestion] import cache register skipped:', error)
@@ -178,6 +183,7 @@ export async function runGarmentIngestion(
     name,
     category,
     brand,
+    importCacheId,
   })
 
   setIngestionStatus('idle')

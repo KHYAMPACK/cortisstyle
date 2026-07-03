@@ -18,6 +18,11 @@ export interface StudioImportCacheRecord {
   height: number
   sourceUrl: string | null
   sourceFilename: string | null
+  shopUrl: string | null
+  displayModel: string | null
+  estPriceRange: string | null
+  budgetAlternativeUrl: string | null
+  rarityScore: number
   createdAt: string
   lastUsedAt: string
 }
@@ -84,6 +89,11 @@ export async function registerImportCache(input: {
   height: number
   sourceUrl?: string | null
   sourceFilename?: string | null
+  shopUrl?: string | null
+  displayModel?: string | null
+  estPriceRange?: string | null
+  budgetAlternativeUrl?: string | null
+  rarityScore?: number
 }): Promise<StudioImportCacheRecord> {
   const data = await importCacheFetch<{ record: StudioImportCacheRecord }>(
     '/api/studio/imports/register',
@@ -110,6 +120,30 @@ export async function touchImportCache(id: string): Promise<StudioImportCacheRec
     {
       method: 'POST',
       body: JSON.stringify({ id }),
+    },
+  )
+
+  return data.record
+}
+
+export async function updateImportCacheMetadata(
+  id: string,
+  patch: {
+    productName?: string | null
+    category?: string | null
+    brand?: string | null
+    shopUrl?: string | null
+    displayModel?: string | null
+    estPriceRange?: string | null
+    budgetAlternativeUrl?: string | null
+    rarityScore?: number
+  },
+): Promise<StudioImportCacheRecord> {
+  const data = await importCacheFetch<{ record: StudioImportCacheRecord }>(
+    '/api/studio/imports/update',
+    {
+      method: 'POST',
+      body: JSON.stringify({ id, ...patch }),
     },
   )
 
