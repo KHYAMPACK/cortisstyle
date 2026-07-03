@@ -27,6 +27,8 @@ export interface Look extends StyleMetrics {
   modelName: string;
   /** TikTok @handle for credit link — defaults to cortisstyl. */
   tiktokHandle?: string;
+  /** Primary category id for homepage sectioning (e.g. "cortis", "burgundy"). */
+  category?: string;
   width: number;
   height: number;
   layout?: "collage" | "single-image";

@@ -9,6 +9,7 @@ import {
 import {
   EMPTY_DYNAMIC_CATALOG,
   type DynamicCatalogBundle,
+  type LookCategoryDefinition,
 } from "@/lib/dynamicLooks/types";
 
 export const DYNAMIC_LOOKS_DIR = path.join(
@@ -17,6 +18,9 @@ export const DYNAMIC_LOOKS_DIR = path.join(
 );
 
 const HOMEPAGE_ORDER_FILE = "homepage-order.json";
+const CATEGORIES_FILE = "categories.json";
+
+const RESERVED_FILES = new Set([HOMEPAGE_ORDER_FILE, CATEGORIES_FILE]);
 
 function isItemsFile(fileName: string): boolean {
   return fileName.endsWith("-items.json");
@@ -26,7 +30,7 @@ function isLookProfileFile(fileName: string): boolean {
   return (
     fileName.endsWith(".json") &&
     !isItemsFile(fileName) &&
-    fileName !== HOMEPAGE_ORDER_FILE
+    !RESERVED_FILES.has(fileName)
   );
 }
 
@@ -48,6 +52,25 @@ function loadHomepageOrder(directory: string): string[] | undefined {
   return order.filter((id): id is string => typeof id === "string" && id.length > 0);
 }
 
+function loadCategories(directory: string): LookCategoryDefinition[] | undefined {
+  const filePath = path.join(directory, CATEGORIES_FILE);
+  if (!fs.existsSync(filePath)) return undefined;
+
+  const raw = readJsonFile(filePath);
+  if (!Array.isArray(raw)) return undefined;
+
+  return raw.filter(
+    (entry): entry is LookCategoryDefinition =>
+      typeof entry === "object" &&
+      entry !== null &&
+      typeof (entry as Record<string, unknown>).id === "string" &&
+      typeof (entry as Record<string, unknown>).label === "string" &&
+      ["aesthetic", "color", "creator"].includes(
+        (entry as Record<string, unknown>).type as string,
+      ),
+  );
+}
+
 export function crawlDynamicLooksDirectory(
   directory = DYNAMIC_LOOKS_DIR,
 ): DynamicCatalogBundle {
@@ -56,6 +79,7 @@ export function crawlDynamicLooksDirectory(
   }
 
   const homepageOrder = loadHomepageOrder(directory);
+  const categories = loadCategories(directory);
   const entries = fs
     .readdirSync(directory, { withFileTypes: true })
     .filter((entry) => entry.isFile())
@@ -107,7 +131,8 @@ export function crawlDynamicLooksDirectory(
     mergeDynamicCatalogBundles(...itemBundles, ...lookBundles),
   );
 
-  return homepageOrder ? { ...merged, homepageOrder } : merged;
+  const result = homepageOrder ? { ...merged, homepageOrder } : merged;
+  return categories ? { ...result, categories } : result;
 }
 
 export function loadDynamicLooksFromDisk(): DynamicCatalogBundle {

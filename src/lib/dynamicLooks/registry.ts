@@ -88,4 +88,8 @@ export function getDynamicCanvasLayouts(
   return layouts && Object.keys(layouts).length > 0 ? layouts : undefined;
 }
 
+export function getDynamicCategories() {
+  return getDynamicCatalog().categories;
+}
+
 export { EMPTY_DYNAMIC_CATALOG };

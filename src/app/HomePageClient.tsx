@@ -11,13 +11,15 @@ import {
 } from "@/components/HomeHero";
 import { ArchiveCommunitySignOff } from "@/components/ArchiveCommunitySignOff";
 import { SiteFooter } from "@/components/SiteFooter";
+import type { LookCategoryDefinition } from "@/lib/dynamicLooks/types";
 import type { Look } from "@/types/look";
 
 interface HomePageClientProps {
   looks: Look[];
+  categories?: LookCategoryDefinition[];
 }
 
-function HomePageContent({ looks }: HomePageClientProps) {
+function HomePageContent({ looks, categories }: HomePageClientProps) {
   const searchParams = useSearchParams();
   const [selectedLook, setSelectedLook] = useState<Look | null>(null);
 
@@ -56,7 +58,7 @@ function HomePageContent({ looks }: HomePageClientProps) {
           </div>
         </div>
 
-        <LookGrid looks={looks} onSelectLook={setSelectedLook} />
+        <LookGrid looks={looks} categories={categories} onSelectLook={setSelectedLook} />
       </section>
 
       <footer>
@@ -69,10 +71,10 @@ function HomePageContent({ looks }: HomePageClientProps) {
   );
 }
 
-export function HomePageClient({ looks }: HomePageClientProps) {
+export function HomePageClient({ looks, categories }: HomePageClientProps) {
   return (
     <Suspense fallback={<div className="min-h-full bg-ice-floor" />}>
-      <HomePageContent looks={looks} />
+      <HomePageContent looks={looks} categories={categories} />
     </Suspense>
   );
 }

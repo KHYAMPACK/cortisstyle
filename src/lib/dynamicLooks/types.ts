@@ -11,6 +11,8 @@ export interface DynamicLookJson {
   modelName: string;
   /** TikTok @handle for credit link — defaults to cortisstyl. */
   tiktokHandle?: string;
+  /** Primary category id for homepage sectioning. */
+  category?: string;
   layout?: "collage" | "single-image";
   outfitId?: string;
   editorGuideImage?: string;
@@ -36,6 +38,14 @@ export interface DynamicItemsJson {
   items: ClothingItem[];
 }
 
+export interface LookCategoryDefinition {
+  id: string;
+  label: string;
+  type: "aesthetic" | "color" | "creator";
+  /** TikTok @handle — used for creator-type section headers. */
+  tiktokHandle?: string;
+}
+
 export interface DynamicCatalogBundle {
   items: ClothingItem[];
   looks: Look[];
@@ -43,6 +53,8 @@ export interface DynamicCatalogBundle {
   canvasLayoutsByLookId: Record<string, Record<string, CanvasItemLayout>>;
   /** Explicit homepage stream when homepage-order.json is present. */
   homepageOrder?: string[];
+  /** Category definitions from categories.json. */
+  categories?: LookCategoryDefinition[];
 }
 
 export const EMPTY_DYNAMIC_CATALOG: DynamicCatalogBundle = {
