@@ -22,7 +22,6 @@ export interface StudioImportCacheRecord {
   displayModel: string | null
   estPriceRange: string | null
   budgetAlternativeUrl: string | null
-  rarityScore: number
   createdAt: string
   lastUsedAt: string
 }
@@ -93,7 +92,6 @@ export async function registerImportCache(input: {
   displayModel?: string | null
   estPriceRange?: string | null
   budgetAlternativeUrl?: string | null
-  rarityScore?: number
 }): Promise<StudioImportCacheRecord> {
   const data = await importCacheFetch<{ record: StudioImportCacheRecord }>(
     '/api/studio/imports/register',
@@ -136,7 +134,6 @@ export async function updateImportCacheMetadata(
     displayModel?: string | null
     estPriceRange?: string | null
     budgetAlternativeUrl?: string | null
-    rarityScore?: number
   },
 ): Promise<StudioImportCacheRecord> {
   const data = await importCacheFetch<{ record: StudioImportCacheRecord }>(

@@ -20,7 +20,6 @@ export interface StudioImportCacheRecord {
   displayModel: string | null;
   estPriceRange: string | null;
   budgetAlternativeUrl: string | null;
-  rarityScore: number;
   createdAt: string;
   lastUsedAt: string;
 }

@@ -398,10 +398,13 @@ export function AuthPopup({
                       <motion.p
                         initial={{ opacity: 0, y: 6 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="mb-4 text-center font-mono text-[10px] leading-relaxed tracking-[0.22em] text-neutral-800 uppercase"
+                        className="mb-2 text-center font-mono text-[10px] leading-relaxed tracking-[0.22em] text-neutral-800 uppercase"
                       >
                         [ 6-DIGIT ACCESS TOKEN DISPATCHED TO YOUR INBOX ]
                       </motion.p>
+                      <p className="mb-4 text-center text-[11px] leading-relaxed text-neutral-400">
+                        Don&apos;t see it? Check your spam or junk folder.
+                      </p>
 
                       <label className="sr-only" htmlFor="community-otp">
                         Six digit access token

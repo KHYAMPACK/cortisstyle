@@ -1,7 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { ClothingCategory } from "@/types/item";
-import type { RarityScore } from "@/types/rarity";
 import { applySmartGuesses } from "@/lib/itemDraft/applySmartGuesses";
 import {
   buildKnownItemContext,
@@ -35,7 +34,6 @@ export interface LlmMetadataResult {
   displayModel: string;
   estPriceRange: string;
   budgetAlternativeUrl: string;
-  suggestedRarityScore: RarityScore;
   guessedFields: string[];
   llmNotes?: string;
 }
@@ -46,7 +44,6 @@ interface LlmJsonPayload {
   displayModel?: string;
   estPriceRange?: string;
   budgetAlternativeUrl?: string;
-  suggestedRarityScore?: number;
   guessedFields?: string[];
   llmNotes?: string;
 }
@@ -84,7 +81,6 @@ Return JSON:
   "displayModel": "string",
   "estPriceRange": "string",
   "budgetAlternativeUrl": "https://www.forever21.com/",
-  "suggestedRarityScore": 1,
   "guessedFields": ["field.names.you.inferred"],
   "llmNotes": "one sentence for human reviewer"
 }`;
@@ -305,7 +301,6 @@ export async function generateItemMetadataWithLlm(input: {
     displayModel: guessed.displayModel,
     estPriceRange: guessed.estPriceRange,
     budgetAlternativeUrl: guessed.budgetAlternativeUrl,
-    suggestedRarityScore: guessed.suggestedRarityScore,
     guessedFields: guessed.guessedFields,
     llmNotes: guessed.llmNotes,
     llmProvider: llmUsed

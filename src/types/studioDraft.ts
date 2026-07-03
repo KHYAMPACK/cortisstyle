@@ -20,7 +20,6 @@ export interface StudioNodeDraft {
   shopUrl: string;
   estPriceRange: string;
   budgetAlternativeUrl: string;
-  rarityScore: number;
   displayModel?: string;
   worldX: number;
   worldY: number;

@@ -11,9 +11,6 @@ export function formatItemDraftSnippets(draft: GeneratedItemDraft): string {
     `    estPriceRange: "${escapeTsString(draft.estPriceRange)}",`,
     `    budgetAlternativeUrl: "${escapeTsString(draft.budgetAlternativeUrl)}",`,
   ];
-  if (draft.suggestedRarityScore !== 1) {
-    optionLines.push(`    rarityScore: ${draft.suggestedRarityScore},`);
-  }
   optionLines.push(
     `    canvasImage: "${draft.canvasImage}",`,
     "    defaultCanvasPosition: {",

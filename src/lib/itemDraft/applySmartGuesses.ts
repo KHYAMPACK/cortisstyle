@@ -1,5 +1,4 @@
 import type { ClothingCategory } from "@/types/item";
-import type { RarityScore } from "@/types/rarity";
 import type { KnownItemContext } from "@/lib/itemDraft/inferItemContext";
 import { normalizeBudgetAlternativeLink } from "@/lib/itemDraft/buildBudgetAlternativeSearchUrl";
 
@@ -47,14 +46,6 @@ function guessBudgetAlternative(category: ClothingCategory): string {
   return defaults[category];
 }
 
-function guessRarity(category: ClothingCategory, name: string): RarityScore {
-  const n = name.toLowerCase();
-  if (/(balenciaga|chanel|margiela|archive|vintage|limited)/.test(n)) return 4;
-  if (category === "accessories" && /necklace|bracelet/.test(n)) return 3;
-  if (category === "headwear") return 3;
-  return 2;
-}
-
 export function applySmartGuesses(
   payload: {
     brand?: string;
@@ -62,7 +53,6 @@ export function applySmartGuesses(
     displayModel?: string;
     estPriceRange?: string;
     budgetAlternativeUrl?: string;
-    suggestedRarityScore?: number;
     guessedFields?: string[];
     llmNotes?: string;
   },
@@ -73,7 +63,6 @@ export function applySmartGuesses(
   displayModel: string;
   estPriceRange: string;
   budgetAlternativeUrl: string;
-  suggestedRarityScore: RarityScore;
   guessedFields: string[];
   llmNotes?: string;
 } {
@@ -111,13 +100,6 @@ export function applySmartGuesses(
   }
   const budgetAlternativeUrl = normalizeBudgetAlternativeLink(budgetAltRaw).url;
 
-  let suggestedRarityScore = payload.suggestedRarityScore;
-  if (suggestedRarityScore == null || Number.isNaN(suggestedRarityScore)) {
-    suggestedRarityScore = guessRarity(category, ctx.name);
-    guessedFields.add("suggestedRarityScore");
-  }
-  const rarity = Math.min(5, Math.max(1, Math.round(suggestedRarityScore))) as RarityScore;
-
   const reviewNote =
     guessedFields.size > 0
       ? `Draft includes ${guessedFields.size} inferred field(s) — review before publishing.`
@@ -133,7 +115,6 @@ export function applySmartGuesses(
     displayModel,
     estPriceRange,
     budgetAlternativeUrl,
-    suggestedRarityScore: rarity,
     guessedFields: [...guessedFields],
     llmNotes: payload.llmNotes?.trim()
       ? `${payload.llmNotes.trim()} ${reviewNote}`

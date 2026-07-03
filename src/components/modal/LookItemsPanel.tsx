@@ -5,14 +5,11 @@ import { Check } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
 import type { Look, ResolvedLookItem } from "@/types/look";
 import type { CanvasItemLayout } from "@/lib/canvasLayout";
-import { computeOutfitRarityFromItems } from "@/lib/rarity";
 import { CoordinateEditorExport } from "@/components/modal/CoordinateEditorExport";
 import { LookItemCard } from "@/components/modal/LookItemCard";
 import { AffiliateShopDisclosure } from "@/components/legal/AffiliateShopDisclosure";
 import { StyleAnalysis } from "@/components/modal/StyleAnalysis";
 import { itemsIncludeAmazonLink } from "@/lib/affiliateUrls";
-import { RarityBadge } from "@/components/RarityBadge";
-
 const spring = { type: "spring" as const, stiffness: 100, damping: 20 };
 
 interface LookItemsPanelProps {
@@ -44,10 +41,6 @@ export function LookItemsPanel({
 }: LookItemsPanelProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<Map<string, HTMLDivElement>>(new Map());
-  const outfitRarity = useMemo(
-    () => computeOutfitRarityFromItems(items),
-    [items],
-  );
   const showAmazonDisclosure = useMemo(
     () => isMetadataRevealed && itemsIncludeAmazonLink(items),
     [isMetadataRevealed, items],
@@ -90,8 +83,6 @@ export function LookItemsPanel({
             <h2 id="look-modal-title" className="sr-only">
               {look.title} — styled by {look.modelName}
             </h2>
-
-            <RarityBadge rarity={outfitRarity} className="mb-4 md:mb-6" />
 
             <div className="hidden md:block" aria-hidden="true">
               <p className="text-meta mb-2 text-[9px] tracking-[0.45em] uppercase">

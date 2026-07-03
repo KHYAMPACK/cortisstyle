@@ -183,7 +183,6 @@ defineItem(
     displayModel: "Lace-up Knit Cap",    // optional — shown in look modal
     estPriceRange: "$25 - $30",           // optional — defaults to "Contact archive for pricing"
     budgetAlternativeUrl: "https://...", // optional — defaults to forever21.com
-    rarityScore: 4,                      // optional — 1–5, defaults to 1
     canvasImage: "/images/clothes/outfit-01/black-beanie-01.png",
     defaultCanvasPosition: {
       top: "2.34%",
@@ -208,7 +207,6 @@ defineItem(
 | `shopUrl`                         | yes (defaulted) | Original purchase link in look modal    |
 | `estPriceRange`                   | yes (defaulted) | Shown when look metadata is unlocked    |
 | `budgetAlternativeUrl`            | yes (defaulted) | Budget alternative link                 |
-| `rarityScore`                     | yes (defaulted) | 1–5 editorial rarity                    |
 | `displayModel`                    | no              | Product title in modal                  |
 | `canvasImage`                     | no              | PNG path for collage rendering          |
 | `defaultCanvasPosition`           | no              | Fallback layout before look JSON exists |
@@ -622,7 +620,7 @@ These were removed or are not part of the collage pipeline:
 - **Style guide PDF generation** — removed entirely
 - `guidePrice`**, Shopier checkout, purchase-intent API** — removed
 - `blurredDescription` **/** `unlockedDescription` — removed from item catalog
-- `item-metadata.ts`**,** `item-rarity.ts` — merged into `items.ts`
+- `item-metadata.ts` — merged into `items.ts`
 - **Leader-line hotspot editor** (`LookHotspotLayer`) — replaced by `CollageStudioLayer`
 - **Hitbox fields** — optional unless you need pixel-perfect click targets in the in-app editor
 - `coordinates` **in** `looks.ts` — legacy modal UI only, not collage placement
@@ -663,7 +661,6 @@ defineItem("jacket-01", "JACKET", "outerwear", "Brand", {
   displayModel: "Raw Denim Jacket",
   estPriceRange: "$160 - $180",
   budgetAlternativeUrl: "https://www.asos.com/",
-  rarityScore: 4,
   canvasImage: "/images/clothes/outfit-07/jacket-01.png",
   defaultCanvasPosition: { top: "8%", left: "25%", width: "43%", zIndex: 25 },
 }),

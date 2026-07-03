@@ -8,7 +8,6 @@
       "shopUrl": "https://shopier.com/cortis/sunglasses-02",
       "estPriceRange": "$90 - $240 on Grailed/Vestiaire",
       "budgetAlternativeUrl": "https://www.retrosuperfuture.com/",
-      "rarityScore": 3,
       "displayModel": "Shield Frame 0962 Sun",
       "canvasImage": "/images/clothes/outfit-02/sunglasses-02.png",
       "defaultCanvasPosition": {
@@ -26,7 +25,6 @@
       "shopUrl": "https://shopier.com/cortis/necklace-01",
       "estPriceRange": "$120 - $380 on Vestiaire/Grailed",
       "budgetAlternativeUrl": "https://www.cos.com/",
-      "rarityScore": 4,
       "displayModel": "Industrial Hardware Chain Collar",
       "canvasImage": "/images/clothes/outfit-02/necklace-01.png",
       "defaultCanvasPosition": {
@@ -44,7 +42,6 @@
       "shopUrl": "",
       "estPriceRange": "$49 on eBay",
       "budgetAlternativeUrl": "https://www.ebay.com/itm/198183448747",
-      "rarityScore": 5,
       "displayModel": "Y2K Ed Hardy Shirt Dress",
       "canvasImage": "/images/clothes/outfit-02/longsleeve-shirt-01.png",
       "defaultCanvasPosition": {
@@ -62,7 +59,6 @@
       "shopUrl": "https://shopier.com/cortis/shorts-01",
       "estPriceRange": "$80 - $260 on Grailed/Vestiaire",
       "budgetAlternativeUrl": "https://www.asos.com/",
-      "rarityScore": 4,
       "displayModel": "Distressed Technical Shorts",
       "canvasImage": "/images/clothes/outfit-02/shorts-01.png",
       "defaultCanvasPosition": {
@@ -80,7 +76,6 @@
       "shopUrl": "https://shopier.com/cortis/black-bag-02",
       "estPriceRange": "$50 - $130 on Depop/Grailed",
       "budgetAlternativeUrl": "https://www.carhartt-wip.com/",
-      "rarityScore": 2,
       "displayModel": "Multi-Pocket Utilitarian Crossbody",
       "canvasImage": "/images/clothes/outfit-02/black-bag-02.png",
       "defaultCanvasPosition": {
@@ -98,7 +93,6 @@
       "shopUrl": "https://shopier.com/cortis/sneakers-02",
       "estPriceRange": "$190 - $480 on Grailed/GOAT",
       "budgetAlternativeUrl": "https://www.nike.com/",
-      "rarityScore": 4,
       "displayModel": "Track-Inspired Panel Runner",
       "canvasImage": "/images/clothes/outfit-02/sneakers-02.png",
       "defaultCanvasPosition": {

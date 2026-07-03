@@ -20,7 +20,6 @@ interface ImportCacheRow {
   display_model: string | null;
   est_price_range: string | null;
   budget_alternative_url: string | null;
-  rarity_score: number;
   created_at: string;
   last_used_at: string;
 }
@@ -44,7 +43,6 @@ function mapImportCacheRow(row: ImportCacheRow): StudioImportCacheRecord {
     displayModel: row.display_model,
     estPriceRange: row.est_price_range,
     budgetAlternativeUrl: row.budget_alternative_url,
-    rarityScore: row.rarity_score ?? 1,
     createdAt: row.created_at,
     lastUsedAt: row.last_used_at,
   };
@@ -95,7 +93,6 @@ export interface RegisterStudioImportCacheInput {
   displayModel?: string | null;
   estPriceRange?: string | null;
   budgetAlternativeUrl?: string | null;
-  rarityScore?: number;
 }
 
 export async function registerStudioImportCache(
@@ -121,7 +118,6 @@ export async function registerStudioImportCache(
     display_model: input.displayModel ?? null,
     est_price_range: input.estPriceRange ?? null,
     budget_alternative_url: input.budgetAlternativeUrl ?? null,
-    rarity_score: input.rarityScore ?? 1,
     last_used_at: new Date().toISOString(),
   };
 
@@ -144,7 +140,6 @@ export interface UpdateStudioImportCacheMetadataInput {
   displayModel?: string | null;
   estPriceRange?: string | null;
   budgetAlternativeUrl?: string | null;
-  rarityScore?: number;
 }
 
 export async function updateStudioImportCacheMetadata(
@@ -164,7 +159,6 @@ export async function updateStudioImportCacheMetadata(
   if (input.displayModel !== undefined) patch.display_model = input.displayModel;
   if (input.estPriceRange !== undefined) patch.est_price_range = input.estPriceRange;
   if (input.budgetAlternativeUrl !== undefined) patch.budget_alternative_url = input.budgetAlternativeUrl;
-  if (input.rarityScore !== undefined) patch.rarity_score = input.rarityScore;
 
   const { data, error } = await supabase
     .from("studio_import_cache")

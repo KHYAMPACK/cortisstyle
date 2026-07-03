@@ -23,7 +23,6 @@ export function placeGarmentFromCacheRecord(record: StudioImportCacheRecord): st
     displayModel: record.displayModel || undefined,
     estPriceRange: record.estPriceRange || undefined,
     budgetAlternativeUrl: record.budgetAlternativeUrl || undefined,
-    rarityScore: record.rarityScore ?? undefined,
     importCacheId: record.id,
   })
 

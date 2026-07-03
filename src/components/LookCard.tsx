@@ -1,8 +1,6 @@
 import Image from "next/image";
 import type { KeyboardEvent, MouseEvent } from "react";
 import { LookCardCredits } from "@/components/LookCardCredits";
-import { RarityBadge } from "@/components/RarityBadge";
-import { computeOutfitRarityFromLook } from "@/lib/rarity";
 import type { Look } from "@/types/look";
 
 interface LookCardProps {
@@ -16,8 +14,6 @@ export function LookCard({
   priority = false,
   onSelect,
 }: LookCardProps) {
-  const outfitRarity = computeOutfitRarityFromLook(look);
-
   const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
@@ -48,13 +44,6 @@ export function LookCard({
             sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
             priority={priority}
             className="h-auto w-full object-contain transition-all duration-700 ease-out group-hover:scale-[1.02] group-hover:brightness-[0.72]"
-          />
-        </div>
-
-        <div className="absolute top-3 left-3 z-10">
-          <RarityBadge
-            rarity={outfitRarity}
-            className="bg-white/95 backdrop-blur-sm"
           />
         </div>
 

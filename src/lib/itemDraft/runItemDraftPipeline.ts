@@ -104,7 +104,6 @@ export async function runItemDraftPipeline(
     displayModel: llmResult.displayModel,
     estPriceRange: llmResult.estPriceRange,
     budgetAlternativeUrl: llmResult.budgetAlternativeUrl,
-    suggestedRarityScore: llmResult.suggestedRarityScore,
     canvasImage,
     productHints,
     guessedFields: llmResult.guessedFields,
@@ -165,7 +164,6 @@ export async function runItemDraftCli(argv = process.argv.slice(2)): Promise<voi
   console.log(`  id:       ${result.draft.id}`);
   console.log(`  brand:    ${result.draft.brand}`);
   console.log(`  category: ${result.draft.category}`);
-  console.log(`  rarity:   ${result.draft.suggestedRarityScore}`);
   if (result.copiedImagePath) {
     console.log(`  image:    ${result.copiedImagePath}`);
   }

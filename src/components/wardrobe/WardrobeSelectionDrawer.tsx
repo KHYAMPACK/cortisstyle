@@ -134,7 +134,7 @@ export function WardrobeSelectionDrawer({
                             {item.name}
                           </p>
                           <p className="text-meta mt-1 text-[8px] tracking-[0.2em] uppercase">
-                            Rarity: {item.rarityScore}/5
+                            {item.brand}
                           </p>
                         </div>
                       </button>

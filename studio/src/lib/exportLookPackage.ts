@@ -89,7 +89,6 @@ export function buildDynamicItemsJson(
       ...(displayModel ? { displayModel } : {}),
       estPriceRange: metadata.estPriceRange || DEFAULT_EST_PRICE_RANGE,
       budgetAlternativeUrl: metadata.budgetAlternativeUrl || DEFAULT_BUDGET_ALTERNATIVE_URL,
-      rarityScore: metadata.rarityScore ?? 1,
       canvasImage: defaultCanvasImagePath(outfitId, metadata.id),
       defaultCanvasPosition: {
         top: coords.top,

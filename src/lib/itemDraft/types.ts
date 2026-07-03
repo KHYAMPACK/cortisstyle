@@ -1,5 +1,4 @@
 import type { ClothingCategory } from "@/types/item";
-import type { RarityScore } from "@/types/rarity";
 
 export interface ItemDraftInput {
   /** Exact product title — never rewritten by the pipeline. */
@@ -31,7 +30,6 @@ export interface GeneratedItemDraft {
   displayModel?: string;
   estPriceRange: string;
   budgetAlternativeUrl: string;
-  suggestedRarityScore: RarityScore;
   canvasImage: string;
   productHints: ProductPageHints;
   guessedFields?: string[];

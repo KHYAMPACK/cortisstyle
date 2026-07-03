@@ -148,7 +148,6 @@ function normalizeClothingItem(value: unknown): ClothingItem | null {
       value.budgetAlternativeUrl,
       DEFAULT_BUDGET_ALTERNATIVE_URL,
     ),
-    rarityScore: (readNumber(value.rarityScore) ?? 1) as ClothingItem["rarityScore"],
     canvasImage: readString(value.canvasImage),
     defaultCanvasPosition: normalizeCanvasPosition(value.defaultCanvasPosition),
   };

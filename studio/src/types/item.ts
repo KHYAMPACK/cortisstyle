@@ -28,7 +28,6 @@ export interface CatalogItemMetadata {
   shopUrl: string
   estPriceRange: string
   budgetAlternativeUrl: string
-  rarityScore: number
   displayModel?: string
 }
 

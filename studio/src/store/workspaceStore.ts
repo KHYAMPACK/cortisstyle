@@ -37,7 +37,6 @@ export interface TwinIngestPayload {
   displayModel?: string
   estPriceRange?: string
   budgetAlternativeUrl?: string
-  rarityScore?: number
   importCacheId?: string
 }
 
@@ -87,7 +86,6 @@ function catalogDefaults(id: string): CatalogItemMetadata {
     shopUrl: defaultShopUrl(id),
     estPriceRange: DEFAULT_EST_PRICE_RANGE,
     budgetAlternativeUrl: DEFAULT_BUDGET_ALTERNATIVE_URL,
-    rarityScore: 1,
   }
 }
 
@@ -132,7 +130,6 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
       displayModel: payload.displayModel,
       estPriceRange: payload.estPriceRange ?? defaults.estPriceRange,
       budgetAlternativeUrl: payload.budgetAlternativeUrl ?? defaults.budgetAlternativeUrl,
-      rarityScore: payload.rarityScore ?? defaults.rarityScore,
     }
 
     const node: StudioNode = {

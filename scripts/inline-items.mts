@@ -29,9 +29,6 @@ const blocks = clothingItems.map((item) => {
       `      budgetAlternativeUrl: "${escape(item.budgetAlternativeUrl)}",`,
     );
   }
-  if (item.rarityScore !== 1) {
-    opts.push(`      rarityScore: ${item.rarityScore},`);
-  }
   if (item.canvasImage) {
     opts.push(`      canvasImage: "${escape(item.canvasImage)}",`);
   }
@@ -61,8 +58,6 @@ const blocks = clothingItems.map((item) => {
 });
 
 const output = `import type { ClothingCategory, ClothingItem, CanvasPosition } from "@/types/item";
-import type { RarityScore } from "@/types/rarity";
-
 const DEFAULT_EST_PRICE_RANGE = "Contact archive for pricing";
 const DEFAULT_BUDGET_ALTERNATIVE_URL = "https://www.forever21.com/";
 
@@ -71,7 +66,6 @@ interface DefineItemOptions {
   displayModel?: string;
   estPriceRange?: string;
   budgetAlternativeUrl?: string;
-  rarityScore?: RarityScore;
   canvasImage?: string;
   defaultCanvasPosition?: CanvasPosition;
 }
@@ -88,7 +82,6 @@ function defineItem(
     displayModel,
     estPriceRange,
     budgetAlternativeUrl,
-    rarityScore,
     canvasImage,
     defaultCanvasPosition,
   } = options;
@@ -103,7 +96,6 @@ function defineItem(
     estPriceRange: estPriceRange ?? DEFAULT_EST_PRICE_RANGE,
     budgetAlternativeUrl:
       budgetAlternativeUrl ?? DEFAULT_BUDGET_ALTERNATIVE_URL,
-    rarityScore: rarityScore ?? 1,
     canvasImage,
     defaultCanvasPosition,
   };

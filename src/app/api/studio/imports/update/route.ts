@@ -26,7 +26,6 @@ export async function POST(request: Request) {
       displayModel?: string | null;
       estPriceRange?: string | null;
       budgetAlternativeUrl?: string | null;
-      rarityScore?: number;
     };
 
     const id = payload.id?.trim() ?? "";
@@ -48,7 +47,6 @@ export async function POST(request: Request) {
           displayModel: payload.displayModel,
           estPriceRange: payload.estPriceRange,
           budgetAlternativeUrl: payload.budgetAlternativeUrl,
-          rarityScore: payload.rarityScore,
         },
       );
 

@@ -3,10 +3,6 @@
 import { motion } from "framer-motion";
 import { forwardRef, type KeyboardEvent, type MouseEvent } from "react";
 import { resolveItemPurchaseState } from "@/lib/itemPurchaseState";
-import {
-  formatItemRarityIndicator,
-  LOCKED_ITEM_RARITY_PLACEHOLDER,
-} from "@/lib/rarity";
 import type { ResolvedLookItem } from "@/types/look";
 
 const spring = { type: "spring" as const, stiffness: 100, damping: 20 };
@@ -31,21 +27,6 @@ interface LookItemCardProps {
 
 const LOCKED_METADATA_BLUR =
   "pointer-events-none select-none blur-[6px] opacity-60";
-
-function getLegendaryFrameClass(isActive: boolean): string {
-  return isActive
-    ? "border-blueprint-accent bg-gradient-to-tr from-white to-[#F8FAFC] shadow-[0_0_30px_rgba(192,213,240,0.65)]"
-    : "border-[#B5D1F2] bg-gradient-to-tr from-white to-[#F8FAFC] shadow-[0_0_30px_rgba(192,213,240,0.65)] hover:border-[#9fc0e8]";
-}
-
-function LegendaryRarityPulse() {
-  return (
-    <span className="relative ml-2 flex h-2 w-2" aria-hidden="true">
-      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#3A7BD5] opacity-60" />
-      <span className="relative inline-flex h-2 w-2 rounded-full bg-[#3A7BD5]" />
-    </span>
-  );
-}
 
 function PurchaseLinkButton({
   href,
@@ -90,12 +71,7 @@ export const LookItemCard = forwardRef<HTMLDivElement, LookItemCardProps>(
     const purchaseState = resolveItemPurchaseState(item);
     const isAlternativeOnly = purchaseState === "alternative-only";
 
-    const isLegendary = isMetadataRevealed && item.rarityScore === 5;
-    const surfaceClass = isLegendary
-      ? getLegendaryFrameClass(isActive)
-      : isActive
-        ? CARD_ACTIVE_CLASS
-        : CARD_IDLE_CLASS;
+    const surfaceClass = isActive ? CARD_ACTIVE_CLASS : CARD_IDLE_CLASS;
 
     const stopPropagation = (event: MouseEvent<HTMLAnchorElement>) => {
       event.stopPropagation();
@@ -116,27 +92,7 @@ export const LookItemCard = forwardRef<HTMLDivElement, LookItemCardProps>(
           <span className="absolute top-4 right-4 border border-blueprint-accent bg-transparent px-2 py-1 font-mono text-[10px] tracking-[0.1em] text-blueprint-accent uppercase">
             Selected
           </span>
-        ) : (
-          <span
-            className={`text-meta absolute top-4 right-4 flex items-center text-[10px] tracking-widest uppercase ${
-              isMetadataRevealed ? "" : LOCKED_METADATA_BLUR
-            }`}
-          >
-            {isMetadataRevealed ? (
-              <>
-                {formatItemRarityIndicator(item.rarityScore)}
-                {item.rarityScore === 5 ? <LegendaryRarityPulse /> : null}
-              </>
-            ) : (
-              <>
-                Rarity //
-                <span className="ml-1 inline-block w-[5.75rem] overflow-hidden text-right">
-                  {LOCKED_ITEM_RARITY_PLACEHOLDER}
-                </span>
-              </>
-            )}
-          </span>
-        )}
+        ) : null}
 
         <h3 className="pr-28 font-serif text-sm tracking-[0.06em] text-neutral-900 uppercase md:pr-32 md:text-base">
           {item.name}

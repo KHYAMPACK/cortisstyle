@@ -15,7 +15,6 @@ export async function syncImportCacheMetadata(nodes: StudioNode[]): Promise<void
         displayModel: node.displayModel || null,
         estPriceRange: node.estPriceRange || null,
         budgetAlternativeUrl: node.budgetAlternativeUrl || null,
-        rarityScore: node.rarityScore,
       }),
     ),
   )

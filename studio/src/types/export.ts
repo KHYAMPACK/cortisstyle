@@ -44,7 +44,6 @@ export interface ExportClothingItem {
   estPriceRange: string
   budgetAlternativeUrl: string
   canvasImage?: string
-  rarityScore: number
   defaultCanvasPosition?: {
     top: string
     left: string

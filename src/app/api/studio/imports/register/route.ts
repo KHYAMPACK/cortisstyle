@@ -38,7 +38,6 @@ export async function POST(request: Request) {
       displayModel?: string | null;
       estPriceRange?: string | null;
       budgetAlternativeUrl?: string | null;
-      rarityScore?: number;
     };
 
     const sourceHash = record.sourceHash?.trim().toLowerCase() ?? "";
@@ -92,7 +91,6 @@ export async function POST(request: Request) {
           displayModel: record.displayModel ?? null,
           estPriceRange: record.estPriceRange ?? null,
           budgetAlternativeUrl: record.budgetAlternativeUrl ?? null,
-          rarityScore: record.rarityScore ?? 1,
         },
       );
 

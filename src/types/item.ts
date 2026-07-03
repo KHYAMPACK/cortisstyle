@@ -1,5 +1,3 @@
-import type { RarityScore } from "@/types/rarity";
-
 export type ClothingCategory =
   | "headwear"
   | "eyewear"
@@ -29,5 +27,4 @@ export interface ClothingItem {
   budgetAlternativeUrl: string;
   canvasImage?: string;
   defaultCanvasPosition?: CanvasPosition;
-  rarityScore: RarityScore;
 }

@@ -1,5 +1,4 @@
 import type { ClothingCategory, ClothingItem, CanvasPosition } from "@/types/item";
-import type { RarityScore } from "@/types/rarity";
 import {
   buildClothingItemMap,
   getDynamicCatalog,
@@ -13,7 +12,6 @@ interface DefineItemOptions {
   displayModel?: string;
   estPriceRange?: string;
   budgetAlternativeUrl?: string;
-  rarityScore?: RarityScore;
   canvasImage?: string;
   defaultCanvasPosition?: CanvasPosition;
 }
@@ -31,7 +29,6 @@ export function defineItem(
     displayModel,
     estPriceRange,
     budgetAlternativeUrl,
-    rarityScore,
     canvasImage,
     defaultCanvasPosition,
   } = options;
@@ -46,7 +43,6 @@ export function defineItem(
     estPriceRange: estPriceRange ?? DEFAULT_EST_PRICE_RANGE,
     budgetAlternativeUrl:
       budgetAlternativeUrl ?? DEFAULT_BUDGET_ALTERNATIVE_URL,
-    rarityScore: rarityScore ?? 1,
     canvasImage,
     defaultCanvasPosition,
   };
