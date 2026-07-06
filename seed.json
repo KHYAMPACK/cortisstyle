@@ -1,0 +1,41 @@
+{
+    "boutiques": [
+      {
+        "slug": "vintage-atolye",
+        "name": "Vintage Atölye",
+        "description": "İstanbul'dan seçilmiş vintage parçalar.",
+        "status": "verified",
+        "products": [
+          {
+            "title": "Vintage Blazer",
+            "description": "Yün karışımlı, iyi durumda.",
+            "priceTry": 1250,
+            "size": "M",
+            "conditionLabel": "İyi",
+            "category": "outerwear",
+            "images": ["https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=800"]
+          },
+          {
+            "title": "Wide Leg Jean",
+            "priceTry": 890,
+            "size": "28",
+            "category": "bottom",
+            "images": ["https://images.unsplash.com/photo-1542272604-787c3835535d?w=800"]
+          }
+        ]
+      },
+      {
+        "slug": "moda-evi",
+        "name": "Moda Evi",
+        "status": "verified",
+        "products": [
+          {
+            "title": "Deri Çanta",
+            "priceTry": 2100,
+            "category": "bag",
+            "images": ["https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=800"]
+          }
+        ]
+      }
+    ]
+  }

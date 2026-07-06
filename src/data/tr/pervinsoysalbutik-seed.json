@@ -1,0 +1,181 @@
+{
+  "boutiques": [
+    {
+      "slug": "pervinsoysalbutik",
+      "name": "Pervin Soysal Butik",
+      "description": "Denizli'den Türkiye geneline ücretsiz kargo ile moda.",
+      "logoUrl": "/tr/boutiques/pervinsoysalbutik/logo.svg",
+      "whatsappPhone": "905436592262",
+      "instagramHandle": "pervinsoysalbutik",
+      "themeAccent": "#C2185B",
+      "shippingNote": "Tüm Türkiye'ye ücretsiz kargo",
+      "exchangePolicy": "Değişim 3 gündür, iade yoktur",
+      "physicalAddress": "Altıntop Mah. Lise Cad. No:23/C Merkezefendi/Denizli",
+      "status": "verified",
+      "products": [
+        {
+          "title": "Pembe Midi Elbise",
+          "description": "Yumuşak kumaş, günlük ve özel günler için ideal.",
+          "priceTry": 899,
+          "size": "36",
+          "conditionLabel": "Sıfır",
+          "category": "elbise",
+          "images": ["https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=800&q=80"]
+        },
+        {
+          "title": "Beyaz Dantel Elbise",
+          "description": "Zarif dantel detaylı yaz elbisesi.",
+          "priceTry": 1099,
+          "size": "38",
+          "conditionLabel": "Sıfır",
+          "category": "elbise",
+          "images": ["https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=800&q=80"]
+        },
+        {
+          "title": "Siyah Saten Elbise",
+          "description": "Akşam davetleri için şık saten model.",
+          "priceTry": 1299,
+          "size": "38",
+          "conditionLabel": "Sıfır",
+          "category": "elbise",
+          "images": ["https://images.unsplash.com/photo-1566174053879-31528523f8ae?w=800&q=80"]
+        },
+        {
+          "title": "Çiçek Desenli Elbise",
+          "description": "Canlı çiçek baskılı yazlık elbise.",
+          "priceTry": 949,
+          "size": "40",
+          "conditionLabel": "Sıfır",
+          "category": "elbise",
+          "images": ["https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=800&q=80"]
+        },
+        {
+          "title": "Krem Triko Kazak",
+          "description": "Yumuşak triko, oversize kesim.",
+          "priceTry": 549,
+          "size": "S/M",
+          "conditionLabel": "Sıfır",
+          "category": "ust-giyim",
+          "images": ["https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=800&q=80"]
+        },
+        {
+          "title": "Pudra Bluz",
+          "description": "Fiyonklu yaka detaylı bluz.",
+          "priceTry": 449,
+          "size": "38",
+          "conditionLabel": "Sıfır",
+          "category": "ust-giyim",
+          "images": ["https://images.unsplash.com/photo-1485968579580-b6d5abe91de2?w=800&q=80"]
+        },
+        {
+          "title": "Beyaz Gömlek",
+          "description": "Klasik kesim, her kombine uyumlu.",
+          "priceTry": 399,
+          "size": "38",
+          "conditionLabel": "Sıfır",
+          "category": "ust-giyim",
+          "images": ["https://images.unsplash.com/photo-1596755094514-f87e34085b56?w=800&q=80"]
+        },
+        {
+          "title": "Lila Crop Top",
+          "description": "Yaz kombinleri için crop model.",
+          "priceTry": 299,
+          "size": "S",
+          "conditionLabel": "Sıfır",
+          "category": "ust-giyim",
+          "images": ["https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=800&q=80"]
+        },
+        {
+          "title": "Yüksek Bel Pantolon",
+          "description": "Kumaş pantolon, ofis ve günlük kullanım.",
+          "priceTry": 649,
+          "size": "38",
+          "conditionLabel": "Sıfır",
+          "category": "alt-giyim",
+          "images": ["https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=800&q=80"]
+        },
+        {
+          "title": "Kot Pantolon",
+          "description": "Açık mavi yıkamalı mom jean.",
+          "priceTry": 599,
+          "size": "38",
+          "conditionLabel": "Sıfır",
+          "category": "alt-giyim",
+          "images": ["https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=800&q=80"]
+        },
+        {
+          "title": "Pileli Etek",
+          "description": "Midi boy, hafif kumaş.",
+          "priceTry": 499,
+          "size": "38",
+          "conditionLabel": "Sıfır",
+          "category": "alt-giyim",
+          "images": ["https://images.unsplash.com/photo-1583496661160-fb5886a0aaaa?w=800&q=80"]
+        },
+        {
+          "title": "Bej Trençkot",
+          "description": "İlkbahar ve sonbahar için klasik trenç.",
+          "priceTry": 1199,
+          "size": "38",
+          "conditionLabel": "Sıfır",
+          "category": "dis-giyim",
+          "images": ["https://images.unsplash.com/photo-1548624313-08916f3a8965?w=800&q=80"]
+        },
+        {
+          "title": "Krem Hırka",
+          "description": "İnce örgü, kat kat giyilebilir.",
+          "priceTry": 549,
+          "size": "M",
+          "conditionLabel": "Sıfır",
+          "category": "dis-giyim",
+          "images": ["https://images.unsplash.com/photo-1434982418721-58584b692b42?w=800&q=80"]
+        },
+        {
+          "title": "Siyah Blazer",
+          "description": "Şık blazer ceket, tek parça satış.",
+          "priceTry": 899,
+          "size": "38",
+          "conditionLabel": "Sıfır",
+          "category": "dis-giyim",
+          "images": ["https://images.unsplash.com/photo-1591369822096-ffd140ec771f?w=800&q=80"]
+        },
+        {
+          "title": "İkili Takım Set",
+          "description": "Üst ve alt parça birlikte, aynı kumaş.",
+          "priceTry": 1399,
+          "size": "38",
+          "conditionLabel": "Sıfır",
+          "category": "takim",
+          "images": ["https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&q=80"]
+        },
+        {
+          "title": "Keten Takım",
+          "description": "Yazlık keten ikili set.",
+          "priceTry": 1249,
+          "size": "38",
+          "conditionLabel": "Sıfır",
+          "category": "takim",
+          "images": ["https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=800&q=80"]
+        },
+        {
+          "title": "Günlük Takım",
+          "description": "Rahat kesim günlük kombin seti.",
+          "priceTry": 999,
+          "size": "40",
+          "conditionLabel": "Sıfır",
+          "category": "takim",
+          "images": ["https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=800&q=80"]
+        },
+        {
+          "title": "Bordo Midi Elbise",
+          "description": "Sonbahar tonlarında midi elbise.",
+          "priceTry": 849,
+          "size": "36",
+          "conditionLabel": "Sıfır",
+          "category": "elbise",
+          "images": ["https://images.unsplash.com/photo-1539008835657-9e8e9680c956?w=800&q=80"]
+        }
+      ]
+    }
+  ]
+}

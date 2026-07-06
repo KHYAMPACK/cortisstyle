@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { MAINTENANCE_PATH } from "@/lib/launchGates";
+import {
+  getCountryFromRequest,
+  isMarketRoutingExcludedPath,
+  isTrMarketPath,
+  shouldRedirectRootToTr,
+} from "@/lib/marketPreference";
 import { handleStudioPreflight } from "@/lib/studioApiCors";
 
 const STUDIO_API_PREFIX = "/api/studio";
@@ -74,6 +80,22 @@ function isAllowedDuringMaintenance(pathname: string): boolean {
   return /\.(?:png|jpe?g|webp|svg|ico|gif|woff2?)$/i.test(pathname);
 }
 
+function handleMarketRouting(request: NextRequest): NextResponse | null {
+  const { pathname } = request.nextUrl;
+
+  if (isMarketRoutingExcludedPath(pathname) || isTrMarketPath(pathname)) {
+    return null;
+  }
+
+  const countryCode = getCountryFromRequest(request);
+
+  if (!shouldRedirectRootToTr(pathname, countryCode)) {
+    return null;
+  }
+
+  return NextResponse.redirect(new URL("/tr", request.url));
+}
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -89,6 +111,9 @@ export function middleware(request: NextRequest) {
   ) {
     return NextResponse.redirect(new URL(MAINTENANCE_PATH, request.url));
   }
+
+  const marketRedirect = handleMarketRouting(request);
+  if (marketRedirect) return marketRedirect;
 
   if (shouldServeStudioSpa(pathname)) {
     return NextResponse.rewrite(new URL("/studio/index.html", request.url));

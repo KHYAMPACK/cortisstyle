@@ -17,3 +17,6 @@ SUPABASE_SMTP_PASS=
 
 # Launch gates (opt-in)
 # NEXT_PUBLIC_MAINTENANCE_MODE=true
+
+# TR marketplace — platform checkout (all boutiques). false = WhatsApp interim flow.
+TR_CHECKOUT_ENABLED=false
