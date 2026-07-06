@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { PATHNAME_HEADER } from "@/lib/introLoader";
 import { MAINTENANCE_PATH } from "@/lib/launchGates";
 import {
   getCountryFromRequest,
@@ -96,6 +97,24 @@ function handleMarketRouting(request: NextRequest): NextResponse | null {
   return NextResponse.redirect(new URL("/tr", request.url));
 }
 
+function withPathnameRequest(request: NextRequest): Headers {
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set(PATHNAME_HEADER, request.nextUrl.pathname);
+  return requestHeaders;
+}
+
+function nextWithPathname(request: NextRequest): NextResponse {
+  return NextResponse.next({
+    request: { headers: withPathnameRequest(request) },
+  });
+}
+
+function rewriteWithPathname(request: NextRequest, url: URL): NextResponse {
+  return NextResponse.rewrite(url, {
+    request: { headers: withPathnameRequest(request) },
+  });
+}
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -116,10 +135,13 @@ export function middleware(request: NextRequest) {
   if (marketRedirect) return marketRedirect;
 
   if (shouldServeStudioSpa(pathname)) {
-    return NextResponse.rewrite(new URL("/studio/index.html", request.url));
+    return rewriteWithPathname(
+      request,
+      new URL("/studio/index.html", request.url),
+    );
   }
 
-  return NextResponse.next();
+  return nextWithPathname(request);
 }
 
 export const config = {
