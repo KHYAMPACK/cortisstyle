@@ -4,12 +4,28 @@ import type {
   TrOrder,
   TrOrderItem,
   TrProduct,
+  TrProductColor,
   TrShippingAddress,
 } from "@/types/tr-marketplace";
 
 function readStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value.filter((entry): entry is string => typeof entry === "string");
+}
+
+function readProductColors(value: unknown): TrProductColor[] {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .map((entry) => {
+      if (!entry || typeof entry !== "object") return null;
+      const record = entry as Record<string, unknown>;
+      const name = typeof record.name === "string" ? record.name.trim() : "";
+      const hex = typeof record.hex === "string" ? record.hex.trim() : "";
+      if (!name || !hex) return null;
+      return { name, hex };
+    })
+    .filter((entry): entry is TrProductColor => entry !== null);
 }
 
 function readShippingAddress(value: unknown): TrShippingAddress {
@@ -100,6 +116,8 @@ export function mapProductRow(row: Record<string, unknown>): TrProduct {
     description: (row.description as string | null) ?? null,
     priceKurus: row.price_kurus as number,
     size: (row.size as string | null) ?? null,
+    sizes: readStringArray(row.sizes),
+    colors: readProductColors(row.colors),
     conditionLabel: (row.condition_label as string | null) ?? null,
     category: (row.category as string | null) ?? null,
     images: readStringArray(row.images),

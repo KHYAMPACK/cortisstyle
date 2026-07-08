@@ -83,6 +83,8 @@ async function main() {
         description: productInput.description,
         priceKurus: parseTryToKurus(productInput.priceTry),
         size: productInput.size,
+        sizes: productInput.sizes,
+        colors: productInput.colors,
         conditionLabel: productInput.conditionLabel,
         category: productInput.category,
         images: productInput.images ?? [],

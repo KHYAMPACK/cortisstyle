@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { TrBoutiqueCatalogSection } from "@/components/tr/boutique/TrBoutiqueCatalogSection";
+import { TrBoutiqueFeaturedCategories } from "@/components/tr/boutique/TrBoutiqueFeaturedCategories";
 import { TrBoutiqueProductGrid } from "@/components/tr/boutique/TrBoutiqueProductGrid";
 import { TrProductCard } from "@/components/tr/TrProductCard";
 import { TrSectionHeader } from "@/components/tr/TrSectionHeader";
@@ -9,6 +11,7 @@ import {
   hasBoutiqueBrand,
   resolveBoutiqueThemeAccent,
 } from "@/lib/tr/boutiqueBrand";
+import { buildFeaturedCategoryTiles } from "@/lib/tr/categoryFeatured";
 import { isTrCheckoutEnabled } from "@/lib/tr/platform";
 import { trHomePath } from "@/lib/tr/paths";
 import { safeGetBoutiqueStorefront } from "@/lib/tr/publicData";
@@ -51,14 +54,12 @@ export default async function BoutiqueStorefrontPage({
   const availableCount = storefront.products.filter(
     (product) => product.status === "available",
   ).length;
-  const featuredProducts = storefront.products
-    .filter((product) => product.status === "available")
-    .slice(0, 3);
+  const featuredTiles = buildFeaturedCategoryTiles(storefront.products);
 
   if (branded) {
     return (
-      <div className="mx-auto max-w-6xl px-5 py-8 md:px-8 md:py-12">
-        <section className="mb-10 text-center md:mb-14">
+      <>
+        <section className="mx-auto max-w-6xl px-5 py-8 text-center md:px-8 md:py-10">
           {storefront.logoUrl ? (
             <div className="mb-4 flex justify-center">
               <Image
@@ -88,34 +89,17 @@ export default async function BoutiqueStorefrontPage({
           </p>
         </section>
 
-        {featuredProducts.length > 0 ? (
-          <section className="mb-12" aria-label="Öne çıkan ürünler">
-            <h2 className="mb-4 font-serif text-xl tracking-tight text-neutral-900">
-              Öne çıkanlar
-            </h2>
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
-              {featuredProducts.map((product, index) => (
-                <TrProductCard
-                  key={product.id}
-                  product={product}
-                  priority={index < 3}
-                />
-              ))}
-            </div>
-          </section>
-        ) : null}
+        <TrBoutiqueFeaturedCategories tiles={featuredTiles} />
 
-        <section className="mb-14" aria-label={`${storefront.name} ürünleri`}>
-          <h2 className="mb-5 font-serif text-xl tracking-tight text-neutral-900">
-            Tüm ürünler
-          </h2>
-          <TrBoutiqueProductGrid
-            products={storefront.products}
-            accentColor={accent}
-          />
-        </section>
+        <div className="mx-auto max-w-6xl px-5 py-8 md:px-8 md:py-12">
+          <TrBoutiqueCatalogSection className="mb-14">
+            <TrBoutiqueProductGrid
+              products={storefront.products}
+              accentColor={accent}
+            />
+          </TrBoutiqueCatalogSection>
 
-        <section className="grid gap-10 border-t border-black/5 pt-10 md:grid-cols-2">
+          <section className="grid gap-10 border-t border-black/5 pt-10 md:grid-cols-2">
           <div>
             <h2 className="font-serif text-xl tracking-tight text-neutral-900">
               Hakkımızda
@@ -153,7 +137,8 @@ export default async function BoutiqueStorefrontPage({
             )}
           </div>
         </section>
-      </div>
+        </div>
+      </>
     );
   }
 

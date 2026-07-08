@@ -11,7 +11,7 @@ import type {
 } from "@/types/tr-marketplace";
 
 const PUBLIC_PRODUCT_COLUMNS =
-  "id, boutique_id, title, description, price_kurus, size, condition_label, category, images, status, sort_order, created_at, updated_at";
+  "id, boutique_id, title, description, price_kurus, size, sizes, colors, condition_label, category, images, status, sort_order, created_at, updated_at";
 
 function productInsertRow(input: CreateTrProductInput) {
   return {
@@ -20,6 +20,8 @@ function productInsertRow(input: CreateTrProductInput) {
     description: input.description?.trim() ?? null,
     price_kurus: input.priceKurus,
     size: input.size?.trim() ?? null,
+    sizes: input.sizes ?? [],
+    colors: input.colors ?? [],
     condition_label: input.conditionLabel?.trim() ?? null,
     category: input.category?.trim() ?? null,
     images: input.images ?? [],

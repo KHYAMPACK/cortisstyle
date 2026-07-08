@@ -1,20 +1,27 @@
+"use client";
+
+import { TrBoutiqueAnnouncementBar } from "@/components/tr/boutique/TrBoutiqueAnnouncementBar";
+import { TrBoutiqueCatalogProvider } from "@/components/tr/boutique/TrBoutiqueCatalogContext";
+import { TrBoutiqueCategoryDrawer } from "@/components/tr/boutique/TrBoutiqueCategoryDrawer";
+import { TrBoutiqueFooter } from "@/components/tr/boutique/TrBoutiqueFooter";
+import { TrBoutiqueHeader } from "@/components/tr/boutique/TrBoutiqueHeader";
+import { listCategoriesForProducts } from "@/lib/tr/categories";
 import {
   hasBoutiqueBrand,
   resolveBoutiqueBackground,
   resolveBoutiqueThemeAccent,
 } from "@/lib/tr/boutiqueBrand";
-import { TrBoutiqueFooter } from "@/components/tr/boutique/TrBoutiqueFooter";
-import { TrBoutiqueHeader } from "@/components/tr/boutique/TrBoutiqueHeader";
-import { TrBoutiqueTrustStrip } from "@/components/tr/boutique/TrBoutiqueTrustStrip";
-import type { TrBoutiquePublic } from "@/types/tr-marketplace";
+import type { TrBoutiquePublic, TrProduct } from "@/types/tr-marketplace";
 
 interface TrBoutiqueBrandedShellProps {
   boutique: TrBoutiquePublic;
+  products?: TrProduct[];
   children: React.ReactNode;
 }
 
 export function TrBoutiqueBrandedShell({
   boutique,
+  products = [],
   children,
 }: TrBoutiqueBrandedShellProps) {
   if (!hasBoutiqueBrand(boutique)) {
@@ -23,21 +30,25 @@ export function TrBoutiqueBrandedShell({
 
   const accent = resolveBoutiqueThemeAccent(boutique);
   const background = resolveBoutiqueBackground();
+  const categories = listCategoriesForProducts(products);
 
   return (
-    <div
-      className="flex min-h-full flex-col text-neutral-900"
-      style={
-        {
-          backgroundColor: background,
-          "--boutique-accent": accent,
-        } as React.CSSProperties
-      }
-    >
-      <TrBoutiqueHeader boutique={boutique} />
-      <TrBoutiqueTrustStrip boutique={boutique} />
-      <main className="flex-1">{children}</main>
-      <TrBoutiqueFooter boutique={boutique} />
-    </div>
+    <TrBoutiqueCatalogProvider categories={categories}>
+      <div
+        className="flex min-h-full flex-col text-neutral-900"
+        style={
+          {
+            backgroundColor: background,
+            "--boutique-accent": accent,
+          } as React.CSSProperties
+        }
+      >
+        <TrBoutiqueAnnouncementBar boutique={boutique} />
+        <TrBoutiqueHeader boutique={boutique} />
+        <TrBoutiqueCategoryDrawer boutique={boutique} />
+        <main className="flex-1">{children}</main>
+        <TrBoutiqueFooter boutique={boutique} />
+      </div>
+    </TrBoutiqueCatalogProvider>
   );
 }

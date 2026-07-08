@@ -43,6 +43,11 @@ export interface TrBoutique extends TrBoutiquePublic {
   returnAddress: string | null;
 }
 
+export interface TrProductColor {
+  name: string;
+  hex: string;
+}
+
 export interface TrProduct {
   id: string;
   boutiqueId: string;
@@ -50,6 +55,8 @@ export interface TrProduct {
   description: string | null;
   priceKurus: number;
   size: string | null;
+  sizes: string[];
+  colors: TrProductColor[];
   conditionLabel: string | null;
   category: string | null;
   images: string[];
@@ -135,6 +142,8 @@ export interface CreateTrProductInput {
   description?: string | null;
   priceKurus: number;
   size?: string | null;
+  sizes?: string[];
+  colors?: TrProductColor[];
   conditionLabel?: string | null;
   category?: string | null;
   images?: string[];

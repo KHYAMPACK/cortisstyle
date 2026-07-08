@@ -12,10 +12,24 @@ import type { TrProductWithBoutique } from "@/types/tr-marketplace";
 
 interface TrProductPurchasePanelProps {
   product: TrProductWithBoutique;
+  selectedSize?: string | null;
+  selectedColor?: string | null;
+  canOrder?: boolean;
 }
 
-export function TrProductPurchasePanel({ product }: TrProductPurchasePanelProps) {
+export function TrProductPurchasePanel({
+  product,
+  selectedSize = null,
+  selectedColor = null,
+  canOrder = true,
+}: TrProductPurchasePanelProps) {
   const checkoutEnabled = isTrCheckoutEnabled();
+  const orderProduct = {
+    title: product.title,
+    priceKurus: product.priceKurus,
+    size: selectedSize,
+    color: selectedColor,
+  };
 
   if (checkoutEnabled) {
     return (
@@ -30,15 +44,16 @@ export function TrProductPurchasePanel({ product }: TrProductPurchasePanelProps)
           title={product.title}
           priceKurus={product.priceKurus}
           image={getProductCoverImage(product)}
-          size={product.size}
+          size={selectedSize}
           status={product.status}
+          disabled={!canOrder}
         />
 
         {product.boutique.whatsappPhone ? (
           <a
             href={buildWhatsAppOrderUrl(
               product.boutique.whatsappPhone,
-              buildProductOrderMessage(product),
+              buildProductOrderMessage(orderProduct),
             )}
             target="_blank"
             rel="noopener noreferrer"
@@ -56,8 +71,9 @@ export function TrProductPurchasePanel({ product }: TrProductPurchasePanelProps)
       <div className="mt-8 space-y-4">
         <TrWhatsAppOrderButton
           phone={product.boutique.whatsappPhone}
-          product={product}
+          product={orderProduct}
           status={product.status}
+          disabled={!canOrder}
         />
 
         {product.boutique.shippingNote ? (

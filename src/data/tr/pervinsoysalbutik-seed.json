@@ -17,7 +17,13 @@
           "title": "Pembe Midi Elbise",
           "description": "Yumuşak kumaş, günlük ve özel günler için ideal.",
           "priceTry": 899,
-          "size": "36",
+          "sizes": ["S", "M", "L", "XL"],
+          "colors": [
+            { "name": "Pembe", "hex": "#E8A0B4" },
+            { "name": "Siyah", "hex": "#1A1A1A" },
+            { "name": "Beyaz", "hex": "#F5F5F5" },
+            { "name": "Lacivert", "hex": "#1E3A5F" }
+          ],
           "conditionLabel": "Sıfır",
           "category": "elbise",
           "images": ["https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=800&q=80"]
@@ -26,7 +32,11 @@
           "title": "Beyaz Dantel Elbise",
           "description": "Zarif dantel detaylı yaz elbisesi.",
           "priceTry": 1099,
-          "size": "38",
+          "sizes": ["S", "M", "L"],
+          "colors": [
+            { "name": "Beyaz", "hex": "#F8F8F8" },
+            { "name": "Krem", "hex": "#EDE6D6" }
+          ],
           "conditionLabel": "Sıfır",
           "category": "elbise",
           "images": ["https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=800&q=80"]
@@ -35,7 +45,11 @@
           "title": "Siyah Saten Elbise",
           "description": "Akşam davetleri için şık saten model.",
           "priceTry": 1299,
-          "size": "38",
+          "sizes": ["S", "M", "L", "XL"],
+          "colors": [
+            { "name": "Siyah", "hex": "#111111" },
+            { "name": "Bordo", "hex": "#6B1E2F" }
+          ],
           "conditionLabel": "Sıfır",
           "category": "elbise",
           "images": ["https://images.unsplash.com/photo-1566174053879-31528523f8ae?w=800&q=80"]

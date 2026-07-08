@@ -17,6 +17,7 @@ interface TrPurchaseActionsProps {
   image: string | null;
   size: string | null;
   status: TrProductStatus;
+  disabled?: boolean;
   className?: string;
 }
 
@@ -34,7 +35,7 @@ function toCartLineItem(props: TrPurchaseActionsProps): TrCartLineItem {
 }
 
 export function TrPurchaseActions(props: TrPurchaseActionsProps) {
-  const { status, className = "" } = props;
+  const { status, disabled = false, className = "" } = props;
   const addItem = useTrCartStore((state) => state.addItem);
   const inCart = useTrCartStore((state) =>
     state.items.some((entry) => entry.productId === props.productId),
@@ -58,6 +59,7 @@ export function TrPurchaseActions(props: TrPurchaseActionsProps) {
   }
 
   const handleAdd = () => {
+    if (disabled) return;
     const added = addItem(toCartLineItem(props));
     if (added) {
       setFeedback("added");
@@ -83,9 +85,10 @@ export function TrPurchaseActions(props: TrPurchaseActionsProps) {
       <button
         type="button"
         onClick={handleAdd}
-        className="btn-primary inline-flex w-full items-center justify-center px-6 py-4 text-[11px] tracking-[0.2em]"
+        disabled={disabled}
+        className="btn-primary inline-flex w-full items-center justify-center px-6 py-4 text-[11px] tracking-[0.2em] disabled:cursor-not-allowed disabled:opacity-50"
       >
-        Sepete ekle
+        {disabled ? "Beden seçin" : "Sepete ekle"}
       </button>
       {feedback === "added" ? (
         <p className="text-center text-[11px] text-meta">Sepete eklendi.</p>

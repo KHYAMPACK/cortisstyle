@@ -23,6 +23,8 @@ interface SeedBoutiquePayload {
     description?: string;
     priceTry: number;
     size?: string;
+    sizes?: string[];
+    colors?: Array<{ name: string; hex: string }>;
     conditionLabel?: string;
     category?: string;
     images?: string[];
@@ -87,6 +89,8 @@ export async function POST(request: Request) {
           description: productInput.description,
           priceKurus: parseTryToKurus(productInput.priceTry),
           size: productInput.size,
+          sizes: productInput.sizes,
+          colors: productInput.colors,
           conditionLabel: productInput.conditionLabel,
           category: productInput.category,
           images: productInput.images ?? [],

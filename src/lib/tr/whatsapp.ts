@@ -16,11 +16,15 @@ export function buildProductOrderMessage(product: {
   title: string;
   priceKurus: number;
   size?: string | null;
+  color?: string | null;
 }): string {
   const price = formatTryFromKurus(product.priceKurus);
   const sizeLine = product.size?.trim()
     ? `Beden: ${product.size.trim()}`
     : "Beden: ";
+  const colorLine = product.color?.trim()
+    ? `Renk: ${product.color.trim()}`
+    : null;
 
   return [
     "Merhaba, sipariş vermek istiyorum.",
@@ -28,7 +32,10 @@ export function buildProductOrderMessage(product: {
     `Ürün: ${product.title}`,
     `Fiyat: ${price}`,
     sizeLine,
-  ].join("\n");
+    colorLine,
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 export function instagramProfileUrl(handle: string): string {

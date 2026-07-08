@@ -107,4 +107,23 @@ html.intro-loading body {
       var(--ice-floor) 100%
     );
   }
+
+  @keyframes boutique-announcement-scroll {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-33.333%);
+    }
+  }
+
+  .boutique-announcement-track {
+    animation: boutique-announcement-scroll 28s linear infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .boutique-announcement-track {
+      animation: none;
+    }
+  }
 }

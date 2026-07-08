@@ -1,6 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { getProductCoverImage, trProductPath } from "@/lib/tr/paths";
+import { resolveProductColors } from "@/lib/tr/productOptions";
+import { TrProductColorDots } from "@/components/tr/TrProductColorDots";
 import { formatTryFromKurus } from "@/types/tr-marketplace";
 import type { TrProduct, TrProductWithBoutique } from "@/types/tr-marketplace";
 
@@ -16,6 +18,7 @@ export function TrProductCard({
   priority = false,
 }: TrProductCardProps) {
   const coverImage = getProductCoverImage(product);
+  const colors = resolveProductColors(product);
   const boutique =
     "boutique" in product && showBoutique ? product.boutique : null;
   const isSold = product.status === "sold";
@@ -56,9 +59,11 @@ export function TrProductCard({
           {product.title}
         </h3>
 
-        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] tracking-[0.14em] uppercase">
-          <span className="text-jet-black">{formatTryFromKurus(product.priceKurus)}</span>
-          {product.size ? <span className="text-meta">Beden {product.size}</span> : null}
+        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2">
+          <span className="text-[10px] tracking-[0.14em] text-jet-black uppercase">
+            {formatTryFromKurus(product.priceKurus)}
+          </span>
+          <TrProductColorDots colors={colors} />
         </div>
 
         {boutique ? (
