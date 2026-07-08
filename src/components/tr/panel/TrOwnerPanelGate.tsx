@@ -2,9 +2,14 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AuthPopup } from "@/components/AuthPopup";
+import {
+  TrPanelLoading,
+  TrPanelPageTransition,
+} from "@/components/tr/panel/TrPanelMotion";
 import { useAuth } from "@/context/AuthContext";
 import {
   fetchOwnerBoutiques,
@@ -195,51 +200,49 @@ export function TrOwnerPanelGate({ children }: TrOwnerPanelGateProps) {
         ) : null}
       </header>
 
-      {isInitializing || loading ? (
-        <p className="text-[13px] text-neutral-600">Yükleniyor…</p>
-      ) : null}
-
-      {!isInitializing && !loading && !isAuthenticated ? (
-        <div className="space-y-4 border border-black/10 bg-white px-5 py-8">
-          <p className="text-[14px] text-neutral-800">
-            Panele girmek için oturum açın.
-          </p>
-          <button
-            type="button"
-            onClick={() => setShowAuth(true)}
-            className="btn-primary inline-flex px-6 py-3 text-[11px] tracking-[0.16em]"
-          >
-            Giriş / Kayıt
-          </button>
-        </div>
-      ) : null}
-
-      {!isInitializing && !loading && isAuthenticated && error ? (
-        <p className="border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-800">
-          {error}
-        </p>
-      ) : null}
-
-      {!isInitializing &&
-      !loading &&
-      isAuthenticated &&
-      !error &&
-      boutiques.length === 0 ? (
-        <div className="border border-black/10 bg-white px-5 py-8">
-          <p className="text-[14px] leading-relaxed text-neutral-800">
-            Hesabınız henüz bir butiğe bağlanmadı. Cortisstyle ekibi hesabınızı
-            butiğinize bağladıktan sonra ürün ekleyebilirsiniz.
-          </p>
-        </div>
-      ) : null}
-
-      {!isInitializing && !loading && isAuthenticated && activeBoutique
-        ? children({
-            boutiques,
-            activeBoutique,
-            setActiveBoutiqueId: (id) => setActiveBoutiqueId(id),
-          })
-        : null}
+      <AnimatePresence mode="wait">
+        {isInitializing || loading ? (
+          <TrPanelLoading key="panel-boot" label="Yükleniyor…" />
+        ) : !isAuthenticated ? (
+          <TrPanelPageTransition key="auth-required" pathname="auth-required">
+            <div className="space-y-4 border border-black/10 bg-white px-5 py-8">
+              <p className="text-[14px] text-neutral-800">
+                Panele girmek için oturum açın.
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowAuth(true)}
+                className="btn-primary inline-flex px-6 py-3 text-[11px] tracking-[0.16em]"
+              >
+                Giriş / Kayıt
+              </button>
+            </div>
+          </TrPanelPageTransition>
+        ) : error ? (
+          <TrPanelPageTransition key="panel-error" pathname="panel-error">
+            <p className="border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-800">
+              {error}
+            </p>
+          </TrPanelPageTransition>
+        ) : boutiques.length === 0 ? (
+          <TrPanelPageTransition key="no-boutique" pathname="no-boutique">
+            <div className="border border-black/10 bg-white px-5 py-8">
+              <p className="text-[14px] leading-relaxed text-neutral-800">
+                Hesabınız henüz bir butiğe bağlanmadı. Cortisstyle ekibi
+                hesabınızı butiğinize bağladıktan sonra ürün ekleyebilirsiniz.
+              </p>
+            </div>
+          </TrPanelPageTransition>
+        ) : activeBoutique ? (
+          <TrPanelPageTransition key={pathname} pathname={pathname}>
+            {children({
+              boutiques,
+              activeBoutique,
+              setActiveBoutiqueId: (id) => setActiveBoutiqueId(id),
+            })}
+          </TrPanelPageTransition>
+        ) : null}
+      </AnimatePresence>
     </div>
   );
 }

@@ -2,8 +2,15 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
+import {
+  TrPanelFadeIn,
+  TrPanelLoading,
+  TrPanelStagger,
+  trPanelStaggerItem,
+} from "@/components/tr/panel/TrPanelMotion";
 import { fetchOwnerProducts } from "@/lib/tr/ownerClient";
 import {
   trPanelEditProductPath,
@@ -52,74 +59,74 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
     };
   }, [boutiqueId]);
 
-  if (loading) {
-    return <p className="text-[13px] text-neutral-600">Ürünler yükleniyor…</p>;
-  }
-
-  if (error) {
-    return (
-      <p className="border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-800">
-        {error}
-      </p>
-    );
-  }
-
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-[12px] text-neutral-600">
-          {products.length} ürün
-        </p>
-        <Link
-          href={trPanelNewProductPath()}
-          className="btn-primary px-4 py-3 text-[10px] tracking-[0.14em]"
-        >
-          Yeni ürün
-        </Link>
-      </div>
-
-      {products.length === 0 ? (
-        <p className="border border-black/10 bg-white px-4 py-8 text-[13px] text-neutral-600">
-          Henüz ürün yok. İlk ürününüzü ekleyin.
-        </p>
+    <AnimatePresence mode="wait">
+      {loading ? (
+        <TrPanelLoading key="products-loading" label="Ürünler yükleniyor…" />
+      ) : error ? (
+        <TrPanelFadeIn key="products-error">
+          <p className="border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-800">
+            {error}
+          </p>
+        </TrPanelFadeIn>
       ) : (
-        <ul className="divide-y divide-black/10 border border-black/10 bg-white">
-          {products.map((product) => {
-            const cover = product.images[0] ?? null;
-            return (
-              <li key={product.id}>
-                <Link
-                  href={trPanelEditProductPath(product.id)}
-                  className="flex items-center gap-3 px-3 py-3 transition-colors hover:bg-neutral-50"
-                >
-                  <div className="relative h-16 w-12 shrink-0 overflow-hidden bg-neutral-100">
-                    {cover ? (
-                      <Image
-                        src={cover}
-                        alt=""
-                        fill
-                        unoptimized
-                        className="object-cover"
-                        sizes="48px"
-                      />
-                    ) : null}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[14px] text-neutral-900">
-                      {product.title}
-                    </p>
-                    <p className="mt-1 text-[11px] text-neutral-500">
-                      {formatTryFromKurus(product.priceKurus)} ·{" "}
-                      {STATUS_LABEL[product.status] ?? product.status}
-                    </p>
-                  </div>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+        <TrPanelFadeIn key="products-ready" className="space-y-4">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-[12px] text-neutral-600">
+              {products.length} ürün
+            </p>
+            <Link
+              href={trPanelNewProductPath()}
+              className="btn-primary px-4 py-3 text-[10px] tracking-[0.14em]"
+            >
+              Yeni ürün
+            </Link>
+          </div>
+
+          {products.length === 0 ? (
+            <p className="border border-black/10 bg-white px-4 py-8 text-[13px] text-neutral-600">
+              Henüz ürün yok. İlk ürününüzü ekleyin.
+            </p>
+          ) : (
+            <TrPanelStagger className="divide-y divide-black/10 border border-black/10 bg-white">
+              {products.map((product) => {
+                const cover = product.images[0] ?? null;
+                return (
+                  <motion.div key={product.id} variants={trPanelStaggerItem}>
+                    <Link
+                      href={trPanelEditProductPath(product.id)}
+                      className="flex items-center gap-3 px-3 py-3 transition-colors hover:bg-neutral-50"
+                    >
+                      <div className="relative h-16 w-12 shrink-0 overflow-hidden bg-neutral-100">
+                        {cover ? (
+                          <Image
+                            src={cover}
+                            alt=""
+                            fill
+                            unoptimized
+                            className="object-cover"
+                            sizes="48px"
+                          />
+                        ) : null}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-[14px] text-neutral-900">
+                          {product.title}
+                        </p>
+                        <p className="mt-1 text-[11px] text-neutral-500">
+                          {formatTryFromKurus(product.priceKurus)} ·{" "}
+                          {STATUS_LABEL[product.status] ?? product.status}
+                        </p>
+                      </div>
+                    </Link>
+                  </motion.div>
+                );
+              })}
+            </TrPanelStagger>
+          )}
+        </TrPanelFadeIn>
       )}
-    </div>
+    </AnimatePresence>
   );
 }
 

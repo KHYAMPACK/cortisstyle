@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { TR_BOUTIQUE_CATEGORIES } from "@/lib/tr/categories";
 import { DEFAULT_LETTER_SIZES } from "@/lib/tr/productOptions";
@@ -11,6 +12,17 @@ import {
 } from "@/lib/tr/ownerClient";
 import { formatTryFromKurus } from "@/types/tr-marketplace";
 import type { TrProduct, TrProductColor, TrProductStatus } from "@/types/tr-marketplace";
+
+function InlineBusySpinner() {
+  return (
+    <motion.span
+      aria-hidden
+      className="inline-block h-3 w-3 shrink-0 border border-current border-t-transparent"
+      animate={{ rotate: 360 }}
+      transition={{ duration: 0.9, repeat: Infinity, ease: "linear" }}
+    />
+  );
+}
 
 const PRESET_COLORS: TrProductColor[] = [
   { name: "Siyah", hex: "#1A1A1A" },
@@ -193,8 +205,15 @@ export function TrProductEditorForm({
         <p className="text-[12px] text-neutral-500">
           İlk fotoğraf kapak olur. PNG, JPEG veya WebP.
         </p>
-        <label className="inline-flex cursor-pointer border border-black/15 bg-white px-4 py-3 text-[11px] tracking-[0.12em] uppercase">
-          {uploading ? "Yükleniyor…" : "Fotoğraf ekle"}
+        <label className="inline-flex cursor-pointer items-center gap-2 border border-black/15 bg-white px-4 py-3 text-[11px] tracking-[0.12em] uppercase">
+          {uploading ? (
+            <>
+              <InlineBusySpinner />
+              Yükleniyor…
+            </>
+          ) : (
+            "Fotoğraf ekle"
+          )}
           <input
             type="file"
             accept="image/png,image/jpeg,image/webp"
@@ -398,9 +417,18 @@ export function TrProductEditorForm({
       <button
         type="submit"
         disabled={saving || uploading}
-        className="btn-primary w-full px-6 py-4 text-[11px] tracking-[0.16em] disabled:opacity-50"
+        className="btn-primary inline-flex w-full items-center justify-center gap-2 px-6 py-4 text-[11px] tracking-[0.16em] disabled:opacity-50"
       >
-        {saving ? "Kaydediliyor…" : mode === "create" ? "Ürünü ekle" : "Kaydet"}
+        {saving ? (
+          <>
+            <InlineBusySpinner />
+            Kaydediliyor…
+          </>
+        ) : mode === "create" ? (
+          "Ürünü ekle"
+        ) : (
+          "Kaydet"
+        )}
       </button>
     </form>
   );

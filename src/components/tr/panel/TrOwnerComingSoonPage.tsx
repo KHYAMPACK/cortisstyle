@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
+import { TrPanelFadeIn } from "@/components/tr/panel/TrPanelMotion";
 import { trPanelPath } from "@/lib/tr/paths";
 
 interface TrOwnerComingSoonPageProps {
@@ -17,7 +18,7 @@ export function TrOwnerComingSoonPage({
   return (
     <TrOwnerPanelGate>
       {() => (
-        <div className="space-y-6">
+        <TrPanelFadeIn className="space-y-6">
           <Link
             href={trPanelPath()}
             className="inline-block text-[11px] tracking-[0.1em] text-neutral-500 uppercase"
@@ -35,7 +36,7 @@ export function TrOwnerComingSoonPage({
               {description}
             </p>
           </div>
-        </div>
+        </TrPanelFadeIn>
       )}
     </TrOwnerPanelGate>
   );

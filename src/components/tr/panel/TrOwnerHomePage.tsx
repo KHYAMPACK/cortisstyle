@@ -1,8 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
+import {
+  TrPanelFadeIn,
+  TrPanelLoading,
+  TrPanelStagger,
+  trPanelStaggerItem,
+} from "@/components/tr/panel/TrPanelMotion";
 import {
   fetchOwnerSummary,
   type TrOwnerSummaryResponse,
@@ -42,10 +49,13 @@ function MetricCard({
   label: string;
 }) {
   return (
-    <div className="border border-black/10 bg-white px-4 py-5">
+    <motion.div
+      variants={trPanelStaggerItem}
+      className="border border-black/10 bg-white px-4 py-5"
+    >
       <p className="font-serif text-3xl tracking-tight text-neutral-950">{value}</p>
       <p className="mt-2 text-[11px] leading-snug text-neutral-500">{label}</p>
-    </div>
+    </motion.div>
   );
 }
 
@@ -59,20 +69,22 @@ function QuickTile({
   hint?: string;
 }) {
   return (
-    <Link
-      href={href}
-      className="flex items-center justify-between gap-3 border border-black/10 bg-white px-4 py-4 transition-colors hover:border-black/25"
-    >
-      <div>
-        <p className="text-[13px] font-medium text-neutral-900">{label}</p>
-        {hint ? (
-          <p className="mt-1 text-[11px] text-neutral-500">{hint}</p>
-        ) : null}
-      </div>
-      <span className="text-neutral-400" aria-hidden>
-        →
-      </span>
-    </Link>
+    <motion.div variants={trPanelStaggerItem}>
+      <Link
+        href={href}
+        className="flex items-center justify-between gap-3 border border-black/10 bg-white px-4 py-4 transition-colors hover:border-black/25"
+      >
+        <div>
+          <p className="text-[13px] font-medium text-neutral-900">{label}</p>
+          {hint ? (
+            <p className="mt-1 text-[11px] text-neutral-500">{hint}</p>
+          ) : null}
+        </div>
+        <span className="text-neutral-400" aria-hidden>
+          →
+        </span>
+      </Link>
+    </motion.div>
   );
 }
 
@@ -127,103 +139,112 @@ function HomeDashboard({
 
   return (
     <div className="space-y-8">
-      <section>
-        <h2 className="font-serif text-2xl tracking-tight text-neutral-950">
-          {greetingForHour(hour)}
-        </h2>
-        <p className="mt-1 text-[13px] text-neutral-600">
-          {boutiqueName} · {todayLabel()} · günlük özet
-        </p>
-        <Link
-          href={trBoutiquePath(boutiqueSlug)}
-          className="mt-2 inline-block text-[11px] tracking-[0.1em] text-neutral-500 uppercase underline underline-offset-2"
-        >
-          Mağazayı görüntüle
-        </Link>
-      </section>
-
-      {loading ? (
-        <p className="text-[13px] text-neutral-600">Özet yükleniyor…</p>
-      ) : null}
-      {error ? (
-        <p className="border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-800">
-          {error}
-        </p>
-      ) : null}
-
-      {summary ? (
-        <section className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          {summary.checkoutEnabled && summary.today ? (
-            <>
-              <MetricCard
-                value={String(summary.today.orderCount)}
-                label="sipariş alındı (bugün)"
-              />
-              <MetricCard
-                value={formatTryFromKurus(summary.today.revenueKurus)}
-                label="bugünkü toplam tutar"
-              />
-              <MetricCard
-                value={String(summary.inventory.available)}
-                label="satışta ürün"
-              />
-            </>
-          ) : (
-            <>
-              <MetricCard
-                value={String(summary.inventory.available)}
-                label="satışta ürün"
-              />
-              <MetricCard
-                value={String(summary.inventory.sold)}
-                label="satıldı"
-              />
-              <MetricCard
-                value={String(summary.inventory.hidden)}
-                label="gizli"
-              />
-            </>
-          )}
+      <TrPanelFadeIn>
+        <section>
+          <h2 className="font-serif text-2xl tracking-tight text-neutral-950">
+            {greetingForHour(hour)}
+          </h2>
+          <p className="mt-1 text-[13px] text-neutral-600">
+            {boutiqueName} · {todayLabel()} · günlük özet
+          </p>
+          <Link
+            href={trBoutiquePath(boutiqueSlug)}
+            className="mt-2 inline-block text-[11px] tracking-[0.1em] text-neutral-500 uppercase underline underline-offset-2"
+          >
+            Mağazayı görüntüle
+          </Link>
         </section>
-      ) : null}
+      </TrPanelFadeIn>
 
-      {summary && !summary.checkoutEnabled ? (
-        <p className="border border-black/10 bg-neutral-50 px-4 py-3 text-[12px] text-neutral-600">
-          Online ödeme kapalı — siparişler WhatsApp üzerinden. Ciro özeti ödeme
-          açılınca burada görünür.
-        </p>
-      ) : null}
+      <AnimatePresence mode="wait">
+        {loading ? (
+          <TrPanelLoading key="summary-loading" label="Özet yükleniyor…" />
+        ) : error ? (
+          <TrPanelFadeIn key="summary-error">
+            <p className="border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-800">
+              {error}
+            </p>
+          </TrPanelFadeIn>
+        ) : summary ? (
+          <TrPanelFadeIn key="summary-ready" className="space-y-8">
+            <TrPanelStagger className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              {summary.checkoutEnabled && summary.today ? (
+                <>
+                  <MetricCard
+                    value={String(summary.today.orderCount)}
+                    label="sipariş alındı (bugün)"
+                  />
+                  <MetricCard
+                    value={formatTryFromKurus(summary.today.revenueKurus)}
+                    label="bugünkü toplam tutar"
+                  />
+                  <MetricCard
+                    value={String(summary.inventory.available)}
+                    label="satışta ürün"
+                  />
+                </>
+              ) : (
+                <>
+                  <MetricCard
+                    value={String(summary.inventory.available)}
+                    label="satışta ürün"
+                  />
+                  <MetricCard
+                    value={String(summary.inventory.sold)}
+                    label="satıldı"
+                  />
+                  <MetricCard
+                    value={String(summary.inventory.hidden)}
+                    label="gizli"
+                  />
+                </>
+              )}
+            </TrPanelStagger>
 
-      <section className="space-y-3">
-        <p className="text-[11px] tracking-[0.16em] text-neutral-500 uppercase">
-          Hızlı erişim
-        </p>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          <QuickTile href={trPanelProductsPath()} label="Ürünler" />
-          <QuickTile href={trPanelNewProductPath()} label="Yeni ürün" />
-          <QuickTile
-            href={trPanelOrdersPath()}
-            label="Siparişler"
-            hint={
-              summary?.checkoutEnabled === false
-                ? "WhatsApp sipariş"
-                : "Yakında"
-            }
-          />
-          <QuickTile href={trPanelSettingsPath()} label="Ayarlar" />
-          <QuickTile
-            href={trPanelCustomersPath()}
-            label="Müşteriler"
-            hint="Yakında"
-          />
-          <QuickTile
-            href={trPanelDiscountsPath()}
-            label="İndirim"
-            hint="Yakında"
-          />
-          <QuickTile href={trPanelStockPath()} label="Stok" hint="Yakında" />
-        </div>
-      </section>
+            {!summary.checkoutEnabled ? (
+              <p className="border border-black/10 bg-neutral-50 px-4 py-3 text-[12px] text-neutral-600">
+                Online ödeme kapalı — siparişler WhatsApp üzerinden. Ciro özeti
+                ödeme açılınca burada görünür.
+              </p>
+            ) : null}
+
+            <section className="space-y-3">
+              <p className="text-[11px] tracking-[0.16em] text-neutral-500 uppercase">
+                Hızlı erişim
+              </p>
+              <TrPanelStagger className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <QuickTile href={trPanelProductsPath()} label="Ürünler" />
+                <QuickTile href={trPanelNewProductPath()} label="Yeni ürün" />
+                <QuickTile
+                  href={trPanelOrdersPath()}
+                  label="Siparişler"
+                  hint={
+                    summary.checkoutEnabled === false
+                      ? "WhatsApp sipariş"
+                      : "Yakında"
+                  }
+                />
+                <QuickTile href={trPanelSettingsPath()} label="Ayarlar" />
+                <QuickTile
+                  href={trPanelCustomersPath()}
+                  label="Müşteriler"
+                  hint="Yakında"
+                />
+                <QuickTile
+                  href={trPanelDiscountsPath()}
+                  label="İndirim"
+                  hint="Yakında"
+                />
+                <QuickTile
+                  href={trPanelStockPath()}
+                  label="Stok"
+                  hint="Yakında"
+                />
+              </TrPanelStagger>
+            </section>
+          </TrPanelFadeIn>
+        ) : null}
+      </AnimatePresence>
     </div>
   );
 }

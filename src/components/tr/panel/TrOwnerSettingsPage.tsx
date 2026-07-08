@@ -1,8 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState, type FormEvent } from "react";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
+import {
+  TrPanelFadeIn,
+  TrPanelLoading,
+  trPanelFadeTransition,
+} from "@/components/tr/panel/TrPanelMotion";
 import {
   fetchOwnerBoutiqueSettings,
   updateOwnerBoutiqueSettings,
@@ -88,119 +94,149 @@ function SettingsForm({ boutiqueId }: { boutiqueId: string }) {
   };
 
   if (loading) {
-    return <p className="text-[13px] text-neutral-600">Yükleniyor…</p>;
+    return <TrPanelLoading label="Ayarlar yükleniyor…" />;
   }
 
   const fieldClass =
     "w-full border border-black/15 bg-white px-3 py-3 text-[14px] outline-none focus:border-black/40";
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <p className="text-[13px] text-neutral-600">
-        {settings?.name} — mağaza iletişim ve politika alanları.
-      </p>
-
-      <label className="block space-y-2">
-        <span className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
-          Açıklama
-        </span>
-        <textarea
-          value={description}
-          onChange={(event) => setDescription(event.target.value)}
-          rows={3}
-          className={fieldClass}
-        />
-      </label>
-
-      <label className="block space-y-2">
-        <span className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
-          Logo URL
-        </span>
-        <input
-          value={logoUrl}
-          onChange={(event) => setLogoUrl(event.target.value)}
-          className={fieldClass}
-          placeholder="/tr/boutiques/.../logo.svg"
-        />
-      </label>
-
-      <label className="block space-y-2">
-        <span className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
-          WhatsApp (ülke kodu ile)
-        </span>
-        <input
-          value={whatsappPhone}
-          onChange={(event) => setWhatsappPhone(event.target.value)}
-          className={fieldClass}
-          placeholder="90543..."
-        />
-      </label>
-
-      <label className="block space-y-2">
-        <span className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
-          Instagram
-        </span>
-        <input
-          value={instagramHandle}
-          onChange={(event) => setInstagramHandle(event.target.value)}
-          className={fieldClass}
-          placeholder="pervinsoysalbutik"
-        />
-      </label>
-
-      <label className="block space-y-2">
-        <span className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
-          Kargo notu
-        </span>
-        <input
-          value={shippingNote}
-          onChange={(event) => setShippingNote(event.target.value)}
-          className={fieldClass}
-        />
-      </label>
-
-      <label className="block space-y-2">
-        <span className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
-          Değişim / iade
-        </span>
-        <input
-          value={exchangePolicy}
-          onChange={(event) => setExchangePolicy(event.target.value)}
-          className={fieldClass}
-        />
-      </label>
-
-      <label className="block space-y-2">
-        <span className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
-          Adres
-        </span>
-        <textarea
-          value={physicalAddress}
-          onChange={(event) => setPhysicalAddress(event.target.value)}
-          rows={2}
-          className={fieldClass}
-        />
-      </label>
-
-      {error ? (
-        <p className="border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-800">
-          {error}
+    <TrPanelFadeIn>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <p className="text-[13px] text-neutral-600">
+          {settings?.name} — mağaza iletişim ve politika alanları.
         </p>
-      ) : null}
-      {saved ? (
-        <p className="border border-black/10 bg-neutral-50 px-4 py-3 text-[13px] text-neutral-700">
-          Kaydedildi. Mağaza sayfasında güncellenir.
-        </p>
-      ) : null}
 
-      <button
-        type="submit"
-        disabled={saving}
-        className="btn-primary w-full px-6 py-4 text-[11px] tracking-[0.16em] disabled:opacity-50"
-      >
-        {saving ? "Kaydediliyor…" : "Kaydet"}
-      </button>
-    </form>
+        <label className="block space-y-2">
+          <span className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
+            Açıklama
+          </span>
+          <textarea
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+            rows={3}
+            className={fieldClass}
+          />
+        </label>
+
+        <label className="block space-y-2">
+          <span className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
+            Logo URL
+          </span>
+          <input
+            value={logoUrl}
+            onChange={(event) => setLogoUrl(event.target.value)}
+            className={fieldClass}
+            placeholder="/tr/boutiques/.../logo.svg"
+          />
+        </label>
+
+        <label className="block space-y-2">
+          <span className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
+            WhatsApp (ülke kodu ile)
+          </span>
+          <input
+            value={whatsappPhone}
+            onChange={(event) => setWhatsappPhone(event.target.value)}
+            className={fieldClass}
+            placeholder="90543..."
+          />
+        </label>
+
+        <label className="block space-y-2">
+          <span className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
+            Instagram
+          </span>
+          <input
+            value={instagramHandle}
+            onChange={(event) => setInstagramHandle(event.target.value)}
+            className={fieldClass}
+            placeholder="pervinsoysalbutik"
+          />
+        </label>
+
+        <label className="block space-y-2">
+          <span className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
+            Kargo notu
+          </span>
+          <input
+            value={shippingNote}
+            onChange={(event) => setShippingNote(event.target.value)}
+            className={fieldClass}
+          />
+        </label>
+
+        <label className="block space-y-2">
+          <span className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
+            Değişim / iade
+          </span>
+          <input
+            value={exchangePolicy}
+            onChange={(event) => setExchangePolicy(event.target.value)}
+            className={fieldClass}
+          />
+        </label>
+
+        <label className="block space-y-2">
+          <span className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
+            Adres
+          </span>
+          <textarea
+            value={physicalAddress}
+            onChange={(event) => setPhysicalAddress(event.target.value)}
+            rows={2}
+            className={fieldClass}
+          />
+        </label>
+
+        <AnimatePresence>
+          {error ? (
+            <motion.p
+              key="settings-error"
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={trPanelFadeTransition}
+              className="border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-800"
+            >
+              {error}
+            </motion.p>
+          ) : null}
+          {saved ? (
+            <motion.p
+              key="settings-saved"
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={trPanelFadeTransition}
+              className="border border-black/10 bg-neutral-50 px-4 py-3 text-[13px] text-neutral-700"
+            >
+              Kaydedildi. Mağaza sayfasında güncellenir.
+            </motion.p>
+          ) : null}
+        </AnimatePresence>
+
+        <button
+          type="submit"
+          disabled={saving}
+          className="btn-primary inline-flex w-full items-center justify-center gap-2 px-6 py-4 text-[11px] tracking-[0.16em] disabled:opacity-50"
+        >
+          {saving ? (
+            <>
+              <motion.span
+                aria-hidden
+                className="inline-block h-3 w-3 border border-current border-t-transparent"
+                animate={{ rotate: 360 }}
+                transition={{ duration: 0.9, repeat: Infinity, ease: "linear" }}
+              />
+              Kaydediliyor…
+            </>
+          ) : (
+            "Kaydet"
+          )}
+        </button>
+      </form>
+    </TrPanelFadeIn>
   );
 }
 

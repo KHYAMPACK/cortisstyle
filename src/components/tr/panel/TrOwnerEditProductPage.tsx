@@ -1,9 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
+import {
+  TrPanelFadeIn,
+  TrPanelLoading,
+} from "@/components/tr/panel/TrPanelMotion";
 import { TrProductEditorForm } from "@/components/tr/panel/TrProductEditorForm";
 import { useAuth } from "@/context/AuthContext";
 import { fetchOwnerProduct } from "@/lib/tr/ownerClient";
@@ -68,25 +73,29 @@ export function TrOwnerEditProductPage({ productId }: TrOwnerEditProductPageProp
             Ürünü düzenle
           </h2>
 
-          {loading ? (
-            <p className="text-[13px] text-neutral-600">Yükleniyor…</p>
-          ) : null}
-          {error ? (
-            <p className="border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-800">
-              {error}
-            </p>
-          ) : null}
-          {!loading && !error && product ? (
-            <TrProductEditorForm
-              boutiqueId={product.boutiqueId}
-              mode="edit"
-              initialProduct={product}
-              onSaved={(saved) => {
-                setProduct(saved);
-                router.push(trPanelProductsPath());
-              }}
-            />
-          ) : null}
+          <AnimatePresence mode="wait">
+            {loading ? (
+              <TrPanelLoading key="edit-loading" label="Ürün yükleniyor…" />
+            ) : error ? (
+              <TrPanelFadeIn key="edit-error">
+                <p className="border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-800">
+                  {error}
+                </p>
+              </TrPanelFadeIn>
+            ) : product ? (
+              <TrPanelFadeIn key="edit-form">
+                <TrProductEditorForm
+                  boutiqueId={product.boutiqueId}
+                  mode="edit"
+                  initialProduct={product}
+                  onSaved={(saved) => {
+                    setProduct(saved);
+                    router.push(trPanelProductsPath());
+                  }}
+                />
+              </TrPanelFadeIn>
+            ) : null}
+          </AnimatePresence>
         </div>
       )}
     </TrOwnerPanelGate>

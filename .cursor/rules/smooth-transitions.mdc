@@ -1,0 +1,25 @@
+---
+description: Keep loading and UI transitions smooth with small intentional animations
+alwaysApply: true
+---
+
+# Smooth loading & transitions
+
+Whenever you build or change UI in this project, **loading states and transitions must feel smooth** — never hard-cut swaps of plain text.
+
+## Required habits
+
+1. **Loading:** Prefer a small motion cue (rectangular spinner, opacity pulse, or shimmer) plus short label — not a bare static “Loading…” string alone.
+2. **Content appear:** After data loads (or when a view mounts), fade/slide in content lightly (opacity + small `y`). Prefer shared helpers when they exist (e.g. `TrPanelMotion` under `src/components/tr/panel/`).
+3. **Route / panel body changes:** When a shell wraps pages (owner panel, drawers, modals), animate enter/exit with `AnimatePresence` or equivalent — keyed by pathname or state.
+4. **Stagger lists/tiles:** Metric rows, quick-access grids, and similar groups should stagger slightly so the screen doesn’t “pop” all at once.
+5. **Match the surface:** Keep motion on-brand — rectangular, short (~0.25–0.4s), ease similar to existing `framer-motion` usage elsewhere. Avoid bouncing, pill loaders, or purple “AI demo” glow unless the design system already uses them.
+6. **Reuse before inventing:** Check for existing loaders (`WardrobeLoadingState`, `TrPanelLoading`, AuthPopup motion patterns) before adding a one-off.
+
+## When editing existing screens
+
+If you touch a screen that still uses abrupt “Yükleniyor…” / unmount flashes, upgrade that loading/transition path in the same change when it’s cheap.
+
+## Stack
+
+This app already uses **framer-motion**. Prefer it for intentional UI motion over ad-hoc CSS-only one-offs unless CSS is clearly simpler for that case.
