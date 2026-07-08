@@ -91,52 +91,55 @@ export default async function BoutiqueStorefrontPage({
 
         <TrBoutiqueFeaturedCategories tiles={featuredTiles} />
 
-        <div className="mx-auto max-w-6xl px-5 py-8 md:px-8 md:py-12">
-          <TrBoutiqueCatalogSection className="mb-14">
-            <TrBoutiqueProductGrid
-              products={storefront.products}
-              accentColor={accent}
-            />
-          </TrBoutiqueCatalogSection>
+        <TrBoutiqueCatalogSection className="pt-8 md:pt-10">
+          <TrBoutiqueProductGrid
+            products={storefront.products}
+            accentColor={accent}
+          />
+        </TrBoutiqueCatalogSection>
 
+        <div className="mx-auto max-w-6xl px-5 py-12 md:px-8 md:py-16">
           <section className="grid gap-10 border-t border-black/5 pt-10 md:grid-cols-2">
-          <div>
-            <h2 className="font-serif text-xl tracking-tight text-neutral-900">
-              Hakkımızda
-            </h2>
-            <p className="mt-3 text-[13px] leading-relaxed text-neutral-600">
-              {storefront.description ??
-                `${storefront.name}, seçilmiş parçaları Türkiye geneline ulaştırır.`}
-            </p>
-            {storefront.physicalAddress ? (
-              <p className="mt-4 text-[12px] text-neutral-500">
-                {storefront.physicalAddress}
+            <div>
+              <h2 className="font-serif text-xl tracking-tight text-neutral-900">
+                Hakkımızda
+              </h2>
+              <p className="mt-3 text-[13px] leading-relaxed text-neutral-600">
+                {storefront.description ??
+                  `${storefront.name}, seçilmiş parçaları Türkiye geneline ulaştırır.`}
               </p>
-            ) : null}
-          </div>
+              {storefront.physicalAddress ? (
+                <p className="mt-4 text-[12px] text-neutral-500">
+                  {storefront.physicalAddress}
+                </p>
+              ) : null}
+            </div>
 
-          <div>
-            <h2 className="font-serif text-xl tracking-tight text-neutral-900">
-              Nasıl sipariş verilir?
-            </h2>
-            {checkoutEnabled ? (
-              <ol className="mt-3 list-decimal space-y-2 pl-5 text-[13px] leading-relaxed text-neutral-600">
-                <li>Beğendiğiniz ürünü seçin.</li>
-                <li>Sepete ekleyin ve ödeme adımlarını tamamlayın.</li>
-                <li>Sipariş onayı e-posta ile gönderilir.</li>
-              </ol>
-            ) : (
-              <ol className="mt-3 list-decimal space-y-2 pl-5 text-[13px] leading-relaxed text-neutral-600">
-                <li>Beğendiğiniz ürünü seçin.</li>
-                <li>
-                  &quot;WhatsApp ile sipariş ver&quot; butonuna tıklayın — mesaj
-                  otomatik hazırlanır.
-                </li>
-                <li>Beden ve adres bilgilerinizi paylaşın, ödeme detaylarını alın.</li>
-              </ol>
-            )}
-          </div>
-        </section>
+            <div>
+              <h2 className="font-serif text-xl tracking-tight text-neutral-900">
+                Nasıl sipariş verilir?
+              </h2>
+              {checkoutEnabled ? (
+                <ol className="mt-3 list-decimal space-y-2 pl-5 text-[13px] leading-relaxed text-neutral-600">
+                  <li>Beğendiğiniz ürünü seçin.</li>
+                  <li>Sepete ekleyin ve ödeme adımlarını tamamlayın.</li>
+                  <li>Sipariş onayı e-posta ile gönderilir.</li>
+                </ol>
+              ) : (
+                <ol className="mt-3 list-decimal space-y-2 pl-5 text-[13px] leading-relaxed text-neutral-600">
+                  <li>Beğendiğiniz ürünü seçin.</li>
+                  <li>
+                    &quot;WhatsApp ile sipariş ver&quot; butonuna tıklayın —
+                    mesaj otomatik hazırlanır.
+                  </li>
+                  <li>
+                    Beden ve adres bilgilerinizi paylaşın, ödeme detaylarını
+                    alın.
+                  </li>
+                </ol>
+              )}
+            </div>
+          </section>
         </div>
       </>
     );
@@ -176,7 +179,7 @@ export default async function BoutiqueStorefrontPage({
         />
 
         {storefront.products.length > 0 ? (
-          <div className="grid grid-cols-2 gap-px border-b border-blueprint-border bg-blueprint-border md:grid-cols-3 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-x-[2px] gap-y-0 border-b border-black/5 bg-white md:grid-cols-3 lg:grid-cols-4">
             {storefront.products.map((product, index) => (
               <TrProductCard key={product.id} product={product} priority={index < 4} />
             ))}

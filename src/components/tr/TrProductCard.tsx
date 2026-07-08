@@ -12,6 +12,10 @@ interface TrProductCardProps {
   priority?: boolean;
 }
 
+/**
+ * Image-forward product tile — no card border / boxed chrome.
+ * Spacing comes from the parent grid (tight gutters, like fashion retail).
+ */
 export function TrProductCard({
   product,
   showBoutique = false,
@@ -26,9 +30,9 @@ export function TrProductCard({
   return (
     <Link
       href={trProductPath(product.id)}
-      className="group surface-canvas-paper block border border-blueprint-border outline-none transition-shadow hover:shadow-canvas-paper focus-visible:ring-2 focus-visible:ring-blueprint-accent focus-visible:ring-offset-2"
+      className="group block bg-white outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
     >
-      <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100">
+      <div className="relative aspect-[2/3] overflow-hidden bg-neutral-100">
         {coverImage ? (
           <Image
             src={coverImage}
@@ -42,33 +46,35 @@ export function TrProductCard({
             }`}
           />
         ) : (
-          <div className="flex h-full items-center justify-center bg-blueprint-surface px-4 text-center">
-            <span className="font-serif text-lg text-neutral-700">{product.title}</span>
+          <div className="flex h-full items-center justify-center bg-neutral-100 px-4 text-center">
+            <span className="font-serif text-lg text-neutral-700">
+              {product.title}
+            </span>
           </div>
         )}
 
         {isSold ? (
-          <span className="absolute top-3 left-3 bg-jet-black px-2 py-1 text-[9px] tracking-[0.2em] text-white uppercase">
+          <span className="absolute top-2 left-2 bg-white px-1.5 py-1 text-[9px] tracking-[0.16em] text-neutral-900 uppercase">
             Satıldı
           </span>
         ) : null}
       </div>
 
-      <div className="border-t border-blueprint-border px-4 py-4">
-        <h3 className="font-serif text-lg leading-tight tracking-[-0.02em] text-neutral-950">
+      <div className="px-2 pt-3 pb-5 md:px-2.5">
+        <h3 className="line-clamp-2 text-[12px] leading-snug font-semibold tracking-[0.04em] text-neutral-950 uppercase md:text-[13px]">
           {product.title}
         </h3>
 
-        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2">
-          <span className="text-[10px] tracking-[0.14em] text-jet-black uppercase">
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
+          <span className="text-[12px] font-semibold tracking-tight text-neutral-950 md:text-[13px]">
             {formatTryFromKurus(product.priceKurus)}
           </span>
           <TrProductColorDots colors={colors} />
         </div>
 
         {boutique ? (
-          <p className="text-meta mt-2 text-[10px] tracking-[0.12em]">
-            Satıcı: {boutique.name}
+          <p className="mt-1.5 text-[10px] tracking-[0.08em] text-neutral-500 uppercase">
+            {boutique.name}
           </p>
         ) : null}
       </div>

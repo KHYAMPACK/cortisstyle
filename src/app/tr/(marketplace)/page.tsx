@@ -54,7 +54,7 @@ export default async function TrMarketplaceHomePage() {
         />
 
         {featuredProducts.length > 0 ? (
-          <div className="grid grid-cols-2 gap-px border-b border-blueprint-border bg-blueprint-border md:grid-cols-3 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-x-[2px] gap-y-0 border-b border-black/5 bg-white md:grid-cols-3 lg:grid-cols-4">
             {featuredProducts.map((product, index) => (
               <TrProductCard
                 key={product.id}

@@ -1,6 +1,6 @@
 ---
 description: Keep loading and UI transitions smooth with small intentional animations
-alwaysApply: true
+alwaysApply: 
 ---
 
 # Smooth loading & transitions
