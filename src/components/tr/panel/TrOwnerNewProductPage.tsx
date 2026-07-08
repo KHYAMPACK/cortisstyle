@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
 import { TrProductEditorForm } from "@/components/tr/panel/TrProductEditorForm";
-import { trPanelPath } from "@/lib/tr/paths";
+import { trPanelProductsPath } from "@/lib/tr/paths";
 
 export function TrOwnerNewProductPage() {
   const router = useRouter();
@@ -14,7 +14,7 @@ export function TrOwnerNewProductPage() {
       {({ activeBoutique }) => (
         <div className="space-y-6">
           <Link
-            href={trPanelPath()}
+            href={trPanelProductsPath()}
             className="inline-block text-[11px] tracking-[0.1em] text-neutral-500 uppercase"
           >
             ← Listeye dön
@@ -26,7 +26,7 @@ export function TrOwnerNewProductPage() {
             boutiqueId={activeBoutique.id}
             mode="create"
             onSaved={() => {
-              router.push(trPanelPath());
+              router.push(trPanelProductsPath());
             }}
           />
         </div>

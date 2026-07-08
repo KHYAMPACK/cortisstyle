@@ -31,8 +31,10 @@ Authorization: Bearer <TR_ADMIN_SECRET>
 
 ## Smoke test
 
-1. Open `/tr/panel` and sign in as the owner
-2. Create a product with photos, sizes, colors
+1. Open `/tr/panel` and sign in as the owner (Ana Sayfa + KPI özeti)
+2. **Ürünler** → create a product with photos, sizes, colors
 3. Confirm it appears on `/tr/pervinsoysalbutik`
-4. Edit → mark **Gizli** → confirm it leaves public available listings
-5. Mark **Satıldı** → sold badge on storefront
+4. **Ayarlar** → save WhatsApp / kargo notu → confirm storefront reflects
+5. Edit → mark **Gizli** → confirm it leaves public available listings
+6. Mark **Satıldı** → sold badge on storefront
+7. Stub nav (Siparişler / Müşteriler / …) shows Yakında, not a dead end

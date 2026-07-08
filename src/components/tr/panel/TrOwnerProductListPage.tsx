@@ -6,9 +6,9 @@ import { useEffect, useState } from "react";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
 import { fetchOwnerProducts } from "@/lib/tr/ownerClient";
 import {
-  trBoutiquePath,
   trPanelEditProductPath,
   trPanelNewProductPath,
+  trPanelPath,
 } from "@/lib/tr/paths";
 import { formatTryFromKurus } from "@/types/tr-marketplace";
 import type { TrProduct } from "@/types/tr-marketplace";
@@ -128,12 +128,19 @@ export function TrOwnerProductListPage() {
     <TrOwnerPanelGate>
       {({ activeBoutique }) => (
         <div className="space-y-4">
-          <Link
-            href={trBoutiquePath(activeBoutique.slug)}
-            className="inline-block text-[11px] tracking-[0.1em] text-neutral-500 uppercase underline underline-offset-2"
-          >
-            Mağazayı görüntüle
-          </Link>
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <Link
+                href={trPanelPath()}
+                className="inline-block text-[11px] tracking-[0.1em] text-neutral-500 uppercase"
+              >
+                ← Ana sayfa
+              </Link>
+              <h2 className="mt-2 font-serif text-2xl tracking-tight text-neutral-950">
+                Ürünler
+              </h2>
+            </div>
+          </div>
           <ProductList boutiqueId={activeBoutique.id} />
         </div>
       )}

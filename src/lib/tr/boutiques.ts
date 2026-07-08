@@ -183,3 +183,67 @@ export async function setBoutiqueOwnerAdmin(
 
   return mapBoutiqueRow(data as Record<string, unknown>);
 }
+
+export interface UpdateTrBoutiqueBrandInput {
+  description?: string | null;
+  logoUrl?: string | null;
+  whatsappPhone?: string | null;
+  instagramHandle?: string | null;
+  shippingNote?: string | null;
+  exchangePolicy?: string | null;
+  physicalAddress?: string | null;
+  themeAccent?: string | null;
+}
+
+export async function updateBoutiqueBrandAdmin(
+  boutiqueId: string,
+  input: UpdateTrBoutiqueBrandInput,
+): Promise<TrBoutique> {
+  const supabase = getServiceSupabase();
+  if (!supabase) {
+    throw new Error("Supabase service role is not configured.");
+  }
+
+  const row: Record<string, unknown> = {};
+  if (input.description !== undefined) {
+    row.description = input.description?.trim() ?? null;
+  }
+  if (input.logoUrl !== undefined) {
+    row.logo_url = input.logoUrl?.trim() ?? null;
+  }
+  if (input.whatsappPhone !== undefined) {
+    row.whatsapp_phone = input.whatsappPhone?.trim() ?? null;
+  }
+  if (input.instagramHandle !== undefined) {
+    row.instagram_handle = input.instagramHandle?.trim() ?? null;
+  }
+  if (input.shippingNote !== undefined) {
+    row.shipping_note = input.shippingNote?.trim() ?? null;
+  }
+  if (input.exchangePolicy !== undefined) {
+    row.exchange_policy = input.exchangePolicy?.trim() ?? null;
+  }
+  if (input.physicalAddress !== undefined) {
+    row.physical_address = input.physicalAddress?.trim() ?? null;
+  }
+  if (input.themeAccent !== undefined) {
+    row.theme_accent = input.themeAccent?.trim() ?? null;
+  }
+
+  if (Object.keys(row).length === 0) {
+    const existing = await getBoutiqueByIdAdmin(boutiqueId);
+    if (!existing) throw new Error("Boutique not found.");
+    return existing;
+  }
+
+  const { data, error } = await supabase
+    .from("tr_boutiques")
+    .update(row)
+    .eq("id", boutiqueId)
+    .select("*")
+    .single();
+
+  if (error) throw error;
+
+  return mapBoutiqueRow(data as Record<string, unknown>);
+}

@@ -156,3 +156,100 @@ export async function uploadOwnerProductImage(
   if (!data.url) throw new Error("Fotoğraf yüklenemedi.");
   return data.url;
 }
+
+export interface TrOwnerSummaryResponse {
+  checkoutEnabled: boolean;
+  inventory: {
+    available: number;
+    sold: number;
+    hidden: number;
+    total: number;
+  };
+  today: {
+    orderCount: number;
+    revenueKurus: number;
+  } | null;
+}
+
+export async function fetchOwnerSummary(
+  boutiqueId: string,
+): Promise<TrOwnerSummaryResponse> {
+  const response = await ownerFetch(
+    `/api/tr/owner/summary?boutiqueId=${encodeURIComponent(boutiqueId)}`,
+  );
+  const data = (await response.json()) as {
+    summary?: TrOwnerSummaryResponse;
+    error?: string;
+  };
+  if (!response.ok) {
+    throw new Error(data.error ?? "Özet yüklenemedi.");
+  }
+  if (!data.summary) throw new Error("Özet yüklenemedi.");
+  return data.summary;
+}
+
+export interface TrOwnerBoutiqueSettings {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  logoUrl: string | null;
+  whatsappPhone: string | null;
+  instagramHandle: string | null;
+  shippingNote: string | null;
+  exchangePolicy: string | null;
+  physicalAddress: string | null;
+  themeAccent: string | null;
+  status: string;
+}
+
+export async function fetchOwnerBoutiqueSettings(
+  boutiqueId: string,
+): Promise<TrOwnerBoutiqueSettings> {
+  const response = await ownerFetch(
+    `/api/tr/owner/boutiques/${encodeURIComponent(boutiqueId)}`,
+  );
+  const data = (await response.json()) as {
+    boutique?: TrOwnerBoutiqueSettings;
+    error?: string;
+  };
+  if (!response.ok) {
+    throw new Error(data.error ?? "Butik yüklenemedi.");
+  }
+  if (!data.boutique) throw new Error("Butik yüklenemedi.");
+  return data.boutique;
+}
+
+export async function updateOwnerBoutiqueSettings(
+  boutiqueId: string,
+  payload: Partial<
+    Pick<
+      TrOwnerBoutiqueSettings,
+      | "description"
+      | "logoUrl"
+      | "whatsappPhone"
+      | "instagramHandle"
+      | "shippingNote"
+      | "exchangePolicy"
+      | "physicalAddress"
+      | "themeAccent"
+    >
+  >,
+): Promise<TrOwnerBoutiqueSettings> {
+  const response = await ownerFetch(
+    `/api/tr/owner/boutiques/${encodeURIComponent(boutiqueId)}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    },
+  );
+  const data = (await response.json()) as {
+    boutique?: TrOwnerBoutiqueSettings;
+    error?: string;
+  };
+  if (!response.ok) {
+    throw new Error(data.error ?? "Butik güncellenemedi.");
+  }
+  if (!data.boutique) throw new Error("Butik güncellenemedi.");
+  return data.boutique;
+}

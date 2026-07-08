@@ -7,7 +7,7 @@ import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
 import { TrProductEditorForm } from "@/components/tr/panel/TrProductEditorForm";
 import { useAuth } from "@/context/AuthContext";
 import { fetchOwnerProduct } from "@/lib/tr/ownerClient";
-import { trPanelPath } from "@/lib/tr/paths";
+import { trPanelProductsPath } from "@/lib/tr/paths";
 import type { TrProduct } from "@/types/tr-marketplace";
 
 interface TrOwnerEditProductPageProps {
@@ -59,7 +59,7 @@ export function TrOwnerEditProductPage({ productId }: TrOwnerEditProductPageProp
       {() => (
         <div className="space-y-6">
           <Link
-            href={trPanelPath()}
+            href={trPanelProductsPath()}
             className="inline-block text-[11px] tracking-[0.1em] text-neutral-500 uppercase"
           >
             ← Listeye dön
@@ -83,7 +83,7 @@ export function TrOwnerEditProductPage({ productId }: TrOwnerEditProductPageProp
               initialProduct={product}
               onSaved={(saved) => {
                 setProduct(saved);
-                router.push(trPanelPath());
+                router.push(trPanelProductsPath());
               }}
             />
           ) : null}

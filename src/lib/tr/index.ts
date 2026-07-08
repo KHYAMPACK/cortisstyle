@@ -37,9 +37,15 @@ export {
   trComingSoonPath,
   trHomePath,
   trOrderConfirmationPath,
+  trPanelCustomersPath,
+  trPanelDiscountsPath,
   trPanelEditProductPath,
   trPanelNewProductPath,
+  trPanelOrdersPath,
   trPanelPath,
+  trPanelProductsPath,
+  trPanelSettingsPath,
+  trPanelStockPath,
   trProductPath,
 } from "@/lib/tr/paths";
 

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { TrOwnerProductListPage } from "@/components/tr/panel/TrOwnerProductListPage";
+import { TrOwnerHomePage } from "@/components/tr/panel/TrOwnerHomePage";
 
 export const metadata: Metadata = {
   title: "Butik paneli",
@@ -7,5 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function TrPanelPage() {
-  return <TrOwnerProductListPage />;
+  return <TrOwnerHomePage />;
 }
