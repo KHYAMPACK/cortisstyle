@@ -24,6 +24,36 @@ function InlineBusySpinner() {
   );
 }
 
+function OptionToggle({
+  checked,
+  onChange,
+  label,
+}: {
+  checked: boolean;
+  onChange: (next: boolean) => void;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      onClick={() => onChange(!checked)}
+      className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
+        checked ? "bg-jet-black" : "bg-neutral-300"
+      }`}
+    >
+      <span
+        aria-hidden
+        className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
+          checked ? "translate-x-5" : "translate-x-0"
+        }`}
+      />
+    </button>
+  );
+}
+
 const PRESET_COLORS: TrProductColor[] = [
   { name: "Siyah", hex: "#1A1A1A" },
   { name: "Beyaz", hex: "#F5F5F5" },
@@ -595,27 +625,17 @@ export function TrProductEditorForm({
           <p className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
             Bedenler
           </p>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={sizesEnabled}
-            onClick={() => {
-              setSizesEnabled((current) => {
-                if (current) {
-                  setAddingSize(false);
-                  setNewSizeLabel("");
-                }
-                return !current;
-              });
+          <OptionToggle
+            label="Beden seçenekleri"
+            checked={sizesEnabled}
+            onChange={(next) => {
+              setSizesEnabled(next);
+              if (!next) {
+                setAddingSize(false);
+                setNewSizeLabel("");
+              }
             }}
-            className={`border px-3 py-1.5 text-[10px] tracking-[0.1em] uppercase transition-colors ${
-              sizesEnabled
-                ? "border-jet-black bg-jet-black text-white"
-                : "border-black/20 bg-white text-neutral-500"
-            }`}
-          >
-            {sizesEnabled ? "Açık" : "Kapalı"}
-          </button>
+          />
         </div>
         {!sizesEnabled ? (
           <p className="text-[12px] text-neutral-500">
@@ -702,28 +722,18 @@ export function TrProductEditorForm({
           <p className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
             Renkler
           </p>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={colorsEnabled}
-            onClick={() => {
-              setColorsEnabled((current) => {
-                if (current) {
-                  setAddingColor(false);
-                  setNewColorName("");
-                  setNewColorHex("#C2185B");
-                }
-                return !current;
-              });
+          <OptionToggle
+            label="Renk seçenekleri"
+            checked={colorsEnabled}
+            onChange={(next) => {
+              setColorsEnabled(next);
+              if (!next) {
+                setAddingColor(false);
+                setNewColorName("");
+                setNewColorHex("#C2185B");
+              }
             }}
-            className={`border px-3 py-1.5 text-[10px] tracking-[0.1em] uppercase transition-colors ${
-              colorsEnabled
-                ? "border-jet-black bg-jet-black text-white"
-                : "border-black/20 bg-white text-neutral-500"
-            }`}
-          >
-            {colorsEnabled ? "Açık" : "Kapalı"}
-          </button>
+          />
         </div>
         {!colorsEnabled ? (
           <p className="text-[12px] text-neutral-500">
