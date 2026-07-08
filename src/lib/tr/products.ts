@@ -8,6 +8,7 @@ import type {
   TrProduct,
   TrProductStatus,
   TrProductWithBoutique,
+  UpdateTrProductInput,
 } from "@/types/tr-marketplace";
 
 const PUBLIC_PRODUCT_COLUMNS =
@@ -150,10 +151,9 @@ export async function createProductAdmin(
   return mapProductRow(data as Record<string, unknown>);
 }
 
-export async function updateProductStatusAdmin(
+export async function getProductByIdAdmin(
   productId: string,
-  status: TrProductStatus,
-): Promise<TrProduct> {
+): Promise<TrProduct | null> {
   const supabase = getServiceSupabase();
   if (!supabase) {
     throw new Error("Supabase service role is not configured.");
@@ -161,7 +161,59 @@ export async function updateProductStatusAdmin(
 
   const { data, error } = await supabase
     .from("tr_products")
-    .update({ status })
+    .select("*")
+    .eq("id", productId)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) return null;
+
+  return mapProductRow(data as Record<string, unknown>);
+}
+
+function productUpdateRow(input: UpdateTrProductInput): Record<string, unknown> {
+  const row: Record<string, unknown> = {};
+
+  if (input.title !== undefined) row.title = input.title.trim();
+  if (input.description !== undefined) {
+    row.description = input.description?.trim() ?? null;
+  }
+  if (input.priceKurus !== undefined) row.price_kurus = input.priceKurus;
+  if (input.size !== undefined) row.size = input.size?.trim() ?? null;
+  if (input.sizes !== undefined) row.sizes = input.sizes;
+  if (input.colors !== undefined) row.colors = input.colors;
+  if (input.conditionLabel !== undefined) {
+    row.condition_label = input.conditionLabel?.trim() ?? null;
+  }
+  if (input.category !== undefined) {
+    row.category = input.category?.trim() ?? null;
+  }
+  if (input.images !== undefined) row.images = input.images;
+  if (input.status !== undefined) row.status = input.status;
+  if (input.sortOrder !== undefined) row.sort_order = input.sortOrder;
+
+  return row;
+}
+
+export async function updateProductAdmin(
+  productId: string,
+  input: UpdateTrProductInput,
+): Promise<TrProduct> {
+  const supabase = getServiceSupabase();
+  if (!supabase) {
+    throw new Error("Supabase service role is not configured.");
+  }
+
+  const row = productUpdateRow(input);
+  if (Object.keys(row).length === 0) {
+    const existing = await getProductByIdAdmin(productId);
+    if (!existing) throw new Error("Product not found.");
+    return existing;
+  }
+
+  const { data, error } = await supabase
+    .from("tr_products")
+    .update(row)
     .eq("id", productId)
     .select("*")
     .single();
@@ -169,6 +221,13 @@ export async function updateProductStatusAdmin(
   if (error) throw error;
 
   return mapProductRow(data as Record<string, unknown>);
+}
+
+export async function updateProductStatusAdmin(
+  productId: string,
+  status: TrProductStatus,
+): Promise<TrProduct> {
+  return updateProductAdmin(productId, { status });
 }
 
 export async function markProductsSoldAdmin(productIds: string[]): Promise<void> {

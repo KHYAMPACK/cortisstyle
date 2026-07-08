@@ -162,3 +162,24 @@ export async function updateBoutiqueStatusAdmin(
 
   return mapBoutiqueRow(data as Record<string, unknown>);
 }
+
+export async function setBoutiqueOwnerAdmin(
+  boutiqueId: string,
+  ownerUserId: string | null,
+): Promise<TrBoutique> {
+  const supabase = getServiceSupabase();
+  if (!supabase) {
+    throw new Error("Supabase service role is not configured.");
+  }
+
+  const { data, error } = await supabase
+    .from("tr_boutiques")
+    .update({ owner_user_id: ownerUserId })
+    .eq("id", boutiqueId)
+    .select("*")
+    .single();
+
+  if (error) throw error;
+
+  return mapBoutiqueRow(data as Record<string, unknown>);
+}

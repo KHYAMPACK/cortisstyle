@@ -28,6 +28,18 @@ export function trComingSoonPath(): string {
   return "/tr/yakinda";
 }
 
+export function trPanelPath(): string {
+  return "/tr/panel";
+}
+
+export function trPanelNewProductPath(): string {
+  return "/tr/panel/urun/yeni";
+}
+
+export function trPanelEditProductPath(productId: string): string {
+  return `/tr/panel/urun/${encodeURIComponent(productId)}`;
+}
+
 export function getProductCoverImage(product: Pick<TrProduct, "images" | "title">): string | null {
   return product.images[0] ?? null;
 }

@@ -37,6 +37,7 @@ export interface TrBoutique extends TrBoutiquePublic {
   vergiNo: string | null;
   iban: string | null;
   commissionBps: number;
+  ownerUserId: string | null;
   contactName: string | null;
   contactPhone: string | null;
   shippingAddress: string | null;
@@ -141,6 +142,20 @@ export interface CreateTrProductInput {
   title: string;
   description?: string | null;
   priceKurus: number;
+  size?: string | null;
+  sizes?: string[];
+  colors?: TrProductColor[];
+  conditionLabel?: string | null;
+  category?: string | null;
+  images?: string[];
+  status?: TrProductStatus;
+  sortOrder?: number;
+}
+
+export interface UpdateTrProductInput {
+  title?: string;
+  description?: string | null;
+  priceKurus?: number;
   size?: string | null;
   sizes?: string[];
   colors?: TrProductColor[];

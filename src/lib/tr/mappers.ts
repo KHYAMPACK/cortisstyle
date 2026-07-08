@@ -78,6 +78,7 @@ export function mapBoutiqueRow(row: Record<string, unknown>): TrBoutique {
     vergiNo: (row.vergi_no as string | null) ?? null,
     iban: (row.iban as string | null) ?? null,
     commissionBps: (row.commission_bps as number) ?? 1000,
+    ownerUserId: (row.owner_user_id as string | null) ?? null,
     contactName: (row.contact_name as string | null) ?? null,
     contactPhone: (row.contact_phone as string | null) ?? null,
     shippingAddress: (row.shipping_address as string | null) ?? null,

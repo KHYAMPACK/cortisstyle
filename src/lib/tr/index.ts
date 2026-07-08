@@ -5,17 +5,20 @@ export {
   getPublicBoutiqueBySlug,
   listAllBoutiquesAdmin,
   listPublicBoutiques,
+  setBoutiqueOwnerAdmin,
   updateBoutiqueStatusAdmin,
 } from "@/lib/tr/boutiques";
 
 export {
   createProductAdmin,
+  getProductByIdAdmin,
   getPublicProductById,
   listProductsByBoutiqueIdAdmin,
   listPublicAvailableProducts,
   listPublicProductsByBoutiqueId,
   listPublicProductsByBoutiqueSlug,
   markProductsSoldAdmin,
+  updateProductAdmin,
   updateProductStatusAdmin,
 } from "@/lib/tr/products";
 
@@ -34,6 +37,9 @@ export {
   trComingSoonPath,
   trHomePath,
   trOrderConfirmationPath,
+  trPanelEditProductPath,
+  trPanelNewProductPath,
+  trPanelPath,
   trProductPath,
 } from "@/lib/tr/paths";
 
