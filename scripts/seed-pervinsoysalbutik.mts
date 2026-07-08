@@ -47,6 +47,8 @@ interface SeedPayload {
       description?: string;
       priceTry: number;
       size?: string;
+      sizes?: string[];
+      colors?: Array<{ name: string; hex: string }>;
       conditionLabel?: string;
       category?: string;
       images?: string[];
