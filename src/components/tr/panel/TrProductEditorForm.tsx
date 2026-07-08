@@ -1,8 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { TR_BOUTIQUE_CATEGORIES } from "@/lib/tr/categories";
 import { DEFAULT_LETTER_SIZES } from "@/lib/tr/productOptions";
 import {
@@ -41,6 +41,23 @@ const STATUS_OPTIONS: Array<{ id: TrProductStatus; label: string }> = [
   { id: "hidden", label: "Gizli" },
 ];
 
+function slugifyCustomId(label: string): string {
+  return label
+    .trim()
+    .toLocaleLowerCase("tr")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/ı/g, "i")
+    .replace(/ğ/g, "g")
+    .replace(/ü/g, "u")
+    .replace(/ş/g, "s")
+    .replace(/ö/g, "o")
+    .replace(/ç/g, "c")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40);
+}
+
 interface TrProductEditorFormProps {
   boutiqueId: string;
   mode: "create" | "edit";
@@ -64,7 +81,11 @@ export function TrProductEditorForm({
   const [category, setCategory] = useState<string | null>(
     initialProduct?.category ?? null,
   );
+  const [extraCategories, setExtraCategories] = useState<
+    Array<{ id: string; label: string }>
+  >([]);
   const [sizes, setSizes] = useState<string[]>(initialProduct?.sizes ?? []);
+  const [extraSizes, setExtraSizes] = useState<string[]>([]);
   const [colors, setColors] = useState<TrProductColor[]>(
     initialProduct?.colors ?? [],
   );
@@ -76,6 +97,14 @@ export function TrProductEditorForm({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [addingCategory, setAddingCategory] = useState(false);
+  const [newCategoryLabel, setNewCategoryLabel] = useState("");
+  const [addingSize, setAddingSize] = useState(false);
+  const [newSizeLabel, setNewSizeLabel] = useState("");
+  const [addingColor, setAddingColor] = useState(false);
+  const [newColorName, setNewColorName] = useState("");
+  const [newColorHex, setNewColorHex] = useState("#C2185B");
+
   useEffect(() => {
     if (!initialProduct) return;
     setTitle(initialProduct.title);
@@ -86,7 +115,50 @@ export function TrProductEditorForm({
     setColors(initialProduct.colors);
     setImages(initialProduct.images);
     setStatus(initialProduct.status);
+
+    if (
+      initialProduct.category &&
+      !TR_BOUTIQUE_CATEGORIES.some((entry) => entry.id === initialProduct.category)
+    ) {
+      setExtraCategories([
+        {
+          id: initialProduct.category,
+          label: initialProduct.category.replace(/-/g, " "),
+        },
+      ]);
+    }
+
+    const unknownSizes = initialProduct.sizes.filter(
+      (size) =>
+        !(DEFAULT_LETTER_SIZES as readonly string[]).includes(size),
+    );
+    setExtraSizes(unknownSizes);
   }, [initialProduct]);
+
+  const categoryOptions = useMemo(() => {
+    const seen = new Set(TR_BOUTIQUE_CATEGORIES.map((entry) => entry.id));
+    const extras = extraCategories.filter((entry) => {
+      if (seen.has(entry.id)) return false;
+      seen.add(entry.id);
+      return true;
+    });
+    return [...TR_BOUTIQUE_CATEGORIES, ...extras];
+  }, [extraCategories]);
+
+  const sizeOptions = useMemo(() => {
+    const seen = new Set<string>(DEFAULT_LETTER_SIZES);
+    const extras = [
+      ...extraSizes,
+      ...sizes.filter(
+        (size) => !(DEFAULT_LETTER_SIZES as readonly string[]).includes(size),
+      ),
+    ].filter((size) => {
+      if (seen.has(size)) return false;
+      seen.add(size);
+      return true;
+    });
+    return [...DEFAULT_LETTER_SIZES, ...extras];
+  }, [extraSizes, sizes]);
 
   const toggleSize = (size: string) => {
     setSizes((current) =>
@@ -98,12 +170,61 @@ export function TrProductEditorForm({
 
   const toggleColor = (color: TrProductColor) => {
     setColors((current) => {
-      const exists = current.some((entry) => entry.hex === color.hex);
+      const exists = current.some(
+        (entry) => entry.hex.toLowerCase() === color.hex.toLowerCase(),
+      );
       if (exists) {
-        return current.filter((entry) => entry.hex !== color.hex);
+        return current.filter(
+          (entry) => entry.hex.toLowerCase() !== color.hex.toLowerCase(),
+        );
       }
       return [...current, color];
     });
+  };
+
+  const commitCategory = () => {
+    const label = newCategoryLabel.trim();
+    if (!label) return;
+    const id = slugifyCustomId(label) || `kategori-${Date.now()}`;
+    const existing = categoryOptions.find(
+      (entry) => entry.id === id || entry.label.toLocaleLowerCase("tr") === label.toLocaleLowerCase("tr"),
+    );
+    if (existing) {
+      setCategory(existing.id);
+    } else {
+      setExtraCategories((current) => [...current, { id, label }]);
+      setCategory(id);
+    }
+    setNewCategoryLabel("");
+    setAddingCategory(false);
+  };
+
+  const commitSize = () => {
+    const size = newSizeLabel.trim().toUpperCase();
+    if (!size) return;
+    if (!sizeOptions.includes(size)) {
+      setExtraSizes((current) => [...current, size]);
+    }
+    setSizes((current) =>
+      current.includes(size) ? current : [...current, size],
+    );
+    setNewSizeLabel("");
+    setAddingSize(false);
+  };
+
+  const commitColor = () => {
+    const name = newColorName.trim();
+    let hex = newColorHex.trim();
+    if (!name) return;
+    if (!hex.startsWith("#")) hex = `#${hex}`;
+    if (!/^#[0-9A-Fa-f]{6}$/.test(hex)) {
+      setError("Renk için geçerli bir hex kodu girin (ör. #C2185B).");
+      return;
+    }
+    toggleColor({ name, hex: hex.toUpperCase() });
+    setNewColorName("");
+    setNewColorHex("#C2185B");
+    setAddingColor(false);
   };
 
   const handleFiles = async (fileList: FileList | null) => {
@@ -144,7 +265,16 @@ export function TrProductEditorForm({
     });
   };
 
-  const handleSubmit = async (event: React.FormEvent) => {
+  const makeCover = (index: number) => {
+    if (index === 0) return;
+    setImages((current) => {
+      const next = [...current];
+      const [picked] = next.splice(index, 1);
+      return [picked, ...next];
+    });
+  };
+
+  const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     setSaving(true);
     setError(null);
@@ -196,86 +326,129 @@ export function TrProductEditorForm({
         : "border-black/15 bg-white text-neutral-800 hover:border-black/30",
     ].join(" ");
 
+  const addChipClass =
+    "border border-dashed border-black/25 bg-white px-3 py-2 text-[11px] tracking-[0.08em] text-neutral-600 uppercase transition-colors hover:border-black/40 hover:text-neutral-900";
+
+  const fieldClass =
+    "w-full border border-black/15 bg-white px-3 py-3 text-[14px] outline-none focus:border-black/40";
+
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
       <section className="space-y-3">
-        <p className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
-          Fotoğraflar
-        </p>
-        <p className="text-[12px] text-neutral-500">
-          İlk fotoğraf kapak olur. PNG, JPEG veya WebP.
-        </p>
-        <label className="inline-flex cursor-pointer items-center gap-2 border border-black/15 bg-white px-4 py-3 text-[11px] tracking-[0.12em] uppercase">
-          {uploading ? (
-            <>
-              <InlineBusySpinner />
-              Yükleniyor…
-            </>
-          ) : (
-            "Fotoğraf ekle"
-          )}
-          <input
-            type="file"
-            accept="image/png,image/jpeg,image/webp"
-            multiple
-            className="hidden"
-            disabled={uploading || saving}
-            onChange={(event) => {
-              void handleFiles(event.target.files);
-              event.target.value = "";
-            }}
-          />
-        </label>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
+              Fotoğraflar
+            </p>
+            <p className="mt-1 text-[12px] text-neutral-500">
+              Soldaki 1. görsel kapaktır. Sürükle yerine oklarla sırayı
+              değiştirin.
+            </p>
+          </div>
+          <label className="inline-flex cursor-pointer items-center gap-2 border border-black/15 bg-white px-4 py-3 text-[11px] tracking-[0.12em] uppercase">
+            {uploading ? (
+              <>
+                <InlineBusySpinner />
+                Yükleniyor…
+              </>
+            ) : (
+              "Fotoğraf ekle"
+            )}
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              multiple
+              className="hidden"
+              disabled={uploading || saving}
+              onChange={(event) => {
+                void handleFiles(event.target.files);
+                event.target.value = "";
+              }}
+            />
+          </label>
+        </div>
 
         {images.length > 0 ? (
-          <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+          <ol className="flex gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {images.map((url, index) => (
               <li
                 key={url}
-                className="relative aspect-[3/4] overflow-hidden border border-black/10 bg-neutral-100"
+                className={`relative w-[132px] shrink-0 overflow-hidden border bg-neutral-100 ${
+                  index === 0
+                    ? "border-jet-black ring-1 ring-jet-black"
+                    : "border-black/10"
+                }`}
               >
-                <Image
-                  src={url}
-                  alt=""
-                  fill
-                  unoptimized
-                  className="object-cover"
-                  sizes="120px"
-                />
-                {index === 0 ? (
-                  <span className="absolute top-1 left-1 bg-black/70 px-1.5 py-0.5 text-[8px] tracking-[0.1em] text-white uppercase">
-                    Kapak
-                  </span>
-                ) : null}
-                <div className="absolute inset-x-0 bottom-0 flex gap-0.5 bg-black/50 p-0.5">
-                  <button
-                    type="button"
-                    className="flex-1 bg-white/90 text-[9px]"
-                    onClick={() => moveImage(index, -1)}
-                    disabled={index === 0}
+                <div className="relative aspect-[3/4]">
+                  <Image
+                    src={url}
+                    alt=""
+                    fill
+                    unoptimized
+                    className="object-cover"
+                    sizes="132px"
+                  />
+                  <span
+                    className={`absolute top-1.5 left-1.5 px-1.5 py-0.5 text-[9px] tracking-[0.08em] uppercase ${
+                      index === 0
+                        ? "bg-jet-black text-white"
+                        : "bg-white/90 text-neutral-800"
+                    }`}
                   >
-                    ←
-                  </button>
+                    {index === 0 ? "Kapak · 1" : `${index + 1}`}
+                  </span>
+                </div>
+
+                <div className="space-y-1 border-t border-black/10 bg-white p-1.5">
+                  <div className="flex gap-1">
+                    <button
+                      type="button"
+                      className="flex-1 border border-black/10 bg-white py-1.5 text-[10px] tracking-[0.06em] uppercase disabled:opacity-30"
+                      onClick={() => moveImage(index, -1)}
+                      disabled={index === 0}
+                      title="Sola taşı"
+                    >
+                      ←
+                    </button>
+                    <button
+                      type="button"
+                      className="flex-1 border border-black/10 bg-white py-1.5 text-[10px] tracking-[0.06em] uppercase disabled:opacity-30"
+                      onClick={() => moveImage(index, 1)}
+                      disabled={index === images.length - 1}
+                      title="Sağa taşı"
+                    >
+                      →
+                    </button>
+                  </div>
+                  {index !== 0 ? (
+                    <button
+                      type="button"
+                      className="w-full border border-black/10 bg-neutral-50 py-1.5 text-[10px] tracking-[0.06em] text-neutral-800 uppercase"
+                      onClick={() => makeCover(index)}
+                    >
+                      Kapak yap
+                    </button>
+                  ) : (
+                    <p className="py-1.5 text-center text-[10px] tracking-[0.06em] text-neutral-500 uppercase">
+                      Vitrin
+                    </p>
+                  )}
                   <button
                     type="button"
-                    className="flex-1 bg-white/90 text-[9px]"
+                    className="w-full border border-black/10 bg-white py-1.5 text-[10px] tracking-[0.06em] text-red-700 uppercase"
                     onClick={() => removeImage(url)}
                   >
                     Sil
                   </button>
-                  <button
-                    type="button"
-                    className="flex-1 bg-white/90 text-[9px]"
-                    onClick={() => moveImage(index, 1)}
-                    disabled={index === images.length - 1}
-                  >
-                    →
-                  </button>
                 </div>
               </li>
             ))}
-          </ul>
-        ) : null}
+          </ol>
+        ) : (
+          <p className="border border-dashed border-black/15 bg-neutral-50 px-4 py-6 text-[12px] text-neutral-500">
+            Henüz fotoğraf yok. En az bir kapak görseli ekleyin.
+          </p>
+        )}
       </section>
 
       <label className="block space-y-2">
@@ -285,7 +458,7 @@ export function TrProductEditorForm({
         <input
           value={title}
           onChange={(event) => setTitle(event.target.value)}
-          className="w-full border border-black/15 bg-white px-3 py-3 text-[14px] outline-none focus:border-black/40"
+          className={fieldClass}
           required
         />
       </label>
@@ -299,12 +472,14 @@ export function TrProductEditorForm({
           onChange={(event) => setPriceTry(event.target.value)}
           inputMode="decimal"
           placeholder="899"
-          className="w-full border border-black/15 bg-white px-3 py-3 text-[14px] outline-none focus:border-black/40"
+          className={fieldClass}
           required
         />
         {priceTry && Number(priceTry.replace(",", ".")) > 0 ? (
           <span className="text-[11px] text-neutral-500">
-            {formatTryFromKurus(Math.round(Number(priceTry.replace(",", ".")) * 100))}
+            {formatTryFromKurus(
+              Math.round(Number(priceTry.replace(",", ".")) * 100),
+            )}
           </span>
         ) : null}
       </label>
@@ -314,19 +489,70 @@ export function TrProductEditorForm({
           Kategori
         </p>
         <div className="flex flex-wrap gap-2">
-          {TR_BOUTIQUE_CATEGORIES.map((entry) => (
+          {categoryOptions.map((entry) => (
             <button
               key={entry.id}
               type="button"
               className={chipClass(category === entry.id)}
               onClick={() =>
-                setCategory((current) => (current === entry.id ? null : entry.id))
+                setCategory((current) =>
+                  current === entry.id ? null : entry.id,
+                )
               }
             >
               {entry.label}
             </button>
           ))}
+          {!addingCategory ? (
+            <button
+              type="button"
+              className={addChipClass}
+              onClick={() => setAddingCategory(true)}
+            >
+              + Kategori ekle
+            </button>
+          ) : null}
         </div>
+        <AnimatePresence>
+          {addingCategory ? (
+            <motion.div
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              className="flex flex-wrap items-center gap-2"
+            >
+              <input
+                value={newCategoryLabel}
+                onChange={(event) => setNewCategoryLabel(event.target.value)}
+                placeholder="Örn. Aksesuar"
+                className="min-w-[160px] flex-1 border border-black/15 bg-white px-3 py-2 text-[13px] outline-none focus:border-black/40"
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    commitCategory();
+                  }
+                }}
+              />
+              <button
+                type="button"
+                className="border border-jet-black bg-jet-black px-3 py-2 text-[11px] tracking-[0.08em] text-white uppercase"
+                onClick={commitCategory}
+              >
+                Ekle
+              </button>
+              <button
+                type="button"
+                className="border border-black/15 px-3 py-2 text-[11px] tracking-[0.08em] uppercase"
+                onClick={() => {
+                  setAddingCategory(false);
+                  setNewCategoryLabel("");
+                }}
+              >
+                Vazgeç
+              </button>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
       </section>
 
       <section className="space-y-3">
@@ -334,7 +560,7 @@ export function TrProductEditorForm({
           Bedenler
         </p>
         <div className="flex flex-wrap gap-2">
-          {DEFAULT_LETTER_SIZES.map((size) => (
+          {sizeOptions.map((size) => (
             <button
               key={size}
               type="button"
@@ -344,16 +570,67 @@ export function TrProductEditorForm({
               {size}
             </button>
           ))}
+          {!addingSize ? (
+            <button
+              type="button"
+              className={addChipClass}
+              onClick={() => setAddingSize(true)}
+            >
+              + Beden ekle
+            </button>
+          ) : null}
         </div>
+        <AnimatePresence>
+          {addingSize ? (
+            <motion.div
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              className="flex flex-wrap items-center gap-2"
+            >
+              <input
+                value={newSizeLabel}
+                onChange={(event) => setNewSizeLabel(event.target.value)}
+                placeholder="Örn. 38 veya XXL"
+                className="min-w-[140px] flex-1 border border-black/15 bg-white px-3 py-2 text-[13px] outline-none focus:border-black/40"
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    commitSize();
+                  }
+                }}
+              />
+              <button
+                type="button"
+                className="border border-jet-black bg-jet-black px-3 py-2 text-[11px] tracking-[0.08em] text-white uppercase"
+                onClick={commitSize}
+              >
+                Ekle
+              </button>
+              <button
+                type="button"
+                className="border border-black/15 px-3 py-2 text-[11px] tracking-[0.08em] uppercase"
+                onClick={() => {
+                  setAddingSize(false);
+                  setNewSizeLabel("");
+                }}
+              >
+                Vazgeç
+              </button>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
       </section>
 
       <section className="space-y-3">
         <p className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
           Renkler
         </p>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {PRESET_COLORS.map((color) => {
-            const active = colors.some((entry) => entry.hex === color.hex);
+            const active = colors.some(
+              (entry) => entry.hex.toLowerCase() === color.hex.toLowerCase(),
+            );
             return (
               <button
                 key={color.hex}
@@ -368,12 +645,97 @@ export function TrProductEditorForm({
               />
             );
           })}
+          {colors
+            .filter(
+              (color) =>
+                !PRESET_COLORS.some(
+                  (preset) =>
+                    preset.hex.toLowerCase() === color.hex.toLowerCase(),
+                ),
+            )
+            .map((color) => (
+              <button
+                key={color.hex}
+                type="button"
+                title={color.name}
+                onClick={() => toggleColor(color)}
+                className="h-8 w-8 border-2 border-jet-black"
+                style={{ backgroundColor: color.hex }}
+              />
+            ))}
+          {!addingColor ? (
+            <button
+              type="button"
+              className={addChipClass}
+              onClick={() => setAddingColor(true)}
+            >
+              + Renk ekle
+            </button>
+          ) : null}
         </div>
         {colors.length > 0 ? (
           <p className="text-[11px] text-neutral-600">
             {colors.map((color) => color.name).join(", ")}
           </p>
         ) : null}
+        <AnimatePresence>
+          {addingColor ? (
+            <motion.div
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              className="flex flex-wrap items-center gap-2"
+            >
+              <input
+                value={newColorName}
+                onChange={(event) => setNewColorName(event.target.value)}
+                placeholder="Renk adı"
+                className="min-w-[120px] flex-1 border border-black/15 bg-white px-3 py-2 text-[13px] outline-none focus:border-black/40"
+              />
+              <input
+                type="color"
+                value={
+                  /^#[0-9A-Fa-f]{6}$/.test(newColorHex)
+                    ? newColorHex
+                    : "#C2185B"
+                }
+                onChange={(event) => setNewColorHex(event.target.value)}
+                className="h-10 w-12 cursor-pointer border border-black/15 bg-white p-1"
+                title="Renk seç"
+              />
+              <input
+                value={newColorHex}
+                onChange={(event) => setNewColorHex(event.target.value)}
+                placeholder="#C2185B"
+                className="w-28 border border-black/15 bg-white px-3 py-2 text-[13px] outline-none focus:border-black/40"
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    commitColor();
+                  }
+                }}
+              />
+              <button
+                type="button"
+                className="border border-jet-black bg-jet-black px-3 py-2 text-[11px] tracking-[0.08em] text-white uppercase"
+                onClick={commitColor}
+              >
+                Ekle
+              </button>
+              <button
+                type="button"
+                className="border border-black/15 px-3 py-2 text-[11px] tracking-[0.08em] uppercase"
+                onClick={() => {
+                  setAddingColor(false);
+                  setNewColorName("");
+                  setNewColorHex("#C2185B");
+                }}
+              >
+                Vazgeç
+              </button>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
       </section>
 
       <label className="block space-y-2">
@@ -384,7 +746,7 @@ export function TrProductEditorForm({
           value={description}
           onChange={(event) => setDescription(event.target.value)}
           rows={4}
-          className="w-full border border-black/15 bg-white px-3 py-3 text-[14px] outline-none focus:border-black/40"
+          className={fieldClass}
         />
       </label>
 
