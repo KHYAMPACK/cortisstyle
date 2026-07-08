@@ -84,10 +84,19 @@ export function TrProductEditorForm({
   const [extraCategories, setExtraCategories] = useState<
     Array<{ id: string; label: string }>
   >([]);
+  const [sizesEnabled, setSizesEnabled] = useState(
+    () => (initialProduct?.sizes.length ?? 0) > 0,
+  );
   const [sizes, setSizes] = useState<string[]>(initialProduct?.sizes ?? []);
   const [extraSizes, setExtraSizes] = useState<string[]>([]);
+  const [colorsEnabled, setColorsEnabled] = useState(
+    () => (initialProduct?.colors.length ?? 0) > 0,
+  );
   const [colors, setColors] = useState<TrProductColor[]>(
     initialProduct?.colors ?? [],
+  );
+  const [stock, setStock] = useState(
+    String(initialProduct?.stock ?? 1),
   );
   const [images, setImages] = useState<string[]>(initialProduct?.images ?? []);
   const [status, setStatus] = useState<TrProductStatus>(
@@ -111,8 +120,11 @@ export function TrProductEditorForm({
     setPriceTry(String(initialProduct.priceKurus / 100));
     setDescription(initialProduct.description ?? "");
     setCategory(initialProduct.category);
+    setSizesEnabled(initialProduct.sizes.length > 0);
     setSizes(initialProduct.sizes);
+    setColorsEnabled(initialProduct.colors.length > 0);
     setColors(initialProduct.colors);
+    setStock(String(initialProduct.stock ?? 1));
     setImages(initialProduct.images);
     setStatus(initialProduct.status);
 
@@ -291,15 +303,21 @@ export function TrProductEditorForm({
         throw new Error("En az bir fotoğraf ekleyin.");
       }
 
+      const stockValue = Number.parseInt(stock, 10);
+      if (!Number.isFinite(stockValue) || stockValue < 0) {
+        throw new Error("Stok 0 veya daha büyük bir tam sayı olmalı.");
+      }
+
       const payload = {
         boutiqueId,
         title: title.trim(),
         description: description.trim() || null,
         priceTry: price,
-        sizes,
-        colors,
+        sizes: sizesEnabled ? sizes : [],
+        colors: colorsEnabled ? colors : [],
         category,
         images,
+        stock: stockValue,
         status,
       };
 
@@ -484,6 +502,23 @@ export function TrProductEditorForm({
         ) : null}
       </label>
 
+      <label className="block space-y-2">
+        <span className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
+          Stok
+        </span>
+        <input
+          value={stock}
+          onChange={(event) => setStock(event.target.value)}
+          inputMode="numeric"
+          min={0}
+          step={1}
+          className={fieldClass}
+        />
+        <span className="text-[11px] text-neutral-500">
+          Varsayılan 1 — tek parça için değiştirmenize gerek yok.
+        </span>
+      </label>
+
       <section className="space-y-3">
         <p className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
           Kategori
@@ -556,183 +591,265 @@ export function TrProductEditorForm({
       </section>
 
       <section className="space-y-3">
-        <p className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
-          Bedenler
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {sizeOptions.map((size) => (
-            <button
-              key={size}
-              type="button"
-              className={chipClass(sizes.includes(size))}
-              onClick={() => toggleSize(size)}
-            >
-              {size}
-            </button>
-          ))}
-          {!addingSize ? (
-            <button
-              type="button"
-              className={addChipClass}
-              onClick={() => setAddingSize(true)}
-            >
-              + Beden ekle
-            </button>
-          ) : null}
-        </div>
-        <AnimatePresence>
-          {addingSize ? (
-            <motion.div
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -4 }}
-              className="flex flex-wrap items-center gap-2"
-            >
-              <input
-                value={newSizeLabel}
-                onChange={(event) => setNewSizeLabel(event.target.value)}
-                placeholder="Örn. 38 veya XXL"
-                className="min-w-[140px] flex-1 border border-black/15 bg-white px-3 py-2 text-[13px] outline-none focus:border-black/40"
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    event.preventDefault();
-                    commitSize();
-                  }
-                }}
-              />
-              <button
-                type="button"
-                className="border border-jet-black bg-jet-black px-3 py-2 text-[11px] tracking-[0.08em] text-white uppercase"
-                onClick={commitSize}
-              >
-                Ekle
-              </button>
-              <button
-                type="button"
-                className="border border-black/15 px-3 py-2 text-[11px] tracking-[0.08em] uppercase"
-                onClick={() => {
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
+            Bedenler
+          </p>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={sizesEnabled}
+            onClick={() => {
+              setSizesEnabled((current) => {
+                if (current) {
                   setAddingSize(false);
                   setNewSizeLabel("");
-                }}
-              >
-                Vazgeç
-              </button>
+                }
+                return !current;
+              });
+            }}
+            className={`border px-3 py-1.5 text-[10px] tracking-[0.1em] uppercase transition-colors ${
+              sizesEnabled
+                ? "border-jet-black bg-jet-black text-white"
+                : "border-black/20 bg-white text-neutral-500"
+            }`}
+          >
+            {sizesEnabled ? "Açık" : "Kapalı"}
+          </button>
+        </div>
+        {!sizesEnabled ? (
+          <p className="text-[12px] text-neutral-500">
+            Kapalıyken mağazada beden seçimi gösterilmez.
+          </p>
+        ) : null}
+        <AnimatePresence initial={false}>
+          {sizesEnabled ? (
+            <motion.div
+              key="sizes-panel"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="space-y-3 overflow-hidden"
+            >
+              <div className="flex flex-wrap gap-2">
+                {sizeOptions.map((size) => (
+                  <button
+                    key={size}
+                    type="button"
+                    className={chipClass(sizes.includes(size))}
+                    onClick={() => toggleSize(size)}
+                  >
+                    {size}
+                  </button>
+                ))}
+                {!addingSize ? (
+                  <button
+                    type="button"
+                    className={addChipClass}
+                    onClick={() => setAddingSize(true)}
+                  >
+                    + Beden ekle
+                  </button>
+                ) : null}
+              </div>
+              <AnimatePresence>
+                {addingSize ? (
+                  <motion.div
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    className="flex flex-wrap items-center gap-2"
+                  >
+                    <input
+                      value={newSizeLabel}
+                      onChange={(event) => setNewSizeLabel(event.target.value)}
+                      placeholder="Örn. 38 veya XXL"
+                      className="min-w-[140px] flex-1 border border-black/15 bg-white px-3 py-2 text-[13px] outline-none focus:border-black/40"
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          commitSize();
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className="border border-jet-black bg-jet-black px-3 py-2 text-[11px] tracking-[0.08em] text-white uppercase"
+                      onClick={commitSize}
+                    >
+                      Ekle
+                    </button>
+                    <button
+                      type="button"
+                      className="border border-black/15 px-3 py-2 text-[11px] tracking-[0.08em] uppercase"
+                      onClick={() => {
+                        setAddingSize(false);
+                        setNewSizeLabel("");
+                      }}
+                    >
+                      Vazgeç
+                    </button>
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
             </motion.div>
           ) : null}
         </AnimatePresence>
       </section>
 
       <section className="space-y-3">
-        <p className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
-          Renkler
-        </p>
-        <div className="flex flex-wrap items-center gap-2">
-          {PRESET_COLORS.map((color) => {
-            const active = colors.some(
-              (entry) => entry.hex.toLowerCase() === color.hex.toLowerCase(),
-            );
-            return (
-              <button
-                key={color.hex}
-                type="button"
-                title={color.name}
-                onClick={() => toggleColor(color)}
-                className="h-8 w-8 border-2"
-                style={{
-                  backgroundColor: color.hex,
-                  borderColor: active ? "#0d0d0d" : "rgba(0,0,0,0.15)",
-                }}
-              />
-            );
-          })}
-          {colors
-            .filter(
-              (color) =>
-                !PRESET_COLORS.some(
-                  (preset) =>
-                    preset.hex.toLowerCase() === color.hex.toLowerCase(),
-                ),
-            )
-            .map((color) => (
-              <button
-                key={color.hex}
-                type="button"
-                title={color.name}
-                onClick={() => toggleColor(color)}
-                className="h-8 w-8 border-2 border-jet-black"
-                style={{ backgroundColor: color.hex }}
-              />
-            ))}
-          {!addingColor ? (
-            <button
-              type="button"
-              className={addChipClass}
-              onClick={() => setAddingColor(true)}
-            >
-              + Renk ekle
-            </button>
-          ) : null}
-        </div>
-        {colors.length > 0 ? (
-          <p className="text-[11px] text-neutral-600">
-            {colors.map((color) => color.name).join(", ")}
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
+            Renkler
           </p>
-        ) : null}
-        <AnimatePresence>
-          {addingColor ? (
-            <motion.div
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -4 }}
-              className="flex flex-wrap items-center gap-2"
-            >
-              <input
-                value={newColorName}
-                onChange={(event) => setNewColorName(event.target.value)}
-                placeholder="Renk adı"
-                className="min-w-[120px] flex-1 border border-black/15 bg-white px-3 py-2 text-[13px] outline-none focus:border-black/40"
-              />
-              <input
-                type="color"
-                value={
-                  /^#[0-9A-Fa-f]{6}$/.test(newColorHex)
-                    ? newColorHex
-                    : "#C2185B"
-                }
-                onChange={(event) => setNewColorHex(event.target.value)}
-                className="h-10 w-12 cursor-pointer border border-black/15 bg-white p-1"
-                title="Renk seç"
-              />
-              <input
-                value={newColorHex}
-                onChange={(event) => setNewColorHex(event.target.value)}
-                placeholder="#C2185B"
-                className="w-28 border border-black/15 bg-white px-3 py-2 text-[13px] outline-none focus:border-black/40"
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    event.preventDefault();
-                    commitColor();
-                  }
-                }}
-              />
-              <button
-                type="button"
-                className="border border-jet-black bg-jet-black px-3 py-2 text-[11px] tracking-[0.08em] text-white uppercase"
-                onClick={commitColor}
-              >
-                Ekle
-              </button>
-              <button
-                type="button"
-                className="border border-black/15 px-3 py-2 text-[11px] tracking-[0.08em] uppercase"
-                onClick={() => {
+          <button
+            type="button"
+            role="switch"
+            aria-checked={colorsEnabled}
+            onClick={() => {
+              setColorsEnabled((current) => {
+                if (current) {
                   setAddingColor(false);
                   setNewColorName("");
                   setNewColorHex("#C2185B");
-                }}
-              >
-                Vazgeç
-              </button>
+                }
+                return !current;
+              });
+            }}
+            className={`border px-3 py-1.5 text-[10px] tracking-[0.1em] uppercase transition-colors ${
+              colorsEnabled
+                ? "border-jet-black bg-jet-black text-white"
+                : "border-black/20 bg-white text-neutral-500"
+            }`}
+          >
+            {colorsEnabled ? "Açık" : "Kapalı"}
+          </button>
+        </div>
+        {!colorsEnabled ? (
+          <p className="text-[12px] text-neutral-500">
+            Kapalıyken mağazada renk seçimi gösterilmez.
+          </p>
+        ) : null}
+        <AnimatePresence initial={false}>
+          {colorsEnabled ? (
+            <motion.div
+              key="colors-panel"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="space-y-3 overflow-hidden"
+            >
+              <div className="flex flex-wrap items-center gap-2">
+                {PRESET_COLORS.map((color) => {
+                  const active = colors.some(
+                    (entry) =>
+                      entry.hex.toLowerCase() === color.hex.toLowerCase(),
+                  );
+                  return (
+                    <button
+                      key={color.hex}
+                      type="button"
+                      title={color.name}
+                      onClick={() => toggleColor(color)}
+                      className="h-8 w-8 border-2"
+                      style={{
+                        backgroundColor: color.hex,
+                        borderColor: active ? "#0d0d0d" : "rgba(0,0,0,0.15)",
+                      }}
+                    />
+                  );
+                })}
+                {colors
+                  .filter(
+                    (color) =>
+                      !PRESET_COLORS.some(
+                        (preset) =>
+                          preset.hex.toLowerCase() === color.hex.toLowerCase(),
+                      ),
+                  )
+                  .map((color) => (
+                    <button
+                      key={color.hex}
+                      type="button"
+                      title={color.name}
+                      onClick={() => toggleColor(color)}
+                      className="h-8 w-8 border-2 border-jet-black"
+                      style={{ backgroundColor: color.hex }}
+                    />
+                  ))}
+                {!addingColor ? (
+                  <button
+                    type="button"
+                    className={addChipClass}
+                    onClick={() => setAddingColor(true)}
+                  >
+                    + Renk ekle
+                  </button>
+                ) : null}
+              </div>
+              {colors.length > 0 ? (
+                <p className="text-[11px] text-neutral-600">
+                  {colors.map((color) => color.name).join(", ")}
+                </p>
+              ) : null}
+              <AnimatePresence>
+                {addingColor ? (
+                  <motion.div
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    className="flex flex-wrap items-center gap-2"
+                  >
+                    <input
+                      value={newColorName}
+                      onChange={(event) => setNewColorName(event.target.value)}
+                      placeholder="Renk adı"
+                      className="min-w-[120px] flex-1 border border-black/15 bg-white px-3 py-2 text-[13px] outline-none focus:border-black/40"
+                    />
+                    <input
+                      type="color"
+                      value={
+                        /^#[0-9A-Fa-f]{6}$/.test(newColorHex)
+                          ? newColorHex
+                          : "#C2185B"
+                      }
+                      onChange={(event) => setNewColorHex(event.target.value)}
+                      className="h-10 w-12 cursor-pointer border border-black/15 bg-white p-1"
+                      title="Renk seç"
+                    />
+                    <input
+                      value={newColorHex}
+                      onChange={(event) => setNewColorHex(event.target.value)}
+                      placeholder="#C2185B"
+                      className="w-28 border border-black/15 bg-white px-3 py-2 text-[13px] outline-none focus:border-black/40"
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          commitColor();
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className="border border-jet-black bg-jet-black px-3 py-2 text-[11px] tracking-[0.08em] text-white uppercase"
+                      onClick={commitColor}
+                    >
+                      Ekle
+                    </button>
+                    <button
+                      type="button"
+                      className="border border-black/15 px-3 py-2 text-[11px] tracking-[0.08em] uppercase"
+                      onClick={() => {
+                        setAddingColor(false);
+                        setNewColorName("");
+                        setNewColorHex("#C2185B");
+                      }}
+                    >
+                      Vazgeç
+                    </button>
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
             </motion.div>
           ) : null}
         </AnimatePresence>

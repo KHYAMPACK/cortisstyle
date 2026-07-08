@@ -3,7 +3,9 @@
 Run in Supabase SQL Editor:
 
 1. `supabase/patch_tr_boutique_owner.sql` (adds `owner_user_id` + `tr-assets` bucket)
-2. Also ensure `supabase/patch_tr_product_options.sql` has been applied (sizes/colors)
+2. Also ensure these have been applied:
+   - `supabase/patch_tr_product_options.sql` (sizes/colors)
+   - `supabase/patch_tr_product_stock.sql` (`stock` column, default 1)
 
 ## Link owner by email
 

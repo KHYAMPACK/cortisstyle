@@ -123,6 +123,7 @@ export function mapProductRow(row: Record<string, unknown>): TrProduct {
     category: (row.category as string | null) ?? null,
     images: readStringArray(row.images),
     status: row.status as TrProduct["status"],
+    stock: typeof row.stock === "number" ? row.stock : 1,
     sortOrder: (row.sort_order as number) ?? 0,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,

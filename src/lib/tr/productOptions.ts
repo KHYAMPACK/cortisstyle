@@ -9,7 +9,7 @@ function parseSizeToken(value: string): string[] {
     .filter(Boolean);
 }
 
-/** Sizes shown in the beden picker — DB `sizes`, else parsed `size`, else letter defaults. */
+/** Sizes shown in the beden picker — DB `sizes`, else parsed legacy `size`. Empty = no size needed. */
 export function resolveProductSizes(product: Pick<TrProduct, "sizes" | "size">): string[] {
   if (product.sizes.length > 0) {
     return product.sizes;
@@ -17,7 +17,7 @@ export function resolveProductSizes(product: Pick<TrProduct, "sizes" | "size">):
 
   const legacy = product.size?.trim();
   if (!legacy) {
-    return [...DEFAULT_LETTER_SIZES];
+    return [];
   }
 
   const tokens = parseSizeToken(legacy);

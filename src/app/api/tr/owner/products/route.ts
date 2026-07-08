@@ -132,6 +132,18 @@ export async function POST(request: Request) {
       ? (body.status as TrProductStatus)
       : "available";
 
+  let stock = 1;
+  if (body.stock !== undefined && body.stock !== null) {
+    const parsed = Number(body.stock);
+    if (!Number.isFinite(parsed) || !Number.isInteger(parsed) || parsed < 0) {
+      return Response.json(
+        { error: "Stok 0 veya daha büyük bir tam sayı olmalı." },
+        { status: 400 },
+      );
+    }
+    stock = parsed;
+  }
+
   try {
     const product = await createProductAdmin({
       boutiqueId: boutique.id,
@@ -146,6 +158,7 @@ export async function POST(request: Request) {
       conditionLabel:
         typeof body.conditionLabel === "string" ? body.conditionLabel : null,
       status,
+      stock,
     });
 
     return Response.json({ product }, { status: 201 });

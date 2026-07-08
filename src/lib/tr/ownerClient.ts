@@ -97,6 +97,7 @@ export interface TrOwnerProductPayload {
   colors: TrProductColor[];
   category: string | null;
   images: string[];
+  stock?: number;
   conditionLabel?: string | null;
   status?: TrProductStatus;
 }

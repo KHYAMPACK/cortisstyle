@@ -143,6 +143,16 @@ export async function PATCH(request: Request, context: RouteContext) {
   ) {
     patch.status = body.status as TrProductStatus;
   }
+  if (body.stock !== undefined && body.stock !== null) {
+    const parsed = Number(body.stock);
+    if (!Number.isFinite(parsed) || !Number.isInteger(parsed) || parsed < 0) {
+      return Response.json(
+        { error: "Stok 0 veya daha büyük bir tam sayı olmalı." },
+        { status: 400 },
+      );
+    }
+    patch.stock = parsed;
+  }
   if (typeof body.sortOrder === "number") {
     patch.sortOrder = body.sortOrder;
   }

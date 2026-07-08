@@ -62,6 +62,7 @@ export interface TrProduct {
   category: string | null;
   images: string[];
   status: TrProductStatus;
+  stock: number;
   sortOrder: number;
   createdAt: string;
   updatedAt: string;
@@ -149,6 +150,7 @@ export interface CreateTrProductInput {
   category?: string | null;
   images?: string[];
   status?: TrProductStatus;
+  stock?: number;
   sortOrder?: number;
 }
 
@@ -163,6 +165,7 @@ export interface UpdateTrProductInput {
   category?: string | null;
   images?: string[];
   status?: TrProductStatus;
+  stock?: number;
   sortOrder?: number;
 }
 

@@ -27,6 +27,7 @@ function productInsertRow(input: CreateTrProductInput) {
     category: input.category?.trim() ?? null,
     images: input.images ?? [],
     status: input.status ?? "available",
+    stock: input.stock ?? 1,
     sort_order: input.sortOrder ?? 0,
   };
 }
@@ -190,6 +191,7 @@ function productUpdateRow(input: UpdateTrProductInput): Record<string, unknown> 
   }
   if (input.images !== undefined) row.images = input.images;
   if (input.status !== undefined) row.status = input.status;
+  if (input.stock !== undefined) row.stock = input.stock;
   if (input.sortOrder !== undefined) row.sort_order = input.sortOrder;
 
   return row;
