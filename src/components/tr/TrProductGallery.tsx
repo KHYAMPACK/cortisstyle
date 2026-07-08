@@ -1,4 +1,7 @@
+"use client";
+
 import Image from "next/image";
+import { useRef, useState } from "react";
 import type { TrProduct } from "@/types/tr-marketplace";
 
 interface TrProductGalleryProps {
@@ -6,9 +9,12 @@ interface TrProductGalleryProps {
 }
 
 export function TrProductGallery({ product }: TrProductGalleryProps) {
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+
   if (product.images.length === 0) {
     return (
-      <div className="flex aspect-[3/4] items-center justify-center border border-blueprint-border bg-blueprint-surface px-8 text-center">
+      <div className="flex aspect-[2/3] items-center justify-center border border-black/10 bg-neutral-100 px-8 text-center">
         <p className="font-serif text-2xl tracking-[-0.02em] text-neutral-700">
           {product.title}
         </p>
@@ -16,24 +22,78 @@ export function TrProductGallery({ product }: TrProductGalleryProps) {
     );
   }
 
+  const handleScroll = () => {
+    const el = scrollerRef.current;
+    if (!el || el.clientWidth === 0) return;
+    const next = Math.round(el.scrollLeft / el.clientWidth);
+    setActiveIndex(
+      Math.min(Math.max(next, 0), product.images.length - 1),
+    );
+  };
+
+  const scrollToIndex = (index: number) => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    el.scrollTo({
+      left: index * el.clientWidth,
+      behavior: "smooth",
+    });
+  };
+
   return (
-    <div className="flex flex-col gap-3">
-      {product.images.map((image, index) => (
+    <div className="relative">
+      <div
+        ref={scrollerRef}
+        onScroll={handleScroll}
+        className="flex aspect-[2/3] snap-x snap-mandatory overflow-x-auto overflow-y-hidden overscroll-x-contain bg-neutral-100 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        aria-label={`${product.title} görselleri`}
+      >
+        {product.images.map((image, index) => (
+          <div
+            key={`${image}-${index}`}
+            className="relative h-full w-full shrink-0 snap-center snap-always"
+          >
+            <Image
+              src={image}
+              alt={
+                index === 0
+                  ? product.title
+                  : `${product.title} — görsel ${index + 1}`
+              }
+              fill
+              priority={index === 0}
+              sizes="(max-width: 1024px) 100vw, 50vw"
+              unoptimized
+              className="object-cover"
+              draggable={false}
+            />
+          </div>
+        ))}
+      </div>
+
+      {product.images.length > 1 ? (
         <div
-          key={`${image}-${index}`}
-          className="relative aspect-[3/4] overflow-hidden border border-blueprint-border bg-neutral-100"
+          className="absolute inset-x-0 bottom-3 flex justify-center gap-1.5"
+          role="tablist"
+          aria-label="Görsel seç"
         >
-          <Image
-            src={image}
-            alt={index === 0 ? product.title : `${product.title} — görsel ${index + 1}`}
-            fill
-            priority={index === 0}
-            sizes="(max-width: 1024px) 100vw, 50vw"
-            unoptimized
-            className="object-cover"
-          />
+          {product.images.map((_, index) => (
+            <button
+              key={index}
+              type="button"
+              role="tab"
+              aria-selected={activeIndex === index}
+              aria-label={`Görsel ${index + 1}`}
+              onClick={() => scrollToIndex(index)}
+              className={`h-1.5 transition-all ${
+                activeIndex === index
+                  ? "w-5 bg-white"
+                  : "w-1.5 bg-white/55 hover:bg-white/80"
+              }`}
+            />
+          ))}
         </div>
-      ))}
+      ) : null}
     </div>
   );
 }
