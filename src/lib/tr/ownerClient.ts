@@ -1,4 +1,5 @@
 import { getSupabaseClient } from "@/lib/supabaseClient";
+import { prepareOwnerUploadFile } from "@/lib/tr/prepareOwnerUploadFile";
 import type { TrProduct, TrProductColor, TrProductStatus } from "@/types/tr-marketplace";
 
 export interface TrOwnerBoutiqueSummary {
@@ -143,14 +144,22 @@ export async function uploadOwnerProductImage(
   boutiqueId: string,
   file: File,
 ): Promise<{ url: string; marketplaceUrl: string | null }> {
+  const prepared = await prepareOwnerUploadFile(file);
   const formData = new FormData();
   formData.set("boutiqueId", boutiqueId);
-  formData.set("file", file);
+  formData.set("file", prepared);
 
   const response = await ownerFetch("/api/tr/owner/upload", {
     method: "POST",
     body: formData,
   });
+
+  if (response.status === 413) {
+    throw new Error(
+      "Fotoğraf çok büyük. Daha küçük bir görsel deneyin (yaklaşık 10 MB altı).",
+    );
+  }
+
   const data = (await response.json()) as {
     url?: string;
     marketplaceUrl?: string | null;
