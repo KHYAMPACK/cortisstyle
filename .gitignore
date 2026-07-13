@@ -24,6 +24,9 @@
 # generated item drafts (review before committing)
 /drafts/
 
+# local raw cutouts for TR hero import (npm run tr:import-hero)
+/tmp/tr-hero-raw/
+
 # misc
 .DS_Store
 *.pem

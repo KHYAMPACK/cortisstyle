@@ -10,7 +10,6 @@ const nextConfig: NextConfig = {
   reactCompiler: true,
   experimental: {
     proxyClientMaxBodySize: UPLOAD_BODY_SIZE_LIMIT,
-    middlewareClientMaxBodySize: UPLOAD_BODY_SIZE_LIMIT,
     serverActions: {
       bodySizeLimit: UPLOAD_BODY_SIZE_LIMIT,
     },

@@ -1,5 +1,8 @@
 import type { TrProduct } from "@/types/tr-marketplace";
 
+/** Home “Parçalar” section anchor. */
+export const TR_PIECES_SECTION_ID = "parcalar";
+
 export function trHomePath(): string {
   return "/tr";
 }
@@ -8,17 +11,29 @@ export function trBoutiquePath(slug: string): string {
   return `/tr/${encodeURIComponent(slug)}`;
 }
 
+/** Set on PDP links from marketplace home / looks so “back” returns to Cadde. */
+export const TR_PDP_FROM_CADDE = "cadde";
+
 export function trBoutiqueProductPath(
   boutiqueSlug: string,
   productId: string,
+  options?: { from?: typeof TR_PDP_FROM_CADDE },
 ): string {
-  return `/tr/${encodeURIComponent(boutiqueSlug)}/urun/${encodeURIComponent(productId)}`;
+  const path = `/tr/${encodeURIComponent(boutiqueSlug)}/urun/${encodeURIComponent(productId)}`;
+  if (options?.from === TR_PDP_FROM_CADDE) {
+    return `${path}?from=${TR_PDP_FROM_CADDE}`;
+  }
+  return path;
 }
 
 /** Canonical boutique PDP when slug is known; legacy `/tr/shop/id` fallback otherwise. */
-export function trProductPath(productId: string, boutiqueSlug?: string): string {
+export function trProductPath(
+  productId: string,
+  boutiqueSlug?: string,
+  options?: { from?: typeof TR_PDP_FROM_CADDE },
+): string {
   if (boutiqueSlug?.trim()) {
-    return trBoutiqueProductPath(boutiqueSlug.trim(), productId);
+    return trBoutiqueProductPath(boutiqueSlug.trim(), productId, options);
   }
   return `/tr/shop/${encodeURIComponent(productId)}`;
 }
@@ -37,6 +52,11 @@ export function trOrderConfirmationPath(): string {
 
 export function trComingSoonPath(): string {
   return "/tr/yakinda";
+}
+
+/** Localhost-only Photoroom → waist-anchored hero slot importer. */
+export function trDevHeroImportPath(): string {
+  return "/tr/dev/hero-import";
 }
 
 export function trPanelPath(): string {

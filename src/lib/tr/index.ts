@@ -62,7 +62,10 @@ export {
   trCartPath,
   trCheckoutPath,
   trComingSoonPath,
+  trDevHeroImportPath,
   trHomePath,
+  TR_PDP_FROM_CADDE,
+  TR_PIECES_SECTION_ID,
   trOrderConfirmationPath,
   trPanelCustomersPath,
   trPanelDiscountsPath,
@@ -77,3 +80,21 @@ export {
 } from "@/lib/tr/paths";
 
 export { formatTryFromKurus, parseTryToKurus } from "@/types/tr-marketplace";
+
+export {
+  HERO_OUTFIT_PUBLIC_BASE,
+  OUTFIT_FRAME_HEIGHT,
+  OUTFIT_FRAME_WIDTH,
+  OUTFIT_LANDMARKS,
+  OUTFIT_ROLE_PLACEMENTS,
+  heroOutfitPublicPath,
+  listHeroSlotPublicPaths,
+  normalizeOutfitCutout,
+  rewriteHeroSlotPiecesFromDisk,
+  writeNormalizedHeroSlot,
+} from "@/lib/tr/outfitFrame";
+export type {
+  OutfitAnchorEdge,
+  OutfitFrameRole,
+  OutfitRolePlacement,
+} from "@/lib/tr/outfitFrame";

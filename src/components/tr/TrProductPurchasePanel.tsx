@@ -2,6 +2,7 @@ import { TrCheckoutComingSoon } from "@/components/tr/TrCheckoutComingSoon";
 import { TrPurchaseActions } from "@/components/tr/TrPurchaseActions";
 import { TrSandboxBanner } from "@/components/tr/TrSandboxBanner";
 import { TrWhatsAppOrderButton } from "@/components/tr/TrWhatsAppOrderButton";
+import { isTrDemoProduct } from "@/lib/tr/looks/demoCatalog";
 import { isTrCheckoutEnabled } from "@/lib/tr/platform";
 import { getProductCoverImageFor } from "@/lib/tr/productImages";
 import {
@@ -23,7 +24,7 @@ export function TrProductPurchasePanel({
   selectedColor = null,
   canOrder = true,
 }: TrProductPurchasePanelProps) {
-  const checkoutEnabled = isTrCheckoutEnabled();
+  const checkoutEnabled = isTrCheckoutEnabled() || isTrDemoProduct(product);
   const orderProduct = {
     title: product.title,
     priceKurus: product.priceKurus,
@@ -34,7 +35,7 @@ export function TrProductPurchasePanel({
   if (checkoutEnabled) {
     return (
       <div className="mt-8 space-y-4">
-        <TrSandboxBanner />
+        <TrSandboxBanner demo={isTrDemoProduct(product)} />
 
         <TrPurchaseActions
           productId={product.id}

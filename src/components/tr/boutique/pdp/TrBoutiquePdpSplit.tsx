@@ -7,9 +7,14 @@ import type { TrProductWithBoutique } from "@/types/tr-marketplace";
 interface TrBoutiquePdpSplitProps {
   product: TrProductWithBoutique;
   branded: boolean;
+  entry?: "cadde" | "store";
 }
 
-export function TrBoutiquePdpSplit({ product, branded }: TrBoutiquePdpSplitProps) {
+export function TrBoutiquePdpSplit({
+  product,
+  branded,
+  entry = "store",
+}: TrBoutiquePdpSplitProps) {
   const galleryProduct = {
     ...product,
     images: getBoutiqueProductImages(product),
@@ -39,7 +44,11 @@ export function TrBoutiquePdpSplit({ product, branded }: TrBoutiquePdpSplitProps
           </div>
 
           <div className={branded ? "" : "px-5 py-8 md:px-10 md:py-10"}>
-            <TrProductDetailPanel product={product} branded={branded} />
+            <TrProductDetailPanel
+              product={product}
+              branded={branded}
+              entry={entry}
+            />
           </div>
         </div>
       </div>

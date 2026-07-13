@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { getProductCoverImageFor } from "@/lib/tr/productImages";
+import { isTrDemoIconSrc } from "@/lib/tr/demoIcons";
 import type { TrProductWithBoutique } from "@/types/tr-marketplace";
 
 interface TrBoutiqueCatalogCutoutProps {
@@ -19,7 +20,7 @@ export function TrBoutiqueCatalogCutout({
   const hasDedicatedCutout =
     (product.marketplaceImages ?? []).some((url) => Boolean(url?.trim()));
 
-  if (!cutout || !hasDedicatedCutout) {
+  if (!cutout || !hasDedicatedCutout || isTrDemoIconSrc(cutout)) {
     return null;
   }
 

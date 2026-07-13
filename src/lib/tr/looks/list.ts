@@ -91,6 +91,12 @@ export async function listPublishedTrLooks(): Promise<TrLookWithProducts[]> {
   const catalog = await listPublicAvailableProducts();
   const available = catalog.filter((p) => p.status === "available");
 
+  // Empty live catalog → showable demo looks (silhouettes + logo’d boutiques)
+  if (available.length === 0) {
+    const { buildTrDemoLooks } = await import("@/lib/tr/looks/demoCatalog");
+    return buildTrDemoLooks();
+  }
+
   const looks: TrLookWithProducts[] = [];
   const usedAcrossLooks = new Set<string>();
 
@@ -123,6 +129,7 @@ export async function safeListPublishedTrLooks(): Promise<TrLookWithProducts[]> 
     return await listPublishedTrLooks();
   } catch (error) {
     console.error("Failed to load TR looks:", error);
-    return [];
+    const { buildTrDemoLooks } = await import("@/lib/tr/looks/demoCatalog");
+    return buildTrDemoLooks();
   }
 }

@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { TrBoutiqueProductPage } from "@/components/tr/boutique/pdp/TrBoutiqueProductPage";
+import { TR_PDP_FROM_CADDE } from "@/lib/tr/paths";
 import { safeGetPublicProductByBoutiqueSlugAndId } from "@/lib/tr/publicData";
 
 interface BoutiqueProductPageProps {
   params: Promise<{ boutiqueSlug: string; productId: string }>;
+  searchParams: Promise<{ from?: string }>;
 }
 
 export async function generateMetadata({
@@ -22,14 +24,17 @@ export async function generateMetadata({
 
   return {
     title: product.title,
-    description: product.description ?? `${product.title} — ${product.boutique.name}`,
+    description:
+      product.description ?? `${product.title} — ${product.boutique.name}`,
   };
 }
 
 export default async function BoutiqueProductPage({
   params,
+  searchParams,
 }: BoutiqueProductPageProps) {
   const { boutiqueSlug, productId } = await params;
+  const { from } = await searchParams;
   const product = await safeGetPublicProductByBoutiqueSlugAndId(
     boutiqueSlug,
     productId,
@@ -39,5 +44,7 @@ export default async function BoutiqueProductPage({
     notFound();
   }
 
-  return <TrBoutiqueProductPage product={product} />;
+  const entry = from === TR_PDP_FROM_CADDE ? "cadde" : "store";
+
+  return <TrBoutiqueProductPage product={product} entry={entry} />;
 }

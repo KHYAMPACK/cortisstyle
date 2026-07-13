@@ -10,7 +10,7 @@ import {
   resolveProductColors,
   resolveProductSizes,
 } from "@/lib/tr/productOptions";
-import { trBoutiquePath } from "@/lib/tr/paths";
+import { trBoutiquePath, trHomePath } from "@/lib/tr/paths";
 import { resolveBoutiqueThemeAccent } from "@/lib/tr/boutiqueBrand";
 import { formatTryFromKurus } from "@/types/tr-marketplace";
 import type { TrProductWithBoutique } from "@/types/tr-marketplace";
@@ -18,9 +18,15 @@ import type { TrProductWithBoutique } from "@/types/tr-marketplace";
 interface TrProductDetailPanelProps {
   product: TrProductWithBoutique;
   branded: boolean;
+  /** When `"cadde"`, back link returns to /tr; otherwise to the boutique storefront. */
+  entry?: "cadde" | "store";
 }
 
-export function TrProductDetailPanel({ product, branded }: TrProductDetailPanelProps) {
+export function TrProductDetailPanel({
+  product,
+  branded,
+  entry = "store",
+}: TrProductDetailPanelProps) {
   const sizes = useMemo(() => resolveProductSizes(product), [product]);
   const colors = useMemo(() => resolveProductColors(product), [product]);
   const accent = resolveBoutiqueThemeAccent(product.boutique);
@@ -37,26 +43,30 @@ export function TrProductDetailPanel({ product, branded }: TrProductDetailPanelP
   const sizeRequired = sizes.length > 0;
   const canOrder = isAvailable && (!sizeRequired || Boolean(selectedSize));
 
+  const fromCadde = entry === "cadde";
+  const backHref = fromCadde
+    ? trHomePath()
+    : trBoutiquePath(product.boutique.slug);
+  const backLabel = fromCadde
+    ? "← Cadde"
+    : branded
+      ? "← Mağazaya dön"
+      : `← ${product.boutique.name}`;
+  const backClass = branded
+    ? "text-[11px] tracking-[0.12em] text-neutral-600 uppercase transition-colors hover:text-neutral-900"
+    : "text-meta text-[10px] tracking-[0.22em] uppercase transition-colors hover:text-jet-black";
+
   return (
     <>
-      {branded ? (
-        <Link
-          href={trBoutiquePath(product.boutique.slug)}
-          className="text-[11px] tracking-[0.12em] text-neutral-600 uppercase transition-colors hover:text-neutral-900"
-        >
-          ← Mağazaya dön
-        </Link>
-      ) : (
-        <>
-          <Link
-            href={trBoutiquePath(product.boutique.slug)}
-            className="text-meta text-[10px] tracking-[0.22em] uppercase transition-colors hover:text-jet-black"
-          >
-            ← {product.boutique.name}
-          </Link>
-          <p className="text-meta mt-6 text-[9px] tracking-[0.5em] uppercase">[ ÜRÜN ]</p>
-        </>
-      )}
+      <Link href={backHref} className={backClass}>
+        {backLabel}
+      </Link>
+
+      {!branded ? (
+        <p className="text-meta mt-6 text-[9px] tracking-[0.5em] uppercase">
+          [ ÜRÜN ]
+        </p>
+      ) : null}
 
       <h1
         className={

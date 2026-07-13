@@ -6,6 +6,7 @@ import { Menu, MessageCircle } from "lucide-react";
 import { InstagramIcon } from "@/components/icons/InstagramIcon";
 import { TrCartLink } from "@/components/tr/TrCartLink";
 import { useTrBoutiqueCatalogOptional } from "@/components/tr/boutique/TrBoutiqueCatalogContext";
+import { isTrDemoBoutiqueSlug } from "@/lib/tr/looks/demoCatalog";
 import { isTrCheckoutEnabled } from "@/lib/tr/platform";
 import { trBoutiquePath } from "@/lib/tr/paths";
 import {
@@ -21,7 +22,8 @@ interface TrBoutiqueHeaderProps {
 
 export function TrBoutiqueHeader({ boutique }: TrBoutiqueHeaderProps) {
   const accent = resolveBoutiqueThemeAccent(boutique);
-  const checkoutEnabled = isTrCheckoutEnabled();
+  const checkoutEnabled =
+    isTrCheckoutEnabled() || isTrDemoBoutiqueSlug(boutique.slug);
   const catalog = useTrBoutiqueCatalogOptional();
 
   const whatsappUrl = boutique.whatsappPhone

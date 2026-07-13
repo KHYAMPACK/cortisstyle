@@ -5,11 +5,15 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 import { useEffect } from "react";
+import { TrDemoGarmentVisual } from "@/components/tr/demo/TrDemoGarmentVisual";
+import { TrPurchaseActions } from "@/components/tr/TrPurchaseActions";
 import {
   getProductCoverImageFor,
   isCatalogCutoutImage,
 } from "@/lib/tr/productImages";
-import { trBoutiquePath, trBoutiqueProductPath } from "@/lib/tr/paths";
+import { isTrDemoIconSrc } from "@/lib/tr/demoIcons";
+import { isTrDemoProduct } from "@/lib/tr/looks/demoCatalog";
+import { trBoutiquePath, trBoutiqueProductPath, TR_PDP_FROM_CADDE } from "@/lib/tr/paths";
 import { formatTryFromKurus } from "@/types/tr-marketplace";
 import type { TrLookWithProducts } from "@/types/tr-look";
 import { trPanelEase, trPanelFadeTransition } from "@/components/tr/panel/TrPanelMotion";
@@ -17,9 +21,15 @@ import { trPanelEase, trPanelFadeTransition } from "@/components/tr/panel/TrPane
 interface TrLookSheetProps {
   look: TrLookWithProducts | null;
   onClose: () => void;
+  /** When true, Sepete ekle is available (demo or live checkout). */
+  cartEnabled?: boolean;
 }
 
-export function TrLookSheet({ look, onClose }: TrLookSheetProps) {
+export function TrLookSheet({
+  look,
+  onClose,
+  cartEnabled = false,
+}: TrLookSheetProps) {
   useEffect(() => {
     if (!look) return;
     const onKey = (event: KeyboardEvent) => {
@@ -33,6 +43,8 @@ export function TrLookSheet({ look, onClose }: TrLookSheetProps) {
       document.body.style.overflow = prev;
     };
   }, [look, onClose]);
+
+  const demoLook = look?.products.some(isTrDemoProduct) ?? false;
 
   return (
     <AnimatePresence>
@@ -68,6 +80,7 @@ export function TrLookSheet({ look, onClose }: TrLookSheetProps) {
                   {look.boutiqueCount > 1
                     ? ` · ${look.boutiqueCount} BUTİK`
                     : ""}
+                  {demoLook ? " · DEMO" : ""}
                 </p>
                 <h2
                   id={`tr-look-${look.id}-title`}
@@ -97,6 +110,7 @@ export function TrLookSheet({ look, onClose }: TrLookSheetProps) {
                 const href = trBoutiqueProductPath(
                   product.boutique.slug,
                   product.id,
+                  { from: TR_PDP_FROM_CADDE },
                 );
                 return (
                   <motion.li
@@ -110,13 +124,18 @@ export function TrLookSheet({ look, onClose }: TrLookSheetProps) {
                     }}
                     className="border-b border-blueprint-border last:border-b-0"
                   >
-                    <Link
-                      href={href}
-                      onClick={onClose}
-                      className="flex gap-4 px-5 py-4 transition-colors hover:bg-white/70 md:px-6"
-                    >
-                      <div className="relative h-24 w-[4.5rem] shrink-0 overflow-hidden bg-[#f3f1ec] md:h-28 md:w-20">
-                        {cover ? (
+                    <div className="flex gap-4 px-5 py-4 md:px-6">
+                      <Link
+                        href={href}
+                        onClick={onClose}
+                        className="relative h-24 w-[4.5rem] shrink-0 overflow-hidden bg-ice-floor md:h-28 md:w-20"
+                      >
+                        {isTrDemoIconSrc(cover) ? (
+                          <TrDemoGarmentVisual
+                            src={cover}
+                            iconClassName="h-8 w-8"
+                          />
+                        ) : cover ? (
                           <Image
                             src={cover}
                             alt=""
@@ -130,24 +149,51 @@ export function TrLookSheet({ look, onClose }: TrLookSheetProps) {
                             }
                           />
                         ) : null}
-                      </div>
+                      </Link>
                       <div className="min-w-0 flex-1 py-0.5">
-                        <p className="font-mono text-[9px] tracking-[0.22em] text-meta uppercase">
-                          <span className="transition-colors hover:text-jet-black">
-                            {product.boutique.name}
-                          </span>
-                        </p>
-                        <p className="mt-1 truncate font-serif text-lg leading-snug tracking-[-0.02em] text-neutral-950">
+                        <Link
+                          href={trBoutiquePath(product.boutique.slug)}
+                          onClick={onClose}
+                          className="font-mono text-[9px] tracking-[0.22em] text-meta uppercase transition-colors hover:text-jet-black"
+                        >
+                          {product.boutique.name}
+                        </Link>
+                        <Link
+                          href={href}
+                          onClick={onClose}
+                          className="mt-1 block truncate font-serif text-lg leading-snug tracking-[-0.02em] text-neutral-950 hover:underline"
+                        >
                           {product.title}
-                        </p>
+                        </Link>
                         <p className="mt-2 text-[12px] tracking-[0.04em] text-neutral-700">
                           {formatTryFromKurus(product.priceKurus)}
                         </p>
-                        <p className="mt-3 font-mono text-[9px] tracking-[0.22em] text-neutral-500 uppercase">
-                          Ürünü gör →
-                        </p>
+                        {cartEnabled ? (
+                          <div className="mt-3 max-w-xs">
+                            <TrPurchaseActions
+                              productId={product.id}
+                              boutiqueId={product.boutiqueId}
+                              boutiqueName={product.boutique.name}
+                              boutiqueSlug={product.boutique.slug}
+                              title={product.title}
+                              priceKurus={product.priceKurus}
+                              image={cover}
+                              size={product.size}
+                              status={product.status}
+                              className="!mt-0"
+                            />
+                          </div>
+                        ) : (
+                          <Link
+                            href={href}
+                            onClick={onClose}
+                            className="mt-3 inline-block font-mono text-[9px] tracking-[0.22em] text-neutral-500 uppercase hover:text-jet-black"
+                          >
+                            Ürünü gör →
+                          </Link>
+                        )}
                       </div>
-                    </Link>
+                    </div>
                   </motion.li>
                 );
               })}
@@ -155,16 +201,9 @@ export function TrLookSheet({ look, onClose }: TrLookSheetProps) {
 
             <div className="border-t border-blueprint-border px-5 py-3 md:px-6">
               <p className="text-[11px] leading-relaxed text-meta">
-                Parçalar farklı butiklerden gelebilir — tek sepette toplanır.{" "}
-                {look.products[0] ? (
-                  <Link
-                    href={trBoutiquePath(look.products[0].boutique.slug)}
-                    onClick={onClose}
-                    className="underline-offset-2 hover:underline"
-                  >
-                    Butiklere göz at
-                  </Link>
-                ) : null}
+                {demoLook
+                  ? "Demo akış — parçaları sepete ekle, butik vitrinine gir, ödemeyi tamamla."
+                  : "Parçalar farklı butiklerden gelebilir — tek sepette toplanır."}
               </p>
             </div>
           </motion.div>

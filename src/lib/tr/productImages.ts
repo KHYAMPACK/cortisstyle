@@ -50,5 +50,9 @@ export function hasRealMarketplaceImagery(
 /** True when the cover should render as a contained cutout (not full-bleed cover). */
 export function isCatalogCutoutImage(src: string | null | undefined): boolean {
   if (!src) return false;
-  return isLookbookPieceImage(src) || isTrMarketplaceAssetUrl(src);
+  return (
+    isLookbookPieceImage(src) ||
+    isTrMarketplaceAssetUrl(src) ||
+    src.startsWith("/images/tr/hero/")
+  );
 }

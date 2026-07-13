@@ -1,5 +1,10 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import type { KeyboardEvent } from "react";
+import { TrDemoGarmentVisual } from "@/components/tr/demo/TrDemoGarmentVisual";
+import { isTrDemoIconSrc } from "@/lib/tr/demoIcons";
 import {
   getProductCoverImageFor,
   isCatalogCutoutImage,
@@ -16,28 +21,28 @@ interface TrProductCardProps {
   product: TrProduct | TrProductWithBoutique;
   showBoutique?: boolean;
   priority?: boolean;
-  /** Boutique slug for canonical PDP URL when product has no nested boutique. */
   boutiqueSlug?: string;
-  /**
-   * `marketplace` — catalog cutout (contain).
-   * `boutique` — original gallery cover (full-bleed).
-   */
   variant?: TrProductCardVariant;
+  /**
+   * When set (home piece rails), open quick view instead of navigating to PDP.
+   * Requires a product with nested boutique.
+   */
+  onSelect?: (product: TrProductWithBoutique) => void;
 }
 
-/**
- * Image-forward product tile — no card border / boxed chrome.
- */
 export function TrProductCard({
   product,
   showBoutique = false,
   priority = false,
   boutiqueSlug,
   variant = "boutique",
+  onSelect,
 }: TrProductCardProps) {
   const coverImage = getProductCoverImageFor(variant, product);
+  const demoIcon = isTrDemoIconSrc(coverImage);
   const catalogCutout =
-    variant === "marketplace" || isCatalogCutoutImage(coverImage);
+    !demoIcon &&
+    (variant === "marketplace" || isCatalogCutoutImage(coverImage));
   const colors = resolveProductColors(product);
   const boutique =
     "boutique" in product && showBoutique ? product.boutique : null;
@@ -45,18 +50,21 @@ export function TrProductCard({
   const slug =
     boutiqueSlug ??
     ("boutique" in product ? product.boutique.slug : undefined);
+  const quickView =
+    Boolean(onSelect) && "boutique" in product
+      ? (product as TrProductWithBoutique)
+      : null;
 
-  return (
-    <Link
-      href={trProductPath(product.id, slug)}
-      className="group block bg-white outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
-    >
+  const body = (
+    <>
       <div
         className={`relative aspect-[2/3] overflow-hidden ${
-          catalogCutout ? "bg-[#f3f1ec]" : "bg-neutral-100"
+          catalogCutout || demoIcon ? "bg-ice-floor" : "bg-neutral-100"
         }`}
       >
-        {coverImage ? (
+        {demoIcon ? (
+          <TrDemoGarmentVisual src={coverImage} showLabel />
+        ) : coverImage ? (
           <Image
             src={coverImage}
             alt=""
@@ -86,23 +94,54 @@ export function TrProductCard({
       </div>
 
       <div className="px-2 pt-3 pb-5 md:px-2.5">
-        <h3 className="line-clamp-2 text-[12px] leading-snug font-semibold tracking-[0.04em] text-neutral-950 uppercase md:text-[13px]">
+        <h3 className="line-clamp-2 font-serif text-[11px] leading-snug tracking-[0.12em] text-neutral-900 uppercase md:text-xs">
           {product.title}
         </h3>
 
         <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
-          <span className="text-[12px] font-semibold tracking-tight text-neutral-950 md:text-[13px]">
+          <span className="text-meta text-[11px] tracking-[0.06em]">
             {formatTryFromKurus(product.priceKurus)}
           </span>
           <TrProductColorDots colors={colors} />
         </div>
 
         {boutique ? (
-          <p className="mt-1.5 text-[10px] tracking-[0.08em] text-neutral-500 uppercase">
+          <p className="text-meta mt-1.5 text-[9px] tracking-[0.22em] uppercase">
             {boutique.name}
           </p>
         ) : null}
       </div>
+    </>
+  );
+
+  if (quickView && onSelect) {
+    const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        onSelect(quickView);
+      }
+    };
+
+    return (
+      <article
+        role="button"
+        tabIndex={0}
+        onClick={() => onSelect(quickView)}
+        onKeyDown={handleKeyDown}
+        className="group block cursor-pointer bg-white text-left outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
+        aria-label={`${product.title} — hızlı bak`}
+      >
+        {body}
+      </article>
+    );
+  }
+
+  return (
+    <Link
+      href={trProductPath(product.id, slug)}
+      className="group block bg-white outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
+    >
+      {body}
     </Link>
   );
 }

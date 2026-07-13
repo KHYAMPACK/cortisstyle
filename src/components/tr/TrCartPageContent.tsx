@@ -1,25 +1,37 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
-import { TrSandboxBanner } from "@/components/tr/TrSandboxBanner";
-import { trBoutiquePath, trBoutiqueProductPath, trCheckoutPath, trHomePath } from "@/lib/tr/paths";
+import { TrDemoGarmentVisual } from "@/components/tr/demo/TrDemoGarmentVisual";
+import {
+  TrSandboxBanner,
+  cartHasDemoItems,
+} from "@/components/tr/TrSandboxBanner";
+import { isTrDemoIconSrc } from "@/lib/tr/demoIcons";
+import {
+  trBoutiquePath,
+  trBoutiqueProductPath,
+  trCheckoutPath,
+  trHomePath,
+} from "@/lib/tr/paths";
 import { useTrCartStore } from "@/store/trCartStore";
 import { cartTotalKurus, groupCartItemsByBoutique } from "@/types/tr-cart";
 import { formatTryFromKurus } from "@/types/tr-marketplace";
+import Image from "next/image";
 
 export function TrCartPageContent() {
   const items = useTrCartStore((state) => state.items);
   const removeItem = useTrCartStore((state) => state.removeItem);
   const grouped = groupCartItemsByBoutique(items);
   const totalKurus = cartTotalKurus(items);
+  const demoCart = cartHasDemoItems(items);
 
   if (items.length === 0) {
     return (
       <div className="space-y-6 px-5 py-10 md:px-10">
-        <TrSandboxBanner />
+        <TrSandboxBanner demo />
         <p className="text-meta max-w-xl text-[12px] leading-relaxed">
-          Sepetiniz boş. Ürün keşfine devam edebilir veya butik vitrinlerini inceleyebilirsiniz.
+          Sepetiniz boş. Ürün keşfine devam edebilir veya butik vitrinlerini
+          inceleyebilirsiniz.
         </p>
         <Link
           href={trHomePath()}
@@ -33,7 +45,7 @@ export function TrCartPageContent() {
 
   return (
     <div className="px-5 py-8 md:px-10 md:py-10">
-      <TrSandboxBanner className="mb-8" />
+      <TrSandboxBanner className="mb-8" demo={demoCart} />
 
       <div className="grid gap-10 lg:grid-cols-[1fr_320px] lg:items-start">
         <div className="space-y-8">
@@ -55,10 +67,18 @@ export function TrCartPageContent() {
                 {group.items.map((item) => (
                   <li key={item.productId} className="flex gap-4 p-4">
                     <Link
-                      href={trBoutiqueProductPath(item.boutiqueSlug, item.productId)}
-                      className="relative h-24 w-20 shrink-0 overflow-hidden border border-blueprint-border bg-neutral-100"
+                      href={trBoutiqueProductPath(
+                        item.boutiqueSlug,
+                        item.productId,
+                      )}
+                      className="relative h-24 w-20 shrink-0 overflow-hidden border border-blueprint-border bg-ice-floor"
                     >
-                      {item.image ? (
+                      {isTrDemoIconSrc(item.image) ? (
+                        <TrDemoGarmentVisual
+                          src={item.image}
+                          iconClassName="h-8 w-8"
+                        />
+                      ) : item.image ? (
                         <Image
                           src={item.image}
                           alt=""
@@ -76,7 +96,10 @@ export function TrCartPageContent() {
 
                     <div className="min-w-0 flex-1">
                       <Link
-                        href={trBoutiqueProductPath(item.boutiqueSlug, item.productId)}
+                        href={trBoutiqueProductPath(
+                          item.boutiqueSlug,
+                          item.productId,
+                        )}
                         className="font-serif text-lg leading-tight text-neutral-950 hover:underline"
                       >
                         {item.title}
@@ -101,7 +124,9 @@ export function TrCartPageContent() {
         </div>
 
         <aside className="border border-blueprint-border bg-canvas-paper p-5 lg:sticky lg:top-24">
-          <p className="text-meta text-[10px] tracking-[0.22em] uppercase">Özet</p>
+          <p className="text-meta text-[10px] tracking-[0.22em] uppercase">
+            Özet
+          </p>
           <p className="mt-3 font-serif text-2xl tracking-[-0.02em] text-neutral-950">
             {formatTryFromKurus(totalKurus)}
           </p>
@@ -109,7 +134,8 @@ export function TrCartPageContent() {
             {items.length} ürün · {grouped.length} butik
           </p>
           <p className="text-meta mt-3 text-[11px] leading-relaxed">
-            Birden fazla butikten alışveriş yapıyorsanız her satıcı ayrı kargo gönderebilir.
+            Birden fazla butikten alışveriş yapıyorsanız her satıcı ayrı kargo
+            gönderebilir.
           </p>
 
           <Link

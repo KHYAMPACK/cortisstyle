@@ -2,6 +2,8 @@
 
 import Image from "next/image";
 import { useRef, useState } from "react";
+import { TrDemoGarmentVisual } from "@/components/tr/demo/TrDemoGarmentVisual";
+import { isTrDemoIconSrc } from "@/lib/tr/demoIcons";
 import { isLookbookPieceImage } from "@/lib/tr/lookbookImages";
 import type { TrProduct } from "@/types/tr-marketplace";
 
@@ -19,6 +21,18 @@ export function TrProductGallery({ product }: TrProductGalleryProps) {
         <p className="font-serif text-2xl tracking-[-0.02em] text-neutral-700">
           {product.title}
         </p>
+      </div>
+    );
+  }
+
+  if (product.images.every((image) => isTrDemoIconSrc(image))) {
+    return (
+      <div className="relative aspect-[2/3] overflow-hidden border border-black/10 bg-ice-floor">
+        <TrDemoGarmentVisual
+          src={product.images[0]}
+          showLabel
+          iconClassName="h-20 w-20 md:h-24 md:w-24"
+        />
       </div>
     );
   }

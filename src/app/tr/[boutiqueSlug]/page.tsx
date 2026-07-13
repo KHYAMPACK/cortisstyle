@@ -12,9 +12,10 @@ import {
   resolveBoutiqueThemeAccent,
 } from "@/lib/tr/boutiqueBrand";
 import { buildFeaturedCategoryTiles } from "@/lib/tr/categoryFeatured";
-import { isTrCheckoutEnabled } from "@/lib/tr/platform";
+import { isTrCheckoutEnabled, isTrMarketplaceCartEnabled } from "@/lib/tr/platform";
 import { trHomePath } from "@/lib/tr/paths";
 import { safeGetBoutiqueStorefront } from "@/lib/tr/publicData";
+import { isTrDemoBoutiqueSlug } from "@/lib/tr/looks/demoCatalog";
 
 interface BoutiqueStorefrontPageProps {
   params: Promise<{ boutiqueSlug: string }>;
@@ -50,7 +51,10 @@ export default async function BoutiqueStorefrontPage({
 
   const branded = hasBoutiqueBrand(storefront);
   const accent = resolveBoutiqueThemeAccent(storefront);
-  const checkoutEnabled = isTrCheckoutEnabled();
+  const checkoutEnabled =
+    isTrCheckoutEnabled() ||
+    isTrDemoBoutiqueSlug(boutiqueSlug) ||
+    (await isTrMarketplaceCartEnabled());
   const availableCount = storefront.products.filter(
     (product) => product.status === "available",
   ).length;
@@ -67,7 +71,11 @@ export default async function BoutiqueStorefrontPage({
                 alt={storefront.name}
                 width={120}
                 height={120}
-                className="h-20 w-20 object-contain md:h-24 md:w-24"
+                className={`h-20 w-20 object-contain md:h-24 md:w-24 ${
+                  storefront.logoUrl.includes("cortisstyle-logo-light")
+                    ? "invert"
+                    : ""
+                }`}
                 unoptimized
                 priority
               />

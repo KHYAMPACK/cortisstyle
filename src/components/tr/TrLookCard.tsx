@@ -1,7 +1,11 @@
 "use client";
 
 import Image from "next/image";
+import type { KeyboardEvent } from "react";
 import { motion } from "framer-motion";
+import { TrDemoGarmentVisual } from "@/components/tr/demo/TrDemoGarmentVisual";
+import { TrLookBoutiqueCredits } from "@/components/tr/TrLookBoutiqueCredits";
+import { isTrDemoIconSrc } from "@/lib/tr/demoIcons";
 import type { TrLookWithProducts } from "@/types/tr-look";
 import { trPanelEase } from "@/components/tr/panel/TrPanelMotion";
 
@@ -12,49 +16,78 @@ interface TrLookCardProps {
 }
 
 export function TrLookCard({ look, index, onSelect }: TrLookCardProps) {
+  const boutiques = look.products.map((product) => product.boutique);
+  const demoCover = isTrDemoIconSrc(look.coverImage);
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      onSelect(look);
+    }
+  };
+
   return (
-    <motion.button
-      type="button"
+    <motion.article
+      role="button"
+      tabIndex={0}
       onClick={() => onSelect(look)}
-      className="group block w-full cursor-pointer overflow-hidden border-0 bg-transparent p-0 text-left outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
+      onKeyDown={handleKeyDown}
+      className="group surface-canvas-paper block w-full cursor-pointer overflow-hidden border border-blueprint-border text-left outline-none focus-visible:ring-2 focus-visible:ring-blueprint-accent focus-visible:ring-offset-2"
+      aria-label={`${look.title} look’una bak`}
       initial={{ opacity: 0, y: 14 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-40px" }}
-      transition={{ duration: 0.45, ease: trPanelEase, delay: Math.min(index * 0.06, 0.24) }}
+      transition={{
+        duration: 0.45,
+        ease: trPanelEase,
+        delay: Math.min(index * 0.06, 0.24),
+      }}
     >
       <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100">
-        {look.coverImage ? (
+        {demoCover ? (
+          <TrDemoGarmentVisual
+            src={look.coverImage}
+            showLabel
+            iconClassName="h-16 w-16 md:h-20 md:w-20"
+          />
+        ) : look.coverImage ? (
           <Image
             src={look.coverImage}
             alt=""
             fill
-            sizes="(max-width: 768px) 100vw, 50vw"
+            sizes="(max-width: 768px) 92vw, 460px"
             unoptimized
-            className="object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+            className="object-cover transition-all duration-700 ease-out group-hover:scale-[1.02] group-hover:brightness-[0.72]"
           />
         ) : (
           <div className="flex h-full items-center justify-center bg-blueprint-surface px-6">
-            <span className="font-serif text-2xl text-neutral-600">{look.title}</span>
+            <span className="font-serif text-2xl text-neutral-600">
+              {look.title}
+            </span>
           </div>
         )}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
-        <div className="absolute right-0 bottom-0 left-0 p-5 md:p-6">
-          <p className="font-mono text-[9px] tracking-[0.28em] text-white/70 uppercase">
-            {look.products.length} parça
-            {look.boutiqueCount > 1
-              ? ` · ${look.boutiqueCount} butik`
-              : ""}
-          </p>
-          <h3 className="mt-2 font-serif text-2xl leading-none tracking-[-0.02em] text-white md:text-3xl">
-            {look.title}
-          </h3>
-          {look.subtitle ? (
-            <p className="mt-2 max-w-sm text-[12px] leading-relaxed text-white/75">
-              {look.subtitle}
-            </p>
-          ) : null}
+
+        <div
+          className="absolute inset-0 bg-black/0 transition-colors duration-500 group-hover:bg-black/20"
+          aria-hidden
+        />
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-500 group-hover:opacity-100">
+          <span className="font-serif text-[11px] tracking-[0.45em] text-white uppercase drop-shadow">
+            Look’a bak
+          </span>
         </div>
       </div>
-    </motion.button>
+
+      <div className="border-t border-blueprint-border px-3 py-3 md:px-4 md:py-4">
+        <h3 className="font-serif text-[11px] leading-snug tracking-[0.12em] text-neutral-900 uppercase md:text-xs">
+          {look.title}
+        </h3>
+        <p className="text-meta mt-1.5 text-[9px] tracking-[0.22em] uppercase">
+          {look.products.length} parça
+          {look.boutiqueCount > 1 ? ` · ${look.boutiqueCount} butik` : ""}
+        </p>
+        <TrLookBoutiqueCredits boutiques={boutiques} />
+      </div>
+    </motion.article>
   );
 }

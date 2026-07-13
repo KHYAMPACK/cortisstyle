@@ -5,15 +5,25 @@ import type { TrProductWithBoutique } from "@/types/tr-marketplace";
 
 interface TrBoutiqueProductPageProps {
   product: TrProductWithBoutique;
+  entry?: "cadde" | "store";
 }
 
-export function TrBoutiqueProductPage({ product }: TrBoutiqueProductPageProps) {
+export function TrBoutiqueProductPage({
+  product,
+  entry = "store",
+}: TrBoutiqueProductPageProps) {
   const branded = hasBoutiqueBrand(product.boutique);
   const layout = resolveBoutiquePdpLayout(product.boutique.slug);
 
   switch (layout) {
     case "split":
     default:
-      return <TrBoutiquePdpSplit product={product} branded={branded} />;
+      return (
+        <TrBoutiquePdpSplit
+          product={product}
+          branded={branded}
+          entry={entry}
+        />
+      );
   }
 }

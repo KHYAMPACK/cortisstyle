@@ -2,8 +2,12 @@
 
 import Link from "next/link";
 import { FormEvent, useState } from "react";
-import { TrSandboxBanner } from "@/components/tr/TrSandboxBanner";
-import { trCartPath } from "@/lib/tr/paths";
+import { useRouter } from "next/navigation";
+import {
+  TrSandboxBanner,
+  cartHasDemoItems,
+} from "@/components/tr/TrSandboxBanner";
+import { trCartPath, trOrderConfirmationPath } from "@/lib/tr/paths";
 import { useTrCartStore } from "@/store/trCartStore";
 import {
   cartTotalKurus,
@@ -19,15 +23,19 @@ const inputClassName =
 const labelClassName = "text-meta text-[10px] tracking-[0.16em] uppercase";
 
 export function TrCheckoutPageContent() {
+  const router = useRouter();
   const items = useTrCartStore((state) => state.items);
+  const clearCart = useTrCartStore((state) => state.clearCart);
   const [form, setForm] = useState<TrCheckoutFormData>(EMPTY_CHECKOUT_FORM);
+  const [submitting, setSubmitting] = useState(false);
   const grouped = groupCartItemsByBoutique(items);
   const totalKurus = cartTotalKurus(items);
+  const demoCart = cartHasDemoItems(items);
 
   if (items.length === 0) {
     return (
       <div className="space-y-6 px-5 py-10 md:px-10">
-        <TrSandboxBanner />
+        <TrSandboxBanner demo />
         <p className="text-meta max-w-xl text-[12px] leading-relaxed">
           Ödeme için önce sepetinize ürün ekleyin.
         </p>
@@ -47,11 +55,15 @@ export function TrCheckoutPageContent() {
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!demoCart || submitting) return;
+    setSubmitting(true);
+    clearCart();
+    router.push(`${trOrderConfirmationPath()}?demo=1`);
   };
 
   return (
     <div className="px-5 py-8 md:px-10 md:py-10">
-      <TrSandboxBanner className="mb-8" />
+      <TrSandboxBanner className="mb-8" demo={demoCart} />
 
       <div className="grid gap-10 lg:grid-cols-[1fr_360px] lg:items-start">
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -65,7 +77,9 @@ export function TrCheckoutPageContent() {
                 <input
                   required
                   value={form.customerName}
-                  onChange={(event) => updateField("customerName", event.target.value)}
+                  onChange={(event) =>
+                    updateField("customerName", event.target.value)
+                  }
                   className={`${inputClassName} mt-2`}
                   autoComplete="name"
                 />
@@ -76,7 +90,9 @@ export function TrCheckoutPageContent() {
                   required
                   type="email"
                   value={form.customerEmail}
-                  onChange={(event) => updateField("customerEmail", event.target.value)}
+                  onChange={(event) =>
+                    updateField("customerEmail", event.target.value)
+                  }
                   className={`${inputClassName} mt-2`}
                   autoComplete="email"
                 />
@@ -85,7 +101,9 @@ export function TrCheckoutPageContent() {
                 <span className={labelClassName}>Telefon</span>
                 <input
                   value={form.customerPhone}
-                  onChange={(event) => updateField("customerPhone", event.target.value)}
+                  onChange={(event) =>
+                    updateField("customerPhone", event.target.value)
+                  }
                   className={`${inputClassName} mt-2`}
                   autoComplete="tel"
                 />
@@ -123,7 +141,9 @@ export function TrCheckoutPageContent() {
                   <input
                     required
                     value={form.district}
-                    onChange={(event) => updateField("district", event.target.value)}
+                    onChange={(event) =>
+                      updateField("district", event.target.value)
+                    }
                     className={`${inputClassName} mt-2`}
                   />
                 </label>
@@ -132,7 +152,9 @@ export function TrCheckoutPageContent() {
                   <input
                     required
                     value={form.city}
-                    onChange={(event) => updateField("city", event.target.value)}
+                    onChange={(event) =>
+                      updateField("city", event.target.value)
+                    }
                     className={`${inputClassName} mt-2`}
                   />
                 </label>
@@ -142,7 +164,9 @@ export function TrCheckoutPageContent() {
                 <input
                   required
                   value={form.postalCode}
-                  onChange={(event) => updateField("postalCode", event.target.value)}
+                  onChange={(event) =>
+                    updateField("postalCode", event.target.value)
+                  }
                   className={`${inputClassName} mt-2`}
                   autoComplete="postal-code"
                 />
@@ -165,23 +189,36 @@ export function TrCheckoutPageContent() {
             <label className="mt-5 flex items-start gap-3 text-[12px] leading-relaxed text-neutral-800">
               <input required type="checkbox" className="mt-1" />
               <span>
-                Mesafeli satış sözleşmesi ve ön bilgilendirme formunu okudum. (Taslak —
-                ödeme henüz aktif değil.)
+                {demoCart
+                  ? "Bu bir demo sipariştir; gerçek ödeme alınmaz."
+                  : "Mesafeli satış sözleşmesi ve ön bilgilendirme formunu okudum. (Taslak — ödeme henüz aktif değil.)"}
               </span>
             </label>
           </section>
 
-          <button
-            type="submit"
-            disabled
-            className="inline-flex w-full cursor-not-allowed items-center justify-center border border-blueprint-border bg-neutral-100 px-6 py-4 text-[11px] tracking-[0.2em] text-meta uppercase sm:max-w-md"
-          >
-            Ödemeyi tamamla (yakında)
-          </button>
+          {demoCart ? (
+            <button
+              type="submit"
+              disabled={submitting}
+              className="btn-primary inline-flex w-full items-center justify-center px-6 py-4 text-[11px] tracking-[0.2em] disabled:opacity-60 sm:max-w-md"
+            >
+              {submitting ? "Tamamlanıyor…" : "Demo siparişi tamamla"}
+            </button>
+          ) : (
+            <button
+              type="submit"
+              disabled
+              className="inline-flex w-full cursor-not-allowed items-center justify-center border border-blueprint-border bg-neutral-100 px-6 py-4 text-[11px] tracking-[0.2em] text-meta uppercase sm:max-w-md"
+            >
+              Ödemeyi tamamla (yakında)
+            </button>
+          )}
         </form>
 
         <aside className="border border-blueprint-border bg-canvas-paper p-5 lg:sticky lg:top-24">
-          <p className="text-meta text-[10px] tracking-[0.22em] uppercase">Sipariş özeti</p>
+          <p className="text-meta text-[10px] tracking-[0.22em] uppercase">
+            Sipariş özeti
+          </p>
           <div className="mt-4 space-y-4">
             {grouped.map((group) => (
               <div key={group.boutiqueId}>
@@ -190,9 +227,14 @@ export function TrCheckoutPageContent() {
                 </p>
                 <ul className="mt-2 space-y-1 text-[12px] text-neutral-800">
                   {group.items.map((item) => (
-                    <li key={item.productId} className="flex justify-between gap-3">
+                    <li
+                      key={item.productId}
+                      className="flex justify-between gap-3"
+                    >
                       <span className="truncate">{item.title}</span>
-                      <span className="shrink-0">{formatTryFromKurus(item.priceKurus)}</span>
+                      <span className="shrink-0">
+                        {formatTryFromKurus(item.priceKurus)}
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -201,7 +243,9 @@ export function TrCheckoutPageContent() {
           </div>
           <div className="mt-5 border-t border-blueprint-border pt-4">
             <div className="flex items-center justify-between">
-              <span className="text-meta text-[10px] tracking-[0.16em] uppercase">Toplam</span>
+              <span className="text-meta text-[10px] tracking-[0.16em] uppercase">
+                Toplam
+              </span>
               <span className="font-serif text-xl text-neutral-950">
                 {formatTryFromKurus(totalKurus)}
               </span>
