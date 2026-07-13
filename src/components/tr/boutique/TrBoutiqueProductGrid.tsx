@@ -8,6 +8,7 @@ import type { TrProduct } from "@/types/tr-marketplace";
 
 interface TrBoutiqueProductGridProps {
   products: TrProduct[];
+  boutiqueSlug: string;
   accentColor?: string;
 }
 
@@ -21,6 +22,7 @@ function getActiveCategoryLabel(categoryId: string | null): string {
 
 export function TrBoutiqueProductGrid({
   products,
+  boutiqueSlug,
   accentColor = "#C2185B",
 }: TrBoutiqueProductGridProps) {
   const { activeCategory, selectCategory } = useTrBoutiqueCatalog();
@@ -65,6 +67,7 @@ export function TrBoutiqueProductGrid({
             <TrProductCard
               key={product.id}
               product={product}
+              boutiqueSlug={boutiqueSlug}
               priority={index < 4}
             />
           ))}

@@ -31,7 +31,19 @@ export {
 export { getPublicBoutiqueStorefrontBySlug } from "@/lib/tr/storefront";
 
 export {
+  listPublishedTrLooks,
+  safeListPublishedTrLooks,
+  TR_LOOKS_SECTION_ID,
+} from "@/lib/tr/looks";
+export type {
+  TrLookDefinition,
+  TrLookStatus,
+  TrLookWithProducts,
+} from "@/types/tr-look";
+
+export {
   trBoutiquePath,
+  trBoutiqueProductPath,
   trCartPath,
   trCheckoutPath,
   trComingSoonPath,

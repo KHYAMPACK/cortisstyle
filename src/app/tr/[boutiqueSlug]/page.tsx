@@ -94,6 +94,7 @@ export default async function BoutiqueStorefrontPage({
         <TrBoutiqueCatalogSection className="pt-8 md:pt-10">
           <TrBoutiqueProductGrid
             products={storefront.products}
+            boutiqueSlug={storefront.slug}
             accentColor={accent}
           />
         </TrBoutiqueCatalogSection>
@@ -181,7 +182,12 @@ export default async function BoutiqueStorefrontPage({
         {storefront.products.length > 0 ? (
           <div className="grid grid-cols-2 gap-x-[2px] gap-y-0 border-b border-black/5 bg-white md:grid-cols-3 lg:grid-cols-4">
             {storefront.products.map((product, index) => (
-              <TrProductCard key={product.id} product={product} priority={index < 4} />
+              <TrProductCard
+                key={product.id}
+                product={product}
+                boutiqueSlug={storefront.slug}
+                priority={index < 4}
+              />
             ))}
           </div>
         ) : (

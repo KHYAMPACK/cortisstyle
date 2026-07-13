@@ -49,6 +49,16 @@ export async function safeGetPublicProduct(
   }
 }
 
+export async function safeGetPublicProductByBoutiqueSlugAndId(
+  boutiqueSlug: string,
+  productId: string,
+): Promise<TrProductWithBoutique | null> {
+  const product = await safeGetPublicProduct(productId);
+  if (!product) return null;
+  if (product.boutique.slug !== boutiqueSlug) return null;
+  return product;
+}
+
 export async function safeListFeaturedProducts(
   limit = 8,
 ): Promise<TrProductWithBoutique[]> {

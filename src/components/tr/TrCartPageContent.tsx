@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { TrSandboxBanner } from "@/components/tr/TrSandboxBanner";
-import { trBoutiquePath, trCheckoutPath, trHomePath, trProductPath } from "@/lib/tr/paths";
+import { trBoutiquePath, trBoutiqueProductPath, trCheckoutPath, trHomePath } from "@/lib/tr/paths";
 import { useTrCartStore } from "@/store/trCartStore";
 import { cartTotalKurus, groupCartItemsByBoutique } from "@/types/tr-cart";
 import { formatTryFromKurus } from "@/types/tr-marketplace";
@@ -55,7 +55,7 @@ export function TrCartPageContent() {
                 {group.items.map((item) => (
                   <li key={item.productId} className="flex gap-4 p-4">
                     <Link
-                      href={trProductPath(item.productId)}
+                      href={trBoutiqueProductPath(item.boutiqueSlug, item.productId)}
                       className="relative h-24 w-20 shrink-0 overflow-hidden border border-blueprint-border bg-neutral-100"
                     >
                       {item.image ? (
@@ -76,7 +76,7 @@ export function TrCartPageContent() {
 
                     <div className="min-w-0 flex-1">
                       <Link
-                        href={trProductPath(item.productId)}
+                        href={trBoutiqueProductPath(item.boutiqueSlug, item.productId)}
                         className="font-serif text-lg leading-tight text-neutral-950 hover:underline"
                       >
                         {item.title}

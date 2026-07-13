@@ -10,6 +10,8 @@ interface TrProductCardProps {
   product: TrProduct | TrProductWithBoutique;
   showBoutique?: boolean;
   priority?: boolean;
+  /** Boutique slug for canonical PDP URL when product has no nested boutique. */
+  boutiqueSlug?: string;
 }
 
 /**
@@ -20,16 +22,20 @@ export function TrProductCard({
   product,
   showBoutique = false,
   priority = false,
+  boutiqueSlug,
 }: TrProductCardProps) {
   const coverImage = getProductCoverImage(product);
   const colors = resolveProductColors(product);
   const boutique =
     "boutique" in product && showBoutique ? product.boutique : null;
   const isSold = product.status === "sold";
+  const slug =
+    boutiqueSlug ??
+    ("boutique" in product ? product.boutique.slug : undefined);
 
   return (
     <Link
-      href={trProductPath(product.id)}
+      href={trProductPath(product.id, slug)}
       className="group block bg-white outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
     >
       <div className="relative aspect-[2/3] overflow-hidden bg-neutral-100">

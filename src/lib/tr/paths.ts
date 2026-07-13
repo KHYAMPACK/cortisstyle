@@ -8,7 +8,18 @@ export function trBoutiquePath(slug: string): string {
   return `/tr/${encodeURIComponent(slug)}`;
 }
 
-export function trProductPath(productId: string): string {
+export function trBoutiqueProductPath(
+  boutiqueSlug: string,
+  productId: string,
+): string {
+  return `/tr/${encodeURIComponent(boutiqueSlug)}/urun/${encodeURIComponent(productId)}`;
+}
+
+/** Canonical boutique PDP when slug is known; legacy `/tr/shop/id` fallback otherwise. */
+export function trProductPath(productId: string, boutiqueSlug?: string): string {
+  if (boutiqueSlug?.trim()) {
+    return trBoutiqueProductPath(boutiqueSlug.trim(), productId);
+  }
   return `/tr/shop/${encodeURIComponent(productId)}`;
 }
 

@@ -35,8 +35,8 @@ export function TrFooter() {
         </nav>
 
         <p className="max-w-xl text-[11px] leading-relaxed text-meta">
-          Bağımsız butiklerden seçilmiş tek parça ürünler. Ödeme altyapısı
-          hazırlanıyor — şu an yalnızca ürün keşfi açık.
+          Butik caddesinden seçilmiş kombinler ve parçalar. Farklı satıcılardan
+          tek sepet — online ödeme yakında.
         </p>
 
         <p className="text-[11px] text-meta">

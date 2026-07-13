@@ -1,18 +1,22 @@
 import { TrBoutiqueCard } from "@/components/tr/TrBoutiqueCard";
+import { TrHomeHero } from "@/components/tr/TrHomeHero";
+import { TrLookSection } from "@/components/tr/TrLookSection";
 import { TrProductCard } from "@/components/tr/TrProductCard";
-import { TrSandboxBanner } from "@/components/tr/TrSandboxBanner";
 import { TrSectionHeader } from "@/components/tr/TrSectionHeader";
 import { getProductCoverImage } from "@/lib/tr/paths";
+import { safeListPublishedTrLooks } from "@/lib/tr/looks";
 import {
   safeGetBoutiqueStorefront,
   safeListFeaturedProducts,
   safeListPublicBoutiques,
 } from "@/lib/tr/publicData";
+import { isTrCheckoutEnabled } from "@/lib/tr/platform";
 
 export default async function TrMarketplaceHomePage() {
-  const [boutiques, featuredProducts] = await Promise.all([
+  const [boutiques, featuredProducts, looks] = await Promise.all([
     safeListPublicBoutiques(),
     safeListFeaturedProducts(8),
+    safeListPublishedTrLooks(),
   ]);
 
   const storefronts = await Promise.all(
@@ -28,29 +32,28 @@ export default async function TrMarketplaceHomePage() {
     }),
   );
 
+  const checkoutEnabled = isTrCheckoutEnabled();
+
   return (
     <div>
-      <section className="border-b border-blueprint-border px-5 py-10 md:px-10 md:py-14">
-        <p className="text-meta text-[9px] tracking-[0.5em] uppercase">
-          [ TÜRKİYE PAZARI ]
-        </p>
-        <h1 className="mt-3 max-w-3xl font-serif text-3xl leading-none tracking-[-0.03em] text-neutral-950 md:text-5xl">
-          Bağımsız butiklerden seçilmiş parçalar
-        </h1>
-        <p className="text-meta mt-4 max-w-2xl text-[12px] leading-relaxed tracking-[0.06em] md:text-[13px]">
-          Her butik kendi ürün kataloğunu listeler. Kombinler ve editoryal
-          lookbook Cortisstyle tarafından bu parçalardan oluşturulur.
-        </p>
-        <div className="mt-6 max-w-2xl">
-          <TrSandboxBanner />
-        </div>
-      </section>
+      <TrHomeHero />
 
-      <section aria-label="Öne çıkan ürünler">
+      {!checkoutEnabled ? (
+        <p
+          className="border-b border-blueprint-border px-5 py-3 font-mono text-[10px] tracking-[0.14em] text-meta md:px-10"
+          role="status"
+        >
+          Online ödeme yakında — şimdilik kombin ve ürün keşfi açık.
+        </p>
+      ) : null}
+
+      <TrLookSection looks={looks} />
+
+      <section aria-label="Yeni parçalar">
         <TrSectionHeader
-          kicker="[ ÜRÜNLER ]"
+          kicker="[ PARÇALAR ]"
           title="Yeni eklenenler"
-          description="Tek parça, stokta olan ürünler. Her kart bir butiğe aittir."
+          description="Tek parçalar — her kart bir butiğe aittir."
         />
 
         {featuredProducts.length > 0 ? (
@@ -67,18 +70,18 @@ export default async function TrMarketplaceHomePage() {
         ) : (
           <div className="border-b border-blueprint-border px-5 py-12 md:px-10">
             <p className="text-meta max-w-xl text-[12px] leading-relaxed">
-              Henüz listelenen ürün yok. Supabase migration çalıştırıldıktan sonra
-              admin seed ile butik ve ürün ekleyebilirsiniz.
+              Henüz listelenen ürün yok. Butikler ürün ekledikçe burada
+              görünecek.
             </p>
           </div>
         )}
       </section>
 
-      <section aria-label="Butikler">
+      <section id="cadde" className="scroll-mt-20" aria-label="Butik caddesi">
         <TrSectionHeader
-          kicker="[ BUTİKLER ]"
+          kicker="[ CADDE ]"
           title="Butik vitrinleri"
-          description="Her butik kendi ürünlerini satar — kombin satışı yok."
+          description="Ağın parçası olan bağımsız butikler — her biri kendi vitrinine sahip."
         />
 
         {storefronts.length > 0 ? (
@@ -95,7 +98,7 @@ export default async function TrMarketplaceHomePage() {
         ) : (
           <div className="border-b border-blueprint-border px-5 py-12 md:px-10">
             <p className="text-meta max-w-xl text-[12px] leading-relaxed">
-              Henüz doğrulanmış butik yok. İlk butikleri seed API ile ekleyin.
+              İlk butikler yakında bu caddeye çıkacak.
             </p>
           </div>
         )}
