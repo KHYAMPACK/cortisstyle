@@ -3,7 +3,7 @@ import { TrPurchaseActions } from "@/components/tr/TrPurchaseActions";
 import { TrSandboxBanner } from "@/components/tr/TrSandboxBanner";
 import { TrWhatsAppOrderButton } from "@/components/tr/TrWhatsAppOrderButton";
 import { isTrCheckoutEnabled } from "@/lib/tr/platform";
-import { getProductCoverImage } from "@/lib/tr/paths";
+import { getProductCoverImageFor } from "@/lib/tr/productImages";
 import {
   buildProductOrderMessage,
   buildWhatsAppOrderUrl,
@@ -43,7 +43,7 @@ export function TrProductPurchasePanel({
           boutiqueSlug={product.boutique.slug}
           title={product.title}
           priceKurus={product.priceKurus}
-          image={getProductCoverImage(product)}
+          image={getProductCoverImageFor("marketplace", product)}
           size={selectedSize}
           status={product.status}
           disabled={!canOrder}

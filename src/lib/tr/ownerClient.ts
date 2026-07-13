@@ -97,6 +97,7 @@ export interface TrOwnerProductPayload {
   colors: TrProductColor[];
   category: string | null;
   images: string[];
+  marketplaceImages?: string[];
   stock?: number;
   conditionLabel?: string | null;
   status?: TrProductStatus;
@@ -141,7 +142,7 @@ export async function updateOwnerProduct(
 export async function uploadOwnerProductImage(
   boutiqueId: string,
   file: File,
-): Promise<string> {
+): Promise<{ url: string; marketplaceUrl: string | null }> {
   const formData = new FormData();
   formData.set("boutiqueId", boutiqueId);
   formData.set("file", file);
@@ -150,12 +151,19 @@ export async function uploadOwnerProductImage(
     method: "POST",
     body: formData,
   });
-  const data = (await response.json()) as { url?: string; error?: string };
+  const data = (await response.json()) as {
+    url?: string;
+    marketplaceUrl?: string | null;
+    error?: string;
+  };
   if (!response.ok) {
     throw new Error(data.error ?? "Fotoğraf yüklenemedi.");
   }
   if (!data.url) throw new Error("Fotoğraf yüklenemedi.");
-  return data.url;
+  return {
+    url: data.url,
+    marketplaceUrl: data.marketplaceUrl ?? null,
+  };
 }
 
 export interface TrOwnerSummaryResponse {

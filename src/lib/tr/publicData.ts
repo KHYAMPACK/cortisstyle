@@ -5,7 +5,12 @@ import {
   listPublicAvailableProducts,
   listPublicBoutiques,
 } from "@/lib/tr";
-import type { TrBoutiquePublic, TrBoutiqueStorefront, TrProductWithBoutique } from "@/types/tr-marketplace";
+import { mapProductsWithLookbookImages } from "@/lib/tr/lookbookImages";
+import type {
+  TrBoutiquePublic,
+  TrBoutiqueStorefront,
+  TrProductWithBoutique,
+} from "@/types/tr-marketplace";
 
 export async function safeListPublicBoutiques(): Promise<TrBoutiquePublic[]> {
   try {
@@ -64,7 +69,7 @@ export async function safeListFeaturedProducts(
 ): Promise<TrProductWithBoutique[]> {
   try {
     const products = await listPublicAvailableProducts();
-    return products.slice(0, limit);
+    return mapProductsWithLookbookImages(products).slice(0, limit);
   } catch (error) {
     console.error("Failed to load TR featured products:", error);
     return [];

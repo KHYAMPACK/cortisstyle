@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useRef, useState } from "react";
+import { isLookbookPieceImage } from "@/lib/tr/lookbookImages";
 import type { TrProduct } from "@/types/tr-marketplace";
 
 interface TrProductGalleryProps {
@@ -45,30 +46,37 @@ export function TrProductGallery({ product }: TrProductGalleryProps) {
       <div
         ref={scrollerRef}
         onScroll={handleScroll}
-        className="flex aspect-[2/3] snap-x snap-mandatory overflow-x-auto overflow-y-hidden overscroll-x-contain bg-neutral-100 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex aspect-[2/3] snap-x snap-mandatory overflow-x-auto overflow-y-hidden overscroll-x-contain bg-[#f3f1ec] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         aria-label={`${product.title} görselleri`}
       >
-        {product.images.map((image, index) => (
-          <div
-            key={`${image}-${index}`}
-            className="relative h-full w-full shrink-0 snap-center snap-always"
-          >
-            <Image
-              src={image}
-              alt={
-                index === 0
-                  ? product.title
-                  : `${product.title} — görsel ${index + 1}`
-              }
-              fill
-              priority={index === 0}
-              sizes="(max-width: 1024px) 100vw, 50vw"
-              unoptimized
-              className="object-cover"
-              draggable={false}
-            />
-          </div>
-        ))}
+        {product.images.map((image, index) => {
+          const lookbookCutout = isLookbookPieceImage(image);
+          return (
+            <div
+              key={`${image}-${index}`}
+              className="relative h-full w-full shrink-0 snap-center snap-always"
+            >
+              <Image
+                src={image}
+                alt={
+                  index === 0
+                    ? product.title
+                    : `${product.title} — görsel ${index + 1}`
+                }
+                fill
+                priority={index === 0}
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                unoptimized
+                className={
+                  lookbookCutout
+                    ? "object-contain p-8 md:p-12"
+                    : "object-cover"
+                }
+                draggable={false}
+              />
+            </div>
+          );
+        })}
       </div>
 
       {product.images.length > 1 ? (

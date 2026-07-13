@@ -122,6 +122,7 @@ export function mapProductRow(row: Record<string, unknown>): TrProduct {
     conditionLabel: (row.condition_label as string | null) ?? null,
     category: (row.category as string | null) ?? null,
     images: readStringArray(row.images),
+    marketplaceImages: readStringArray(row.marketplace_images),
     status: row.status as TrProduct["status"],
     stock: typeof row.stock === "number" ? row.stock : 1,
     sortOrder: (row.sort_order as number) ?? 0,

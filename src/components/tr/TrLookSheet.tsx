@@ -6,10 +6,10 @@ import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 import { useEffect } from "react";
 import {
-  getProductCoverImage,
-  trBoutiquePath,
-  trBoutiqueProductPath,
-} from "@/lib/tr/paths";
+  getProductCoverImageFor,
+  isCatalogCutoutImage,
+} from "@/lib/tr/productImages";
+import { trBoutiquePath, trBoutiqueProductPath } from "@/lib/tr/paths";
 import { formatTryFromKurus } from "@/types/tr-marketplace";
 import type { TrLookWithProducts } from "@/types/tr-look";
 import { trPanelEase, trPanelFadeTransition } from "@/components/tr/panel/TrPanelMotion";
@@ -93,7 +93,7 @@ export function TrLookSheet({ look, onClose }: TrLookSheetProps) {
 
             <ul className="flex-1 overflow-y-auto">
               {look.products.map((product, index) => {
-                const cover = getProductCoverImage(product);
+                const cover = getProductCoverImageFor("marketplace", product);
                 const href = trBoutiqueProductPath(
                   product.boutique.slug,
                   product.id,
@@ -115,7 +115,7 @@ export function TrLookSheet({ look, onClose }: TrLookSheetProps) {
                       onClick={onClose}
                       className="flex gap-4 px-5 py-4 transition-colors hover:bg-white/70 md:px-6"
                     >
-                      <div className="relative h-24 w-[4.5rem] shrink-0 overflow-hidden bg-neutral-100 md:h-28 md:w-20">
+                      <div className="relative h-24 w-[4.5rem] shrink-0 overflow-hidden bg-[#f3f1ec] md:h-28 md:w-20">
                         {cover ? (
                           <Image
                             src={cover}
@@ -123,7 +123,11 @@ export function TrLookSheet({ look, onClose }: TrLookSheetProps) {
                             fill
                             sizes="80px"
                             unoptimized
-                            className="object-cover"
+                            className={
+                              isCatalogCutoutImage(cover)
+                                ? "object-contain p-1.5"
+                                : "object-cover"
+                            }
                           />
                         ) : null}
                       </div>

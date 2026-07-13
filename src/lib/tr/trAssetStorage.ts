@@ -1,9 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { getServiceSupabase } from "@/lib/supabaseAdmin";
+import { TR_ASSETS_BUCKET } from "@/lib/tr/trAssetUrls";
 
-export const TR_ASSETS_BUCKET = "tr-assets";
+export { TR_ASSETS_BUCKET, isTrMarketplaceAssetUrl } from "@/lib/tr/trAssetUrls";
 
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
+
+export type TrAssetKind = "original" | "marketplace";
 
 function sanitizeSegment(value: string): string {
   return value.replace(/[^a-zA-Z0-9._-]/g, "-").slice(0, 120);
@@ -19,10 +22,11 @@ export function buildTrAssetPath(
   userId: string,
   boutiqueId: string,
   contentType: string,
+  kind: TrAssetKind = "original",
 ): string {
   const extension = extensionFromContentType(contentType);
   const fileName = `${randomUUID()}.${extension}`;
-  return `${sanitizeSegment(userId)}/${sanitizeSegment(boutiqueId)}/${fileName}`;
+  return `${sanitizeSegment(userId)}/${sanitizeSegment(boutiqueId)}/${kind}/${fileName}`;
 }
 
 export function getTrAssetPublicUrl(storagePath: string): string {
@@ -39,6 +43,7 @@ export async function uploadTrProductAsset(params: {
   boutiqueId: string;
   bytes: Buffer;
   contentType: string;
+  kind?: TrAssetKind;
 }): Promise<{ url: string; path: string }> {
   const admin = getServiceSupabase();
 
@@ -52,10 +57,12 @@ export async function uploadTrProductAsset(params: {
     throw new Error("Dosya 10 MB sınırını aşıyor.");
   }
 
+  const kind = params.kind ?? "original";
   const path = buildTrAssetPath(
     params.userId,
     params.boutiqueId,
     params.contentType,
+    kind,
   );
 
   const { error } = await admin.storage

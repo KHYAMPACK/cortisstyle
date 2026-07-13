@@ -17,42 +17,86 @@
           "title": "Pembe Midi Elbise",
           "description": "Yumuşak kumaş, günlük ve özel günler için ideal.",
           "priceTry": 899,
-          "sizes": ["S", "M", "L", "XL"],
+          "sizes": [
+            "S",
+            "M",
+            "L",
+            "XL"
+          ],
           "colors": [
-            { "name": "Pembe", "hex": "#E8A0B4" },
-            { "name": "Siyah", "hex": "#1A1A1A" },
-            { "name": "Beyaz", "hex": "#F5F5F5" },
-            { "name": "Lacivert", "hex": "#1E3A5F" }
+            {
+              "name": "Pembe",
+              "hex": "#E8A0B4"
+            },
+            {
+              "name": "Siyah",
+              "hex": "#1A1A1A"
+            },
+            {
+              "name": "Beyaz",
+              "hex": "#F5F5F5"
+            },
+            {
+              "name": "Lacivert",
+              "hex": "#1E3A5F"
+            }
           ],
           "conditionLabel": "Sıfır",
           "category": "elbise",
-          "images": ["https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=800&q=80"]
+          "images": [
+            "/images/clothes/outfit-05/polo-ralph-lauren-women-s-shirt-01.png"
+          ]
         },
         {
           "title": "Beyaz Dantel Elbise",
           "description": "Zarif dantel detaylı yaz elbisesi.",
           "priceTry": 1099,
-          "sizes": ["S", "M", "L"],
+          "sizes": [
+            "S",
+            "M",
+            "L"
+          ],
           "colors": [
-            { "name": "Beyaz", "hex": "#F8F8F8" },
-            { "name": "Krem", "hex": "#EDE6D6" }
+            {
+              "name": "Beyaz",
+              "hex": "#F8F8F8"
+            },
+            {
+              "name": "Krem",
+              "hex": "#EDE6D6"
+            }
           ],
           "conditionLabel": "Sıfır",
           "category": "elbise",
-          "images": ["https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=800&q=80"]
+          "images": [
+            "/images/clothes/outfit-07/linen-cotton-blend-striped-shirt-01.png"
+          ]
         },
         {
           "title": "Siyah Saten Elbise",
           "description": "Akşam davetleri için şık saten model.",
           "priceTry": 1299,
-          "sizes": ["S", "M", "L", "XL"],
+          "sizes": [
+            "S",
+            "M",
+            "L",
+            "XL"
+          ],
           "colors": [
-            { "name": "Siyah", "hex": "#111111" },
-            { "name": "Bordo", "hex": "#6B1E2F" }
+            {
+              "name": "Siyah",
+              "hex": "#111111"
+            },
+            {
+              "name": "Bordo",
+              "hex": "#6B1E2F"
+            }
           ],
           "conditionLabel": "Sıfır",
           "category": "elbise",
-          "images": ["https://images.unsplash.com/photo-1566174053879-31528523f8ae?w=800&q=80"]
+          "images": [
+            "/images/clothes/outfit-04/ember-top-black-01.png"
+          ]
         },
         {
           "title": "Çiçek Desenli Elbise",
@@ -61,7 +105,9 @@
           "size": "40",
           "conditionLabel": "Sıfır",
           "category": "elbise",
-          "images": ["https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=800&q=80"]
+          "images": [
+            "/images/clothes/outfit-03/tank-top-01.png"
+          ]
         },
         {
           "title": "Krem Triko Kazak",
@@ -70,7 +116,9 @@
           "size": "S/M",
           "conditionLabel": "Sıfır",
           "category": "ust-giyim",
-          "images": ["https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=800&q=80"]
+          "images": [
+            "/images/clothes/outfit-010efe85/green-ribbed-zip-sweater.png"
+          ]
         },
         {
           "title": "Pudra Bluz",
@@ -79,7 +127,9 @@
           "size": "38",
           "conditionLabel": "Sıfır",
           "category": "ust-giyim",
-          "images": ["https://images.unsplash.com/photo-1485968579580-b6d5abe91de2?w=800&q=80"]
+          "images": [
+            "/images/clothes/outfit-07/v-neck-racerback-tank-01.png"
+          ]
         },
         {
           "title": "Beyaz Gömlek",
@@ -88,7 +138,9 @@
           "size": "38",
           "conditionLabel": "Sıfır",
           "category": "ust-giyim",
-          "images": ["https://images.unsplash.com/photo-1596755094514-f87e34085b56?w=800&q=80"]
+          "images": [
+            "/images/clothes/outfit-01/compression-shirt-01.png"
+          ]
         },
         {
           "title": "Lila Crop Top",
@@ -97,7 +149,9 @@
           "size": "S",
           "conditionLabel": "Sıfır",
           "category": "ust-giyim",
-          "images": ["https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=800&q=80"]
+          "images": [
+            "/images/clothes/outfit-a3ec0959/cider-maroon-striped-short-sleeve-shirt.png"
+          ]
         },
         {
           "title": "Yüksek Bel Pantolon",
@@ -106,7 +160,9 @@
           "size": "38",
           "conditionLabel": "Sıfır",
           "category": "alt-giyim",
-          "images": ["https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=800&q=80"]
+          "images": [
+            "/images/clothes/outfit-06/perfect-denims-01.png"
+          ]
         },
         {
           "title": "Kot Pantolon",
@@ -115,7 +171,9 @@
           "size": "38",
           "conditionLabel": "Sıfır",
           "category": "alt-giyim",
-          "images": ["https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=800&q=80"]
+          "images": [
+            "/images/clothes/outfit-03/baggy-jeans-01.png"
+          ]
         },
         {
           "title": "Pileli Etek",
@@ -124,7 +182,9 @@
           "size": "38",
           "conditionLabel": "Sıfır",
           "category": "alt-giyim",
-          "images": ["https://images.unsplash.com/photo-1583496661160-fb5886a0aaaa?w=800&q=80"]
+          "images": [
+            "/images/clothes/outfit-04/tweed-mini-skirt-with-decorative-belt-01.png"
+          ]
         },
         {
           "title": "Bej Trençkot",
@@ -133,7 +193,9 @@
           "size": "38",
           "conditionLabel": "Sıfır",
           "category": "dis-giyim",
-          "images": ["https://images.unsplash.com/photo-1548624313-08916f3a8965?w=800&q=80"]
+          "images": [
+            "/images/clothes/outfit-05/women-s-tan-cream-coat-01.png"
+          ]
         },
         {
           "title": "Krem Hırka",
@@ -142,7 +204,9 @@
           "size": "M",
           "conditionLabel": "Sıfır",
           "category": "dis-giyim",
-          "images": ["https://images.unsplash.com/photo-1434982418721-58584b692b42?w=800&q=80"]
+          "images": [
+            "/images/clothes/outfit-06/burn-mark-zip-up-hoodi-01.png"
+          ]
         },
         {
           "title": "Siyah Blazer",
@@ -151,7 +215,9 @@
           "size": "38",
           "conditionLabel": "Sıfır",
           "category": "dis-giyim",
-          "images": ["https://images.unsplash.com/photo-1591369822096-ffd140ec771f?w=800&q=80"]
+          "images": [
+            "/images/clothes/outfit-04/gray-raw-denim-jacket-01.png"
+          ]
         },
         {
           "title": "İkili Takım Set",
@@ -160,7 +226,9 @@
           "size": "38",
           "conditionLabel": "Sıfır",
           "category": "takim",
-          "images": ["https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&q=80"]
+          "images": [
+            "/images/clothes/outfit-07/black-soft-knee-length-wide-leg-jorts-01.png"
+          ]
         },
         {
           "title": "Keten Takım",
@@ -169,7 +237,9 @@
           "size": "38",
           "conditionLabel": "Sıfır",
           "category": "takim",
-          "images": ["https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=800&q=80"]
+          "images": [
+            "/images/clothes/outfit-01/bootcut-jeans-02.png"
+          ]
         },
         {
           "title": "Günlük Takım",
@@ -178,7 +248,9 @@
           "size": "40",
           "conditionLabel": "Sıfır",
           "category": "takim",
-          "images": ["https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=800&q=80"]
+          "images": [
+            "/images/clothes/outfit-05/hollister-co-women-s-black-and-navy-shorts-01.png"
+          ]
         },
         {
           "title": "Bordo Midi Elbise",
@@ -187,7 +259,9 @@
           "size": "36",
           "conditionLabel": "Sıfır",
           "category": "elbise",
-          "images": ["https://images.unsplash.com/photo-1539008835657-9e8e9680c956?w=800&q=80"]
+          "images": [
+            "/images/clothes/outfit-a3ec0959/minga-washed-black-star-cutout-jeans.png"
+          ]
         }
       ]
     }

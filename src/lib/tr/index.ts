@@ -31,6 +31,21 @@ export {
 export { getPublicBoutiqueStorefrontBySlug } from "@/lib/tr/storefront";
 
 export {
+  isLookbookPieceImage,
+  mapProductsWithLookbookImages,
+  withLookbookPieceImages,
+} from "@/lib/tr/lookbookImages";
+
+export {
+  getBoutiqueProductImages,
+  getMarketplaceProductImages,
+  getProductCoverImageFor,
+  hasRealMarketplaceImagery,
+  isCatalogCutoutImage,
+} from "@/lib/tr/productImages";
+export type { TrProductImageSurface } from "@/lib/tr/productImages";
+
+export {
   listPublishedTrLooks,
   safeListPublishedTrLooks,
   TR_LOOKS_SECTION_ID,

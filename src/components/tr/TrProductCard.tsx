@@ -1,10 +1,16 @@
 import Image from "next/image";
 import Link from "next/link";
-import { getProductCoverImage, trProductPath } from "@/lib/tr/paths";
+import {
+  getProductCoverImageFor,
+  isCatalogCutoutImage,
+} from "@/lib/tr/productImages";
+import { trProductPath } from "@/lib/tr/paths";
 import { resolveProductColors } from "@/lib/tr/productOptions";
 import { TrProductColorDots } from "@/components/tr/TrProductColorDots";
 import { formatTryFromKurus } from "@/types/tr-marketplace";
 import type { TrProduct, TrProductWithBoutique } from "@/types/tr-marketplace";
+
+export type TrProductCardVariant = "marketplace" | "boutique";
 
 interface TrProductCardProps {
   product: TrProduct | TrProductWithBoutique;
@@ -12,19 +18,26 @@ interface TrProductCardProps {
   priority?: boolean;
   /** Boutique slug for canonical PDP URL when product has no nested boutique. */
   boutiqueSlug?: string;
+  /**
+   * `marketplace` — catalog cutout (contain).
+   * `boutique` — original gallery cover (full-bleed).
+   */
+  variant?: TrProductCardVariant;
 }
 
 /**
  * Image-forward product tile — no card border / boxed chrome.
- * Spacing comes from the parent grid (tight gutters, like fashion retail).
  */
 export function TrProductCard({
   product,
   showBoutique = false,
   priority = false,
   boutiqueSlug,
+  variant = "boutique",
 }: TrProductCardProps) {
-  const coverImage = getProductCoverImage(product);
+  const coverImage = getProductCoverImageFor(variant, product);
+  const catalogCutout =
+    variant === "marketplace" || isCatalogCutoutImage(coverImage);
   const colors = resolveProductColors(product);
   const boutique =
     "boutique" in product && showBoutique ? product.boutique : null;
@@ -38,7 +51,11 @@ export function TrProductCard({
       href={trProductPath(product.id, slug)}
       className="group block bg-white outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
     >
-      <div className="relative aspect-[2/3] overflow-hidden bg-neutral-100">
+      <div
+        className={`relative aspect-[2/3] overflow-hidden ${
+          catalogCutout ? "bg-[#f3f1ec]" : "bg-neutral-100"
+        }`}
+      >
         {coverImage ? (
           <Image
             src={coverImage}
@@ -47,9 +64,11 @@ export function TrProductCard({
             priority={priority}
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             unoptimized
-            className={`object-cover transition-transform duration-700 group-hover:scale-[1.03] ${
-              isSold ? "opacity-60" : ""
-            }`}
+            className={`transition-transform duration-700 group-hover:scale-[1.03] ${
+              catalogCutout
+                ? "object-contain p-5 md:p-7"
+                : "object-cover"
+            } ${isSold ? "opacity-60" : ""}`}
           />
         ) : (
           <div className="flex h-full items-center justify-center bg-neutral-100 px-4 text-center">

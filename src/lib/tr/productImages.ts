@@ -1,0 +1,54 @@
+import { isLookbookPieceImage } from "@/data/tr/lookbookPieceImages";
+import { isTrMarketplaceAssetUrl } from "@/lib/tr/trAssetUrls";
+import type { TrProduct } from "@/types/tr-marketplace";
+
+export type TrProductImageSurface = "boutique" | "marketplace";
+
+function nonEmpty(urls: string[] | undefined): string[] {
+  return (urls ?? []).filter((url) => Boolean(url?.trim()));
+}
+
+/** Original boutique gallery (owner uploads). */
+export function getBoutiqueProductImages(
+  product: Pick<TrProduct, "images">,
+): string[] {
+  return nonEmpty(product.images);
+}
+
+/**
+ * Marketplace / catalog cutouts. Falls back to boutique originals when
+ * normalization has not produced cutouts yet.
+ */
+export function getMarketplaceProductImages(
+  product: Pick<TrProduct, "images" | "marketplaceImages">,
+): string[] {
+  const marketplace = nonEmpty(product.marketplaceImages);
+  if (marketplace.length > 0) return marketplace;
+  return getBoutiqueProductImages(product);
+}
+
+export function getProductCoverImageFor(
+  surface: TrProductImageSurface,
+  product: Pick<TrProduct, "images" | "marketplaceImages">,
+): string | null {
+  const list =
+    surface === "marketplace"
+      ? getMarketplaceProductImages(product)
+      : getBoutiqueProductImages(product);
+  return list[0] ?? null;
+}
+
+export function hasRealMarketplaceImagery(
+  product: Pick<TrProduct, "images" | "marketplaceImages">,
+): boolean {
+  if (nonEmpty(product.marketplaceImages).length > 0) return true;
+  return nonEmpty(product.images).some(
+    (url) => isTrMarketplaceAssetUrl(url) || isLookbookPieceImage(url),
+  );
+}
+
+/** True when the cover should render as a contained cutout (not full-bleed cover). */
+export function isCatalogCutoutImage(src: string | null | undefined): boolean {
+  if (!src) return false;
+  return isLookbookPieceImage(src) || isTrMarketplaceAssetUrl(src);
+}

@@ -60,7 +60,10 @@ export interface TrProduct {
   colors: TrProductColor[];
   conditionLabel: string | null;
   category: string | null;
+  /** Boutique gallery — original owner uploads. */
   images: string[];
+  /** Marketplace / catalog cutouts (BG removed + normalized). */
+  marketplaceImages: string[];
   status: TrProductStatus;
   stock: number;
   sortOrder: number;
@@ -149,6 +152,7 @@ export interface CreateTrProductInput {
   conditionLabel?: string | null;
   category?: string | null;
   images?: string[];
+  marketplaceImages?: string[];
   status?: TrProductStatus;
   stock?: number;
   sortOrder?: number;
@@ -164,6 +168,7 @@ export interface UpdateTrProductInput {
   conditionLabel?: string | null;
   category?: string | null;
   images?: string[];
+  marketplaceImages?: string[];
   status?: TrProductStatus;
   stock?: number;
   sortOrder?: number;

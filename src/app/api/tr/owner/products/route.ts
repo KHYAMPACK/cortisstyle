@@ -155,6 +155,7 @@ export async function POST(request: Request) {
       colors: readColors(body.colors) ?? [],
       category: typeof body.category === "string" ? body.category : null,
       images: readStringArray(body.images) ?? [],
+      marketplaceImages: readStringArray(body.marketplaceImages) ?? [],
       conditionLabel:
         typeof body.conditionLabel === "string" ? body.conditionLabel : null,
       status,

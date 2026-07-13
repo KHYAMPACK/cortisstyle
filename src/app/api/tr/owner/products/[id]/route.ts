@@ -129,6 +129,9 @@ export async function PATCH(request: Request, context: RouteContext) {
   if (body.sizes !== undefined) patch.sizes = readStringArray(body.sizes) ?? [];
   if (body.colors !== undefined) patch.colors = readColors(body.colors) ?? [];
   if (body.images !== undefined) patch.images = readStringArray(body.images) ?? [];
+  if (body.marketplaceImages !== undefined) {
+    patch.marketplaceImages = readStringArray(body.marketplaceImages) ?? [];
+  }
   if (typeof body.category === "string" || body.category === null) {
     patch.category = typeof body.category === "string" ? body.category : null;
   }

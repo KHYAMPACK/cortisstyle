@@ -63,6 +63,7 @@ export default async function TrMarketplaceHomePage() {
                 key={product.id}
                 product={product}
                 showBoutique
+                variant="marketplace"
                 priority={index < 4}
               />
             ))}

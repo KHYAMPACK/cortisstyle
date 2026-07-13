@@ -1,5 +1,7 @@
+import { TrBoutiqueCatalogCutout } from "@/components/tr/boutique/pdp/TrBoutiqueCatalogCutout";
 import { TrProductDetailPanel } from "@/components/tr/TrProductDetailPanel";
 import { TrProductGallery } from "@/components/tr/TrProductGallery";
+import { getBoutiqueProductImages } from "@/lib/tr/productImages";
 import type { TrProductWithBoutique } from "@/types/tr-marketplace";
 
 interface TrBoutiquePdpSplitProps {
@@ -8,6 +10,11 @@ interface TrBoutiquePdpSplitProps {
 }
 
 export function TrBoutiquePdpSplit({ product, branded }: TrBoutiquePdpSplitProps) {
+  const galleryProduct = {
+    ...product,
+    images: getBoutiqueProductImages(product),
+  };
+
   const wrapperClass = branded
     ? "mx-auto max-w-6xl px-5 py-8 md:px-8 md:py-10"
     : "";
@@ -27,7 +34,8 @@ export function TrBoutiquePdpSplit({ product, branded }: TrBoutiquePdpSplitProps
                 : "border-b border-blueprint-border px-5 py-6 md:px-10 lg:border-r lg:border-b-0"
             }
           >
-            <TrProductGallery product={product} />
+            <TrProductGallery product={galleryProduct} />
+            <TrBoutiqueCatalogCutout product={product} branded={branded} />
           </div>
 
           <div className={branded ? "" : "px-5 py-8 md:px-10 md:py-10"}>

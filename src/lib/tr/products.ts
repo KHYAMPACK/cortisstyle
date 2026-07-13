@@ -12,7 +12,7 @@ import type {
 } from "@/types/tr-marketplace";
 
 const PUBLIC_PRODUCT_COLUMNS =
-  "id, boutique_id, title, description, price_kurus, size, sizes, colors, condition_label, category, images, status, sort_order, created_at, updated_at";
+  "id, boutique_id, title, description, price_kurus, size, sizes, colors, condition_label, category, images, marketplace_images, status, stock, sort_order, created_at, updated_at";
 
 function productInsertRow(input: CreateTrProductInput) {
   return {
@@ -26,6 +26,7 @@ function productInsertRow(input: CreateTrProductInput) {
     condition_label: input.conditionLabel?.trim() ?? null,
     category: input.category?.trim() ?? null,
     images: input.images ?? [],
+    marketplace_images: input.marketplaceImages ?? [],
     status: input.status ?? "available",
     stock: input.stock ?? 1,
     sort_order: input.sortOrder ?? 0,
@@ -190,6 +191,9 @@ function productUpdateRow(input: UpdateTrProductInput): Record<string, unknown> 
     row.category = input.category?.trim() ?? null;
   }
   if (input.images !== undefined) row.images = input.images;
+  if (input.marketplaceImages !== undefined) {
+    row.marketplace_images = input.marketplaceImages;
+  }
   if (input.status !== undefined) row.status = input.status;
   if (input.stock !== undefined) row.stock = input.stock;
   if (input.sortOrder !== undefined) row.sort_order = input.sortOrder;

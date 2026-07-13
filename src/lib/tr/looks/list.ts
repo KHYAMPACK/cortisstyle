@@ -1,4 +1,5 @@
 import { TR_LOOK_DEFINITIONS } from "@/data/tr/looks/looks";
+import { withLookbookPieceImages } from "@/lib/tr/lookbookImages";
 import { getProductCoverImage } from "@/lib/tr/paths";
 import { listPublicAvailableProducts } from "@/lib/tr/products";
 import type { TrLookDefinition, TrLookWithProducts } from "@/types/tr-look";
@@ -63,7 +64,9 @@ function hydrateLook(
       ? Math.max(0, definition.autoPickCount - fromIds.length)
       : 0;
   const auto = autoPickProducts(catalog, fromIds, need);
-  const products = [...fromIds, ...auto];
+  const products = [...fromIds, ...auto].map((product) =>
+    withLookbookPieceImages(product),
+  );
 
   if (products.length === 0) return null;
 

@@ -129,6 +129,9 @@ export function TrProductEditorForm({
     String(initialProduct?.stock ?? 1),
   );
   const [images, setImages] = useState<string[]>(initialProduct?.images ?? []);
+  const [marketplaceImages, setMarketplaceImages] = useState<string[]>(
+    initialProduct?.marketplaceImages ?? [],
+  );
   const [status, setStatus] = useState<TrProductStatus>(
     initialProduct?.status ?? "available",
   );
@@ -156,6 +159,7 @@ export function TrProductEditorForm({
     setColors(initialProduct.colors);
     setStock(String(initialProduct.stock ?? 1));
     setImages(initialProduct.images);
+    setMarketplaceImages(initialProduct.marketplaceImages ?? []);
     setStatus(initialProduct.status);
 
     if (
@@ -274,12 +278,15 @@ export function TrProductEditorForm({
     setUploading(true);
     setError(null);
     try {
-      const uploaded: string[] = [];
+      const nextOriginals: string[] = [];
+      const nextMarketplace: string[] = [];
       for (const file of Array.from(fileList)) {
-        const url = await uploadOwnerProductImage(boutiqueId, file);
-        uploaded.push(url);
+        const uploaded = await uploadOwnerProductImage(boutiqueId, file);
+        nextOriginals.push(uploaded.url);
+        nextMarketplace.push(uploaded.marketplaceUrl ?? "");
       }
-      setImages((current) => [...current, ...uploaded]);
+      setImages((current) => [...current, ...nextOriginals]);
+      setMarketplaceImages((current) => [...current, ...nextMarketplace]);
     } catch (uploadError) {
       setError(
         uploadError instanceof Error
@@ -291,17 +298,26 @@ export function TrProductEditorForm({
     }
   };
 
-  const removeImage = (url: string) => {
-    setImages((current) => current.filter((entry) => entry !== url));
+  const removeImage = (index: number) => {
+    setImages((current) => current.filter((_, i) => i !== index));
+    setMarketplaceImages((current) => current.filter((_, i) => i !== index));
   };
 
   const moveImage = (index: number, direction: -1 | 1) => {
+    const target = index + direction;
     setImages((current) => {
+      if (target < 0 || target >= current.length) return current;
       const next = [...current];
-      const target = index + direction;
-      if (target < 0 || target >= next.length) return current;
-      const tmp = next[index];
-      next[index] = next[target];
+      const tmp = next[index]!;
+      next[index] = next[target]!;
+      next[target] = tmp;
+      return next;
+    });
+    setMarketplaceImages((current) => {
+      if (target < 0 || target >= current.length) return current;
+      const next = [...current];
+      const tmp = next[index] ?? "";
+      next[index] = next[target] ?? "";
       next[target] = tmp;
       return next;
     });
@@ -312,7 +328,12 @@ export function TrProductEditorForm({
     setImages((current) => {
       const next = [...current];
       const [picked] = next.splice(index, 1);
-      return [picked, ...next];
+      return [picked!, ...next];
+    });
+    setMarketplaceImages((current) => {
+      const next = [...current];
+      const [picked] = next.splice(index, 1);
+      return [picked ?? "", ...next];
     });
   };
 
@@ -347,6 +368,7 @@ export function TrProductEditorForm({
         colors: colorsEnabled ? colors : [],
         category,
         images,
+        marketplaceImages: images.map((_, index) => marketplaceImages[index] ?? ""),
         stock: stockValue,
         status,
       };
@@ -414,13 +436,25 @@ export function TrProductEditorForm({
               }}
             />
           </label>
+          {uploading ? (
+            <p className="mt-2 text-[11px] leading-relaxed text-meta">
+              Arka plan temizleniyor ve katalog görseli hazırlanıyor…
+            </p>
+          ) : (
+            <p className="mt-2 text-[11px] leading-relaxed text-meta">
+              Butik galerisi için orijinal fotoğraf kaydedilir; pazaryeri için
+              ayrı katalog kesiti üretilir.
+            </p>
+          )}
         </div>
 
         {images.length > 0 ? (
           <ol className="flex gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {images.map((url, index) => (
+            {images.map((url, index) => {
+              const catalogUrl = marketplaceImages[index];
+              return (
               <li
-                key={url}
+                key={`${url}-${index}`}
                 className={`relative w-[132px] shrink-0 overflow-hidden border bg-neutral-100 ${
                   index === 0
                     ? "border-jet-black ring-1 ring-jet-black"
@@ -445,6 +479,11 @@ export function TrProductEditorForm({
                   >
                     {index === 0 ? "Kapak · 1" : `${index + 1}`}
                   </span>
+                  {catalogUrl ? (
+                    <span className="absolute right-1.5 bottom-1.5 bg-white/90 px-1.5 py-0.5 text-[8px] tracking-[0.06em] text-neutral-700 uppercase">
+                      Katalog hazır
+                    </span>
+                  ) : null}
                 </div>
 
                 <div className="space-y-1 border-t border-black/10 bg-white p-1.5">
@@ -484,13 +523,14 @@ export function TrProductEditorForm({
                   <button
                     type="button"
                     className="w-full border border-black/10 bg-white py-1.5 text-[10px] tracking-[0.06em] text-red-700 uppercase"
-                    onClick={() => removeImage(url)}
+                    onClick={() => removeImage(index)}
                   >
                     Sil
                   </button>
                 </div>
               </li>
-            ))}
+              );
+            })}
           </ol>
         ) : (
           <p className="border border-dashed border-black/15 bg-neutral-50 px-4 py-6 text-[12px] text-neutral-500">

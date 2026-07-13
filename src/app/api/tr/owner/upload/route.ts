@@ -2,6 +2,11 @@ import {
   requireOwnedBoutique,
   requireTrOwner,
 } from "@/lib/tr/ownerAuth";
+import {
+  isTrProductImageNormalizeEnabled,
+  normalizeProductCutoutToCanvas,
+} from "@/lib/tr/normalizeProductImage";
+import { removeGarmentBackground } from "@/lib/studioRemoveBg";
 import { uploadTrProductAsset } from "@/lib/tr/trAssetStorage";
 
 export const runtime = "nodejs";
@@ -11,7 +16,7 @@ const ALLOWED_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
 /**
  * POST /api/tr/owner/upload
  * multipart: file + boutiqueId
- * Authorization: Bearer {supabase access token}
+ * Returns original URL always; marketplaceUrl when Photoroom + normalize succeed.
  */
 export async function POST(request: Request) {
   const authResult = await requireTrOwner(request);
@@ -55,14 +60,48 @@ export async function POST(request: Request) {
 
   try {
     const bytes = Buffer.from(await file.arrayBuffer());
-    const uploaded = await uploadTrProductAsset({
+    const original = await uploadTrProductAsset({
       userId: authResult.auth.user.id,
       boutiqueId: boutique.id,
       bytes,
       contentType,
+      kind: "original",
     });
 
-    return Response.json({ url: uploaded.url, path: uploaded.path });
+    let marketplaceUrl: string | null = null;
+    let marketplacePath: string | null = null;
+
+    if (isTrProductImageNormalizeEnabled()) {
+      try {
+        const cutout = await removeGarmentBackground({
+          bytes,
+          filename: file.name || "product.jpg",
+          mimeType: contentType,
+        });
+        const normalized = await normalizeProductCutoutToCanvas(cutout);
+        const marketplace = await uploadTrProductAsset({
+          userId: authResult.auth.user.id,
+          boutiqueId: boutique.id,
+          bytes: normalized,
+          contentType: "image/png",
+          kind: "marketplace",
+        });
+        marketplaceUrl = marketplace.url;
+        marketplacePath = marketplace.path;
+      } catch (normalizeError) {
+        console.error(
+          "[tr/owner/upload] marketplace normalize failed (keeping original):",
+          normalizeError,
+        );
+      }
+    }
+
+    return Response.json({
+      url: original.url,
+      path: original.path,
+      marketplaceUrl,
+      marketplacePath,
+    });
   } catch (error) {
     console.error("[tr/owner/upload] failed:", error);
     return Response.json(
