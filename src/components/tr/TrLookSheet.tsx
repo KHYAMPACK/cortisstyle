@@ -1,35 +1,63 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import { TrDemoGarmentVisual } from "@/components/tr/demo/TrDemoGarmentVisual";
-import { TrPurchaseActions } from "@/components/tr/TrPurchaseActions";
 import {
   getProductCoverImageFor,
   isCatalogCutoutImage,
 } from "@/lib/tr/productImages";
 import { isTrDemoIconSrc } from "@/lib/tr/demoIcons";
 import { isTrDemoProduct } from "@/lib/tr/looks/demoCatalog";
-import { trBoutiquePath, trBoutiqueProductPath, TR_PDP_FROM_CADDE } from "@/lib/tr/paths";
+import { trCartPath } from "@/lib/tr/paths";
+import { useTrCartStore } from "@/store/trCartStore";
 import { formatTryFromKurus } from "@/types/tr-marketplace";
 import type { TrLookWithProducts } from "@/types/tr-look";
+import type { TrProductWithBoutique } from "@/types/tr-marketplace";
+import type { TrCartLineItem } from "@/types/tr-cart";
 import { trPanelEase, trPanelFadeTransition } from "@/components/tr/panel/TrPanelMotion";
 
 interface TrLookSheetProps {
   look: TrLookWithProducts | null;
   onClose: () => void;
-  /** When true, Sepete ekle is available (demo or live checkout). */
+  /** Open the home product quick sheet for a piece. */
+  onViewProduct: (product: TrProductWithBoutique) => void;
+  /** When true, outfit add-to-cart is available (demo or live checkout). */
   cartEnabled?: boolean;
+}
+
+function productToCartLine(product: TrProductWithBoutique): TrCartLineItem {
+  return {
+    productId: product.id,
+    boutiqueId: product.boutiqueId,
+    boutiqueName: product.boutique.name,
+    boutiqueSlug: product.boutique.slug,
+    title: product.title,
+    priceKurus: product.priceKurus,
+    image: getProductCoverImageFor("marketplace", product),
+    size: product.size,
+  };
 }
 
 export function TrLookSheet({
   look,
   onClose,
+  onViewProduct,
   cartEnabled = false,
 }: TrLookSheetProps) {
+  const addItem = useTrCartStore((state) => state.addItem);
+  const cartItems = useTrCartStore((state) => state.items);
+  const [addFeedback, setAddFeedback] = useState<"added" | "partial" | null>(
+    null,
+  );
+
+  useEffect(() => {
+    setAddFeedback(null);
+  }, [look?.id]);
+
   useEffect(() => {
     if (!look) return;
     const onKey = (event: KeyboardEvent) => {
@@ -45,6 +73,28 @@ export function TrLookSheet({
   }, [look, onClose]);
 
   const demoLook = look?.products.some(isTrDemoProduct) ?? false;
+  const availableProducts =
+    look?.products.filter((product) => product.status === "available") ?? [];
+  const alreadyInCart =
+    availableProducts.length > 0 &&
+    availableProducts.every((product) =>
+      cartItems.some((entry) => entry.productId === product.id),
+    );
+
+  const handleAddOutfit = () => {
+    if (!look || !cartEnabled) return;
+    let added = 0;
+    for (const product of availableProducts) {
+      if (addItem(productToCartLine(product))) added += 1;
+    }
+    if (added === 0) {
+      setAddFeedback(null);
+      return;
+    }
+    setAddFeedback(
+      added === availableProducts.length ? "added" : "partial",
+    );
+  };
 
   return (
     <AnimatePresence>
@@ -75,12 +125,12 @@ export function TrLookSheet({
           >
             <div className="flex items-start justify-between gap-4 border-b border-blueprint-border px-5 py-4 md:px-6">
               <div>
-                <p className="text-meta text-[9px] tracking-[0.35em] uppercase">
-                  [ KOMBİN ]
+                <p className="text-meta text-[10px] tracking-[0.18em] uppercase">
+                  Kombin
                   {look.boutiqueCount > 1
-                    ? ` · ${look.boutiqueCount} BUTİK`
+                    ? ` · ${look.boutiqueCount} butik`
                     : ""}
-                  {demoLook ? " · DEMO" : ""}
+                  {demoLook ? " · Demo" : ""}
                 </p>
                 <h2
                   id={`tr-look-${look.id}-title`}
@@ -107,11 +157,6 @@ export function TrLookSheet({
             <ul className="flex-1 overflow-y-auto">
               {look.products.map((product, index) => {
                 const cover = getProductCoverImageFor("marketplace", product);
-                const href = trBoutiqueProductPath(
-                  product.boutique.slug,
-                  product.id,
-                  { from: TR_PDP_FROM_CADDE },
-                );
                 return (
                   <motion.li
                     key={product.id}
@@ -125,10 +170,11 @@ export function TrLookSheet({
                     className="border-b border-blueprint-border last:border-b-0"
                   >
                     <div className="flex gap-4 px-5 py-4 md:px-6">
-                      <Link
-                        href={href}
-                        onClick={onClose}
+                      <button
+                        type="button"
+                        onClick={() => onViewProduct(product)}
                         className="relative h-24 w-[4.5rem] shrink-0 overflow-hidden bg-ice-floor md:h-28 md:w-20"
+                        aria-label={`${product.title} — ürünü gör`}
                       >
                         {isTrDemoIconSrc(cover) ? (
                           <TrDemoGarmentVisual
@@ -149,49 +195,24 @@ export function TrLookSheet({
                             }
                           />
                         ) : null}
-                      </Link>
+                      </button>
                       <div className="min-w-0 flex-1 py-0.5">
-                        <Link
-                          href={trBoutiquePath(product.boutique.slug)}
-                          onClick={onClose}
-                          className="font-mono text-[9px] tracking-[0.22em] text-meta uppercase transition-colors hover:text-jet-black"
-                        >
+                        <p className="font-mono text-[9px] tracking-[0.22em] text-meta uppercase">
                           {product.boutique.name}
-                        </Link>
-                        <Link
-                          href={href}
-                          onClick={onClose}
-                          className="mt-1 block truncate font-serif text-lg leading-snug tracking-[-0.02em] text-neutral-950 hover:underline"
-                        >
+                        </p>
+                        <p className="mt-1 truncate font-serif text-lg leading-snug tracking-[-0.02em] text-neutral-950">
                           {product.title}
-                        </Link>
-                        <p className="mt-2 text-[12px] tracking-[0.04em] text-neutral-700">
+                        </p>
+                        <p className="mt-2 text-[12px] tracking-[0.04em] text-brand-primary">
                           {formatTryFromKurus(product.priceKurus)}
                         </p>
-                        {cartEnabled ? (
-                          <div className="mt-3 max-w-xs">
-                            <TrPurchaseActions
-                              productId={product.id}
-                              boutiqueId={product.boutiqueId}
-                              boutiqueName={product.boutique.name}
-                              boutiqueSlug={product.boutique.slug}
-                              title={product.title}
-                              priceKurus={product.priceKurus}
-                              image={cover}
-                              size={product.size}
-                              status={product.status}
-                              className="!mt-0"
-                            />
-                          </div>
-                        ) : (
-                          <Link
-                            href={href}
-                            onClick={onClose}
-                            className="mt-3 inline-block font-mono text-[9px] tracking-[0.22em] text-neutral-500 uppercase hover:text-jet-black"
-                          >
-                            Ürünü gör →
-                          </Link>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => onViewProduct(product)}
+                          className="mt-3 inline-flex border border-brand-primary/40 bg-white px-4 py-2.5 text-[10px] tracking-[0.18em] text-brand-primary uppercase transition-colors hover:border-brand-primary hover:bg-brand-primary hover:text-white"
+                        >
+                          Ürünü gör
+                        </button>
                       </div>
                     </div>
                   </motion.li>
@@ -199,10 +220,39 @@ export function TrLookSheet({
               })}
             </ul>
 
-            <div className="border-t border-blueprint-border px-5 py-3 md:px-6">
+            <div className="space-y-3 border-t border-blueprint-border px-5 py-4 md:px-6">
+              {cartEnabled && availableProducts.length > 0 ? (
+                alreadyInCart ? (
+                  <Link
+                    href={trCartPath()}
+                    onClick={onClose}
+                    className="btn-primary inline-flex w-full items-center justify-center px-6 py-4 text-[11px] tracking-[0.2em]"
+                  >
+                    Kombin sepette — sepete git
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleAddOutfit}
+                    className="btn-primary inline-flex w-full items-center justify-center px-6 py-4 text-[11px] tracking-[0.2em]"
+                  >
+                    Kombini sepete ekle
+                  </button>
+                )
+              ) : null}
+              {addFeedback === "added" ? (
+                <p className="text-center text-[11px] text-meta">
+                  Kombin sepete eklendi.
+                </p>
+              ) : null}
+              {addFeedback === "partial" ? (
+                <p className="text-center text-[11px] text-meta">
+                  Eksik parçalar sepete eklendi.
+                </p>
+              ) : null}
               <p className="text-[11px] leading-relaxed text-meta">
                 {demoLook
-                  ? "Demo akış — parçaları sepete ekle, butik vitrinine gir, ödemeyi tamamla."
+                  ? "Demo akış — kombini sepete ekle veya parçayı ürün penceresinde incele."
                   : "Parçalar farklı butiklerden gelebilir — tek sepette toplanır."}
               </p>
             </div>

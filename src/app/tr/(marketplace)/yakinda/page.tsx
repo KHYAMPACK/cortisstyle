@@ -6,7 +6,7 @@ export default function TrComingSoonPage() {
   return (
     <div>
       <TrSectionHeader
-        kicker="[ YAKINDA ]"
+        kicker="Yakında"
         title="Yakında"
         description="Hukuki metinler ve tam ödeme deneyimi kayıt süreci tamamlandığında yayınlanacak."
       />

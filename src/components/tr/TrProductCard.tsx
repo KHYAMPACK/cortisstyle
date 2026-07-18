@@ -4,12 +4,14 @@ import Image from "next/image";
 import Link from "next/link";
 import type { KeyboardEvent } from "react";
 import { TrDemoGarmentVisual } from "@/components/tr/demo/TrDemoGarmentVisual";
+import { TrFavoriteButton } from "@/components/tr/TrFavoriteButton";
+import { getTrCategoryLabel } from "@/lib/tr/categories";
 import { isTrDemoIconSrc } from "@/lib/tr/demoIcons";
 import {
   getProductCoverImageFor,
   isCatalogCutoutImage,
 } from "@/lib/tr/productImages";
-import { trProductPath } from "@/lib/tr/paths";
+import { trClothPath, trProductPath } from "@/lib/tr/paths";
 import { resolveProductColors } from "@/lib/tr/productOptions";
 import { TrProductColorDots } from "@/components/tr/TrProductColorDots";
 import { formatTryFromKurus } from "@/types/tr-marketplace";
@@ -22,9 +24,10 @@ interface TrProductCardProps {
   showBoutique?: boolean;
   priority?: boolean;
   boutiqueSlug?: string;
+  boutiqueName?: string;
   variant?: TrProductCardVariant;
   /**
-   * When set (home piece rails), open quick view instead of navigating to PDP.
+   * When set, open quick view instead of navigating.
    * Requires a product with nested boutique.
    */
   onSelect?: (product: TrProductWithBoutique) => void;
@@ -35,6 +38,7 @@ export function TrProductCard({
   showBoutique = false,
   priority = false,
   boutiqueSlug,
+  boutiqueName,
   variant = "boutique",
   onSelect,
 }: TrProductCardProps) {
@@ -44,16 +48,25 @@ export function TrProductCard({
     !demoIcon &&
     (variant === "marketplace" || isCatalogCutoutImage(coverImage));
   const colors = resolveProductColors(product);
-  const boutique =
-    "boutique" in product && showBoutique ? product.boutique : null;
   const isSold = product.status === "sold";
   const slug =
     boutiqueSlug ??
     ("boutique" in product ? product.boutique.slug : undefined);
+  const resolvedBoutiqueName =
+    boutiqueName ??
+    ("boutique" in product ? product.boutique.name : undefined);
+  const showSeller = showBoutique && Boolean(resolvedBoutiqueName);
+  const categoryLabel = getTrCategoryLabel(product.category);
+  const centered = variant === "marketplace";
   const quickView =
     Boolean(onSelect) && "boutique" in product
       ? (product as TrProductWithBoutique)
       : null;
+
+  const metaBits = [
+    categoryLabel,
+    product.size?.trim() || null,
+  ].filter(Boolean);
 
   const body = (
     <>
@@ -91,25 +104,50 @@ export function TrProductCard({
             Satıldı
           </span>
         ) : null}
+
+        <TrFavoriteButton
+          product={product}
+          boutiqueSlug={slug}
+          boutiqueName={resolvedBoutiqueName}
+          className="absolute top-2 right-2 z-10 h-8 w-8"
+        />
       </div>
 
-      <div className="px-2 pt-3 pb-5 md:px-2.5">
-        <h3 className="line-clamp-2 font-serif text-[11px] leading-snug tracking-[0.12em] text-neutral-900 uppercase md:text-xs">
+      <div
+        className={`px-2 pt-3 pb-5 md:px-2.5 ${
+          centered ? "text-center" : "text-left"
+        }`}
+      >
+        {showSeller ? (
+          <p className="text-[10px] font-semibold tracking-[0.08em] text-neutral-900 uppercase">
+            {resolvedBoutiqueName}
+          </p>
+        ) : null}
+
+        <h3
+          className={`line-clamp-2 font-serif text-[11px] leading-snug tracking-[0.1em] text-neutral-800 uppercase md:text-xs ${
+            showSeller ? "mt-1" : ""
+          }`}
+        >
           {product.title}
         </h3>
 
-        <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
-          <span className="text-meta text-[11px] tracking-[0.06em]">
+        {metaBits.length > 0 ? (
+          <p className="text-meta mt-1.5 text-[9px] tracking-[0.16em] uppercase">
+            {metaBits.join(" · ")}
+          </p>
+        ) : null}
+
+        <div
+          className={`mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5 ${
+            centered ? "justify-center" : ""
+          }`}
+        >
+          <span className="text-[12px] font-medium tracking-[0.04em] text-brand-primary">
             {formatTryFromKurus(product.priceKurus)}
           </span>
           <TrProductColorDots colors={colors} />
         </div>
-
-        {boutique ? (
-          <p className="text-meta mt-1.5 text-[9px] tracking-[0.22em] uppercase">
-            {boutique.name}
-          </p>
-        ) : null}
       </div>
     </>
   );
@@ -128,7 +166,7 @@ export function TrProductCard({
         tabIndex={0}
         onClick={() => onSelect(quickView)}
         onKeyDown={handleKeyDown}
-        className="group block cursor-pointer bg-white text-left outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
+        className="group relative block cursor-pointer bg-white outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2"
         aria-label={`${product.title} — hızlı bak`}
       >
         {body}
@@ -138,8 +176,12 @@ export function TrProductCard({
 
   return (
     <Link
-      href={trProductPath(product.id, slug)}
-      className="group block bg-white outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
+      href={
+        variant === "marketplace"
+          ? trClothPath(product.id)
+          : trProductPath(product.id, slug)
+      }
+      className="group relative block bg-white outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2"
     >
       {body}
     </Link>

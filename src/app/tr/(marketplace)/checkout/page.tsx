@@ -1,15 +1,7 @@
-import { TrCheckoutPageContent } from "@/components/tr/TrCheckoutPageContent";
-import { TrSectionHeader } from "@/components/tr/TrSectionHeader";
+import { permanentRedirect } from "next/navigation";
+import { trCheckoutPath } from "@/lib/tr/paths";
 
-export default function TrCheckoutPage() {
-  return (
-    <div>
-      <TrSectionHeader
-        kicker="[ ÖDEME ]"
-        title="Ödeme"
-        description="Teslimat bilgilerinizi girin. Kart ödemesi henüz aktif değil."
-      />
-      <TrCheckoutPageContent />
-    </div>
-  );
+/** Legacy English path — redirects to /tr/odeme. */
+export default function LegacyTrCheckoutPage() {
+  permanentRedirect(trCheckoutPath());
 }

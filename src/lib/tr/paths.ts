@@ -7,6 +7,36 @@ export function trHomePath(): string {
   return "/tr";
 }
 
+/** Zara-style full-page search (no marketplace chrome). */
+export function trSearchPath(): string {
+  return "/tr/ara";
+}
+
+export function trProductsPath(params?: {
+  q?: string;
+  kategori?: string;
+}): string {
+  const base = "/tr/urunler";
+  const search = new URLSearchParams();
+  const q = params?.q?.trim();
+  const kategori = params?.kategori?.trim();
+  if (q) search.set("q", q);
+  if (kategori) search.set("kategori", kategori);
+  const qs = search.toString();
+  return qs ? `${base}?${qs}` : base;
+}
+
+export function trFavoritesPath(): string {
+  return "/tr/favoriler";
+}
+
+export function trBoutiquesPath(params?: { q?: string }): string {
+  const base = "/tr/butikler";
+  const q = params?.q?.trim();
+  if (!q) return base;
+  return `${base}?${new URLSearchParams({ q }).toString()}`;
+}
+
 export function trBoutiquePath(slug: string): string {
   return `/tr/${encodeURIComponent(slug)}`;
 }
@@ -26,6 +56,16 @@ export function trBoutiqueProductPath(
   return path;
 }
 
+/** Marketplace cloth (parça) detail — not boutique-branded PDP. */
+export function trClothPath(productId: string): string {
+  return `/tr/parca/${encodeURIComponent(productId)}`;
+}
+
+/** Marketplace look (kombin) detail. */
+export function trLookPath(slug: string): string {
+  return `/tr/kombin/${encodeURIComponent(slug)}`;
+}
+
 /** Canonical boutique PDP when slug is known; legacy `/tr/shop/id` fallback otherwise. */
 export function trProductPath(
   productId: string,
@@ -39,11 +79,11 @@ export function trProductPath(
 }
 
 export function trCartPath(): string {
-  return "/tr/cart";
+  return "/tr/sepet";
 }
 
 export function trCheckoutPath(): string {
-  return "/tr/checkout";
+  return "/tr/odeme";
 }
 
 export function trOrderConfirmationPath(): string {

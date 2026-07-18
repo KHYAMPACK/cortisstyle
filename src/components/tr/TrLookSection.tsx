@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import {
   TR_HOME_PLACEHOLDER_LOOKS,
   TR_HOME_PLACEHOLDER_PIECES_PER_LOOK,
@@ -14,13 +13,13 @@ import {
   TR_LOOK_PIECE_TILE,
   TrLookPieceStack,
 } from "@/components/tr/TrLookPieceStack";
-import { TrLookSheet } from "@/components/tr/TrLookSheet";
 import { TrSectionHeader } from "@/components/tr/TrSectionHeader";
 import { TR_LOOKS_SECTION_ID } from "@/lib/tr/looks";
 import type { TrLookWithProducts } from "@/types/tr-look";
 
 interface TrLookSectionProps {
   looks: TrLookWithProducts[];
+  /** Kept for call-site compatibility; cart actions live on kombin page. */
   cartEnabled?: boolean;
 }
 
@@ -46,11 +45,7 @@ function TrLookPieceStackPlaceholder({ index }: { index: number }) {
   );
 }
 
-export function TrLookSection({
-  looks,
-  cartEnabled = false,
-}: TrLookSectionProps) {
-  const [selected, setSelected] = useState<TrLookWithProducts | null>(null);
+export function TrLookSection({ looks }: TrLookSectionProps) {
   const showPlaceholders = looks.length === 0;
 
   return (
@@ -59,29 +54,15 @@ export function TrLookSection({
       className="scroll-mt-20"
       aria-label="Kombinler"
     >
-      <TrSectionHeader kicker="[ KOMBİNLER ]" />
+      <TrSectionHeader title="Kombinler" kicker="Editoryal" />
 
       {showPlaceholders
         ? Array.from({ length: TR_HOME_PLACEHOLDER_LOOKS }, (_, index) => (
             <TrLookPieceStackPlaceholder key={index} index={index} />
           ))
         : looks.map((look, index) => (
-            <TrLookPieceStack
-              key={look.id}
-              look={look}
-              index={index}
-              onSelect={setSelected}
-              cartEnabled={cartEnabled}
-            />
+            <TrLookPieceStack key={look.id} look={look} index={index} />
           ))}
-
-      {!showPlaceholders ? (
-        <TrLookSheet
-          look={selected}
-          onClose={() => setSelected(null)}
-          cartEnabled={cartEnabled}
-        />
-      ) : null}
     </section>
   );
 }

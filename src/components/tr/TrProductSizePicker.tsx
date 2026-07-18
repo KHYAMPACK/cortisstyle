@@ -4,6 +4,7 @@ interface TrProductSizePickerProps {
   sizes: string[];
   selectedSize: string | null;
   onChange: (size: string) => void;
+  /** Boutique theme accent; defaults to marketplace brand primary. */
   accentColor?: string;
 }
 
@@ -11,7 +12,7 @@ export function TrProductSizePicker({
   sizes,
   selectedSize,
   onChange,
-  accentColor = "#C2185B",
+  accentColor,
 }: TrProductSizePickerProps) {
   if (sizes.length === 0) return null;
 
@@ -23,6 +24,7 @@ export function TrProductSizePicker({
       <div className="mt-3 flex flex-wrap gap-2">
         {sizes.map((size) => {
           const isSelected = selectedSize === size;
+          const useCustomAccent = Boolean(accentColor && isSelected);
 
           return (
             <button
@@ -30,19 +32,21 @@ export function TrProductSizePicker({
               type="button"
               onClick={() => onChange(size)}
               aria-pressed={isSelected}
-              className="min-w-[2.75rem] border px-3 py-2 text-[11px] font-medium tracking-[0.1em] uppercase transition-colors"
+              className={`min-w-[2.75rem] border px-3 py-2 text-[11px] font-medium tracking-[0.1em] uppercase transition-colors ${
+                isSelected && !accentColor
+                  ? "border-brand-primary bg-brand-primary text-white"
+                  : !isSelected
+                    ? "border-black/12 bg-white text-neutral-900"
+                    : "text-white"
+              }`}
               style={
-                isSelected
+                useCustomAccent
                   ? {
                       backgroundColor: accentColor,
                       borderColor: accentColor,
                       color: "#ffffff",
                     }
-                  : {
-                      backgroundColor: "#ffffff",
-                      borderColor: "rgba(0,0,0,0.12)",
-                      color: "#171717",
-                    }
+                  : undefined
               }
             >
               {size}

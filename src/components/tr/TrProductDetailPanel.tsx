@@ -1,10 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, useState } from "react";
+import { TrBackButton } from "@/components/tr/TrBackButton";
 import { TrProductColorPicker } from "@/components/tr/TrProductColorPicker";
 import { TrProductPurchasePanel } from "@/components/tr/TrProductPurchasePanel";
 import { TrProductSizePicker } from "@/components/tr/TrProductSizePicker";
+import { TrSoftNavLink } from "@/components/tr/TrSoftNavLink";
 import { getTrCategoryLabel } from "@/lib/tr/categories";
 import {
   resolveProductColors,
@@ -18,7 +19,7 @@ import type { TrProductWithBoutique } from "@/types/tr-marketplace";
 interface TrProductDetailPanelProps {
   product: TrProductWithBoutique;
   branded: boolean;
-  /** When `"cadde"`, back link returns to /tr; otherwise to the boutique storefront. */
+  /** When `"cadde"`, back falls back to /tr; otherwise boutique storefront. */
   entry?: "cadde" | "store";
 }
 
@@ -44,23 +45,16 @@ export function TrProductDetailPanel({
   const canOrder = isAvailable && (!sizeRequired || Boolean(selectedSize));
 
   const fromCadde = entry === "cadde";
-  const backHref = fromCadde
+  const backFallback = fromCadde
     ? trHomePath()
     : trBoutiquePath(product.boutique.slug);
-  const backLabel = fromCadde
-    ? "← Cadde"
-    : branded
-      ? "← Mağazaya dön"
-      : `← ${product.boutique.name}`;
   const backClass = branded
     ? "text-[11px] tracking-[0.12em] text-neutral-600 uppercase transition-colors hover:text-neutral-900"
     : "text-meta text-[10px] tracking-[0.22em] uppercase transition-colors hover:text-jet-black";
 
   return (
     <>
-      <Link href={backHref} className={backClass}>
-        {backLabel}
-      </Link>
+      <TrBackButton fallbackHref={backFallback} className={backClass} />
 
       {!branded ? (
         <p className="text-meta mt-6 text-[9px] tracking-[0.5em] uppercase">
@@ -78,7 +72,7 @@ export function TrProductDetailPanel({
         {product.title}
       </h1>
 
-      <p className="mt-4 font-serif text-2xl tracking-[-0.02em] text-neutral-950">
+      <p className="mt-4 font-serif text-2xl tracking-[-0.02em] text-brand-primary">
         {formatTryFromKurus(product.priceKurus)}
       </p>
 
@@ -105,12 +99,12 @@ export function TrProductDetailPanel({
           <div className="flex gap-4">
             <dt className="text-meta w-28 shrink-0 tracking-[0.12em] uppercase">Satıcı</dt>
             <dd>
-              <Link
+              <TrSoftNavLink
                 href={trBoutiquePath(product.boutique.slug)}
                 className="text-jet-black underline underline-offset-2"
               >
                 {product.boutique.name}
-              </Link>
+              </TrSoftNavLink>
             </dd>
           </div>
         ) : null}

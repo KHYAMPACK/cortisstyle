@@ -320,3 +320,7 @@ export function getDemoProductByBoutiqueSlugAndId(
 export function listDemoBoutiques(): TrBoutiquePublic[] {
   return [...DEMO_BOUTIQUES];
 }
+
+export function listDemoProducts(): TrProductWithBoutique[] {
+  return [...demoProductPool()];
+}

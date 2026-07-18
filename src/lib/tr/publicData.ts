@@ -121,3 +121,31 @@ export async function safeListFeaturedProducts(
     return [];
   }
 }
+
+/** Full marketplace catalog; falls back to demo icon products when live catalog is empty. */
+export async function safeListPublicCatalogProducts(): Promise<
+  TrProductWithBoutique[]
+> {
+  try {
+    const products = mapProductsWithLookbookImages(
+      await listPublicAvailableProducts(),
+    ).filter((product) => product.status === "available");
+    if (products.length > 0) return products;
+  } catch (error) {
+    console.error("Failed to load TR catalog products:", error);
+  }
+
+  const { listDemoProducts } = await import("@/lib/tr/looks/demoCatalog");
+  return listDemoProducts();
+}
+
+/** Boutique directory; demo boutiques when live list is empty. */
+export async function safeListMarketplaceBoutiques(): Promise<
+  TrBoutiquePublic[]
+> {
+  const boutiques = await safeListPublicBoutiques();
+  if (boutiques.length > 0) return boutiques;
+
+  const { listDemoBoutiques } = await import("@/lib/tr/looks/demoCatalog");
+  return listDemoBoutiques();
+}

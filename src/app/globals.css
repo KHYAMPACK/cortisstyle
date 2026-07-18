@@ -12,6 +12,10 @@
   --blueprint-selected-bg: #d3e4f5;
   --blueprint-selected-text: #1e4a85;
   --meta-text: #4a5568;
+  /* Verdigris — marketplace brand primary (alive on ice, not Trendyol orange) */
+  --brand-primary: #1f6b63;
+  --brand-primary-hover: #185750;
+  --brand-primary-muted: #1f6b6318;
 }
 
 @theme inline {
@@ -25,6 +29,9 @@
   --color-blueprint-selected: #d3e4f5;
   --color-blueprint-accent: #1e4a85;
   --color-meta: #4a5568;
+  --color-brand-primary: var(--brand-primary);
+  --color-brand-primary-hover: var(--brand-primary-hover);
+  --color-brand-primary-muted: var(--brand-primary-muted);
   --shadow-canvas-paper: 0 12px 40px rgba(0, 0, 0, 0.02);
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Cormorant Garamond", ui-serif, Georgia, serif;
@@ -65,7 +72,7 @@ html.intro-loading body {
   }
 
   .btn-primary {
-    background-color: var(--jet-black);
+    background-color: var(--brand-primary);
     color: #ffffff;
     border-radius: 0;
     letter-spacing: 0.1em;
@@ -75,7 +82,7 @@ html.intro-loading body {
   }
 
   .btn-primary:hover:not(:disabled) {
-    background-color: #262626;
+    background-color: var(--brand-primary-hover);
   }
 
   .btn-primary:disabled {

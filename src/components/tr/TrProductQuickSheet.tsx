@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 import { useEffect } from "react";
 import { TrDemoGarmentVisual } from "@/components/tr/demo/TrDemoGarmentVisual";
+import { TrFavoriteButton } from "@/components/tr/TrFavoriteButton";
 import { TrPurchaseActions } from "@/components/tr/TrPurchaseActions";
 import { getTrCategoryLabel } from "@/lib/tr/categories";
 import { isTrDemoIconSrc } from "@/lib/tr/demoIcons";
@@ -24,14 +25,21 @@ import { trPanelFadeTransition } from "@/components/tr/panel/TrPanelMotion";
 interface TrProductQuickSheetProps {
   product: TrProductWithBoutique | null;
   onClose: () => void;
+  /** Hard dismiss without restoring a previous sheet (e.g. navigating to boutique). */
+  onLeave?: () => void;
+  /** Contextual back: outfit → look sheet, home rail → dismiss. */
+  backLabel?: string;
   cartEnabled?: boolean;
 }
 
 export function TrProductQuickSheet({
   product,
   onClose,
+  onLeave,
+  backLabel = "← Geri",
   cartEnabled = false,
 }: TrProductQuickSheetProps) {
+  const leave = onLeave ?? onClose;
   useEffect(() => {
     if (!product) return;
     const onKey = (event: KeyboardEvent) => {
@@ -73,27 +81,41 @@ export function TrProductQuickSheet({
             exit={{ opacity: 0, y: 16 }}
             transition={trPanelFadeTransition}
           >
-            <div className="flex items-start justify-between gap-4 border-b border-blueprint-border px-5 py-4">
-              <div>
-                <p className="text-meta text-[9px] tracking-[0.35em] uppercase">
-                  [ PARÇA ]
-                  {isTrDemoProduct(product) ? " · DEMO" : ""}
-                </p>
-                <h2
-                  id={`tr-product-quick-${product.id}-title`}
-                  className="mt-2 font-serif text-2xl leading-none tracking-[-0.02em] text-neutral-950"
+            <div className="border-b border-blueprint-border px-5 py-4">
+              <div className="flex items-center justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="text-meta text-[10px] tracking-[0.18em] uppercase transition-colors hover:text-jet-black"
                 >
-                  {product.title}
-                </h2>
+                  {backLabel}
+                </button>
+                <div className="flex shrink-0 items-center gap-1">
+                  <TrFavoriteButton
+                    product={product}
+                    size="md"
+                    className="h-9 w-9"
+                  />
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="p-1.5 text-neutral-500 transition-colors hover:text-neutral-950"
+                    aria-label="Kapat"
+                  >
+                    <X className="h-5 w-5" strokeWidth={1.25} />
+                  </button>
+                </div>
               </div>
-              <button
-                type="button"
-                onClick={onClose}
-                className="shrink-0 p-1.5 text-neutral-500 transition-colors hover:text-neutral-950"
-                aria-label="Kapat"
+              <p className="text-meta mt-3 text-[10px] tracking-[0.18em] uppercase">
+                Parça
+                {isTrDemoProduct(product) ? " · Demo" : ""}
+              </p>
+              <h2
+                id={`tr-product-quick-${product.id}-title`}
+                className="mt-2 font-serif text-2xl leading-none tracking-[-0.02em] text-neutral-950"
               >
-                <X className="h-5 w-5" strokeWidth={1.25} />
-              </button>
+                {product.title}
+              </h2>
             </div>
 
             <div className="flex-1 overflow-y-auto">
@@ -131,13 +153,13 @@ export function TrProductQuickSheet({
 
               <div className="space-y-4 border-t border-blueprint-border px-5 py-5">
                 <div>
-                  <p className="font-serif text-xl tracking-[-0.02em] text-neutral-950">
+                  <p className="font-serif text-xl tracking-[-0.02em] text-brand-primary">
                     {formatTryFromKurus(product.priceKurus)}
                   </p>
                   <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
                     <Link
                       href={trBoutiquePath(product.boutique.slug)}
-                      onClick={onClose}
+                      onClick={leave}
                       className="text-meta text-[10px] tracking-[0.22em] uppercase transition-colors hover:text-jet-black"
                     >
                       {product.boutique.name}
@@ -185,14 +207,14 @@ export function TrProductQuickSheet({
                       product.id,
                       { from: TR_PDP_FROM_CADDE },
                     )}
-                    onClick={onClose}
+                    onClick={leave}
                     className="inline-flex w-full items-center justify-center border border-blueprint-border bg-white px-6 py-3.5 text-[11px] tracking-[0.2em] text-neutral-900 uppercase transition-colors hover:bg-ice-floor"
                   >
                     Butikte daha fazla bilgi
                   </Link>
                   <Link
                     href={trBoutiquePath(product.boutique.slug)}
-                    onClick={onClose}
+                    onClick={leave}
                     className="text-center font-mono text-[9px] tracking-[0.22em] text-meta uppercase transition-colors hover:text-jet-black"
                   >
                     {product.boutique.name} vitrinine git →

@@ -15,7 +15,7 @@ export default async function TrOrderConfirmationPage({
   return (
     <div>
       <TrSectionHeader
-        kicker="[ SİPARİŞ ]"
+        kicker="Sipariş"
         title={demo ? "Demo sipariş alındı" : "Sipariş onayı"}
         description={
           demo

@@ -5,6 +5,7 @@ import { TrBoutiqueCatalogProvider } from "@/components/tr/boutique/TrBoutiqueCa
 import { TrBoutiqueCategoryDrawer } from "@/components/tr/boutique/TrBoutiqueCategoryDrawer";
 import { TrBoutiqueFooter } from "@/components/tr/boutique/TrBoutiqueFooter";
 import { TrBoutiqueHeader } from "@/components/tr/boutique/TrBoutiqueHeader";
+import { TrAddedToCartSheet } from "@/components/tr/TrAddedToCartSheet";
 import { listCategoriesForProducts } from "@/lib/tr/categories";
 import {
   hasBoutiqueBrand,
@@ -48,6 +49,7 @@ export function TrBoutiqueBrandedShell({
         <TrBoutiqueCategoryDrawer boutique={boutique} />
         <main className="flex-1">{children}</main>
         <TrBoutiqueFooter boutique={boutique} />
+        <TrAddedToCartSheet />
       </div>
     </TrBoutiqueCatalogProvider>
   );

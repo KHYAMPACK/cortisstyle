@@ -103,6 +103,7 @@ export default async function BoutiqueStorefrontPage({
           <TrBoutiqueProductGrid
             products={storefront.products}
             boutiqueSlug={storefront.slug}
+            boutiqueName={storefront.name}
             accentColor={accent}
           />
         </TrBoutiqueCatalogSection>
@@ -182,7 +183,7 @@ export default async function BoutiqueStorefrontPage({
 
       <section aria-label={`${storefront.name} ürünleri`}>
         <TrSectionHeader
-          kicker="[ KATALOG ]"
+          kicker="Katalog"
           title="Ürünler"
           description="Bu butiğin listelediği tek parça ürünler."
         />
@@ -194,6 +195,7 @@ export default async function BoutiqueStorefrontPage({
                 key={product.id}
                 product={product}
                 boutiqueSlug={storefront.slug}
+                boutiqueName={storefront.name}
                 priority={index < 4}
               />
             ))}

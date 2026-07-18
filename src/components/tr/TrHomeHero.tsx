@@ -33,7 +33,7 @@ export function TrHomeHero({
   return (
     <section
       aria-label="Türkiye editorial hero"
-      className="relative flex min-h-[calc(100dvh-5rem)] w-full flex-col overflow-hidden bg-ice-floor"
+      className="relative flex min-h-dvh w-full flex-col overflow-hidden bg-ice-floor"
     >
       <div
         aria-hidden

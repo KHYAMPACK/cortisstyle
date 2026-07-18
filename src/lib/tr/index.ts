@@ -47,6 +47,7 @@ export type { TrProductImageSurface } from "@/lib/tr/productImages";
 
 export {
   listPublishedTrLooks,
+  safeGetPublishedTrLookBySlug,
   safeListPublishedTrLooks,
   TR_LOOKS_SECTION_ID,
 } from "@/lib/tr/looks";
@@ -59,14 +60,20 @@ export type {
 export {
   trBoutiquePath,
   trBoutiqueProductPath,
+  trBoutiquesPath,
   trCartPath,
   trCheckoutPath,
+  trClothPath,
   trComingSoonPath,
   trDevHeroImportPath,
+  trFavoritesPath,
   trHomePath,
+  trLookPath,
   TR_PDP_FROM_CADDE,
   TR_PIECES_SECTION_ID,
   trOrderConfirmationPath,
+  trProductsPath,
+  trSearchPath,
   trPanelCustomersPath,
   trPanelDiscountsPath,
   trPanelEditProductPath,
@@ -80,6 +87,8 @@ export {
 } from "@/lib/tr/paths";
 
 export { formatTryFromKurus, parseTryToKurus } from "@/types/tr-marketplace";
+
+export { getTrUserFirstName } from "@/lib/tr/userDisplayName";
 
 export {
   HERO_OUTFIT_PUBLIC_BASE,

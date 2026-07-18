@@ -6,14 +6,17 @@ interface TrProductColorPickerProps {
   colors: TrProductColor[];
   selectedColor: TrProductColor | null;
   onChange: (color: TrProductColor) => void;
+  /** Boutique theme accent; defaults to marketplace brand primary. */
   accentColor?: string;
 }
+
+const BRAND_PRIMARY = "#1F6B63";
 
 export function TrProductColorPicker({
   colors,
   selectedColor,
   onChange,
-  accentColor = "#C2185B",
+  accentColor = BRAND_PRIMARY,
 }: TrProductColorPickerProps) {
   if (colors.length === 0) return null;
 

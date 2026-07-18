@@ -133,3 +133,34 @@ export async function safeListPublishedTrLooks(): Promise<TrLookWithProducts[]> 
     return buildTrDemoLooks();
   }
 }
+
+export async function getPublishedTrLookBySlug(
+  slug: string,
+): Promise<TrLookWithProducts | null> {
+  const normalized = slug.trim().toLowerCase();
+  if (!normalized) return null;
+
+  const looks = await listPublishedTrLooks();
+  return looks.find((look) => look.slug.toLowerCase() === normalized) ?? null;
+}
+
+export async function safeGetPublishedTrLookBySlug(
+  slug: string,
+): Promise<TrLookWithProducts | null> {
+  try {
+    return await getPublishedTrLookBySlug(slug);
+  } catch (error) {
+    console.error(`Failed to load TR look (${slug}):`, error);
+    try {
+      const { buildTrDemoLooks } = await import("@/lib/tr/looks/demoCatalog");
+      const normalized = slug.trim().toLowerCase();
+      return (
+        buildTrDemoLooks().find(
+          (look) => look.slug.toLowerCase() === normalized,
+        ) ?? null
+      );
+    } catch {
+      return null;
+    }
+  }
+}

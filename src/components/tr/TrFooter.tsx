@@ -3,13 +3,13 @@ import { siteLegal } from "@/lib/siteLegal";
 import { trComingSoonPath, trHomePath } from "@/lib/tr/paths";
 
 const linkClass =
-  "text-meta transition-colors hover:text-jet-black underline-offset-2 hover:underline";
+  "text-meta transition-colors hover:text-brand-primary underline-offset-2 hover:underline";
 
 export function TrFooter() {
   return (
     <footer className="border-t border-blueprint-border bg-ice-floor px-5 py-8 md:px-10">
       <div className="mx-auto flex max-w-4xl flex-col items-center gap-4 text-center">
-        <p className="text-meta text-[9px] tracking-[0.35em] uppercase">
+        <p className="text-[9px] tracking-[0.35em] text-brand-primary uppercase">
           © 2026 {siteLegal.siteName} Türkiye — Tüm hakları saklıdır
         </p>
 

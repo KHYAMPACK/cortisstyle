@@ -1,15 +1,7 @@
-import { TrCartPageContent } from "@/components/tr/TrCartPageContent";
-import { TrSectionHeader } from "@/components/tr/TrSectionHeader";
+import { permanentRedirect } from "next/navigation";
+import { trCartPath } from "@/lib/tr/paths";
 
-export default function TrCartPage() {
-  return (
-    <div>
-      <TrSectionHeader
-        kicker="[ SEPET ]"
-        title="Sepetiniz"
-        description="Ürünlerinizi gözden geçirin. Ödeme bir sonraki aşamada açılacak."
-      />
-      <TrCartPageContent />
-    </div>
-  );
+/** Legacy English path — redirects to /tr/sepet. */
+export default function LegacyTrCartPage() {
+  permanentRedirect(trCartPath());
 }

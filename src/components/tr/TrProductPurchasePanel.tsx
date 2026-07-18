@@ -46,6 +46,7 @@ export function TrProductPurchasePanel({
           priceKurus={product.priceKurus}
           image={getProductCoverImageFor("marketplace", product)}
           size={selectedSize}
+          color={selectedColor?.name ?? null}
           status={product.status}
           disabled={!canOrder}
         />

@@ -232,7 +232,7 @@ export function TrCheckoutPageContent() {
                       className="flex justify-between gap-3"
                     >
                       <span className="truncate">{item.title}</span>
-                      <span className="shrink-0">
+                      <span className="shrink-0 text-brand-primary">
                         {formatTryFromKurus(item.priceKurus)}
                       </span>
                     </li>
@@ -246,7 +246,7 @@ export function TrCheckoutPageContent() {
               <span className="text-meta text-[10px] tracking-[0.16em] uppercase">
                 Toplam
               </span>
-              <span className="font-serif text-xl text-neutral-950">
+              <span className="font-serif text-xl text-brand-primary">
                 {formatTryFromKurus(totalKurus)}
               </span>
             </div>
