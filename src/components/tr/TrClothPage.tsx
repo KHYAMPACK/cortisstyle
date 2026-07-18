@@ -185,7 +185,7 @@ export function TrClothPage({ product, relatedProducts }: TrClothPageProps) {
           <TrProductPurchasePanel
             product={product}
             selectedSize={selectedSize}
-            selectedColor={selectedColor}
+            selectedColor={selectedColor?.name ?? null}
             canOrder={canOrder}
           />
 
