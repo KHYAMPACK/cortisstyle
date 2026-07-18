@@ -1,10 +1,12 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { TrBackButton } from "@/components/tr/TrBackButton";
 import { TrDemoGarmentVisual } from "@/components/tr/demo/TrDemoGarmentVisual";
 import { TrLookBoutiqueCredits } from "@/components/tr/TrLookBoutiqueCredits";
+import { TrLookSizeGateSheet } from "@/components/tr/TrLookSizeGateSheet";
+import { TrMobileBuyBar } from "@/components/tr/TrMobileBuyBar";
 import { TrSoftNavLink } from "@/components/tr/TrSoftNavLink";
 import { TrYouMayAlsoLike } from "@/components/tr/TrYouMayAlsoLike";
 import { isTrDemoIconSrc } from "@/lib/tr/demoIcons";
@@ -13,6 +15,7 @@ import {
   getProductCoverImageFor,
   isCatalogCutoutImage,
 } from "@/lib/tr/productImages";
+import { resolveProductSizes } from "@/lib/tr/productOptions";
 import { trCartPath, trClothPath, trHomePath } from "@/lib/tr/paths";
 import { useTrAddedToCartStore } from "@/store/trAddedToCartStore";
 import { useTrCartStore } from "@/store/trCartStore";
@@ -29,7 +32,10 @@ interface TrLookPageProps {
   cartEnabled: boolean;
 }
 
-function productToCartLine(product: TrProductWithBoutique): TrCartLineItem {
+function productToCartLine(
+  product: TrProductWithBoutique,
+  size: string | null,
+): TrCartLineItem {
   return {
     productId: product.id,
     boutiqueId: product.boutiqueId,
@@ -38,8 +44,23 @@ function productToCartLine(product: TrProductWithBoutique): TrCartLineItem {
     title: product.title,
     priceKurus: product.priceKurus,
     image: getProductCoverImageFor("marketplace", product),
-    size: product.size,
+    size,
   };
+}
+
+function resolveLineSize(
+  product: TrProductWithBoutique,
+  override?: string | null,
+): string | null {
+  if (override != null && override !== "") return override;
+  const sizes = resolveProductSizes(product);
+  if (sizes.length === 1) return sizes[0]!;
+  if (sizes.length === 0) return product.size ?? null;
+  return null;
+}
+
+function needsSizePick(product: TrProductWithBoutique): boolean {
+  return resolveProductSizes(product).length > 1;
 }
 
 export function TrLookPage({
@@ -54,6 +75,7 @@ export function TrLookPage({
   const [addFeedback, setAddFeedback] = useState<"added" | "partial" | null>(
     null,
   );
+  const [sizeSheetOpen, setSizeSheetOpen] = useState(false);
 
   const boutiques = look.products.map((product) => product.boutique);
   const availableProducts = look.products.filter(
@@ -66,22 +88,36 @@ export function TrLookPage({
       cartItems.some((entry) => entry.productId === product.id),
     );
 
-  const handleAddOutfit = () => {
+  const piecesNeedingSize = useMemo(
+    () => availableProducts.filter(needsSizePick),
+    [availableProducts],
+  );
+
+  const commitOutfit = (sizesByProductId?: Record<string, string | null>) => {
     if (!cartEnabled) return;
     let added = 0;
     const newlyAdded: TrProductWithBoutique[] = [];
+    const lines: TrCartLineItem[] = [];
+
     for (const product of availableProducts) {
-      if (addItem(productToCartLine(product))) {
+      const size = resolveLineSize(
+        product,
+        sizesByProductId?.[product.id],
+      );
+      const line = productToCartLine(product, size);
+      if (addItem(line)) {
         added += 1;
         newlyAdded.push(product);
+        lines.push(line);
       }
     }
+
     if (added === 0) return;
     setAddFeedback(added === availableProducts.length ? "added" : "partial");
+    setSizeSheetOpen(false);
 
     const lead = newlyAdded[0] ?? availableProducts[0];
     if (!lead) return;
-    const lines = newlyAdded.map(productToCartLine);
     openAddedSheet({
       productId: lead.id,
       title: look.title,
@@ -94,8 +130,36 @@ export function TrLookPage({
     });
   };
 
+  const handleAddOutfit = () => {
+    if (!cartEnabled || availableProducts.length === 0) return;
+    if (piecesNeedingSize.length > 0) {
+      setSizeSheetOpen(true);
+      return;
+    }
+    commitOutfit();
+  };
+
+  const addCta =
+    alreadyInCart || addFeedback === "added" ? (
+      <TrSoftNavLink
+        href={trCartPath()}
+        className="inline-flex w-full items-center justify-center bg-jet-black px-6 py-4 text-[11px] tracking-[0.22em] text-white uppercase transition-opacity hover:opacity-85"
+      >
+        Sepete git
+      </TrSoftNavLink>
+    ) : (
+      <button
+        type="button"
+        onClick={handleAddOutfit}
+        disabled={availableProducts.length === 0}
+        className="inline-flex w-full items-center justify-center bg-jet-black px-6 py-4 text-[11px] tracking-[0.22em] text-white uppercase transition-opacity hover:opacity-85 disabled:opacity-40"
+      >
+        Kombini sepete ekle
+      </button>
+    );
+
   return (
-    <div className="pt-16 md:pt-20">
+    <div className="pt-16 pb-28 md:pt-20 md:pb-0">
       <div className="mx-auto grid max-w-6xl gap-10 px-5 py-8 md:grid-cols-2 md:gap-14 md:px-10 md:py-12">
         <div className="relative aspect-[3/4] overflow-hidden bg-ice-floor">
           {isTrDemoIconSrc(look.coverImage) ? (
@@ -199,29 +263,13 @@ export function TrLookPage({
           </ul>
 
           {cartEnabled ? (
-            <div className="mt-8 space-y-3">
+            <div className="mt-8 hidden space-y-3 md:block">
               {demoLook ? (
                 <p className="text-[10px] tracking-[0.14em] text-neutral-500 uppercase">
                   Demo kombin
                 </p>
               ) : null}
-              {alreadyInCart || addFeedback === "added" ? (
-                <TrSoftNavLink
-                  href={trCartPath()}
-                  className="inline-flex w-full items-center justify-center bg-jet-black px-6 py-4 text-[11px] tracking-[0.22em] text-white uppercase transition-opacity hover:opacity-85"
-                >
-                  Sepete git
-                </TrSoftNavLink>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleAddOutfit}
-                  disabled={availableProducts.length === 0}
-                  className="inline-flex w-full items-center justify-center bg-jet-black px-6 py-4 text-[11px] tracking-[0.22em] text-white uppercase transition-opacity hover:opacity-85 disabled:opacity-40"
-                >
-                  Kombini sepete ekle
-                </button>
-              )}
+              {addCta}
               {addFeedback === "partial" ? (
                 <p className="text-[11px] text-neutral-600">
                   Bazı parçalar zaten sepetteydi — yeniler eklendi.
@@ -235,7 +283,25 @@ export function TrLookPage({
       <TrYouMayAlsoLike
         looks={relatedLooks}
         products={relatedProducts}
-        className="pb-16"
+        className="pb-8 md:pb-16"
+      />
+
+      {cartEnabled ? (
+        <TrMobileBuyBar>
+          {demoLook ? (
+            <p className="mb-2 text-center text-[10px] tracking-[0.14em] text-neutral-500 uppercase">
+              Demo kombin
+            </p>
+          ) : null}
+          {addCta}
+        </TrMobileBuyBar>
+      ) : null}
+
+      <TrLookSizeGateSheet
+        open={sizeSheetOpen}
+        onClose={() => setSizeSheetOpen(false)}
+        products={availableProducts}
+        onConfirm={commitOutfit}
       />
     </div>
   );

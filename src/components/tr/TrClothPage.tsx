@@ -4,15 +4,21 @@ import Image from "next/image";
 import { useMemo, useState } from "react";
 import { TrBackButton } from "@/components/tr/TrBackButton";
 import { TrDemoGarmentVisual } from "@/components/tr/demo/TrDemoGarmentVisual";
+import { TrMobileBuyBar } from "@/components/tr/TrMobileBuyBar";
 import { TrProductColorPicker } from "@/components/tr/TrProductColorPicker";
 import { TrProductPurchasePanel } from "@/components/tr/TrProductPurchasePanel";
 import { TrProductSizePicker } from "@/components/tr/TrProductSizePicker";
+import { TrPurchaseActions } from "@/components/tr/TrPurchaseActions";
+import { TrSizeGateSheet } from "@/components/tr/TrSizeGateSheet";
 import { TrSoftNavLink } from "@/components/tr/TrSoftNavLink";
 import { TrYouMayAlsoLike } from "@/components/tr/TrYouMayAlsoLike";
 import { getTrCategoryLabel } from "@/lib/tr/categories";
 import { isTrDemoIconSrc } from "@/lib/tr/demoIcons";
+import { isTrDemoProduct } from "@/lib/tr/looks/demoCatalog";
+import { isTrCheckoutEnabled } from "@/lib/tr/platform";
 import {
   getMarketplaceProductImages,
+  getProductCoverImageFor,
   isCatalogCutoutImage,
 } from "@/lib/tr/productImages";
 import {
@@ -20,6 +26,8 @@ import {
   resolveProductSizes,
 } from "@/lib/tr/productOptions";
 import { trBoutiquePath, trBoutiqueProductPath, trHomePath } from "@/lib/tr/paths";
+import { useTrAddedToCartStore } from "@/store/trAddedToCartStore";
+import { useTrCartStore } from "@/store/trCartStore";
 import { formatTryFromKurus } from "@/types/tr-marketplace";
 import type { TrProductWithBoutique } from "@/types/tr-marketplace";
 
@@ -37,6 +45,7 @@ export function TrClothPage({ product, relatedProducts }: TrClothPageProps) {
   const colors = useMemo(() => resolveProductColors(product), [product]);
   const categoryLabel = getTrCategoryLabel(product.category);
   const isAvailable = product.status === "available";
+  const checkoutEnabled = isTrCheckoutEnabled() || isTrDemoProduct(product);
 
   const [selectedSize, setSelectedSize] = useState<string | null>(
     sizes.length === 1 ? sizes[0]! : null,
@@ -45,13 +54,55 @@ export function TrClothPage({ product, relatedProducts }: TrClothPageProps) {
     colors.length === 1 ? colors[0]! : (colors[0] ?? null),
   );
   const [activeImage, setActiveImage] = useState(0);
+  const [sizeSheetOpen, setSizeSheetOpen] = useState(false);
+
+  const addItem = useTrCartStore((state) => state.addItem);
+  const openAddedSheet = useTrAddedToCartStore((state) => state.open);
 
   const sizeRequired = sizes.length > 0;
+  const selectionRequired = sizeRequired && !selectedSize;
   const canOrder = isAvailable && (!sizeRequired || Boolean(selectedSize));
   const displayImage = images[activeImage] ?? cover;
 
+  const purchaseProps = {
+    productId: product.id,
+    boutiqueId: product.boutiqueId,
+    boutiqueName: product.boutique.name,
+    boutiqueSlug: product.boutique.slug,
+    title: product.title,
+    priceKurus: product.priceKurus,
+    image: getProductCoverImageFor("marketplace", product),
+    size: selectedSize,
+    color: selectedColor?.name ?? null,
+    status: product.status,
+  } as const;
+
+  const addWithSize = (size: string) => {
+    setSelectedSize(size);
+    setSizeSheetOpen(false);
+    addItem({
+      productId: product.id,
+      boutiqueId: product.boutiqueId,
+      boutiqueName: product.boutique.name,
+      boutiqueSlug: product.boutique.slug,
+      title: product.title,
+      priceKurus: product.priceKurus,
+      image: getProductCoverImageFor("marketplace", product),
+      size,
+    });
+    openAddedSheet({
+      productId: product.id,
+      title: product.title,
+      priceKurus: product.priceKurus,
+      image: getProductCoverImageFor("marketplace", product),
+      size,
+      color: selectedColor?.name ?? null,
+      boutiqueName: product.boutique.name,
+    });
+  };
+
   return (
-    <div className="pt-16 md:pt-20">
+    <div className="pt-16 pb-28 md:pt-20 md:pb-0">
       <div className="mx-auto grid max-w-6xl gap-10 px-5 py-8 md:grid-cols-2 md:gap-14 md:px-10 md:py-12">
         <div>
           <div
@@ -182,12 +233,30 @@ export function TrClothPage({ product, relatedProducts }: TrClothPageProps) {
             </p>
           ) : null}
 
+          {/* Desktop CTAs inline; mobile uses sticky bar */}
           <TrProductPurchasePanel
             product={product}
             selectedSize={selectedSize}
             selectedColor={selectedColor?.name ?? null}
             canOrder={canOrder}
+            selectionRequired={selectionRequired}
+            onRequestSelection={() => setSizeSheetOpen(true)}
+            className="hidden md:block"
           />
+
+          {/* Mobile: banners / WhatsApp only — actions in sticky bar */}
+          {checkoutEnabled ? (
+            <TrProductPurchasePanel
+              product={product}
+              selectedSize={selectedSize}
+              selectedColor={selectedColor?.name ?? null}
+              canOrder={canOrder}
+              selectionRequired={selectionRequired}
+              onRequestSelection={() => setSizeSheetOpen(true)}
+              hideActions
+              className="md:hidden"
+            />
+          ) : null}
 
           <TrSoftNavLink
             href={trBoutiqueProductPath(
@@ -201,7 +270,26 @@ export function TrClothPage({ product, relatedProducts }: TrClothPageProps) {
         </div>
       </div>
 
-      <TrYouMayAlsoLike products={relatedProducts} className="pb-16" />
+      <TrYouMayAlsoLike products={relatedProducts} className="pb-8 md:pb-16" />
+
+      {checkoutEnabled && isAvailable ? (
+        <TrMobileBuyBar>
+          <TrPurchaseActions
+            {...purchaseProps}
+            disabled={false}
+            selectionRequired={selectionRequired}
+            onRequestSelection={() => setSizeSheetOpen(true)}
+          />
+        </TrMobileBuyBar>
+      ) : null}
+
+      <TrSizeGateSheet
+        open={sizeSheetOpen}
+        onClose={() => setSizeSheetOpen(false)}
+        sizes={sizes}
+        initialSize={selectedSize}
+        onConfirm={addWithSize}
+      />
     </div>
   );
 }

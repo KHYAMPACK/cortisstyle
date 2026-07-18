@@ -16,6 +16,12 @@ interface TrProductPurchasePanelProps {
   selectedSize?: string | null;
   selectedColor?: string | null;
   canOrder?: boolean;
+  /** When true, Sepete ekle stays enabled and asks for size via sheet. */
+  selectionRequired?: boolean;
+  onRequestSelection?: () => void;
+  /** Hide primary purchase CTAs (e.g. moved to mobile sticky bar). */
+  hideActions?: boolean;
+  className?: string;
 }
 
 export function TrProductPurchasePanel({
@@ -23,6 +29,10 @@ export function TrProductPurchasePanel({
   selectedSize = null,
   selectedColor = null,
   canOrder = true,
+  selectionRequired = false,
+  onRequestSelection,
+  hideActions = false,
+  className = "",
 }: TrProductPurchasePanelProps) {
   const checkoutEnabled = isTrCheckoutEnabled() || isTrDemoProduct(product);
   const orderProduct = {
@@ -32,24 +42,39 @@ export function TrProductPurchasePanel({
     color: selectedColor,
   };
 
+  const actions = hideActions ? null : checkoutEnabled ? (
+    <TrPurchaseActions
+      productId={product.id}
+      boutiqueId={product.boutiqueId}
+      boutiqueName={product.boutique.name}
+      boutiqueSlug={product.boutique.slug}
+      title={product.title}
+      priceKurus={product.priceKurus}
+      image={getProductCoverImageFor("marketplace", product)}
+      size={selectedSize}
+      color={selectedColor}
+      status={product.status}
+      disabled={!canOrder && !selectionRequired}
+      selectionRequired={selectionRequired}
+      onRequestSelection={onRequestSelection}
+    />
+  ) : product.boutique.whatsappPhone ? (
+    <TrWhatsAppOrderButton
+      phone={product.boutique.whatsappPhone}
+      product={orderProduct}
+      status={product.status}
+      disabled={!canOrder}
+    />
+  ) : (
+    <TrCheckoutComingSoon />
+  );
+
   if (checkoutEnabled) {
     return (
-      <div className="mt-8 space-y-4">
+      <div className={`mt-8 space-y-4 ${className}`}>
         <TrSandboxBanner demo={isTrDemoProduct(product)} />
 
-        <TrPurchaseActions
-          productId={product.id}
-          boutiqueId={product.boutiqueId}
-          boutiqueName={product.boutique.name}
-          boutiqueSlug={product.boutique.slug}
-          title={product.title}
-          priceKurus={product.priceKurus}
-          image={getProductCoverImageFor("marketplace", product)}
-          size={selectedSize}
-          color={selectedColor}
-          status={product.status}
-          disabled={!canOrder}
-        />
+        {actions}
 
         {product.boutique.whatsappPhone ? (
           <a
@@ -70,13 +95,8 @@ export function TrProductPurchasePanel({
 
   if (product.boutique.whatsappPhone) {
     return (
-      <div className="mt-8 space-y-4">
-        <TrWhatsAppOrderButton
-          phone={product.boutique.whatsappPhone}
-          product={orderProduct}
-          status={product.status}
-          disabled={!canOrder}
-        />
+      <div className={`mt-8 space-y-4 ${className}`}>
+        {actions}
 
         {product.boutique.shippingNote ? (
           <p className="text-center text-[11px] text-neutral-600">
@@ -92,9 +112,5 @@ export function TrProductPurchasePanel({
     );
   }
 
-  return (
-    <div className="mt-8">
-      <TrCheckoutComingSoon />
-    </div>
-  );
+  return <div className={`mt-8 ${className}`}>{actions}</div>;
 }

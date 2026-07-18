@@ -1,6 +1,5 @@
 "use client";
 
-import { Search } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { TrAccountMenu } from "@/components/tr/TrAccountMenu";
@@ -14,9 +13,6 @@ import { selectCartItemCount, useTrCartStore } from "@/store/trCartStore";
 const EDGE_LINK =
   "text-[10px] tracking-[0.22em] text-jet-black uppercase transition-opacity hover:opacity-60";
 
-const ICON_BUTTON =
-  "relative inline-flex size-10 items-center justify-center text-jet-black transition-opacity hover:opacity-60";
-
 interface TrFloatingChromeProps {
   cartEnabled: boolean;
 }
@@ -29,7 +25,7 @@ function isTrSearchPath(pathname: string | null): boolean {
 
 /**
  * Zara-style corner chrome: no header bar, always visible on marketplace routes.
- * Mobile: icon row (profile · search · bag). Desktop: text stack under ARA.
+ * Menu toggle morphs 2 lines ↔ X; right stack sits under ARA.
  */
 export function TrFloatingChrome({ cartEnabled }: TrFloatingChromeProps) {
   const pathname = usePathname();
@@ -44,7 +40,7 @@ export function TrFloatingChrome({ cartEnabled }: TrFloatingChromeProps) {
       <TrNavDrawer open={menuOpen} onClose={() => setMenuOpen(false)} />
 
       <div className="pointer-events-none fixed inset-0 z-[110]">
-        {/* Top-left: menu ↔ X */}
+        {/* Top-left: menu ↔ X — hairline stroke, same weight open/closed */}
         <div className="pointer-events-auto absolute top-5 left-5 md:top-8 md:left-8">
           <button
             type="button"
@@ -52,87 +48,54 @@ export function TrFloatingChrome({ cartEnabled }: TrFloatingChromeProps) {
             aria-label={menuOpen ? "Menüyü kapat" : "Menüyü aç"}
             aria-expanded={menuOpen}
             aria-haspopup="dialog"
-            className="relative flex h-12 w-12 items-center justify-start"
+            className="relative flex h-10 w-10 items-center justify-start"
           >
             <svg
-              width="28"
-              height="18"
-              viewBox="0 0 28 18"
+              width="20"
+              height="14"
+              viewBox="0 0 20 14"
               fill="none"
               aria-hidden
-              className="text-jet-black"
+              className="overflow-visible text-jet-black"
             >
-              <g
-                className="transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+              <line
+                x1="0"
+                y1="7"
+                x2="20"
+                y2="7"
+                stroke="currentColor"
+                strokeWidth="1"
+                vectorEffect="non-scaling-stroke"
+                className="origin-center transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
                 style={{
                   transform: menuOpen
                     ? "rotate(45deg)"
-                    : "translateY(-5px)",
-                  transformOrigin: "14px 9px",
+                    : "translateY(-4px) rotate(0deg)",
+                  transformOrigin: "10px 7px",
                 }}
-              >
-                <line
-                  x1="0"
-                  y1="9"
-                  x2="28"
-                  y2="9"
-                  stroke="currentColor"
-                  strokeWidth="1.25"
-                  vectorEffect="non-scaling-stroke"
-                />
-              </g>
-              <g
-                className="transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+              />
+              <line
+                x1="0"
+                y1="7"
+                x2="20"
+                y2="7"
+                stroke="currentColor"
+                strokeWidth="1"
+                vectorEffect="non-scaling-stroke"
+                className="origin-center transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
                 style={{
                   transform: menuOpen
                     ? "rotate(-45deg)"
-                    : "translateY(5px)",
-                  transformOrigin: "14px 9px",
+                    : "translateY(4px) rotate(0deg)",
+                  transformOrigin: "10px 7px",
                 }}
-              >
-                <line
-                  x1="0"
-                  y1="9"
-                  x2="28"
-                  y2="9"
-                  stroke="currentColor"
-                  strokeWidth="1.25"
-                  vectorEffect="non-scaling-stroke"
-                />
-              </g>
+              />
             </svg>
           </button>
         </div>
 
-        {/* Mobile — Zara icon row: profile · search · bag (no Yardım) */}
-        <div className="pointer-events-auto absolute top-5 right-3 flex items-center gap-0.5 md:hidden">
-          <TrAccountMenu variant="icon" />
-          {onSearch ? null : (
-            <TrSoftNavLink
-              href={trSearchPath()}
-              className={ICON_BUTTON}
-              aria-label="Ara"
-            >
-              <Search className="size-[22px] stroke-[1.25]" aria-hidden />
-            </TrSoftNavLink>
-          )}
-          {cartEnabled ? (
-            <TrSoftNavLink
-              href={trCartPath()}
-              className={ICON_BUTTON}
-              aria-label={
-                displayCount > 0
-                  ? `Sepet (${displayCount} ürün)`
-                  : "Sepet"
-              }
-            >
-              <TrZaraBagIcon count={displayCount} className="scale-125" />
-            </TrSoftNavLink>
-          ) : null}
-        </div>
-
-        {/* Desktop — text stack under ARA */}
-        <div className="pointer-events-auto absolute top-8 right-8 hidden w-40 flex-col items-end md:flex">
+        {/* Top-right: ARA + SEPET / GİRİŞ / YARDIM */}
+        <div className="pointer-events-auto absolute top-5 right-5 flex w-[min(9.5rem,28vw)] flex-col items-end md:top-8 md:right-8 md:w-40">
           {onSearch ? null : (
             <TrSoftNavLink
               href={trSearchPath()}
@@ -144,8 +107,8 @@ export function TrFloatingChrome({ cartEnabled }: TrFloatingChromeProps) {
           )}
 
           <div
-            className={`flex flex-col items-end gap-3.5 ${
-              onSearch ? "" : "mt-11"
+            className={`flex flex-col items-end gap-3 md:gap-3.5 ${
+              onSearch ? "" : "mt-6 md:mt-7"
             }`}
           >
             {cartEnabled ? (

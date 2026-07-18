@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { AuthPopup } from "@/components/AuthPopup";
 import { useAuth } from "@/context/AuthContext";
@@ -10,12 +11,20 @@ import { trCartPath, trFavoritesPath } from "@/lib/tr/paths";
 const EDGE_LINK =
   "inline-flex h-8 items-center text-[10px] tracking-[0.22em] text-jet-black uppercase transition-opacity hover:opacity-60";
 
+const ICON_BUTTON =
+  "inline-flex size-10 items-center justify-center text-jet-black transition-opacity hover:opacity-60";
+
 interface TrAccountMenuProps {
   /** Dropdown opens below (default) or left of the trigger. */
   menuAlign?: "right" | "left";
+  /** Text label (desktop) or person icon (mobile). */
+  variant?: "text" | "icon";
 }
 
-export function TrAccountMenu({ menuAlign = "right" }: TrAccountMenuProps) {
+export function TrAccountMenu({
+  menuAlign = "right",
+  variant = "text",
+}: TrAccountMenuProps) {
   const { user, isAuthenticated, needsPasswordSetup, signOut } = useAuth();
   const [showAuthPopup, setShowAuthPopup] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -25,6 +34,7 @@ export function TrAccountMenu({ menuAlign = "right" }: TrAccountMenuProps) {
     isAuthenticated && !needsPasswordSetup
       ? (displayName ?? "Hesap")
       : "Giriş";
+  const isIcon = variant === "icon";
 
   useEffect(() => {
     if (!showMenu) return;
@@ -68,12 +78,22 @@ export function TrAccountMenu({ menuAlign = "right" }: TrAccountMenuProps) {
       <button
         type="button"
         onClick={handleClick}
-        aria-label={isAuthenticated ? "Hesap menüsü" : "Giriş yap"}
+        aria-label={
+          isAuthenticated
+            ? displayName
+              ? `Hesap menüsü · ${displayName}`
+              : "Hesap menüsü"
+            : "Giriş yap"
+        }
         aria-expanded={isAuthenticated ? showMenu : undefined}
         aria-haspopup="menu"
-        className={EDGE_LINK}
+        className={isIcon ? ICON_BUTTON : EDGE_LINK}
       >
-        {label}
+        {isIcon ? (
+          <User className="size-[22px] stroke-[1.25]" aria-hidden />
+        ) : (
+          label
+        )}
       </button>
 
       {isAuthenticated && !needsPasswordSetup && showMenu ? (

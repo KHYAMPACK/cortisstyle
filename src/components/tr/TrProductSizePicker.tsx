@@ -6,6 +6,9 @@ interface TrProductSizePickerProps {
   onChange: (size: string) => void;
   /** Boutique theme accent; defaults to marketplace brand primary. */
   accentColor?: string;
+  /** Hide the “Beden seçin” heading (e.g. sheet already has a title). */
+  hideLabel?: boolean;
+  className?: string;
 }
 
 export function TrProductSizePicker({
@@ -13,15 +16,19 @@ export function TrProductSizePicker({
   selectedSize,
   onChange,
   accentColor,
+  hideLabel = false,
+  className = "",
 }: TrProductSizePickerProps) {
   if (sizes.length === 0) return null;
 
   return (
-    <div className="mt-6">
-      <p className="text-[11px] font-medium tracking-[0.12em] text-neutral-800 uppercase">
-        Beden seçin
-      </p>
-      <div className="mt-3 flex flex-wrap gap-2">
+    <div className={className || (hideLabel ? "mt-3" : "mt-6")}>
+      {hideLabel ? null : (
+        <p className="text-[11px] font-medium tracking-[0.12em] text-neutral-800 uppercase">
+          Beden seçin
+        </p>
+      )}
+      <div className={`flex flex-wrap gap-2 ${hideLabel ? "" : "mt-3"}`}>
         {sizes.map((size) => {
           const isSelected = selectedSize === size;
           const useCustomAccent = Boolean(accentColor && isSelected);

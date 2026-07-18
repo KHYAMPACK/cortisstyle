@@ -18,7 +18,14 @@ interface TrPurchaseActionsProps {
   size: string | null;
   color?: string | null;
   status: TrProductStatus;
+  /** Hard block (e.g. unavailable) — not used for missing size. */
   disabled?: boolean;
+  /**
+   * When true, click opens size/option sheet instead of adding.
+   * Button stays enabled so the CTA is never gated by beden.
+   */
+  selectionRequired?: boolean;
+  onRequestSelection?: () => void;
   className?: string;
 }
 
@@ -36,7 +43,13 @@ function toCartLineItem(props: TrPurchaseActionsProps): TrCartLineItem {
 }
 
 export function TrPurchaseActions(props: TrPurchaseActionsProps) {
-  const { status, disabled = false, className = "" } = props;
+  const {
+    status,
+    disabled = false,
+    selectionRequired = false,
+    onRequestSelection,
+    className = "",
+  } = props;
   const addItem = useTrCartStore((state) => state.addItem);
   const openAddedSheet = useTrAddedToCartStore((state) => state.open);
   const inCart = useTrCartStore((state) =>
@@ -59,13 +72,13 @@ export function TrPurchaseActions(props: TrPurchaseActionsProps) {
     return null;
   }
 
-  const openSheet = () => {
+  const openSheet = (size: string | null = props.size) => {
     openAddedSheet({
       productId: props.productId,
       title: props.title,
       priceKurus: props.priceKurus,
       image: props.image,
-      size: props.size,
+      size,
       color: props.color ?? null,
       boutiqueName: props.boutiqueName,
     });
@@ -73,6 +86,10 @@ export function TrPurchaseActions(props: TrPurchaseActionsProps) {
 
   const handleAdd = () => {
     if (disabled) return;
+    if (selectionRequired) {
+      onRequestSelection?.();
+      return;
+    }
     addItem(toCartLineItem(props));
     openSheet();
   };
@@ -87,7 +104,7 @@ export function TrPurchaseActions(props: TrPurchaseActionsProps) {
           inCart ? "min-w-0 flex-1" : "w-full"
         }`}
       >
-        {disabled ? "Beden seçin" : "Sepete ekle"}
+        Sepete ekle
       </button>
 
       {inCart ? (

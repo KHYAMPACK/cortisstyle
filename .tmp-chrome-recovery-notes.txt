@@ -1,0 +1,11 @@
+RECOVERY NOTES
+Last Write: transcript line 1174 (usePathname version, no TrCartProvider/TrMenuProvider)
+Subsequent StrReplace patches applied:
+1. line 1176 - menu icon SVG animation (overflow-visible/line morph -> g transform rotate/translateY)
+2. line 1183 - menu button h-10->h-12, svg 20x14 -> 28x18, viewBox and line coords scaled
+3. line 1183 - right column mt-6 md:mt-7 -> mt-9 md:mt-11 when no search
+
+Earlier history (not used as base):
+- Write line 1146 + StrReplace 1151 (chromePinned/pinHandlers) - superseded by later Writes
+- Write line 1164 (ShoppingBag) - superseded by Write 1174
+TrCartProvider/TrMenuProvider do NOT appear anywhere in this transcript; breakage is post-transcript.
