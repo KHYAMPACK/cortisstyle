@@ -75,6 +75,17 @@ export function mapBoutiqueRow(row: Record<string, unknown>): TrBoutique {
     shippingNote: (row.shipping_note as string | null) ?? null,
     exchangePolicy: (row.exchange_policy as string | null) ?? null,
     physicalAddress: (row.physical_address as string | null) ?? null,
+    homeLayout:
+      row.home_layout === "editorial" || row.home_layout === "default"
+        ? row.home_layout
+        : null,
+    customDomain: (row.custom_domain as string | null) ?? null,
+    editorialContent:
+      row.editorial_content &&
+      typeof row.editorial_content === "object" &&
+      !Array.isArray(row.editorial_content)
+        ? (row.editorial_content as Record<string, unknown>)
+        : null,
     vergiNo: (row.vergi_no as string | null) ?? null,
     iban: (row.iban as string | null) ?? null,
     commissionBps: (row.commission_bps as number) ?? 1000,
@@ -103,6 +114,9 @@ export function toPublicBoutique(boutique: TrBoutique): TrBoutiquePublic {
     shippingNote: boutique.shippingNote,
     exchangePolicy: boutique.exchangePolicy,
     physicalAddress: boutique.physicalAddress,
+    homeLayout: boutique.homeLayout,
+    customDomain: boutique.customDomain,
+    editorialContent: boutique.editorialContent,
     status: boutique.status,
     createdAt: boutique.createdAt,
     updatedAt: boutique.updatedAt,

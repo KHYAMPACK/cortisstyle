@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 import { useEffect, useId, useState, type FormEvent, type ReactNode } from "react";
@@ -12,7 +13,7 @@ import {
 } from "@/components/tr/boutique/TrBoutiqueCommerceScope";
 import { formatTryFromKurus } from "@/types/tr-marketplace";
 import { cartTotalKurus } from "@/types/tr-cart";
-import { trBoutiqueProductPath } from "@/lib/tr/paths";
+import { trBoutiqueCheckoutPath, trBoutiqueProductPath } from "@/lib/tr/paths";
 
 function PanelShell({
   title,
@@ -76,28 +77,9 @@ function PanelShell({
 }
 
 function CartPanel() {
-  const { boutiqueName, closePanel } = useTrBoutiqueCommerceScope();
+  const { boutiqueName, boutiqueSlug, closePanel } = useTrBoutiqueCommerceScope();
   const cart = useTrScopedCart();
-  const [checkedOut, setCheckedOut] = useState(false);
-
-  if (checkedOut) {
-    return (
-      <PanelShell title="Sipariş" onClose={closePanel}>
-        <p className="text-[14px] leading-relaxed text-neutral-700">
-          Demo siparişiniz alındı. Gerçek ödeme veya kargo yok — bu yalnızca
-          {` ${boutiqueName} `}
-          vitrin deneyimi.
-        </p>
-        <button
-          type="button"
-          onClick={closePanel}
-          className="mt-6 w-full bg-neutral-900 px-4 py-3 text-[11px] tracking-[0.16em] text-white uppercase"
-        >
-          Alışverişe devam et
-        </button>
-      </PanelShell>
-    );
-  }
+  const router = useRouter();
 
   return (
     <PanelShell title={`${boutiqueName} Sepet`} onClose={closePanel}>
@@ -162,12 +144,12 @@ function CartPanel() {
           <button
             type="button"
             onClick={() => {
-              cart.clearCart();
-              setCheckedOut(true);
+              closePanel();
+              router.push(trBoutiqueCheckoutPath(boutiqueSlug));
             }}
             className="mt-4 w-full bg-neutral-900 px-4 py-3 text-[11px] tracking-[0.16em] text-white uppercase transition-opacity hover:opacity-80"
           >
-            Demo ödeme tamamla
+            Ödemeye geç
           </button>
         </div>
       ) : null}

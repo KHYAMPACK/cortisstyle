@@ -60,6 +60,24 @@ export async function safeGetPublicProduct(
     const { listDemoProducts } = await import("@/lib/tr/looks/demoCatalog");
     return listDemoProducts().find((p) => p.id === productId) ?? null;
   }
+  if (productId.startsWith("demo-wl-")) {
+    const { isEditorialDemoProductId } = await import(
+      "@/lib/tr/looks/editorialDemoProducts"
+    );
+    if (!isEditorialDemoProductId(productId)) return null;
+    // slug embedded: demo-wl-{slug}-{key}
+    const rest = productId.slice("demo-wl-".length);
+    const slug = rest.includes("-")
+      ? rest.slice(0, rest.lastIndexOf("-"))
+      : null;
+    if (!slug) return null;
+    const boutique = await safeGetPublicBoutique(slug);
+    if (!boutique) return null;
+    const { getEditorialDemoProduct } = await import(
+      "@/lib/tr/looks/editorialDemoProducts"
+    );
+    return getEditorialDemoProduct(boutique, productId);
+  }
   try {
     return await getPublicProductById(productId);
   } catch (error) {
@@ -72,6 +90,14 @@ export async function safeGetPublicProductByBoutiqueSlugAndId(
   boutiqueSlug: string,
   productId: string,
 ): Promise<TrProductWithBoutique | null> {
+  if (productId.startsWith("demo-wl-")) {
+    const boutique = await safeGetPublicBoutique(boutiqueSlug);
+    if (!boutique) return null;
+    const { getEditorialDemoProduct } = await import(
+      "@/lib/tr/looks/editorialDemoProducts"
+    );
+    return getEditorialDemoProduct(boutique, productId);
+  }
   if (
     boutiqueSlug.startsWith("demo-") ||
     productId.startsWith("demo-product-")

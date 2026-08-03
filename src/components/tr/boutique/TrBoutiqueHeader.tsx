@@ -13,7 +13,10 @@ import {
   buildWhatsAppOrderUrl,
   instagramProfileUrl,
 } from "@/lib/tr/whatsapp";
-import { resolveBoutiqueThemeAccent } from "@/lib/tr/boutiqueBrand";
+import {
+  resolveBoutiqueLogoUrl,
+  resolveBoutiqueThemeAccent,
+} from "@/lib/tr/boutiqueBrand";
 import type { TrBoutiquePublic } from "@/types/tr-marketplace";
 
 interface TrBoutiqueHeaderProps {
@@ -22,6 +25,7 @@ interface TrBoutiqueHeaderProps {
 
 export function TrBoutiqueHeader({ boutique }: TrBoutiqueHeaderProps) {
   const accent = resolveBoutiqueThemeAccent(boutique);
+  const logoUrl = resolveBoutiqueLogoUrl(boutique);
   const checkoutEnabled =
     isTrCheckoutEnabled() || isTrDemoBoutiqueSlug(boutique.slug);
   const catalog = useTrBoutiqueCatalogOptional();
@@ -63,13 +67,13 @@ export function TrBoutiqueHeader({ boutique }: TrBoutiqueHeaderProps) {
             href={trBoutiquePath(boutique.slug)}
             className="flex items-center justify-center"
           >
-            {boutique.logoUrl ? (
+            {logoUrl ? (
               <Image
-                src={boutique.logoUrl}
+                src={logoUrl}
                 alt={boutique.name}
-                width={48}
+                width={120}
                 height={48}
-                className="h-10 w-10 object-contain md:h-12 md:w-12"
+                className="h-11 w-auto object-contain md:h-14"
                 unoptimized
               />
             ) : (

@@ -13,7 +13,7 @@ export function TrBoutiqueEditorialHome({
 }: TrBoutiqueEditorialHomeProps) {
   return (
     <>
-      <TrBoutiqueEditorialSections boutiqueSlug={boutique.slug} />
+      <TrBoutiqueEditorialSections boutique={boutique} />
       <TrBoutiqueEditorialCatalog
         products={products}
         boutiqueSlug={boutique.slug}

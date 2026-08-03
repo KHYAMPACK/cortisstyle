@@ -9,6 +9,11 @@ import {
   shouldRedirectRootToTr,
 } from "@/lib/marketPreference";
 import { handleStudioPreflight } from "@/lib/studioApiCors";
+import {
+  isBoutiqueDomainPassthroughPath,
+  resolveBoutiqueSlugFromHost,
+  rewriteBoutiqueDomainPath,
+} from "@/lib/tr/customDomain";
 
 const STUDIO_API_PREFIX = "/api/studio";
 const STUDIO_APP_PREFIX = "/studio";
@@ -129,6 +134,39 @@ export function middleware(request: NextRequest) {
     !isStudioApiPath(pathname)
   ) {
     return NextResponse.redirect(new URL(MAINTENANCE_PATH, request.url));
+  }
+
+  // White-label custom domains (e.g. pervinsoysal.com → /tr/pervinsoysalbutik/…)
+  const host =
+    request.headers.get("x-forwarded-host") ??
+    request.headers.get("host") ??
+    "";
+  const boutiqueSlug = resolveBoutiqueSlugFromHost(host);
+  if (
+    boutiqueSlug &&
+    !isBoutiqueDomainPassthroughPath(pathname)
+  ) {
+    const rewritten = rewriteBoutiqueDomainPath(boutiqueSlug, pathname);
+    if (rewritten !== pathname) {
+      const url = request.nextUrl.clone();
+      const qIndex = rewritten.indexOf("?");
+      if (qIndex >= 0) {
+        url.pathname = rewritten.slice(0, qIndex);
+        url.search = rewritten.slice(qIndex);
+      } else {
+        url.pathname = rewritten;
+      }
+      // Preserve boutique scope on shared checkout/confirm routes
+      if (
+        (url.pathname === "/tr/odeme" ||
+          url.pathname === "/tr/siparis-onay" ||
+          url.pathname === "/tr/sepet") &&
+        !url.searchParams.has("boutique")
+      ) {
+        url.searchParams.set("boutique", boutiqueSlug);
+      }
+      return rewriteWithPathname(request, url);
+    }
   }
 
   const marketRedirect = handleMarketRouting(request);

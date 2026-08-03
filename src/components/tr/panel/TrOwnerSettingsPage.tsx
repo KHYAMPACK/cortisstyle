@@ -14,7 +14,7 @@ import {
   updateOwnerBoutiqueSettings,
   type TrOwnerBoutiqueSettings,
 } from "@/lib/tr/ownerClient";
-import { trPanelPath } from "@/lib/tr/paths";
+import { trBoutiquePath, trPanelPath } from "@/lib/tr/paths";
 
 function SettingsForm({ boutiqueId }: { boutiqueId: string }) {
   const [settings, setSettings] = useState<TrOwnerBoutiqueSettings | null>(null);
@@ -27,6 +27,7 @@ function SettingsForm({ boutiqueId }: { boutiqueId: string }) {
   const [logoUrl, setLogoUrl] = useState("");
   const [whatsappPhone, setWhatsappPhone] = useState("");
   const [instagramHandle, setInstagramHandle] = useState("");
+  const [themeAccent, setThemeAccent] = useState("");
   const [shippingNote, setShippingNote] = useState("");
   const [exchangePolicy, setExchangePolicy] = useState("");
   const [physicalAddress, setPhysicalAddress] = useState("");
@@ -45,6 +46,7 @@ function SettingsForm({ boutiqueId }: { boutiqueId: string }) {
         setLogoUrl(result.logoUrl ?? "");
         setWhatsappPhone(result.whatsappPhone ?? "");
         setInstagramHandle(result.instagramHandle ?? "");
+        setThemeAccent(result.themeAccent ?? "");
         setShippingNote(result.shippingNote ?? "");
         setExchangePolicy(result.exchangePolicy ?? "");
         setPhysicalAddress(result.physicalAddress ?? "");
@@ -78,6 +80,7 @@ function SettingsForm({ boutiqueId }: { boutiqueId: string }) {
         logoUrl: logoUrl.trim() || null,
         whatsappPhone: whatsappPhone.trim() || null,
         instagramHandle: instagramHandle.trim() || null,
+        themeAccent: themeAccent.trim() || null,
         shippingNote: shippingNote.trim() || null,
         exchangePolicy: exchangePolicy.trim() || null,
         physicalAddress: physicalAddress.trim() || null,
@@ -106,6 +109,25 @@ function SettingsForm({ boutiqueId }: { boutiqueId: string }) {
         <p className="text-[13px] text-neutral-600">
           {settings?.name} — mağaza iletişim ve politika alanları.
         </p>
+
+        {settings?.slug ? (
+          <div className="space-y-2 border border-black/10 bg-neutral-50 px-4 py-3 text-[13px] text-neutral-700">
+            <p>
+              Vitrin:{" "}
+              <Link
+                href={trBoutiquePath(settings.slug)}
+                className="underline underline-offset-2"
+                target="_blank"
+              >
+                /tr/{settings.slug}
+              </Link>
+            </p>
+            <p className="text-[12px] text-neutral-500">
+              Özel alan adı DNS ile bağlandığında (ör. pervinsoysal.com) aynı
+              vitrin o adreste açılır. Panel Cortisstyle üzerinde kalır.
+            </p>
+          </div>
+        ) : null}
 
         <label className="block space-y-2">
           <span className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
@@ -153,6 +175,27 @@ function SettingsForm({ boutiqueId }: { boutiqueId: string }) {
             className={fieldClass}
             placeholder="pervinsoysalbutik"
           />
+        </label>
+
+        <label className="block space-y-2">
+          <span className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
+            Tema rengi (accent)
+          </span>
+          <div className="flex gap-3">
+            <input
+              type="color"
+              value={themeAccent.trim() || "#C2185B"}
+              onChange={(event) => setThemeAccent(event.target.value)}
+              className="h-12 w-14 shrink-0 cursor-pointer border border-black/15 bg-white p-1"
+              aria-label="Tema rengi seç"
+            />
+            <input
+              value={themeAccent}
+              onChange={(event) => setThemeAccent(event.target.value)}
+              className={fieldClass}
+              placeholder="#C2185B"
+            />
+          </div>
         </label>
 
         <label className="block space-y-2">

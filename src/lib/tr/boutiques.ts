@@ -10,7 +10,7 @@ import type {
 } from "@/types/tr-marketplace";
 
 export const PUBLIC_BOUTIQUE_COLUMNS =
-  "id, slug, name, legal_name, description, logo_url, whatsapp_phone, instagram_handle, theme_accent, shipping_note, exchange_policy, physical_address, status, created_at, updated_at";
+  "id, slug, name, legal_name, description, logo_url, whatsapp_phone, instagram_handle, theme_accent, shipping_note, exchange_policy, physical_address, home_layout, custom_domain, editorial_content, status, created_at, updated_at";
 
 function boutiqueInsertRow(input: CreateTrBoutiqueInput) {
   return {
@@ -25,6 +25,9 @@ function boutiqueInsertRow(input: CreateTrBoutiqueInput) {
     shipping_note: input.shippingNote?.trim() ?? null,
     exchange_policy: input.exchangePolicy?.trim() ?? null,
     physical_address: input.physicalAddress?.trim() ?? null,
+    home_layout: input.homeLayout === "editorial" ? "editorial" : "default",
+    custom_domain: input.customDomain?.trim().toLowerCase() || null,
+    editorial_content: input.editorialContent ?? null,
     vergi_no: input.vergiNo?.trim() ?? null,
     iban: input.iban?.trim() ?? null,
     commission_bps: input.commissionBps ?? 1000,
@@ -193,6 +196,9 @@ export interface UpdateTrBoutiqueBrandInput {
   exchangePolicy?: string | null;
   physicalAddress?: string | null;
   themeAccent?: string | null;
+  homeLayout?: "default" | "editorial" | null;
+  customDomain?: string | null;
+  editorialContent?: Record<string, unknown> | null;
 }
 
 export async function updateBoutiqueBrandAdmin(
@@ -228,6 +234,16 @@ export async function updateBoutiqueBrandAdmin(
   }
   if (input.themeAccent !== undefined) {
     row.theme_accent = input.themeAccent?.trim() ?? null;
+  }
+  if (input.homeLayout !== undefined) {
+    row.home_layout =
+      input.homeLayout === "editorial" ? "editorial" : "default";
+  }
+  if (input.customDomain !== undefined) {
+    row.custom_domain = input.customDomain?.trim().toLowerCase() || null;
+  }
+  if (input.editorialContent !== undefined) {
+    row.editorial_content = input.editorialContent;
   }
 
   if (Object.keys(row).length === 0) {

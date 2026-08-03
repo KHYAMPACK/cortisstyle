@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { type FormEvent, useState } from "react";
 import { InstagramIcon } from "@/components/icons/InstagramIcon";
-import { getEditorialDemoContent } from "@/lib/tr/boutiqueHome";
+import { getEditorialContent } from "@/lib/tr/boutiqueHome";
 import { instagramProfileUrl } from "@/lib/tr/whatsapp";
 import type { TrBoutiquePublic } from "@/types/tr-marketplace";
 
@@ -14,8 +14,7 @@ interface TrBoutiqueEditorialFooterProps {
 export function TrBoutiqueEditorialFooter({
   boutique,
 }: TrBoutiqueEditorialFooterProps) {
-  const content = getEditorialDemoContent();
-  const { footer } = content;
+  const content = getEditorialContent(boutique);  const { footer } = content;
   const [email, setEmail] = useState("");
   const [done, setDone] = useState(false);
 
@@ -89,15 +88,12 @@ export function TrBoutiqueEditorialFooter({
               <ul className="mt-3 space-y-2">
                 {column.links.map((link) => (
                   <li key={link.label}>
-                    <a
+                    <Link
                       href={link.href}
                       className="text-[13px] text-neutral-600 transition-opacity hover:opacity-70"
-                      onClick={(event) => {
-                        if (link.href === "#") event.preventDefault();
-                      }}
                     >
                       {link.label}
-                    </a>
+                    </Link>
                   </li>
                 ))}
               </ul>

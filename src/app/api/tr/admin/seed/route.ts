@@ -17,6 +17,9 @@ interface SeedBoutiquePayload {
   shippingNote?: string;
   exchangePolicy?: string;
   physicalAddress?: string;
+  homeLayout?: "default" | "editorial";
+  customDomain?: string;
+  editorialContent?: Record<string, unknown>;
   status?: "draft" | "pending" | "verified" | "suspended";
   products?: Array<{
     title: string;
@@ -72,6 +75,9 @@ export async function POST(request: Request) {
         shippingNote: boutiqueInput.shippingNote,
         exchangePolicy: boutiqueInput.exchangePolicy,
         physicalAddress: boutiqueInput.physicalAddress,
+        homeLayout: boutiqueInput.homeLayout,
+        customDomain: boutiqueInput.customDomain,
+        editorialContent: boutiqueInput.editorialContent,
         status: boutiqueInput.status ?? "verified",
       });
 

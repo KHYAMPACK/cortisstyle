@@ -4,6 +4,7 @@ import { TrBoutiqueEditorialShell } from "@/components/tr/boutique/editorial/TrB
 import { TrMarketplaceChrome } from "@/components/tr/TrMarketplaceChrome";
 import { hasBoutiqueBrand } from "@/lib/tr/boutiqueBrand";
 import { resolveBoutiqueHomeLayout } from "@/lib/tr/boutiqueHome";
+import { withEditorialDemoProducts } from "@/lib/tr/looks/editorialDemoProducts";
 import {
   safeGetBoutiqueStorefront,
   safeGetPublicBoutique,
@@ -49,15 +50,19 @@ export default async function BoutiqueLayout({
     notFound();
   }
 
-  const homeLayout = resolveBoutiqueHomeLayout(boutiqueSlug);
+  const homeLayout = resolveBoutiqueHomeLayout(
+    boutiqueSlug,
+    boutique.homeLayout,
+  );
 
   if (homeLayout === "editorial") {
     const storefront = await safeGetBoutiqueStorefront(boutiqueSlug);
+    const products = withEditorialDemoProducts(
+      boutique,
+      storefront?.products ?? [],
+    );
     return (
-      <TrBoutiqueEditorialShell
-        boutique={boutique}
-        products={storefront?.products ?? []}
-      >
+      <TrBoutiqueEditorialShell boutique={boutique} products={products}>
         {children}
       </TrBoutiqueEditorialShell>
     );

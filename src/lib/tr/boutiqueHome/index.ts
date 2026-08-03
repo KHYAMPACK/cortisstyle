@@ -7,3 +7,7 @@ export {
   type EditorialDemoContent,
   type EditorialNavItem,
 } from "@/lib/tr/boutiqueHome/editorialDemoContent";
+export {
+  buildBoutiqueEditorialDefaults,
+  getEditorialContent,
+} from "@/lib/tr/boutiqueHome/editorialContent";

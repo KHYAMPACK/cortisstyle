@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { TrBoutiqueEditorialPlp } from "@/components/tr/boutique/editorial/TrBoutiqueEditorialPlp";
 import { resolveBoutiqueHomeLayout } from "@/lib/tr/boutiqueHome";
+import { withEditorialDemoProducts } from "@/lib/tr/looks/editorialDemoProducts";
 import { safeGetBoutiqueStorefront } from "@/lib/tr/publicData";
 
 interface BoutiqueProductsPageProps {
@@ -37,7 +38,10 @@ export default async function BoutiqueProductsPage({
     notFound();
   }
 
-  if (resolveBoutiqueHomeLayout(boutiqueSlug) !== "editorial") {
+  if (
+    resolveBoutiqueHomeLayout(boutiqueSlug, storefront.homeLayout) !==
+    "editorial"
+  ) {
     notFound();
   }
 
@@ -51,7 +55,7 @@ export default async function BoutiqueProductsPage({
     >
       <TrBoutiqueEditorialPlp
         boutique={storefront}
-        products={storefront.products}
+        products={withEditorialDemoProducts(storefront, storefront.products)}
       />
     </Suspense>
   );

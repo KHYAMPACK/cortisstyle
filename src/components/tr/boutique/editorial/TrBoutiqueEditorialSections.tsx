@@ -12,10 +12,13 @@ import {
 } from "lucide-react";
 import {
   EDITORIAL_SALE_RED,
-  getEditorialDemoContent,
+  getEditorialContent,
+  type EditorialNavItem,
 } from "@/lib/tr/boutiqueHome";
+import { resolveBoutiqueLogoUrl } from "@/lib/tr/boutiqueBrand";
 import { trBoutiqueProductsPath } from "@/lib/tr/paths";
 import { instagramProfileUrl } from "@/lib/tr/whatsapp";
+import type { TrBoutiquePublic } from "@/types/tr-marketplace";
 
 const fadeUp = {
   initial: { opacity: 0, y: 16 },
@@ -31,143 +34,186 @@ const USP_ICONS: Record<string, LucideIcon> = {
   payment: CreditCard,
 };
 
+const PLACEHOLDER_TONES = [
+  "bg-[#EDE9E3]",
+  "bg-[#E4DFD7]",
+  "bg-[#D8D2C8]",
+  "bg-[#F2EFE9]",
+  "bg-[#CAC3B8]",
+] as const;
+
+function EditorialPlaceholder({
+  label,
+  tone = 0,
+  dark = false,
+}: {
+  label?: string;
+  tone?: number;
+  dark?: boolean;
+}) {
+  return (
+    <div
+      className={`absolute inset-0 ${
+        dark
+          ? "bg-neutral-800"
+          : PLACEHOLDER_TONES[tone % PLACEHOLDER_TONES.length]
+      }`}
+      aria-hidden
+    >
+      <div
+        className={`absolute inset-0 opacity-40 ${
+          dark
+            ? "bg-[linear-gradient(135deg,transparent_40%,rgba(255,255,255,0.06)_40%,rgba(255,255,255,0.06)_60%,transparent_60%)]"
+            : "bg-[linear-gradient(135deg,transparent_40%,rgba(0,0,0,0.03)_40%,rgba(0,0,0,0.03)_60%,transparent_60%)]"
+        }`}
+      />
+      {label ? (
+        <span
+          className={`pointer-events-none absolute inset-0 flex items-center justify-center px-4 text-center text-[11px] tracking-[0.22em] uppercase md:text-[12px] ${
+            dark ? "text-white/25" : "text-neutral-500/55"
+          }`}
+        >
+          {label}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
 interface TrBoutiqueEditorialSectionsProps {
-  boutiqueSlug: string;
+  boutique: TrBoutiquePublic;
+}
+
+function navHref(boutiqueSlug: string, item: EditorialNavItem): string {
+  if (item.categoryId === "sale" || item.accent === "sale") {
+    return trBoutiqueProductsPath(boutiqueSlug, { indirim: true });
+  }
+  if (item.id === "new" || !item.categoryId) {
+    return trBoutiqueProductsPath(boutiqueSlug, { sira: "new" });
+  }
+  return trBoutiqueProductsPath(boutiqueSlug, { kategori: item.categoryId });
 }
 
 export function TrBoutiqueEditorialSections({
-  boutiqueSlug,
+  boutique,
 }: TrBoutiqueEditorialSectionsProps) {
-  const content = getEditorialDemoContent();
+  const boutiqueSlug = boutique.slug;
+  const content = getEditorialContent(boutique);
+  const logoUrl = resolveBoutiqueLogoUrl(boutique);
   const productsHref = trBoutiqueProductsPath(boutiqueSlug);
   const saleHref = trBoutiqueProductsPath(boutiqueSlug, { indirim: true });
   const categoryHref = (id: string) =>
     trBoutiqueProductsPath(boutiqueSlug, { kategori: id });
 
+  const heroLinks = content.nav.filter((item) => item.accent !== "sale");
+  const brandTitle =
+    boutique.slug === "pervinsoysalbutik" ? "Pervin Soysal" : boutique.name;
+
   return (
     <div className="bg-white">
-      <motion.section
-        {...fadeUp}
-        className="grid md:grid-cols-2"
-        aria-label="Kampanya"
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
+        className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 bg-neutral-950 px-3 py-2.5 text-center text-white"
       >
+        <p className="text-[10px] tracking-[0.12em] uppercase sm:text-[11px] md:text-[12px]">
+          {content.promoBar.text}
+        </p>
         <Link
           href={saleHref}
-          className="relative flex min-h-[52vw] flex-col items-center justify-center bg-[#F7F4EF] px-6 py-14 text-center md:min-h-[70vh]"
+          className="border border-white/80 px-3 py-1.5 text-[10px] tracking-[0.14em] uppercase transition-colors hover:bg-white hover:text-neutral-950"
         >
-          <p className="text-[10px] tracking-[0.28em] text-neutral-600 uppercase">
-            {content.promo.eyebrow}
-          </p>
-          <p
-            className="mt-4 font-serif text-5xl leading-none md:text-7xl"
-            style={{ color: "#B8952A" }}
-          >
-            {content.promo.discount}
-          </p>
-          <p
-            className="mt-1 font-serif text-2xl italic md:text-3xl"
-            style={{ color: "#B8952A" }}
-          >
-            {content.promo.discountScript}
-          </p>
-          <p className="mt-3 font-serif text-4xl tracking-tight text-neutral-900 md:text-5xl">
-            {content.promo.title}
-          </p>
+          {content.promoBar.cta}
         </Link>
+      </motion.div>
 
-        <Link
-          href={productsHref}
-          className="group relative min-h-[58vw] overflow-hidden md:min-h-[70vh]"
-        >
-          <Image
-            src={content.promo.image}
-            alt=""
-            fill
-            priority
-            sizes="(max-width: 768px) 100vw, 50vw"
-            className="object-cover transition-transform duration-700 group-hover:scale-[1.03]"
-          />
-          <div className="absolute inset-0 bg-black/25" />
-          <div className="absolute inset-x-0 bottom-10 px-6 text-center text-white">
-            <p className="text-2xl font-semibold tracking-[0.12em] uppercase md:text-3xl">
-              {content.promo.imageLabel}
-            </p>
-            <p className="mt-2 text-[11px] tracking-[0.18em] uppercase underline underline-offset-4">
-              {content.promo.imageCta}
-            </p>
-          </div>
-        </Link>
-      </motion.section>
-
-      <motion.section
-        {...fadeUp}
-        className="grid md:grid-cols-2"
-        aria-label="Editöryel"
-      >
-        <div className="order-2 flex flex-col items-center justify-center px-6 py-14 text-center md:order-1 md:min-h-[60vh] md:px-12">
-          <h2 className="max-w-md text-[22px] leading-snug font-semibold tracking-[0.06em] text-neutral-900 uppercase md:text-3xl">
-            {content.editorial.headline}
-          </h2>
-          <p className="mt-5 max-w-md text-[13px] leading-relaxed text-neutral-600 md:text-[14px]">
-            {content.editorial.body}
-          </p>
-          <Link
-            href={productsHref}
-            className="mt-8 text-[12px] tracking-[0.18em] text-neutral-900 uppercase underline-offset-4 transition-opacity hover:opacity-60 hover:underline"
-          >
-            {content.editorial.cta} ›
-          </Link>
-        </div>
-
-        <Link
-          href={productsHref}
-          className="group relative order-1 min-h-[58vw] overflow-hidden md:order-2 md:min-h-[60vh]"
-        >
-          <Image
-            src={content.editorial.image}
-            alt=""
-            fill
-            sizes="(max-width: 768px) 100vw, 50vw"
-            className="object-cover transition-transform duration-700 group-hover:scale-[1.03]"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-          <div className="absolute inset-x-0 bottom-8 px-6 text-center text-white">
-            <p className="text-lg tracking-[0.08em] uppercase md:text-xl">
-              {content.editorial.imageTitle}
-            </p>
-            <p className="mt-2 text-[11px] tracking-[0.16em] uppercase underline underline-offset-4">
-              {content.editorial.imageCta}
-            </p>
-          </div>
-        </Link>
-      </motion.section>
-
+      {/* Category hero — mobile: brand first, compact links */}
       <motion.section
         {...fadeUp}
         aria-label="Kategoriler"
-        className="grid grid-cols-2 gap-px bg-black/10 md:grid-cols-4"
+        className="relative overflow-hidden"
       >
-        {content.categoryTiles.map((tile) => (
-          <Link
-            key={`${tile.label}-${tile.categoryId}`}
-            href={categoryHref(tile.categoryId)}
-            className="group relative aspect-[3/4] overflow-hidden bg-neutral-900 md:aspect-[3/5]"
+        <div className="absolute inset-0">
+          <EditorialPlaceholder dark />
+        </div>
+
+        <div className="relative z-10 flex flex-col gap-8 px-5 py-8 sm:py-10 md:min-h-[82vh] md:justify-between md:px-10 md:py-14 lg:px-14">
+          {/* Brand — top on mobile, right on desktop */}
+          <div className="flex flex-col items-center text-center text-white md:absolute md:top-14 md:right-10 md:items-end md:text-right lg:right-14">
+            {logoUrl ? (
+              <Image
+                src={logoUrl}
+                alt=""
+                width={160}
+                height={160}
+                className="h-14 w-auto object-contain brightness-0 invert md:h-20"
+                unoptimized
+                priority
+              />
+            ) : null}
+            <p className="mt-3 font-serif text-[1.75rem] tracking-[0.04em] md:text-4xl lg:text-5xl">
+              {brandTitle}
+            </p>
+          </div>
+
+          <nav
+            aria-label="Ana kategoriler"
+            className="mx-auto w-full max-w-md md:mx-0 md:mt-6 md:pt-2"
           >
-            <Image
-              src={tile.image}
-              alt=""
-              fill
-              sizes="(max-width: 768px) 50vw, 25vw"
-              className="object-cover transition-transform duration-700 group-hover:scale-[1.04]"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
-            <div className="absolute inset-x-0 bottom-6 px-3 text-center text-white">
-              <p className="text-sm font-semibold tracking-[0.16em] uppercase md:text-base">
-                {tile.label}
+            <ul className="divide-y divide-white/15 border-y border-white/15 md:space-y-1 md:divide-y-0 md:border-0">
+              {heroLinks.map((item) => (
+                <li key={item.id}>
+                  <Link
+                    href={navHref(boutiqueSlug, item)}
+                    className="flex min-h-12 items-center justify-between py-3 text-white transition-opacity hover:opacity-80 md:min-h-0 md:block md:py-1"
+                  >
+                    <span className="text-[18px] leading-none font-semibold tracking-[-0.02em] uppercase md:text-[40px] lg:text-[48px]">
+                      {item.label}
+                    </span>
+                    <span className="text-[11px] tracking-[0.14em] text-white/50 uppercase md:hidden">
+                      ›
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          <div className="text-center text-white md:mt-auto md:max-w-lg md:text-left">
+            <p className="text-[14px] font-medium tracking-[0.04em] md:text-lg">
+              {content.categoryHero.promoLine}
+            </p>
+            <Link
+              href={productsHref}
+              className="mt-4 inline-flex min-h-11 items-center bg-white px-5 py-3 text-[11px] tracking-[0.18em] text-neutral-950 uppercase transition-opacity hover:opacity-85"
+            >
+              {content.categoryHero.cta}
+            </Link>
+          </div>
+        </div>
+      </motion.section>
+
+      <motion.section
+        {...fadeUp}
+        aria-label="Öne çıkan kategoriler"
+        className="grid gap-px bg-white md:grid-cols-2"
+      >
+        {content.featuredPair.map((panel, index) => (
+          <Link
+            key={`${panel.label}-${panel.categoryId}`}
+            href={categoryHref(panel.categoryId)}
+            className="group relative min-h-[48vw] overflow-hidden sm:min-h-[42vw] md:min-h-[68vh]"
+          >
+            <EditorialPlaceholder tone={index} />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+            <div className="absolute inset-x-0 bottom-0 flex flex-col items-center px-5 pb-8 text-center text-white md:pb-14">
+              <p className="text-xl font-semibold tracking-[0.14em] uppercase md:text-4xl">
+                {panel.label}
               </p>
-              <p className="mt-1 text-[10px] tracking-[0.14em] uppercase underline underline-offset-4">
-                {tile.cta}
-              </p>
+              <span className="mt-3 inline-flex min-h-10 items-center bg-white px-5 py-2.5 text-[11px] tracking-[0.16em] text-neutral-950 uppercase transition-transform duration-300 group-hover:scale-[1.02]">
+                {panel.cta}
+              </span>
             </div>
           </Link>
         ))}
@@ -175,32 +221,31 @@ export function TrBoutiqueEditorialSections({
 
       <motion.section
         {...fadeUp}
-        className="relative min-h-[70vw] overflow-hidden md:min-h-[78vh]"
-        aria-label="Yaşam stili"
+        aria-label="Daha fazla kategori"
+        className="grid grid-cols-1 gap-px bg-white sm:grid-cols-3"
       >
-        <Image
-          src={content.lifestyle.image}
-          alt=""
-          fill
-          sizes="100vw"
-          className="object-cover"
-        />
-        <div className="absolute inset-0 bg-black/35" />
-        <div className="absolute inset-x-0 bottom-0 max-w-xl px-6 py-10 text-white md:left-10 md:px-0 md:py-16">
-          <p className="text-[13px] leading-relaxed md:text-[15px]">
-            {content.lifestyle.body}
-          </p>
+        {content.categoryTiles.map((tile, index) => (
           <Link
-            href={productsHref}
-            className="mt-5 inline-block text-[12px] tracking-[0.18em] uppercase underline underline-offset-[6px] transition-opacity hover:opacity-70"
+            key={`${tile.label}-${tile.categoryId}`}
+            href={categoryHref(tile.categoryId)}
+            className="group relative min-h-[42vw] overflow-hidden sm:aspect-auto sm:min-h-[48vh]"
           >
-            {content.lifestyle.cta}
+            <EditorialPlaceholder tone={index + 2} />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+            <div className="absolute inset-x-0 bottom-0 flex flex-col items-center px-4 pb-7 text-center text-white">
+              <p className="text-lg font-semibold tracking-[0.16em] uppercase md:text-2xl">
+                {tile.label}
+              </p>
+              <span className="mt-3 inline-flex min-h-10 items-center border border-white/90 px-4 py-2 text-[10px] tracking-[0.16em] uppercase transition-colors group-hover:bg-white group-hover:text-neutral-950">
+                {tile.cta}
+              </span>
+            </div>
           </Link>
-        </div>
+        ))}
       </motion.section>
 
-      <motion.section {...fadeUp} className="px-5 py-12 md:px-8 md:py-16">
-        <p className="mx-auto max-w-3xl text-center text-[13px] leading-relaxed text-neutral-600 md:text-[14px]">
+      <motion.section {...fadeUp} className="px-5 py-10 md:px-8 md:py-16">
+        <p className="mx-auto max-w-2xl text-center text-[13px] leading-relaxed text-neutral-600 md:text-[14px]">
           {content.highlight.body}{" "}
           <Link
             href={productsHref}
@@ -215,22 +260,15 @@ export function TrBoutiqueEditorialSections({
         </h2>
 
         <div className="-mx-5 mt-6 flex gap-2 overflow-x-auto px-5 pb-2 md:mx-0 md:grid md:grid-cols-5 md:gap-3 md:overflow-visible md:px-0">
-          {content.instagram.images.map((src, index) => (
+          {Array.from({ length: 5 }).map((_, index) => (
             <a
-              key={src}
+              key={`ig-ph-${index}`}
               href={instagramProfileUrl(content.instagram.handle)}
               target="_blank"
               rel="noopener noreferrer"
-              className="relative aspect-square w-[42vw] shrink-0 overflow-hidden md:w-auto"
+              className="relative aspect-square w-[38vw] shrink-0 overflow-hidden sm:w-[30vw] md:w-auto"
             >
-              <Image
-                src={src}
-                alt=""
-                fill
-                sizes="(max-width: 768px) 42vw, 20vw"
-                className="object-cover transition-transform duration-500 hover:scale-[1.04]"
-                priority={index < 2}
-              />
+              <EditorialPlaceholder tone={index} />
             </a>
           ))}
         </div>
@@ -264,7 +302,7 @@ export function TrBoutiqueEditorialSections({
       <div className="px-5 py-6 text-center md:px-8">
         <Link
           href={saleHref}
-          className="text-[12px] tracking-[0.16em] uppercase underline-offset-4 hover:underline"
+          className="inline-flex min-h-11 items-center text-[12px] tracking-[0.16em] uppercase underline-offset-4 hover:underline"
           style={{ color: EDITORIAL_SALE_RED }}
         >
           İndirimdeki ürünleri gör →

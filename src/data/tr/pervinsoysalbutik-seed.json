@@ -4,13 +4,29 @@
       "slug": "pervinsoysalbutik",
       "name": "Pervin Soysal Butik",
       "description": "Denizli'den Türkiye geneline ücretsiz kargo ile moda.",
-      "logoUrl": "/tr/boutiques/pervinsoysalbutik/logo.svg",
+      "logoUrl": "/tr/boutiques/pervinsoysalbutik/logo.png",
       "whatsappPhone": "905436592262",
       "instagramHandle": "pervinsoysalbutik",
       "themeAccent": "#C2185B",
       "shippingNote": "Tüm Türkiye'ye ücretsiz kargo",
-      "exchangePolicy": "Değişim 3 gündür, iade yoktur",
+      "exchangePolicy": "Mesafeli satışlarda cayma hakkı, yasal istisnalar saklı kalmak kaydıyla, malın tesliminden itibaren 14 gün içinde kullanılabilir. Değişim talepleri müşteri hizmetleri üzerinden değerlendirilir.",
       "physicalAddress": "Altıntop Mah. Lise Cad. No:23/C Merkezefendi/Denizli",
+      "homeLayout": "editorial",
+      "customDomain": "pervinsoysal.com",
+      "editorialContent": {
+        "promoBar": {
+          "text": "Seçili ürünlerde %40'a varan indirim",
+          "cta": "Alışverişe başla"
+        },
+        "categoryHero": {
+          "promoLine": "Tüm Türkiye'ye ücretsiz kargo",
+          "cta": "Alışverişe başla"
+        },
+        "instagram": {
+          "title": "Bizi Instagram'da takip et!",
+          "handle": "pervinsoysalbutik"
+        }
+      },
       "status": "verified",
       "products": []
     }

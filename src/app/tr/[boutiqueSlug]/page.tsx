@@ -14,6 +14,7 @@ import {
 } from "@/lib/tr/boutiqueBrand";
 import { resolveBoutiqueHomeLayout } from "@/lib/tr/boutiqueHome";
 import { buildFeaturedCategoryTiles } from "@/lib/tr/categoryFeatured";
+import { withEditorialDemoProducts } from "@/lib/tr/looks/editorialDemoProducts";
 import { isTrCheckoutEnabled, isTrMarketplaceCartEnabled } from "@/lib/tr/platform";
 import { trHomePath } from "@/lib/tr/paths";
 import { safeGetBoutiqueStorefront } from "@/lib/tr/publicData";
@@ -51,11 +52,14 @@ export default async function BoutiqueStorefrontPage({
     notFound();
   }
 
-  if (resolveBoutiqueHomeLayout(boutiqueSlug) === "editorial") {
+  if (
+    resolveBoutiqueHomeLayout(boutiqueSlug, storefront.homeLayout) ===
+    "editorial"
+  ) {
     return (
       <TrBoutiqueEditorialHome
         boutique={storefront}
-        products={storefront.products}
+        products={withEditorialDemoProducts(storefront, storefront.products)}
       />
     );
   }

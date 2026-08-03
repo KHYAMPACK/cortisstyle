@@ -8,19 +8,33 @@ import {
 import { TrSoftNavLink } from "@/components/tr/TrSoftNavLink";
 import { trCartPath } from "@/lib/tr/paths";
 
-export function TrCartLink() {
+type TrCartLinkSize = "md" | "lg";
+
+export function TrCartLink({ size = "md" }: { size?: TrCartLinkSize }) {
   const scope = useTrBoutiqueCommerceScopeOptional();
   const cart = useTrScopedCart();
   const displayCount = cart.hydrated ? cart.itemCount : 0;
 
   const className =
-    "relative inline-flex h-10 w-10 items-center justify-center transition-opacity hover:opacity-60";
+    size === "lg"
+      ? "relative inline-flex h-11 w-11 items-center justify-center transition-opacity hover:opacity-60 md:h-12 md:w-12"
+      : "relative inline-flex h-10 w-10 items-center justify-center transition-opacity hover:opacity-60";
+  const iconClass =
+    size === "lg"
+      ? "h-5 w-5 text-neutral-900 md:h-[22px] md:w-[22px]"
+      : "h-[18px] w-[18px] text-neutral-900";
   const label =
     displayCount > 0 ? `Sepet (${displayCount} ürün)` : "Sepet";
 
   const badge =
     displayCount > 0 ? (
-      <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center bg-neutral-900 px-1 text-[9px] text-white">
+      <span
+        className={`absolute flex min-w-4 items-center justify-center bg-neutral-900 px-1 text-white ${
+          size === "lg"
+            ? "top-0.5 right-0.5 h-5 min-w-5 text-[10px]"
+            : "-top-0.5 -right-0.5 h-4 text-[9px]"
+        }`}
+      >
         {displayCount}
       </span>
     ) : null;
@@ -33,10 +47,7 @@ export function TrCartLink() {
         className={className}
         aria-label={label}
       >
-        <ShoppingBag
-          strokeWidth={1.5}
-          className="h-[18px] w-[18px] text-neutral-900"
-        />
+        <ShoppingBag strokeWidth={1.5} className={iconClass} />
         {badge}
       </button>
     );
@@ -44,10 +55,7 @@ export function TrCartLink() {
 
   return (
     <TrSoftNavLink href={trCartPath()} className={className} aria-label={label}>
-      <ShoppingBag
-        strokeWidth={1.5}
-        className="h-[18px] w-[18px] text-neutral-900"
-      />
+      <ShoppingBag strokeWidth={1.5} className={iconClass} />
       {badge}
     </TrSoftNavLink>
   );

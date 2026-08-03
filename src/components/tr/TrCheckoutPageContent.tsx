@@ -1,18 +1,26 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
+import { FormEvent, Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   TrSandboxBanner,
   cartHasDemoItems,
 } from "@/components/tr/TrSandboxBanner";
-import { trCartPath, trOrderConfirmationPath } from "@/lib/tr/paths";
+import { isTrCheckoutEnabled } from "@/lib/tr/platform";
+import {
+  trBoutiqueLegalPath,
+  trBoutiquePath,
+  trCartPath,
+  trOrderConfirmationPath,
+} from "@/lib/tr/paths";
+import { getTrBoutiqueLocalCartStore } from "@/store/trBoutiqueLocalCartStore";
 import { useTrCartStore } from "@/store/trCartStore";
 import {
   cartTotalKurus,
   EMPTY_CHECKOUT_FORM,
   groupCartItemsByBoutique,
+  type TrCartLineItem,
   type TrCheckoutFormData,
 } from "@/types/tr-cart";
 import { formatTryFromKurus } from "@/types/tr-marketplace";
@@ -22,28 +30,90 @@ const inputClassName =
 
 const labelClassName = "text-meta text-[10px] tracking-[0.16em] uppercase";
 
-export function TrCheckoutPageContent() {
+function useCheckoutCart(boutiqueSlug: string | null): {
+  items: TrCartLineItem[];
+  clearCart: () => void;
+  hydrated: boolean;
+} {
+  const globalItems = useTrCartStore((state) => state.items);
+  const clearGlobal = useTrCartStore((state) => state.clearCart);
+  const [localItems, setLocalItems] = useState<TrCartLineItem[]>([]);
+  const [hydrated, setHydrated] = useState(!boutiqueSlug);
+
+  useEffect(() => {
+    if (!boutiqueSlug) {
+      setHydrated(true);
+      return;
+    }
+
+    const store = getTrBoutiqueLocalCartStore(boutiqueSlug);
+    const sync = () => setLocalItems(store.getState().items);
+    sync();
+
+    const unsub = store.subscribe(sync);
+    const finish = store.persist?.onFinishHydration(() => {
+      sync();
+      setHydrated(true);
+    });
+    if (store.persist?.hasHydrated()) {
+      setHydrated(true);
+    }
+
+    return () => {
+      unsub();
+      finish?.();
+    };
+  }, [boutiqueSlug]);
+
+  if (boutiqueSlug) {
+    return {
+      items: localItems,
+      clearCart: () => getTrBoutiqueLocalCartStore(boutiqueSlug).getState().clearCart(),
+      hydrated,
+    };
+  }
+
+  return { items: globalItems, clearCart: clearGlobal, hydrated: true };
+}
+
+function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
   const router = useRouter();
-  const items = useTrCartStore((state) => state.items);
-  const clearCart = useTrCartStore((state) => state.clearCart);
+  const { items, clearCart, hydrated } = useCheckoutCart(boutiqueSlug);
   const [form, setForm] = useState<TrCheckoutFormData>(EMPTY_CHECKOUT_FORM);
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [acceptedDistance, setAcceptedDistance] = useState(false);
+  const [acceptedKvkk, setAcceptedKvkk] = useState(false);
+
   const grouped = groupCartItemsByBoutique(items);
   const totalKurus = cartTotalKurus(items);
   const demoCart = cartHasDemoItems(items);
+  const boutiqueCheckout = Boolean(boutiqueSlug);
+  const canSubmit =
+    demoCart || boutiqueCheckout || isTrCheckoutEnabled();
+
+  if (!hydrated) {
+    return (
+      <div className="px-5 py-10 text-[13px] text-neutral-600 md:px-10">
+        Sepet yükleniyor…
+      </div>
+    );
+  }
 
   if (items.length === 0) {
     return (
       <div className="space-y-6 px-5 py-10 md:px-10">
-        <TrSandboxBanner demo />
+        <TrSandboxBanner demo={demoCart || !isTrCheckoutEnabled()} />
         <p className="text-meta max-w-xl text-[12px] leading-relaxed">
           Ödeme için önce sepetinize ürün ekleyin.
         </p>
         <Link
-          href={trCartPath()}
+          href={
+            boutiqueSlug ? trBoutiquePath(boutiqueSlug) : trCartPath()
+          }
           className="btn-primary inline-flex items-center justify-center px-6 py-4 text-[11px] tracking-[0.2em]"
         >
-          Sepete dön
+          {boutiqueSlug ? "Mağazaya dön" : "Sepete dön"}
         </Link>
       </div>
     );
@@ -53,17 +123,90 @@ export function TrCheckoutPageContent() {
     setForm((current) => ({ ...current, [field]: value }));
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!demoCart || submitting) return;
+    if (!canSubmit || submitting) return;
+    if (!acceptedDistance || !acceptedKvkk) {
+      setError("Sözleşmeleri onaylamanız gerekir.");
+      return;
+    }
+
     setSubmitting(true);
-    clearCart();
-    router.push(`${trOrderConfirmationPath()}?demo=1`);
+    setError(null);
+
+    try {
+      if (demoCart) {
+        clearCart();
+        const base = trOrderConfirmationPath(
+          boutiqueSlug ? { boutique: boutiqueSlug } : undefined,
+        );
+        router.push(`${base}${base.includes("?") ? "&" : "?"}demo=1`);
+        return;
+      }
+
+      const response = await fetch("/api/tr/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          boutiqueSlug: boutiqueSlug ?? undefined,
+          customerName: form.customerName,
+          customerEmail: form.customerEmail,
+          customerPhone: form.customerPhone || undefined,
+          shippingAddress: {
+            line1: form.line1,
+            line2: form.line2 || undefined,
+            district: form.district,
+            city: form.city,
+            postalCode: form.postalCode,
+            country: form.country || "TR",
+          },
+          items: items.map((item) => ({
+            productId: item.productId,
+            boutiqueId: item.boutiqueId,
+            title: item.title,
+            priceKurus: item.priceKurus,
+            quantity: 1,
+          })),
+          acceptedDistanceSales: acceptedDistance,
+          acceptedKvkk,
+        }),
+      });
+
+      const data = (await response.json()) as {
+        ok?: boolean;
+        orderId?: string;
+        error?: string;
+      };
+
+      if (!response.ok || !data.orderId) {
+        throw new Error(data.error ?? "Sipariş oluşturulamadı.");
+      }
+
+      clearCart();
+      const confirm = trOrderConfirmationPath(
+        boutiqueSlug ? { boutique: boutiqueSlug } : undefined,
+      );
+      router.push(
+        `${confirm}${confirm.includes("?") ? "&" : "?"}order=${encodeURIComponent(data.orderId)}&sandbox=1`,
+      );
+    } catch (submitError) {
+      setError(
+        submitError instanceof Error
+          ? submitError.message
+          : "Sipariş oluşturulamadı.",
+      );
+      setSubmitting(false);
+    }
   };
+
+  const legalSlug = boutiqueSlug ?? grouped[0]?.boutiqueSlug;
 
   return (
     <div className="px-5 py-8 md:px-10 md:py-10">
-      <TrSandboxBanner className="mb-8" demo={demoCart} />
+      <TrSandboxBanner
+        className="mb-8"
+        demo={demoCart || !isTrCheckoutEnabled()}
+      />
 
       <div className="grid gap-10 lg:grid-cols-[1fr_360px] lg:items-start">
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -186,23 +329,85 @@ export function TrCheckoutPageContent() {
                 </li>
               ))}
             </ul>
-            <label className="mt-5 flex items-start gap-3 text-[12px] leading-relaxed text-neutral-800">
-              <input required type="checkbox" className="mt-1" />
-              <span>
-                {demoCart
-                  ? "Bu bir demo sipariştir; gerçek ödeme alınmaz."
-                  : "Mesafeli satış sözleşmesi ve ön bilgilendirme formunu okudum. (Taslak — ödeme henüz aktif değil.)"}
-              </span>
-            </label>
+            <div className="mt-5 space-y-3 text-[12px] leading-relaxed text-neutral-800">
+              <label className="flex items-start gap-3">
+                <input
+                  required
+                  type="checkbox"
+                  className="mt-1"
+                  checked={acceptedDistance}
+                  onChange={(event) => setAcceptedDistance(event.target.checked)}
+                />
+                <span>
+                  {legalSlug ? (
+                    <>
+                      <Link
+                        href={trBoutiqueLegalPath(legalSlug, "mesafeli-satis")}
+                        className="underline underline-offset-2"
+                        target="_blank"
+                      >
+                        Mesafeli satış sözleşmesi
+                      </Link>
+                      {" ve "}
+                      <Link
+                        href={trBoutiqueLegalPath(legalSlug, "on-bilgilendirme")}
+                        className="underline underline-offset-2"
+                        target="_blank"
+                      >
+                        ön bilgilendirme formunu
+                      </Link>{" "}
+                      okudum, kabul ediyorum.
+                    </>
+                  ) : (
+                    "Mesafeli satış sözleşmesi ve ön bilgilendirme formunu okudum, kabul ediyorum."
+                  )}
+                </span>
+              </label>
+              <label className="flex items-start gap-3">
+                <input
+                  required
+                  type="checkbox"
+                  className="mt-1"
+                  checked={acceptedKvkk}
+                  onChange={(event) => setAcceptedKvkk(event.target.checked)}
+                />
+                <span>
+                  {legalSlug ? (
+                    <>
+                      <Link
+                        href={trBoutiqueLegalPath(legalSlug, "kvkk")}
+                        className="underline underline-offset-2"
+                        target="_blank"
+                      >
+                        KVKK aydınlatma metnini
+                      </Link>{" "}
+                      okudum.
+                    </>
+                  ) : (
+                    "KVKK aydınlatma metnini okudum."
+                  )}
+                </span>
+              </label>
+            </div>
           </section>
 
-          {demoCart ? (
+          {error ? (
+            <p className="border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-800">
+              {error}
+            </p>
+          ) : null}
+
+          {canSubmit ? (
             <button
               type="submit"
               disabled={submitting}
               className="btn-primary inline-flex w-full items-center justify-center px-6 py-4 text-[11px] tracking-[0.2em] disabled:opacity-60 sm:max-w-md"
             >
-              {submitting ? "Tamamlanıyor…" : "Demo siparişi tamamla"}
+              {submitting
+                ? "Tamamlanıyor…"
+                : demoCart && !boutiqueCheckout
+                  ? "Demo siparişi tamamla"
+                  : "Siparişi tamamla (sandbox)"}
             </button>
           ) : (
             <button
@@ -252,13 +457,35 @@ export function TrCheckoutPageContent() {
             </div>
           </div>
           <Link
-            href={trCartPath()}
+            href={
+              boutiqueSlug ? trBoutiquePath(boutiqueSlug) : trCartPath()
+            }
             className="text-meta mt-5 inline-block text-[10px] tracking-[0.22em] uppercase underline underline-offset-2"
           >
-            ← Sepete dön
+            ← {boutiqueSlug ? "Mağazaya dön" : "Sepete dön"}
           </Link>
         </aside>
       </div>
     </div>
+  );
+}
+
+function TrCheckoutPageInner() {
+  const searchParams = useSearchParams();
+  const boutiqueSlug = searchParams.get("boutique")?.trim() || null;
+  return <TrCheckoutForm boutiqueSlug={boutiqueSlug} />;
+}
+
+export function TrCheckoutPageContent() {
+  return (
+    <Suspense
+      fallback={
+        <div className="px-5 py-10 text-[13px] text-neutral-600 md:px-10">
+          Ödeme yükleniyor…
+        </div>
+      }
+    >
+      <TrCheckoutPageInner />
+    </Suspense>
   );
 }

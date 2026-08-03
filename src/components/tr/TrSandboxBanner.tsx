@@ -31,5 +31,9 @@ export function TrSandboxBanner({
 export function cartHasDemoItems(
   items: Array<{ productId: string }>,
 ): boolean {
-  return items.some((item) => isTrDemoProductId(item.productId));
+  return items.some(
+    (item) =>
+      isTrDemoProductId(item.productId) ||
+      item.productId.startsWith("demo-wl-"),
+  );
 }

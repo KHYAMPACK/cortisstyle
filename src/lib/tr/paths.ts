@@ -108,12 +108,29 @@ export function trCartPath(): string {
   return "/tr/sepet";
 }
 
-export function trCheckoutPath(): string {
-  return "/tr/odeme";
+export function trCheckoutPath(params?: { boutique?: string }): string {
+  const boutique = params?.boutique?.trim();
+  if (!boutique) return "/tr/odeme";
+  return `/tr/odeme?boutique=${encodeURIComponent(boutique)}`;
 }
 
-export function trOrderConfirmationPath(): string {
-  return "/tr/siparis-onay";
+/** Boutique-scoped checkout (white-label / editorial local cart). */
+export function trBoutiqueCheckoutPath(boutiqueSlug: string): string {
+  return trCheckoutPath({ boutique: boutiqueSlug });
+}
+
+export function trOrderConfirmationPath(params?: { boutique?: string }): string {
+  const boutique = params?.boutique?.trim();
+  if (!boutique) return "/tr/siparis-onay";
+  return `/tr/siparis-onay?boutique=${encodeURIComponent(boutique)}`;
+}
+
+export function trBoutiqueLegalPath(boutiqueSlug: string, doc: string): string {
+  return `/tr/${encodeURIComponent(boutiqueSlug)}/yasal/${encodeURIComponent(doc)}`;
+}
+
+export function trBoutiqueAuthPath(boutiqueSlug: string): string {
+  return `/tr/${encodeURIComponent(boutiqueSlug)}/giris`;
 }
 
 export function trComingSoonPath(): string {

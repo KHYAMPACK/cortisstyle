@@ -2,12 +2,14 @@
 
 import { TrBoutiqueCatalogProvider } from "@/components/tr/boutique/TrBoutiqueCatalogContext";
 import { TrBoutiqueCommerceScopeProvider } from "@/components/tr/boutique/TrBoutiqueCommerceScope";
+import { TrBoutiqueCookieNotice } from "@/components/tr/boutique/TrBoutiqueCookieNotice";
 import { TrBoutiqueEditorialCommercePanels } from "@/components/tr/boutique/editorial/TrBoutiqueEditorialCommercePanels";
 import { TrBoutiqueEditorialFooter } from "@/components/tr/boutique/editorial/TrBoutiqueEditorialFooter";
 import { TrBoutiqueEditorialHeader } from "@/components/tr/boutique/editorial/TrBoutiqueEditorialHeader";
 import { TrBoutiqueEditorialHelpFab } from "@/components/tr/boutique/editorial/TrBoutiqueEditorialHelpFab";
 import { TrAddedToCartSheet } from "@/components/tr/TrAddedToCartSheet";
 import { listCategoriesForProducts } from "@/lib/tr/categories";
+import { trBoutiqueLegalPath } from "@/lib/tr/paths";
 import type { TrBoutiquePublic, TrProduct } from "@/types/tr-marketplace";
 
 interface TrBoutiqueEditorialShellProps {
@@ -44,6 +46,9 @@ export function TrBoutiqueEditorialShell({
           <TrBoutiqueEditorialHelpFab />
           <TrBoutiqueEditorialCommercePanels />
           <TrAddedToCartSheet />
+          <TrBoutiqueCookieNotice
+            privacyHref={trBoutiqueLegalPath(boutique.slug, "cerez")}
+          />
         </div>
       </TrBoutiqueCatalogProvider>
     </TrBoutiqueCommerceScopeProvider>

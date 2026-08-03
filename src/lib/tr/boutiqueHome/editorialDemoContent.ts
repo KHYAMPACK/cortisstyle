@@ -15,34 +15,31 @@ export type EditorialNavItem = {
 
 export type EditorialDemoContent = {
   nav: EditorialNavItem[];
-  promo: {
-    eyebrow: string;
-    discount: string;
-    discountScript: string;
-    title: string;
-    image: string;
-    imageLabel: string;
-    imageCta: string;
-  };
-  editorial: {
-    headline: string;
-    body: string;
+  /** Slim top strip above the category hero. */
+  promoBar: {
+    text: string;
     cta: string;
-    image: string;
-    imageTitle: string;
-    imageCta: string;
   };
+  /** Full-bleed hero with vertical category list (Aksesuarix-style). */
+  categoryHero: {
+    image: string;
+    promoLine: string;
+    cta: string;
+  };
+  /** Two large side-by-side category panels. */
+  featuredPair: Array<{
+    categoryId: string;
+    label: string;
+    image: string;
+    cta: string;
+  }>;
+  /** Three (or more) category panels in a row. */
   categoryTiles: Array<{
     categoryId: string;
     label: string;
     image: string;
     cta: string;
   }>;
-  lifestyle: {
-    image: string;
-    body: string;
-    cta: string;
-  };
   highlight: {
     body: string;
     cta: string;
@@ -69,16 +66,42 @@ export type EditorialDemoContent = {
       links: Array<{ label: string; href: string }>;
     }>;
   };
+  /** @deprecated Kept for DB JSON merge compatibility; unused in UI. */
+  promo?: {
+    eyebrow: string;
+    discount: string;
+    discountScript: string;
+    title: string;
+    image: string;
+    imageLabel: string;
+    imageCta: string;
+  };
+  /** @deprecated Kept for DB JSON merge compatibility; unused in UI. */
+  editorial?: {
+    headline: string;
+    body: string;
+    cta: string;
+    image: string;
+    imageTitle: string;
+    imageCta: string;
+  };
+  /** @deprecated Kept for DB JSON merge compatibility; unused in UI. */
+  lifestyle?: {
+    image: string;
+    body: string;
+    cta: string;
+  };
 };
 
 export function getEditorialDemoContent(): EditorialDemoContent {
   return {
     nav: [
-      { id: "new", label: "En Yeniler", categoryId: null },
+      { id: "new", label: "Yeni", categoryId: null },
       { id: "elbise", label: "Elbise", categoryId: "elbise" },
       { id: "ust", label: "Üst Giyim", categoryId: "ust-giyim" },
       { id: "alt", label: "Alt Giyim", categoryId: "alt-giyim" },
       { id: "beach", label: "Beach", categoryId: "beach" },
+      { id: "dis", label: "Dış Giyim", categoryId: "dis-giyim" },
       {
         id: "sale",
         label: "İndirim",
@@ -86,57 +109,52 @@ export function getEditorialDemoContent(): EditorialDemoContent {
         accent: "sale",
       },
     ],
-    promo: {
-      eyebrow: "Seçili ürünlerde",
-      discount: "%70'e",
-      discountScript: "Varan",
-      title: "İndirim",
-      image: ASSET("hero-promo.jpg"),
-      imageLabel: "Selection",
-      imageCta: "Daha fazlasını keşfet",
-    },
-    editorial: {
-      headline: "Zamana meydan okuyan klasikler",
-      body: "Sezonun en çok tercih edilen parçaları; modern dokular, rahat kesimler ve zamansız detaylarla bir araya geliyor. Yaz stilini tamamlayacak en çok sevilecek seçimleri şimdi keşfet.",
-      cta: "Keşfet",
-      image: ASSET("hero-editorial.jpg"),
-      imageTitle: "Sezonun en sevilenleri",
-      imageCta: "Şimdi keşfet",
-    },
-    categoryTiles: [
-      {
-        categoryId: "dis-giyim",
-        label: "Ceket",
-        image: ASSET("cat-ceket.jpg"),
-        cta: "Şimdi keşfet",
-      },
-      {
-        categoryId: "dis-giyim",
-        label: "Parka",
-        image: ASSET("cat-parka.jpg"),
-        cta: "Şimdi keşfet",
-      },
-      {
-        categoryId: "alt-giyim",
-        label: "Jean",
-        image: ASSET("cat-jean.jpg"),
-        cta: "Şimdi keşfet",
-      },
-      {
-        categoryId: "dis-giyim",
-        label: "Trençkot",
-        image: ASSET("cat-trenckot.jpg"),
-        cta: "Şimdi keşfet",
-      },
-    ],
-    lifestyle: {
-      image: ASSET("hero-lifestyle.jpg"),
-      body: "Zarif dokunuşlar, zamansız kesimler ve modern silüetlerle Maya Atelier; günlük şıklığı sezonun en sevilen parçalarında buluşturur.",
+    promoBar: {
+      text: "Seçili ürünlerde %70'e varan indirim",
       cta: "Alışverişe başla",
     },
+    categoryHero: {
+      image: ASSET("cat-trenckot.jpg"),
+      promoLine: "Sezon seçkilerinde özel fırsatlar",
+      cta: "Alışverişe başla",
+    },
+    featuredPair: [
+      {
+        categoryId: "ust-giyim",
+        label: "Üst Giyim",
+        image: ASSET("cat-ceket.jpg"),
+        cta: "Hemen keşfet",
+      },
+      {
+        categoryId: "elbise",
+        label: "Elbise",
+        image: ASSET("cat-parka.jpg"),
+        cta: "Hemen keşfet",
+      },
+    ],
+    categoryTiles: [
+      {
+        categoryId: "alt-giyim",
+        label: "Alt Giyim",
+        image: ASSET("cat-jean.jpg"),
+        cta: "Ürünleri incele",
+      },
+      {
+        categoryId: "dis-giyim",
+        label: "Dış Giyim",
+        image: ASSET("cat-trenckot.jpg"),
+        cta: "Ürünleri incele",
+      },
+      {
+        categoryId: "beach",
+        label: "Beach",
+        image: ASSET("ig-3.jpg"),
+        cta: "Ürünleri incele",
+      },
+    ],
     highlight: {
-      body: "Öne çıkanlar — yaz sezonunun en çok tercih edilen parçalarıyla stiline modern, hafif ve zamansız bir dokunuş kat. Günlük şıklıktan yaz akşamlarına uzanan kombinlerin vazgeçilmezi olacak seçkiler şimdi seni bekliyor.",
-      cta: "Şimdi keşfet",
+      body: "Kategorilerden seç, koleksiyonu keşfet — zamansız parçalar bir tık uzağında.",
+      cta: "Tüm ürünler",
     },
     instagram: {
       title: "Bizi Instagram'da takip et!",
