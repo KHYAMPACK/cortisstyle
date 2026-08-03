@@ -1,9 +1,12 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { type FormEvent, useState } from "react";
 import { InstagramIcon } from "@/components/icons/InstagramIcon";
+import { resolveBoutiqueLogoUrl } from "@/lib/tr/boutiqueBrand";
 import { getEditorialContent } from "@/lib/tr/boutiqueHome";
+import { trBoutiquePath } from "@/lib/tr/paths";
 import { instagramProfileUrl } from "@/lib/tr/whatsapp";
 import type { TrBoutiquePublic } from "@/types/tr-marketplace";
 
@@ -14,7 +17,11 @@ interface TrBoutiqueEditorialFooterProps {
 export function TrBoutiqueEditorialFooter({
   boutique,
 }: TrBoutiqueEditorialFooterProps) {
-  const content = getEditorialContent(boutique);  const { footer } = content;
+  const content = getEditorialContent(boutique);
+  const { footer } = content;
+  const logoUrl = resolveBoutiqueLogoUrl(boutique);
+  const brandTitle =
+    boutique.slug === "pervinsoysalbutik" ? "Pervin Soysal" : boutique.name;
   const [email, setEmail] = useState("");
   const [done, setDone] = useState(false);
 
@@ -31,6 +38,30 @@ export function TrBoutiqueEditorialFooter({
 
   return (
     <footer className="mt-auto bg-[#F5F2EA] text-neutral-900">
+      {/* Mobile secondary footer — brand mark above main footer blocks */}
+      <div className="flex flex-col items-center border-b border-black/10 px-5 py-10 md:hidden">
+        <Link
+          href={trBoutiquePath(boutique.slug)}
+          className="flex flex-col items-center gap-3"
+          aria-label={boutique.name}
+        >
+          {logoUrl ? (
+            <Image
+              src={logoUrl}
+              alt={boutique.name}
+              width={200}
+              height={80}
+              className="h-14 w-auto object-contain"
+              unoptimized
+            />
+          ) : (
+            <span className="font-serif text-2xl tracking-[0.18em] uppercase">
+              {brandTitle}
+            </span>
+          )}
+        </Link>
+      </div>
+
       <div className="mx-auto max-w-7xl px-5 py-10 md:px-8 md:py-14">
         <div className="border-b border-black/10 pb-8">
           <h2 className="text-[13px] font-semibold tracking-[0.18em] uppercase">
@@ -126,7 +157,9 @@ export function TrBoutiqueEditorialFooter({
         </div>
 
         <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-black/10 pt-6 text-[11px] text-neutral-500 sm:flex-row">
-          <p>© {new Date().getFullYear()} {boutique.name}</p>
+          <p>
+            © {new Date().getFullYear()} {boutique.name}
+          </p>
         </div>
       </div>
     </footer>

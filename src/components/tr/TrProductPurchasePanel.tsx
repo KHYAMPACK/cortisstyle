@@ -2,8 +2,8 @@ import { TrCheckoutComingSoon } from "@/components/tr/TrCheckoutComingSoon";
 import { TrPurchaseActions } from "@/components/tr/TrPurchaseActions";
 import { TrSandboxBanner } from "@/components/tr/TrSandboxBanner";
 import { TrWhatsAppOrderButton } from "@/components/tr/TrWhatsAppOrderButton";
+import { isProductCartCheckoutEnabled } from "@/lib/tr/cartCheckout";
 import { isTrDemoProduct } from "@/lib/tr/looks/demoCatalog";
-import { isTrCheckoutEnabled } from "@/lib/tr/platform";
 import { getProductCoverImageFor } from "@/lib/tr/productImages";
 import {
   buildProductOrderMessage,
@@ -34,10 +34,7 @@ export function TrProductPurchasePanel({
   hideActions = false,
   className = "",
 }: TrProductPurchasePanelProps) {
-  const checkoutEnabled =
-    isTrCheckoutEnabled() ||
-    isTrDemoProduct(product) ||
-    product.boutique.homeLayout === "editorial";
+  const checkoutEnabled = isProductCartCheckoutEnabled(product);
   const orderProduct = {
     title: product.title,
     priceKurus: product.priceKurus,

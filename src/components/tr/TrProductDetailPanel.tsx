@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useTrScopedCart } from "@/components/tr/boutique/TrBoutiqueCommerceScope";
 import { TrBackButton } from "@/components/tr/TrBackButton";
 import {
   TrEditorialSaleBadge,
@@ -15,9 +15,8 @@ import { TrPurchaseActions } from "@/components/tr/TrPurchaseActions";
 import { TrSizeGateSheet } from "@/components/tr/TrSizeGateSheet";
 import { TrSoftNavLink } from "@/components/tr/TrSoftNavLink";
 import { getTrCategoryLabel } from "@/lib/tr/categories";
+import { isProductCartCheckoutEnabled } from "@/lib/tr/cartCheckout";
 import { EDITORIAL_SALE_RED } from "@/lib/tr/boutiqueHome";
-import { isTrDemoProduct } from "@/lib/tr/looks/demoCatalog";
-import { isTrCheckoutEnabled } from "@/lib/tr/platform";
 import { getProductCoverImageFor } from "@/lib/tr/productImages";
 import {
   resolveProductColors,
@@ -26,9 +25,9 @@ import {
 import { trBoutiquePath, trHomePath } from "@/lib/tr/paths";
 import { resolveBoutiqueThemeAccent } from "@/lib/tr/boutiqueBrand";
 import { useTrAddedToCartStore } from "@/store/trAddedToCartStore";
-import { useTrCartStore } from "@/store/trCartStore";
 import { formatTryFromKurus } from "@/types/tr-marketplace";
 import type { TrProductWithBoutique } from "@/types/tr-marketplace";
+import { useMemo, useState } from "react";
 
 interface TrProductDetailPanelProps {
   product: TrProductWithBoutique;
@@ -47,7 +46,8 @@ export function TrProductDetailPanel({
   const accent = resolveBoutiqueThemeAccent(product.boutique);
   const categoryLabel = getTrCategoryLabel(product.category);
   const isAvailable = product.status === "available";
-  const checkoutEnabled = isTrCheckoutEnabled() || isTrDemoProduct(product);
+  const checkoutEnabled = isProductCartCheckoutEnabled(product);
+  const cart = useTrScopedCart();
 
   const [selectedSize, setSelectedSize] = useState<string | null>(
     sizes.length === 1 ? sizes[0]! : null,
@@ -57,7 +57,6 @@ export function TrProductDetailPanel({
   );
   const [sizeSheetOpen, setSizeSheetOpen] = useState(false);
 
-  const addItem = useTrCartStore((state) => state.addItem);
   const openAddedSheet = useTrAddedToCartStore((state) => state.open);
 
   const sizeRequired = sizes.length > 0;
@@ -85,7 +84,7 @@ export function TrProductDetailPanel({
     setSelectedSize(size);
     setSizeSheetOpen(false);
     const image = getProductCoverImageFor("boutique", product);
-    addItem({
+    cart.addItem({
       productId: product.id,
       boutiqueId: product.boutiqueId,
       boutiqueName: product.boutique.name,
