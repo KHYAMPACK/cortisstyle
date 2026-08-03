@@ -13,6 +13,21 @@ export type EditorialNavItem = {
   accent?: "sale";
 };
 
+/** One slide in the auto-rotating promotion hero. */
+export type EditorialHeroPromotion = {
+  id: string;
+  image?: string;
+  /** Small line above the discount, e.g. "Seçili ürünlerde" */
+  promoLine: string;
+  /** Large discount line, e.g. "%50'YE VARAN İNDİRİM" */
+  discountLine: string;
+  cta: string;
+  /**
+   * Where CTA goes: `"sale"` (default), a category id, or `"all"` for full PLP.
+   */
+  target?: "sale" | "all" | string;
+};
+
 export type EditorialDemoContent = {
   nav: EditorialNavItem[];
   /** Slim top strip above the category hero. */
@@ -20,7 +35,12 @@ export type EditorialDemoContent = {
     text: string;
     cta: string;
   };
-  /** Full-bleed promotion hero (Aksesuarix-style). */
+  /**
+   * Auto-rotating hero promotions. When empty/missing, UI falls back to
+   * wrapping `categoryHero` as a single slide.
+   */
+  heroPromotions?: EditorialHeroPromotion[];
+  /** Full-bleed promotion hero (legacy single slide; still merged for DB JSON). */
   categoryHero: {
     image: string;
     /** Small line above the discount, e.g. "Seçili ürünlerde" */
@@ -122,6 +142,32 @@ export function getEditorialDemoContent(): EditorialDemoContent {
       discountLine: "%70'e varan indirim",
       cta: "Alışverişe başla",
     },
+    heroPromotions: [
+      {
+        id: "sale-70",
+        image: ASSET("cat-trenckot.jpg"),
+        promoLine: "Seçili ürünlerde",
+        discountLine: "%70'e varan indirim",
+        cta: "Alışverişe başla",
+        target: "sale",
+      },
+      {
+        id: "new-season",
+        image: ASSET("cat-ceket.jpg"),
+        promoLine: "Yeni sezon",
+        discountLine: "Zamansız parçalar",
+        cta: "Yeni gelenler",
+        target: "all",
+      },
+      {
+        id: "dresses",
+        image: ASSET("cat-parka.jpg"),
+        promoLine: "Elbise seçkisi",
+        discountLine: "Haftanın favorileri",
+        cta: "Elbiseleri keşfet",
+        target: "elbise",
+      },
+    ],
     featuredPair: [
       {
         categoryId: "ust-giyim",

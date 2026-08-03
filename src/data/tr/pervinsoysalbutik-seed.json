@@ -23,6 +23,29 @@
           "discountLine": "%40'a varan indirim",
           "cta": "Alışverişe başla"
         },
+        "heroPromotions": [
+          {
+            "id": "sale-40",
+            "promoLine": "Seçili ürünlerde",
+            "discountLine": "%40'a varan indirim",
+            "cta": "Alışverişe başla",
+            "target": "sale"
+          },
+          {
+            "id": "free-shipping",
+            "promoLine": "Tüm Türkiye'ye",
+            "discountLine": "Ücretsiz kargo",
+            "cta": "Alışverişe başla",
+            "target": "all"
+          },
+          {
+            "id": "new-arrivals",
+            "promoLine": "Yeni gelenler",
+            "discountLine": "Sezonun parçaları",
+            "cta": "Keşfet",
+            "target": "all"
+          }
+        ],
         "instagram": {
           "title": "Bizi Instagram'da takip et!",
           "handle": "pervinsoysalbutik"

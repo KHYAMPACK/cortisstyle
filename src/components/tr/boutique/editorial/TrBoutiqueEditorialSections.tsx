@@ -1,9 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import type { CSSProperties } from "react";
 import {
   CreditCard,
   Lock,
@@ -11,8 +9,10 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react";
+import { TrBoutiqueEditorialHeroCarousel } from "@/components/tr/boutique/editorial/TrBoutiqueEditorialHeroCarousel";
 import {
   getEditorialContent,
+  resolveEditorialHeroPromotions,
 } from "@/lib/tr/boutiqueHome";
 import { resolveBoutiqueLogoUrl } from "@/lib/tr/boutiqueBrand";
 import { trBoutiqueProductsPath } from "@/lib/tr/paths";
@@ -96,6 +96,7 @@ export function TrBoutiqueEditorialSections({
 
   const brandTitle =
     boutique.slug === "pervinsoysalbutik" ? "Pervin Soysal" : boutique.name;
+  const heroPromotions = resolveEditorialHeroPromotions(content);
 
   return (
     <div className="bg-white">
@@ -120,62 +121,14 @@ export function TrBoutiqueEditorialSections({
         </Link>
       </motion.div>
 
-      {/* Promotion hero — mobile + desktop */}
-      <motion.section
-        {...fadeUp}
-        aria-label="Kampanya"
-        className="relative min-h-[72vh] overflow-hidden md:min-h-[85vh]"
-      >
-        <div className="absolute inset-0">
-          <EditorialPlaceholder dark />
-        </div>
-
-        <div className="relative z-10 flex min-h-[72vh] flex-col items-center justify-between px-5 py-10 text-center text-white md:min-h-[85vh] md:py-14">
-          <div className="flex flex-col items-center pt-2 md:pt-6">
-            {logoUrl ? (
-              <Image
-                src={logoUrl}
-                alt=""
-                width={160}
-                height={160}
-                className="h-14 w-auto object-contain brightness-0 invert md:h-20"
-                unoptimized
-                priority
-              />
-            ) : null}
-            <p className="mt-3 font-serif text-[1.75rem] tracking-[0.04em] md:text-4xl lg:text-5xl">
-              {brandTitle}
-            </p>
-          </div>
-
-          <div className="flex max-w-xl flex-col items-center pb-6 md:pb-10">
-            <p className="text-[13px] tracking-[0.08em] text-white/80 uppercase md:text-[15px]">
-              {content.categoryHero.promoLine}
-            </p>
-            <motion.p
-              initial={{ opacity: 0, scale: 0.96 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-              className="editorial-sale-text mt-3 text-[28px] leading-tight font-semibold tracking-[-0.02em] uppercase md:text-5xl lg:text-6xl"
-              style={
-                {
-                  color: "#FF4D8D",
-                  "--boutique-sale": "#FF4D8D",
-                  "--brand-primary": "#C2185B",
-                } as CSSProperties
-              }
-            >
-              {content.categoryHero.discountLine}
-            </motion.p>
-            <Link
-              href={saleHref}
-              className="editorial-promo-cta mt-6 inline-flex min-h-11 items-center bg-brand-primary px-6 py-3 text-[12px] tracking-[0.2em] text-white uppercase transition-opacity hover:opacity-90 md:text-[13px]"
-            >
-              {content.categoryHero.cta}
-            </Link>
-          </div>
-        </div>
-      </motion.section>
+      <motion.div {...fadeUp}>
+        <TrBoutiqueEditorialHeroCarousel
+          boutiqueSlug={boutiqueSlug}
+          brandTitle={brandTitle}
+          logoUrl={logoUrl}
+          promotions={heroPromotions}
+        />
+      </motion.div>
 
       <motion.section
         {...fadeUp}

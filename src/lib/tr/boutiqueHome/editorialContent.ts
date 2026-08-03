@@ -7,6 +7,7 @@ import {
   EDITORIAL_DEMO_SLUG,
   getEditorialDemoContent,
   type EditorialDemoContent,
+  type EditorialHeroPromotion,
 } from "@/lib/tr/boutiqueHome/editorialDemoContent";
 import { trBoutiqueLegalPath, trBoutiquePath } from "@/lib/tr/paths";
 import type { TrBoutiquePublic } from "@/types/tr-marketplace";
@@ -121,6 +122,32 @@ export function buildBoutiqueEditorialDefaults(
       discountLine: "%50'ye varan indirim",
       cta: "Alışverişe başla",
     },
+    heroPromotions: [
+      {
+        id: "sale-50",
+        image: TEMPLATE_ASSET("cat-trenckot.jpg"),
+        promoLine: "Seçili ürünlerde",
+        discountLine: "%50'ye varan indirim",
+        cta: "Alışverişe başla",
+        target: "sale",
+      },
+      {
+        id: "free-shipping",
+        image: TEMPLATE_ASSET("cat-ceket.jpg"),
+        promoLine: "Tüm Türkiye'ye",
+        discountLine: "Ücretsiz kargo",
+        cta: "Alışverişe başla",
+        target: "all",
+      },
+      {
+        id: "new-arrivals",
+        image: TEMPLATE_ASSET("cat-parka.jpg"),
+        promoLine: "Yeni gelenler",
+        discountLine: "Sezonun parçaları",
+        cta: "Keşfet",
+        target: "all",
+      },
+    ],
     featuredPair: [
       {
         categoryId: "ust-giyim",
@@ -209,6 +236,11 @@ export function getEditorialContent(
   const merged = mergeEditorial(defaults, boutique.editorialContent);
 
   // Ensure structural sections survive partial DB overrides from older JSON shapes.
+  const heroPromotions =
+    Array.isArray(merged.heroPromotions) && merged.heroPromotions.length > 0
+      ? merged.heroPromotions
+      : defaults.heroPromotions;
+
   return {
     ...merged,
     promoBar: merged.promoBar ?? defaults.promoBar,
@@ -219,6 +251,7 @@ export function getEditorialContent(
         merged.categoryHero?.discountLine ??
         defaults.categoryHero.discountLine,
     },
+    heroPromotions,
     featuredPair:
       merged.featuredPair?.length >= 2
         ? merged.featuredPair
@@ -228,4 +261,23 @@ export function getEditorialContent(
         ? merged.categoryTiles
         : defaults.categoryTiles,
   };
+}
+
+/** Prefer `heroPromotions`; fall back to legacy single `categoryHero` slide. */
+export function resolveEditorialHeroPromotions(
+  content: EditorialDemoContent,
+): EditorialHeroPromotion[] {
+  if (content.heroPromotions && content.heroPromotions.length > 0) {
+    return content.heroPromotions;
+  }
+  return [
+    {
+      id: "legacy-hero",
+      image: content.categoryHero.image,
+      promoLine: content.categoryHero.promoLine,
+      discountLine: content.categoryHero.discountLine,
+      cta: content.categoryHero.cta,
+      target: "sale",
+    },
+  ];
 }

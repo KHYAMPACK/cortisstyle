@@ -5,9 +5,11 @@ export {
   EDITORIAL_SALE_RED,
   getEditorialDemoContent,
   type EditorialDemoContent,
+  type EditorialHeroPromotion,
   type EditorialNavItem,
 } from "@/lib/tr/boutiqueHome/editorialDemoContent";
 export {
   buildBoutiqueEditorialDefaults,
   getEditorialContent,
+  resolveEditorialHeroPromotions,
 } from "@/lib/tr/boutiqueHome/editorialContent";
