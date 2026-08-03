@@ -42,6 +42,7 @@ function BoutiquesHeader() {
       kicker="Butikler"
       title="Cadde"
       description="Bağımsız butikleri keşfedin ve vitrinlerine gidin."
+      clearChrome
     />
   );
 }

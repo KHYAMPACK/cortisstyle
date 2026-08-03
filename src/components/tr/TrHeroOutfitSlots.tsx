@@ -22,9 +22,10 @@ interface TrHeroOutfitSlotsProps {
   bottoms: readonly HeroSlotPiece[];
 }
 
-const DWELL_MS = 3000;
+const DWELL_MS = 1800;
 const STAGGER_MS = 420;
 const REEL_DURATION = 0.52;
+const BREATHE_DURATION = 0;
 
 function LayerReel({
   piece,
@@ -80,7 +81,7 @@ function LayerReel({
             unoptimized
             priority={priority}
             draggable={false}
-            className="object-contain object-center select-none [filter:drop-shadow(0_22px_36px_rgba(48,42,36,0.18))_drop-shadow(0_6px_12px_rgba(48,42,36,0.1))]"
+            className="object-contain object-center select-none"
           />
         </motion.div>
       </AnimatePresence>
@@ -165,12 +166,26 @@ export function TrHeroOutfitSlots({ tops, bottoms }: TrHeroOutfitSlotsProps) {
   if (!topPiece || !bottomPiece) return null;
 
   return (
-    <div
+    <motion.div
       ref={rootRef}
       className="relative mx-auto w-full overflow-hidden max-h-[min(68dvh,640px)] lg:max-h-[min(80dvh,860px)]"
       style={{
         aspectRatio: `${OUTFIT_FRAME_WIDTH} / ${OUTFIT_FRAME_HEIGHT}`,
       }}
+      animate={
+        reduceMotion || !inView
+          ? { y: 0 }
+          : { y: [0, -6, 0] }
+      }
+      transition={
+        reduceMotion || !inView
+          ? { duration: 0 }
+          : {
+              duration: BREATHE_DURATION,
+              ease: "easeInOut",
+              repeat: Infinity,
+            }
+      }
     >
       {/* Full-frame layers — tiny seamGapY so hem / waistband don’t kiss */}
       <LayerReel
@@ -210,6 +225,6 @@ export function TrHeroOutfitSlots({ tops, bottoms }: TrHeroOutfitSlotsProps) {
         className="absolute right-0 bottom-0 left-0 z-30 cursor-pointer touch-pan-y border-0 bg-transparent p-0"
         style={{ top: seamSplit }}
       />
-    </div>
+    </motion.div>
   );
 }

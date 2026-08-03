@@ -1,17 +1,22 @@
 "use client";
 
+import { motion, useReducedMotion } from "framer-motion";
+
 /**
  * Blueprint grid + fine grain behind the /tr hero outfit.
  * Ground matches brand ice-floor / blueprint language.
+ * Coarse grid drifts slowly so the hero never feels frozen.
  */
 export function TrHeroAtmosphere() {
+  const reduceMotion = useReducedMotion();
+
   return (
     <div
       aria-hidden
       className="pointer-events-none absolute inset-0 z-[1] overflow-hidden select-none"
     >
-      <div
-        className="absolute inset-0 opacity-[0.28] md:opacity-[0.4]"
+      <motion.div
+        className="absolute inset-[-40px] opacity-[0.28] md:opacity-[0.4]"
         style={{
           backgroundImage: `
             linear-gradient(to right, rgba(208, 224, 245, 0.9) 1px, transparent 1px),
@@ -19,6 +24,20 @@ export function TrHeroAtmosphere() {
           `,
           backgroundSize: "40px 40px",
         }}
+        animate={
+          reduceMotion
+            ? { x: 0, y: 0 }
+            : { x: [0, 20, 0], y: [0, 12, 0] }
+        }
+        transition={
+          reduceMotion
+            ? { duration: 0 }
+            : {
+                duration: 28,
+                ease: "linear",
+                repeat: Infinity,
+              }
+        }
       />
       <div
         className="absolute inset-0 hidden opacity-[0.22] md:block"

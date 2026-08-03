@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
 import { TrBoutiqueBrandedShell } from "@/components/tr/boutique/TrBoutiqueBrandedShell";
+import { TrBoutiqueEditorialShell } from "@/components/tr/boutique/editorial/TrBoutiqueEditorialShell";
 import { TrMarketplaceChrome } from "@/components/tr/TrMarketplaceChrome";
 import { hasBoutiqueBrand } from "@/lib/tr/boutiqueBrand";
+import { resolveBoutiqueHomeLayout } from "@/lib/tr/boutiqueHome";
 import {
   safeGetBoutiqueStorefront,
   safeGetPublicBoutique,
@@ -45,6 +47,20 @@ export default async function BoutiqueLayout({
 
   if (!boutique) {
     notFound();
+  }
+
+  const homeLayout = resolveBoutiqueHomeLayout(boutiqueSlug);
+
+  if (homeLayout === "editorial") {
+    const storefront = await safeGetBoutiqueStorefront(boutiqueSlug);
+    return (
+      <TrBoutiqueEditorialShell
+        boutique={boutique}
+        products={storefront?.products ?? []}
+      >
+        {children}
+      </TrBoutiqueEditorialShell>
+    );
   }
 
   if (hasBoutiqueBrand(boutique)) {

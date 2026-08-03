@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { TrBoutiqueCatalogSection } from "@/components/tr/boutique/TrBoutiqueCatalogSection";
+import { TrBoutiqueEditorialHome } from "@/components/tr/boutique/editorial/TrBoutiqueEditorialHome";
 import { TrBoutiqueFeaturedCategories } from "@/components/tr/boutique/TrBoutiqueFeaturedCategories";
 import { TrBoutiqueProductGrid } from "@/components/tr/boutique/TrBoutiqueProductGrid";
 import { TrProductCard } from "@/components/tr/TrProductCard";
@@ -11,6 +12,7 @@ import {
   hasBoutiqueBrand,
   resolveBoutiqueThemeAccent,
 } from "@/lib/tr/boutiqueBrand";
+import { resolveBoutiqueHomeLayout } from "@/lib/tr/boutiqueHome";
 import { buildFeaturedCategoryTiles } from "@/lib/tr/categoryFeatured";
 import { isTrCheckoutEnabled, isTrMarketplaceCartEnabled } from "@/lib/tr/platform";
 import { trHomePath } from "@/lib/tr/paths";
@@ -47,6 +49,15 @@ export default async function BoutiqueStorefrontPage({
 
   if (!storefront) {
     notFound();
+  }
+
+  if (resolveBoutiqueHomeLayout(boutiqueSlug) === "editorial") {
+    return (
+      <TrBoutiqueEditorialHome
+        boutique={storefront}
+        products={storefront.products}
+      />
+    );
   }
 
   const branded = hasBoutiqueBrand(storefront);

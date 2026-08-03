@@ -78,71 +78,70 @@ export function TrCatalogBrowser({
 
   return (
     <div>
-      <div className="border-b border-blueprint-border px-5 py-5 md:px-10">
-        <form
-          onSubmit={handleSearchSubmit}
-          className="flex flex-col gap-4 md:flex-row md:items-center"
-        >
-          <label className="relative block flex-1">
-            <span className="sr-only">Ürün ara</span>
-            <Search
-              className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-neutral-400"
-              strokeWidth={1.5}
-            />
-            <input
-              type="search"
-              value={q}
-              onChange={(event) => setQ(event.target.value)}
-              onBlur={() => syncUrl(q, kategori)}
-              placeholder="Ürün veya butik ara…"
-              className="w-full border border-blueprint-border bg-white py-3 pr-4 pl-10 text-[13px] text-neutral-900 outline-none transition-colors placeholder:text-neutral-400 focus:border-neutral-900"
-            />
-          </label>
-          <button
-            type="submit"
-            className="shrink-0 border border-brand-primary bg-brand-primary px-6 py-3 text-[10px] tracking-[0.22em] text-white uppercase transition-colors hover:border-brand-primary-hover hover:bg-brand-primary-hover"
-          >
-            Ara
-          </button>
-        </form>
+      <div className="border-b border-blueprint-border px-5 py-8 md:px-10 md:py-10">
+        <div className="mx-auto max-w-2xl">
+          <form onSubmit={handleSearchSubmit} className="relative">
+            <label className="relative block">
+              <span className="sr-only">Ürün ara</span>
+              <Search
+                className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-neutral-400"
+                strokeWidth={1.5}
+              />
+              <input
+                type="search"
+                value={q}
+                onChange={(event) => setQ(event.target.value)}
+                onBlur={() => syncUrl(q, kategori)}
+                placeholder="Ürün veya butik ara…"
+                className="w-full border border-blueprint-border bg-white py-3.5 pr-20 pl-11 text-center text-[13px] text-neutral-900 outline-none transition-colors placeholder:text-neutral-400 focus:border-neutral-900 md:text-[14px]"
+              />
+            </label>
+            <button
+              type="submit"
+              className="absolute top-1/2 right-2 -translate-y-1/2 px-3 py-2 text-[10px] tracking-[0.22em] text-brand-primary uppercase transition-opacity hover:opacity-60"
+            >
+              Ara
+            </button>
+          </form>
 
-        <div
-          className="mt-5 flex flex-wrap gap-2"
-          role="listbox"
-          aria-label="Kategoriler"
-        >
-          <button
-            type="button"
-            role="option"
-            aria-selected={!kategori}
-            onClick={() => handleCategory(null)}
-            className={`border px-3 py-2 text-[10px] tracking-[0.18em] uppercase transition-colors ${
-              !kategori
-                ? "border-brand-primary bg-brand-primary text-white"
-                : "border-blueprint-border bg-white text-neutral-600 hover:border-neutral-900 hover:text-neutral-900"
-            }`}
+          <div
+            className="mt-6 flex flex-wrap justify-center gap-2"
+            role="listbox"
+            aria-label="Kategoriler"
           >
-            Tümü
-          </button>
-          {TR_BOUTIQUE_CATEGORIES.map((entry) => {
-            const active = kategori === entry.id;
-            return (
-              <button
-                key={entry.id}
-                type="button"
-                role="option"
-                aria-selected={active}
-                onClick={() => handleCategory(entry.id)}
-                className={`border px-3 py-2 text-[10px] tracking-[0.18em] uppercase transition-colors ${
-                  active
-                    ? "border-brand-primary bg-brand-primary text-white"
-                    : "border-blueprint-border bg-white text-neutral-600 hover:border-neutral-900 hover:text-neutral-900"
-                }`}
-              >
-                {entry.label}
-              </button>
-            );
-          })}
+            <button
+              type="button"
+              role="option"
+              aria-selected={!kategori}
+              onClick={() => handleCategory(null)}
+              className={`border px-3.5 py-2 text-[10px] tracking-[0.18em] uppercase transition-colors ${
+                !kategori
+                  ? "border-brand-primary bg-brand-primary text-white"
+                  : "border-blueprint-border bg-white text-neutral-600 hover:border-neutral-900 hover:text-neutral-900"
+              }`}
+            >
+              Tümü
+            </button>
+            {TR_BOUTIQUE_CATEGORIES.map((entry) => {
+              const active = kategori === entry.id;
+              return (
+                <button
+                  key={entry.id}
+                  type="button"
+                  role="option"
+                  aria-selected={active}
+                  onClick={() => handleCategory(entry.id)}
+                  className={`border px-3.5 py-2 text-[10px] tracking-[0.18em] uppercase transition-colors ${
+                    active
+                      ? "border-brand-primary bg-brand-primary text-white"
+                      : "border-blueprint-border bg-white text-neutral-600 hover:border-neutral-900 hover:text-neutral-900"
+                  }`}
+                >
+                  {entry.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
@@ -151,26 +150,28 @@ export function TrCatalogBrowser({
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: isPending ? 0.7 : 1, y: 0 }}
         transition={trPanelFadeTransition}
-        className="px-0 pb-16"
+        className="pb-16"
       >
-        <p className="text-meta px-5 py-4 text-[10px] tracking-[0.18em] uppercase md:px-10">
+        <p className="text-meta px-5 py-5 text-center text-[10px] tracking-[0.18em] uppercase md:px-10">
           {filtered.length} ürün
         </p>
 
         {filtered.length > 0 ? (
-          <div className="grid grid-cols-2 gap-x-[2px] gap-y-0 bg-white md:grid-cols-3 lg:grid-cols-4">
-            {filtered.map((product, index) => (
-              <TrProductCard
-                key={product.id}
-                product={product}
-                showBoutique
-                variant="marketplace"
-                priority={index < 4}
-              />
-            ))}
+          <div className="mx-auto max-w-6xl px-0 md:px-6 lg:px-10">
+            <div className="grid grid-cols-2 gap-x-[2px] gap-y-0 bg-white md:grid-cols-3 lg:grid-cols-4">
+              {filtered.map((product, index) => (
+                <TrProductCard
+                  key={product.id}
+                  product={product}
+                  showBoutique
+                  variant="marketplace"
+                  priority={index < 4}
+                />
+              ))}
+            </div>
           </div>
         ) : (
-          <p className="px-5 py-12 text-[13px] text-neutral-600 md:px-10">
+          <p className="mx-auto max-w-md px-5 py-12 text-center text-[13px] text-neutral-600 md:px-10">
             Bu filtrelerle ürün bulunamadı.{" "}
             <button
               type="button"

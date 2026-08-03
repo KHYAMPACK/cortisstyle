@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { KeyboardEvent } from "react";
 import { TrDemoGarmentVisual } from "@/components/tr/demo/TrDemoGarmentVisual";
 import { TrFavoriteButton } from "@/components/tr/TrFavoriteButton";
+import { TrQuickAddToCartButton } from "@/components/tr/TrQuickAddToCartButton";
 import { getTrCategoryLabel } from "@/lib/tr/categories";
 import { isTrDemoIconSrc } from "@/lib/tr/demoIcons";
 import {
@@ -26,6 +27,8 @@ interface TrProductCardProps {
   boutiqueSlug?: string;
   boutiqueName?: string;
   variant?: TrProductCardVariant;
+  /** Show Sepete ekle under the card (outfit piece rails). */
+  showQuickAdd?: boolean;
   /**
    * When set, open quick view instead of navigating.
    * Requires a product with nested boutique.
@@ -40,6 +43,7 @@ export function TrProductCard({
   boutiqueSlug,
   boutiqueName,
   variant = "boutique",
+  showQuickAdd = false,
   onSelect,
 }: TrProductCardProps) {
   const coverImage = getProductCoverImageFor(variant, product);
@@ -62,6 +66,8 @@ export function TrProductCard({
     Boolean(onSelect) && "boutique" in product
       ? (product as TrProductWithBoutique)
       : null;
+  const withBoutique =
+    "boutique" in product ? (product as TrProductWithBoutique) : null;
 
   const metaBits = [
     categoryLabel,
@@ -148,6 +154,12 @@ export function TrProductCard({
           </span>
           <TrProductColorDots colors={colors} />
         </div>
+
+        {showQuickAdd && withBoutique ? (
+          <div className="mt-3">
+            <TrQuickAddToCartButton product={withBoutique} compact />
+          </div>
+        ) : null}
       </div>
     </>
   );

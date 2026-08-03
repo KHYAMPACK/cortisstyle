@@ -57,12 +57,8 @@ export async function safeGetPublicProduct(
   productId: string,
 ): Promise<TrProductWithBoutique | null> {
   if (productId.startsWith("demo-product-")) {
-    const { buildTrDemoLooks } = await import("@/lib/tr/looks/demoCatalog");
-    for (const look of buildTrDemoLooks()) {
-      const match = look.products.find((p) => p.id === productId);
-      if (match) return match;
-    }
-    return null;
+    const { listDemoProducts } = await import("@/lib/tr/looks/demoCatalog");
+    return listDemoProducts().find((p) => p.id === productId) ?? null;
   }
   try {
     return await getPublicProductById(productId);

@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useMemo, useState } from "react";
 import { TrBackButton } from "@/components/tr/TrBackButton";
 import { TrDemoGarmentVisual } from "@/components/tr/demo/TrDemoGarmentVisual";
+import { TrFavoriteButton } from "@/components/tr/TrFavoriteButton";
 import { TrMobileBuyBar } from "@/components/tr/TrMobileBuyBar";
 import { TrProductColorPicker } from "@/components/tr/TrProductColorPicker";
 import { TrProductPurchasePanel } from "@/components/tr/TrProductPurchasePanel";
@@ -135,6 +136,12 @@ export function TrClothPage({ product, relatedProducts }: TrClothPageProps) {
                 </span>
               </div>
             )}
+
+            <TrFavoriteButton
+              product={product}
+              className="absolute top-3 right-3 z-10 h-9 w-9"
+              size="md"
+            />
           </div>
 
           {images.length > 1 ? (

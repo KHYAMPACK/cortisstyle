@@ -2,11 +2,8 @@
 
 import { Heart } from "lucide-react";
 import { useState, type MouseEvent } from "react";
-import { useTrPersistedHydration } from "@/lib/tr/useTrPersistedHydration";
-import {
-  favoriteSnapshotFromProduct,
-  useTrFavoritesStore,
-} from "@/store/trFavoritesStore";
+import { useTrScopedFavorites } from "@/components/tr/boutique/TrBoutiqueCommerceScope";
+import { favoriteSnapshotFromProduct } from "@/store/trFavoritesStore";
 import type { TrProduct, TrProductWithBoutique } from "@/types/tr-marketplace";
 
 interface TrFavoriteButtonProps {
@@ -29,16 +26,13 @@ export function TrFavoriteButton({
     boutiqueSlug,
     boutiqueName,
   });
-  const isFavorite = useTrFavoritesStore((state) =>
-    snapshot ? state.hasItem(snapshot.productId) : false,
-  );
-  const toggleItem = useTrFavoritesStore((state) => state.toggleItem);
-  const hydrated = useTrPersistedHydration(useTrFavoritesStore.persist);
+  const favorites = useTrScopedFavorites();
+  const isFavorite = snapshot ? favorites.hasItem(snapshot.productId) : false;
   const [error, setError] = useState<string | null>(null);
 
   if (!snapshot) return null;
 
-  const active = hydrated && isFavorite;
+  const active = favorites.hydrated && isFavorite;
   const iconClass = size === "md" ? "h-5 w-5" : "h-4 w-4";
 
   const handleClick = (event: MouseEvent<HTMLButtonElement>) => {
@@ -46,7 +40,7 @@ export function TrFavoriteButton({
     event.stopPropagation();
     setError(null);
     try {
-      toggleItem(snapshot);
+      favorites.toggleItem(snapshot);
     } catch {
       setError("Kaydedilemedi");
     }

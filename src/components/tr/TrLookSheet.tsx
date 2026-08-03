@@ -6,6 +6,8 @@ import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { TrDemoGarmentVisual } from "@/components/tr/demo/TrDemoGarmentVisual";
+import { TrFavoriteButton } from "@/components/tr/TrFavoriteButton";
+import { TrQuickAddToCartButton } from "@/components/tr/TrQuickAddToCartButton";
 import {
   getProductCoverImageFor,
   isCatalogCutoutImage,
@@ -206,13 +208,22 @@ export function TrLookSheet({
                         <p className="mt-2 text-[12px] tracking-[0.04em] text-brand-primary">
                           {formatTryFromKurus(product.priceKurus)}
                         </p>
-                        <button
-                          type="button"
-                          onClick={() => onViewProduct(product)}
-                          className="mt-3 inline-flex border border-brand-primary/40 bg-white px-4 py-2.5 text-[10px] tracking-[0.18em] text-brand-primary uppercase transition-colors hover:border-brand-primary hover:bg-brand-primary hover:text-white"
-                        >
-                          Ürünü gör
-                        </button>
+                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => onViewProduct(product)}
+                            className="inline-flex border border-brand-primary/40 bg-white px-4 py-2.5 text-[10px] tracking-[0.18em] text-brand-primary uppercase transition-colors hover:border-brand-primary hover:bg-brand-primary hover:text-white"
+                          >
+                            Ürünü gör
+                          </button>
+                          <TrFavoriteButton
+                            product={product}
+                            className="h-9 w-9"
+                          />
+                          {cartEnabled ? (
+                            <TrQuickAddToCartButton product={product} />
+                          ) : null}
+                        </div>
                       </div>
                     </div>
                   </motion.li>

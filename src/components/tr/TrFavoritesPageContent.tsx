@@ -23,6 +23,7 @@ function favoriteAsProduct(item: TrFavoriteItem): TrProductWithBoutique {
     title: item.title,
     description: null,
     priceKurus: item.priceKurus,
+    compareAtPriceKurus: null,
     size: null,
     sizes: [],
     colors: [],
@@ -90,59 +91,61 @@ export function TrFavoritesPageContent() {
       transition={trPanelFadeTransition}
       className="pb-16"
     >
-      <p className="text-meta px-5 py-4 text-[10px] tracking-[0.18em] uppercase md:px-10">
+      <p className="text-meta px-5 py-5 text-center text-[10px] tracking-[0.18em] uppercase md:px-10">
         {items.length} favori
       </p>
-      <div className="grid grid-cols-2 gap-x-[2px] gap-y-0 bg-white md:grid-cols-3 lg:grid-cols-4">
-        {items.map((item) => {
-          const product = favoriteAsProduct(item);
-          const demoIcon = isTrDemoIconSrc(item.image);
+      <div className="mx-auto max-w-6xl px-0 md:px-6 lg:px-10">
+        <div className="grid grid-cols-2 gap-x-[2px] gap-y-0 bg-white md:grid-cols-3 lg:grid-cols-4">
+          {items.map((item) => {
+            const product = favoriteAsProduct(item);
+            const demoIcon = isTrDemoIconSrc(item.image);
 
-          return (
-            <div key={item.productId} className="relative bg-white">
-              <TrFavoriteButton
-                product={product}
-                className="absolute top-2 right-2 z-10 h-8 w-8"
-              />
-              <Link
-                href={trClothPath(item.productId)}
-                className="group block outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
-              >
-                <div className="relative aspect-[2/3] overflow-hidden bg-ice-floor">
-                  {demoIcon && item.image ? (
-                    <TrDemoGarmentVisual src={item.image} showLabel />
-                  ) : item.image ? (
-                    <Image
-                      src={item.image}
-                      alt=""
-                      fill
-                      sizes="(max-width: 640px) 50vw, 25vw"
-                      unoptimized
-                      className="object-contain p-5 transition-transform duration-700 group-hover:scale-[1.03] md:p-7"
-                    />
-                  ) : (
-                    <div className="flex h-full items-center justify-center px-4 text-center">
-                      <span className="font-serif text-lg text-neutral-700">
-                        {item.title}
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <div className="px-2 pt-3 pb-5 md:px-2.5">
-                  <h3 className="line-clamp-2 font-serif text-[11px] leading-snug tracking-[0.12em] text-neutral-900 uppercase md:text-xs">
-                    {item.title}
-                  </h3>
-                  <p className="mt-1.5 text-[11px] tracking-[0.06em] text-brand-primary">
-                    {formatTryFromKurus(item.priceKurus)}
-                  </p>
-                  <p className="text-meta mt-1.5 text-[9px] tracking-[0.22em] uppercase">
-                    {item.boutiqueName}
-                  </p>
-                </div>
-              </Link>
-            </div>
-          );
-        })}
+            return (
+              <div key={item.productId} className="relative bg-white">
+                <TrFavoriteButton
+                  product={product}
+                  className="absolute top-2 right-2 z-10 h-8 w-8"
+                />
+                <Link
+                  href={trClothPath(item.productId)}
+                  className="group block outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
+                >
+                  <div className="relative aspect-[2/3] overflow-hidden bg-ice-floor">
+                    {demoIcon && item.image ? (
+                      <TrDemoGarmentVisual src={item.image} showLabel />
+                    ) : item.image ? (
+                      <Image
+                        src={item.image}
+                        alt=""
+                        fill
+                        sizes="(max-width: 640px) 50vw, 25vw"
+                        unoptimized
+                        className="object-contain p-5 transition-transform duration-700 group-hover:scale-[1.03] md:p-7"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center px-4 text-center">
+                        <span className="font-serif text-lg text-neutral-700">
+                          {item.title}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="px-2 pt-3 pb-5 text-center md:px-2.5">
+                    <h3 className="line-clamp-2 font-serif text-[11px] leading-snug tracking-[0.12em] text-neutral-900 uppercase md:text-xs">
+                      {item.title}
+                    </h3>
+                    <p className="mt-1.5 text-[11px] tracking-[0.06em] text-brand-primary">
+                      {formatTryFromKurus(item.priceKurus)}
+                    </p>
+                    <p className="text-meta mt-1.5 text-[9px] tracking-[0.22em] uppercase">
+                      {item.boutiqueName}
+                    </p>
+                  </div>
+                </Link>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </motion.div>
   );

@@ -116,6 +116,7 @@ export function mapProductRow(row: Record<string, unknown>): TrProduct {
     title: row.title as string,
     description: (row.description as string | null) ?? null,
     priceKurus: row.price_kurus as number,
+    compareAtPriceKurus: null,
     size: (row.size as string | null) ?? null,
     sizes: readStringArray(row.sizes),
     colors: readProductColors(row.colors),

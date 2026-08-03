@@ -41,6 +41,32 @@ export function trBoutiquePath(slug: string): string {
   return `/tr/${encodeURIComponent(slug)}`;
 }
 
+/** Boutique storefront product listing (editorial PLP). */
+export function trBoutiqueProductsPath(
+  boutiqueSlug: string,
+  params?: {
+    q?: string;
+    kategori?: string;
+    indirim?: boolean;
+    renk?: string;
+    sira?: string;
+  },
+): string {
+  const base = `/tr/${encodeURIComponent(boutiqueSlug)}/urunler`;
+  const search = new URLSearchParams();
+  const q = params?.q?.trim();
+  const kategori = params?.kategori?.trim();
+  const renk = params?.renk?.trim();
+  const sira = params?.sira?.trim();
+  if (q) search.set("q", q);
+  if (kategori) search.set("kategori", kategori);
+  if (params?.indirim) search.set("indirim", "1");
+  if (renk) search.set("renk", renk);
+  if (sira) search.set("sira", sira);
+  const qs = search.toString();
+  return qs ? `${base}?${qs}` : base;
+}
+
 /** Set on PDP links from marketplace home / looks so “back” returns to Cadde. */
 export const TR_PDP_FROM_CADDE = "cadde";
 

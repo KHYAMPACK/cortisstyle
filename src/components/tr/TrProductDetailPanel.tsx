@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { TrBackButton } from "@/components/tr/TrBackButton";
+import { TrFavoriteButton } from "@/components/tr/TrFavoriteButton";
 import { TrMobileBuyBar } from "@/components/tr/TrMobileBuyBar";
 import { TrProductColorPicker } from "@/components/tr/TrProductColorPicker";
 import { TrProductPurchasePanel } from "@/components/tr/TrProductPurchasePanel";
@@ -102,15 +103,26 @@ export function TrProductDetailPanel({
           </p>
         ) : null}
 
-        <h1
-          className={
-            branded
-              ? "mt-4 font-serif text-3xl tracking-tight text-neutral-950 md:text-4xl"
-              : "mt-3 font-serif text-3xl leading-none tracking-[-0.03em] text-neutral-950 md:text-4xl"
-          }
+        <div
+          className={`flex items-start justify-between gap-4 ${
+            branded ? "mt-4" : "mt-3"
+          }`}
         >
-          {product.title}
-        </h1>
+          <h1
+            className={
+              branded
+                ? "font-serif text-3xl tracking-tight text-neutral-950 md:text-4xl"
+                : "font-serif text-3xl leading-none tracking-[-0.03em] text-neutral-950 md:text-4xl"
+            }
+          >
+            {product.title}
+          </h1>
+          <TrFavoriteButton
+            product={product}
+            className="h-9 w-9 shrink-0"
+            size="md"
+          />
+        </div>
 
         <p className="mt-4 font-serif text-2xl tracking-[-0.02em] text-brand-primary">
           {formatTryFromKurus(product.priceKurus)}

@@ -4,6 +4,7 @@
  */
 
 import { demoIconSrc, type TrDemoGarmentKind } from "@/lib/tr/demoIcons";
+import { buildMayaProductSpecs } from "@/lib/tr/looks/mayaDemoProducts";
 import type { TrLookWithProducts } from "@/types/tr-look";
 import type {
   TrBoutiquePublic,
@@ -61,6 +62,24 @@ const DEMO_BOUTIQUES: TrBoutiquePublic[] = [
     shippingNote: "Demo kargo — gerçek gönderim yok.",
     exchangePolicy: "Demo iade politikası.",
     physicalAddress: null,
+    status: "verified",
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+  },
+  {
+    id: "demo-boutique-maya",
+    slug: "demo-maya",
+    name: "Maya Atelier",
+    legalName: null,
+    description:
+      "Demo butik — klasik editorial vitrin. Stok fotoğraflı mobil-öncelikli mağaza şablonu.",
+    logoUrl: "/tr/boutiques/demo-maya/logo.svg",
+    whatsappPhone: null,
+    instagramHandle: "mayaatelier.demo",
+    themeAccent: "#111111",
+    shippingNote: "Demo kargo — gerçek gönderim yok.",
+    exchangePolicy: "Demo iade politikası — 14 gün içinde değişim.",
+    physicalAddress: "Nişantaşı, İstanbul (Demo)",
     status: "verified",
     createdAt: "2026-01-01T00:00:00.000Z",
     updatedAt: "2026-01-01T00:00:00.000Z",
@@ -215,6 +234,7 @@ function buildDemoProduct(input: {
     description:
       "Demo ürün — ikon görsel. Sepete ekleyip ödeme demosunu deneyebilirsiniz.",
     priceKurus: input.priceKurus,
+    compareAtPriceKurus: null,
     size: "M",
     sizes: ["S", "M", "L"],
     colors: [],
@@ -229,6 +249,32 @@ function buildDemoProduct(input: {
     updatedAt: "2026-01-01T00:00:00.000Z",
     boutique: input.boutique,
   };
+}
+
+function buildMayaProducts(): TrProductWithBoutique[] {
+  const boutique = DEMO_BOUTIQUES.find((b) => b.slug === "demo-maya")!;
+  return buildMayaProductSpecs().map((spec) => ({
+    id: spec.id,
+    boutiqueId: boutique.id,
+    title: spec.title,
+    description:
+      "Maya Atelier demo ürünü — stok fotoğraf. Sepete ekleyip ödeme demosunu deneyebilirsiniz.",
+    priceKurus: spec.priceKurus,
+    compareAtPriceKurus: spec.compareAtPriceKurus ?? null,
+    size: "M",
+    sizes: ["XS", "S", "M", "L", "XL"],
+    colors: spec.colors,
+    conditionLabel: spec.isNew ? "Yeni Ürün" : null,
+    category: spec.category,
+    images: [spec.image],
+    marketplaceImages: [spec.image],
+    status: "available" as const,
+    stock: 5,
+    sortOrder: spec.sortOrder,
+    createdAt: "2026-03-01T00:00:00.000Z",
+    updatedAt: "2026-03-01T00:00:00.000Z",
+    boutique,
+  }));
 }
 
 function allDemoProducts(): TrProductWithBoutique[] {
@@ -248,6 +294,7 @@ function allDemoProducts(): TrProductWithBoutique[] {
       );
     });
   });
+  products.push(...buildMayaProducts());
   return products;
 }
 

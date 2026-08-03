@@ -28,7 +28,7 @@ function isTrSearchPath(pathname: string | null): boolean {
 }
 
 /**
- * Zara-style corner chrome: no header bar, always visible on marketplace routes.
+ * Zara-style corner chrome: no header bar.
  * Mobile: icon row (profile · search · bag). Desktop: text stack under ARA.
  */
 export function TrFloatingChrome({ cartEnabled }: TrFloatingChromeProps) {
@@ -104,7 +104,7 @@ export function TrFloatingChrome({ cartEnabled }: TrFloatingChromeProps) {
           </button>
         </div>
 
-        {/* Mobile — Zara icon row: profile · search · bag (no Yardım) */}
+        {/* Mobile — icon row: profile · search · bag (no Yardım) */}
         <div className="pointer-events-auto absolute top-5 right-3 flex items-center gap-0.5 md:hidden">
           <TrAccountMenu variant="icon" />
           {onSearch ? null : (

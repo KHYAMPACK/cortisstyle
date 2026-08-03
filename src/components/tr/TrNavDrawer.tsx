@@ -19,6 +19,7 @@ const NAV_ITEMS = [
   { href: trProductsPath(), label: "Ürünler" },
   { href: trBoutiquesPath(), label: "Butikler" },
   { href: trFavoritesPath(), label: "Favoriler" },
+  { href: "/contact", label: "Yardım" },
 ] as const;
 
 interface TrNavDrawerProps {

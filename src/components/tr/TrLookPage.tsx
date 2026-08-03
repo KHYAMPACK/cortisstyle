@@ -4,9 +4,11 @@ import Image from "next/image";
 import { useMemo, useState } from "react";
 import { TrBackButton } from "@/components/tr/TrBackButton";
 import { TrDemoGarmentVisual } from "@/components/tr/demo/TrDemoGarmentVisual";
+import { TrFavoriteButton } from "@/components/tr/TrFavoriteButton";
 import { TrLookBoutiqueCredits } from "@/components/tr/TrLookBoutiqueCredits";
 import { TrLookSizeGateSheet } from "@/components/tr/TrLookSizeGateSheet";
 import { TrMobileBuyBar } from "@/components/tr/TrMobileBuyBar";
+import { TrQuickAddToCartButton } from "@/components/tr/TrQuickAddToCartButton";
 import { TrSoftNavLink } from "@/components/tr/TrSoftNavLink";
 import { TrYouMayAlsoLike } from "@/components/tr/TrYouMayAlsoLike";
 import { isTrDemoIconSrc } from "@/lib/tr/demoIcons";
@@ -213,10 +215,10 @@ export function TrLookPage({
               const cutout =
                 !isTrDemoIconSrc(cover) && isCatalogCutoutImage(cover);
               return (
-                <li key={product.id}>
+                <li key={product.id} className="flex items-stretch gap-3 py-4">
                   <TrSoftNavLink
                     href={trClothPath(product.id)}
-                    className="flex gap-4 py-4 transition-opacity hover:opacity-80"
+                    className="flex min-w-0 flex-1 gap-4 transition-opacity hover:opacity-80"
                   >
                     <span
                       className={`relative h-20 w-16 shrink-0 overflow-hidden ${
@@ -257,6 +259,16 @@ export function TrLookPage({
                       </span>
                     </span>
                   </TrSoftNavLink>
+
+                  <div className="flex shrink-0 flex-col items-end justify-center gap-2">
+                    <TrFavoriteButton
+                      product={product}
+                      className="h-8 w-8"
+                    />
+                    {cartEnabled ? (
+                      <TrQuickAddToCartButton product={product} compact />
+                    ) : null}
+                  </div>
                 </li>
               );
             })}

@@ -12,6 +12,8 @@ function ProductsHeader() {
       kicker="Ürünler"
       title="Tüm parçalar"
       description="Kategori ve arama ile Cadde’deki ürünleri keşfedin."
+      align="center"
+      clearChrome
     />
   );
 }

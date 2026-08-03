@@ -55,6 +55,8 @@ export interface TrProduct {
   title: string;
   description: string | null;
   priceKurus: number;
+  /** Original price before discount — demo/editorial use; live rows leave null. */
+  compareAtPriceKurus: number | null;
   size: string | null;
   sizes: string[];
   colors: TrProductColor[];

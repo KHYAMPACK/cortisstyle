@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { TrProductSizePicker } from "@/components/tr/TrProductSizePicker";
 
 interface TrSizeGateSheetProps {
@@ -17,6 +18,7 @@ interface TrSizeGateSheetProps {
 
 /**
  * Bottom sheet for size before add-to-cart — keeps the buy CTA always tappable.
+ * Portaled to document.body so transformed/overflow card ancestors cannot trap it.
  */
 export function TrSizeGateSheet({
   open,
@@ -28,6 +30,11 @@ export function TrSizeGateSheet({
   onConfirm,
 }: TrSizeGateSheetProps) {
   const [draft, setDraft] = useState<string | null>(initialSize);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -50,7 +57,9 @@ export function TrSizeGateSheet({
 
   const canConfirm = Boolean(draft);
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <AnimatePresence>
       {open ? (
         <motion.div
@@ -116,6 +125,7 @@ export function TrSizeGateSheet({
           </motion.div>
         </motion.div>
       ) : null}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }

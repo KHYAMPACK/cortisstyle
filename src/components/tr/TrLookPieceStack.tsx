@@ -1,7 +1,9 @@
 "use client";
 
+import { motion, useReducedMotion } from "framer-motion";
 import { TrProductCard } from "@/components/tr/TrProductCard";
 import { TrLookCard } from "@/components/tr/TrLookCard";
+import { trPanelFadeTransition } from "@/components/tr/panel/TrPanelMotion";
 import type { TrLookWithProducts } from "@/types/tr-look";
 
 /** Shared with placeholder stacks so live + ghost covers match. */
@@ -22,8 +24,19 @@ interface TrLookPieceStackProps {
 }
 
 export function TrLookPieceStack({ look, index }: TrLookPieceStackProps) {
+  const reduceMotion = useReducedMotion();
+
   return (
-    <article className="border-b border-blueprint-border">
+    <motion.article
+      className="border-b border-blueprint-border"
+      initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.2 }}
+      transition={{
+        ...trPanelFadeTransition,
+        delay: reduceMotion ? 0 : index * 0.06,
+      }}
+    >
       <div className={TR_LOOK_COVER_PAD}>
         <div className={TR_LOOK_COVER_FRAME}>
           <TrLookCard look={look} index={index} />
@@ -41,12 +54,13 @@ export function TrLookPieceStack({ look, index }: TrLookPieceStackProps) {
                 product={product}
                 showBoutique
                 variant="marketplace"
+                showQuickAdd
                 priority={index === 0 && productIndex < 2}
               />
             </div>
           ))}
         </div>
       ) : null}
-    </article>
+    </motion.article>
   );
 }

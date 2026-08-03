@@ -8,6 +8,8 @@ export default function TrFavoritesPage() {
         kicker="Favoriler"
         title="Kaydettikleriniz"
         description="Cihazınızda saklanır. Giriş yapmadan kullanabilirsiniz."
+        align="center"
+        clearChrome
       />
       <TrFavoritesPageContent />
     </div>

@@ -4,6 +4,7 @@ import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 import { useEffect, useMemo } from "react";
+import { useTrBoutiqueCommerceScopeOptional } from "@/components/tr/boutique/TrBoutiqueCommerceScope";
 import { TrDemoGarmentVisual } from "@/components/tr/demo/TrDemoGarmentVisual";
 import { TrProductCard } from "@/components/tr/TrProductCard";
 import { TrSoftNavLink } from "@/components/tr/TrSoftNavLink";
@@ -22,6 +23,7 @@ export function TrAddedToCartSheet() {
   const payload = useTrAddedToCartStore((state) => state.payload);
   const close = useTrAddedToCartStore((state) => state.close);
   const cache = useTrMarketplaceCacheOptional();
+  const boutiqueScope = useTrBoutiqueCommerceScopeOptional();
 
   const related = useMemo(() => {
     if (!payload || !cache?.products.length) return [];
@@ -146,13 +148,26 @@ export function TrAddedToCartSheet() {
               </div>
             </div>
 
-            <TrSoftNavLink
-              href={trCartPath()}
-              onNavigate={close}
-              className="mt-8 inline-flex w-full items-center justify-center border border-jet-black bg-transparent px-6 py-3.5 text-[11px] tracking-[0.22em] text-jet-black uppercase transition-opacity hover:opacity-70"
-            >
-              Sepeti gör
-            </TrSoftNavLink>
+            {boutiqueScope ? (
+              <button
+                type="button"
+                onClick={() => {
+                  close();
+                  boutiqueScope.openPanel("cart");
+                }}
+                className="mt-8 inline-flex w-full items-center justify-center border border-jet-black bg-transparent px-6 py-3.5 text-[11px] tracking-[0.22em] text-jet-black uppercase transition-opacity hover:opacity-70"
+              >
+                Sepeti gör
+              </button>
+            ) : (
+              <TrSoftNavLink
+                href={trCartPath()}
+                onNavigate={close}
+                className="mt-8 inline-flex w-full items-center justify-center border border-jet-black bg-transparent px-6 py-3.5 text-[11px] tracking-[0.22em] text-jet-black uppercase transition-opacity hover:opacity-70"
+              >
+                Sepeti gör
+              </TrSoftNavLink>
+            )}
 
             {related.length > 0 ? (
               <div className="mt-10">
