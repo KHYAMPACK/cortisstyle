@@ -1,9 +1,12 @@
 "use client";
 
+import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { BrandLogo } from "@/components/BrandLogo";
+import { resolveBoutiqueIntroBrand } from "@/lib/tr/boutiqueBrand";
+import { resolveBoutiqueSlugFromHost } from "@/lib/tr/customDomain";
 
 const MIN_DISPLAY_MS = 2000;
 const MAX_LOAD_WAIT_MS = 5000;
@@ -25,23 +28,47 @@ interface IntroLoaderProps {
   /** Keeps the mask visible until the parent unmounts (auth callback bridge). */
   forceActive?: boolean;
   statusLabel?: string;
+  /** White-label boutique slug (custom domain) — shows boutique logo instead of Cortis. */
+  boutiqueSlug?: string | null;
 }
 
 export function IntroLoader({
   forceActive = false,
   statusLabel,
+  boutiqueSlug = null,
 }: IntroLoaderProps) {
   const [isMounted, setIsMounted] = useState(false);
   const [phase, setPhase] = useState<"visible" | "exiting" | "done">("visible");
+  const [resolvedSlug, setResolvedSlug] = useState<string | null>(() => {
+    if (boutiqueSlug?.trim()) return boutiqueSlug.trim();
+    if (typeof window !== "undefined") {
+      return resolveBoutiqueSlugFromHost(window.location.host);
+    }
+    return null;
+  });
+
+  const introBrand = resolvedSlug
+    ? resolveBoutiqueIntroBrand(resolvedSlug)
+    : null;
+  const isBoutique = Boolean(introBrand);
 
   useEffect(() => {
     setIsMounted(true);
-  }, []);
+    if (boutiqueSlug?.trim()) {
+      setResolvedSlug(boutiqueSlug.trim());
+      return;
+    }
+    const fromHost = resolveBoutiqueSlugFromHost(window.location.host);
+    if (fromHost) setResolvedSlug(fromHost);
+  }, [boutiqueSlug]);
 
   useEffect(() => {
     if (!isMounted || forceActive) return;
 
     document.documentElement.classList.add("intro-loading");
+    if (isBoutique) {
+      document.documentElement.classList.add("intro-loading-boutique");
+    }
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
@@ -81,17 +108,23 @@ export function IntroLoader({
       window.removeEventListener("load", onLoad);
       if (exitTimer) clearTimeout(exitTimer);
       if (fallbackTimer) clearTimeout(fallbackTimer);
-      document.documentElement.classList.remove("intro-loading");
+      document.documentElement.classList.remove(
+        "intro-loading",
+        "intro-loading-boutique",
+      );
       document.body.style.overflow = previousOverflow;
     };
-  }, [forceActive, isMounted]);
+  }, [forceActive, isBoutique, isMounted]);
 
   useEffect(() => {
     if (forceActive || phase !== "exiting") return;
 
     const timer = setTimeout(() => {
       setPhase("done");
-      document.documentElement.classList.remove("intro-loading");
+      document.documentElement.classList.remove(
+        "intro-loading",
+        "intro-loading-boutique",
+      );
       document.body.style.overflow = "";
     }, EXIT_DURATION_MS);
 
@@ -102,14 +135,20 @@ export function IntroLoader({
     if (!forceActive || !isMounted) return;
 
     document.documentElement.classList.add("intro-loading");
+    if (isBoutique) {
+      document.documentElement.classList.add("intro-loading-boutique");
+    }
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
     return () => {
-      document.documentElement.classList.remove("intro-loading");
+      document.documentElement.classList.remove(
+        "intro-loading",
+        "intro-loading-boutique",
+      );
       document.body.style.overflow = previousOverflow;
     };
-  }, [forceActive, isMounted]);
+  }, [forceActive, isBoutique, isMounted]);
 
   if (!isMounted || (!forceActive && phase === "done")) {
     return null;
@@ -121,14 +160,19 @@ export function IntroLoader({
         key="intro-loader"
         role="status"
         aria-live="polite"
-        aria-label={statusLabel ?? "Loading Cortisstyle"}
+        aria-label={
+          statusLabel ??
+          (introBrand ? `Loading ${introBrand.label}` : "Loading Cortisstyle")
+        }
         initial={{ opacity: 1, y: 0 }}
         animate={
           !forceActive && phase === "exiting"
             ? exitPanel
             : { opacity: 1, y: 0 }
         }
-        className={`fixed inset-0 z-[9999] flex h-screen w-screen flex-col items-center justify-center bg-[#0D0D0D] ${
+        className={`fixed inset-0 z-[9999] flex h-screen w-screen flex-col items-center justify-center ${
+          isBoutique ? "bg-white" : "bg-[#0D0D0D]"
+        } ${
           !forceActive && phase === "exiting"
             ? "pointer-events-none"
             : "pointer-events-auto"
@@ -138,13 +182,29 @@ export function IntroLoader({
           {...entrance}
           className="flex flex-col items-center gap-6 px-6"
         >
-          <BrandLogo
-            variant="onDark"
-            priority
-            className="h-[min(52vw,14rem)] w-auto md:h-[min(36vw,16rem)]"
-          />
+          {introBrand ? (
+            <Image
+              src={introBrand.logoUrl}
+              alt={introBrand.label}
+              width={320}
+              height={128}
+              priority
+              unoptimized
+              className="h-[min(42vw,11rem)] w-auto object-contain md:h-[min(28vw,12rem)]"
+            />
+          ) : (
+            <BrandLogo
+              variant="onDark"
+              priority
+              className="h-[min(52vw,14rem)] w-auto md:h-[min(36vw,16rem)]"
+            />
+          )}
           {statusLabel ? (
-            <p className="font-mono text-[10px] tracking-[0.42em] text-white/75 uppercase sm:text-[11px]">
+            <p
+              className={`font-mono text-[10px] tracking-[0.42em] uppercase sm:text-[11px] ${
+                isBoutique ? "text-neutral-500" : "text-white/75"
+              }`}
+            >
               [ {statusLabel} ]
             </p>
           ) : null}

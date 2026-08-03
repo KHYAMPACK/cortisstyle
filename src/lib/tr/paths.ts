@@ -121,13 +121,18 @@ export function trCheckoutPath(params?: { boutique?: string }): string {
 
 /** Boutique-scoped checkout (white-label / editorial local cart). */
 export function trBoutiqueCheckoutPath(boutiqueSlug: string): string {
-  return trCheckoutPath({ boutique: boutiqueSlug });
+  return `/tr/${encodeURIComponent(boutiqueSlug)}/odeme`;
 }
 
 export function trOrderConfirmationPath(params?: { boutique?: string }): string {
   const boutique = params?.boutique?.trim();
   if (!boutique) return "/tr/siparis-onay";
-  return `/tr/siparis-onay?boutique=${encodeURIComponent(boutique)}`;
+  return `/tr/${encodeURIComponent(boutique)}/siparis-onay`;
+}
+
+/** @deprecated Prefer trOrderConfirmationPath({ boutique }) */
+export function trBoutiqueOrderConfirmationPath(boutiqueSlug: string): string {
+  return trOrderConfirmationPath({ boutique: boutiqueSlug });
 }
 
 export function trBoutiqueLegalPath(boutiqueSlug: string, doc: string): string {

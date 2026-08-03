@@ -470,13 +470,24 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
   );
 }
 
-function TrCheckoutPageInner() {
+function TrCheckoutPageInner({
+  boutiqueSlug: boutiqueSlugProp = null,
+}: {
+  boutiqueSlug?: string | null;
+}) {
   const searchParams = useSearchParams();
-  const boutiqueSlug = searchParams.get("boutique")?.trim() || null;
+  const boutiqueSlug =
+    boutiqueSlugProp?.trim() ||
+    searchParams.get("boutique")?.trim() ||
+    null;
   return <TrCheckoutForm boutiqueSlug={boutiqueSlug} />;
 }
 
-export function TrCheckoutPageContent() {
+export function TrCheckoutPageContent({
+  boutiqueSlug = null,
+}: {
+  boutiqueSlug?: string | null;
+} = {}) {
   return (
     <Suspense
       fallback={
@@ -485,7 +496,7 @@ export function TrCheckoutPageContent() {
         </div>
       }
     >
-      <TrCheckoutPageInner />
+      <TrCheckoutPageInner boutiqueSlug={boutiqueSlug} />
     </Suspense>
   );
 }

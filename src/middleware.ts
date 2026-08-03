@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { PATHNAME_HEADER } from "@/lib/introLoader";
+import { PATHNAME_HEADER, BOUTIQUE_SLUG_HEADER } from "@/lib/introLoader";
 import { MAINTENANCE_PATH } from "@/lib/launchGates";
 import {
   getCountryFromRequest,
@@ -105,6 +105,14 @@ function handleMarketRouting(request: NextRequest): NextResponse | null {
 function withPathnameRequest(request: NextRequest): Headers {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set(PATHNAME_HEADER, request.nextUrl.pathname);
+  const host =
+    request.headers.get("x-forwarded-host") ??
+    request.headers.get("host") ??
+    "";
+  const boutiqueSlug = resolveBoutiqueSlugFromHost(host);
+  if (boutiqueSlug) {
+    requestHeaders.set(BOUTIQUE_SLUG_HEADER, boutiqueSlug);
+  }
   return requestHeaders;
 }
 
@@ -156,15 +164,7 @@ export function middleware(request: NextRequest) {
       } else {
         url.pathname = rewritten;
       }
-      // Preserve boutique scope on shared checkout/confirm routes
-      if (
-        (url.pathname === "/tr/odeme" ||
-          url.pathname === "/tr/siparis-onay" ||
-          url.pathname === "/tr/sepet") &&
-        !url.searchParams.has("boutique")
-      ) {
-        url.searchParams.set("boutique", boutiqueSlug);
-      }
+      // Boutique cart/checkout/confirm now live under /tr/{slug}/…
       return rewriteWithPathname(request, url);
     }
   }

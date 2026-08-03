@@ -8,6 +8,10 @@ const LOGO_OVERRIDES: Partial<Record<string, string>> = {
   pervinsoysalbutik: "/tr/boutiques/pervinsoysalbutik/logo.png",
 };
 
+const INTRO_BRAND_LABELS: Partial<Record<string, string>> = {
+  pervinsoysalbutik: "Pervin Soysal",
+};
+
 /** Boutiques with logo or accent get the branded shell. */
 export function hasBoutiqueBrand(boutique: TrBoutiquePublic): boolean {
   return Boolean(boutique.logoUrl?.trim() || boutique.themeAccent?.trim());
@@ -28,4 +32,17 @@ export function resolveBoutiqueLogoUrl(
   const override = LOGO_OVERRIDES[boutique.slug];
   if (override) return override;
   return boutique.logoUrl?.trim() || null;
+}
+
+/** Logo + label for custom-domain intro mask (no DB round-trip). */
+export function resolveBoutiqueIntroBrand(slug: string): {
+  logoUrl: string;
+  label: string;
+} | null {
+  const logoUrl = LOGO_OVERRIDES[slug];
+  if (!logoUrl) return null;
+  return {
+    logoUrl,
+    label: INTRO_BRAND_LABELS[slug] ?? slug,
+  };
 }

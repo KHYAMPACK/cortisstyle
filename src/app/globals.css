@@ -51,6 +51,12 @@ html.intro-loading body {
   overflow: hidden;
 }
 
+html.intro-loading-boutique,
+html.intro-loading-boutique body {
+  background: #ffffff !important;
+  overflow: hidden;
+}
+
 @layer components {
   .surface-canvas-paper {
     background-color: var(--canvas-paper);

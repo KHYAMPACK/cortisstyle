@@ -43,7 +43,7 @@ export function TrBoutiqueCatalogCutout({
           Katalog görünümü
         </p>
         <p className="text-[10px] tracking-[0.08em] text-neutral-500">
-          Cortisstyle vitrin
+          Vitrin
         </p>
       </div>
 

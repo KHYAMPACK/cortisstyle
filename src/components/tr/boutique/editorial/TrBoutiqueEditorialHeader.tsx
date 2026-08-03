@@ -174,10 +174,10 @@ export function TrBoutiqueEditorialHeader({
 
   return (
     <header className="sticky top-0 z-50 border-b border-black/5 bg-white/95 backdrop-blur-md">
-      <div className="mx-auto grid h-14 max-w-7xl grid-cols-[auto_1fr_auto] items-center gap-3 px-3 sm:px-4 md:h-[4.5rem] md:px-8 lg:h-20">
+      <div className="relative mx-auto flex h-14 max-w-7xl items-center justify-between px-3 sm:px-4 md:h-[4.5rem] md:px-8 lg:h-20">
         <button
           type="button"
-          className={iconBtn}
+          className={`${iconBtn} relative z-10`}
           aria-label={menuOpen ? "Menüyü kapat" : "Menüyü aç"}
           aria-expanded={menuOpen}
           onClick={() => setMenuOpen((open) => !open)}
@@ -187,7 +187,7 @@ export function TrBoutiqueEditorialHeader({
 
         <Link
           href={trBoutiquePath(boutique.slug)}
-          className="flex items-center justify-center justify-self-center"
+          className="absolute top-1/2 left-1/2 z-0 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center"
         >
           {logoUrl ? (
             <Image
@@ -206,7 +206,7 @@ export function TrBoutiqueEditorialHeader({
           )}
         </Link>
 
-        <div className="flex items-center justify-end gap-0.5 md:gap-1">
+        <div className="relative z-10 flex items-center justify-end gap-0.5 md:gap-1">
           {!onProductsPage ? (
             <Link
               href={productsPath}

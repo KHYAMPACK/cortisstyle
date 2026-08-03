@@ -89,8 +89,11 @@ export function rewriteBoutiqueDomainPath(
   if (pathname === "/sepet") {
     return `${base}/sepet`;
   }
-  if (pathname === "/odeme" || pathname === "/siparis-onay") {
-    return `/tr${pathname}?boutique=${encodeURIComponent(boutiqueSlug)}`;
+  if (pathname === "/odeme") {
+    return `${base}/odeme`;
+  }
+  if (pathname === "/siparis-onay") {
+    return `${base}/siparis-onay`;
   }
   if (pathname === "/giris" || pathname === "/hesap") {
     return `${base}/giris`;

@@ -126,16 +126,7 @@ export function TrBoutiqueEditorialFooter({
         </div>
 
         <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-black/10 pt-6 text-[11px] text-neutral-500 sm:flex-row">
-          <p>© {new Date().getFullYear()} {boutique.name}. Demo vitrin.</p>
-          <p>
-            Mağaza altyapısı:{" "}
-            <Link
-              href="/tr"
-              className="underline underline-offset-2 transition-opacity hover:opacity-70"
-            >
-              Cortisstyle
-            </Link>
-          </p>
+          <p>© {new Date().getFullYear()} {boutique.name}</p>
         </div>
       </div>
     </footer>

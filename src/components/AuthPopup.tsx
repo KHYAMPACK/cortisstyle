@@ -1,6 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
+import Image from "next/image";
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
@@ -34,11 +35,27 @@ type AuthPhase =
   | "forgot-password"
   | "forgot-password-sent";
 
+interface AuthPopupBrand {
+  /** Custom logo URL (e.g. boutique monogram). */
+  logoUrl?: string | null;
+  logoAlt?: string;
+  /** Small eyebrow above the title. */
+  eyebrow?: string;
+  /** Where to go after successful auth (default /wardrobe). */
+  successHref?: string;
+  termsHref?: string;
+  privacyHref?: string;
+  locale?: "en" | "tr";
+  /** Primary button / accent (CSS color). */
+  accent?: string;
+}
+
 interface AuthPopupProps {
   isOpen: boolean;
   onClose: () => void;
   onAuthSuccess?: () => void;
   description?: string;
+  brand?: AuthPopupBrand;
 }
 
 function ResetAnchor({
@@ -60,6 +77,7 @@ export function AuthPopup({
   onClose,
   onAuthSuccess,
   description = "Enter your email to sign in or create your curator archive profile.",
+  brand,
 }: AuthPopupProps) {
   const router = useRouter();
   const {
@@ -82,6 +100,20 @@ export function AuthPopup({
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [phase, setPhase] = useState<AuthPhase>("email");
+  const locale = brand?.locale ?? "en";
+  const isTr = locale === "tr";
+  const successHref = brand?.successHref?.trim() || "/wardrobe";
+  const accent = brand?.accent?.trim();
+  const primaryBtnStyle = accent
+    ? { backgroundColor: accent, borderColor: accent }
+    : undefined;
+  const termsNotice = (
+    <AuthTermsNotice
+      locale={locale}
+      termsHref={brand?.termsHref}
+      privacyHref={brand?.privacyHref}
+    />
+  );
   const [isMounted, setIsMounted] = useState(false);
 
   const normalizedEmail = email.trim().toLowerCase();
@@ -106,7 +138,7 @@ export function AuthPopup({
 
   const enterWardrobe = () => {
     completeAuth();
-    router.push("/wardrobe");
+    router.push(successHref);
   };
 
   useEffect(() => {
@@ -231,27 +263,49 @@ export function AuthPopup({
     }
   };
 
-  const titleByPhase: Record<AuthPhase, string> = {
-    email: "Join the Community",
-    login: "Welcome Back",
-    otp: "Verify Identity",
-    "set-password": "Secure Your Archive",
-    "complete-signup": "Finish Your Profile",
-    "forgot-password": "Reset Password",
-    "forgot-password-sent": "Check Your Inbox",
-  };
+  const titleByPhase: Record<AuthPhase, string> = isTr
+    ? {
+        email: "Giriş / Üyelik",
+        login: "Tekrar hoş geldiniz",
+        otp: "Doğrulama",
+        "set-password": "Şifrenizi belirleyin",
+        "complete-signup": "Profilinizi tamamlayın",
+        "forgot-password": "Şifre sıfırlama",
+        "forgot-password-sent": "E-postanızı kontrol edin",
+      }
+    : {
+        email: "Join the Community",
+        login: "Welcome Back",
+        otp: "Verify Identity",
+        "set-password": "Secure Your Archive",
+        "complete-signup": "Finish Your Profile",
+        "forgot-password": "Reset Password",
+        "forgot-password-sent": "Check Your Inbox",
+      };
 
-  const subtitleByPhase: Record<AuthPhase, string> = {
-    email: description,
-    login: `Sign in to ${normalizedEmail || "your account"} with your curator password.`,
-    otp: `Enter the 6-digit token we sent to ${normalizedEmail}.`,
-    "set-password": "Create a permanent password for future sign-ins.",
-    "complete-signup":
-      "Your email is verified, but you still need to set a curator password before signing in.",
-    "forgot-password":
-      "We will email you a secure link to choose a new password.",
-    "forgot-password-sent": `If an account exists for ${normalizedEmail}, a reset link is on its way.`,
-  };
+  const subtitleByPhase: Record<AuthPhase, string> = isTr
+    ? {
+        email: description,
+        login: `${normalizedEmail || "Hesabınıza"} şifrenizle giriş yapın.`,
+        otp: `${normalizedEmail} adresine gönderilen 6 haneli kodu girin.`,
+        "set-password": "Sonraki girişler için kalıcı bir şifre oluşturun.",
+        "complete-signup":
+          "E-postanız doğrulandı. Giriş için bir şifre belirlemeniz gerekiyor.",
+        "forgot-password":
+          "Yeni şifre seçmeniz için güvenli bir bağlantı göndereceğiz.",
+        "forgot-password-sent": `${normalizedEmail} için bir hesap varsa sıfırlama bağlantısı yolda.`,
+      }
+    : {
+        email: description,
+        login: `Sign in to ${normalizedEmail || "your account"} with your curator password.`,
+        otp: `Enter the 6-digit token we sent to ${normalizedEmail}.`,
+        "set-password": "Create a permanent password for future sign-ins.",
+        "complete-signup":
+          "Your email is verified, but you still need to set a curator password before signing in.",
+        "forgot-password":
+          "We will email you a secure link to choose a new password.",
+        "forgot-password-sent": `If an account exists for ${normalizedEmail}, a reset link is on its way.`,
+      };
 
   if (!isMounted) return null;
 
@@ -284,11 +338,26 @@ export function AuthPopup({
               className="pointer-events-auto w-[min(92vw,440px)] border border-blueprint-border bg-white p-8 shadow-2xl md:p-10"
             >
               <div className="mb-6 flex justify-center">
-                <BrandLogo variant="onLight" className="h-20 w-auto md:h-24" />
+                {brand?.logoUrl ? (
+                  <Image
+                    src={brand.logoUrl}
+                    alt={brand.logoAlt ?? "Logo"}
+                    width={220}
+                    height={88}
+                    className="h-16 w-auto object-contain md:h-20"
+                    unoptimized
+                    priority
+                  />
+                ) : (
+                  <BrandLogo
+                    variant="onLight"
+                    className="h-20 w-auto md:h-24"
+                  />
+                )}
               </div>
 
               <p className="text-meta mb-3 text-center text-[9px] tracking-[0.4em] uppercase">
-                Community Archive
+                {brand?.eyebrow ?? (isTr ? "Üyelik" : "Community Archive")}
               </p>
 
               <h2
@@ -329,11 +398,11 @@ export function AuthPopup({
                       <button
                         type="submit"
                         disabled={isAuthenticating}
-                        className={primaryButtonClass}
+                        className={primaryButtonClass} style={primaryBtnStyle}
                       >
                         {isAuthenticating ? "CHECKING..." : "CONTINUE"}
                       </button>
-                      <AuthTermsNotice />
+                      {termsNotice}
                     </motion.form>
                   ) : null}
 
@@ -363,7 +432,7 @@ export function AuthPopup({
                       <button
                         type="submit"
                         disabled={isAuthenticating || password.length < 6}
-                        className={primaryButtonClass}
+                        className={primaryButtonClass} style={primaryBtnStyle}
                       >
                         {isAuthenticating ? "SIGNING IN..." : "SIGN IN"}
                       </button>
@@ -431,12 +500,12 @@ export function AuthPopup({
                       <button
                         type="submit"
                         disabled={isAuthenticating || otpToken.length !== 6}
-                        className={primaryButtonClass}
+                        className={primaryButtonClass} style={primaryBtnStyle}
                       >
                         {isAuthenticating ? "VERIFYING..." : "VERIFY IDENTITY ACCESS"}
                       </button>
 
-                      <AuthTermsNotice />
+                      {termsNotice}
 
                       <button
                         type="button"
@@ -506,12 +575,12 @@ export function AuthPopup({
                           newPassword.length < 6 ||
                           newPassword !== confirmPassword
                         }
-                        className={primaryButtonClass}
+                        className={primaryButtonClass} style={primaryBtnStyle}
                       >
                         {isAuthenticating ? "SAVING..." : "CONFIRM PROFILE"}
                       </button>
 
-                      <AuthTermsNotice />
+                      {termsNotice}
 
                       {!needsPasswordSetup ? (
                         <ResetAnchor
@@ -534,7 +603,7 @@ export function AuthPopup({
                         type="button"
                         onClick={() => void handleCompleteSignupLink()}
                         disabled={isAuthenticating}
-                        className={primaryButtonClass}
+                        className={primaryButtonClass} style={primaryBtnStyle}
                       >
                         {isAuthenticating ? "SENDING..." : "SEND PASSWORD SETUP LINK"}
                       </button>
@@ -573,7 +642,7 @@ export function AuthPopup({
                       <button
                         type="submit"
                         disabled={isAuthenticating}
-                        className={primaryButtonClass}
+                        className={primaryButtonClass} style={primaryBtnStyle}
                       >
                         {isAuthenticating ? "SENDING..." : "SEND RESET LINK"}
                       </button>
@@ -600,7 +669,7 @@ export function AuthPopup({
                           goToEmailPhase();
                           setEmail("");
                         }}
-                        className={primaryButtonClass}
+                        className={primaryButtonClass} style={primaryBtnStyle}
                       >
                         BACK TO SIGN IN
                       </button>

@@ -356,7 +356,7 @@ const HELP_REPLIES: Array<{ q: string; a: string }> = [
   },
   {
     q: "Ödeme güvenli mi?",
-    a: "Bu vitrin demo ödemesi kullanır; kart çekimi yoktur. Canlı mağazada ödeme altyapısı Cortisstyle üzerindendir.",
+    a: "Bu vitrin demo ödemesi kullanır; kart çekimi yoktur. Canlı mağazada güvenli ödeme yakında açılacak.",
   },
   {
     q: "Beden tablosu",

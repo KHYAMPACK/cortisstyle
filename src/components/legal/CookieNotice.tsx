@@ -9,13 +9,23 @@ import {
 } from "@/lib/cookieConsent";
 import { isAuthCallbackPath } from "@/lib/authRedirect";
 import { isMaintenancePath } from "@/lib/launchGates";
+import { useBoutiqueHostSlug } from "@/lib/tr/boutiqueStorefrontContext";
+import { isTrMarketPath } from "@/lib/marketPreference";
 
-export function CookieNotice() {
+export function CookieNotice({
+  boutiqueSlug = null,
+}: {
+  boutiqueSlug?: string | null;
+}) {
   const pathname = usePathname();
+  const hostBoutiqueSlug = useBoutiqueHostSlug(boutiqueSlug);
   const [visible, setVisible] = useState(false);
 
   const shouldHideRoute =
-    isMaintenancePath(pathname) || isAuthCallbackPath(pathname);
+    isMaintenancePath(pathname) ||
+    isAuthCallbackPath(pathname) ||
+    isTrMarketPath(pathname) ||
+    Boolean(hostBoutiqueSlug);
 
   useEffect(() => {
     if (shouldHideRoute) {

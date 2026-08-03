@@ -8,9 +8,17 @@ import { AuthRedirectBridge } from "@/components/AuthRedirectBridge";
 import { CookieNotice } from "@/components/legal/CookieNotice";
 import { IntroLoader } from "@/components/IntroLoader";
 import { clearIntroLoadingLock, shouldShowIntroLoader } from "@/lib/introLoader";
+import { useBoutiqueHostSlug } from "@/lib/tr/boutiqueStorefrontContext";
 
-export function Providers({ children }: { children: React.ReactNode }) {
+export function Providers({
+  children,
+  boutiqueSlug = null,
+}: {
+  children: React.ReactNode;
+  boutiqueSlug?: string | null;
+}) {
   const pathname = usePathname();
+  const resolvedBoutiqueSlug = useBoutiqueHostSlug(boutiqueSlug);
   const showIntroLoader = shouldShowIntroLoader(pathname);
 
   useEffect(() => {
@@ -20,10 +28,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthProvider>
-      {showIntroLoader ? <IntroLoader /> : null}
+      {showIntroLoader ? (
+        <IntroLoader boutiqueSlug={resolvedBoutiqueSlug} />
+      ) : null}
       <AuthRedirectBridge />
-      <AppShell>{children}</AppShell>
-      <CookieNotice />
+      <AppShell boutiqueSlug={resolvedBoutiqueSlug}>{children}</AppShell>
+      <CookieNotice boutiqueSlug={resolvedBoutiqueSlug} />
     </AuthProvider>
   );
 }

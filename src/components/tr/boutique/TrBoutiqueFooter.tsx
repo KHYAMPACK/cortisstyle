@@ -1,5 +1,3 @@
-import Link from "next/link";
-import { resolveBoutiqueThemeAccent } from "@/lib/tr/boutiqueBrand";
 import type { TrBoutiquePublic } from "@/types/tr-marketplace";
 
 interface TrBoutiqueFooterProps {
@@ -7,8 +5,6 @@ interface TrBoutiqueFooterProps {
 }
 
 export function TrBoutiqueFooter({ boutique }: TrBoutiqueFooterProps) {
-  const accent = resolveBoutiqueThemeAccent(boutique);
-
   return (
     <footer className="mt-auto border-t border-black/5 px-5 py-10 md:px-8">
       <div className="mx-auto grid max-w-6xl gap-8 md:grid-cols-2">
@@ -40,14 +36,7 @@ export function TrBoutiqueFooter({ boutique }: TrBoutiqueFooterProps) {
       </div>
 
       <p className="mx-auto mt-8 max-w-6xl text-center text-[10px] tracking-[0.12em] text-neutral-400">
-        Mağaza altyapısı:{" "}
-        <Link
-          href="/tr"
-          className="underline underline-offset-2 transition-colors hover:text-neutral-600"
-          style={{ color: accent }}
-        >
-          Cortisstyle
-        </Link>
+        © {new Date().getFullYear()} {boutique.name}
       </p>
     </footer>
   );

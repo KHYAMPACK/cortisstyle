@@ -25,6 +25,7 @@ import { useAuth } from "@/context/AuthContext";
 import { resolveBoutiqueLogoUrl, resolveBoutiqueThemeAccent } from "@/lib/tr/boutiqueBrand";
 import { getSupabaseClient } from "@/lib/supabaseClient";
 import {
+  trBoutiqueAuthPath,
   trBoutiqueCartPath,
   trBoutiqueLegalPath,
   trBoutiquePath,
@@ -153,8 +154,8 @@ export function TrBoutiqueAuthPageContent({
             ? firstName
               ? `Merhaba ${firstName} — ${brandTitle} hesabınız.`
               : `${brandTitle} hesabınız.`
-            : `${brandTitle} üyeliği Cortisstyle altyapısı üzerindedir. Aynı e-posta ile diğer butiklerde de giriş yapabilirsiniz.`}
-        </p>
+            : `${brandTitle} hesabı oluşturun veya giriş yapın.`}
+      </p>
       </motion.div>
 
       {!user ? (
@@ -439,7 +440,17 @@ export function TrBoutiqueAuthPageContent({
           setAuthOpen(false);
           void recordRegistrationSource(boutique.slug);
         }}
-        description={`${boutique.name} hesabınıza giriş yapın veya oluşturun.`}
+        description={`${brandTitle} hesabınıza giriş yapın veya oluşturun.`}
+        brand={{
+          logoUrl,
+          logoAlt: boutique.name,
+          eyebrow: brandTitle,
+          successHref: trBoutiqueAuthPath(boutique.slug),
+          termsHref: trBoutiqueLegalPath(boutique.slug, "uyelik"),
+          privacyHref: trBoutiqueLegalPath(boutique.slug, "gizlilik"),
+          locale: "tr",
+          accent,
+        }}
       />
     </div>
   );
