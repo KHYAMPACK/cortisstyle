@@ -20,10 +20,13 @@ export type EditorialDemoContent = {
     text: string;
     cta: string;
   };
-  /** Full-bleed hero with vertical category list (Aksesuarix-style). */
+  /** Full-bleed promotion hero (Aksesuarix-style). */
   categoryHero: {
     image: string;
+    /** Small line above the discount, e.g. "Seçili ürünlerde" */
     promoLine: string;
+    /** Large discount line, e.g. "%50'YE VARAN İNDİRİM" */
+    discountLine: string;
     cta: string;
   };
   /** Two large side-by-side category panels. */
@@ -115,7 +118,8 @@ export function getEditorialDemoContent(): EditorialDemoContent {
     },
     categoryHero: {
       image: ASSET("cat-trenckot.jpg"),
-      promoLine: "Sezon seçkilerinde özel fırsatlar",
+      promoLine: "Seçili ürünlerde",
+      discountLine: "%70'e varan indirim",
       cta: "Alışverişe başla",
     },
     featuredPair: [

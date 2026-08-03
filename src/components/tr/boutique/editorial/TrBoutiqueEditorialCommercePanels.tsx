@@ -13,7 +13,11 @@ import {
 } from "@/components/tr/boutique/TrBoutiqueCommerceScope";
 import { formatTryFromKurus } from "@/types/tr-marketplace";
 import { cartTotalKurus } from "@/types/tr-cart";
-import { trBoutiqueCheckoutPath, trBoutiqueProductPath } from "@/lib/tr/paths";
+import {
+  trBoutiqueCartPath,
+  trBoutiqueCheckoutPath,
+  trBoutiqueProductPath,
+} from "@/lib/tr/paths";
 
 function PanelShell({
   title,
@@ -145,9 +149,19 @@ function CartPanel() {
             type="button"
             onClick={() => {
               closePanel();
+              router.push(trBoutiqueCartPath(boutiqueSlug));
+            }}
+            className="mt-4 w-full bg-brand-primary px-4 py-3 text-[11px] tracking-[0.16em] text-white uppercase transition-colors hover:bg-brand-primary-hover"
+          >
+            Sepeti gör
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              closePanel();
               router.push(trBoutiqueCheckoutPath(boutiqueSlug));
             }}
-            className="mt-4 w-full bg-neutral-900 px-4 py-3 text-[11px] tracking-[0.16em] text-white uppercase transition-opacity hover:opacity-80"
+            className="mt-2 w-full border border-neutral-900 bg-transparent px-4 py-3 text-[11px] tracking-[0.16em] text-neutral-900 uppercase transition-opacity hover:opacity-70"
           >
             Ödemeye geç
           </button>

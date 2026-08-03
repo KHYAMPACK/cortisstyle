@@ -9,6 +9,8 @@ interface TrYouMayAlsoLikeProps {
   products?: TrProductWithBoutique[];
   looks?: TrLookWithProducts[];
   className?: string;
+  /** When false, hide boutique name on product cards (boutique-scoped cart). */
+  showBoutique?: boolean;
 }
 
 /**
@@ -18,6 +20,7 @@ export function TrYouMayAlsoLike({
   products = [],
   looks = [],
   className = "",
+  showBoutique = true,
 }: TrYouMayAlsoLikeProps) {
   if (products.length === 0 && looks.length === 0) return null;
 
@@ -46,7 +49,7 @@ export function TrYouMayAlsoLike({
             <div key={product.id} className="bg-white">
               <TrProductCard
                 product={product}
-                showBoutique
+                showBoutique={showBoutique}
                 variant="marketplace"
                 priority={index < 4}
               />

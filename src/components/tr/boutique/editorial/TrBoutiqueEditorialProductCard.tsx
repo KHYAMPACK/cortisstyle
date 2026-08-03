@@ -4,6 +4,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { TrFavoriteButton } from "@/components/tr/TrFavoriteButton";
 import { TrQuickAddToCartButton } from "@/components/tr/TrQuickAddToCartButton";
+import {
+  TrEditorialSaleBadge,
+  discountPercentFromPrices,
+} from "@/components/tr/boutique/editorial/TrEditorialSaleBadge";
 import { EDITORIAL_SALE_RED } from "@/lib/tr/boutiqueHome";
 import { trProductPath } from "@/lib/tr/paths";
 import { resolveProductColors } from "@/lib/tr/productOptions";
@@ -21,11 +25,6 @@ interface TrBoutiqueEditorialProductCardProps {
   priority?: boolean;
 }
 
-function discountPercent(price: number, compareAt: number): number {
-  if (compareAt <= price) return 0;
-  return Math.round(((compareAt - price) / compareAt) * 100);
-}
-
 export function TrBoutiqueEditorialProductCard({
   product,
   boutiqueSlug,
@@ -38,7 +37,9 @@ export function TrBoutiqueEditorialProductCard({
   const isNew = product.conditionLabel?.toLocaleLowerCase("tr").includes("yeni");
   const compareAt = product.compareAtPriceKurus;
   const onSale = typeof compareAt === "number" && compareAt > product.priceKurus;
-  const pct = onSale ? discountPercent(product.priceKurus, compareAt) : 0;
+  const pct = onSale
+    ? discountPercentFromPrices(product.priceKurus, compareAt)
+    : 0;
 
   const withBoutique: TrProductWithBoutique = {
     ...product,
@@ -86,7 +87,12 @@ export function TrBoutiqueEditorialProductCard({
           ) : null}
         </Link>
 
-        {isNew && !isSold ? (
+        {onSale && pct > 0 && !isSold ? (
+          <TrEditorialSaleBadge
+            percent={pct}
+            className="pointer-events-none absolute top-2 left-2 z-10"
+          />
+        ) : isNew && !isSold ? (
           <span className="pointer-events-none absolute top-2 left-2 z-10 bg-neutral-500/90 px-2 py-1 text-[9px] tracking-[0.06em] text-white">
             Yeni Ürün
           </span>
@@ -148,14 +154,7 @@ export function TrBoutiqueEditorialProductCard({
               >
                 {formatTryFromKurus(product.priceKurus)}
               </span>
-              {pct > 0 ? (
-                <span
-                  className="px-1.5 py-0.5 text-[10px] font-medium text-white"
-                  style={{ backgroundColor: EDITORIAL_SALE_RED }}
-                >
-                  %{pct}
-                </span>
-              ) : null}
+              {pct > 0 ? <TrEditorialSaleBadge percent={pct} /> : null}
             </>
           ) : (
             <span className="text-[13px] font-medium text-neutral-900">

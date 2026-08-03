@@ -108,6 +108,11 @@ export function trCartPath(): string {
   return "/tr/sepet";
 }
 
+/** Boutique-scoped cart page (editorial / white-label local cart). */
+export function trBoutiqueCartPath(boutiqueSlug: string): string {
+  return `/tr/${encodeURIComponent(boutiqueSlug)}/sepet`;
+}
+
 export function trCheckoutPath(params?: { boutique?: string }): string {
   const boutique = params?.boutique?.trim();
   if (!boutique) return "/tr/odeme";

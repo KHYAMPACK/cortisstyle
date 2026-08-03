@@ -226,7 +226,12 @@ export function isTrDemoProduct(product: {
   id?: string;
   boutique: { slug: string };
 }): boolean {
-  if (product.id && isTrDemoProductId(product.id)) return true;
+  if (
+    product.id &&
+    (isTrDemoProductId(product.id) || product.id.startsWith("demo-wl-"))
+  ) {
+    return true;
+  }
   return isTrDemoBoutiqueSlug(product.boutique.slug);
 }
 

@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import type { CSSProperties } from "react";
 import {
   CreditCard,
   Lock,
@@ -11,9 +12,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import {
-  EDITORIAL_SALE_RED,
   getEditorialContent,
-  type EditorialNavItem,
 } from "@/lib/tr/boutiqueHome";
 import { resolveBoutiqueLogoUrl } from "@/lib/tr/boutiqueBrand";
 import { trBoutiqueProductsPath } from "@/lib/tr/paths";
@@ -84,16 +83,6 @@ interface TrBoutiqueEditorialSectionsProps {
   boutique: TrBoutiquePublic;
 }
 
-function navHref(boutiqueSlug: string, item: EditorialNavItem): string {
-  if (item.categoryId === "sale" || item.accent === "sale") {
-    return trBoutiqueProductsPath(boutiqueSlug, { indirim: true });
-  }
-  if (item.id === "new" || !item.categoryId) {
-    return trBoutiqueProductsPath(boutiqueSlug, { sira: "new" });
-  }
-  return trBoutiqueProductsPath(boutiqueSlug, { kategori: item.categoryId });
-}
-
 export function TrBoutiqueEditorialSections({
   boutique,
 }: TrBoutiqueEditorialSectionsProps) {
@@ -105,7 +94,6 @@ export function TrBoutiqueEditorialSections({
   const categoryHref = (id: string) =>
     trBoutiqueProductsPath(boutiqueSlug, { kategori: id });
 
-  const heroLinks = content.nav.filter((item) => item.accent !== "sale");
   const brandTitle =
     boutique.slug === "pervinsoysalbutik" ? "Pervin Soysal" : boutique.name;
 
@@ -115,32 +103,35 @@ export function TrBoutiqueEditorialSections({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}
-        className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 bg-neutral-950 px-3 py-2.5 text-center text-white"
+        className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 px-3 py-2.5 text-center text-white"
+        style={{
+          background:
+            "linear-gradient(90deg, #1a0a10 0%, #3b0f24 40%, #C2185B 70%, #3b0f24 100%)",
+        }}
       >
         <p className="text-[10px] tracking-[0.12em] uppercase sm:text-[11px] md:text-[12px]">
           {content.promoBar.text}
         </p>
         <Link
           href={saleHref}
-          className="border border-white/80 px-3 py-1.5 text-[10px] tracking-[0.14em] uppercase transition-colors hover:bg-white hover:text-neutral-950"
+          className="editorial-promo-cta border border-white/90 bg-white/10 px-3 py-1.5 text-[10px] tracking-[0.14em] uppercase backdrop-blur-sm transition-colors hover:bg-white hover:text-neutral-950"
         >
           {content.promoBar.cta}
         </Link>
       </motion.div>
 
-      {/* Category hero — mobile: brand first, compact links */}
+      {/* Promotion hero — mobile + desktop */}
       <motion.section
         {...fadeUp}
-        aria-label="Kategoriler"
-        className="relative overflow-hidden"
+        aria-label="Kampanya"
+        className="relative min-h-[72vh] overflow-hidden md:min-h-[85vh]"
       >
         <div className="absolute inset-0">
           <EditorialPlaceholder dark />
         </div>
 
-        <div className="relative z-10 flex flex-col gap-8 px-5 py-8 sm:py-10 md:min-h-[82vh] md:justify-between md:px-10 md:py-14 lg:px-14">
-          {/* Brand — top on mobile, right on desktop */}
-          <div className="flex flex-col items-center text-center text-white md:absolute md:top-14 md:right-10 md:items-end md:text-right lg:right-14">
+        <div className="relative z-10 flex min-h-[72vh] flex-col items-center justify-between px-5 py-10 text-center text-white md:min-h-[85vh] md:py-14">
+          <div className="flex flex-col items-center pt-2 md:pt-6">
             {logoUrl ? (
               <Image
                 src={logoUrl}
@@ -157,36 +148,28 @@ export function TrBoutiqueEditorialSections({
             </p>
           </div>
 
-          <nav
-            aria-label="Ana kategoriler"
-            className="mx-auto w-full max-w-md md:mx-0 md:mt-6 md:pt-2"
-          >
-            <ul className="divide-y divide-white/15 border-y border-white/15 md:space-y-1 md:divide-y-0 md:border-0">
-              {heroLinks.map((item) => (
-                <li key={item.id}>
-                  <Link
-                    href={navHref(boutiqueSlug, item)}
-                    className="flex min-h-12 items-center justify-between py-3 text-white transition-opacity hover:opacity-80 md:min-h-0 md:block md:py-1"
-                  >
-                    <span className="text-[18px] leading-none font-semibold tracking-[-0.02em] uppercase md:text-[40px] lg:text-[48px]">
-                      {item.label}
-                    </span>
-                    <span className="text-[11px] tracking-[0.14em] text-white/50 uppercase md:hidden">
-                      ›
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </nav>
-
-          <div className="text-center text-white md:mt-auto md:max-w-lg md:text-left">
-            <p className="text-[14px] font-medium tracking-[0.04em] md:text-lg">
+          <div className="flex max-w-xl flex-col items-center pb-6 md:pb-10">
+            <p className="text-[13px] tracking-[0.08em] text-white/80 uppercase md:text-[15px]">
               {content.categoryHero.promoLine}
             </p>
+            <motion.p
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+              className="editorial-sale-text mt-3 text-[28px] leading-tight font-semibold tracking-[-0.02em] uppercase md:text-5xl lg:text-6xl"
+              style={
+                {
+                  color: "#FF4D8D",
+                  "--boutique-sale": "#FF4D8D",
+                  "--brand-primary": "#C2185B",
+                } as CSSProperties
+              }
+            >
+              {content.categoryHero.discountLine}
+            </motion.p>
             <Link
-              href={productsHref}
-              className="mt-4 inline-flex min-h-11 items-center bg-white px-5 py-3 text-[11px] tracking-[0.18em] text-neutral-950 uppercase transition-opacity hover:opacity-85"
+              href={saleHref}
+              className="editorial-promo-cta mt-6 inline-flex min-h-11 items-center bg-brand-primary px-6 py-3 text-[12px] tracking-[0.2em] text-white uppercase transition-opacity hover:opacity-90 md:text-[13px]"
             >
               {content.categoryHero.cta}
             </Link>
@@ -211,7 +194,7 @@ export function TrBoutiqueEditorialSections({
               <p className="text-xl font-semibold tracking-[0.14em] uppercase md:text-4xl">
                 {panel.label}
               </p>
-              <span className="mt-3 inline-flex min-h-10 items-center bg-white px-5 py-2.5 text-[11px] tracking-[0.16em] text-neutral-950 uppercase transition-transform duration-300 group-hover:scale-[1.02]">
+              <span className="mt-3 inline-flex min-h-10 items-center bg-white px-5 py-2.5 text-[11px] tracking-[0.16em] text-neutral-950 uppercase transition-all duration-300 group-hover:scale-[1.02] group-hover:bg-brand-primary group-hover:text-white">
                 {panel.cta}
               </span>
             </div>
@@ -236,7 +219,7 @@ export function TrBoutiqueEditorialSections({
               <p className="text-lg font-semibold tracking-[0.16em] uppercase md:text-2xl">
                 {tile.label}
               </p>
-              <span className="mt-3 inline-flex min-h-10 items-center border border-white/90 px-4 py-2 text-[10px] tracking-[0.16em] uppercase transition-colors group-hover:bg-white group-hover:text-neutral-950">
+              <span className="mt-3 inline-flex min-h-10 items-center border border-white/90 bg-white/10 px-4 py-2 text-[10px] tracking-[0.16em] uppercase backdrop-blur-sm transition-colors group-hover:bg-brand-primary group-hover:border-brand-primary">
                 {tile.cta}
               </span>
             </div>
@@ -302,8 +285,7 @@ export function TrBoutiqueEditorialSections({
       <div className="px-5 py-6 text-center md:px-8">
         <Link
           href={saleHref}
-          className="inline-flex min-h-11 items-center text-[12px] tracking-[0.16em] uppercase underline-offset-4 hover:underline"
-          style={{ color: EDITORIAL_SALE_RED }}
+          className="editorial-sale-text inline-flex min-h-11 items-center text-[12px] font-semibold tracking-[0.16em] uppercase underline-offset-4 hover:underline"
         >
           İndirimdeki ürünleri gör →
         </Link>

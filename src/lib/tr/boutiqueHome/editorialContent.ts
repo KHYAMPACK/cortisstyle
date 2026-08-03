@@ -117,9 +117,8 @@ export function buildBoutiqueEditorialDefaults(
     },
     categoryHero: {
       image: TEMPLATE_ASSET("cat-trenckot.jpg"),
-      promoLine:
-        boutique.shippingNote?.trim() ||
-        `${boutique.name} — kategorilerden keşfet`,
+      promoLine: "Seçili ürünlerde",
+      discountLine: "%50'ye varan indirim",
       cta: "Alışverişe başla",
     },
     featuredPair: [
@@ -213,7 +212,13 @@ export function getEditorialContent(
   return {
     ...merged,
     promoBar: merged.promoBar ?? defaults.promoBar,
-    categoryHero: merged.categoryHero ?? defaults.categoryHero,
+    categoryHero: {
+      ...defaults.categoryHero,
+      ...merged.categoryHero,
+      discountLine:
+        merged.categoryHero?.discountLine ??
+        defaults.categoryHero.discountLine,
+    },
     featuredPair:
       merged.featuredPair?.length >= 2
         ? merged.featuredPair

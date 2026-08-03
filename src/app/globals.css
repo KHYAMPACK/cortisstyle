@@ -133,4 +133,86 @@ html.intro-loading body {
       animation: none;
     }
   }
+
+  /* Editorial / white-label sale accents */
+  @keyframes editorial-sale-glow {
+    0%,
+    100% {
+      box-shadow:
+        0 0 0 0 color-mix(in srgb, var(--boutique-sale, #c41e3a) 0%, transparent),
+        0 0 8px 0 color-mix(in srgb, var(--boutique-sale, #c41e3a) 35%, transparent);
+    }
+    50% {
+      box-shadow:
+        0 0 0 4px color-mix(in srgb, var(--boutique-sale, #c41e3a) 22%, transparent),
+        0 0 18px 2px color-mix(in srgb, var(--boutique-sale, #c41e3a) 55%, transparent);
+    }
+  }
+
+  @keyframes editorial-sale-pulse {
+    0%,
+    100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.06);
+    }
+  }
+
+  @keyframes editorial-sale-text-glow {
+    0%,
+    100% {
+      text-shadow:
+        0 0 12px color-mix(in srgb, var(--boutique-sale, #c41e3a) 35%, transparent),
+        0 0 28px color-mix(in srgb, var(--brand-primary, #c2185b) 25%, transparent);
+      filter: brightness(1);
+    }
+    50% {
+      text-shadow:
+        0 0 20px color-mix(in srgb, var(--boutique-sale, #c41e3a) 65%, transparent),
+        0 0 42px color-mix(in srgb, var(--brand-primary, #c2185b) 45%, transparent);
+      filter: brightness(1.08);
+    }
+  }
+
+  @keyframes editorial-cta-sheen {
+    0% {
+      background-position: 120% 0;
+    }
+    100% {
+      background-position: -20% 0;
+    }
+  }
+
+  .editorial-sale-badge {
+    background-color: var(--boutique-sale, #c41e3a);
+    color: #fff;
+    animation:
+      editorial-sale-glow 2.4s ease-in-out infinite,
+      editorial-sale-pulse 2.4s ease-in-out infinite;
+  }
+
+  .editorial-sale-text {
+    color: var(--boutique-sale, #c41e3a);
+    animation: editorial-sale-text-glow 2.8s ease-in-out infinite;
+  }
+
+  .editorial-promo-cta {
+    background-image: linear-gradient(
+      110deg,
+      transparent 35%,
+      color-mix(in srgb, white 35%, transparent) 50%,
+      transparent 65%
+    );
+    background-size: 220% 100%;
+    animation: editorial-cta-sheen 3.2s ease-in-out infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .editorial-sale-badge,
+    .editorial-sale-text,
+    .editorial-promo-cta {
+      animation: none;
+    }
+  }
 }

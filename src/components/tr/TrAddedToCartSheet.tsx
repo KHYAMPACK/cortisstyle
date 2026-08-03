@@ -5,13 +5,14 @@ import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { useTrBoutiqueCommerceScopeOptional } from "@/components/tr/boutique/TrBoutiqueCommerceScope";
+import { useTrBoutiqueProductsOptional } from "@/components/tr/boutique/TrBoutiqueProductsContext";
 import { TrDemoGarmentVisual } from "@/components/tr/demo/TrDemoGarmentVisual";
 import { TrProductCard } from "@/components/tr/TrProductCard";
 import { TrSoftNavLink } from "@/components/tr/TrSoftNavLink";
 import { useTrMarketplaceCacheOptional } from "@/components/tr/TrMarketplaceCacheProvider";
 import { isTrDemoIconSrc } from "@/lib/tr/demoIcons";
 import { isCatalogCutoutImage } from "@/lib/tr/productImages";
-import { trCartPath } from "@/lib/tr/paths";
+import { trBoutiqueCartPath, trCartPath } from "@/lib/tr/paths";
 import { pickRelatedProducts } from "@/lib/tr/recommendations";
 import { useTrAddedToCartStore } from "@/store/trAddedToCartStore";
 import { formatTryFromKurus } from "@/types/tr-marketplace";
@@ -24,15 +25,19 @@ export function TrAddedToCartSheet() {
   const close = useTrAddedToCartStore((state) => state.close);
   const cache = useTrMarketplaceCacheOptional();
   const boutiqueScope = useTrBoutiqueCommerceScopeOptional();
+  const boutiqueProducts = useTrBoutiqueProductsOptional();
 
   const related = useMemo(() => {
-    if (!payload || !cache?.products.length) return [];
+    if (!payload) return [];
+    const catalog =
+      boutiqueProducts?.products ?? cache?.products ?? [];
+    if (!catalog.length) return [];
     return pickRelatedProducts({
-      catalog: cache.products,
+      catalog,
       excludeIds: [payload.productId],
       limit: 4,
     });
-  }, [cache?.products, payload]);
+  }, [boutiqueProducts?.products, cache?.products, payload]);
 
   useEffect(() => {
     if (!payload) return;
@@ -149,16 +154,13 @@ export function TrAddedToCartSheet() {
             </div>
 
             {boutiqueScope ? (
-              <button
-                type="button"
-                onClick={() => {
-                  close();
-                  boutiqueScope.openPanel("cart");
-                }}
+              <TrSoftNavLink
+                href={trBoutiqueCartPath(boutiqueScope.boutiqueSlug)}
+                onNavigate={close}
                 className="mt-8 inline-flex w-full items-center justify-center border border-jet-black bg-transparent px-6 py-3.5 text-[11px] tracking-[0.22em] text-jet-black uppercase transition-opacity hover:opacity-70"
               >
                 Sepeti gör
-              </button>
+              </TrSoftNavLink>
             ) : (
               <TrSoftNavLink
                 href={trCartPath()}
@@ -183,7 +185,7 @@ export function TrAddedToCartSheet() {
                     >
                       <TrProductCard
                         product={product}
-                        showBoutique
+                        showBoutique={!boutiqueScope}
                         variant="marketplace"
                         priority={index < 2}
                       />

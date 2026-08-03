@@ -6,7 +6,7 @@ import {
   useTrScopedCart,
 } from "@/components/tr/boutique/TrBoutiqueCommerceScope";
 import { TrSoftNavLink } from "@/components/tr/TrSoftNavLink";
-import { trCartPath } from "@/lib/tr/paths";
+import { trBoutiqueCartPath, trCartPath } from "@/lib/tr/paths";
 
 type TrCartLinkSize = "md" | "lg";
 
@@ -29,7 +29,9 @@ export function TrCartLink({ size = "md" }: { size?: TrCartLinkSize }) {
   const badge =
     displayCount > 0 ? (
       <span
-        className={`absolute flex min-w-4 items-center justify-center bg-neutral-900 px-1 text-white ${
+        className={`absolute flex min-w-4 items-center justify-center px-1 text-white ${
+          scope ? "bg-brand-primary" : "bg-neutral-900"
+        } ${
           size === "lg"
             ? "top-0.5 right-0.5 h-5 min-w-5 text-[10px]"
             : "-top-0.5 -right-0.5 h-4 text-[9px]"
@@ -39,22 +41,12 @@ export function TrCartLink({ size = "md" }: { size?: TrCartLinkSize }) {
       </span>
     ) : null;
 
-  if (scope) {
-    return (
-      <button
-        type="button"
-        onClick={() => scope.openPanel("cart")}
-        className={className}
-        aria-label={label}
-      >
-        <ShoppingBag strokeWidth={1.5} className={iconClass} />
-        {badge}
-      </button>
-    );
-  }
+  const href = scope
+    ? trBoutiqueCartPath(scope.boutiqueSlug)
+    : trCartPath();
 
   return (
-    <TrSoftNavLink href={trCartPath()} className={className} aria-label={label}>
+    <TrSoftNavLink href={href} className={className} aria-label={label}>
       <ShoppingBag strokeWidth={1.5} className={iconClass} />
       {badge}
     </TrSoftNavLink>

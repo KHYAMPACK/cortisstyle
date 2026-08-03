@@ -5,7 +5,7 @@ import {
   useTrScopedCart,
 } from "@/components/tr/boutique/TrBoutiqueCommerceScope";
 import { TrSoftNavLink } from "@/components/tr/TrSoftNavLink";
-import { trCartPath } from "@/lib/tr/paths";
+import { trBoutiqueCartPath, trCartPath } from "@/lib/tr/paths";
 import { useTrAddedToCartStore } from "@/store/trAddedToCartStore";
 import type { TrCartLineItem } from "@/types/tr-cart";
 import type { TrProductStatus } from "@/types/tr-marketplace";
@@ -110,22 +110,16 @@ export function TrPurchaseActions(props: TrPurchaseActionsProps) {
       </button>
 
       {inCart ? (
-        scope ? (
-          <button
-            type="button"
-            onClick={() => scope.openPanel("cart")}
-            className="inline-flex min-w-0 flex-1 items-center justify-center border border-jet-black bg-transparent px-4 py-4 text-center text-[11px] tracking-[0.18em] text-jet-black uppercase transition-opacity hover:opacity-70 sm:px-6 sm:tracking-[0.22em]"
-          >
-            Siparişi tamamla
-          </button>
-        ) : (
-          <TrSoftNavLink
-            href={trCartPath()}
-            className="inline-flex min-w-0 flex-1 items-center justify-center border border-jet-black bg-transparent px-4 py-4 text-center text-[11px] tracking-[0.18em] text-jet-black uppercase transition-opacity hover:opacity-70 sm:px-6 sm:tracking-[0.22em]"
-          >
-            Siparişi tamamla
-          </TrSoftNavLink>
-        )
+        <TrSoftNavLink
+          href={
+            scope
+              ? trBoutiqueCartPath(scope.boutiqueSlug)
+              : trCartPath()
+          }
+          className="inline-flex min-w-0 flex-1 items-center justify-center border border-jet-black bg-transparent px-4 py-4 text-center text-[11px] tracking-[0.18em] text-jet-black uppercase transition-opacity hover:opacity-70 sm:px-6 sm:tracking-[0.22em]"
+        >
+          Siparişi tamamla
+        </TrSoftNavLink>
       ) : null}
     </div>
   );

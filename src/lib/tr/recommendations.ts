@@ -57,3 +57,26 @@ export function pickRelatedLooks(input: {
     .sort(byId)
     .slice(0, limit);
 }
+
+/** Favorited catalog products first (boutique cart / account recommendations). */
+export function pickFavoriteProducts(input: {
+  catalog: TrProductWithBoutique[];
+  favoriteIds: Iterable<string>;
+  excludeIds?: Iterable<string>;
+  limit?: number;
+}): TrProductWithBoutique[] {
+  const limit = input.limit ?? DEFAULT_PRODUCT_LIMIT;
+  const favoriteIds = new Set(input.favoriteIds);
+  const exclude = new Set(input.excludeIds ?? []);
+  if (favoriteIds.size === 0) return [];
+
+  return input.catalog
+    .filter(
+      (product) =>
+        favoriteIds.has(product.id) &&
+        product.status === "available" &&
+        !exclude.has(product.id),
+    )
+    .sort(byId)
+    .slice(0, limit);
+}

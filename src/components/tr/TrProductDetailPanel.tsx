@@ -2,6 +2,10 @@
 
 import { useMemo, useState } from "react";
 import { TrBackButton } from "@/components/tr/TrBackButton";
+import {
+  TrEditorialSaleBadge,
+  discountPercentFromPrices,
+} from "@/components/tr/boutique/editorial/TrEditorialSaleBadge";
 import { TrFavoriteButton } from "@/components/tr/TrFavoriteButton";
 import { TrMobileBuyBar } from "@/components/tr/TrMobileBuyBar";
 import { TrProductColorPicker } from "@/components/tr/TrProductColorPicker";
@@ -11,6 +15,7 @@ import { TrPurchaseActions } from "@/components/tr/TrPurchaseActions";
 import { TrSizeGateSheet } from "@/components/tr/TrSizeGateSheet";
 import { TrSoftNavLink } from "@/components/tr/TrSoftNavLink";
 import { getTrCategoryLabel } from "@/lib/tr/categories";
+import { EDITORIAL_SALE_RED } from "@/lib/tr/boutiqueHome";
 import { isTrDemoProduct } from "@/lib/tr/looks/demoCatalog";
 import { isTrCheckoutEnabled } from "@/lib/tr/platform";
 import { getProductCoverImageFor } from "@/lib/tr/productImages";
@@ -66,6 +71,15 @@ export function TrProductDetailPanel({
   const backClass = branded
     ? "text-[11px] tracking-[0.12em] text-neutral-600 uppercase transition-colors hover:text-neutral-900"
     : "text-meta text-[10px] tracking-[0.22em] uppercase transition-colors hover:text-jet-black";
+
+  const compareAt = product.compareAtPriceKurus;
+  const onSale =
+    branded &&
+    typeof compareAt === "number" &&
+    compareAt > product.priceKurus;
+  const salePct = onSale
+    ? discountPercentFromPrices(product.priceKurus, compareAt)
+    : 0;
 
   const addWithSize = (size: string) => {
     setSelectedSize(size);
@@ -124,9 +138,26 @@ export function TrProductDetailPanel({
           />
         </div>
 
-        <p className="mt-4 font-serif text-2xl tracking-[-0.02em] text-brand-primary">
-          {formatTryFromKurus(product.priceKurus)}
-        </p>
+        {onSale ? (
+          <div className="mt-4 flex flex-wrap items-baseline gap-x-3 gap-y-2">
+            <span className="font-serif text-lg tracking-[-0.02em] text-neutral-400 line-through md:text-xl">
+              {formatTryFromKurus(compareAt)}
+            </span>
+            <span
+              className="font-serif text-2xl tracking-[-0.02em] md:text-3xl"
+              style={{ color: EDITORIAL_SALE_RED }}
+            >
+              {formatTryFromKurus(product.priceKurus)}
+            </span>
+            {salePct > 0 ? (
+              <TrEditorialSaleBadge percent={salePct} size="md" />
+            ) : null}
+          </div>
+        ) : (
+          <p className="mt-4 font-serif text-2xl tracking-[-0.02em] text-brand-primary">
+            {formatTryFromKurus(product.priceKurus)}
+          </p>
+        )}
 
         <TrProductColorPicker
           colors={colors}

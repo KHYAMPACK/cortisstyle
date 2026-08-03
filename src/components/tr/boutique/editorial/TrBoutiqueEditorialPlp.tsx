@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Search } from "lucide-react";
 import { TrBoutiqueEditorialProductCard } from "@/components/tr/boutique/editorial/TrBoutiqueEditorialProductCard";
 import { getTrCategoryLabel } from "@/lib/tr/categories";
 import { trBoutiquePath, trBoutiqueProductsPath } from "@/lib/tr/paths";
@@ -50,6 +51,14 @@ export function TrBoutiqueEditorialPlp({
 
   const [renkOpen, setRenkOpen] = useState(false);
   const [filtreOpen, setFiltreOpen] = useState(false);
+  const [searchDraft, setSearchDraft] = useState(
+    searchParams.get("q")?.trim() ?? "",
+  );
+
+  // Keep draft in sync when URL changes (nav / clear)
+  useEffect(() => {
+    setSearchDraft(searchParams.get("q")?.trim() ?? "");
+  }, [searchParams]);
 
   const colorOptions = useMemo(() => {
     const map = new Map<string, string>();
@@ -149,6 +158,35 @@ export function TrBoutiqueEditorialPlp({
           <span className="mx-2 text-neutral-300">|</span>
           <span className="text-neutral-900">{crumb}</span>
         </nav>
+
+        <form
+          className="mx-auto mt-6 flex w-full max-w-xl gap-2"
+          onSubmit={(event) => {
+            event.preventDefault();
+            replaceParams({ q: searchDraft.trim() || null });
+          }}
+        >
+          <label className="relative min-w-0 flex-1">
+            <span className="sr-only">Ürün ara</span>
+            <Search
+              className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-neutral-400"
+              strokeWidth={1.5}
+            />
+            <input
+              type="search"
+              value={searchDraft}
+              onChange={(event) => setSearchDraft(event.target.value)}
+              placeholder="Ara"
+              className="w-full border border-neutral-300 bg-white py-3 pr-3 pl-10 text-[14px] outline-none focus:border-neutral-900"
+            />
+          </label>
+          <button
+            type="submit"
+            className="bg-neutral-900 px-5 py-3 text-[11px] tracking-[0.14em] text-white uppercase"
+          >
+            Ara
+          </button>
+        </form>
 
         <div className="mt-6 flex flex-col gap-3 border-y border-black/5 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative flex flex-wrap items-center gap-4 text-[11px] tracking-[0.12em] text-neutral-700 uppercase">

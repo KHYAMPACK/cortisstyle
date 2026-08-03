@@ -19,7 +19,8 @@
           "cta": "Alışverişe başla"
         },
         "categoryHero": {
-          "promoLine": "Tüm Türkiye'ye ücretsiz kargo",
+          "promoLine": "Seçili ürünlerde",
+          "discountLine": "%40'a varan indirim",
           "cta": "Alışverişe başla"
         },
         "instagram": {

@@ -2,12 +2,37 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import {
+  Heart,
+  LogOut,
+  Package,
+  Settings,
+  ShoppingBag,
+  Trash2,
+  Truck,
+  UserRound,
+} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { AuthPopup } from "@/components/AuthPopup";
+import {
+  useTrBoutiqueCommerceScope,
+  useTrScopedFavorites,
+} from "@/components/tr/boutique/TrBoutiqueCommerceScope";
+import { TrBoutiqueEditorialProductCard } from "@/components/tr/boutique/editorial/TrBoutiqueEditorialProductCard";
+import { useTrBoutiqueProductsOptional } from "@/components/tr/boutique/TrBoutiqueProductsContext";
 import { useAuth } from "@/context/AuthContext";
+import { resolveBoutiqueLogoUrl, resolveBoutiqueThemeAccent } from "@/lib/tr/boutiqueBrand";
 import { getSupabaseClient } from "@/lib/supabaseClient";
-import { resolveBoutiqueLogoUrl } from "@/lib/tr/boutiqueBrand";
-import { trBoutiqueLegalPath, trBoutiquePath } from "@/lib/tr/paths";
+import {
+  trBoutiqueCartPath,
+  trBoutiqueLegalPath,
+  trBoutiquePath,
+  trBoutiqueProductsPath,
+} from "@/lib/tr/paths";
+import { pickFavoriteProducts } from "@/lib/tr/recommendations";
+import { getTrUserFirstName } from "@/lib/tr/userDisplayName";
+import { trPanelEase } from "@/components/tr/panel/TrPanelMotion";
 import type { TrBoutiquePublic } from "@/types/tr-marketplace";
 
 interface TrBoutiqueAuthPageContentProps {
@@ -38,24 +63,65 @@ async function recordRegistrationSource(boutiqueSlug: string) {
   }
 }
 
+const ACTION =
+  "flex items-center gap-3 border border-black/8 bg-white px-4 py-3.5 text-left transition-colors hover:border-brand-primary/40 hover:bg-brand-primary/[0.03]";
+
 export function TrBoutiqueAuthPageContent({
   boutique,
 }: TrBoutiqueAuthPageContentProps) {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
+  const commerce = useTrBoutiqueCommerceScope();
+  const favorites = useTrScopedFavorites();
+  const boutiqueProducts = useTrBoutiqueProductsOptional();
   const [authOpen, setAuthOpen] = useState(false);
-  const accent = boutique.themeAccent?.trim() || "#111111";
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+  const accent = resolveBoutiqueThemeAccent(boutique);
   const logoUrl = resolveBoutiqueLogoUrl(boutique);
+  const firstName = getTrUserFirstName(user);
+  const brandTitle =
+    boutique.slug === "pervinsoysalbutik" ? "Pervin Soysal" : boutique.name;
 
   useEffect(() => {
     if (!user) return;
     void recordRegistrationSource(boutique.slug);
   }, [user, boutique.slug]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.location.hash !== "#favoriler") return;
+    const el = document.getElementById("favoriler");
+    el?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [user, favorites.items.length]);
+
+  const favoriteProducts = useMemo(() => {
+    const catalog = boutiqueProducts?.products ?? [];
+    return pickFavoriteProducts({
+      catalog,
+      favoriteIds: favorites.items.map((item) => item.productId),
+      limit: 12,
+    });
+  }, [boutiqueProducts?.products, favorites.items]);
+
+  const handleSignOut = async () => {
+    setSigningOut(true);
+    try {
+      await signOut();
+    } finally {
+      setSigningOut(false);
+    }
+  };
+
+  const requestAccountDeletion = () => {
+    setDeleteConfirm(false);
+    commerce.openPanel("report");
+  };
+
   return (
-    <div className="mx-auto flex min-h-[70vh] max-w-lg flex-col justify-center px-5 py-12">
+    <div className="mx-auto max-w-3xl px-5 py-10 md:px-8 md:py-14">
       <Link
         href={trBoutiquePath(boutique.slug)}
-        className="mb-10 flex flex-col items-center gap-3"
+        className="mb-8 flex flex-col items-center gap-3"
       >
         {logoUrl ? (
           <Image
@@ -63,58 +129,308 @@ export function TrBoutiqueAuthPageContent({
             alt={boutique.name}
             width={200}
             height={80}
-            className="h-16 w-auto object-contain"
+            className="h-14 w-auto object-contain md:h-16"
             unoptimized
             priority
           />
         ) : (
           <span className="font-serif text-2xl tracking-[0.18em] uppercase">
-            {boutique.name}
+            {brandTitle}
           </span>
         )}
       </Link>
 
-      <h1 className="text-center font-serif text-2xl tracking-tight text-neutral-950">
-        {user ? "Hesabınız" : "Giriş / Üyelik"}
-      </h1>
-      <p className="mt-3 text-center text-[14px] leading-relaxed text-neutral-600">
-        {user
-          ? `Merhaba — ${boutique.name} hesabınızla Cortisstyle ekosistemindeki diğer butiklerde de aynı e-posta ile giriş yapabilirsiniz.`
-          : `${boutique.name} üyeliği Cortisstyle altyapısı üzerindedir. Aynı e-posta ile ileride diğer butiklerde de kolayca giriş yapabilirsiniz.`}
-      </p>
-
-      {user ? (
-        <p className="mt-6 text-center text-[13px] text-neutral-700">
-          Oturum: {user.email}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: trPanelEase }}
+      >
+        <h1 className="text-center font-serif text-2xl tracking-tight text-neutral-950 md:text-3xl">
+          {user ? "Hesabım" : "Giriş / Üyelik"}
+        </h1>
+        <p className="mx-auto mt-3 max-w-md text-center text-[14px] leading-relaxed text-neutral-600">
+          {user
+            ? firstName
+              ? `Merhaba ${firstName} — ${brandTitle} hesabınız.`
+              : `${brandTitle} hesabınız.`
+            : `${brandTitle} üyeliği Cortisstyle altyapısı üzerindedir. Aynı e-posta ile diğer butiklerde de giriş yapabilirsiniz.`}
         </p>
-      ) : (
-        <button
-          type="button"
-          onClick={() => setAuthOpen(true)}
-          className="mt-8 w-full px-5 py-3.5 text-[11px] tracking-[0.18em] text-white uppercase transition-opacity hover:opacity-90"
-          style={{ backgroundColor: accent }}
-        >
-          Devam et
-        </button>
-      )}
+      </motion.div>
 
-      <p className="mt-6 text-center text-[12px] leading-relaxed text-neutral-500">
-        Devam ederek{" "}
-        <Link
-          href={trBoutiqueLegalPath(boutique.slug, "uyelik")}
-          className="underline underline-offset-2"
+      {!user ? (
+        <>
+          <button
+            type="button"
+            onClick={() => setAuthOpen(true)}
+            className="editorial-promo-cta mt-8 w-full px-5 py-3.5 text-[11px] tracking-[0.18em] text-white uppercase transition-opacity hover:opacity-90"
+            style={{ backgroundColor: accent }}
+          >
+            Devam et
+          </button>
+          <p className="mt-6 text-center text-[12px] leading-relaxed text-neutral-500">
+            Devam ederek{" "}
+            <Link
+              href={trBoutiqueLegalPath(boutique.slug, "uyelik")}
+              className="underline underline-offset-2"
+            >
+              üyelik şartlarını
+            </Link>{" "}
+            ve{" "}
+            <Link
+              href={trBoutiqueLegalPath(boutique.slug, "kvkk")}
+              className="underline underline-offset-2"
+            >
+              KVKK aydınlatmasını
+            </Link>{" "}
+            kabul etmiş olursunuz.
+          </p>
+        </>
+      ) : (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: trPanelEase, delay: 0.05 }}
+          className="mt-8 space-y-10"
         >
-          üyelik şartlarını
-        </Link>{" "}
-        ve{" "}
-        <Link
-          href={trBoutiqueLegalPath(boutique.slug, "kvkk")}
-          className="underline underline-offset-2"
-        >
-          KVKK aydınlatmasını
-        </Link>{" "}
-        kabul etmiş olursunuz.
-      </p>
+          <div className="border border-black/8 bg-neutral-50 px-4 py-4 text-center">
+            <p className="text-[10px] tracking-[0.2em] text-neutral-500 uppercase">
+              Oturum
+            </p>
+            <p className="mt-1 text-[13px] text-neutral-900">{user.email}</p>
+          </div>
+
+          <section aria-label="Hızlı işlemler">
+            <p className="mb-3 text-[10px] tracking-[0.22em] text-neutral-500 uppercase">
+              Hızlı işlemler
+            </p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <Link href={trBoutiqueCartPath(boutique.slug)} className={ACTION}>
+                <ShoppingBag className="h-4 w-4 shrink-0" strokeWidth={1.5} />
+                <span className="text-[12px] tracking-[0.12em] uppercase">
+                  Sepet
+                </span>
+              </Link>
+              <a href="#favoriler" className={ACTION}>
+                <Heart className="h-4 w-4 shrink-0" strokeWidth={1.5} />
+                <span className="text-[12px] tracking-[0.12em] uppercase">
+                  Favoriler
+                  {favorites.itemCount > 0
+                    ? ` (${favorites.itemCount})`
+                    : ""}
+                </span>
+              </a>
+              <button
+                type="button"
+                onClick={() => commerce.openPanel("tracking")}
+                className={ACTION}
+              >
+                <Truck className="h-4 w-4 shrink-0" strokeWidth={1.5} />
+                <span className="text-[12px] tracking-[0.12em] uppercase">
+                  Kargo takip
+                </span>
+              </button>
+              <button
+                type="button"
+                disabled
+                className={`${ACTION} cursor-not-allowed opacity-55`}
+                title="Yakında"
+              >
+                <Package className="h-4 w-4 shrink-0" strokeWidth={1.5} />
+                <span className="text-[12px] tracking-[0.12em] uppercase">
+                  Siparişler · yakında
+                </span>
+              </button>
+            </div>
+          </section>
+
+          <section id="favoriler" aria-label="Favorileriniz" className="scroll-mt-24">
+            <div className="mb-4 flex items-end justify-between gap-3">
+              <div>
+                <p className="text-[10px] tracking-[0.22em] text-neutral-500 uppercase">
+                  Favorileriniz
+                </p>
+                <p className="mt-1 text-[13px] text-neutral-600">
+                  Beğendiğiniz parçalar burada.
+                </p>
+              </div>
+              <Link
+                href={trBoutiqueProductsPath(boutique.slug)}
+                className="shrink-0 text-[11px] tracking-[0.14em] text-brand-primary uppercase underline-offset-4 hover:underline"
+              >
+                Alışverişe dön
+              </Link>
+            </div>
+
+            {favoriteProducts.length > 0 ? (
+              <div className="grid grid-cols-2 gap-px bg-black/5 md:grid-cols-3">
+                {favoriteProducts.map((product, index) => (
+                  <div key={product.id} className="bg-white">
+                    <TrBoutiqueEditorialProductCard
+                      product={product}
+                      boutiqueSlug={boutique.slug}
+                      boutiqueName={boutique.name}
+                      priority={index < 3}
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : favorites.items.length > 0 ? (
+              <ul className="divide-y divide-black/5 border border-black/8">
+                {favorites.items.map((item) => (
+                  <li key={item.productId} className="flex gap-3 px-3 py-3">
+                    <div className="relative h-16 w-12 shrink-0 overflow-hidden bg-neutral-100">
+                      {item.image ? (
+                        <Image
+                          src={item.image}
+                          alt=""
+                          fill
+                          className="object-cover"
+                          sizes="48px"
+                          unoptimized
+                        />
+                      ) : null}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="line-clamp-2 text-[13px] text-neutral-900">
+                        {item.title}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => favorites.removeItem(item.productId)}
+                        className="mt-1 text-[11px] text-neutral-500 underline-offset-2 hover:underline"
+                      >
+                        Kaldır
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="border border-dashed border-black/15 px-4 py-10 text-center">
+                <Heart
+                  className="mx-auto h-6 w-6 text-neutral-300"
+                  strokeWidth={1.25}
+                />
+                <p className="mt-3 text-[13px] text-neutral-600">
+                  Henüz favori ürün yok.
+                </p>
+                <Link
+                  href={trBoutiqueProductsPath(boutique.slug)}
+                  className="mt-4 inline-flex text-[11px] tracking-[0.16em] text-brand-primary uppercase underline underline-offset-4"
+                >
+                  Keşfet
+                </Link>
+              </div>
+            )}
+          </section>
+
+          <section aria-label="Hesap yönetimi">
+            <p className="mb-3 text-[10px] tracking-[0.22em] text-neutral-500 uppercase">
+              Hesap yönetimi
+            </p>
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => setAuthOpen(true)}
+                className={ACTION + " w-full"}
+              >
+                <Settings className="h-4 w-4 shrink-0" strokeWidth={1.5} />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[12px] tracking-[0.12em] uppercase">
+                    Hesabı yönet
+                  </span>
+                  <span className="mt-0.5 block text-[11px] normal-case tracking-normal text-neutral-500">
+                    Şifre sıfırlama / tekrar giriş
+                  </span>
+                </span>
+                <UserRound className="h-4 w-4 shrink-0 text-neutral-400" strokeWidth={1.5} />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => commerce.openPanel("report")}
+                className={ACTION + " w-full"}
+              >
+                <Package className="h-4 w-4 shrink-0" strokeWidth={1.5} />
+                <span className="text-[12px] tracking-[0.12em] uppercase">
+                  Destek / sorun bildir
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => void handleSignOut()}
+                disabled={signingOut}
+                className={ACTION + " w-full"}
+              >
+                <LogOut className="h-4 w-4 shrink-0" strokeWidth={1.5} />
+                <span className="text-[12px] tracking-[0.12em] uppercase">
+                  {signingOut ? "Çıkış yapılıyor…" : "Çıkış yap"}
+                </span>
+              </button>
+
+              {!deleteConfirm ? (
+                <button
+                  type="button"
+                  onClick={() => setDeleteConfirm(true)}
+                  className="flex w-full items-center gap-3 border border-transparent px-4 py-3.5 text-left text-neutral-500 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-700"
+                >
+                  <Trash2 className="h-4 w-4 shrink-0" strokeWidth={1.5} />
+                  <span className="text-[12px] tracking-[0.12em] uppercase">
+                    Hesabı sil
+                  </span>
+                </button>
+              ) : (
+                <div className="border border-red-200 bg-red-50 px-4 py-4">
+                  <p className="text-[13px] leading-relaxed text-red-900">
+                    Hesap silme talebi destek ekibine iletilir. Onaylıyor
+                    musunuz?
+                  </p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={requestAccountDeletion}
+                      className="bg-red-700 px-4 py-2.5 text-[11px] tracking-[0.14em] text-white uppercase"
+                    >
+                      Talebi gönder
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDeleteConfirm(false)}
+                      className="border border-neutral-300 bg-white px-4 py-2.5 text-[11px] tracking-[0.14em] text-neutral-800 uppercase"
+                    >
+                      Vazgeç
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
+
+          <p className="text-center text-[11px] leading-relaxed text-neutral-500">
+            <Link
+              href={trBoutiqueLegalPath(boutique.slug, "kvkk")}
+              className="underline underline-offset-2"
+            >
+              KVKK
+            </Link>
+            {" · "}
+            <Link
+              href={trBoutiqueLegalPath(boutique.slug, "gizlilik")}
+              className="underline underline-offset-2"
+            >
+              Gizlilik
+            </Link>
+            {" · "}
+            <Link
+              href={trBoutiqueLegalPath(boutique.slug, "uyelik")}
+              className="underline underline-offset-2"
+            >
+              Üyelik
+            </Link>
+          </p>
+        </motion.div>
+      )}
 
       <AuthPopup
         isOpen={authOpen}

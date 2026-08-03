@@ -86,11 +86,10 @@ export function rewriteBoutiqueDomainPath(
   if (pathname.startsWith("/yasal/")) {
     return `${base}${pathname}`;
   }
-  if (
-    pathname === "/sepet" ||
-    pathname === "/odeme" ||
-    pathname === "/siparis-onay"
-  ) {
+  if (pathname === "/sepet") {
+    return `${base}/sepet`;
+  }
+  if (pathname === "/odeme" || pathname === "/siparis-onay") {
     return `/tr${pathname}?boutique=${encodeURIComponent(boutiqueSlug)}`;
   }
   if (pathname === "/giris" || pathname === "/hesap") {

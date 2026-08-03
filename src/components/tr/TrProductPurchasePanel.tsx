@@ -34,7 +34,10 @@ export function TrProductPurchasePanel({
   hideActions = false,
   className = "",
 }: TrProductPurchasePanelProps) {
-  const checkoutEnabled = isTrCheckoutEnabled() || isTrDemoProduct(product);
+  const checkoutEnabled =
+    isTrCheckoutEnabled() ||
+    isTrDemoProduct(product) ||
+    product.boutique.homeLayout === "editorial";
   const orderProduct = {
     title: product.title,
     priceKurus: product.priceKurus,
