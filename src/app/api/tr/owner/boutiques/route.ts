@@ -16,6 +16,7 @@ export async function GET(request: Request) {
       slug: boutique.slug,
       name: boutique.name,
       logoUrl: boutique.logoUrl,
+      themeAccent: boutique.themeAccent,
       status: boutique.status,
     })),
   });

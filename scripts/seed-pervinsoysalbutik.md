@@ -4,9 +4,14 @@ Requires:
 1. Run in Supabase SQL Editor (order matters):
    - `supabase/patch_tr_boutique_brand.sql` (if not already)
    - `supabase/patch_tr_boutique_storefront.sql` (`home_layout`, `custom_domain`, `editorial_content`, `tr_customer_profiles`)
+   - `supabase/patch_tr_product_stock.sql`
+   - `supabase/patch_tr_product_compare_at.sql`
+   - `supabase/patch_tr_order_fulfillment.sql`
+   - `supabase/patch_tr_discount_codes.sql`
 2. Dev server: `npm run dev`
 3. Set `TR_ADMIN_SECRET` in `.env.local`
-4. Optional: `TR_BOUTIQUE_DOMAINS={"pervinsoysal.com":"pervinsoysalbutik","www.pervinsoysal.com":"pervinsoysalbutik"}`
+4. For panel revenue/orders KPIs: `TR_CHECKOUT_ENABLED=true`
+5. Optional: `TR_BOUTIQUE_DOMAINS={"pervinsoysal.com":"pervinsoysalbutik","www.pervinsoysal.com":"pervinsoysalbutik"}`
 
 ```powershell
 $body = Get-Content -Raw "src/data/tr/pervinsoysalbutik-seed.json"
@@ -18,6 +23,10 @@ Invoke-RestMethod -Method POST `
   -Body $body
 ```
 
-If the boutique slug already exists, delete the row in Supabase before re-seeding (or PATCH brand fields via panel / SQL).
+Seed creates: boutique + ~10 demo products + sample sandbox orders + coupon codes.
 
-After seed, open `/tr/pervinsoysalbutik` for the editorial storefront.
+If the boutique slug already exists, delete related `tr_order_items` / `tr_orders` / `tr_products` / boutique row in Supabase before re-seeding (or start fresh).
+
+Then link owner (`scripts/link-tr-boutique-owner.md`) and open `/tr/panel`.
+
+Storefront: `/tr/pervinsoysalbutik`

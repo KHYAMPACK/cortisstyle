@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Heart, Menu, Search, User, X } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -10,6 +9,10 @@ import {
   useTrBoutiqueCommerceScope,
   useTrScopedFavorites,
 } from "@/components/tr/boutique/TrBoutiqueCommerceScope";
+import {
+  TrBoutiquePendingLink,
+  useTrBoutiqueNavPendingOptional,
+} from "@/components/tr/boutique/editorial/TrBoutiqueNavPending";
 import { TrCartLink } from "@/components/tr/TrCartLink";
 import {
   EDITORIAL_SALE_RED,
@@ -35,6 +38,7 @@ export function TrBoutiqueEditorialHeader({
   const pathname = usePathname();
   const commerce = useTrBoutiqueCommerceScope();
   const favorites = useTrScopedFavorites();
+  const navPending = useTrBoutiqueNavPendingOptional();
   const content = getEditorialContent(boutique);
   const logoUrl = resolveBoutiqueLogoUrl(boutique);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -66,21 +70,22 @@ export function TrBoutiqueEditorialHeader({
 
   const selectNav = (item: EditorialNavItem) => {
     setMenuOpen(false);
+    let href = trBoutiqueProductsPath(boutique.slug);
     if (item.categoryId === "sale" || item.accent === "sale") {
-      router.push(trBoutiqueProductsPath(boutique.slug, { indirim: true }));
+      href = trBoutiqueProductsPath(boutique.slug, { indirim: true });
+    } else if (item.id === "new") {
+      href = trBoutiqueProductsPath(boutique.slug, { sira: "new" });
+    } else if (item.categoryId) {
+      href = trBoutiqueProductsPath(boutique.slug, {
+        kategori: item.categoryId,
+      });
+    }
+
+    if (navPending) {
+      navPending.beginNavigation(href, { kind: "products" });
       return;
     }
-    if (item.id === "new") {
-      router.push(trBoutiqueProductsPath(boutique.slug, { sira: "new" }));
-      return;
-    }
-    if (item.categoryId) {
-      router.push(
-        trBoutiqueProductsPath(boutique.slug, { kategori: item.categoryId }),
-      );
-      return;
-    }
-    router.push(trBoutiqueProductsPath(boutique.slug));
+    router.push(href);
   };
 
   const iconBtn =
@@ -137,13 +142,14 @@ export function TrBoutiqueEditorialHeader({
                 </ul>
 
                 <div className="mt-6 space-y-1 pb-10">
-                  <Link
+                  <TrBoutiquePendingLink
                     href={trBoutiqueAuthPath(boutique.slug)}
-                    onClick={() => setMenuOpen(false)}
+                    kind="account"
+                    onNavigate={() => setMenuOpen(false)}
                     className="block py-3 text-[12px] tracking-[0.14em] text-neutral-600 uppercase"
                   >
                     Giriş / Hesap
-                  </Link>
+                  </TrBoutiquePendingLink>
                   <button
                     type="button"
                     onClick={() => {
@@ -185,8 +191,9 @@ export function TrBoutiqueEditorialHeader({
           <Menu className="h-5 w-5 md:h-6 md:w-6" strokeWidth={1.5} />
         </button>
 
-        <Link
+        <TrBoutiquePendingLink
           href={trBoutiquePath(boutique.slug)}
+          kind="home"
           className="absolute top-1/2 left-1/2 z-0 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center"
         >
           {logoUrl ? (
@@ -204,26 +211,28 @@ export function TrBoutiqueEditorialHeader({
               {brandTitle}
             </span>
           )}
-        </Link>
+        </TrBoutiquePendingLink>
 
         <div className="relative z-10 flex items-center justify-end gap-0.5 md:gap-1">
           {!onProductsPage ? (
-            <Link
+            <TrBoutiquePendingLink
               href={productsPath}
+              kind="products"
               className={iconBtn}
               aria-label="Ara — ürünler"
             >
               <Search className="h-5 w-5" strokeWidth={1.5} />
-            </Link>
+            </TrBoutiquePendingLink>
           ) : null}
 
-          <Link
+          <TrBoutiquePendingLink
             href={trBoutiqueAuthPath(boutique.slug)}
+            kind="account"
             className={iconBtn}
             aria-label="Giriş / Hesap"
           >
             <User className="h-5 w-5" strokeWidth={1.5} />
-          </Link>
+          </TrBoutiquePendingLink>
 
           <button
             type="button"

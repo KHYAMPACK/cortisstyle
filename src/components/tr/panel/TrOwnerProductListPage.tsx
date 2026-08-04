@@ -77,7 +77,7 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
             </p>
             <Link
               href={trPanelNewProductPath()}
-              className="btn-primary px-4 py-3 text-[10px] tracking-[0.14em]"
+              className="inline-flex min-h-12 items-center rounded-xl bg-[#C2185B] px-5 py-3 text-[15px] font-semibold text-white"
             >
               Yeni ürün
             </Link>
@@ -88,16 +88,16 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
               Henüz ürün yok. İlk ürününüzü ekleyin.
             </p>
           ) : (
-            <TrPanelStagger className="divide-y divide-black/10 border border-black/10 bg-white">
+            <TrPanelStagger className="divide-y divide-[#F5C6D6] overflow-hidden rounded-2xl border border-[#F5C6D6] bg-white shadow-sm">
               {products.map((product) => {
                 const cover = product.images[0] ?? null;
                 return (
                   <motion.div key={product.id} variants={trPanelStaggerItem}>
                     <Link
                       href={trPanelEditProductPath(product.id)}
-                      className="flex items-center gap-3 px-3 py-3 transition-colors hover:bg-neutral-50"
+                      className="flex items-center gap-4 px-4 py-4 transition-colors hover:bg-[#FFF5F8]"
                     >
-                      <div className="relative h-16 w-12 shrink-0 overflow-hidden bg-neutral-100">
+                      <div className="relative h-20 w-16 shrink-0 overflow-hidden rounded-xl bg-[#FFE4EE]">
                         {cover ? (
                           <Image
                             src={cover}
@@ -105,17 +105,22 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
                             fill
                             unoptimized
                             className="object-cover"
-                            sizes="48px"
+                            sizes="64px"
                           />
                         ) : null}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-[14px] text-neutral-900">
+                        <p className="truncate text-[17px] font-medium text-neutral-900">
                           {product.title}
                         </p>
-                        <p className="mt-1 text-[11px] text-neutral-500">
-                          {formatTryFromKurus(product.priceKurus)} ·{" "}
+                        <p className="mt-1 text-[15px] text-neutral-600">
+                          {formatTryFromKurus(product.priceKurus)} · Stok{" "}
+                          {product.stock} ·{" "}
                           {STATUS_LABEL[product.status] ?? product.status}
+                          {typeof product.compareAtPriceKurus === "number" &&
+                          product.compareAtPriceKurus > product.priceKurus
+                            ? " · İndirim"
+                            : ""}
                         </p>
                       </div>
                     </Link>
@@ -139,11 +144,11 @@ export function TrOwnerProductListPage() {
             <div>
               <Link
                 href={trPanelPath()}
-                className="inline-block text-[11px] tracking-[0.1em] text-neutral-500 uppercase"
+                className="inline-block text-[14px] font-medium text-[#C2185B]"
               >
                 ← Ana sayfa
               </Link>
-              <h2 className="mt-2 font-serif text-2xl tracking-tight text-neutral-950">
+              <h2 className="mt-2 text-[1.75rem] font-semibold tracking-tight text-[#8E0D3F]">
                 Ürünler
               </h2>
             </div>

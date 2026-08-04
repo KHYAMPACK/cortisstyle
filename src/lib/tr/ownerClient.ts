@@ -7,6 +7,7 @@ export interface TrOwnerBoutiqueSummary {
   slug: string;
   name: string;
   logoUrl?: string | null;
+  themeAccent?: string | null;
   status?: string;
 }
 
@@ -94,6 +95,7 @@ export interface TrOwnerProductPayload {
   title: string;
   description?: string | null;
   priceTry: number;
+  compareAtPriceTry?: number | null;
   sizes: string[];
   colors: TrProductColor[];
   category: string | null;
@@ -182,7 +184,19 @@ export interface TrOwnerSummaryResponse {
     sold: number;
     hidden: number;
     total: number;
+    lowStock?: number;
   };
+  period?: {
+    range: string;
+    orderCount: number;
+    revenueKurus: number;
+    pendingFulfillment: number;
+    topProducts: Array<{
+      title: string;
+      quantity: number;
+      revenueKurus: number;
+    }>;
+  } | null;
   today: {
     orderCount: number;
     revenueKurus: number;
@@ -191,9 +205,10 @@ export interface TrOwnerSummaryResponse {
 
 export async function fetchOwnerSummary(
   boutiqueId: string,
+  range: "today" | "7d" | "30d" | "all" = "today",
 ): Promise<TrOwnerSummaryResponse> {
   const response = await ownerFetch(
-    `/api/tr/owner/summary?boutiqueId=${encodeURIComponent(boutiqueId)}`,
+    `/api/tr/owner/summary?boutiqueId=${encodeURIComponent(boutiqueId)}&range=${range}`,
   );
   const data = (await response.json()) as {
     summary?: TrOwnerSummaryResponse;
@@ -204,6 +219,162 @@ export async function fetchOwnerSummary(
   }
   if (!data.summary) throw new Error("Özet yüklenemedi.");
   return data.summary;
+}
+
+export async function deleteOwnerProduct(productId: string): Promise<void> {
+  const response = await ownerFetch(
+    `/api/tr/owner/products/${encodeURIComponent(productId)}`,
+    { method: "DELETE" },
+  );
+  const data = (await response.json()) as { error?: string };
+  if (!response.ok) {
+    throw new Error(data.error ?? "Ürün silinemedi.");
+  }
+}
+
+export async function duplicateOwnerProduct(
+  productId: string,
+): Promise<TrProduct> {
+  const response = await ownerFetch(
+    `/api/tr/owner/products/${encodeURIComponent(productId)}`,
+    {
+      method: "POST",
+      body: JSON.stringify({ action: "duplicate" }),
+    },
+  );
+  const data = (await response.json()) as { product?: TrProduct; error?: string };
+  if (!response.ok) {
+    throw new Error(data.error ?? "Ürün kopyalanamadı.");
+  }
+  if (!data.product) throw new Error("Ürün kopyalanamadı.");
+  return data.product;
+}
+
+export async function fetchOwnerOrders(boutiqueId: string) {
+  const response = await ownerFetch(
+    `/api/tr/owner/orders?boutiqueId=${encodeURIComponent(boutiqueId)}`,
+  );
+  const data = (await response.json()) as {
+    orders?: import("@/types/tr-marketplace").TrOrderWithItems[];
+    error?: string;
+  };
+  if (!response.ok) {
+    throw new Error(data.error ?? "Siparişler yüklenemedi.");
+  }
+  return data.orders ?? [];
+}
+
+export async function fetchOwnerOrder(boutiqueId: string, orderId: string) {
+  const response = await ownerFetch(
+    `/api/tr/owner/orders/${encodeURIComponent(orderId)}?boutiqueId=${encodeURIComponent(boutiqueId)}`,
+  );
+  const data = (await response.json()) as {
+    order?: import("@/types/tr-marketplace").TrOrderWithItems;
+    error?: string;
+  };
+  if (!response.ok) {
+    throw new Error(data.error ?? "Sipariş yüklenemedi.");
+  }
+  if (!data.order) throw new Error("Sipariş yüklenemedi.");
+  return data.order;
+}
+
+export async function updateOwnerOrderFulfillment(
+  boutiqueId: string,
+  orderId: string,
+  fulfillmentStatus: import("@/types/tr-marketplace").TrFulfillmentStatus,
+) {
+  const response = await ownerFetch(
+    `/api/tr/owner/orders/${encodeURIComponent(orderId)}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ boutiqueId, fulfillmentStatus }),
+    },
+  );
+  const data = (await response.json()) as {
+    order?: import("@/types/tr-marketplace").TrOrderWithItems;
+    error?: string;
+  };
+  if (!response.ok) {
+    throw new Error(data.error ?? "Sipariş güncellenemedi.");
+  }
+  if (!data.order) throw new Error("Sipariş güncellenemedi.");
+  return data.order;
+}
+
+export async function fetchOwnerCustomers(boutiqueId: string) {
+  const response = await ownerFetch(
+    `/api/tr/owner/customers?boutiqueId=${encodeURIComponent(boutiqueId)}`,
+  );
+  const data = (await response.json()) as {
+    customers?: import("@/types/tr-marketplace").TrOwnerCustomer[];
+    error?: string;
+  };
+  if (!response.ok) {
+    throw new Error(data.error ?? "Müşteriler yüklenemedi.");
+  }
+  return data.customers ?? [];
+}
+
+export async function fetchOwnerDiscountCodes(boutiqueId: string) {
+  const response = await ownerFetch(
+    `/api/tr/owner/discounts?boutiqueId=${encodeURIComponent(boutiqueId)}`,
+  );
+  const data = (await response.json()) as {
+    codes?: import("@/types/tr-marketplace").TrDiscountCode[];
+    error?: string;
+  };
+  if (!response.ok) {
+    throw new Error(data.error ?? "Kuponlar yüklenemedi.");
+  }
+  return data.codes ?? [];
+}
+
+export async function createOwnerDiscountCode(
+  boutiqueId: string,
+  payload: {
+    code: string;
+    percentOff?: number;
+    amountOffTry?: number;
+    usageLimit?: number | null;
+  },
+) {
+  const response = await ownerFetch("/api/tr/owner/discounts", {
+    method: "POST",
+    body: JSON.stringify({ boutiqueId, ...payload }),
+  });
+  const data = (await response.json()) as {
+    code?: import("@/types/tr-marketplace").TrDiscountCode;
+    error?: string;
+  };
+  if (!response.ok) {
+    throw new Error(data.error ?? "Kupon oluşturulamadı.");
+  }
+  if (!data.code) throw new Error("Kupon oluşturulamadı.");
+  return data.code;
+}
+
+export async function setOwnerDiscountCodeActive(
+  boutiqueId: string,
+  codeId: string,
+  active: boolean,
+) {
+  const response = await ownerFetch(
+    `/api/tr/owner/discounts/${encodeURIComponent(codeId)}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ boutiqueId, active }),
+    },
+  );
+  const data = (await response.json()) as {
+    code?: import("@/types/tr-marketplace").TrDiscountCode;
+    error?: string;
+  };
+  if (!response.ok) {
+    throw new Error(data.error ?? "Kupon güncellenemedi.");
+  }
+  if (!data.code) throw new Error("Kupon güncellenemedi.");
+  return data.code;
 }
 
 export interface TrOwnerBoutiqueSettings {
@@ -270,4 +441,56 @@ export async function updateOwnerBoutiqueSettings(
   }
   if (!data.boutique) throw new Error("Butik güncellenemedi.");
   return data.boutique;
+}
+
+export async function fetchOwnerBoutiqueOptions(boutiqueId: string): Promise<{
+  sizePresets: string[];
+  colorPresets: TrProductColor[];
+}> {
+  const response = await ownerFetch(
+    `/api/tr/owner/boutiques/${encodeURIComponent(boutiqueId)}/options`,
+  );
+  const data = (await response.json()) as {
+    sizePresets?: string[];
+    colorPresets?: TrProductColor[];
+    error?: string;
+  };
+  if (!response.ok) {
+    throw new Error(data.error ?? "Seçenekler yüklenemedi.");
+  }
+  return {
+    sizePresets: data.sizePresets ?? [],
+    colorPresets: data.colorPresets ?? [],
+  };
+}
+
+export async function updateOwnerBoutiqueOptions(
+  boutiqueId: string,
+  payload: {
+    sizePresets?: string[];
+    colorPresets?: TrProductColor[];
+  },
+): Promise<{
+  sizePresets: string[];
+  colorPresets: TrProductColor[];
+}> {
+  const response = await ownerFetch(
+    `/api/tr/owner/boutiques/${encodeURIComponent(boutiqueId)}/options`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    },
+  );
+  const data = (await response.json()) as {
+    sizePresets?: string[];
+    colorPresets?: TrProductColor[];
+    error?: string;
+  };
+  if (!response.ok) {
+    throw new Error(data.error ?? "Seçenekler kaydedilemedi.");
+  }
+  return {
+    sizePresets: data.sizePresets ?? [],
+    colorPresets: data.colorPresets ?? [],
+  };
 }

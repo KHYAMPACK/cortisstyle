@@ -172,12 +172,29 @@ export function trPanelOrdersPath(): string {
   return "/tr/panel/siparisler";
 }
 
+export function trPanelOrderPath(orderId: string): string {
+  return `/tr/panel/siparisler/${encodeURIComponent(orderId)}`;
+}
+
 export function trPanelCustomersPath(): string {
   return "/tr/panel/musteriler";
 }
 
+export function trPanelCustomerPath(email: string): string {
+  return `/tr/panel/musteriler/${encodeURIComponent(email)}`;
+}
+
+/** @deprecated Use trPanelCampaignsPath — kept for redirects. */
 export function trPanelDiscountsPath(): string {
-  return "/tr/panel/indirim";
+  return trPanelCampaignsPath();
+}
+
+export function trPanelCampaignsPath(): string {
+  return "/tr/panel/kampanyalar";
+}
+
+export function trPanelReportsPath(): string {
+  return "/tr/panel/raporlar";
 }
 
 export function trPanelStockPath(): string {

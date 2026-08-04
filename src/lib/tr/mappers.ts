@@ -1,6 +1,7 @@
 import type {
   TrBoutique,
   TrBoutiquePublic,
+  TrDiscountCode,
   TrOrder,
   TrOrderItem,
   TrProduct,
@@ -94,6 +95,8 @@ export function mapBoutiqueRow(row: Record<string, unknown>): TrBoutique {
     contactPhone: (row.contact_phone as string | null) ?? null,
     shippingAddress: (row.shipping_address as string | null) ?? null,
     returnAddress: (row.return_address as string | null) ?? null,
+    sizePresets: readStringArray(row.size_presets),
+    colorPresets: readProductColors(row.color_presets),
     status: row.status as TrBoutique["status"],
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
@@ -124,13 +127,17 @@ export function toPublicBoutique(boutique: TrBoutique): TrBoutiquePublic {
 }
 
 export function mapProductRow(row: Record<string, unknown>): TrProduct {
+  const compareAt =
+    typeof row.compare_at_price_kurus === "number"
+      ? (row.compare_at_price_kurus as number)
+      : null;
   return {
     id: row.id as string,
     boutiqueId: row.boutique_id as string,
     title: row.title as string,
     description: (row.description as string | null) ?? null,
     priceKurus: row.price_kurus as number,
-    compareAtPriceKurus: null,
+    compareAtPriceKurus: compareAt,
     size: (row.size as string | null) ?? null,
     sizes: readStringArray(row.sizes),
     colors: readProductColors(row.colors),
@@ -146,6 +153,21 @@ export function mapProductRow(row: Record<string, unknown>): TrProduct {
   };
 }
 
+function readFulfillmentStatus(
+  value: unknown,
+): TrOrder["fulfillmentStatus"] {
+  if (
+    value === "created" ||
+    value === "ready" ||
+    value === "shipped" ||
+    value === "delivered" ||
+    value === "cancelled"
+  ) {
+    return value;
+  }
+  return "created";
+}
+
 export function mapOrderRow(row: Record<string, unknown>): TrOrder {
   return {
     id: row.id as string,
@@ -155,9 +177,30 @@ export function mapOrderRow(row: Record<string, unknown>): TrOrder {
     shippingAddress: readShippingAddress(row.shipping_address),
     totalKurus: row.total_kurus as number,
     paymentStatus: row.payment_status as TrOrder["paymentStatus"],
+    fulfillmentStatus: readFulfillmentStatus(row.fulfillment_status),
     isSandbox: Boolean(row.is_sandbox),
     iyzicoPaymentId: (row.iyzico_payment_id as string | null) ?? null,
     iyzicoConversationId: (row.iyzico_conversation_id as string | null) ?? null,
+    createdAt: row.created_at as string,
+    updatedAt: row.updated_at as string,
+  };
+}
+
+export function mapDiscountCodeRow(row: Record<string, unknown>): TrDiscountCode {
+  return {
+    id: row.id as string,
+    boutiqueId: row.boutique_id as string,
+    code: row.code as string,
+    percentOff:
+      typeof row.percent_off === "number" ? (row.percent_off as number) : null,
+    amountOffKurus:
+      typeof row.amount_off_kurus === "number"
+        ? (row.amount_off_kurus as number)
+        : null,
+    active: Boolean(row.active),
+    usageLimit:
+      typeof row.usage_limit === "number" ? (row.usage_limit as number) : null,
+    usedCount: typeof row.used_count === "number" ? (row.used_count as number) : 0,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   };

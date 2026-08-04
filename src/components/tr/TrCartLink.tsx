@@ -5,6 +5,7 @@ import {
   useTrBoutiqueCommerceScopeOptional,
   useTrScopedCart,
 } from "@/components/tr/boutique/TrBoutiqueCommerceScope";
+import { TrBoutiquePendingLink } from "@/components/tr/boutique/editorial/TrBoutiqueNavPending";
 import { TrSoftNavLink } from "@/components/tr/TrSoftNavLink";
 import { trBoutiqueCartPath, trCartPath } from "@/lib/tr/paths";
 
@@ -45,10 +46,29 @@ export function TrCartLink({ size = "md" }: { size?: TrCartLinkSize }) {
     ? trBoutiqueCartPath(scope.boutiqueSlug)
     : trCartPath();
 
-  return (
-    <TrSoftNavLink href={href} className={className} aria-label={label}>
+  const content = (
+    <>
       <ShoppingBag strokeWidth={1.5} className={iconClass} />
       {badge}
+    </>
+  );
+
+  if (scope) {
+    return (
+      <TrBoutiquePendingLink
+        href={href}
+        kind="cart"
+        className={className}
+        aria-label={label}
+      >
+        {content}
+      </TrBoutiquePendingLink>
+    );
+  }
+
+  return (
+    <TrSoftNavLink href={href} className={className} aria-label={label}>
+      {content}
     </TrSoftNavLink>
   );
 }

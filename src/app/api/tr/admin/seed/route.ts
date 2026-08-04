@@ -1,7 +1,13 @@
 import { createBoutiqueAdmin } from "@/lib/tr/boutiques";
+import { createDiscountCodeAdmin } from "@/lib/tr/discountCodes";
+import {
+  createOrderAdmin,
+  updateOrderFulfillmentStatusAdmin,
+} from "@/lib/tr/orders";
 import { createProductAdmin } from "@/lib/tr/products";
 import { isTrAdminAuthorized } from "@/lib/tr/adminAuth";
 import { parseTryToKurus } from "@/types/tr-marketplace";
+import type { TrFulfillmentStatus } from "@/types/tr-marketplace";
 
 export const runtime = "nodejs";
 
@@ -25,12 +31,27 @@ interface SeedBoutiquePayload {
     title: string;
     description?: string;
     priceTry: number;
+    compareAtPriceTry?: number;
     size?: string;
     sizes?: string[];
     colors?: Array<{ name: string; hex: string }>;
     conditionLabel?: string;
     category?: string;
     images?: string[];
+    stock?: number;
+  }>;
+  sampleOrders?: Array<{
+    daysAgo?: number;
+    customerName: string;
+    customerEmail: string;
+    customerPhone?: string;
+    fulfillmentStatus?: TrFulfillmentStatus;
+    productIndexes: number[];
+  }>;
+  discountCodes?: Array<{
+    code: string;
+    percentOff?: number;
+    amountOffTry?: number;
   }>;
 }
 
@@ -59,8 +80,13 @@ export async function POST(request: Request) {
 
   try {
     const createdBoutiques = [];
-    const createdProducts: Array<{ id: string; title: string; boutiqueSlug: string }> =
-      [];
+    const createdProducts: Array<{
+      id: string;
+      title: string;
+      boutiqueSlug: string;
+    }> = [];
+    const createdOrders: Array<{ id: string; boutiqueSlug: string }> = [];
+    const createdCodes: Array<{ code: string; boutiqueSlug: string }> = [];
 
     for (const boutiqueInput of payload.boutiques ?? []) {
       const boutique = await createBoutiqueAdmin({
@@ -88,12 +114,23 @@ export async function POST(request: Request) {
         status: boutique.status,
       });
 
+      const productIds: string[] = [];
+      const productSnapshots: Array<{
+        id: string;
+        title: string;
+        priceKurus: number;
+      }> = [];
+
       for (const productInput of boutiqueInput.products ?? []) {
         const product = await createProductAdmin({
           boutiqueId: boutique.id,
           title: productInput.title,
           description: productInput.description,
           priceKurus: parseTryToKurus(productInput.priceTry),
+          compareAtPriceKurus:
+            productInput.compareAtPriceTry != null
+              ? parseTryToKurus(productInput.compareAtPriceTry)
+              : null,
           size: productInput.size,
           sizes: productInput.sizes,
           colors: productInput.colors,
@@ -101,13 +138,78 @@ export async function POST(request: Request) {
           category: productInput.category,
           images: productInput.images ?? [],
           status: "available",
+          stock: productInput.stock ?? 1,
         });
 
+        productIds.push(product.id);
+        productSnapshots.push({
+          id: product.id,
+          title: product.title,
+          priceKurus: product.priceKurus,
+        });
         createdProducts.push({
           id: product.id,
           title: product.title,
           boutiqueSlug: boutique.slug,
         });
+      }
+
+      for (const orderInput of boutiqueInput.sampleOrders ?? []) {
+        const items = (orderInput.productIndexes ?? [])
+          .map((index) => productSnapshots[index])
+          .filter(Boolean)
+          .map((product) => ({
+            productId: product!.id,
+            boutiqueId: boutique.id,
+            title: product!.title,
+            priceKurus: product!.priceKurus,
+            quantity: 1,
+          }));
+
+        if (items.length === 0) continue;
+
+        const daysAgo = orderInput.daysAgo ?? 0;
+        const createdAt = new Date(
+          Date.now() - daysAgo * 24 * 60 * 60 * 1000,
+        ).toISOString();
+
+        const order = await createOrderAdmin({
+          customerEmail: orderInput.customerEmail,
+          customerName: orderInput.customerName,
+          customerPhone: orderInput.customerPhone ?? null,
+          shippingAddress: {
+            line1: "Örnek Mah. Demo Cad. No:1",
+            district: "Merkezefendi",
+            city: "Denizli",
+            postalCode: "20010",
+            country: "TR",
+          },
+          isSandbox: true,
+          createdAt,
+          items,
+        });
+
+        if (orderInput.fulfillmentStatus) {
+          await updateOrderFulfillmentStatusAdmin(
+            order.id,
+            orderInput.fulfillmentStatus,
+          );
+        }
+
+        createdOrders.push({ id: order.id, boutiqueSlug: boutique.slug });
+      }
+
+      for (const codeInput of boutiqueInput.discountCodes ?? []) {
+        const code = await createDiscountCodeAdmin({
+          boutiqueId: boutique.id,
+          code: codeInput.code,
+          percentOff: codeInput.percentOff ?? null,
+          amountOffKurus:
+            codeInput.amountOffTry != null
+              ? parseTryToKurus(codeInput.amountOffTry)
+              : null,
+        });
+        createdCodes.push({ code: code.code, boutiqueSlug: boutique.slug });
       }
     }
 
@@ -115,13 +217,17 @@ export async function POST(request: Request) {
       ok: true,
       boutiques: createdBoutiques,
       products: createdProducts,
+      orders: createdOrders,
+      discountCodes: createdCodes,
     });
   } catch (error) {
     console.error("TR admin seed failed:", error);
     return Response.json(
       {
         error:
-          error instanceof Error ? error.message : "Unable to seed TR marketplace data.",
+          error instanceof Error
+            ? error.message
+            : "Unable to seed TR marketplace data.",
       },
       { status: 500 },
     );

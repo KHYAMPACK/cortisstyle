@@ -1,8 +1,12 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { TrBoutiqueBrandedShell } from "@/components/tr/boutique/TrBoutiqueBrandedShell";
 import { TrBoutiqueEditorialShell } from "@/components/tr/boutique/editorial/TrBoutiqueEditorialShell";
 import { TrMarketplaceChrome } from "@/components/tr/TrMarketplaceChrome";
-import { hasBoutiqueBrand } from "@/lib/tr/boutiqueBrand";
+import {
+  hasBoutiqueBrand,
+  resolveBoutiqueFaviconUrl,
+} from "@/lib/tr/boutiqueBrand";
 import { resolveBoutiqueHomeLayout } from "@/lib/tr/boutiqueHome";
 import { withEditorialDemoProducts } from "@/lib/tr/looks/editorialDemoProducts";
 import {
@@ -32,6 +36,43 @@ const RESERVED_BOUTIQUE_SLUGS = new Set([
 interface BoutiqueLayoutProps {
   children: React.ReactNode;
   params: Promise<{ boutiqueSlug: string }>;
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ boutiqueSlug: string }>;
+}): Promise<Metadata> {
+  const { boutiqueSlug } = await params;
+  if (RESERVED_BOUTIQUE_SLUGS.has(boutiqueSlug)) {
+    return {};
+  }
+
+  const boutique = await safeGetPublicBoutique(boutiqueSlug);
+  if (!boutique) {
+    return { title: "Butik bulunamadı" };
+  }
+
+  const favicon = resolveBoutiqueFaviconUrl(boutique);
+  const brandTitle =
+    boutique.slug === "pervinsoysalbutik" ? "Pervin Soysal" : boutique.name;
+
+  return {
+    title: {
+      default: brandTitle,
+      template: `%s · ${brandTitle}`,
+    },
+    description:
+      boutique.description ??
+      `${brandTitle} — online butik ürün kataloğu.`,
+    icons: favicon
+      ? {
+          icon: [{ url: favicon, type: "image/png" }],
+          shortcut: [{ url: favicon, type: "image/png" }],
+          apple: [{ url: favicon, type: "image/png" }],
+        }
+      : undefined,
+  };
 }
 
 export default async function BoutiqueLayout({

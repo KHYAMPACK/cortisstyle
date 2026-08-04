@@ -1,6 +1,13 @@
 export type TrBoutiqueStatus = "draft" | "pending" | "verified" | "suspended";
 export type TrProductStatus = "available" | "sold" | "hidden";
 export type TrPaymentStatus = "sandbox" | "pending" | "paid" | "failed" | "refunded";
+/** Ikas-like owner fulfillment pipeline (separate from payment). */
+export type TrFulfillmentStatus =
+  | "created"
+  | "ready"
+  | "shipped"
+  | "delivered"
+  | "cancelled";
 
 /** Common garment categories for outfit builder filtering (free text in DB). */
 export type TrGarmentCategory =
@@ -38,6 +45,11 @@ export interface TrBoutiquePublic {
   updatedAt: string;
 }
 
+export interface TrProductColor {
+  name: string;
+  hex: string;
+}
+
 /** Full boutique record — service role / admin only. */
 export interface TrBoutique extends TrBoutiquePublic {
   vergiNo: string | null;
@@ -48,11 +60,10 @@ export interface TrBoutique extends TrBoutiquePublic {
   contactPhone: string | null;
   shippingAddress: string | null;
   returnAddress: string | null;
-}
-
-export interface TrProductColor {
-  name: string;
-  hex: string;
+  /** Boutique-scoped reusable size chips for the product editor. */
+  sizePresets: string[];
+  /** Boutique-scoped reusable color chips for the product editor. */
+  colorPresets: TrProductColor[];
 }
 
 export interface TrProduct {
@@ -105,11 +116,34 @@ export interface TrOrder {
   shippingAddress: TrShippingAddress;
   totalKurus: number;
   paymentStatus: TrPaymentStatus;
+  fulfillmentStatus: TrFulfillmentStatus;
   isSandbox: boolean;
   iyzicoPaymentId: string | null;
   iyzicoConversationId: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface TrDiscountCode {
+  id: string;
+  boutiqueId: string;
+  code: string;
+  percentOff: number | null;
+  amountOffKurus: number | null;
+  active: boolean;
+  usageLimit: number | null;
+  usedCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TrOwnerCustomer {
+  email: string;
+  name: string;
+  phone: string | null;
+  orderCount: number;
+  spendKurus: number;
+  lastOrderAt: string;
 }
 
 export interface TrOrderItem {
@@ -157,6 +191,7 @@ export interface CreateTrProductInput {
   title: string;
   description?: string | null;
   priceKurus: number;
+  compareAtPriceKurus?: number | null;
   size?: string | null;
   sizes?: string[];
   colors?: TrProductColor[];
@@ -173,6 +208,7 @@ export interface UpdateTrProductInput {
   title?: string;
   description?: string | null;
   priceKurus?: number;
+  compareAtPriceKurus?: number | null;
   size?: string | null;
   sizes?: string[];
   colors?: TrProductColor[];
@@ -191,6 +227,8 @@ export interface CreateTrOrderInput {
   customerPhone?: string | null;
   shippingAddress: TrShippingAddress;
   isSandbox?: boolean;
+  /** Optional override for demo seeding historical orders. */
+  createdAt?: string;
   items: Array<{
     productId: string;
     boutiqueId: string;

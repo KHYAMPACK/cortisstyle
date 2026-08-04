@@ -2,7 +2,12 @@ import {
   requireOwnedProductBoutique,
   requireTrOwner,
 } from "@/lib/tr/ownerAuth";
-import { getProductByIdAdmin, updateProductAdmin } from "@/lib/tr/products";
+import {
+  deleteProductAdmin,
+  duplicateProductAdmin,
+  getProductByIdAdmin,
+  updateProductAdmin,
+} from "@/lib/tr/products";
 import { parseTryToKurus } from "@/types/tr-marketplace";
 import type {
   TrProductColor,
@@ -126,6 +131,39 @@ export async function PATCH(request: Request, context: RouteContext) {
     }
   }
 
+  if (
+    body.compareAtPriceKurus !== undefined ||
+    body.compareAtPriceTry !== undefined
+  ) {
+    if (body.compareAtPriceKurus === null || body.compareAtPriceTry === null) {
+      patch.compareAtPriceKurus = null;
+    } else {
+      try {
+        if (typeof body.compareAtPriceKurus === "number") {
+          patch.compareAtPriceKurus = Math.round(body.compareAtPriceKurus);
+        } else if (
+          typeof body.compareAtPriceTry === "number" ||
+          typeof body.compareAtPriceTry === "string"
+        ) {
+          const raw = String(body.compareAtPriceTry).trim();
+          patch.compareAtPriceKurus = raw
+            ? parseTryToKurus(body.compareAtPriceTry)
+            : null;
+        }
+      } catch (error) {
+        return Response.json(
+          {
+            error:
+              error instanceof Error
+                ? error.message
+                : "Geçersiz eski fiyat.",
+          },
+          { status: 400 },
+        );
+      }
+    }
+  }
+
   if (body.sizes !== undefined) patch.sizes = readStringArray(body.sizes) ?? [];
   if (body.colors !== undefined) patch.colors = readColors(body.colors) ?? [];
   if (body.images !== undefined) patch.images = readStringArray(body.images) ?? [];
@@ -169,6 +207,70 @@ export async function PATCH(request: Request, context: RouteContext) {
       {
         error:
           error instanceof Error ? error.message : "Ürün güncellenemedi.",
+      },
+      { status: 500 },
+    );
+  }
+}
+
+export async function DELETE(request: Request, context: RouteContext) {
+  const authResult = await requireTrOwner(request);
+  if (!authResult.ok) return authResult.response;
+
+  const { id } = await context.params;
+  const owned = await requireOwnedProductBoutique(authResult.auth, id);
+  if (!owned) {
+    return Response.json({ error: "Ürün bulunamadı." }, { status: 404 });
+  }
+
+  try {
+    await deleteProductAdmin(id);
+    return Response.json({ ok: true });
+  } catch (error) {
+    console.error("[tr/owner/products/[id]] delete failed:", error);
+    return Response.json(
+      {
+        error:
+          error instanceof Error ? error.message : "Ürün silinemedi.",
+      },
+      { status: 500 },
+    );
+  }
+}
+
+export async function POST(request: Request, context: RouteContext) {
+  const authResult = await requireTrOwner(request);
+  if (!authResult.ok) return authResult.response;
+
+  const { id } = await context.params;
+  const owned = await requireOwnedProductBoutique(authResult.auth, id);
+  if (!owned) {
+    return Response.json({ error: "Ürün bulunamadı." }, { status: 404 });
+  }
+
+  let body: Record<string, unknown> = {};
+  try {
+    body = (await request.json()) as Record<string, unknown>;
+  } catch {
+    body = {};
+  }
+
+  if (body.action !== "duplicate") {
+    return Response.json(
+      { error: "Desteklenmeyen işlem. action: duplicate kullanın." },
+      { status: 400 },
+    );
+  }
+
+  try {
+    const product = await duplicateProductAdmin(id);
+    return Response.json({ product }, { status: 201 });
+  } catch (error) {
+    console.error("[tr/owner/products/[id]] duplicate failed:", error);
+    return Response.json(
+      {
+        error:
+          error instanceof Error ? error.message : "Ürün kopyalanamadı.",
       },
       { status: 500 },
     );

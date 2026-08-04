@@ -105,6 +105,11 @@ export function TrProductEditorForm({
   const [priceTry, setPriceTry] = useState(
     initialProduct ? String(initialProduct.priceKurus / 100) : "",
   );
+  const [compareAtPriceTry, setCompareAtPriceTry] = useState(
+    initialProduct?.compareAtPriceKurus
+      ? String(initialProduct.compareAtPriceKurus / 100)
+      : "",
+  );
   const [description, setDescription] = useState(
     initialProduct?.description ?? "",
   );
@@ -151,6 +156,11 @@ export function TrProductEditorForm({
     if (!initialProduct) return;
     setTitle(initialProduct.title);
     setPriceTry(String(initialProduct.priceKurus / 100));
+    setCompareAtPriceTry(
+      initialProduct.compareAtPriceKurus
+        ? String(initialProduct.compareAtPriceKurus / 100)
+        : "",
+    );
     setDescription(initialProduct.description ?? "");
     setCategory(initialProduct.category);
     setSizesEnabled(initialProduct.sizes.length > 0);
@@ -359,11 +369,25 @@ export function TrProductEditorForm({
         throw new Error("Stok 0 veya daha büyük bir tam sayı olmalı.");
       }
 
+      let compareAtPriceTryValue: number | null = null;
+      const compareRaw = compareAtPriceTry.trim();
+      if (compareRaw) {
+        const compare = Number(compareRaw.replace(",", "."));
+        if (!Number.isFinite(compare) || compare <= 0) {
+          throw new Error("Geçerli bir eski fiyat girin veya boş bırakın.");
+        }
+        if (compare <= price) {
+          throw new Error("Eski fiyat, satış fiyatından yüksek olmalı.");
+        }
+        compareAtPriceTryValue = compare;
+      }
+
       const payload = {
         boutiqueId,
         title: title.trim(),
         description: description.trim() || null,
         priceTry: price,
+        compareAtPriceTry: compareAtPriceTryValue,
         sizes: sizesEnabled ? sizes : [],
         colors: colorsEnabled ? colors : [],
         category,
@@ -570,6 +594,22 @@ export function TrProductEditorForm({
             )}
           </span>
         ) : null}
+      </label>
+
+      <label className="block space-y-2">
+        <span className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
+          Eski fiyat / liste (TL) — isteğe bağlı
+        </span>
+        <input
+          value={compareAtPriceTry}
+          onChange={(event) => setCompareAtPriceTry(event.target.value)}
+          inputMode="decimal"
+          placeholder="1299"
+          className={fieldClass}
+        />
+        <span className="text-[11px] text-neutral-500">
+          Doldurulursa ürün indirimli gösterilir (kampanya).
+        </span>
       </label>
 
       <label className="block space-y-2">

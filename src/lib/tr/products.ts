@@ -12,7 +12,7 @@ import type {
 } from "@/types/tr-marketplace";
 
 const PUBLIC_PRODUCT_COLUMNS =
-  "id, boutique_id, title, description, price_kurus, size, sizes, colors, condition_label, category, images, marketplace_images, status, stock, sort_order, created_at, updated_at";
+  "id, boutique_id, title, description, price_kurus, compare_at_price_kurus, size, sizes, colors, condition_label, category, images, marketplace_images, status, stock, sort_order, created_at, updated_at";
 
 function productInsertRow(input: CreateTrProductInput) {
   return {
@@ -20,6 +20,7 @@ function productInsertRow(input: CreateTrProductInput) {
     title: input.title.trim(),
     description: input.description?.trim() ?? null,
     price_kurus: input.priceKurus,
+    compare_at_price_kurus: input.compareAtPriceKurus ?? null,
     size: input.size?.trim() ?? null,
     sizes: input.sizes ?? [],
     colors: input.colors ?? [],
@@ -181,6 +182,9 @@ function productUpdateRow(input: UpdateTrProductInput): Record<string, unknown> 
     row.description = input.description?.trim() ?? null;
   }
   if (input.priceKurus !== undefined) row.price_kurus = input.priceKurus;
+  if (input.compareAtPriceKurus !== undefined) {
+    row.compare_at_price_kurus = input.compareAtPriceKurus;
+  }
   if (input.size !== undefined) row.size = input.size?.trim() ?? null;
   if (input.sizes !== undefined) row.sizes = input.sizes;
   if (input.colors !== undefined) row.colors = input.colors;
@@ -227,6 +231,45 @@ export async function updateProductAdmin(
   if (error) throw error;
 
   return mapProductRow(data as Record<string, unknown>);
+}
+
+export async function deleteProductAdmin(productId: string): Promise<void> {
+  const supabase = getServiceSupabase();
+  if (!supabase) {
+    throw new Error("Supabase service role is not configured.");
+  }
+
+  const { error } = await supabase
+    .from("tr_products")
+    .delete()
+    .eq("id", productId);
+
+  if (error) throw error;
+}
+
+export async function duplicateProductAdmin(
+  productId: string,
+): Promise<TrProduct> {
+  const existing = await getProductByIdAdmin(productId);
+  if (!existing) throw new Error("Product not found.");
+
+  return createProductAdmin({
+    boutiqueId: existing.boutiqueId,
+    title: `${existing.title} (kopya)`,
+    description: existing.description,
+    priceKurus: existing.priceKurus,
+    compareAtPriceKurus: existing.compareAtPriceKurus,
+    size: existing.size,
+    sizes: existing.sizes,
+    colors: existing.colors,
+    conditionLabel: existing.conditionLabel,
+    category: existing.category,
+    images: existing.images,
+    marketplaceImages: existing.marketplaceImages,
+    status: "hidden",
+    stock: existing.stock,
+    sortOrder: existing.sortOrder,
+  });
 }
 
 export async function updateProductStatusAdmin(

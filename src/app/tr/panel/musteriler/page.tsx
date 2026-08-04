@@ -1,11 +1,5 @@
-import type { Metadata } from "next";
-import { TrOwnerComingSoonPage } from "@/components/tr/panel/TrOwnerComingSoonPage";
+import { TrOwnerCustomersPage } from "@/components/tr/panel/TrOwnerCustomersPage";
 
-export const metadata: Metadata = {
-  title: "Müşteriler · Butik paneli",
-  robots: { index: false, follow: false },
-};
-
-export default function TrPanelCustomersPage() {
-  return <TrOwnerComingSoonPage title="Müşteriler" />;
+export default function Page() {
+  return <TrOwnerCustomersPage />;
 }

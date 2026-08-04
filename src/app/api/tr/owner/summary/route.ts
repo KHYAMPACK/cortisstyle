@@ -29,7 +29,16 @@ export async function GET(request: Request) {
   }
 
   try {
-    const summary = await getOwnerBoutiqueSummary(boutique.id);
+    const { searchParams } = new URL(request.url);
+    const rangeParam = searchParams.get("range")?.trim() ?? "today";
+    const range =
+      rangeParam === "7d" ||
+      rangeParam === "30d" ||
+      rangeParam === "all" ||
+      rangeParam === "today"
+        ? rangeParam
+        : "today";
+    const summary = await getOwnerBoutiqueSummary(boutique.id, range);
     return Response.json({ summary });
   } catch (error) {
     console.error("[tr/owner/summary] failed:", error);

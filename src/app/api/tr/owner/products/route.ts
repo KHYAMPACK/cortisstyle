@@ -144,6 +144,40 @@ export async function POST(request: Request) {
     stock = parsed;
   }
 
+  let compareAtPriceKurus: number | null | undefined;
+  if (
+    body.compareAtPriceKurus !== undefined ||
+    body.compareAtPriceTry !== undefined
+  ) {
+    if (body.compareAtPriceKurus === null || body.compareAtPriceTry === null) {
+      compareAtPriceKurus = null;
+    } else if (typeof body.compareAtPriceKurus === "number") {
+      compareAtPriceKurus = Math.round(body.compareAtPriceKurus);
+    } else if (
+      typeof body.compareAtPriceTry === "number" ||
+      typeof body.compareAtPriceTry === "string"
+    ) {
+      const raw = String(body.compareAtPriceTry).trim();
+      if (!raw) {
+        compareAtPriceKurus = null;
+      } else {
+        try {
+          compareAtPriceKurus = parseTryToKurus(body.compareAtPriceTry);
+        } catch (error) {
+          return Response.json(
+            {
+              error:
+                error instanceof Error
+                  ? error.message
+                  : "Geçersiz eski fiyat.",
+            },
+            { status: 400 },
+          );
+        }
+      }
+    }
+  }
+
   try {
     const product = await createProductAdmin({
       boutiqueId: boutique.id,
@@ -151,6 +185,7 @@ export async function POST(request: Request) {
       description:
         typeof body.description === "string" ? body.description : null,
       priceKurus,
+      compareAtPriceKurus,
       sizes: readStringArray(body.sizes) ?? [],
       colors: readColors(body.colors) ?? [],
       category: typeof body.category === "string" ? body.category : null,

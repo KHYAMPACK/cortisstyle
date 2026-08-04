@@ -57,7 +57,7 @@ export function TrPanelFadeIn({
   );
 }
 
-/** Rectangular spinner — matches panel chrome, not a soft pill. */
+/** Soft spinner for senior-friendly panel. */
 export function TrPanelLoading({
   label = "Yükleniyor…",
 }: {
@@ -65,7 +65,7 @@ export function TrPanelLoading({
 }) {
   return (
     <motion.div
-      className="flex flex-col items-start gap-4 py-6"
+      className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-[#F5C6D6] bg-white px-6 py-14 shadow-sm"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -75,13 +75,11 @@ export function TrPanelLoading({
     >
       <motion.div
         aria-hidden
-        className="h-7 w-7 border border-neutral-300 border-t-neutral-900"
+        className="h-10 w-10 rounded-full border-4 border-[#F5C6D6] border-t-[#C2185B]"
         animate={{ rotate: 360 }}
         transition={{ duration: 1.05, repeat: Infinity, ease: "linear" }}
       />
-      <p className="text-[11px] tracking-[0.2em] text-neutral-500 uppercase">
-        {label}
-      </p>
+      <p className="text-[17px] font-medium text-neutral-700">{label}</p>
     </motion.div>
   );
 }

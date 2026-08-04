@@ -122,9 +122,9 @@ function SettingsForm({ boutiqueId }: { boutiqueId: string }) {
                 /tr/{settings.slug}
               </Link>
             </p>
-            <p className="text-[12px] text-neutral-500">
+            <p className="text-[15px] text-neutral-600">
               Özel alan adı DNS ile bağlandığında (ör. pervinsoysal.com) aynı
-              vitrin o adreste açılır. Panel Cortisstyle üzerinde kalır.
+              vitrin o adreste açılır.
             </p>
           </div>
         ) : null}

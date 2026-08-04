@@ -1,9 +1,10 @@
 import {
+  trPanelCampaignsPath,
   trPanelCustomersPath,
-  trPanelDiscountsPath,
   trPanelOrdersPath,
   trPanelPath,
   trPanelProductsPath,
+  trPanelReportsPath,
   trPanelSettingsPath,
   trPanelStockPath,
 } from "@/lib/tr/paths";
@@ -15,13 +16,15 @@ export interface TrPanelNavItem {
   match: "exact" | "products" | "prefix";
 }
 
+/** Ikas-like merchant sidebar modules. */
 export const TR_PANEL_NAV: TrPanelNavItem[] = [
   { href: trPanelPath(), label: "Ana Sayfa", match: "exact" },
   { href: trPanelProductsPath(), label: "Ürünler", match: "products" },
+  { href: trPanelStockPath(), label: "Stok", match: "prefix" },
   { href: trPanelOrdersPath(), label: "Siparişler", match: "prefix" },
   { href: trPanelCustomersPath(), label: "Müşteriler", match: "prefix" },
-  { href: trPanelDiscountsPath(), label: "İndirim", match: "prefix" },
-  { href: trPanelStockPath(), label: "Stok", match: "prefix" },
+  { href: trPanelCampaignsPath(), label: "Kampanyalar", match: "prefix" },
+  { href: trPanelReportsPath(), label: "Raporlar", match: "prefix" },
   { href: trPanelSettingsPath(), label: "Ayarlar", match: "prefix" },
 ];
 

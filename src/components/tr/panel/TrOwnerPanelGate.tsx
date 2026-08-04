@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { AuthPopup } from "@/components/AuthPopup";
 import {
   TrPanelLoading,
@@ -16,6 +16,7 @@ import {
   type TrOwnerBoutiqueSummary,
 } from "@/lib/tr/ownerClient";
 import { isTrPanelNavActive, TR_PANEL_NAV } from "@/lib/tr/panelNav";
+import { panelAccentCssVars } from "@/lib/tr/panelTheme";
 import { trBoutiquePath, trPanelPath } from "@/lib/tr/paths";
 
 interface TrOwnerPanelGateProps {
@@ -91,8 +92,15 @@ export function TrOwnerPanelGate({ children }: TrOwnerPanelGateProps) {
   const activeBoutique =
     boutiques.find((entry) => entry.id === activeBoutiqueId) ?? boutiques[0];
 
+  const accentStyle = panelAccentCssVars(
+    activeBoutique?.themeAccent,
+  ) as CSSProperties;
+
   return (
-    <div className="mx-auto max-w-4xl px-5 py-6 md:px-8 md:py-8">
+    <div
+      className="mx-auto max-w-5xl px-4 py-5 sm:px-6 md:px-8 md:py-8"
+      style={accentStyle}
+    >
       <AuthPopup
         isOpen={showAuth && !isAuthenticated}
         onClose={() => setShowAuth(false)}
@@ -100,85 +108,99 @@ export function TrOwnerPanelGate({ children }: TrOwnerPanelGateProps) {
         description="Butik panelinize giriş yapmak için e-posta adresinizi girin."
       />
 
-      <header className="mb-6 border-b border-black/10 pb-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="min-w-0">
-            <Link
-              href={trPanelPath()}
-              className="text-[10px] tracking-[0.2em] text-neutral-500 uppercase"
-            >
-              Butik paneli
-            </Link>
-            {activeBoutique ? (
-              <div className="mt-2 flex flex-wrap items-center gap-3">
-                {activeBoutique.logoUrl ? (
-                  <Image
-                    src={activeBoutique.logoUrl}
-                    alt=""
-                    width={36}
-                    height={36}
-                    className="h-9 w-9 object-contain"
-                    unoptimized
-                  />
-                ) : null}
-                {boutiques.length > 1 ? (
-                  <select
-                    className="border border-black/10 bg-white px-3 py-2 text-[13px] text-neutral-900"
-                    value={activeBoutique.id}
-                    onChange={(event) => setActiveBoutiqueId(event.target.value)}
-                  >
-                    {boutiques.map((boutique) => (
-                      <option key={boutique.id} value={boutique.id}>
-                        {boutique.name}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <p className="truncate text-[15px] font-medium text-neutral-900">
-                    {activeBoutique.name}
-                  </p>
-                )}
-              </div>
-            ) : (
-              <h1 className="mt-1 font-serif text-2xl tracking-tight text-neutral-950">
-                Yönetim
-              </h1>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2">
-            {activeBoutique ? (
+      <header className="mb-6 overflow-hidden rounded-2xl border border-[color:var(--panel-accent-border)] bg-white shadow-sm">
+        <div
+          className="px-5 py-4 text-white sm:px-6"
+          style={{
+            background: `linear-gradient(90deg, var(--panel-accent-deep), var(--panel-accent))`,
+          }}
+        >
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="min-w-0">
               <Link
-                href={trBoutiquePath(activeBoutique.slug)}
-                className="border border-black/10 bg-white px-3 py-2 text-[10px] tracking-[0.12em] uppercase"
+                href={trPanelPath()}
+                className="text-[15px] font-semibold tracking-wide"
               >
-                Mağaza
+                Butik Paneli
               </Link>
-            ) : null}
-            {isAuthenticated ? (
-              <button
-                type="button"
-                onClick={() => void signOut()}
-                className="border border-black/10 bg-white px-3 py-2 text-[10px] tracking-[0.12em] uppercase"
-              >
-                Çıkış
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setShowAuth(true)}
-                className="border border-jet-black bg-jet-black px-3 py-2 text-[10px] tracking-[0.12em] text-white uppercase"
-              >
-                Giriş yap
-              </button>
-            )}
+              {activeBoutique ? (
+                <div className="mt-2 flex flex-wrap items-center gap-3">
+                  {activeBoutique.logoUrl ? (
+                    <Image
+                      src={activeBoutique.logoUrl}
+                      alt=""
+                      width={48}
+                      height={48}
+                      className="h-12 w-12 rounded-full bg-white/95 object-contain p-1"
+                      unoptimized
+                    />
+                  ) : (
+                    <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20 text-lg font-semibold">
+                      {activeBoutique.name.slice(0, 1)}
+                    </span>
+                  )}
+                  {boutiques.length > 1 ? (
+                    <select
+                      className="max-w-full rounded-xl border-0 bg-white px-4 py-3 text-[17px] font-medium text-neutral-900"
+                      value={activeBoutique.id}
+                      onChange={(event) =>
+                        setActiveBoutiqueId(event.target.value)
+                      }
+                    >
+                      {boutiques.map((boutique) => (
+                        <option key={boutique.id} value={boutique.id}>
+                          {boutique.name}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <p className="truncate text-[20px] font-semibold leading-tight">
+                      {activeBoutique.name}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <h1 className="mt-1 text-[22px] font-semibold">Yönetim</h1>
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              {activeBoutique ? (
+                <Link
+                  href={trBoutiquePath(activeBoutique.slug)}
+                  className="inline-flex min-h-12 items-center rounded-xl bg-white px-5 py-3 text-[16px] font-semibold shadow-sm"
+                  style={{ color: "var(--panel-accent)" }}
+                >
+                  Mağazayı aç
+                </Link>
+              ) : null}
+              {isAuthenticated ? (
+                <button
+                  type="button"
+                  onClick={() => void signOut()}
+                  className="inline-flex min-h-12 items-center rounded-xl border-2 border-white/70 bg-transparent px-5 py-3 text-[16px] font-semibold text-white"
+                >
+                  Çıkış
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowAuth(true)}
+                  className="inline-flex min-h-12 items-center rounded-xl bg-white px-5 py-3 text-[16px] font-semibold"
+                  style={{ color: "var(--panel-accent)" }}
+                >
+                  Giriş yap
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
         {isAuthenticated && activeBoutique ? (
           <nav
             aria-label="Panel menüsü"
-            className="mt-4 flex gap-0 overflow-x-auto border-t border-black/10 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            className="flex gap-2 overflow-x-auto p-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            style={{ backgroundColor: "var(--panel-accent-softer)" }}
           >
             {TR_PANEL_NAV.map((item) => {
               const active = isTrPanelNavActive(pathname, item);
@@ -186,11 +208,16 @@ export function TrOwnerPanelGate({ children }: TrOwnerPanelGateProps) {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`shrink-0 border-b-2 px-3 py-3 text-[11px] tracking-[0.08em] uppercase transition-colors ${
+                  className={`shrink-0 rounded-full px-4 py-3 text-[15px] font-semibold transition-colors ${
                     active
-                      ? "border-jet-black text-jet-black"
-                      : "border-transparent text-neutral-500 hover:text-neutral-900"
+                      ? "text-white shadow-sm"
+                      : "bg-white text-neutral-700 ring-1 ring-[color:var(--panel-accent-border)] hover:bg-[color:var(--panel-accent-soft)]"
                   }`}
+                  style={
+                    active
+                      ? { backgroundColor: "var(--panel-accent)" }
+                      : undefined
+                  }
                 >
                   {item.label}
                 </Link>
@@ -205,14 +232,15 @@ export function TrOwnerPanelGate({ children }: TrOwnerPanelGateProps) {
           <TrPanelLoading key="panel-boot" label="Yükleniyor…" />
         ) : !isAuthenticated ? (
           <TrPanelPageTransition key="auth-required" pathname="auth-required">
-            <div className="space-y-4 border border-black/10 bg-white px-5 py-8">
-              <p className="text-[14px] text-neutral-800">
+            <div className="space-y-5 rounded-2xl border border-[color:var(--panel-accent-border)] bg-white px-6 py-10 shadow-sm">
+              <p className="text-[18px] leading-relaxed text-neutral-800">
                 Panele girmek için oturum açın.
               </p>
               <button
                 type="button"
                 onClick={() => setShowAuth(true)}
-                className="btn-primary inline-flex px-6 py-3 text-[11px] tracking-[0.16em]"
+                className="inline-flex min-h-14 items-center rounded-xl px-8 py-4 text-[17px] font-semibold text-white"
+                style={{ backgroundColor: "var(--panel-accent)" }}
               >
                 Giriş / Kayıt
               </button>
@@ -220,16 +248,16 @@ export function TrOwnerPanelGate({ children }: TrOwnerPanelGateProps) {
           </TrPanelPageTransition>
         ) : error ? (
           <TrPanelPageTransition key="panel-error" pathname="panel-error">
-            <p className="border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-800">
+            <p className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-[16px] text-red-800">
               {error}
             </p>
           </TrPanelPageTransition>
         ) : boutiques.length === 0 ? (
           <TrPanelPageTransition key="no-boutique" pathname="no-boutique">
-            <div className="border border-black/10 bg-white px-5 py-8">
-              <p className="text-[14px] leading-relaxed text-neutral-800">
-                Hesabınız henüz bir butiğe bağlanmadı. Cortisstyle ekibi
-                hesabınızı butiğinize bağladıktan sonra ürün ekleyebilirsiniz.
+            <div className="rounded-2xl border border-[color:var(--panel-accent-border)] bg-white px-6 py-10 shadow-sm">
+              <p className="text-[18px] leading-relaxed text-neutral-800">
+                Hesabınız henüz bir butiğe bağlanmadı. Destek ekibi hesabınızı
+                butiğinize bağladıktan sonra ürün ekleyebilirsiniz.
               </p>
             </div>
           </TrPanelPageTransition>

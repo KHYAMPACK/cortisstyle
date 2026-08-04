@@ -1,6 +1,9 @@
 import { getServiceSupabase } from "@/lib/supabaseAdmin";
+import { listOrdersByBoutiqueIdAdmin } from "@/lib/tr/orders";
 import { isTrCheckoutEnabled } from "@/lib/tr/platform";
 import { listProductsByBoutiqueIdAdmin } from "@/lib/tr/products";
+
+export type TrOwnerSummaryRange = "today" | "7d" | "30d" | "all";
 
 export interface TrOwnerSummary {
   checkoutEnabled: boolean;
@@ -9,8 +12,17 @@ export interface TrOwnerSummary {
     sold: number;
     hidden: number;
     total: number;
+    lowStock: number;
   };
-  /** Present when checkout is enabled (Europe/Istanbul calendar day). */
+  /** Present when checkout is enabled. */
+  period: {
+    range: TrOwnerSummaryRange;
+    orderCount: number;
+    revenueKurus: number;
+    pendingFulfillment: number;
+    topProducts: Array<{ title: string; quantity: number; revenueKurus: number }>;
+  } | null;
+  /** Legacy alias for home when range=today. */
   today: {
     orderCount: number;
     revenueKurus: number;
@@ -30,8 +42,16 @@ function istanbulDayBounds(now = new Date()): { startIso: string; endIso: string
   return { startIso, endIso };
 }
 
+function rangeStartIso(range: TrOwnerSummaryRange, now = new Date()): string | null {
+  if (range === "all") return null;
+  if (range === "today") return istanbulDayBounds(now).startIso;
+  const days = range === "7d" ? 7 : 30;
+  return new Date(now.getTime() - days * 24 * 60 * 60 * 1000).toISOString();
+}
+
 export async function getOwnerBoutiqueSummary(
   boutiqueId: string,
+  range: TrOwnerSummaryRange = "today",
 ): Promise<TrOwnerSummary> {
   const products = await listProductsByBoutiqueIdAdmin(boutiqueId);
   const inventory = {
@@ -39,11 +59,14 @@ export async function getOwnerBoutiqueSummary(
     sold: products.filter((p) => p.status === "sold").length,
     hidden: products.filter((p) => p.status === "hidden").length,
     total: products.length,
+    lowStock: products.filter(
+      (p) => p.status === "available" && p.stock <= 2,
+    ).length,
   };
 
   const checkoutEnabled = isTrCheckoutEnabled();
   if (!checkoutEnabled) {
-    return { checkoutEnabled, inventory, today: null };
+    return { checkoutEnabled, inventory, period: null, today: null };
   }
 
   const supabase = getServiceSupabase();
@@ -51,53 +74,80 @@ export async function getOwnerBoutiqueSummary(
     throw new Error("Supabase service role is not configured.");
   }
 
-  const { startIso, endIso } = istanbulDayBounds();
+  const orders = await listOrdersByBoutiqueIdAdmin(boutiqueId);
+  const startIso = rangeStartIso(range);
+  const paid = orders.filter(
+    (order) =>
+      (order.paymentStatus === "paid" || order.paymentStatus === "sandbox") &&
+      (startIso == null || order.createdAt >= startIso),
+  );
 
-  const { data: items, error: itemsError } = await supabase
-    .from("tr_order_items")
-    .select("order_id, price_kurus, quantity")
-    .eq("boutique_id", boutiqueId);
-
-  if (itemsError) throw itemsError;
-
-  const orderIds = [
-    ...new Set((items ?? []).map((row) => row.order_id as string)),
-  ];
-
-  if (orderIds.length === 0) {
-    return {
-      checkoutEnabled,
-      inventory,
-      today: { orderCount: 0, revenueKurus: 0 },
-    };
+  const topMap = new Map<
+    string,
+    { title: string; quantity: number; revenueKurus: number }
+  >();
+  let revenueKurus = 0;
+  for (const order of paid) {
+    for (const item of order.items) {
+      if (item.boutiqueId !== boutiqueId) continue;
+      const line = item.priceKurus * item.quantity;
+      revenueKurus += line;
+      const existing = topMap.get(item.productId);
+      if (existing) {
+        existing.quantity += item.quantity;
+        existing.revenueKurus += line;
+      } else {
+        topMap.set(item.productId, {
+          title: item.title,
+          quantity: item.quantity,
+          revenueKurus: line,
+        });
+      }
+    }
   }
 
-  const { data: orders, error: ordersError } = await supabase
-    .from("tr_orders")
-    .select("id, created_at, payment_status")
-    .in("id", orderIds)
-    .gte("created_at", startIso)
-    .lte("created_at", endIso)
-    .in("payment_status", ["paid", "sandbox"]);
+  const topProducts = [...topMap.values()]
+    .sort((a, b) => b.revenueKurus - a.revenueKurus)
+    .slice(0, 5);
 
-  if (ordersError) throw ordersError;
+  const pendingFulfillment = orders.filter(
+    (order) =>
+      (order.paymentStatus === "paid" || order.paymentStatus === "sandbox") &&
+      (order.fulfillmentStatus === "created" ||
+        order.fulfillmentStatus === "ready"),
+  ).length;
 
-  const todayOrderIds = new Set((orders ?? []).map((row) => row.id as string));
-  const todayItems = (items ?? []).filter((row) =>
-    todayOrderIds.has(row.order_id as string),
+  const period = {
+    range,
+    orderCount: paid.length,
+    revenueKurus,
+    pendingFulfillment,
+    topProducts,
+  };
+
+  const todayBounds = istanbulDayBounds();
+  const todayPaid = orders.filter(
+    (order) =>
+      (order.paymentStatus === "paid" || order.paymentStatus === "sandbox") &&
+      order.createdAt >= todayBounds.startIso &&
+      order.createdAt <= todayBounds.endIso,
   );
-  const revenueKurus = todayItems.reduce(
-    (sum, row) =>
-      sum + (row.price_kurus as number) * ((row.quantity as number) ?? 1),
-    0,
-  );
+  let todayRevenue = 0;
+  for (const order of todayPaid) {
+    for (const item of order.items) {
+      if (item.boutiqueId === boutiqueId) {
+        todayRevenue += item.priceKurus * item.quantity;
+      }
+    }
+  }
 
   return {
     checkoutEnabled,
     inventory,
+    period,
     today: {
-      orderCount: todayOrderIds.size,
-      revenueKurus,
+      orderCount: todayPaid.length,
+      revenueKurus: todayRevenue,
     },
   };
 }

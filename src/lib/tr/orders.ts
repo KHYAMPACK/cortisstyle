@@ -7,10 +7,14 @@ import {
 import { markProductsSoldAdmin } from "@/lib/tr/products";
 import type {
   CreateTrOrderInput,
+  TrFulfillmentStatus,
   TrOrder,
   TrOrderWithItems,
+  TrOwnerCustomer,
   TrPaymentStatus,
 } from "@/types/tr-marketplace";
+
+const PAID_LIKE: TrPaymentStatus[] = ["paid", "sandbox"];
 
 export async function createOrderAdmin(
   input: CreateTrOrderInput,
@@ -41,7 +45,9 @@ export async function createOrderAdmin(
       shipping_address: shippingAddressToJson(input.shippingAddress),
       total_kurus: totalKurus,
       payment_status: paymentStatus,
+      fulfillment_status: "created",
       is_sandbox: isSandbox,
+      ...(input.createdAt ? { created_at: input.createdAt } : {}),
     })
     .select("*")
     .single();
@@ -107,6 +113,112 @@ export async function getOrderByIdAdmin(
       mapOrderItemRow(row as Record<string, unknown>),
     ),
   };
+}
+
+export async function listOrdersByBoutiqueIdAdmin(
+  boutiqueId: string,
+): Promise<TrOrderWithItems[]> {
+  const supabase = getServiceSupabase();
+  if (!supabase) {
+    throw new Error("Supabase service role is not configured.");
+  }
+
+  const { data: itemRows, error: itemsError } = await supabase
+    .from("tr_order_items")
+    .select("*")
+    .eq("boutique_id", boutiqueId);
+
+  if (itemsError) throw itemsError;
+
+  const orderIds = [
+    ...new Set((itemRows ?? []).map((row) => row.order_id as string)),
+  ];
+  if (orderIds.length === 0) return [];
+
+  const { data: orderRows, error: ordersError } = await supabase
+    .from("tr_orders")
+    .select("*")
+    .in("id", orderIds)
+    .order("created_at", { ascending: false });
+
+  if (ordersError) throw ordersError;
+
+  const itemsByOrder = new Map<string, typeof itemRows>();
+  for (const row of itemRows ?? []) {
+    const orderId = row.order_id as string;
+    const list = itemsByOrder.get(orderId) ?? [];
+    list.push(row);
+    itemsByOrder.set(orderId, list);
+  }
+
+  return (orderRows ?? []).map((row) => {
+    const order = mapOrderRow(row as Record<string, unknown>);
+    const items = (itemsByOrder.get(order.id) ?? []).map((item) =>
+      mapOrderItemRow(item as Record<string, unknown>),
+    );
+    return { ...order, items };
+  });
+}
+
+export async function updateOrderFulfillmentStatusAdmin(
+  orderId: string,
+  fulfillmentStatus: TrFulfillmentStatus,
+): Promise<TrOrder> {
+  const supabase = getServiceSupabase();
+  if (!supabase) {
+    throw new Error("Supabase service role is not configured.");
+  }
+
+  const { data, error } = await supabase
+    .from("tr_orders")
+    .update({ fulfillment_status: fulfillmentStatus })
+    .eq("id", orderId)
+    .select("*")
+    .single();
+
+  if (error) throw error;
+
+  return mapOrderRow(data as Record<string, unknown>);
+}
+
+export async function listOwnerCustomersByBoutiqueIdAdmin(
+  boutiqueId: string,
+): Promise<TrOwnerCustomer[]> {
+  const orders = await listOrdersByBoutiqueIdAdmin(boutiqueId);
+  const byEmail = new Map<string, TrOwnerCustomer>();
+
+  for (const order of orders) {
+    if (!PAID_LIKE.includes(order.paymentStatus)) continue;
+    const email = order.customerEmail.toLowerCase();
+    const existing = byEmail.get(email);
+    const lineTotal = order.items
+      .filter((item) => item.boutiqueId === boutiqueId)
+      .reduce((sum, item) => sum + item.priceKurus * item.quantity, 0);
+
+    if (!existing) {
+      byEmail.set(email, {
+        email,
+        name: order.customerName,
+        phone: order.customerPhone,
+        orderCount: 1,
+        spendKurus: lineTotal,
+        lastOrderAt: order.createdAt,
+      });
+      continue;
+    }
+
+    existing.orderCount += 1;
+    existing.spendKurus += lineTotal;
+    if (order.createdAt > existing.lastOrderAt) {
+      existing.lastOrderAt = order.createdAt;
+      existing.name = order.customerName;
+      existing.phone = order.customerPhone ?? existing.phone;
+    }
+  }
+
+  return [...byEmail.values()].sort((a, b) =>
+    b.lastOrderAt.localeCompare(a.lastOrderAt),
+  );
 }
 
 export async function updateOrderPaymentStatusAdmin(

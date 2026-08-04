@@ -8,6 +8,11 @@ const LOGO_OVERRIDES: Partial<Record<string, string>> = {
   pervinsoysalbutik: "/tr/boutiques/pervinsoysalbutik/logo.png",
 };
 
+/** High-contrast favicons (tab icons) — prefer readable marks over dark-on-dark logos. */
+const FAVICON_OVERRIDES: Partial<Record<string, string>> = {
+  pervinsoysalbutik: "/tr/boutiques/pervinsoysalbutik/logo-accent.png",
+};
+
 const INTRO_BRAND_LABELS: Partial<Record<string, string>> = {
   pervinsoysalbutik: "Pervin Soysal",
 };
@@ -32,6 +37,15 @@ export function resolveBoutiqueLogoUrl(
   const override = LOGO_OVERRIDES[boutique.slug];
   if (override) return override;
   return boutique.logoUrl?.trim() || null;
+}
+
+/** Browser tab / apple touch icon for white-label boutique hosts. */
+export function resolveBoutiqueFaviconUrl(
+  boutique: Pick<TrBoutiquePublic, "slug" | "logoUrl">,
+): string | null {
+  const override = FAVICON_OVERRIDES[boutique.slug];
+  if (override) return override;
+  return resolveBoutiqueLogoUrl(boutique);
 }
 
 /** Logo + label for custom-domain intro mask (no DB round-trip). */

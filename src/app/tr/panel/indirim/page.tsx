@@ -1,11 +1,6 @@
-import type { Metadata } from "next";
-import { TrOwnerComingSoonPage } from "@/components/tr/panel/TrOwnerComingSoonPage";
+import { redirect } from "next/navigation";
+import { trPanelCampaignsPath } from "@/lib/tr/paths";
 
-export const metadata: Metadata = {
-  title: "İndirim · Butik paneli",
-  robots: { index: false, follow: false },
-};
-
-export default function TrPanelDiscountsPage() {
-  return <TrOwnerComingSoonPage title="İndirim" />;
+export default function Page() {
+  redirect(trPanelCampaignsPath());
 }

@@ -8,6 +8,7 @@ import { TrBoutiqueEditorialCommercePanels } from "@/components/tr/boutique/edit
 import { TrBoutiqueEditorialFooter } from "@/components/tr/boutique/editorial/TrBoutiqueEditorialFooter";
 import { TrBoutiqueEditorialHeader } from "@/components/tr/boutique/editorial/TrBoutiqueEditorialHeader";
 import { TrBoutiqueEditorialHelpFab } from "@/components/tr/boutique/editorial/TrBoutiqueEditorialHelpFab";
+import { TrBoutiqueNavPendingProvider, TrBoutiquePendingMain } from "@/components/tr/boutique/editorial/TrBoutiqueNavPending";
 import { TrBoutiqueProductsProvider } from "@/components/tr/boutique/TrBoutiqueProductsContext";
 import { TrAddedToCartSheet } from "@/components/tr/TrAddedToCartSheet";
 import { resolveBoutiqueThemeAccent } from "@/lib/tr/boutiqueBrand";
@@ -75,8 +76,12 @@ export function TrBoutiqueEditorialShell({
               } as React.CSSProperties
             }
           >
-            <TrBoutiqueEditorialHeader boutique={boutique} />
-            <main className="flex-1">{children}</main>
+            <TrBoutiqueNavPendingProvider>
+              <TrBoutiqueEditorialHeader boutique={boutique} />
+              <main className="flex-1">
+                <TrBoutiquePendingMain>{children}</TrBoutiquePendingMain>
+              </main>
+            </TrBoutiqueNavPendingProvider>
             <TrBoutiqueEditorialFooter boutique={boutique} />
             <TrBoutiqueEditorialHelpFab />
             <TrBoutiqueEditorialCommercePanels />
