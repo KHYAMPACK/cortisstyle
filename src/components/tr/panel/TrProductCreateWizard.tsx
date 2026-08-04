@@ -509,17 +509,20 @@ export function TrProductCreateWizard({
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                   {images.map((url, index) => {
                     const catalogUrl = marketplaceImages[index]?.trim();
+                    const previewSrc = catalogUrl || url;
                     return (
                     <div
                       key={`${url}-${index}`}
-                      className="relative aspect-[3/4] overflow-hidden rounded-xl bg-neutral-100"
+                      className="relative aspect-[3/4] overflow-hidden rounded-xl bg-[#F3F1EC]"
                     >
                       <Image
-                        src={url}
+                        src={previewSrc}
                         alt=""
                         fill
                         unoptimized
-                        className="object-cover"
+                        className={
+                          catalogUrl ? "object-contain p-2" : "object-cover"
+                        }
                         sizes="160px"
                       />
                       {index === 0 ? (

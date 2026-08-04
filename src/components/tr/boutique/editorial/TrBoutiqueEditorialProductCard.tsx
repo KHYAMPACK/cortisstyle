@@ -11,7 +11,7 @@ import { TrBoutiquePendingLink } from "@/components/tr/boutique/editorial/TrBout
 import { EDITORIAL_SALE_RED } from "@/lib/tr/boutiqueHome";
 import { trProductPath } from "@/lib/tr/paths";
 import { resolveProductColors } from "@/lib/tr/productOptions";
-import { getProductCoverImageFor } from "@/lib/tr/productImages";
+import { getProductCoverImageFor, isCatalogCutoutImage } from "@/lib/tr/productImages";
 import {
   formatTryFromKurus,
   type TrProduct,
@@ -31,7 +31,8 @@ export function TrBoutiqueEditorialProductCard({
   boutiqueName,
   priority = false,
 }: TrBoutiqueEditorialProductCardProps) {
-  const coverImage = getProductCoverImageFor("boutique", product);
+  const coverImage = getProductCoverImageFor("marketplace", product);
+  const coverIsCutout = isCatalogCutoutImage(coverImage);
   const colors = resolveProductColors(product);
   const isSold = product.status === "sold";
   const isNew = product.conditionLabel?.toLocaleLowerCase("tr").includes("yeni");
@@ -68,7 +69,11 @@ export function TrBoutiqueEditorialProductCard({
 
   return (
     <article className="group relative bg-white">
-      <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100">
+      <div
+        className={`relative aspect-[3/4] overflow-hidden ${
+          coverIsCutout ? "bg-[#F3F1EC]" : "bg-neutral-100"
+        }`}
+      >
         <TrBoutiquePendingLink
           href={productHref}
           kind="product"
@@ -82,9 +87,11 @@ export function TrBoutiqueEditorialProductCard({
               fill
               priority={priority}
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-              className={`object-cover transition-transform duration-700 group-hover:scale-[1.03] ${
-                isSold ? "opacity-60" : ""
-              }`}
+              className={`${
+                coverIsCutout
+                  ? "object-contain p-3 transition-transform duration-700 group-hover:scale-[1.02]"
+                  : "object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+              } ${isSold ? "opacity-60" : ""}`}
             />
           ) : null}
         </TrBoutiquePendingLink>

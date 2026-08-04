@@ -1,7 +1,7 @@
 import { TrBoutiqueCatalogCutout } from "@/components/tr/boutique/pdp/TrBoutiqueCatalogCutout";
 import { TrProductDetailPanel } from "@/components/tr/TrProductDetailPanel";
 import { TrProductGallery } from "@/components/tr/TrProductGallery";
-import { getBoutiqueProductImages } from "@/lib/tr/productImages";
+import { getMarketplaceProductImages } from "@/lib/tr/productImages";
 import type { TrProductWithBoutique } from "@/types/tr-marketplace";
 
 interface TrBoutiquePdpSplitProps {
@@ -17,7 +17,7 @@ export function TrBoutiquePdpSplit({
 }: TrBoutiquePdpSplitProps) {
   const galleryProduct = {
     ...product,
-    images: getBoutiqueProductImages(product),
+    images: getMarketplaceProductImages(product),
   };
 
   const wrapperClass = branded

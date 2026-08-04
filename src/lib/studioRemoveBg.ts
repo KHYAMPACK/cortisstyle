@@ -23,11 +23,14 @@ export async function removeGarmentBackground(params: {
   mimeType: string;
 }): Promise<Buffer> {
   const formData = new FormData();
-  formData.append(
-    "image_file",
-    new Blob([new Uint8Array(params.bytes)], { type: params.mimeType }),
-    params.filename,
-  );
+  // Prefer File so Node/undici sets multipart filename correctly for Photoroom.
+  const imagePart =
+    typeof File !== "undefined"
+      ? new File([new Uint8Array(params.bytes)], params.filename, {
+          type: params.mimeType,
+        })
+      : new Blob([new Uint8Array(params.bytes)], { type: params.mimeType });
+  formData.append("image_file", imagePart, params.filename);
   formData.append("crop", "true");
   formData.append("format", "png");
 
