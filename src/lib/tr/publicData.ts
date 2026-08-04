@@ -12,11 +12,29 @@ import type {
   TrProductWithBoutique,
 } from "@/types/tr-marketplace";
 
+/** Supabase / PostgREST errors often print as `{}` — prefer message + code. */
+function formatTrDataError(error: unknown): string {
+  if (error instanceof Error && error.message) return error.message;
+  if (error && typeof error === "object") {
+    const record = error as Record<string, unknown>;
+    const message =
+      typeof record.message === "string" ? record.message : null;
+    const code = typeof record.code === "string" ? record.code : null;
+    if (message && code) return `${code}: ${message}`;
+    if (message) return message;
+  }
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return String(error);
+  }
+}
+
 export async function safeListPublicBoutiques(): Promise<TrBoutiquePublic[]> {
   try {
     return await listPublicBoutiques();
   } catch (error) {
-    console.error("Failed to load TR boutiques:", error);
+    console.error("Failed to load TR boutiques:", formatTrDataError(error));
     return [];
   }
 }
@@ -31,7 +49,10 @@ export async function safeGetPublicBoutique(
   try {
     return await getPublicBoutiqueBySlug(slug);
   } catch (error) {
-    console.error(`Failed to load TR boutique (${slug}):`, error);
+    console.error(
+      `Failed to load TR boutique (${slug}):`,
+      formatTrDataError(error),
+    );
     return null;
   }
 }
@@ -48,7 +69,10 @@ export async function safeGetBoutiqueStorefront(
   try {
     return await getPublicBoutiqueStorefrontBySlug(slug);
   } catch (error) {
-    console.error(`Failed to load TR boutique storefront (${slug}):`, error);
+    console.error(
+      `Failed to load TR boutique storefront (${slug}):`,
+      formatTrDataError(error),
+    );
     return null;
   }
 }
@@ -81,7 +105,10 @@ export async function safeGetPublicProduct(
   try {
     return await getPublicProductById(productId);
   } catch (error) {
-    console.error(`Failed to load TR product (${productId}):`, error);
+    console.error(
+      `Failed to load TR product (${productId}):`,
+      formatTrDataError(error),
+    );
     return null;
   }
 }
@@ -139,7 +166,10 @@ export async function safeListFeaturedProducts(
       )
       .slice(0, limit);
   } catch (error) {
-    console.error("Failed to load TR featured products:", error);
+    console.error(
+      "Failed to load TR featured products:",
+      formatTrDataError(error),
+    );
     return [];
   }
 }
@@ -154,7 +184,10 @@ export async function safeListPublicCatalogProducts(): Promise<
     ).filter((product) => product.status === "available");
     if (products.length > 0) return products;
   } catch (error) {
-    console.error("Failed to load TR catalog products:", error);
+    console.error(
+      "Failed to load TR catalog products:",
+      formatTrDataError(error),
+    );
   }
 
   const { listDemoProducts } = await import("@/lib/tr/looks/demoCatalog");

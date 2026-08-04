@@ -1,11 +1,13 @@
 # Seed Pervin Soysal Butik (requires migration + dev server)
 
 Requires:
-1. Run in Supabase SQL Editor (order matters):
+1. Run in Supabase SQL Editor (order matters) — missing product columns cause storefront 404:
    - `supabase/patch_tr_boutique_brand.sql` (if not already)
    - `supabase/patch_tr_boutique_storefront.sql` (`home_layout`, `custom_domain`, `editorial_content`, `tr_customer_profiles`)
+   - `supabase/patch_tr_product_options.sql` (`sizes`, `colors`)
+   - `supabase/patch_tr_product_marketplace_images.sql`
    - `supabase/patch_tr_product_stock.sql`
-   - `supabase/patch_tr_product_compare_at.sql`
+   - `supabase/patch_tr_product_compare_at.sql` (**required** — without it public product select fails)
    - `supabase/patch_tr_order_fulfillment.sql`
    - `supabase/patch_tr_discount_codes.sql`
 2. Dev server: `npm run dev`
