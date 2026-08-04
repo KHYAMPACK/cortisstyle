@@ -1,13 +1,13 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { TrFavoriteButton } from "@/components/tr/TrFavoriteButton";
 import { TrQuickAddToCartButton } from "@/components/tr/TrQuickAddToCartButton";
 import {
   TrEditorialSaleBadge,
   discountPercentFromPrices,
 } from "@/components/tr/boutique/editorial/TrEditorialSaleBadge";
+import { TrBoutiquePendingLink } from "@/components/tr/boutique/editorial/TrBoutiqueNavPending";
 import { EDITORIAL_SALE_RED } from "@/lib/tr/boutiqueHome";
 import { trProductPath } from "@/lib/tr/paths";
 import { resolveProductColors } from "@/lib/tr/productOptions";
@@ -40,6 +40,7 @@ export function TrBoutiqueEditorialProductCard({
   const pct = onSale
     ? discountPercentFromPrices(product.priceKurus, compareAt)
     : 0;
+  const productHref = trProductPath(product.id, boutiqueSlug);
 
   const withBoutique: TrProductWithBoutique = {
     ...product,
@@ -68,8 +69,9 @@ export function TrBoutiqueEditorialProductCard({
   return (
     <article className="group relative bg-white">
       <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100">
-        <Link
-          href={trProductPath(product.id, boutiqueSlug)}
+        <TrBoutiquePendingLink
+          href={productHref}
+          kind="product"
           className="absolute inset-0 block outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
           aria-label={product.title}
         >
@@ -85,7 +87,7 @@ export function TrBoutiqueEditorialProductCard({
               }`}
             />
           ) : null}
-        </Link>
+        </TrBoutiquePendingLink>
 
         {onSale && pct > 0 && !isSold ? (
           <TrEditorialSaleBadge
@@ -134,8 +136,9 @@ export function TrBoutiqueEditorialProductCard({
         ) : null}
       </div>
 
-      <Link
-        href={trProductPath(product.id, boutiqueSlug)}
+      <TrBoutiquePendingLink
+        href={productHref}
+        kind="product"
         className="block px-1 pt-3 pb-5 text-left outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2 md:px-1.5"
       >
         <h3 className="line-clamp-2 text-[12px] leading-snug text-neutral-900 md:text-[13px]">
@@ -162,7 +165,7 @@ export function TrBoutiqueEditorialProductCard({
             </span>
           )}
         </div>
-      </Link>
+      </TrBoutiquePendingLink>
     </article>
   );
 }

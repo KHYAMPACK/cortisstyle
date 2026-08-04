@@ -61,6 +61,11 @@ export function TrProductCreateWizard({
   const [colorOptions, setColorOptions] = useState<TrProductColor[]>(
     DEFAULT_COLOR_PRESETS.map((c) => ({ ...c })),
   );
+  const [pendingDelete, setPendingDelete] = useState<
+    | { kind: "size"; value: string }
+    | { kind: "color"; value: TrProductColor }
+    | null
+  >(null);
   const [images, setImages] = useState<string[]>([]);
   const [marketplaceImages, setMarketplaceImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -339,6 +344,24 @@ export function TrProductCreateWizard({
     void persistPresets(sizeOptions, nextColors);
   };
 
+  const requestRemoveSizeOption = (size: string) => {
+    setPendingDelete({ kind: "size", value: size });
+  };
+
+  const requestRemoveColorOption = (color: TrProductColor) => {
+    setPendingDelete({ kind: "color", value: color });
+  };
+
+  const confirmPendingDelete = () => {
+    if (!pendingDelete) return;
+    if (pendingDelete.kind === "size") {
+      removeSizeOption(pendingDelete.value);
+    } else {
+      removeColorOption(pendingDelete.value);
+    }
+    setPendingDelete(null);
+  };
+
   const displaySellPrice = discountEnabled
     ? salePriceTry
     : priceTry;
@@ -375,6 +398,63 @@ export function TrProductCreateWizard({
           {error}
         </p>
       ) : null}
+
+      <AnimatePresence>
+        {pendingDelete ? (
+          <motion.div
+            key="delete-confirm"
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            className="rounded-2xl border-2 border-amber-300 bg-amber-50 p-5 shadow-sm sm:p-6"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="pending-delete-title"
+          >
+            <p
+              id="pending-delete-title"
+              className="text-[18px] font-semibold text-neutral-900"
+            >
+              Emin misiniz?
+            </p>
+            <p className="mt-2 text-[16px] leading-relaxed text-neutral-700">
+              {pendingDelete.kind === "size" ? (
+                <>
+                  <span className="font-semibold">{pendingDelete.value}</span>{" "}
+                  bedeni bu butikteki listeden silinecek. Sonraki ürünlerde
+                  görünmez.
+                </>
+              ) : (
+                <>
+                  <span className="font-semibold">
+                    {pendingDelete.value.name}
+                  </span>{" "}
+                  rengi bu butikteki listeden silinecek. Sonraki ürünlerde
+                  görünmez.
+                </>
+              )}
+            </p>
+            <div className="mt-5 flex flex-wrap gap-3">
+              <button
+                type="button"
+                className={primaryBtn}
+                style={{ backgroundColor: "#B45309" }}
+                onClick={confirmPendingDelete}
+              >
+                Evet, sil
+              </button>
+              <button
+                type="button"
+                className={secondaryBtn}
+                onClick={() => setPendingDelete(null)}
+              >
+                Vazgeç
+              </button>
+            </div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
       <AnimatePresence mode="wait">
         <motion.div
@@ -643,7 +723,7 @@ export function TrProductCreateWizard({
                         <button
                           type="button"
                           aria-label={`${size} sil`}
-                          onClick={() => removeSizeOption(size)}
+                          onClick={() => requestRemoveSizeOption(size)}
                           className={`mr-1 flex h-8 w-8 items-center justify-center rounded-full text-[18px] ${
                             active
                               ? "bg-white/20 text-white"
@@ -737,7 +817,7 @@ export function TrProductCreateWizard({
                         <button
                           type="button"
                           aria-label={`${color.name} sil`}
-                          onClick={() => removeColorOption(color)}
+                          onClick={() => requestRemoveColorOption(color)}
                           className={`mr-1 flex h-8 w-8 items-center justify-center rounded-full text-[18px] ${
                             active
                               ? "bg-white/20 text-white"

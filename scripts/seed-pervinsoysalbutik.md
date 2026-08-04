@@ -8,11 +8,11 @@ Requires:
    - `supabase/patch_tr_product_marketplace_images.sql`
    - `supabase/patch_tr_product_stock.sql`
    - `supabase/patch_tr_product_compare_at.sql` (**required** — without it public product select fails)
-   - `supabase/patch_tr_order_fulfillment.sql`
+   - `supabase/patch_tr_order_fulfillment.sql` (**required** for checkout — adds `fulfillment_status`)
    - `supabase/patch_tr_discount_codes.sql`
-2. Dev server: `npm run dev`
-3. Set `TR_ADMIN_SECRET` in `.env.local`
-4. For panel revenue/orders KPIs: `TR_CHECKOUT_ENABLED=true`
+2. Set `TR_ADMIN_SECRET` in `.env.local`
+3. Dev server: `npm run dev` (restart after changing `TR_CHECKOUT_ENABLED`)
+4. For live cart + sandbox orders: `TR_CHECKOUT_ENABLED=true`
 5. Optional: `TR_BOUTIQUE_DOMAINS={"pervinsoysal.com":"pervinsoysalbutik","www.pervinsoysal.com":"pervinsoysalbutik"}`
 
 ```powershell
