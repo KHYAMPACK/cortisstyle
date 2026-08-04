@@ -142,10 +142,19 @@ export async function updateOwnerProduct(
   return data.product;
 }
 
+export type TrMarketplaceUploadStatus = "ready" | "skipped" | "failed";
+
+export interface OwnerProductImageUploadResult {
+  url: string;
+  marketplaceUrl: string | null;
+  marketplaceStatus: TrMarketplaceUploadStatus;
+  marketplaceError: string | null;
+}
+
 export async function uploadOwnerProductImage(
   boutiqueId: string,
   file: File,
-): Promise<{ url: string; marketplaceUrl: string | null }> {
+): Promise<OwnerProductImageUploadResult> {
   const prepared = await prepareOwnerUploadFile(file);
   const formData = new FormData();
   formData.set("boutiqueId", boutiqueId);
@@ -162,18 +171,38 @@ export async function uploadOwnerProductImage(
     );
   }
 
-  const data = (await response.json()) as {
+  let data: {
     url?: string;
     marketplaceUrl?: string | null;
+    marketplaceStatus?: TrMarketplaceUploadStatus;
+    marketplaceError?: string | null;
     error?: string;
   };
+  try {
+    data = (await response.json()) as typeof data;
+  } catch {
+    throw new Error(
+      response.ok
+        ? "Fotoğraf yanıtı okunamadı."
+        : "Fotoğraf yüklenemedi.",
+    );
+  }
+
   if (!response.ok) {
     throw new Error(data.error ?? "Fotoğraf yüklenemedi.");
   }
   if (!data.url) throw new Error("Fotoğraf yüklenemedi.");
+
+  const marketplaceUrl = data.marketplaceUrl ?? null;
+  const marketplaceStatus: TrMarketplaceUploadStatus =
+    data.marketplaceStatus ??
+    (marketplaceUrl ? "ready" : "failed");
+
   return {
     url: data.url,
-    marketplaceUrl: data.marketplaceUrl ?? null,
+    marketplaceUrl,
+    marketplaceStatus,
+    marketplaceError: data.marketplaceError ?? null,
   };
 }
 

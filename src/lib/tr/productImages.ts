@@ -16,14 +16,33 @@ export function getBoutiqueProductImages(
 }
 
 /**
- * Marketplace / catalog cutouts. Falls back to boutique originals when
- * normalization has not produced cutouts yet.
+ * Per-index resolve: prefer marketplace cutout at i, else boutique original at i.
+ * Keeps cover/gallery alignment when some cutouts failed.
+ */
+export function resolveProductImagesPerIndex(
+  product: Pick<TrProduct, "images" | "marketplaceImages">,
+): string[] {
+  const originals = product.images ?? [];
+  const marketplace = product.marketplaceImages ?? [];
+  const length = Math.max(originals.length, marketplace.length);
+  const out: string[] = [];
+  for (let i = 0; i < length; i++) {
+    const cutout = marketplace[i]?.trim();
+    const original = originals[i]?.trim();
+    const picked = cutout || original;
+    if (picked) out.push(picked);
+  }
+  return out;
+}
+
+/**
+ * Marketplace / catalog cutouts with per-index fallback to boutique originals.
  */
 export function getMarketplaceProductImages(
   product: Pick<TrProduct, "images" | "marketplaceImages">,
 ): string[] {
-  const marketplace = nonEmpty(product.marketplaceImages);
-  if (marketplace.length > 0) return marketplace;
+  const resolved = resolveProductImagesPerIndex(product);
+  if (resolved.length > 0) return resolved;
   return getBoutiqueProductImages(product);
 }
 

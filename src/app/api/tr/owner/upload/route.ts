@@ -6,12 +6,18 @@ import {
   isTrProductImageNormalizeEnabled,
   normalizeProductCutoutToCanvas,
 } from "@/lib/tr/normalizeProductImage";
-import { removeGarmentBackground } from "@/lib/studioRemoveBg";
+import {
+  isPhotoroomConfigured,
+  removeGarmentBackground,
+} from "@/lib/studioRemoveBg";
 import { uploadTrProductAsset } from "@/lib/tr/trAssetStorage";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 const ALLOWED_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
+
+export type TrMarketplaceUploadStatus = "ready" | "skipped" | "failed";
 
 /**
  * POST /api/tr/owner/upload
@@ -70,8 +76,16 @@ export async function POST(request: Request) {
 
     let marketplaceUrl: string | null = null;
     let marketplacePath: string | null = null;
+    let marketplaceStatus: TrMarketplaceUploadStatus = "skipped";
+    let marketplaceError: string | null = null;
 
-    if (isTrProductImageNormalizeEnabled()) {
+    if (!isTrProductImageNormalizeEnabled()) {
+      marketplaceStatus = "skipped";
+    } else if (!isPhotoroomConfigured()) {
+      marketplaceStatus = "failed";
+      marketplaceError = "PHOTOROOM_API_KEY sunucuda tanımlı değil.";
+      console.error("[tr/owner/upload]", marketplaceError);
+    } else {
       try {
         const cutout = await removeGarmentBackground({
           bytes,
@@ -88,7 +102,13 @@ export async function POST(request: Request) {
         });
         marketplaceUrl = marketplace.url;
         marketplacePath = marketplace.path;
+        marketplaceStatus = "ready";
       } catch (normalizeError) {
+        marketplaceStatus = "failed";
+        marketplaceError =
+          normalizeError instanceof Error
+            ? normalizeError.message
+            : "Katalog kesiti oluşturulamadı.";
         console.error(
           "[tr/owner/upload] marketplace normalize failed (keeping original):",
           normalizeError,
@@ -101,6 +121,8 @@ export async function POST(request: Request) {
       path: original.path,
       marketplaceUrl,
       marketplacePath,
+      marketplaceStatus,
+      marketplaceError,
     });
   } catch (error) {
     console.error("[tr/owner/upload] failed:", error);

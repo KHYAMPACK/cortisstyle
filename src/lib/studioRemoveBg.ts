@@ -1,7 +1,16 @@
 const PHOTOROOM_SEGMENT_URL = "https://sdk.photoroom.com/v1/segment";
 
+export function isPhotoroomConfigured(): boolean {
+  const apiKey =
+    process.env.PHOTOROOM_API_KEY?.trim() ||
+    process.env.VITE_PHOTOROOM_API_KEY?.trim();
+  return Boolean(apiKey);
+}
+
 function getPhotoroomApiKey(): string {
-  const apiKey = process.env.PHOTOROOM_API_KEY ?? process.env.VITE_PHOTOROOM_API_KEY;
+  const apiKey =
+    process.env.PHOTOROOM_API_KEY?.trim() ||
+    process.env.VITE_PHOTOROOM_API_KEY?.trim();
   if (!apiKey) {
     throw new Error("PHOTOROOM_API_KEY is not configured on the server.");
   }

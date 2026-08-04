@@ -290,13 +290,24 @@ export function TrProductEditorForm({
     try {
       const nextOriginals: string[] = [];
       const nextMarketplace: string[] = [];
+      let failedCutouts = 0;
       for (const file of Array.from(fileList)) {
         const uploaded = await uploadOwnerProductImage(boutiqueId, file);
         nextOriginals.push(uploaded.url);
         nextMarketplace.push(uploaded.marketplaceUrl ?? "");
+        if (uploaded.marketplaceStatus === "failed") {
+          failedCutouts += 1;
+        }
       }
       setImages((current) => [...current, ...nextOriginals]);
       setMarketplaceImages((current) => [...current, ...nextMarketplace]);
+      if (failedCutouts > 0) {
+        setError(
+          failedCutouts === nextOriginals.length
+            ? "Fotoğraflar kaydedildi; katalog arka plan temizliği başarısız. Orijinal kullanılıyor."
+            : `${failedCutouts} fotoğrafta katalog kesiti oluşmadı; orijinal kaydedildi.`,
+        );
+      }
     } catch (uploadError) {
       setError(
         uploadError instanceof Error

@@ -158,13 +158,24 @@ export function TrProductCreateWizard({
     try {
       const nextOriginals: string[] = [];
       const nextMarketplace: string[] = [];
+      let failedCutouts = 0;
       for (const file of Array.from(fileList)) {
         const uploaded = await uploadOwnerProductImage(boutiqueId, file);
         nextOriginals.push(uploaded.url);
         nextMarketplace.push(uploaded.marketplaceUrl ?? "");
+        if (uploaded.marketplaceStatus === "failed") {
+          failedCutouts += 1;
+        }
       }
       setImages((current) => [...current, ...nextOriginals]);
       setMarketplaceImages((current) => [...current, ...nextMarketplace]);
+      if (failedCutouts > 0) {
+        setError(
+          failedCutouts === nextOriginals.length
+            ? "Fotoğraflar kaydedildi; katalog arka plan temizliği başarısız. Orijinal kullanılıyor — akşam PHOTOROOM_API_KEY kontrol edin."
+            : `${failedCutouts} fotoğrafta katalog kesiti oluşmadı; orijinal kaydedildi.`,
+        );
+      }
     } catch (uploadError) {
       setError(
         uploadError instanceof Error
@@ -477,7 +488,9 @@ export function TrProductCreateWizard({
                   {uploading ? "Yükleniyor…" : "Fotoğraf seçin"}
                 </span>
                 <span className="text-[16px] text-neutral-600">
-                  Telefon veya bilgisayardan bir veya daha fazla fotoğraf
+                  {uploading
+                    ? "Arka plan temizleniyor ve katalog görseli hazırlanıyor…"
+                    : "Telefon veya bilgisayardan bir veya daha fazla fotoğraf"}
                 </span>
                 <input
                   type="file"
@@ -494,7 +507,9 @@ export function TrProductCreateWizard({
 
               {images.length > 0 ? (
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                  {images.map((url, index) => (
+                  {images.map((url, index) => {
+                    const catalogUrl = marketplaceImages[index]?.trim();
+                    return (
                     <div
                       key={`${url}-${index}`}
                       className="relative aspect-[3/4] overflow-hidden rounded-xl bg-neutral-100"
@@ -512,6 +527,15 @@ export function TrProductCreateWizard({
                           Kapak
                         </span>
                       ) : null}
+                      {catalogUrl ? (
+                        <span className="absolute top-2 right-2 rounded-lg bg-emerald-700 px-2 py-1 text-[12px] font-semibold text-white">
+                          Katalog hazır
+                        </span>
+                      ) : (
+                        <span className="absolute top-2 right-2 rounded-lg bg-amber-700 px-2 py-1 text-[12px] font-semibold text-white">
+                          Orijinal
+                        </span>
+                      )}
                       <button
                         type="button"
                         className="absolute right-2 bottom-2 rounded-lg bg-white px-3 py-2 text-[14px] font-semibold text-red-700"
@@ -527,7 +551,8 @@ export function TrProductCreateWizard({
                         Sil
                       </button>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : null}
             </div>
