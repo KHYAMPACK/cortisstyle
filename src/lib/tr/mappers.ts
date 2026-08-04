@@ -145,6 +145,10 @@ export function mapProductRow(row: Record<string, unknown>): TrProduct {
     category: (row.category as string | null) ?? null,
     images: readStringArray(row.images),
     marketplaceImages: readStringArray(row.marketplace_images),
+    catalogBackgroundId:
+      typeof row.catalog_background_id === "string"
+        ? row.catalog_background_id
+        : null,
     status: row.status as TrProduct["status"],
     stock: typeof row.stock === "number" ? row.stock : 1,
     sortOrder: (row.sort_order as number) ?? 0,

@@ -3,8 +3,29 @@
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { TrCatalogBackgroundPicker } from "@/components/tr/panel/TrCatalogBackgroundPicker";
+import { TrOwnerAiModelPicker } from "@/components/tr/panel/TrOwnerAiModelPicker";
+import { TrProductImageLightbox } from "@/components/tr/panel/TrProductImageLightbox";
 import { TR_BOUTIQUE_CATEGORIES } from "@/lib/tr/categories";
+import {
+  DEFAULT_CATALOG_BACKGROUND_ID,
+  getCatalogBackground,
+} from "@/lib/tr/catalogBackgrounds/registry";
 import { DEFAULT_LETTER_SIZES } from "@/lib/tr/productOptions";
+import {
+  clampDescription,
+  clampTitle,
+  getProductPhotoRole,
+  isValidStock,
+  isValidTryPrice,
+  productPhotoRoleLabel,
+  sanitizeColorName,
+  sanitizeSizeLabel,
+  sanitizeStockInput,
+  sanitizeTryPriceInput,
+  shouldRemoveBackgroundForSlot,
+  TR_OWNER_PRODUCT_LIMITS,
+} from "@/lib/tr/ownerProductConstraints";
 import {
   createOwnerProduct,
   updateOwnerProduct,
@@ -90,6 +111,7 @@ function slugifyCustomId(label: string): string {
 
 interface TrProductEditorFormProps {
   boutiqueId: string;
+  boutiqueSlug?: string | null;
   mode: "create" | "edit";
   initialProduct?: TrProduct | null;
   onSaved: (product: TrProduct) => void;
@@ -97,6 +119,7 @@ interface TrProductEditorFormProps {
 
 export function TrProductEditorForm({
   boutiqueId,
+  boutiqueSlug = null,
   mode,
   initialProduct,
   onSaved,
@@ -137,6 +160,14 @@ export function TrProductEditorForm({
   const [marketplaceImages, setMarketplaceImages] = useState<string[]>(
     initialProduct?.marketplaceImages ?? [],
   );
+  const [catalogBackgroundId, setCatalogBackgroundId] = useState(
+    initialProduct?.catalogBackgroundId ?? DEFAULT_CATALOG_BACKGROUND_ID,
+  );
+  const [selectedModelId, setSelectedModelId] = useState<string | null>(null);
+  const [lightbox, setLightbox] = useState<{
+    src: string;
+    label: string;
+  } | null>(null);
   const [status, setStatus] = useState<TrProductStatus>(
     initialProduct?.status ?? "available",
   );
@@ -151,6 +182,8 @@ export function TrProductEditorForm({
   const [addingColor, setAddingColor] = useState(false);
   const [newColorName, setNewColorName] = useState("");
   const [newColorHex, setNewColorHex] = useState("#C2185B");
+
+  const catalogBackground = getCatalogBackground(catalogBackgroundId);
 
   useEffect(() => {
     if (!initialProduct) return;
@@ -170,6 +203,9 @@ export function TrProductEditorForm({
     setStock(String(initialProduct.stock ?? 1));
     setImages(initialProduct.images);
     setMarketplaceImages(initialProduct.marketplaceImages ?? []);
+    setCatalogBackgroundId(
+      initialProduct.catalogBackgroundId ?? DEFAULT_CATALOG_BACKGROUND_ID,
+    );
     setStatus(initialProduct.status);
 
     if (
@@ -256,7 +292,7 @@ export function TrProductEditorForm({
   };
 
   const commitSize = () => {
-    const size = newSizeLabel.trim().toUpperCase();
+    const size = sanitizeSizeLabel(newSizeLabel);
     if (!size) return;
     if (!sizeOptions.includes(size)) {
       setExtraSizes((current) => [...current, size]);
@@ -269,7 +305,7 @@ export function TrProductEditorForm({
   };
 
   const commitColor = () => {
-    const name = newColorName.trim();
+    const name = sanitizeColorName(newColorName).trim();
     let hex = newColorHex.trim();
     if (!name) return;
     if (!hex.startsWith("#")) hex = `#${hex}`;
@@ -285,25 +321,43 @@ export function TrProductEditorForm({
 
   const handleFiles = async (fileList: FileList | null) => {
     if (!fileList || fileList.length === 0) return;
+    const remaining = TR_OWNER_PRODUCT_LIMITS.maxImages - images.length;
+    if (remaining <= 0) {
+      setError(
+        `En fazla ${TR_OWNER_PRODUCT_LIMITS.maxImages} fotoğraf ekleyebilirsiniz.`,
+      );
+      return;
+    }
+    const files = Array.from(fileList).slice(0, remaining);
     setUploading(true);
     setError(null);
     try {
       const nextOriginals: string[] = [];
       const nextMarketplace: string[] = [];
       let failedCutouts = 0;
-      for (const file of Array.from(fileList)) {
-        const uploaded = await uploadOwnerProductImage(boutiqueId, file);
+      let cutoutCount = 0;
+      const baseCount = images.length;
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i]!;
+        const slot = baseCount + i;
+        const removeBackground = shouldRemoveBackgroundForSlot(slot);
+        const uploaded = await uploadOwnerProductImage(boutiqueId, file, {
+          removeBackground,
+        });
         nextOriginals.push(uploaded.url);
         nextMarketplace.push(uploaded.marketplaceUrl ?? "");
-        if (uploaded.marketplaceStatus === "failed") {
-          failedCutouts += 1;
+        if (removeBackground) {
+          cutoutCount += 1;
+          if (uploaded.marketplaceStatus === "failed") {
+            failedCutouts += 1;
+          }
         }
       }
       setImages((current) => [...current, ...nextOriginals]);
       setMarketplaceImages((current) => [...current, ...nextMarketplace]);
       if (failedCutouts > 0) {
         setError(
-          failedCutouts === nextOriginals.length
+          failedCutouts === cutoutCount
             ? "Fotoğraflar kaydedildi; katalog arka plan temizliği başarısız. Orijinal kullanılıyor."
             : `${failedCutouts} fotoğrafta katalog kesiti oluşmadı; orijinal kaydedildi.`,
         );
@@ -364,29 +418,32 @@ export function TrProductEditorForm({
     setError(null);
 
     try {
-      const price = Number(priceTry.replace(",", "."));
-      if (!Number.isFinite(price) || price <= 0) {
-        throw new Error("Geçerli bir fiyat girin.");
+      if (!isValidTryPrice(priceTry)) {
+        throw new Error(
+          `Fiyat ${TR_OWNER_PRODUCT_LIMITS.priceMinTry}–${TR_OWNER_PRODUCT_LIMITS.priceMaxTry} TL arası olmalı.`,
+        );
       }
+      const price = Number(priceTry.replace(",", "."));
       if (!title.trim()) {
         throw new Error("Başlık zorunlu.");
       }
       if (images.length === 0) {
         throw new Error("En az bir fotoğraf ekleyin.");
       }
-
-      const stockValue = Number.parseInt(stock, 10);
-      if (!Number.isFinite(stockValue) || stockValue < 0) {
-        throw new Error("Stok 0 veya daha büyük bir tam sayı olmalı.");
+      if (!isValidStock(stock)) {
+        throw new Error(
+          `Stok ${TR_OWNER_PRODUCT_LIMITS.stockMin}–${TR_OWNER_PRODUCT_LIMITS.stockMax} arası olmalı.`,
+        );
       }
+      const stockValue = Number.parseInt(stock, 10);
 
       let compareAtPriceTryValue: number | null = null;
       const compareRaw = compareAtPriceTry.trim();
       if (compareRaw) {
-        const compare = Number(compareRaw.replace(",", "."));
-        if (!Number.isFinite(compare) || compare <= 0) {
+        if (!isValidTryPrice(compareRaw)) {
           throw new Error("Geçerli bir eski fiyat girin veya boş bırakın.");
         }
+        const compare = Number(compareRaw.replace(",", "."));
         if (compare <= price) {
           throw new Error("Eski fiyat, satış fiyatından yüksek olmalı.");
         }
@@ -404,9 +461,12 @@ export function TrProductEditorForm({
         category,
         images,
         marketplaceImages: images.map((_, index) => marketplaceImages[index] ?? ""),
+        catalogBackgroundId,
         stock: stockValue,
         status,
       };
+
+      void selectedModelId;
 
       const product =
         mode === "create"
@@ -446,11 +506,18 @@ export function TrProductEditorForm({
               Fotoğraflar
             </p>
             <p className="mt-1 text-[12px] text-neutral-500">
-              Soldaki 1. görsel kapaktır. Sürükle yerine oklarla sırayı
-              değiştirin.
+              1. ön · 2. arka (kesit) — ek fotoğraflar orijinal. Tıklayınca büyür.
             </p>
           </div>
-          <label className="inline-flex cursor-pointer items-center gap-2 border border-black/15 bg-white px-4 py-3 text-[11px] tracking-[0.12em] uppercase">
+          <label
+            className={`inline-flex items-center gap-2 border border-black/15 bg-white px-4 py-3 text-[11px] tracking-[0.12em] uppercase ${
+              uploading ||
+              saving ||
+              images.length >= TR_OWNER_PRODUCT_LIMITS.maxImages
+                ? "cursor-not-allowed opacity-50"
+                : "cursor-pointer"
+            }`}
+          >
             {uploading ? (
               <>
                 <InlineBusySpinner />
@@ -464,114 +531,148 @@ export function TrProductEditorForm({
               accept="image/png,image/jpeg,image/webp"
               multiple
               className="hidden"
-              disabled={uploading || saving}
+              disabled={
+                uploading ||
+                saving ||
+                images.length >= TR_OWNER_PRODUCT_LIMITS.maxImages
+              }
               onChange={(event) => {
                 void handleFiles(event.target.files);
                 event.target.value = "";
               }}
             />
           </label>
-          {uploading ? (
-            <p className="mt-2 text-[11px] leading-relaxed text-meta">
-              Arka plan temizleniyor ve katalog görseli hazırlanıyor…
-            </p>
-          ) : (
-            <p className="mt-2 text-[11px] leading-relaxed text-meta">
-              Butik galerisi için orijinal fotoğraf kaydedilir; pazaryeri için
-              ayrı katalog kesiti üretilir.
-            </p>
-          )}
         </div>
+        <p className="text-[11px] leading-relaxed text-meta">
+          {uploading
+            ? images.length < 2
+              ? "Arka plan temizleniyor…"
+              : "Fotoğraf kaydediliyor…"
+            : `En fazla ${TR_OWNER_PRODUCT_LIMITS.maxImages} fotoğraf.`}
+        </p>
 
         {images.length > 0 ? (
           <ol className="flex gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {images.map((url, index) => {
-              const catalogUrl = marketplaceImages[index];
+              const catalogUrl = marketplaceImages[index]?.trim();
+              const previewSrc = catalogUrl || url;
+              const role = getProductPhotoRole(index);
+              const roleLabel = productPhotoRoleLabel(role);
               return (
-              <li
-                key={`${url}-${index}`}
-                className={`relative w-[132px] shrink-0 overflow-hidden border bg-neutral-100 ${
-                  index === 0
-                    ? "border-jet-black ring-1 ring-jet-black"
-                    : "border-black/10"
-                }`}
-              >
-                <div className="relative aspect-[3/4]">
-                  <Image
-                    src={url}
-                    alt=""
-                    fill
-                    unoptimized
-                    className="object-cover"
-                    sizes="132px"
-                  />
-                  <span
-                    className={`absolute top-1.5 left-1.5 px-1.5 py-0.5 text-[9px] tracking-[0.08em] uppercase ${
-                      index === 0
-                        ? "bg-jet-black text-white"
-                        : "bg-white/90 text-neutral-800"
-                    }`}
-                  >
-                    {index === 0 ? "Kapak · 1" : `${index + 1}`}
-                  </span>
-                  {catalogUrl ? (
-                    <span className="absolute right-1.5 bottom-1.5 bg-white/90 px-1.5 py-0.5 text-[8px] tracking-[0.06em] text-neutral-700 uppercase">
-                      Katalog hazır
-                    </span>
-                  ) : null}
-                </div>
-
-                <div className="space-y-1 border-t border-black/10 bg-white p-1.5">
-                  <div className="flex gap-1">
-                    <button
-                      type="button"
-                      className="flex-1 border border-black/10 bg-white py-1.5 text-[10px] tracking-[0.06em] uppercase disabled:opacity-30"
-                      onClick={() => moveImage(index, -1)}
-                      disabled={index === 0}
-                      title="Sola taşı"
-                    >
-                      ←
-                    </button>
-                    <button
-                      type="button"
-                      className="flex-1 border border-black/10 bg-white py-1.5 text-[10px] tracking-[0.06em] uppercase disabled:opacity-30"
-                      onClick={() => moveImage(index, 1)}
-                      disabled={index === images.length - 1}
-                      title="Sağa taşı"
-                    >
-                      →
-                    </button>
-                  </div>
-                  {index !== 0 ? (
-                    <button
-                      type="button"
-                      className="w-full border border-black/10 bg-neutral-50 py-1.5 text-[10px] tracking-[0.06em] text-neutral-800 uppercase"
-                      onClick={() => makeCover(index)}
-                    >
-                      Kapak yap
-                    </button>
-                  ) : (
-                    <p className="py-1.5 text-center text-[10px] tracking-[0.06em] text-neutral-500 uppercase">
-                      Vitrin
-                    </p>
-                  )}
+                <li
+                  key={`${url}-${index}`}
+                  className={`relative w-[132px] shrink-0 overflow-hidden border bg-neutral-100 ${
+                    index === 0
+                      ? "border-jet-black ring-1 ring-jet-black"
+                      : "border-black/10"
+                  }`}
+                >
                   <button
                     type="button"
-                    className="w-full border border-black/10 bg-white py-1.5 text-[10px] tracking-[0.06em] text-red-700 uppercase"
-                    onClick={() => removeImage(index)}
+                    className="relative block aspect-[3/4] w-full"
+                    style={
+                      catalogUrl
+                        ? { background: catalogBackground.css }
+                        : undefined
+                    }
+                    aria-label={`${roleLabel} — büyüt`}
+                    onClick={() =>
+                      setLightbox({ src: previewSrc, label: roleLabel })
+                    }
                   >
-                    Sil
+                    <Image
+                      src={previewSrc}
+                      alt={roleLabel}
+                      fill
+                      unoptimized
+                      className={
+                        catalogUrl ? "object-contain p-1.5" : "object-cover"
+                      }
+                      sizes="132px"
+                    />
+                    <span
+                      className={`absolute top-1.5 left-1.5 px-1.5 py-0.5 text-[9px] tracking-[0.08em] uppercase ${
+                        index === 0
+                          ? "bg-jet-black text-white"
+                          : "bg-white/90 text-neutral-800"
+                      }`}
+                    >
+                      {roleLabel}
+                    </span>
+                    {catalogUrl ? (
+                      <span className="absolute right-1.5 bottom-1.5 bg-emerald-700/90 px-1.5 py-0.5 text-[8px] tracking-[0.06em] text-white uppercase">
+                        Katalog
+                      </span>
+                    ) : null}
                   </button>
-                </div>
-              </li>
+
+                  <div className="space-y-1 border-t border-black/10 bg-white p-1.5">
+                    <div className="flex gap-1">
+                      <button
+                        type="button"
+                        className="flex-1 border border-black/10 bg-white py-1.5 text-[10px] tracking-[0.06em] uppercase disabled:opacity-30"
+                        onClick={() => moveImage(index, -1)}
+                        disabled={index === 0}
+                        title="Sola taşı"
+                      >
+                        ←
+                      </button>
+                      <button
+                        type="button"
+                        className="flex-1 border border-black/10 bg-white py-1.5 text-[10px] tracking-[0.06em] uppercase disabled:opacity-30"
+                        onClick={() => moveImage(index, 1)}
+                        disabled={index === images.length - 1}
+                        title="Sağa taşı"
+                      >
+                        →
+                      </button>
+                    </div>
+                    {index !== 0 ? (
+                      <button
+                        type="button"
+                        className="w-full border border-black/10 bg-neutral-50 py-1.5 text-[10px] tracking-[0.06em] text-neutral-800 uppercase"
+                        onClick={() => makeCover(index)}
+                      >
+                        Kapak yap
+                      </button>
+                    ) : (
+                      <p className="py-1.5 text-center text-[10px] tracking-[0.06em] text-neutral-500 uppercase">
+                        Vitrin
+                      </p>
+                    )}
+                    <button
+                      type="button"
+                      className="w-full border border-black/10 bg-white py-1.5 text-[10px] tracking-[0.06em] text-red-700 uppercase"
+                      onClick={() => removeImage(index)}
+                    >
+                      Sil
+                    </button>
+                  </div>
+                </li>
               );
             })}
           </ol>
         ) : (
           <p className="border border-dashed border-black/15 bg-neutral-50 px-4 py-6 text-[12px] text-neutral-500">
-            Henüz fotoğraf yok. En az bir kapak görseli ekleyin.
+            Henüz fotoğraf yok. Ön yüz (kapak) ile başlayın.
           </p>
         )}
+
+        {images.length > 0 ? (
+          <div className="space-y-6 border border-black/10 bg-neutral-50/80 p-4">
+            <TrCatalogBackgroundPicker
+              value={catalogBackgroundId}
+              onChange={setCatalogBackgroundId}
+              disabled={uploading || saving}
+            />
+            <TrOwnerAiModelPicker
+              boutiqueSlug={boutiqueSlug}
+              value={selectedModelId}
+              onChange={setSelectedModelId}
+              disabled={uploading || saving}
+            />
+          </div>
+        ) : null}
       </section>
 
       <label className="block space-y-2">
@@ -580,10 +681,14 @@ export function TrProductEditorForm({
         </span>
         <input
           value={title}
-          onChange={(event) => setTitle(event.target.value)}
+          onChange={(event) => setTitle(clampTitle(event.target.value))}
           className={fieldClass}
+          maxLength={TR_OWNER_PRODUCT_LIMITS.titleMax}
           required
         />
+        <span className="text-[11px] text-neutral-500">
+          {title.length}/{TR_OWNER_PRODUCT_LIMITS.titleMax}
+        </span>
       </label>
 
       <label className="block space-y-2">
@@ -592,7 +697,9 @@ export function TrProductEditorForm({
         </span>
         <input
           value={priceTry}
-          onChange={(event) => setPriceTry(event.target.value)}
+          onChange={(event) =>
+            setPriceTry(sanitizeTryPriceInput(event.target.value))
+          }
           inputMode="decimal"
           placeholder="899"
           className={fieldClass}
@@ -613,7 +720,9 @@ export function TrProductEditorForm({
         </span>
         <input
           value={compareAtPriceTry}
-          onChange={(event) => setCompareAtPriceTry(event.target.value)}
+          onChange={(event) =>
+            setCompareAtPriceTry(sanitizeTryPriceInput(event.target.value))
+          }
           inputMode="decimal"
           placeholder="1299"
           className={fieldClass}
@@ -629,8 +738,9 @@ export function TrProductEditorForm({
         </span>
         <input
           value={stock}
-          onChange={(event) => setStock(event.target.value)}
+          onChange={(event) => setStock(sanitizeStockInput(event.target.value))}
           inputMode="numeric"
+          maxLength={4}
           min={0}
           step={1}
           className={fieldClass}
@@ -962,10 +1072,16 @@ export function TrProductEditorForm({
         </span>
         <textarea
           value={description}
-          onChange={(event) => setDescription(event.target.value)}
+          onChange={(event) =>
+            setDescription(clampDescription(event.target.value))
+          }
           rows={4}
+          maxLength={TR_OWNER_PRODUCT_LIMITS.descriptionMax}
           className={fieldClass}
         />
+        <span className="text-[11px] text-neutral-500">
+          {description.length}/{TR_OWNER_PRODUCT_LIMITS.descriptionMax}
+        </span>
       </label>
 
       {mode === "edit" ? (
@@ -1010,6 +1126,12 @@ export function TrProductEditorForm({
           "Kaydet"
         )}
       </button>
+      <TrProductImageLightbox
+        open={Boolean(lightbox)}
+        src={lightbox?.src ?? null}
+        label={lightbox?.label}
+        onClose={() => setLightbox(null)}
+      />
     </form>
   );
 }

@@ -61,7 +61,7 @@ export function TrOwnerEditProductPage({ productId }: TrOwnerEditProductPageProp
 
   return (
     <TrOwnerPanelGate>
-      {() => (
+      {({ activeBoutique }) => (
         <div className="space-y-6">
           <Link
             href={trPanelProductsPath()}
@@ -86,6 +86,7 @@ export function TrOwnerEditProductPage({ productId }: TrOwnerEditProductPageProp
               <TrPanelFadeIn key="edit-form">
                 <TrProductEditorForm
                   boutiqueId={product.boutiqueId}
+                  boutiqueSlug={activeBoutique.slug}
                   mode="edit"
                   initialProduct={product}
                   onSaved={(saved) => {

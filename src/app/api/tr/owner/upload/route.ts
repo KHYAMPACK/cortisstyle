@@ -21,8 +21,9 @@ export type TrMarketplaceUploadStatus = "ready" | "skipped" | "failed";
 
 /**
  * POST /api/tr/owner/upload
- * multipart: file + boutiqueId
+ * multipart: file + boutiqueId + optional removeBackground ("true"|"false")
  * Returns original URL always; marketplaceUrl when Photoroom + normalize succeed.
+ * Front/back product photos remove BG; extra gallery photos skip cutout.
  */
 export async function POST(request: Request) {
   const authResult = await requireTrOwner(request);
@@ -64,6 +65,12 @@ export async function POST(request: Request) {
     );
   }
 
+  const removeBackgroundRaw = formData.get("removeBackground");
+  const removeBackground =
+    removeBackgroundRaw === null || removeBackgroundRaw === undefined
+      ? true
+      : String(removeBackgroundRaw).trim().toLowerCase() !== "false";
+
   try {
     const bytes = Buffer.from(await file.arrayBuffer());
     const original = await uploadTrProductAsset({
@@ -79,7 +86,9 @@ export async function POST(request: Request) {
     let marketplaceStatus: TrMarketplaceUploadStatus = "skipped";
     let marketplaceError: string | null = null;
 
-    if (!isTrProductImageNormalizeEnabled()) {
+    if (!removeBackground) {
+      marketplaceStatus = "skipped";
+    } else if (!isTrProductImageNormalizeEnabled()) {
       marketplaceStatus = "skipped";
     } else if (!isPhotoroomConfigured()) {
       marketplaceStatus = "failed";
@@ -123,6 +132,7 @@ export async function POST(request: Request) {
       marketplacePath,
       marketplaceStatus,
       marketplaceError,
+      removeBackground,
     });
   } catch (error) {
     console.error("[tr/owner/upload] failed:", error);

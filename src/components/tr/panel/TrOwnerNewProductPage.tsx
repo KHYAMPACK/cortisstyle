@@ -35,6 +35,7 @@ export function TrOwnerNewProductPage() {
           <TrPanelFadeIn>
             <TrProductCreateWizard
               boutiqueId={activeBoutique.id}
+              boutiqueSlug={activeBoutique.slug}
               onSaved={() => {
                 router.push(trPanelProductsPath());
               }}

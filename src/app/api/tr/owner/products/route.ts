@@ -191,6 +191,10 @@ export async function POST(request: Request) {
       category: typeof body.category === "string" ? body.category : null,
       images: readStringArray(body.images) ?? [],
       marketplaceImages: readStringArray(body.marketplaceImages) ?? [],
+      catalogBackgroundId:
+        typeof body.catalogBackgroundId === "string"
+          ? body.catalogBackgroundId.trim() || null
+          : null,
       conditionLabel:
         typeof body.conditionLabel === "string" ? body.conditionLabel : null,
       status,

@@ -101,6 +101,7 @@ export interface TrOwnerProductPayload {
   category: string | null;
   images: string[];
   marketplaceImages?: string[];
+  catalogBackgroundId?: string | null;
   stock?: number;
   conditionLabel?: string | null;
   status?: TrProductStatus;
@@ -154,11 +155,16 @@ export interface OwnerProductImageUploadResult {
 export async function uploadOwnerProductImage(
   boutiqueId: string,
   file: File,
+  options?: { removeBackground?: boolean },
 ): Promise<OwnerProductImageUploadResult> {
   const prepared = await prepareOwnerUploadFile(file);
   const formData = new FormData();
   formData.set("boutiqueId", boutiqueId);
   formData.set("file", prepared);
+  formData.set(
+    "removeBackground",
+    options?.removeBackground === false ? "false" : "true",
+  );
 
   const response = await ownerFetch("/api/tr/owner/upload", {
     method: "POST",

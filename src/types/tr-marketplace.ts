@@ -83,6 +83,8 @@ export interface TrProduct {
   images: string[];
   /** Marketplace / catalog cutouts (BG removed + normalized). */
   marketplaceImages: string[];
+  /** Premade catalog backdrop id (one per product). */
+  catalogBackgroundId: string | null;
   status: TrProductStatus;
   stock: number;
   sortOrder: number;
@@ -199,6 +201,7 @@ export interface CreateTrProductInput {
   category?: string | null;
   images?: string[];
   marketplaceImages?: string[];
+  catalogBackgroundId?: string | null;
   status?: TrProductStatus;
   stock?: number;
   sortOrder?: number;
@@ -216,6 +219,7 @@ export interface UpdateTrProductInput {
   category?: string | null;
   images?: string[];
   marketplaceImages?: string[];
+  catalogBackgroundId?: string | null;
   status?: TrProductStatus;
   stock?: number;
   sortOrder?: number;

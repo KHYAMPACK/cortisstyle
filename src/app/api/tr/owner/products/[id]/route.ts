@@ -170,6 +170,12 @@ export async function PATCH(request: Request, context: RouteContext) {
   if (body.marketplaceImages !== undefined) {
     patch.marketplaceImages = readStringArray(body.marketplaceImages) ?? [];
   }
+  if (body.catalogBackgroundId !== undefined) {
+    patch.catalogBackgroundId =
+      typeof body.catalogBackgroundId === "string"
+        ? body.catalogBackgroundId.trim() || null
+        : null;
+  }
   if (typeof body.category === "string" || body.category === null) {
     patch.category = typeof body.category === "string" ? body.category : null;
   }

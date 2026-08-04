@@ -12,7 +12,7 @@ import type {
 } from "@/types/tr-marketplace";
 
 const PUBLIC_PRODUCT_COLUMNS =
-  "id, boutique_id, title, description, price_kurus, compare_at_price_kurus, size, sizes, colors, condition_label, category, images, marketplace_images, status, stock, sort_order, created_at, updated_at";
+  "id, boutique_id, title, description, price_kurus, compare_at_price_kurus, size, sizes, colors, condition_label, category, images, marketplace_images, catalog_background_id, status, stock, sort_order, created_at, updated_at";
 
 function productInsertRow(input: CreateTrProductInput) {
   return {
@@ -28,6 +28,7 @@ function productInsertRow(input: CreateTrProductInput) {
     category: input.category?.trim() ?? null,
     images: input.images ?? [],
     marketplace_images: input.marketplaceImages ?? [],
+    catalog_background_id: input.catalogBackgroundId?.trim() || null,
     status: input.status ?? "available",
     stock: input.stock ?? 1,
     sort_order: input.sortOrder ?? 0,
@@ -198,6 +199,9 @@ function productUpdateRow(input: UpdateTrProductInput): Record<string, unknown> 
   if (input.marketplaceImages !== undefined) {
     row.marketplace_images = input.marketplaceImages;
   }
+  if (input.catalogBackgroundId !== undefined) {
+    row.catalog_background_id = input.catalogBackgroundId?.trim() || null;
+  }
   if (input.status !== undefined) row.status = input.status;
   if (input.stock !== undefined) row.stock = input.stock;
   if (input.sortOrder !== undefined) row.sort_order = input.sortOrder;
@@ -266,6 +270,7 @@ export async function duplicateProductAdmin(
     category: existing.category,
     images: existing.images,
     marketplaceImages: existing.marketplaceImages,
+    catalogBackgroundId: existing.catalogBackgroundId,
     status: "hidden",
     stock: existing.stock,
     sortOrder: existing.sortOrder,

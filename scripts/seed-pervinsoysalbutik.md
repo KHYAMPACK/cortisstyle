@@ -8,6 +8,7 @@ Requires:
    - `supabase/patch_tr_product_marketplace_images.sql`
    - `supabase/patch_tr_product_stock.sql`
    - `supabase/patch_tr_product_compare_at.sql` (**required** — without it public product select fails)
+   - `supabase/patch_tr_product_catalog_background.sql` (catalog backdrop id per product)
    - `supabase/patch_tr_order_fulfillment.sql` (**required** for checkout — adds `fulfillment_status`)
    - `supabase/patch_tr_discount_codes.sql`
 2. Set `TR_ADMIN_SECRET` in `.env.local`

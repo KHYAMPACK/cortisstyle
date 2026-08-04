@@ -3,11 +3,32 @@
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
+import { TrCatalogBackgroundPicker } from "@/components/tr/panel/TrCatalogBackgroundPicker";
+import { TrOwnerAiModelPicker } from "@/components/tr/panel/TrOwnerAiModelPicker";
+import { TrProductImageLightbox } from "@/components/tr/panel/TrProductImageLightbox";
 import { TR_BOUTIQUE_CATEGORIES } from "@/lib/tr/categories";
+import {
+  DEFAULT_CATALOG_BACKGROUND_ID,
+  getCatalogBackground,
+} from "@/lib/tr/catalogBackgrounds/registry";
 import {
   DEFAULT_COLOR_PRESETS,
   DEFAULT_LETTER_SIZES,
 } from "@/lib/tr/productOptions";
+import {
+  clampDescription,
+  clampTitle,
+  getProductPhotoRole,
+  isValidStock,
+  isValidTryPrice,
+  productPhotoRoleLabel,
+  sanitizeColorName,
+  sanitizeSizeLabel,
+  sanitizeStockInput,
+  sanitizeTryPriceInput,
+  shouldRemoveBackgroundForSlot,
+  TR_OWNER_PRODUCT_LIMITS,
+} from "@/lib/tr/ownerProductConstraints";
 import {
   createOwnerProduct,
   fetchOwnerBoutiqueOptions,
@@ -18,7 +39,11 @@ import { formatTryFromKurus } from "@/types/tr-marketplace";
 import type { TrProduct, TrProductColor } from "@/types/tr-marketplace";
 
 const STEPS = [
-  { id: "photo", title: "Fotoğraf", hint: "Ürünün fotoğrafını ekleyin" },
+  {
+    id: "photo",
+    title: "Fotoğraf",
+    hint: "1. ön, 2. arka (arka plan temizlenir) — ek fotoğraflar olduğu gibi kalır",
+  },
   { id: "name", title: "İsim", hint: "Ürüne bir isim verin" },
   { id: "price", title: "Fiyat", hint: "Fiyat ve stok" },
   { id: "details", title: "Detay", hint: "Kategori, beden, renk" },
@@ -36,11 +61,13 @@ const secondaryBtn =
 
 interface TrProductCreateWizardProps {
   boutiqueId: string;
+  boutiqueSlug?: string | null;
   onSaved: (product: TrProduct) => void;
 }
 
 export function TrProductCreateWizard({
   boutiqueId,
+  boutiqueSlug = null,
   onSaved,
 }: TrProductCreateWizardProps) {
   const [stepIndex, setStepIndex] = useState(0);
@@ -68,6 +95,14 @@ export function TrProductCreateWizard({
   >(null);
   const [images, setImages] = useState<string[]>([]);
   const [marketplaceImages, setMarketplaceImages] = useState<string[]>([]);
+  const [catalogBackgroundId, setCatalogBackgroundId] = useState(
+    DEFAULT_CATALOG_BACKGROUND_ID,
+  );
+  const [selectedModelId, setSelectedModelId] = useState<string | null>(null);
+  const [lightbox, setLightbox] = useState<{
+    src: string;
+    label: string;
+  } | null>(null);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -77,6 +112,8 @@ export function TrProductCreateWizard({
   const [addingColor, setAddingColor] = useState(false);
   const [newColorName, setNewColorName] = useState("");
   const [newColorHex, setNewColorHex] = useState("#C2185B");
+
+  const catalogBackground = getCatalogBackground(catalogBackgroundId);
 
   useEffect(() => {
     let cancelled = false;
@@ -124,19 +161,12 @@ export function TrProductCreateWizard({
     if (step.id === "photo") return images.length > 0;
     if (step.id === "name") return title.trim().length > 0;
     if (step.id === "price") {
-      const price = Number(priceTry.replace(",", "."));
-      const stockValue = Number.parseInt(stock, 10);
-      if (
-        !Number.isFinite(price) ||
-        price <= 0 ||
-        !Number.isFinite(stockValue) ||
-        stockValue < 0
-      ) {
-        return false;
-      }
+      if (!isValidTryPrice(priceTry) || !isValidStock(stock)) return false;
       if (discountEnabled) {
+        if (!isValidTryPrice(salePriceTry)) return false;
+        const price = Number(priceTry.replace(",", "."));
         const sale = Number(salePriceTry.replace(",", "."));
-        return Number.isFinite(sale) && sale > 0 && sale < price;
+        return sale < price;
       }
       return true;
     }
@@ -151,28 +181,61 @@ export function TrProductCreateWizard({
     title,
   ]);
 
+  const nextPhotoHint = useMemo(() => {
+    if (images.length === 0) {
+      return "Ön yüz fotoğrafı ekleyin (arka plan temizlenir)";
+    }
+    if (images.length === 1) {
+      return "Arka yüz fotoğrafı ekleyin (arka plan temizlenir)";
+    }
+    if (images.length >= TR_OWNER_PRODUCT_LIMITS.maxImages) {
+      return `En fazla ${TR_OWNER_PRODUCT_LIMITS.maxImages} fotoğraf`;
+    }
+    return "Ek fotoğraf ekleyin (arka plan temizlenmez)";
+  }, [images.length]);
+
   const handleFiles = async (fileList: FileList | null) => {
     if (!fileList || fileList.length === 0) return;
+    const remaining = TR_OWNER_PRODUCT_LIMITS.maxImages - images.length;
+    if (remaining <= 0) {
+      setError(
+        `En fazla ${TR_OWNER_PRODUCT_LIMITS.maxImages} fotoğraf ekleyebilirsiniz.`,
+      );
+      return;
+    }
+
+    const files = Array.from(fileList).slice(0, remaining);
     setUploading(true);
     setError(null);
     try {
       const nextOriginals: string[] = [];
       const nextMarketplace: string[] = [];
       let failedCutouts = 0;
-      for (const file of Array.from(fileList)) {
-        const uploaded = await uploadOwnerProductImage(boutiqueId, file);
+      let cutoutCount = 0;
+      const baseCount = images.length;
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i]!;
+        const slot = baseCount + i;
+        const removeBackground = shouldRemoveBackgroundForSlot(slot);
+        const uploaded = await uploadOwnerProductImage(boutiqueId, file, {
+          removeBackground,
+        });
         nextOriginals.push(uploaded.url);
         nextMarketplace.push(uploaded.marketplaceUrl ?? "");
-        if (uploaded.marketplaceStatus === "failed") {
-          failedCutouts += 1;
+        if (removeBackground) {
+          cutoutCount += 1;
+          if (uploaded.marketplaceStatus === "failed") {
+            failedCutouts += 1;
+          }
         }
       }
       setImages((current) => [...current, ...nextOriginals]);
       setMarketplaceImages((current) => [...current, ...nextMarketplace]);
       if (failedCutouts > 0) {
         setError(
-          failedCutouts === nextOriginals.length
-            ? "Fotoğraflar kaydedildi; katalog arka plan temizliği başarısız. Orijinal kullanılıyor — akşam PHOTOROOM_API_KEY kontrol edin."
+          failedCutouts === cutoutCount
+            ? "Fotoğraflar kaydedildi; katalog arka plan temizliği başarısız. Orijinal kullanılıyor."
             : `${failedCutouts} fotoğrafta katalog kesiti oluşmadı; orijinal kaydedildi.`,
         );
       }
@@ -213,23 +276,29 @@ export function TrProductCreateWizard({
     setSaving(true);
     setError(null);
     try {
-      const listPrice = Number(priceTry.replace(",", "."));
-      if (!Number.isFinite(listPrice) || listPrice <= 0) {
-        throw new Error("Geçerli bir fiyat girin.");
+      if (!isValidTryPrice(priceTry)) {
+        throw new Error(
+          `Fiyat ${TR_OWNER_PRODUCT_LIMITS.priceMinTry}–${TR_OWNER_PRODUCT_LIMITS.priceMaxTry} TL arası olmalı.`,
+        );
       }
+      const listPrice = Number(priceTry.replace(",", "."));
       if (!title.trim()) throw new Error("Başlık zorunlu.");
       if (images.length === 0) throw new Error("En az bir fotoğraf ekleyin.");
-
-      const stockValue = Number.parseInt(stock, 10);
-      if (!Number.isFinite(stockValue) || stockValue < 0) {
-        throw new Error("Stok 0 veya daha büyük olmalı.");
+      if (!isValidStock(stock)) {
+        throw new Error(
+          `Stok ${TR_OWNER_PRODUCT_LIMITS.stockMin}–${TR_OWNER_PRODUCT_LIMITS.stockMax} arası olmalı.`,
+        );
       }
+      const stockValue = Number.parseInt(stock, 10);
 
       let sellPrice = listPrice;
       let compareAtPriceTryValue: number | null = null;
       if (discountEnabled) {
+        if (!isValidTryPrice(salePriceTry)) {
+          throw new Error("Geçerli bir indirimli fiyat girin.");
+        }
         const sale = Number(salePriceTry.replace(",", "."));
-        if (!Number.isFinite(sale) || sale <= 0 || sale >= listPrice) {
+        if (sale >= listPrice) {
           throw new Error("İndirimli fiyat, normal fiyattan düşük olmalı.");
         }
         sellPrice = sale;
@@ -249,11 +318,11 @@ export function TrProductCreateWizard({
         marketplaceImages: images.map(
           (_, index) => marketplaceImages[index] ?? "",
         ),
+        catalogBackgroundId,
         stock: stockValue,
         status: "available",
       });
 
-      // Keep boutique presets in sync with anything used on this product.
       const mergedSizes = [...sizeOptions];
       for (const size of sizes) {
         if (!mergedSizes.includes(size)) mergedSizes.push(size);
@@ -269,6 +338,9 @@ export function TrProductCreateWizard({
         }
       }
       void persistPresets(mergedSizes, mergedColors);
+
+      // selectedModelId reserved for AI try-on — not persisted yet
+      void selectedModelId;
 
       onSaved(product);
     } catch (saveError) {
@@ -303,7 +375,7 @@ export function TrProductCreateWizard({
   };
 
   const addSize = () => {
-    const size = newSizeLabel.trim().toUpperCase();
+    const size = sanitizeSizeLabel(newSizeLabel);
     if (!size) return;
     const nextSizes = sizeOptions.includes(size)
       ? sizeOptions
@@ -315,7 +387,7 @@ export function TrProductCreateWizard({
   };
 
   const addColor = () => {
-    const name = newColorName.trim();
+    const name = sanitizeColorName(newColorName).trim();
     let hex = newColorHex.trim();
     if (!name) return;
     if (!hex.startsWith("#")) hex = `#${hex}`;
@@ -373,9 +445,7 @@ export function TrProductCreateWizard({
     setPendingDelete(null);
   };
 
-  const displaySellPrice = discountEnabled
-    ? salePriceTry
-    : priceTry;
+  const displaySellPrice = discountEnabled ? salePriceTry : priceTry;
   const displayListPrice = discountEnabled ? priceTry : null;
 
   return (
@@ -477,9 +547,13 @@ export function TrProductCreateWizard({
           className="rounded-2xl border border-[color:var(--panel-accent-border)] bg-white p-5 shadow-sm sm:p-6"
         >
           {step.id === "photo" ? (
-            <div className="space-y-5">
+            <div className="space-y-6">
               <label
-                className="flex min-h-48 cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-[color:var(--panel-accent-border)] bg-[color:var(--panel-accent-softer)] px-6 py-10 text-center"
+                className={`flex min-h-48 flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-[color:var(--panel-accent-border)] bg-[color:var(--panel-accent-softer)] px-6 py-10 text-center ${
+                  images.length >= TR_OWNER_PRODUCT_LIMITS.maxImages || uploading
+                    ? "cursor-not-allowed opacity-60"
+                    : "cursor-pointer"
+                }`}
               >
                 <span
                   className="text-[22px] font-semibold"
@@ -487,17 +561,22 @@ export function TrProductCreateWizard({
                 >
                   {uploading ? "Yükleniyor…" : "Fotoğraf seçin"}
                 </span>
-                <span className="text-[16px] text-neutral-600">
+                <span className="max-w-sm text-[16px] text-neutral-600">
                   {uploading
-                    ? "Arka plan temizleniyor ve katalog görseli hazırlanıyor…"
-                    : "Telefon veya bilgisayardan bir veya daha fazla fotoğraf"}
+                    ? images.length < 2
+                      ? "Arka plan temizleniyor…"
+                      : "Fotoğraf kaydediliyor…"
+                    : nextPhotoHint}
                 </span>
                 <input
                   type="file"
                   accept="image/png,image/jpeg,image/webp"
                   multiple
                   className="hidden"
-                  disabled={uploading}
+                  disabled={
+                    uploading ||
+                    images.length >= TR_OWNER_PRODUCT_LIMITS.maxImages
+                  }
                   onChange={(event) => {
                     void handleFiles(event.target.files);
                     event.target.value = "";
@@ -510,53 +589,86 @@ export function TrProductCreateWizard({
                   {images.map((url, index) => {
                     const catalogUrl = marketplaceImages[index]?.trim();
                     const previewSrc = catalogUrl || url;
+                    const role = getProductPhotoRole(index);
+                    const roleLabel = productPhotoRoleLabel(role);
+                    const useBg = Boolean(catalogUrl);
                     return (
-                    <div
-                      key={`${url}-${index}`}
-                      className="relative aspect-[3/4] overflow-hidden rounded-xl bg-[#F3F1EC]"
-                    >
-                      <Image
-                        src={previewSrc}
-                        alt=""
-                        fill
-                        unoptimized
-                        className={
-                          catalogUrl ? "object-contain p-2" : "object-cover"
+                      <div
+                        key={`${url}-${index}`}
+                        className="relative aspect-[3/4] overflow-hidden rounded-xl bg-[#F3F1EC]"
+                        style={
+                          useBg
+                            ? { background: catalogBackground.css }
+                            : undefined
                         }
-                        sizes="160px"
-                      />
-                      {index === 0 ? (
-                        <span className="absolute top-2 left-2 rounded-lg bg-white px-2 py-1 text-[13px] font-semibold">
-                          Kapak
-                        </span>
-                      ) : null}
-                      {catalogUrl ? (
-                        <span className="absolute top-2 right-2 rounded-lg bg-emerald-700 px-2 py-1 text-[12px] font-semibold text-white">
-                          Katalog hazır
-                        </span>
-                      ) : (
-                        <span className="absolute top-2 right-2 rounded-lg bg-amber-700 px-2 py-1 text-[12px] font-semibold text-white">
-                          Orijinal
-                        </span>
-                      )}
-                      <button
-                        type="button"
-                        className="absolute right-2 bottom-2 rounded-lg bg-white px-3 py-2 text-[14px] font-semibold text-red-700"
-                        onClick={() => {
-                          setImages((current) =>
-                            current.filter((_, i) => i !== index),
-                          );
-                          setMarketplaceImages((current) =>
-                            current.filter((_, i) => i !== index),
-                          );
-                        }}
                       >
-                        Sil
-                      </button>
-                    </div>
+                        <button
+                          type="button"
+                          className="absolute inset-0 z-[1]"
+                          aria-label={`${roleLabel} — büyüt`}
+                          onClick={() =>
+                            setLightbox({
+                              src: previewSrc,
+                              label: roleLabel,
+                            })
+                          }
+                        />
+                        <Image
+                          src={previewSrc}
+                          alt={roleLabel}
+                          fill
+                          unoptimized
+                          className={
+                            catalogUrl ? "object-contain p-2" : "object-cover"
+                          }
+                          sizes="160px"
+                        />
+                        <span className="pointer-events-none absolute top-2 left-2 z-[2] rounded-lg bg-white px-2 py-1 text-[13px] font-semibold">
+                          {roleLabel}
+                        </span>
+                        {catalogUrl ? (
+                          <span className="pointer-events-none absolute top-2 right-2 z-[2] rounded-lg bg-emerald-700 px-2 py-1 text-[12px] font-semibold text-white">
+                            Katalog hazır
+                          </span>
+                        ) : (
+                          <span className="pointer-events-none absolute top-2 right-2 z-[2] rounded-lg bg-amber-700 px-2 py-1 text-[12px] font-semibold text-white">
+                            Orijinal
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          className="absolute right-2 bottom-2 z-[2] rounded-lg bg-white px-3 py-2 text-[14px] font-semibold text-red-700"
+                          onClick={() => {
+                            setImages((current) =>
+                              current.filter((_, i) => i !== index),
+                            );
+                            setMarketplaceImages((current) =>
+                              current.filter((_, i) => i !== index),
+                            );
+                          }}
+                        >
+                          Sil
+                        </button>
+                      </div>
                     );
                   })}
                 </div>
+              ) : null}
+
+              {images.length > 0 ? (
+                <>
+                  <TrCatalogBackgroundPicker
+                    value={catalogBackgroundId}
+                    onChange={setCatalogBackgroundId}
+                    disabled={uploading}
+                  />
+                  <TrOwnerAiModelPicker
+                    boutiqueSlug={boutiqueSlug}
+                    value={selectedModelId}
+                    onChange={setSelectedModelId}
+                    disabled={uploading}
+                  />
+                </>
               ) : null}
             </div>
           ) : null}
@@ -569,11 +681,18 @@ export function TrProductCreateWizard({
                 </span>
                 <input
                   value={title}
-                  onChange={(event) => setTitle(event.target.value)}
+                  onChange={(event) =>
+                    setTitle(clampTitle(event.target.value))
+                  }
                   className={fieldClass}
                   placeholder="Örn. Siyah Bluz"
+                  maxLength={TR_OWNER_PRODUCT_LIMITS.titleMax}
                   autoFocus
+                  required
                 />
+                <span className="text-[13px] text-neutral-500">
+                  {title.length}/{TR_OWNER_PRODUCT_LIMITS.titleMax}
+                </span>
               </label>
               <label className="block space-y-2">
                 <span className="text-[17px] font-semibold text-neutral-800">
@@ -581,10 +700,16 @@ export function TrProductCreateWizard({
                 </span>
                 <textarea
                   value={description}
-                  onChange={(event) => setDescription(event.target.value)}
+                  onChange={(event) =>
+                    setDescription(clampDescription(event.target.value))
+                  }
                   className={`${fieldClass} min-h-28`}
                   placeholder="Kumaş, kesim, kullanım…"
+                  maxLength={TR_OWNER_PRODUCT_LIMITS.descriptionMax}
                 />
+                <span className="text-[13px] text-neutral-500">
+                  {description.length}/{TR_OWNER_PRODUCT_LIMITS.descriptionMax}
+                </span>
               </label>
             </div>
           ) : null}
@@ -597,19 +722,27 @@ export function TrProductCreateWizard({
                 </span>
                 <input
                   value={priceTry}
-                  onChange={(event) => setPriceTry(event.target.value)}
+                  onChange={(event) =>
+                    setPriceTry(sanitizeTryPriceInput(event.target.value))
+                  }
                   className={fieldClass}
                   inputMode="decimal"
                   placeholder="890"
                   autoFocus
+                  required
                 />
-                {priceTry && Number(priceTry.replace(",", ".")) > 0 ? (
+                {priceTry && isValidTryPrice(priceTry) ? (
                   <span className="text-[15px] text-neutral-600">
                     {formatTryFromKurus(
                       Math.round(Number(priceTry.replace(",", ".")) * 100),
                     )}
                   </span>
-                ) : null}
+                ) : (
+                  <span className="text-[13px] text-neutral-500">
+                    {TR_OWNER_PRODUCT_LIMITS.priceMinTry}–
+                    {TR_OWNER_PRODUCT_LIMITS.priceMaxTry} TL
+                  </span>
+                )}
               </label>
 
               <label className="block space-y-2">
@@ -618,9 +751,13 @@ export function TrProductCreateWizard({
                 </span>
                 <input
                   value={stock}
-                  onChange={(event) => setStock(event.target.value)}
+                  onChange={(event) =>
+                    setStock(sanitizeStockInput(event.target.value))
+                  }
                   className={fieldClass}
                   inputMode="numeric"
+                  maxLength={4}
+                  required
                 />
               </label>
 
@@ -667,7 +804,9 @@ export function TrProductCreateWizard({
                   </span>
                   <input
                     value={salePriceTry}
-                    onChange={(event) => setSalePriceTry(event.target.value)}
+                    onChange={(event) =>
+                      setSalePriceTry(sanitizeTryPriceInput(event.target.value))
+                    }
                     className={fieldClass}
                     inputMode="decimal"
                     placeholder="690"
@@ -775,9 +914,12 @@ export function TrProductCreateWizard({
                     <div className="flex w-full flex-wrap items-center gap-2">
                       <input
                         value={newSizeLabel}
-                        onChange={(event) => setNewSizeLabel(event.target.value)}
+                        onChange={(event) =>
+                          setNewSizeLabel(sanitizeSizeLabel(event.target.value))
+                        }
                         className={`${fieldClass} max-w-[8rem]`}
                         placeholder="Örn. 38"
+                        maxLength={TR_OWNER_PRODUCT_LIMITS.sizeLabelMax}
                         autoFocus
                       />
                       <button
@@ -806,10 +948,6 @@ export function TrProductCreateWizard({
               <div className="space-y-3">
                 <p className="text-[17px] font-semibold text-neutral-800">
                   Renkler (isteğe bağlı)
-                </p>
-                <p className="text-[14px] text-neutral-600">
-                  Eklediğiniz renkler bu butikte saklanır; sonraki ürünlerde
-                  tekrar görünür.
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {colorOptions.map((color) => {
@@ -869,9 +1007,12 @@ export function TrProductCreateWizard({
                     <div className="flex w-full flex-wrap items-center gap-2">
                       <input
                         value={newColorName}
-                        onChange={(event) => setNewColorName(event.target.value)}
+                        onChange={(event) =>
+                          setNewColorName(sanitizeColorName(event.target.value))
+                        }
                         className={`${fieldClass} max-w-[10rem]`}
                         placeholder="Renk adı"
+                        maxLength={TR_OWNER_PRODUCT_LIMITS.colorNameMax}
                         autoFocus
                       />
                       <input
@@ -911,13 +1052,24 @@ export function TrProductCreateWizard({
             <div className="space-y-4 text-[17px] text-neutral-800">
               <div className="flex gap-4">
                 {images[0] ? (
-                  <div className="relative h-32 w-24 shrink-0 overflow-hidden rounded-xl bg-neutral-100">
+                  <div
+                    className="relative h-32 w-24 shrink-0 overflow-hidden rounded-xl"
+                    style={{
+                      background: marketplaceImages[0]
+                        ? catalogBackground.css
+                        : "#F3F1EC",
+                    }}
+                  >
                     <Image
-                      src={images[0]}
+                      src={marketplaceImages[0]?.trim() || images[0]}
                       alt=""
                       fill
                       unoptimized
-                      className="object-cover"
+                      className={
+                        marketplaceImages[0]?.trim()
+                          ? "object-contain p-1"
+                          : "object-cover"
+                      }
                       sizes="96px"
                     />
                   </div>
@@ -961,6 +1113,14 @@ export function TrProductCreateWizard({
                       Renk: {colors.map((c) => c.name).join(", ")}
                     </p>
                   ) : null}
+                  <p className="text-neutral-600">
+                    Arka plan: {catalogBackground.label}
+                  </p>
+                  {selectedModelId ? (
+                    <p className="text-neutral-500">
+                      Model seçildi (AI yakında)
+                    </p>
+                  ) : null}
                 </div>
               </div>
               <p className="rounded-xl bg-[color:var(--panel-accent-soft)] px-4 py-3 text-[16px]">
@@ -999,6 +1159,13 @@ export function TrProductCreateWizard({
           </button>
         )}
       </div>
+
+      <TrProductImageLightbox
+        open={Boolean(lightbox)}
+        src={lightbox?.src ?? null}
+        label={lightbox?.label}
+        onClose={() => setLightbox(null)}
+      />
     </div>
   );
 }

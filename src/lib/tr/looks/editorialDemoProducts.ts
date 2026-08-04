@@ -109,6 +109,7 @@ export function buildEditorialDemoProducts(
     category: spec.category,
     images: [],
     marketplaceImages: [],
+    catalogBackgroundId: null,
     status: "available" as const,
     stock: 5,
     sortOrder: index,
