@@ -1,0 +1,24 @@
+---
+description: Cortisstyle product map — load agent handoffs before product work
+alwaysApply: true
+---
+
+# Cortisstyle — agent orientation
+
+Three business phases on one repo: **(1) boutique storefronts**, **(2) TR multi-tenant marketplace (Cadde)**, **(3) sell enablement**. Plus international lookbook/affiliate and Lookbook Studio.
+
+Before non-trivial work, read `docs/agent-handoffs/00-overview.md`, then the matching section under `docs/agent-handoffs/`.
+
+| Task area | Handoff |
+|-----------|---------|
+| `/`, wardrobe, affiliate | `01-international-lookbook.md` |
+| `studio/`, `/api/studio` | `02-lookbook-studio.md` |
+| `/tr/[slug]`, `/tr/panel`, custom domains | `03-boutique-storefronts.md` |
+| `/tr` Cadde, looks, platform cart | `04-tr-marketplace.md` |
+| Checkout, orders, WhatsApp, iyzico | `05-commerce-rails.md` |
+| AI catalog, campaigns, TikTok growth | `06-sell-enablement.md` |
+| Env, Supabase, auth | `07-platform-ops.md` |
+
+Quick anchors: TR URLs `src/lib/tr/paths.ts` · types `src/types/tr-marketplace.ts` · edge `src/middleware.ts` · principles `.cursor/rules/implementation-principles.mdc`.
+
+Next.js 16 differs from training data — check `node_modules/next/dist/docs/` (`AGENTS.md`).

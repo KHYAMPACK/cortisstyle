@@ -39,7 +39,10 @@ export function TrQuickAddToCartButton({
 
   const sizes = resolveProductSizes(product);
   const image = getProductCoverImageFor("marketplace", product);
-  const inCart = cart.hasItem(product.id);
+  const inCart =
+    sizes.length <= 1
+      ? cart.hasItem(product.id, sizes[0] ?? null)
+      : false;
 
   const commit = (size: string | null) => {
     cart.addItem({
@@ -97,6 +100,9 @@ export function TrQuickAddToCartButton({
         open={sizeSheetOpen}
         onClose={() => setSizeSheetOpen(false)}
         sizes={sizes}
+        sizeStocks={product.sizeStocks}
+        productTitle={product.title}
+        whatsappPhone={product.boutique.whatsappPhone}
         onConfirm={commit}
       />
     </>

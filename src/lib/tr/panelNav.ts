@@ -1,5 +1,6 @@
 import {
   trPanelCampaignsPath,
+  trPanelContentPath,
   trPanelCustomersPath,
   trPanelOrdersPath,
   trPanelPath,
@@ -24,6 +25,7 @@ export const TR_PANEL_NAV: TrPanelNavItem[] = [
   { href: trPanelOrdersPath(), label: "Siparişler", match: "prefix" },
   { href: trPanelCustomersPath(), label: "Müşteriler", match: "prefix" },
   { href: trPanelCampaignsPath(), label: "Kampanyalar", match: "prefix" },
+  { href: trPanelContentPath(), label: "İçerik", match: "prefix" },
   { href: trPanelReportsPath(), label: "Raporlar", match: "prefix" },
   { href: trPanelSettingsPath(), label: "Ayarlar", match: "prefix" },
 ];

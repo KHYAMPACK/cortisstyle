@@ -8,6 +8,11 @@ import {
   getProductByIdAdmin,
   updateProductAdmin,
 } from "@/lib/tr/products";
+import {
+  readSizeStocks,
+  sizeStocksForSizes,
+  sumSizeStocks,
+} from "@/lib/tr/sizeStocks";
 import { parseTryToKurus } from "@/types/tr-marketplace";
 import type {
   TrProductColor,
@@ -170,6 +175,9 @@ export async function PATCH(request: Request, context: RouteContext) {
   if (body.marketplaceImages !== undefined) {
     patch.marketplaceImages = readStringArray(body.marketplaceImages) ?? [];
   }
+  if (body.lifestyleImages !== undefined) {
+    patch.lifestyleImages = readStringArray(body.lifestyleImages) ?? [];
+  }
   if (body.catalogBackgroundId !== undefined) {
     patch.catalogBackgroundId =
       typeof body.catalogBackgroundId === "string"
@@ -199,6 +207,17 @@ export async function PATCH(request: Request, context: RouteContext) {
       );
     }
     patch.stock = parsed;
+  }
+  if (body.sizeStocks !== undefined) {
+    const sizes =
+      patch.sizes ??
+      (await getProductByIdAdmin(id))?.sizes ??
+      [];
+    const sizeStocks = sizeStocksForSizes(sizes, readSizeStocks(body.sizeStocks));
+    patch.sizeStocks = sizeStocks;
+    if (sizes.length > 0) {
+      patch.stock = sumSizeStocks(sizeStocks);
+    }
   }
   if (typeof body.sortOrder === "number") {
     patch.sortOrder = body.sortOrder;

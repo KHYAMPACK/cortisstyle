@@ -1,18 +1,23 @@
 "use client";
 
 import Image from "next/image";
-import { useRef, useState } from "react";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { TrDemoGarmentVisual } from "@/components/tr/demo/TrDemoGarmentVisual";
 import { isTrDemoIconSrc } from "@/lib/tr/demoIcons";
-import { isLookbookPieceImage } from "@/lib/tr/lookbookImages";
+import { isCatalogCutoutImage } from "@/lib/tr/productImages";
 import type { TrProduct } from "@/types/tr-marketplace";
 
 interface TrProductGalleryProps {
   product: Pick<TrProduct, "title" | "images">;
 }
 
+/**
+ * PDP gallery: main canvas + arrows.
+ * Desktop: thumbs sit outside to the left of the canvas.
+ * Mobile: arrows only (swipe not required).
+ */
 export function TrProductGallery({ product }: TrProductGalleryProps) {
-  const scrollerRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
 
   if (product.images.length === 0) {
@@ -37,85 +42,116 @@ export function TrProductGallery({ product }: TrProductGalleryProps) {
     );
   }
 
-  const handleScroll = () => {
-    const el = scrollerRef.current;
-    if (!el || el.clientWidth === 0) return;
-    const next = Math.round(el.scrollLeft / el.clientWidth);
-    setActiveIndex(
-      Math.min(Math.max(next, 0), product.images.length - 1),
+  const safeIndex = Math.min(activeIndex, product.images.length - 1);
+  const activeImage = product.images[safeIndex]!;
+  const activeIsCutout = isCatalogCutoutImage(activeImage);
+  const multi = product.images.length > 1;
+
+  const goPrev = () => {
+    setActiveIndex((current) =>
+      current <= 0 ? product.images.length - 1 : current - 1,
+    );
+  };
+  const goNext = () => {
+    setActiveIndex((current) =>
+      current >= product.images.length - 1 ? 0 : current + 1,
     );
   };
 
-  const scrollToIndex = (index: number) => {
-    const el = scrollerRef.current;
-    if (!el) return;
-    el.scrollTo({
-      left: index * el.clientWidth,
-      behavior: "smooth",
-    });
-  };
+  const thumbs = multi ? (
+    <div
+      className="hidden shrink-0 flex-col justify-start gap-2 self-stretch py-1 md:flex"
+      role="tablist"
+      aria-label="Görsel seç"
+    >
+      {product.images.map((image, index) => {
+        const selected = index === safeIndex;
+        const thumbCutout = isCatalogCutoutImage(image);
+        return (
+          <button
+            key={`${image}-${index}`}
+            type="button"
+            role="tab"
+            aria-selected={selected}
+            aria-label={`Görsel ${index + 1}`}
+            onClick={() => setActiveIndex(index)}
+            className={`relative h-16 w-12 overflow-hidden bg-[#f3f1ec] transition-opacity ${
+              selected
+                ? "opacity-100 ring-1 ring-neutral-900"
+                : "opacity-70 hover:opacity-100"
+            }`}
+          >
+            <Image
+              src={image}
+              alt=""
+              fill
+              unoptimized
+              sizes="48px"
+              className={thumbCutout ? "object-contain p-1" : "object-cover"}
+            />
+          </button>
+        );
+      })}
+    </div>
+  ) : null;
 
   return (
-    <div className="relative">
-      <div
-        ref={scrollerRef}
-        onScroll={handleScroll}
-        className="flex aspect-[2/3] snap-x snap-mandatory overflow-x-auto overflow-y-hidden overscroll-x-contain bg-[#f3f1ec] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        aria-label={`${product.title} görselleri`}
-      >
-        {product.images.map((image, index) => {
-          const lookbookCutout = isLookbookPieceImage(image);
-          return (
-            <div
-              key={`${image}-${index}`}
-              className="relative h-full w-full shrink-0 snap-center snap-always"
-            >
-              <Image
-                src={image}
-                alt={
-                  index === 0
-                    ? product.title
-                    : `${product.title} — görsel ${index + 1}`
-                }
-                fill
-                priority={index === 0}
-                sizes="(max-width: 1024px) 100vw, 50vw"
-                unoptimized
-                className={
-                  lookbookCutout
-                    ? "object-contain p-8 md:p-12"
-                    : "object-cover"
-                }
-                draggable={false}
-              />
-            </div>
-          );
-        })}
-      </div>
+    <div className="flex items-start gap-3 md:gap-4">
+      {thumbs}
 
-      {product.images.length > 1 ? (
-        <div
-          className="absolute inset-x-0 bottom-3 flex justify-center gap-1.5"
-          role="tablist"
-          aria-label="Görsel seç"
-        >
-          {product.images.map((_, index) => (
-            <button
-              key={index}
-              type="button"
-              role="tab"
-              aria-selected={activeIndex === index}
-              aria-label={`Görsel ${index + 1}`}
-              onClick={() => scrollToIndex(index)}
-              className={`h-1.5 transition-all ${
-                activeIndex === index
-                  ? "w-5 bg-white"
-                  : "w-1.5 bg-white/55 hover:bg-white/80"
-              }`}
+      <div className="relative min-w-0 flex-1 aspect-[2/3] overflow-hidden bg-[#f3f1ec]">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeImage}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            className="absolute inset-0"
+          >
+            <Image
+              src={activeImage}
+              alt={
+                safeIndex === 0
+                  ? product.title
+                  : `${product.title} — görsel ${safeIndex + 1}`
+              }
+              fill
+              priority={safeIndex === 0}
+              sizes="(max-width: 1024px) 100vw, 50vw"
+              unoptimized
+              className={
+                activeIsCutout ? "object-contain p-6 md:p-10" : "object-cover"
+              }
+              draggable={false}
             />
-          ))}
-        </div>
-      ) : null}
+          </motion.div>
+        </AnimatePresence>
+
+        {multi ? (
+          <>
+            <button
+              type="button"
+              onClick={goPrev}
+              className="absolute top-1/2 left-2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[20px] font-semibold text-neutral-800 shadow md:left-3"
+              aria-label="Önceki görsel"
+            >
+              ‹
+            </button>
+            <button
+              type="button"
+              onClick={goNext}
+              className="absolute top-1/2 right-2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[20px] font-semibold text-neutral-800 shadow md:right-3"
+              aria-label="Sonraki görsel"
+            >
+              ›
+            </button>
+            <p className="absolute bottom-3 left-1/2 z-10 -translate-x-1/2 rounded-full bg-black/45 px-2.5 py-1 text-[11px] font-medium text-white md:hidden">
+              {safeIndex + 1}/{product.images.length}
+            </p>
+          </>
+        ) : null}
+      </div>
     </div>
   );
 }

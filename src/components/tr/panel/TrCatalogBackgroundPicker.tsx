@@ -26,10 +26,10 @@ export function TrCatalogBackgroundPicker({
           Katalog arka planı
         </p>
         <p className="mt-1 text-[14px] text-neutral-600">
-          Ürün için tek arka plan — ön ve arka kesitlere uygulanır.
+          Ürün kesitinin arkasında görünecek zemin — düz renk veya doku.
         </p>
       </div>
-      <div className="grid grid-cols-4 gap-2 sm:grid-cols-4">
+      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
         {TR_CATALOG_BACKGROUNDS.map((bg: TrCatalogBackground) => {
           const active = selected === bg.id;
           return (

@@ -12,6 +12,7 @@ import {
   isCatalogCutoutImage,
 } from "@/lib/tr/productImages";
 import { resolveProductSizes } from "@/lib/tr/productOptions";
+import { isSizeInStock } from "@/lib/tr/sizeStocks";
 import type { TrProductWithBoutique } from "@/types/tr-marketplace";
 
 interface TrLookSizeGateSheetProps {
@@ -27,7 +28,10 @@ function initialSizes(
   const next: Record<string, string | null> = {};
   for (const product of products) {
     const sizes = resolveProductSizes(product);
-    next[product.id] = sizes.length === 1 ? sizes[0]! : null;
+    const inStock = sizes.filter((size) =>
+      isSizeInStock(product.sizeStocks, size),
+    );
+    next[product.id] = inStock.length === 1 ? inStock[0]! : null;
   }
   return next;
 }
@@ -71,9 +75,10 @@ export function TrLookSizeGateSheet({
     };
   }, [open, onClose]);
 
-  const canConfirm = piecesNeedingPick.every(
-    (product) => Boolean(draft[product.id]),
-  );
+  const canConfirm = piecesNeedingPick.every((product) => {
+    const size = draft[product.id];
+    return Boolean(size) && isSizeInStock(product.sizeStocks, size!);
+  });
 
   return (
     <AnimatePresence>
@@ -173,6 +178,9 @@ export function TrLookSizeGateSheet({
                               [product.id]: size,
                             }))
                           }
+                          sizeStocks={product.sizeStocks}
+                          productTitle={product.title}
+                          whatsappPhone={product.boutique.whatsappPhone}
                           hideLabel
                         />
                       </div>

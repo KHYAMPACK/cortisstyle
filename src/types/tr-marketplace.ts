@@ -83,10 +83,14 @@ export interface TrProduct {
   images: string[];
   /** Marketplace / catalog cutouts (BG removed + normalized). */
   marketplaceImages: string[];
+  /** AI on-model / lifestyle shots (content packs + PDP). */
+  lifestyleImages: string[];
   /** Premade catalog backdrop id (one per product). */
   catalogBackgroundId: string | null;
   status: TrProductStatus;
   stock: number;
+  /** Per-size units. Empty when product has no sizes (then `stock` is the single count). */
+  sizeStocks: Record<string, number>;
   sortOrder: number;
   createdAt: string;
   updatedAt: string;
@@ -157,6 +161,8 @@ export interface TrOrderItem {
   priceKurus: number;
   quantity: number;
   createdAt: string;
+  /** Cover for packing UI — resolved from live product when available. */
+  imageUrl: string | null;
 }
 
 export interface TrOrderWithItems extends TrOrder {
@@ -201,9 +207,11 @@ export interface CreateTrProductInput {
   category?: string | null;
   images?: string[];
   marketplaceImages?: string[];
+  lifestyleImages?: string[];
   catalogBackgroundId?: string | null;
   status?: TrProductStatus;
   stock?: number;
+  sizeStocks?: Record<string, number>;
   sortOrder?: number;
 }
 
@@ -219,9 +227,11 @@ export interface UpdateTrProductInput {
   category?: string | null;
   images?: string[];
   marketplaceImages?: string[];
+  lifestyleImages?: string[];
   catalogBackgroundId?: string | null;
   status?: TrProductStatus;
   stock?: number;
+  sizeStocks?: Record<string, number>;
   sortOrder?: number;
 }
 

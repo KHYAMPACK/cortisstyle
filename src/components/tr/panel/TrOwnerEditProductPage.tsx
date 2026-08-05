@@ -6,6 +6,11 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
 import {
+  panelBackLinkClass,
+  panelErrorClass,
+  panelPageTitleClass,
+} from "@/components/tr/panel/panelUi";
+import {
   TrPanelFadeIn,
   TrPanelLoading,
 } from "@/components/tr/panel/TrPanelMotion";
@@ -63,24 +68,22 @@ export function TrOwnerEditProductPage({ productId }: TrOwnerEditProductPageProp
     <TrOwnerPanelGate>
       {({ activeBoutique }) => (
         <div className="space-y-6">
-          <Link
-            href={trPanelProductsPath()}
-            className="inline-block text-[11px] tracking-[0.1em] text-neutral-500 uppercase"
-          >
-            ← Listeye dön
-          </Link>
-          <h2 className="font-serif text-xl tracking-tight text-neutral-950">
-            Ürünü düzenle
-          </h2>
+          <div>
+            <Link href={trPanelProductsPath()} className={panelBackLinkClass}>
+              ← Ürün listesine dön
+            </Link>
+            <h2 className={panelPageTitleClass}>Ürünü düzenle</h2>
+            <p className="mt-2 text-[16px] leading-relaxed text-neutral-600">
+              Değişiklikleri kaydetmeden önce kontrol edin.
+            </p>
+          </div>
 
           <AnimatePresence mode="wait">
             {loading ? (
               <TrPanelLoading key="edit-loading" label="Ürün yükleniyor…" />
             ) : error ? (
               <TrPanelFadeIn key="edit-error">
-                <p className="border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-800">
-                  {error}
-                </p>
+                <p className={panelErrorClass}>{error}</p>
               </TrPanelFadeIn>
             ) : product ? (
               <TrPanelFadeIn key="edit-form">
@@ -91,6 +94,9 @@ export function TrOwnerEditProductPage({ productId }: TrOwnerEditProductPageProp
                   initialProduct={product}
                   onSaved={(saved) => {
                     setProduct(saved);
+                    router.push(trPanelProductsPath());
+                  }}
+                  onDeleted={() => {
                     router.push(trPanelProductsPath());
                   }}
                 />

@@ -24,6 +24,7 @@ import {
 import { pickRelatedProducts } from "@/lib/tr/recommendations";
 import { useTrCartStore } from "@/store/trCartStore";
 import {
+  cartLineKey,
   cartTotalKurus,
   groupCartItemsByBoutique,
   type TrCartLineItem,
@@ -79,11 +80,12 @@ function CartLineRow({
 }: {
   item: TrCartLineItem;
   selected: boolean;
-  onToggle: (productId: string, next: boolean) => void;
-  onRemove: (productId: string) => void;
+  onToggle: (lineKey: string, next: boolean) => void;
+  onRemove: (productId: string, size: string | null) => void;
 }) {
   const cutout =
     !isTrDemoIconSrc(item.image) && isCatalogCutoutImage(item.image);
+  const lineKey = cartLineKey(item);
 
   return (
     <div
@@ -94,7 +96,7 @@ function CartLineRow({
       <div className="flex shrink-0 items-start pt-1">
         <CartCheckbox
           checked={selected}
-          onChange={(next) => onToggle(item.productId, next)}
+          onChange={(next) => onToggle(lineKey, next)}
           label={`${item.title} seç`}
         />
       </div>
@@ -148,7 +150,7 @@ function CartLineRow({
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => onRemove(item.productId)}
+              onClick={() => onRemove(item.productId, item.size)}
               className="inline-flex items-center gap-1 text-[11px] tracking-[0.08em] text-neutral-500 uppercase transition-colors hover:text-neutral-900"
             >
               <Trash2 className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
@@ -161,7 +163,7 @@ function CartLineRow({
             >
               <button
                 type="button"
-                onClick={() => onRemove(item.productId)}
+                onClick={() => onRemove(item.productId, item.size)}
                 aria-label="Kaldır"
                 className="px-2.5 py-1.5 transition-colors hover:bg-black/5"
               >
@@ -203,7 +205,7 @@ export function TrCartPageContent() {
   const knownIdsRef = useRef<Set<string>>(new Set());
 
   useLayoutEffect(() => {
-    const currentIds = items.map((item) => item.productId);
+    const currentIds = items.map((item) => cartLineKey(item));
     const known = knownIdsRef.current;
 
     setSelectedIds((prev) => {
@@ -220,7 +222,7 @@ export function TrCartPageContent() {
   }, [items]);
 
   const selectedItems = useMemo(
-    () => items.filter((item) => selectedIds.has(item.productId)),
+    () => items.filter((item) => selectedIds.has(cartLineKey(item))),
     [items, selectedIds],
   );
   const selectedTotal = cartTotalKurus(selectedItems);
@@ -236,11 +238,11 @@ export function TrCartPageContent() {
     [catalog, items],
   );
 
-  const toggleItem = (productId: string, next: boolean) => {
+  const toggleItem = (lineKey: string, next: boolean) => {
     setSelectedIds((prev) => {
       const copy = new Set(prev);
-      if (next) copy.add(productId);
-      else copy.delete(productId);
+      if (next) copy.add(lineKey);
+      else copy.delete(lineKey);
       return copy;
     });
   };
@@ -295,7 +297,7 @@ export function TrCartPageContent() {
 
         <ul className="space-y-4">
           {grouped.map((group, groupIndex) => {
-            const groupIds = group.items.map((item) => item.productId);
+            const groupIds = group.items.map((item) => cartLineKey(item));
             const allSelected =
               groupIds.length > 0 &&
               groupIds.every((id) => selectedIds.has(id));
@@ -336,10 +338,10 @@ export function TrCartPageContent() {
 
                 <ul className="divide-y divide-black/5">
                   {group.items.map((item) => (
-                    <li key={item.productId}>
+                    <li key={cartLineKey(item)}>
                       <CartLineRow
                         item={item}
-                        selected={selectedIds.has(item.productId)}
+                        selected={selectedIds.has(cartLineKey(item))}
                         onToggle={toggleItem}
                         onRemove={removeItem}
                       />

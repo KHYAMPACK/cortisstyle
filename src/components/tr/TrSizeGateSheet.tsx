@@ -5,6 +5,7 @@ import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { TrProductSizePicker } from "@/components/tr/TrProductSizePicker";
+import { isSizeInStock, type SizeStocks } from "@/lib/tr/sizeStocks";
 
 interface TrSizeGateSheetProps {
   open: boolean;
@@ -14,6 +15,9 @@ interface TrSizeGateSheetProps {
   title?: string;
   confirmLabel?: string;
   onConfirm: (size: string) => void;
+  sizeStocks?: SizeStocks | null;
+  productTitle?: string;
+  whatsappPhone?: string | null;
 }
 
 /**
@@ -28,6 +32,9 @@ export function TrSizeGateSheet({
   title = "Beden seçin",
   confirmLabel = "Sepete ekle",
   onConfirm,
+  sizeStocks = null,
+  productTitle,
+  whatsappPhone = null,
 }: TrSizeGateSheetProps) {
   const [draft, setDraft] = useState<string | null>(initialSize);
   const [mounted, setMounted] = useState(false);
@@ -38,8 +45,12 @@ export function TrSizeGateSheet({
 
   useEffect(() => {
     if (!open) return;
-    setDraft(initialSize ?? (sizes.length === 1 ? sizes[0]! : null));
-  }, [open, initialSize, sizes]);
+    const initial =
+      initialSize && isSizeInStock(sizeStocks, initialSize)
+        ? initialSize
+        : sizes.find((size) => isSizeInStock(sizeStocks, size)) ?? null;
+    setDraft(initial);
+  }, [open, initialSize, sizes, sizeStocks]);
 
   useEffect(() => {
     if (!open) return;
@@ -55,7 +66,8 @@ export function TrSizeGateSheet({
     };
   }, [open, onClose]);
 
-  const canConfirm = Boolean(draft);
+  const canConfirm =
+    Boolean(draft) && isSizeInStock(sizeStocks, draft ?? "");
 
   if (!mounted) return null;
 
@@ -108,6 +120,9 @@ export function TrSizeGateSheet({
               sizes={sizes}
               selectedSize={draft}
               onChange={setDraft}
+              sizeStocks={sizeStocks}
+              productTitle={productTitle}
+              whatsappPhone={whatsappPhone}
               hideLabel
             />
 
@@ -115,7 +130,7 @@ export function TrSizeGateSheet({
               type="button"
               disabled={!canConfirm}
               onClick={() => {
-                if (!draft) return;
+                if (!draft || !isSizeInStock(sizeStocks, draft)) return;
                 onConfirm(draft);
               }}
               className="btn-primary mt-6 inline-flex w-full items-center justify-center px-6 py-4 text-[11px] tracking-[0.2em] disabled:cursor-not-allowed disabled:opacity-50"

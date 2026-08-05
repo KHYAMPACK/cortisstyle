@@ -19,6 +19,8 @@ interface TrProductPurchasePanelProps {
   /** When true, Sepete ekle stays enabled and asks for size via sheet. */
   selectionRequired?: boolean;
   onRequestSelection?: () => void;
+  /** Selected beden has no stock — CTA becomes gelince haber et. */
+  sizeOutOfStock?: boolean;
   /** Hide primary purchase CTAs (e.g. moved to mobile sticky bar). */
   hideActions?: boolean;
   className?: string;
@@ -31,6 +33,7 @@ export function TrProductPurchasePanel({
   canOrder = true,
   selectionRequired = false,
   onRequestSelection,
+  sizeOutOfStock = false,
   hideActions = false,
   className = "",
 }: TrProductPurchasePanelProps) {
@@ -57,6 +60,8 @@ export function TrProductPurchasePanel({
       disabled={!canOrder && !selectionRequired}
       selectionRequired={selectionRequired}
       onRequestSelection={onRequestSelection}
+      sizeOutOfStock={sizeOutOfStock}
+      whatsappPhone={product.boutique.whatsappPhone}
     />
   ) : product.boutique.whatsappPhone ? (
     <TrWhatsAppOrderButton

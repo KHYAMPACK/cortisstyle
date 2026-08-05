@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import { getServiceSupabase } from "@/lib/supabaseAdmin";
 import { TR_ASSETS_BUCKET } from "@/lib/tr/trAssetUrls";
 
@@ -6,7 +5,7 @@ export { TR_ASSETS_BUCKET, isTrMarketplaceAssetUrl } from "@/lib/tr/trAssetUrls"
 
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 
-export type TrAssetKind = "original" | "marketplace";
+export type TrAssetKind = "original" | "marketplace" | "lifestyle";
 
 function sanitizeSegment(value: string): string {
   return value.replace(/[^a-zA-Z0-9._-]/g, "-").slice(0, 120);
@@ -25,7 +24,7 @@ export function buildTrAssetPath(
   kind: TrAssetKind = "original",
 ): string {
   const extension = extensionFromContentType(contentType);
-  const fileName = `${randomUUID()}.${extension}`;
+  const fileName = `${crypto.randomUUID()}.${extension}`;
   return `${sanitizeSegment(userId)}/${sanitizeSegment(boutiqueId)}/${kind}/${fileName}`;
 }
 

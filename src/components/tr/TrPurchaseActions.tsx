@@ -6,6 +6,10 @@ import {
 } from "@/components/tr/boutique/TrBoutiqueCommerceScope";
 import { TrSoftNavLink } from "@/components/tr/TrSoftNavLink";
 import { trBoutiqueCartPath, trCartPath } from "@/lib/tr/paths";
+import {
+  buildSizeRestockNotifyMessage,
+  buildWhatsAppOrderUrl,
+} from "@/lib/tr/whatsapp";
 import { useTrAddedToCartStore } from "@/store/trAddedToCartStore";
 import type { TrCartLineItem } from "@/types/tr-cart";
 import type { TrProductStatus } from "@/types/tr-marketplace";
@@ -29,6 +33,9 @@ interface TrPurchaseActionsProps {
    */
   selectionRequired?: boolean;
   onRequestSelection?: () => void;
+  /** Selected beden is out of stock — show notify CTA instead of add. */
+  sizeOutOfStock?: boolean;
+  whatsappPhone?: string | null;
   className?: string;
 }
 
@@ -51,12 +58,14 @@ export function TrPurchaseActions(props: TrPurchaseActionsProps) {
     disabled = false,
     selectionRequired = false,
     onRequestSelection,
+    sizeOutOfStock = false,
+    whatsappPhone = null,
     className = "",
   } = props;
   const cart = useTrScopedCart();
   const scope = useTrBoutiqueCommerceScopeOptional();
   const openAddedSheet = useTrAddedToCartStore((state) => state.open);
-  const inCart = cart.hasItem(props.productId);
+  const inCart = cart.hasItem(props.productId, props.size);
 
   if (status === "sold") {
     return (
@@ -72,6 +81,42 @@ export function TrPurchaseActions(props: TrPurchaseActionsProps) {
 
   if (status === "hidden") {
     return null;
+  }
+
+  if (sizeOutOfStock) {
+    const notifyHref =
+      props.size && whatsappPhone
+        ? buildWhatsAppOrderUrl(
+            whatsappPhone,
+            buildSizeRestockNotifyMessage({
+              title: props.title,
+              size: props.size,
+            }),
+          )
+        : null;
+
+    if (notifyHref) {
+      return (
+        <a
+          href={notifyHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`btn-primary inline-flex w-full items-center justify-center px-4 py-4 text-center text-[11px] tracking-[0.2em] sm:px-6 ${className}`}
+        >
+          Gelince haber et
+        </a>
+      );
+    }
+
+    return (
+      <button
+        type="button"
+        disabled
+        className={`inline-flex w-full cursor-not-allowed items-center justify-center border border-black/15 bg-neutral-50 px-4 py-4 text-[11px] tracking-[0.2em] text-neutral-500 uppercase sm:px-6 ${className}`}
+      >
+        Gelince haber et
+      </button>
+    );
   }
 
   const openSheet = (size: string | null = props.size) => {

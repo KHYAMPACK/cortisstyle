@@ -21,7 +21,7 @@ import {
   selectCartItemCount,
   useTrCartStore,
 } from "@/store/trCartStore";
-import type { TrCartLineItem } from "@/types/tr-cart";
+import { sameCartLine, type TrCartLineItem } from "@/types/tr-cart";
 
 export type TrBoutiqueCommercePanel =
   | "cart"
@@ -138,8 +138,11 @@ export function useTrScopedCart() {
       clearCart: localClear,
       itemCount: localCount,
       hydrated: localHydrated,
-      hasItem: (productId: string) =>
-        localItems.some((entry) => entry.productId === productId),
+      hasItem: (productId: string, size?: string | null) =>
+        localItems.some((entry) => {
+          if (size === undefined) return entry.productId === productId;
+          return sameCartLine(entry, { productId, size });
+        }),
     };
   }
 
@@ -152,8 +155,11 @@ export function useTrScopedCart() {
     clearCart: globalClear,
     itemCount: globalCount,
     hydrated: globalHydrated,
-    hasItem: (productId: string) =>
-      globalItems.some((entry) => entry.productId === productId),
+    hasItem: (productId: string, size?: string | null) =>
+      globalItems.some((entry) => {
+        if (size === undefined) return entry.productId === productId;
+        return sameCartLine(entry, { productId, size });
+      }),
   };
 }
 

@@ -18,14 +18,15 @@ import { isTrDemoIconSrc } from "@/lib/tr/demoIcons";
 import { isTrDemoProduct } from "@/lib/tr/looks/demoCatalog";
 import { isTrCheckoutEnabled } from "@/lib/tr/platform";
 import {
-  getMarketplaceProductImages,
   getProductCoverImageFor,
+  getStorefrontGalleryImages,
   isCatalogCutoutImage,
 } from "@/lib/tr/productImages";
 import {
   resolveProductColors,
   resolveProductSizes,
 } from "@/lib/tr/productOptions";
+import { isSizeInStock } from "@/lib/tr/sizeStocks";
 import { trBoutiquePath, trBoutiqueProductPath, trHomePath } from "@/lib/tr/paths";
 import { useTrAddedToCartStore } from "@/store/trAddedToCartStore";
 import { useTrCartStore } from "@/store/trCartStore";
@@ -38,18 +39,22 @@ interface TrClothPageProps {
 }
 
 export function TrClothPage({ product, relatedProducts }: TrClothPageProps) {
-  const images = getMarketplaceProductImages(product);
+  const images = getStorefrontGalleryImages(product);
   const cover = images[0] ?? null;
   const demoIcon = isTrDemoIconSrc(cover);
   const cutout = !demoIcon && isCatalogCutoutImage(cover);
   const sizes = useMemo(() => resolveProductSizes(product), [product]);
+  const inStockSizes = useMemo(
+    () => sizes.filter((size) => isSizeInStock(product.sizeStocks, size)),
+    [sizes, product.sizeStocks],
+  );
   const colors = useMemo(() => resolveProductColors(product), [product]);
   const categoryLabel = getTrCategoryLabel(product.category);
   const isAvailable = product.status === "available";
   const checkoutEnabled = isTrCheckoutEnabled() || isTrDemoProduct(product);
 
   const [selectedSize, setSelectedSize] = useState<string | null>(
-    sizes.length === 1 ? sizes[0]! : null,
+    inStockSizes.length === 1 ? inStockSizes[0]! : null,
   );
   const [selectedColor, setSelectedColor] = useState(
     colors.length === 1 ? colors[0]! : (colors[0] ?? null),
@@ -62,7 +67,12 @@ export function TrClothPage({ product, relatedProducts }: TrClothPageProps) {
 
   const sizeRequired = sizes.length > 0;
   const selectionRequired = sizeRequired && !selectedSize;
-  const canOrder = isAvailable && (!sizeRequired || Boolean(selectedSize));
+  const sizeOutOfStock =
+    Boolean(selectedSize) &&
+    !isSizeInStock(product.sizeStocks, selectedSize!);
+  const canOrder =
+    isAvailable &&
+    (!sizeRequired || (Boolean(selectedSize) && !sizeOutOfStock));
   const displayImage = images[activeImage] ?? cover;
 
   const purchaseProps = {
@@ -76,11 +86,14 @@ export function TrClothPage({ product, relatedProducts }: TrClothPageProps) {
     size: selectedSize,
     color: selectedColor?.name ?? null,
     status: product.status,
+    sizeOutOfStock,
+    whatsappPhone: product.boutique.whatsappPhone,
   } as const;
 
   const addWithSize = (size: string) => {
     setSelectedSize(size);
     setSizeSheetOpen(false);
+    if (!isSizeInStock(product.sizeStocks, size)) return;
     addItem({
       productId: product.id,
       boutiqueId: product.boutiqueId,
@@ -200,6 +213,9 @@ export function TrClothPage({ product, relatedProducts }: TrClothPageProps) {
             sizes={sizes}
             selectedSize={selectedSize}
             onChange={setSelectedSize}
+            sizeStocks={product.sizeStocks}
+            productTitle={product.title}
+            whatsappPhone={product.boutique.whatsappPhone}
           />
 
           <dl className="mt-6 space-y-3 text-[12px]">
@@ -247,6 +263,7 @@ export function TrClothPage({ product, relatedProducts }: TrClothPageProps) {
             selectedColor={selectedColor?.name ?? null}
             canOrder={canOrder}
             selectionRequired={selectionRequired}
+            sizeOutOfStock={sizeOutOfStock}
             onRequestSelection={() => setSizeSheetOpen(true)}
             className="hidden md:block"
           />
@@ -259,6 +276,7 @@ export function TrClothPage({ product, relatedProducts }: TrClothPageProps) {
               selectedColor={selectedColor?.name ?? null}
               canOrder={canOrder}
               selectionRequired={selectionRequired}
+              sizeOutOfStock={sizeOutOfStock}
               onRequestSelection={() => setSizeSheetOpen(true)}
               hideActions
               className="md:hidden"
@@ -295,6 +313,9 @@ export function TrClothPage({ product, relatedProducts }: TrClothPageProps) {
         onClose={() => setSizeSheetOpen(false)}
         sizes={sizes}
         initialSize={selectedSize}
+        sizeStocks={product.sizeStocks}
+        productTitle={product.title}
+        whatsappPhone={product.boutique.whatsappPhone}
         onConfirm={addWithSize}
       />
     </div>

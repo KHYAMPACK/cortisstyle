@@ -6,26 +6,80 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
 import {
+  panelBackLinkClass,
+  panelEmptyClass,
+  panelErrorClass,
+  panelPageTitleClass,
+} from "@/components/tr/panel/panelUi";
+import {
   TrPanelFadeIn,
   TrPanelLoading,
   TrPanelStagger,
   trPanelStaggerItem,
 } from "@/components/tr/panel/TrPanelMotion";
+import { getProductCoverImageFor } from "@/lib/tr/productImages";
 import { fetchOwnerProducts, updateOwnerProduct } from "@/lib/tr/ownerClient";
 import {
   trPanelEditProductPath,
   trPanelPath,
   trPanelProductsPath,
 } from "@/lib/tr/paths";
+import { sortProductSizes } from "@/lib/tr/productOptions";
+import { sumSizeStocks } from "@/lib/tr/sizeStocks";
 import type { TrProduct } from "@/types/tr-marketplace";
 
 const LOW_STOCK = 2;
+
+function sizeQty(product: TrProduct, size: string): number {
+  const n = product.sizeStocks?.[size];
+  return typeof n === "number" && Number.isFinite(n) ? Math.max(0, n) : 0;
+}
+
+function StockStepper({
+  value,
+  disabled,
+  onDecrease,
+  onIncrease,
+  label,
+}: {
+  value: number;
+  disabled: boolean;
+  onDecrease: () => void;
+  onIncrease: () => void;
+  label: string;
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <button
+        type="button"
+        disabled={disabled || value <= 0}
+        onClick={onDecrease}
+        className="flex h-12 w-12 items-center justify-center rounded-xl border-2 border-[color:var(--panel-accent-border)] bg-white text-[24px] font-semibold text-neutral-900 disabled:opacity-40"
+        aria-label={`${label} azalt`}
+      >
+        −
+      </button>
+      <span className="min-w-[2.5rem] text-center text-[22px] font-semibold tabular-nums text-neutral-950">
+        {value}
+      </span>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={onIncrease}
+        className="flex h-12 w-12 items-center justify-center rounded-xl border-2 border-[color:var(--panel-accent-border)] bg-white text-[24px] font-semibold text-neutral-900 disabled:opacity-40"
+        aria-label={`${label} artır`}
+      >
+        +
+      </button>
+    </div>
+  );
+}
 
 function StockBoard({ boutiqueId }: { boutiqueId: string }) {
   const [products, setProducts] = useState<TrProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [savingId, setSavingId] = useState<string | null>(null);
+  const [savingKey, setSavingKey] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -53,9 +107,13 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
     };
   }, [boutiqueId]);
 
-  const setStock = async (product: TrProduct, next: number) => {
-    if (next < 0 || savingId) return;
-    setSavingId(product.id);
+  const patchProduct = async (
+    product: TrProduct,
+    patch: { stock?: number; sizeStocks?: Record<string, number> },
+    key: string,
+  ) => {
+    if (savingKey) return;
+    setSavingKey(key);
     setError(null);
     try {
       const updated = await updateOwnerProduct(product.id, {
@@ -70,8 +128,11 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
         category: product.category,
         images: product.images,
         marketplaceImages: product.marketplaceImages,
-        stock: next,
+        lifestyleImages: product.lifestyleImages,
+        catalogBackgroundId: product.catalogBackgroundId,
         status: product.status,
+        stock: patch.stock ?? product.stock,
+        sizeStocks: patch.sizeStocks ?? product.sizeStocks,
       });
       setProducts((current) =>
         current.map((entry) => (entry.id === updated.id ? updated : entry)),
@@ -81,9 +142,42 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
         saveError instanceof Error ? saveError.message : "Stok güncellenemedi.",
       );
     } finally {
-      setSavingId(null);
+      setSavingKey(null);
     }
   };
+
+  const setTotalStock = (product: TrProduct, next: number) => {
+    if (next < 0) return;
+    void patchProduct(product, { stock: next }, product.id);
+  };
+
+  const setSizeStock = (product: TrProduct, size: string, next: number) => {
+    if (next < 0) return;
+    const sizes = sortProductSizes(product.sizes);
+    const nextStocks: Record<string, number> = {};
+    for (const entry of sizes) {
+      nextStocks[entry] =
+        entry === size ? next : sizeQty(product, entry);
+    }
+    void patchProduct(
+      product,
+      {
+        sizeStocks: nextStocks,
+        stock: sumSizeStocks(nextStocks),
+      },
+      `${product.id}:${size}`,
+    );
+  };
+
+  const lowCount = products.filter((p) => {
+    if (p.status !== "available") return false;
+    if (p.sizes.length > 0) {
+      return sortProductSizes(p.sizes).some(
+        (size) => sizeQty(p, size) <= LOW_STOCK,
+      );
+    }
+    return p.stock <= LOW_STOCK;
+  }).length;
 
   return (
     <AnimatePresence mode="wait">
@@ -91,90 +185,161 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
         <TrPanelLoading key="stock-loading" label="Stok yükleniyor…" />
       ) : error && products.length === 0 ? (
         <TrPanelFadeIn key="stock-error">
-          <p className="border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-800">
-            {error}
-          </p>
+          <p className={panelErrorClass}>{error}</p>
         </TrPanelFadeIn>
       ) : (
-        <TrPanelFadeIn key="stock-ready" className="space-y-4">
-          {error ? (
-            <p className="border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-800">
-              {error}
+        <TrPanelFadeIn key="stock-ready" className="space-y-5">
+          {error ? <p className={panelErrorClass}>{error}</p> : null}
+
+          <div className="rounded-2xl border border-[color:var(--panel-accent-border)] bg-[color:var(--panel-accent-soft)] px-5 py-4">
+            <p className="text-[17px] font-semibold text-neutral-900">
+              {lowCount} düşük stok · {products.length} ürün
             </p>
-          ) : null}
-          <p className="text-[12px] text-neutral-600">
-            {products.filter((p) => p.status === "available" && p.stock <= LOW_STOCK).length}{" "}
-            düşük stok · {products.length} ürün
-          </p>
+            <p className="mt-1 text-[15px] text-neutral-700">
+              Her beden için ayrı stok girin. Toplam otomatik hesaplanır.
+            </p>
+          </div>
+
           {products.length === 0 ? (
-            <p className="border border-black/10 bg-white px-4 py-8 text-[13px] text-neutral-600">
+            <p className={panelEmptyClass}>
               Henüz ürün yok.{" "}
-              <Link href={trPanelProductsPath()} className="underline">
+              <Link
+                href={trPanelProductsPath()}
+                className="font-semibold underline"
+                style={{ color: "var(--panel-accent-deep)" }}
+              >
                 Ürün ekle
               </Link>
             </p>
           ) : (
-            <TrPanelStagger className="divide-y divide-black/10 border border-black/10 bg-white">
+            <TrPanelStagger className="space-y-3">
               {products.map((product) => {
-                const cover = product.images[0] ?? null;
-                const low =
-                  product.status === "available" && product.stock <= LOW_STOCK;
+                const cover =
+                  getProductCoverImageFor("marketplace", product) ??
+                  product.images[0] ??
+                  null;
+                const sizes = sortProductSizes(product.sizes);
+                const hasSizes = sizes.length > 0;
+                const total = hasSizes
+                  ? sizes.reduce((sum, size) => sum + sizeQty(product, size), 0)
+                  : product.stock;
+                const low = product.status === "available" && total <= LOW_STOCK;
+                const busy = savingKey?.startsWith(product.id) ?? false;
+
                 return (
                   <motion.div
                     key={product.id}
                     variants={trPanelStaggerItem}
-                    className="flex flex-wrap items-center gap-3 px-3 py-3"
+                    className={`rounded-2xl border bg-white p-4 shadow-sm sm:p-5 ${
+                      low
+                        ? "border-amber-300"
+                        : "border-[color:var(--panel-accent-border)]"
+                    }`}
                   >
-                    <Link
-                      href={trPanelEditProductPath(product.id)}
-                      className="flex min-w-0 flex-1 items-center gap-3"
-                    >
-                      <div className="relative h-14 w-11 shrink-0 overflow-hidden bg-neutral-100">
+                    <div className="flex items-start gap-4">
+                      <Link
+                        href={trPanelEditProductPath(product.id)}
+                        className="relative h-20 w-16 shrink-0 overflow-hidden rounded-xl bg-[color:var(--panel-accent-soft)]"
+                      >
                         {cover ? (
                           <Image
                             src={cover}
                             alt=""
                             fill
                             unoptimized
-                            className="object-cover"
-                            sizes="44px"
+                            className="object-contain p-2"
+                            sizes="64px"
                           />
                         ) : null}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="truncate text-[14px] text-neutral-900">
+                      </Link>
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <p className="text-[19px] leading-snug font-semibold text-neutral-900">
                           {product.title}
                         </p>
                         {low ? (
-                          <p className="mt-1 text-[11px] tracking-[0.08em] text-amber-700 uppercase">
-                            Düşük stok
+                          <p className="inline-flex rounded-lg bg-amber-100 px-2.5 py-1 text-[14px] font-semibold text-amber-950">
+                            Düşük stok — dikkat
                           </p>
                         ) : null}
+                        <p className="text-[15px] text-neutral-600">
+                          Toplam:{" "}
+                          <span className="font-semibold text-neutral-900">
+                            {total}
+                          </span>
+                          {hasSizes ? " adet (tüm bedenler)" : " adet"}
+                        </p>
+                        <Link
+                          href={trPanelEditProductPath(product.id)}
+                          className="inline-block text-[15px] font-medium text-[color:var(--panel-accent-deep)]"
+                        >
+                          Ürünü düzenle →
+                        </Link>
                       </div>
-                    </Link>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        disabled={savingId === product.id || product.stock <= 0}
-                        onClick={() => void setStock(product, product.stock - 1)}
-                        className="flex h-9 w-9 items-center justify-center border border-black/15 text-[16px] disabled:opacity-40"
-                        aria-label="Stok azalt"
-                      >
-                        −
-                      </button>
-                      <span className="min-w-8 text-center font-serif text-xl tabular-nums">
-                        {product.stock}
-                      </span>
-                      <button
-                        type="button"
-                        disabled={savingId === product.id}
-                        onClick={() => void setStock(product, product.stock + 1)}
-                        className="flex h-9 w-9 items-center justify-center border border-black/15 text-[16px] disabled:opacity-40"
-                        aria-label="Stok artır"
-                      >
-                        +
-                      </button>
                     </div>
+
+                    {hasSizes ? (
+                      <div className="mt-4 space-y-2 border-t border-[color:var(--panel-accent-border)] pt-4">
+                        <p className="text-[16px] font-semibold text-neutral-800">
+                          Beden stokları
+                        </p>
+                        {sizes.map((size) => {
+                          const qty = sizeQty(product, size);
+                          const sizeLow =
+                            product.status === "available" && qty <= LOW_STOCK;
+                          return (
+                            <div
+                              key={size}
+                              className={`flex items-center justify-between gap-3 rounded-xl px-3 py-3 ${
+                                sizeLow
+                                  ? "bg-amber-50"
+                                  : "bg-[color:var(--panel-accent-soft)]"
+                              }`}
+                            >
+                              <div>
+                                <p className="text-[18px] font-semibold text-neutral-900">
+                                  {size}
+                                </p>
+                                <p className="text-[14px] text-neutral-600">
+                                  {qty === 0
+                                    ? "Stokta yok"
+                                    : sizeLow
+                                      ? "Az kaldı"
+                                      : "Stokta"}
+                                </p>
+                              </div>
+                              <StockStepper
+                                value={qty}
+                                disabled={busy}
+                                label={`${product.title} ${size}`}
+                                onDecrease={() =>
+                                  setSizeStock(product, size, qty - 1)
+                                }
+                                onIncrease={() =>
+                                  setSizeStock(product, size, qty + 1)
+                                }
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="mt-4 flex items-center justify-between gap-3 border-t border-[color:var(--panel-accent-border)] pt-4">
+                        <p className="text-[16px] font-semibold text-neutral-800">
+                          Toplam stok
+                        </p>
+                        <StockStepper
+                          value={product.stock}
+                          disabled={busy}
+                          label={product.title}
+                          onDecrease={() =>
+                            setTotalStock(product, product.stock - 1)
+                          }
+                          onIncrease={() =>
+                            setTotalStock(product, product.stock + 1)
+                          }
+                        />
+                      </div>
+                    )}
                   </motion.div>
                 );
               })}
@@ -190,19 +355,14 @@ export function TrOwnerStockPage() {
   return (
     <TrOwnerPanelGate>
       {({ activeBoutique }) => (
-        <div className="space-y-4">
+        <div className="space-y-5">
           <div>
-            <Link
-              href={trPanelPath()}
-              className="inline-block text-[11px] tracking-[0.1em] text-neutral-500 uppercase"
-            >
+            <Link href={trPanelPath()} className={panelBackLinkClass}>
               ← Ana sayfa
             </Link>
-            <h2 className="mt-2 font-serif text-2xl tracking-tight text-neutral-950">
-              Stok
-            </h2>
-            <p className="mt-1 text-[13px] text-neutral-600">
-              Envanteri buradan hızlıca güncelleyin.
+            <h2 className={panelPageTitleClass}>Stok</h2>
+            <p className="mt-2 text-[16px] leading-relaxed text-neutral-600">
+              Her bedenin stoğunu ayrı ayrı ayarlayın.
             </p>
           </div>
           <StockBoard boutiqueId={activeBoutique.id} />

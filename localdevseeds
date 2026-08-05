@@ -19,4 +19,7 @@ SUPABASE_SMTP_PASS=
 # NEXT_PUBLIC_MAINTENANCE_MODE=true
 
 # TR marketplace — platform checkout (all boutiques). false = WhatsApp interim flow.
+# next.config mirrors this to NEXT_PUBLIC_TR_CHECKOUT_ENABLED for Client Component SSR.
 TR_CHECKOUT_ENABLED=false
+# Or set the public flag explicitly (same effect):
+# NEXT_PUBLIC_TR_CHECKOUT_ENABLED=false

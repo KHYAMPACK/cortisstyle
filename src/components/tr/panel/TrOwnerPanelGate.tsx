@@ -10,6 +10,7 @@ import {
   TrPanelLoading,
   TrPanelPageTransition,
 } from "@/components/tr/panel/TrPanelMotion";
+import { useOwnerOrderAlerts } from "@/hooks/useOwnerOrderAlerts";
 import { useAuth } from "@/context/AuthContext";
 import {
   fetchOwnerBoutiques,
@@ -17,7 +18,7 @@ import {
 } from "@/lib/tr/ownerClient";
 import { isTrPanelNavActive, TR_PANEL_NAV } from "@/lib/tr/panelNav";
 import { panelAccentCssVars } from "@/lib/tr/panelTheme";
-import { trBoutiquePath, trPanelPath } from "@/lib/tr/paths";
+import { trBoutiquePath, trPanelOrdersPath, trPanelPath } from "@/lib/tr/paths";
 
 interface TrOwnerPanelGateProps {
   children: (context: {
@@ -91,6 +92,10 @@ export function TrOwnerPanelGate({ children }: TrOwnerPanelGateProps) {
 
   const activeBoutique =
     boutiques.find((entry) => entry.id === activeBoutiqueId) ?? boutiques[0];
+
+  const { hasNewOrders } = useOwnerOrderAlerts(
+    isAuthenticated && activeBoutique ? activeBoutique.id : null,
+  );
 
   const accentStyle = panelAccentCssVars(
     activeBoutique?.themeAccent,
@@ -204,11 +209,13 @@ export function TrOwnerPanelGate({ children }: TrOwnerPanelGateProps) {
           >
             {TR_PANEL_NAV.map((item) => {
               const active = isTrPanelNavActive(pathname, item);
+              const showOrderDot =
+                item.href === trPanelOrdersPath() && hasNewOrders;
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`shrink-0 rounded-full px-4 py-3 text-[15px] font-semibold transition-colors ${
+                  className={`relative shrink-0 rounded-full px-4 py-3 text-[15px] font-semibold transition-colors ${
                     active
                       ? "text-white shadow-sm"
                       : "bg-white text-neutral-700 ring-1 ring-[color:var(--panel-accent-border)] hover:bg-[color:var(--panel-accent-soft)]"
@@ -218,8 +225,19 @@ export function TrOwnerPanelGate({ children }: TrOwnerPanelGateProps) {
                       ? { backgroundColor: "var(--panel-accent)" }
                       : undefined
                   }
+                  aria-label={
+                    showOrderDot
+                      ? `${item.label} — yeni sipariş var`
+                      : item.label
+                  }
                 >
                   {item.label}
+                  {showOrderDot ? (
+                    <span
+                      className="absolute top-1.5 right-1.5 h-2.5 w-2.5 rounded-full bg-rose-500 ring-2 ring-white"
+                      aria-hidden
+                    />
+                  ) : null}
                 </Link>
               );
             })}

@@ -8,6 +8,7 @@ import type {
   TrProductColor,
   TrShippingAddress,
 } from "@/types/tr-marketplace";
+import { readSizeStocks } from "@/lib/tr/sizeStocks";
 
 function readStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
@@ -145,12 +146,14 @@ export function mapProductRow(row: Record<string, unknown>): TrProduct {
     category: (row.category as string | null) ?? null,
     images: readStringArray(row.images),
     marketplaceImages: readStringArray(row.marketplace_images),
+    lifestyleImages: readStringArray(row.lifestyle_images),
     catalogBackgroundId:
       typeof row.catalog_background_id === "string"
         ? row.catalog_background_id
         : null,
     status: row.status as TrProduct["status"],
     stock: typeof row.stock === "number" ? row.stock : 1,
+    sizeStocks: readSizeStocks(row.size_stocks),
     sortOrder: (row.sort_order as number) ?? 0,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
@@ -220,6 +223,7 @@ export function mapOrderItemRow(row: Record<string, unknown>): TrOrderItem {
     priceKurus: row.price_kurus as number,
     quantity: (row.quantity as number) ?? 1,
     createdAt: row.created_at as string,
+    imageUrl: null,
   };
 }
 

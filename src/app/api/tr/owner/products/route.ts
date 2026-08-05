@@ -3,6 +3,11 @@ import {
   requireTrOwner,
 } from "@/lib/tr/ownerAuth";
 import { createProductAdmin, listProductsByBoutiqueIdAdmin } from "@/lib/tr/products";
+import {
+  readSizeStocks,
+  sizeStocksForSizes,
+  sumSizeStocks,
+} from "@/lib/tr/sizeStocks";
 import { parseTryToKurus } from "@/types/tr-marketplace";
 import type { TrProductColor, TrProductStatus } from "@/types/tr-marketplace";
 
@@ -144,6 +149,15 @@ export async function POST(request: Request) {
     stock = parsed;
   }
 
+  const sizes = readStringArray(body.sizes) ?? [];
+  let sizeStocks: Record<string, number> = {};
+  if (body.sizeStocks !== undefined) {
+    sizeStocks = sizeStocksForSizes(sizes, readSizeStocks(body.sizeStocks));
+    if (sizes.length > 0) {
+      stock = sumSizeStocks(sizeStocks);
+    }
+  }
+
   let compareAtPriceKurus: number | null | undefined;
   if (
     body.compareAtPriceKurus !== undefined ||
@@ -186,11 +200,12 @@ export async function POST(request: Request) {
         typeof body.description === "string" ? body.description : null,
       priceKurus,
       compareAtPriceKurus,
-      sizes: readStringArray(body.sizes) ?? [],
+      sizes,
       colors: readColors(body.colors) ?? [],
       category: typeof body.category === "string" ? body.category : null,
       images: readStringArray(body.images) ?? [],
       marketplaceImages: readStringArray(body.marketplaceImages) ?? [],
+      lifestyleImages: readStringArray(body.lifestyleImages) ?? [],
       catalogBackgroundId:
         typeof body.catalogBackgroundId === "string"
           ? body.catalogBackgroundId.trim() || null
@@ -199,6 +214,7 @@ export async function POST(request: Request) {
         typeof body.conditionLabel === "string" ? body.conditionLabel : null,
       status,
       stock,
+      sizeStocks,
     });
 
     return Response.json({ product }, { status: 201 });

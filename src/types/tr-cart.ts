@@ -9,6 +9,21 @@ export interface TrCartLineItem {
   size: string | null;
 }
 
+/** Stable identity for one cart row — same product + different beden = separate lines. */
+export function cartLineKey(
+  item: Pick<TrCartLineItem, "productId" | "size">,
+): string {
+  const size = item.size?.trim().toLocaleUpperCase("en") ?? "";
+  return `${item.productId}::${size}`;
+}
+
+export function sameCartLine(
+  a: Pick<TrCartLineItem, "productId" | "size">,
+  b: Pick<TrCartLineItem, "productId" | "size">,
+): boolean {
+  return cartLineKey(a) === cartLineKey(b);
+}
+
 export interface TrCheckoutFormData {
   customerName: string;
   customerEmail: string;

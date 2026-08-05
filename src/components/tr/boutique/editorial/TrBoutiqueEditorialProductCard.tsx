@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Image from "next/image";
 import { TrFavoriteButton } from "@/components/tr/TrFavoriteButton";
@@ -11,7 +11,11 @@ import { TrBoutiquePendingLink } from "@/components/tr/boutique/editorial/TrBout
 import { EDITORIAL_SALE_RED } from "@/lib/tr/boutiqueHome";
 import { trProductPath } from "@/lib/tr/paths";
 import { resolveProductColors } from "@/lib/tr/productOptions";
-import { getProductCoverImageFor, isCatalogCutoutImage } from "@/lib/tr/productImages";
+import {
+  getProductCoverImageFor,
+  getProductHoverImage,
+  isCatalogCutoutImage,
+} from "@/lib/tr/productImages";
 import {
   formatTryFromKurus,
   type TrProduct,
@@ -32,6 +36,7 @@ export function TrBoutiqueEditorialProductCard({
   priority = false,
 }: TrBoutiqueEditorialProductCardProps) {
   const coverImage = getProductCoverImageFor("marketplace", product);
+  const modelImage = getProductHoverImage(product);
   const coverIsCutout = isCatalogCutoutImage(coverImage);
   const colors = resolveProductColors(product);
   const isSold = product.status === "sold";
@@ -86,12 +91,31 @@ export function TrBoutiqueEditorialProductCard({
               alt=""
               fill
               priority={priority}
+              unoptimized
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
               className={`${
-                coverIsCutout
-                  ? "object-contain p-3 transition-transform duration-700 group-hover:scale-[1.02]"
-                  : "object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+                coverIsCutout ? "object-contain p-3" : "object-cover"
+              } transition-opacity duration-500 ${
+                modelImage
+                  ? "opacity-100 group-hover:opacity-0"
+                  : "transition-transform duration-700 group-hover:scale-[1.02]"
               } ${isSold ? "opacity-60" : ""}`}
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center px-4 text-center text-[12px] text-neutral-400">
+              {product.title}
+            </div>
+          )}
+          {modelImage ? (
+            <Image
+              src={modelImage}
+              alt=""
+              fill
+              unoptimized
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              className={`object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-100 ${
+                isSold ? "!opacity-60" : ""
+              }`}
             />
           ) : null}
         </TrBoutiquePendingLink>

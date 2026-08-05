@@ -101,8 +101,10 @@ export interface TrOwnerProductPayload {
   category: string | null;
   images: string[];
   marketplaceImages?: string[];
+  lifestyleImages?: string[];
   catalogBackgroundId?: string | null;
   stock?: number;
+  sizeStocks?: Record<string, number>;
   conditionLabel?: string | null;
   status?: TrProductStatus;
 }
@@ -210,6 +212,159 @@ export async function uploadOwnerProductImage(
     marketplaceStatus,
     marketplaceError: data.marketplaceError ?? null,
   };
+}
+
+export interface OwnerListingDraft {
+  title: string;
+  description: string;
+}
+
+export interface OwnerPackshotResult {
+  status: string;
+  imageUrls: string[];
+  predictionId: string | null;
+  creditsUsed: number | null;
+  error: string | null;
+  listingDraft?: OwnerListingDraft | null;
+}
+
+export async function requestOwnerPackshot(input: {
+  boutiqueId: string;
+  sourceImageUrl: string;
+  productId?: string;
+  title?: string;
+  category?: string | null;
+  view?: "front" | "back" | "extra";
+  promptExtra?: string;
+  /** From prepare-packshot — avoids a second Gemini call. */
+  prompt?: string;
+  listingDraft?: OwnerListingDraft | null;
+  numImages?: number;
+}): Promise<OwnerPackshotResult> {
+  const response = await ownerFetch("/api/tr/owner/ai-catalog/packshot", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  const data = (await response.json()) as {
+    ok?: boolean;
+    result?: OwnerPackshotResult;
+    error?: string;
+  };
+  if (!response.ok) {
+    throw new Error(data.error ?? "Packshot üretilemedi.");
+  }
+  if (!data.result) {
+    throw new Error("Packshot yanıtı eksik.");
+  }
+  return data.result;
+}
+
+export interface OwnerPackshotPrepareResult {
+  prompt: string;
+  listingDraft: OwnerListingDraft | null;
+  usedGemini: boolean;
+}
+
+/** Gemini identify + packshot prompt only (no FASHN). */
+export async function requestOwnerPackshotPrepare(input: {
+  boutiqueId: string;
+  sourceImageUrl: string;
+  title?: string;
+  category?: string | null;
+  view?: "front" | "back" | "extra";
+  promptExtra?: string;
+}): Promise<OwnerPackshotPrepareResult> {
+  const response = await ownerFetch(
+    "/api/tr/owner/ai-catalog/prepare-packshot",
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    },
+  );
+  const data = (await response.json()) as {
+    ok?: boolean;
+    prompt?: string;
+    listingDraft?: OwnerListingDraft | null;
+    usedGemini?: boolean;
+    error?: string;
+  };
+  if (!response.ok) {
+    throw new Error(data.error ?? "Ürün analizi başarısız.");
+  }
+  if (!data.prompt?.trim()) {
+    throw new Error("Packshot prompt eksik.");
+  }
+  return {
+    prompt: data.prompt.trim(),
+    listingDraft: data.listingDraft?.title?.trim()
+      ? {
+          title: data.listingDraft.title.trim(),
+          description: data.listingDraft.description?.trim() ?? "",
+        }
+      : null,
+    usedGemini: Boolean(data.usedGemini),
+  };
+}
+
+export async function requestOwnerListingDraft(input: {
+  boutiqueId: string;
+  sourceImageUrl: string;
+  category?: string | null;
+}): Promise<OwnerListingDraft> {
+  const response = await ownerFetch("/api/tr/owner/ai-catalog/listing-draft", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  const data = (await response.json()) as {
+    ok?: boolean;
+    draft?: OwnerListingDraft;
+    error?: string;
+  };
+  if (!response.ok) {
+    throw new Error(data.error ?? "Ürün metni oluşturulamadı.");
+  }
+  if (!data.draft?.title?.trim()) {
+    throw new Error("Ürün metni yanıtı eksik.");
+  }
+  return data.draft;
+}
+
+export interface OwnerAiModelGenerateResult {
+  status: string;
+  providerId?: string;
+  imageUrl?: string;
+  jobId?: string;
+  creditsUsed?: number | null;
+  error?: string;
+  stub?: boolean;
+}
+
+export async function requestOwnerAiModelGenerate(input: {
+  boutiqueId: string;
+  cutoutImageUrl: string;
+  originalImageUrl?: string;
+  productId?: string;
+  title?: string;
+  category?: string | null;
+  pose?: "standing-front" | "standing-three-quarter" | "full-body" | "waist-up";
+  modelId?: string;
+}): Promise<OwnerAiModelGenerateResult> {
+  const response = await ownerFetch("/api/tr/owner/ai-model/generate", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  const data = (await response.json()) as {
+    ok?: boolean;
+    result?: OwnerAiModelGenerateResult;
+    error?: string;
+  };
+  if (!response.ok) {
+    throw new Error(data.error ?? "Model görseli üretilemedi.");
+  }
+  if (!data.result) {
+    throw new Error("Model görseli yanıtı eksik.");
+  }
+  return data.result;
 }
 
 export interface TrOwnerSummaryResponse {
@@ -410,6 +565,63 @@ export async function setOwnerDiscountCodeActive(
   }
   if (!data.code) throw new Error("Kupon güncellenemedi.");
   return data.code;
+}
+
+export async function fetchOwnerContentPacks(boutiqueId: string) {
+  const response = await ownerFetch(
+    `/api/tr/owner/content-packs?boutiqueId=${encodeURIComponent(boutiqueId)}`,
+  );
+  const data = (await response.json()) as {
+    packs?: import("@/lib/tr/contentPacks").TrContentPack[];
+    error?: string;
+  };
+  if (!response.ok) {
+    throw new Error(data.error ?? "İçerik paketleri yüklenemedi.");
+  }
+  return data.packs ?? [];
+}
+
+export async function fetchOwnerContentPack(packId: string) {
+  const response = await ownerFetch(
+    `/api/tr/owner/content-packs/${encodeURIComponent(packId)}`,
+  );
+  const data = (await response.json()) as {
+    pack?: import("@/lib/tr/contentPacks").TrContentPack;
+    error?: string;
+  };
+  if (!response.ok) {
+    throw new Error(data.error ?? "İçerik paketi yüklenemedi.");
+  }
+  if (!data.pack) throw new Error("İçerik paketi bulunamadı.");
+  return data.pack;
+}
+
+export async function createOwnerContentPack(
+  boutiqueId: string,
+  productId: string,
+): Promise<{
+  pack: import("@/lib/tr/contentPacks").TrContentPack;
+  warning: string | null;
+}> {
+  const response = await ownerFetch("/api/tr/owner/content-packs", {
+    method: "POST",
+    body: JSON.stringify({ boutiqueId, productId }),
+  });
+  const data = (await response.json()) as {
+    pack?: import("@/lib/tr/contentPacks").TrContentPack;
+    warning?: string | null;
+    error?: string;
+  };
+  if (!response.ok && !data.pack) {
+    throw new Error(data.error ?? "İçerik paketi oluşturulamadı.");
+  }
+  if (!data.pack) {
+    throw new Error(data.error ?? "İçerik paketi oluşturulamadı.");
+  }
+  return {
+    pack: data.pack,
+    warning: data.warning ?? data.error ?? null,
+  };
 }
 
 export interface TrOwnerBoutiqueSettings {

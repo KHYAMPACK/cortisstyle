@@ -1,9 +1,25 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
+import {
+  FULFILLMENT_HINT,
+  FULFILLMENT_LABEL,
+  FULFILLMENT_TONE,
+  PAYMENT_LABEL,
+  formatOrderDateLong,
+} from "@/components/tr/panel/orderFulfillmentUi";
+import {
+  panelBackLinkClass,
+  panelChipClass,
+  panelErrorClass,
+  panelHintClass,
+  panelPageTitleClass,
+  panelSectionClass,
+} from "@/components/tr/panel/panelUi";
 import {
   TrPanelFadeIn,
   TrPanelLoading,
@@ -19,21 +35,13 @@ import {
   type TrOrderWithItems,
 } from "@/types/tr-marketplace";
 
-const FULFILLMENT_OPTIONS: Array<{ id: TrFulfillmentStatus; label: string }> = [
-  { id: "created", label: "Oluşturuldu" },
-  { id: "ready", label: "Kargoya hazır" },
-  { id: "shipped", label: "Gönderildi" },
-  { id: "delivered", label: "Teslim edildi" },
-  { id: "cancelled", label: "İptal" },
+const FULFILLMENT_OPTIONS: TrFulfillmentStatus[] = [
+  "created",
+  "ready",
+  "shipped",
+  "delivered",
+  "cancelled",
 ];
-
-function formatOrderDate(iso: string): string {
-  return new Intl.DateTimeFormat("tr-TR", {
-    timeZone: "Europe/Istanbul",
-    dateStyle: "long",
-    timeStyle: "short",
-  }).format(new Date(iso));
-}
 
 function OrderDetail({
   boutiqueId,
@@ -101,97 +109,139 @@ function OrderDetail({
         <TrPanelLoading key="od-loading" label="Sipariş yükleniyor…" />
       ) : error && !order ? (
         <TrPanelFadeIn key="od-error">
-          <p className="border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-800">
-            {error}
-          </p>
+          <p className={panelErrorClass}>{error}</p>
         </TrPanelFadeIn>
       ) : order ? (
-        <TrPanelFadeIn key="od-ready" className="space-y-6">
-          {error ? (
-            <p className="border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-800">
-              {error}
-            </p>
-          ) : null}
+        <TrPanelFadeIn key="od-ready" className="space-y-5">
+          {error ? <p className={panelErrorClass}>{error}</p> : null}
 
-          <div className="border border-black/10 bg-white px-4 py-5">
-            <p className="text-[11px] tracking-[0.12em] text-neutral-500 uppercase">
-              {formatOrderDate(order.createdAt)}
+          <section className={panelSectionClass}>
+            <p className="text-[15px] text-neutral-600">
+              {formatOrderDateLong(order.createdAt)}
             </p>
-            <p className="mt-2 font-serif text-2xl text-neutral-950">
+            <p className="mt-2 text-[22px] font-semibold text-neutral-950 sm:text-[24px]">
               {order.customerName}
             </p>
-            <p className="mt-1 text-[13px] text-neutral-600">
+            <p className={`mt-2 ${panelHintClass}`}>
               {order.customerEmail}
               {order.customerPhone ? ` · ${order.customerPhone}` : ""}
             </p>
-            <p className="mt-4 font-serif text-3xl tabular-nums">
+            <p className="mt-4 text-[28px] font-semibold tabular-nums text-neutral-950">
               {formatTryFromKurus(order.totalKurus)}
             </p>
-            <p className="mt-1 text-[11px] text-neutral-500">
-              Ödeme: {order.paymentStatus}
-              {order.isSandbox ? " (sandbox)" : ""}
-            </p>
-          </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <span
+                className={`rounded-lg px-2.5 py-1 text-[14px] font-semibold ${FULFILLMENT_TONE[order.fulfillmentStatus]}`}
+              >
+                {FULFILLMENT_LABEL[order.fulfillmentStatus]}
+              </span>
+              <span className="rounded-lg bg-neutral-100 px-2.5 py-1 text-[14px] font-medium text-neutral-700">
+                {
+                  PAYMENT_LABEL[
+                    order.isSandbox || order.paymentStatus === "sandbox"
+                      ? "sandbox"
+                      : order.paymentStatus
+                  ]
+                }
+              </span>
+            </div>
+          </section>
 
-          <div className="space-y-2">
-            <p className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
+          <section className={panelSectionClass}>
+            <p className="text-[19px] font-semibold text-neutral-900">
               Sipariş durumu
             </p>
-            <div className="flex flex-wrap gap-2">
-              {FULFILLMENT_OPTIONS.map((option) => (
+            <p className={`mt-2 ${panelHintClass}`}>
+              {FULFILLMENT_HINT[order.fulfillmentStatus]}
+            </p>
+            <p className={`mt-3 ${panelHintClass}`}>
+              İşlem ilerledikçe aşağıdaki düğmelerden durumu güncelleyin.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {FULFILLMENT_OPTIONS.map((id) => (
                 <button
-                  key={option.id}
+                  key={id}
                   type="button"
                   disabled={saving}
-                  onClick={() => void setStatus(option.id)}
-                  className={`px-3 py-2 text-[11px] tracking-[0.08em] uppercase disabled:opacity-50 ${
-                    order.fulfillmentStatus === option.id
-                      ? "bg-neutral-950 text-white"
-                      : "border border-black/10 bg-white text-neutral-700"
-                  }`}
+                  onClick={() => void setStatus(id)}
+                  className={panelChipClass(order.fulfillmentStatus === id)}
+                  style={
+                    order.fulfillmentStatus === id
+                      ? { backgroundColor: "var(--panel-accent)" }
+                      : undefined
+                  }
                 >
-                  {option.label}
+                  {FULFILLMENT_LABEL[id]}
                 </button>
               ))}
             </div>
-          </div>
+            {saving ? (
+              <p className={`mt-3 ${panelHintClass}`}>Kaydediliyor…</p>
+            ) : null}
+          </section>
 
-          <div className="border border-black/10 bg-white">
-            <p className="border-b border-black/10 px-4 py-3 text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
-              Ürünler
+          <section className={panelSectionClass}>
+            <p className="text-[19px] font-semibold text-neutral-900">
+              Paketlenecek ürünler
             </p>
-            <ul className="divide-y divide-black/10">
+            <p className={`mt-1 ${panelHintClass}`}>
+              Bunları kutuya koyun, sonra barkodu yapıştırın.
+            </p>
+            <ul className="mt-4 divide-y divide-[color:var(--panel-accent-border)]">
               {order.items.map((item) => (
                 <li
                   key={item.id}
-                  className="flex items-center justify-between gap-3 px-4 py-3 text-[13px]"
+                  className="flex items-center gap-4 py-4 text-[17px]"
                 >
-                  <span>
-                    {item.title}{" "}
-                    <span className="text-neutral-500">×{item.quantity}</span>
-                  </span>
-                  <span className="tabular-nums">
+                  <div className="relative h-24 w-20 shrink-0 overflow-hidden rounded-xl bg-[color:var(--panel-accent-soft)]">
+                    {item.imageUrl ? (
+                      <Image
+                        src={item.imageUrl}
+                        alt={item.title}
+                        fill
+                        unoptimized
+                        className="object-contain p-2"
+                        sizes="80px"
+                      />
+                    ) : (
+                      <span className="flex h-full w-full items-center justify-center text-[18px] font-semibold text-neutral-500">
+                        {item.title.slice(0, 1)}
+                      </span>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-neutral-900">{item.title}</p>
+                    <p className="mt-1 text-[15px] text-neutral-600">
+                      Adet: {item.quantity}
+                    </p>
+                  </div>
+                  <span className="shrink-0 tabular-nums text-neutral-800">
                     {formatTryFromKurus(item.priceKurus * item.quantity)}
                   </span>
                 </li>
               ))}
             </ul>
-          </div>
+          </section>
 
-          <div className="border border-black/10 bg-white px-4 py-4 text-[13px] text-neutral-700">
-            <p className="text-[11px] tracking-[0.12em] text-neutral-500 uppercase">
-              Teslimat
+          <section className={panelSectionClass}>
+            <p className="text-[19px] font-semibold text-neutral-900">
+              Teslimat adresi
             </p>
-            <p className="mt-2">{order.shippingAddress.line1}</p>
-            {order.shippingAddress.line2 ? (
-              <p>{order.shippingAddress.line2}</p>
-            ) : null}
-            <p>
-              {order.shippingAddress.district}, {order.shippingAddress.city}{" "}
-              {order.shippingAddress.postalCode}
+            <p className={`mt-1 ${panelHintClass}`}>
+              Kargo etiketindeki adres bu olmalı.
             </p>
-            <p>{order.shippingAddress.country}</p>
-          </div>
+            <div className="mt-4 space-y-1 text-[17px] leading-relaxed text-neutral-800">
+              <p>{order.shippingAddress.line1}</p>
+              {order.shippingAddress.line2 ? (
+                <p>{order.shippingAddress.line2}</p>
+              ) : null}
+              <p>
+                {order.shippingAddress.district}, {order.shippingAddress.city}{" "}
+                {order.shippingAddress.postalCode}
+              </p>
+              <p>{order.shippingAddress.country}</p>
+            </div>
+          </section>
         </TrPanelFadeIn>
       ) : null}
     </AnimatePresence>
@@ -202,20 +252,19 @@ export function TrOwnerOrderDetailPage({ orderId }: { orderId: string }) {
   return (
     <TrOwnerPanelGate>
       {({ activeBoutique }) => (
-        <div className="space-y-4">
+        <div className="space-y-5">
           <div>
-            <Link
-              href={trPanelOrdersPath()}
-              className="inline-block text-[11px] tracking-[0.1em] text-neutral-500 uppercase"
-            >
+            <Link href={trPanelOrdersPath()} className={panelBackLinkClass}>
               ← Siparişler
             </Link>
-            <h2 className="mt-2 font-serif text-2xl tracking-tight text-neutral-950">
-              Sipariş detayı
-            </h2>
+            <h2 className={panelPageTitleClass}>Sipariş detayı</h2>
+            <p className="mt-2 text-[16px] leading-relaxed text-neutral-600">
+              Ürünleri paketleyin, barkodu yapıştırın, kargoya verin; durumu
+              buradan güncelleyin.
+            </p>
             <Link
               href={trPanelPath()}
-              className="mt-1 inline-block text-[11px] text-neutral-500"
+              className={`mt-2 block ${panelBackLinkClass}`}
             >
               Ana sayfa
             </Link>

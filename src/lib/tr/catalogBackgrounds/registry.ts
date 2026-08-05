@@ -22,9 +22,9 @@ export const TR_CATALOG_BACKGROUNDS: readonly TrCatalogBackground[] = [
     css: "#F7F3EB",
   },
   {
-    id: "blush",
-    label: "Pudra",
-    css: "#F6E8EC",
+    id: "cool-gray",
+    label: "Açık gri",
+    css: "#E8EAED",
   },
   {
     id: "warm-sand",
@@ -32,19 +32,43 @@ export const TR_CATALOG_BACKGROUNDS: readonly TrCatalogBackground[] = [
     css: "#E8DFD0",
   },
   {
-    id: "cool-gray",
-    label: "Açık gri",
-    css: "#E8EAED",
-  },
-  {
     id: "soft-sage",
     label: "Adaçayı",
     css: "#E4EBE4",
   },
   {
+    id: "blush",
+    label: "Pudra",
+    css: "#F6E8EC",
+  },
+  {
     id: "dawn",
     label: "Şafak",
     css: "linear-gradient(165deg, #FBF6F0 0%, #EFE4D8 55%, #E8D5C8 100%)",
+  },
+  {
+    id: "concrete",
+    label: "Beton",
+    css: "center / cover no-repeat url('/tr/catalog-bg/concrete.webp')",
+  },
+  {
+    id: "wood",
+    label: "Ahşap",
+    css: "center / cover no-repeat url('/tr/catalog-bg/wood.webp')",
+  },
+  {
+    id: "linen",
+    label: "Keten",
+    css: [
+      "repeating-linear-gradient(0deg, rgba(90,70,50,0.04) 0 1px, transparent 1px 3px)",
+      "repeating-linear-gradient(90deg, rgba(90,70,50,0.035) 0 1px, transparent 1px 3px)",
+      "linear-gradient(180deg, #F3EBDD 0%, #E8DCC8 100%)",
+    ].join(", "),
+  },
+  {
+    id: "slate",
+    label: "Arduvaz",
+    css: "linear-gradient(145deg, #4A4F55 0%, #2F343A 45%, #3A4046 100%)",
   },
   {
     id: "cutout",

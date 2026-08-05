@@ -2,14 +2,14 @@
 
 import { create, type StoreApi, type UseBoundStore } from "zustand";
 import { persist } from "zustand/middleware";
-import type { TrCartLineItem } from "@/types/tr-cart";
+import { sameCartLine, type TrCartLineItem } from "@/types/tr-cart";
 
 interface TrBoutiqueLocalCartStore {
   items: TrCartLineItem[];
   addItem: (item: TrCartLineItem) => boolean;
-  removeItem: (productId: string) => void;
+  removeItem: (productId: string, size?: string | null) => void;
   clearCart: () => void;
-  hasItem: (productId: string) => boolean;
+  hasItem: (productId: string, size?: string | null) => boolean;
 }
 
 type CartStore = UseBoundStore<StoreApi<TrBoutiqueLocalCartStore>> & {
@@ -21,51 +21,50 @@ type CartStore = UseBoundStore<StoreApi<TrBoutiqueLocalCartStore>> & {
 
 const storeCache = new Map<string, CartStore>();
 
+function cartApi(set: (partial: { items: TrCartLineItem[] }) => void, get: () => TrBoutiqueLocalCartStore) {
+  return {
+    items: [] as TrCartLineItem[],
+    addItem: (item: TrCartLineItem) => {
+      if (get().items.some((entry) => sameCartLine(entry, item))) {
+        return false;
+      }
+      set({ items: [...get().items, item] });
+      return true;
+    },
+    removeItem: (productId: string, size?: string | null) => {
+      set({
+        items: get().items.filter((entry) => {
+          if (size === undefined) {
+            return entry.productId !== productId;
+          }
+          return !sameCartLine(entry, { productId, size });
+        }),
+      });
+    },
+    clearCart: () => set({ items: [] }),
+    hasItem: (productId: string, size?: string | null) =>
+      get().items.some((entry) => {
+        if (size === undefined) {
+          return entry.productId === productId;
+        }
+        return sameCartLine(entry, { productId, size });
+      }),
+  };
+}
+
 function createBoutiqueLocalCartStore(
   boutiqueSlug: string,
   persistEnabled: boolean,
 ): CartStore {
   if (!persistEnabled) {
-    return create<TrBoutiqueLocalCartStore>()((set, get) => ({
-      items: [],
-      addItem: (item) => {
-        if (get().items.some((entry) => entry.productId === item.productId)) {
-          return false;
-        }
-        set({ items: [...get().items, item] });
-        return true;
-      },
-      removeItem: (productId) => {
-        set({
-          items: get().items.filter((entry) => entry.productId !== productId),
-        });
-      },
-      clearCart: () => set({ items: [] }),
-      hasItem: (productId) =>
-        get().items.some((entry) => entry.productId === productId),
-    })) as CartStore;
+    return create<TrBoutiqueLocalCartStore>()((set, get) =>
+      cartApi(set, get),
+    ) as CartStore;
   }
 
   return create<TrBoutiqueLocalCartStore>()(
     persist(
-      (set, get) => ({
-        items: [],
-        addItem: (item) => {
-          if (get().items.some((entry) => entry.productId === item.productId)) {
-            return false;
-          }
-          set({ items: [...get().items, item] });
-          return true;
-        },
-        removeItem: (productId) => {
-          set({
-            items: get().items.filter((entry) => entry.productId !== productId),
-          });
-        },
-        clearCart: () => set({ items: [] }),
-        hasItem: (productId) =>
-          get().items.some((entry) => entry.productId === productId),
-      }),
+      (set, get) => cartApi(set, get),
       {
         name: `cortis-tr-cart:boutique:${boutiqueSlug}`,
         partialize: (state) => ({ items: state.items }),

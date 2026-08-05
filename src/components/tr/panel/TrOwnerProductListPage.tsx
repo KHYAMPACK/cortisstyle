@@ -6,11 +6,19 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
 import {
+  panelBackLinkClass,
+  panelEmptyClass,
+  panelErrorClass,
+  panelPageTitleClass,
+  panelPrimaryBtnClass,
+} from "@/components/tr/panel/panelUi";
+import {
   TrPanelFadeIn,
   TrPanelLoading,
   TrPanelStagger,
   trPanelStaggerItem,
 } from "@/components/tr/panel/TrPanelMotion";
+import { getProductCoverImageFor } from "@/lib/tr/productImages";
 import { fetchOwnerProducts } from "@/lib/tr/ownerClient";
 import {
   trPanelEditProductPath,
@@ -24,6 +32,12 @@ const STATUS_LABEL: Record<string, string> = {
   available: "Satışta",
   sold: "Satıldı",
   hidden: "Gizli",
+};
+
+const STATUS_TONE: Record<string, string> = {
+  available: "bg-emerald-50 text-emerald-900",
+  sold: "bg-neutral-100 text-neutral-700",
+  hidden: "bg-amber-50 text-amber-950",
 };
 
 function ProductList({ boutiqueId }: { boutiqueId: string }) {
@@ -65,62 +79,102 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
         <TrPanelLoading key="products-loading" label="Ürünler yükleniyor…" />
       ) : error ? (
         <TrPanelFadeIn key="products-error">
-          <p className="border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-800">
-            {error}
-          </p>
+          <p className={panelErrorClass}>{error}</p>
         </TrPanelFadeIn>
       ) : (
-        <TrPanelFadeIn key="products-ready" className="space-y-4">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-[12px] text-neutral-600">
+        <TrPanelFadeIn key="products-ready" className="space-y-5">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <p className="text-[17px] font-medium text-neutral-700">
               {products.length} ürün
             </p>
             <Link
               href={trPanelNewProductPath()}
-              className="inline-flex min-h-12 items-center rounded-xl bg-[#C2185B] px-5 py-3 text-[15px] font-semibold text-white"
+              className={panelPrimaryBtnClass}
+              style={{ backgroundColor: "var(--panel-accent)" }}
             >
-              Yeni ürün
+              + Yeni ürün ekle
             </Link>
           </div>
 
           {products.length === 0 ? (
-            <p className="border border-black/10 bg-white px-4 py-8 text-[13px] text-neutral-600">
-              Henüz ürün yok. İlk ürününüzü ekleyin.
+            <p className={panelEmptyClass}>
+              Henüz ürün yok.
+              <br />
+              <Link
+                href={trPanelNewProductPath()}
+                className="mt-3 inline-block font-semibold underline"
+                style={{ color: "var(--panel-accent-deep)" }}
+              >
+                İlk ürününüzü ekleyin
+              </Link>
             </p>
           ) : (
-            <TrPanelStagger className="divide-y divide-[#F5C6D6] overflow-hidden rounded-2xl border border-[#F5C6D6] bg-white shadow-sm">
+            <TrPanelStagger className="space-y-3">
               {products.map((product) => {
-                const cover = product.images[0] ?? null;
+                const cover =
+                  getProductCoverImageFor("marketplace", product) ??
+                  product.images[0] ??
+                  null;
+                const statusLabel =
+                  STATUS_LABEL[product.status] ?? product.status;
+                const statusTone =
+                  STATUS_TONE[product.status] ?? STATUS_TONE.hidden;
+                const onSale =
+                  typeof product.compareAtPriceKurus === "number" &&
+                  product.compareAtPriceKurus > product.priceKurus;
+
                 return (
                   <motion.div key={product.id} variants={trPanelStaggerItem}>
                     <Link
                       href={trPanelEditProductPath(product.id)}
-                      className="flex items-center gap-4 px-4 py-4 transition-colors hover:bg-[#FFF5F8]"
+                      className="flex items-center gap-4 rounded-2xl border border-[color:var(--panel-accent-border)] bg-white p-4 shadow-sm transition-colors hover:bg-[color:var(--panel-accent-soft)] sm:gap-5 sm:p-5"
                     >
-                      <div className="relative h-20 w-16 shrink-0 overflow-hidden rounded-xl bg-[#FFE4EE]">
+                      <div className="relative h-24 w-20 shrink-0 overflow-hidden rounded-xl bg-[color:var(--panel-accent-soft)] sm:h-28 sm:w-24">
                         {cover ? (
                           <Image
                             src={cover}
                             alt=""
                             fill
                             unoptimized
-                            className="object-cover"
-                            sizes="64px"
+                            className="object-contain p-2"
+                            sizes="96px"
                           />
                         ) : null}
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-[17px] font-medium text-neutral-900">
+                      <div className="min-w-0 flex-1 space-y-2">
+                        <p className="text-[19px] leading-snug font-semibold text-neutral-900 sm:text-[20px]">
                           {product.title}
                         </p>
-                        <p className="mt-1 text-[15px] text-neutral-600">
-                          {formatTryFromKurus(product.priceKurus)} · Stok{" "}
-                          {product.stock} ·{" "}
-                          {STATUS_LABEL[product.status] ?? product.status}
-                          {typeof product.compareAtPriceKurus === "number" &&
-                          product.compareAtPriceKurus > product.priceKurus
-                            ? " · İndirim"
-                            : ""}
+                        <p className="text-[18px] font-medium text-neutral-800">
+                          {formatTryFromKurus(product.priceKurus)}
+                          {onSale ? (
+                            <span className="ml-2 text-[15px] font-normal text-neutral-500 line-through">
+                              {formatTryFromKurus(product.compareAtPriceKurus!)}
+                            </span>
+                          ) : null}
+                        </p>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span
+                            className={`rounded-lg px-2.5 py-1 text-[14px] font-semibold ${statusTone}`}
+                          >
+                            {statusLabel}
+                          </span>
+                          <span className="rounded-lg bg-neutral-100 px-2.5 py-1 text-[14px] font-medium text-neutral-700">
+                            Stok: {product.stock}
+                          </span>
+                          {product.sizes.length > 0 ? (
+                            <span className="rounded-lg bg-neutral-100 px-2.5 py-1 text-[14px] font-medium text-neutral-700">
+                              {product.sizes.join(" · ")}
+                            </span>
+                          ) : null}
+                          {onSale ? (
+                            <span className="rounded-lg bg-rose-50 px-2.5 py-1 text-[14px] font-semibold text-rose-800">
+                              İndirimli
+                            </span>
+                          ) : null}
+                        </div>
+                        <p className="text-[15px] font-medium text-[color:var(--panel-accent-deep)]">
+                          Düzenlemek için dokunun →
                         </p>
                       </div>
                     </Link>
@@ -139,19 +193,15 @@ export function TrOwnerProductListPage() {
   return (
     <TrOwnerPanelGate>
       {({ activeBoutique }) => (
-        <div className="space-y-4">
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <Link
-                href={trPanelPath()}
-                className="inline-block text-[14px] font-medium text-[#C2185B]"
-              >
-                ← Ana sayfa
-              </Link>
-              <h2 className="mt-2 text-[1.75rem] font-semibold tracking-tight text-[#8E0D3F]">
-                Ürünler
-              </h2>
-            </div>
+        <div className="space-y-5">
+          <div>
+            <Link href={trPanelPath()} className={panelBackLinkClass}>
+              ← Ana sayfa
+            </Link>
+            <h2 className={panelPageTitleClass}>Ürünler</h2>
+            <p className="mt-2 text-[16px] leading-relaxed text-neutral-600">
+              Ürünlerinizi buradan görün ve düzenleyin.
+            </p>
           </div>
           <ProductList boutiqueId={activeBoutique.id} />
         </div>

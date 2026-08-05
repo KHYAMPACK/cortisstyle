@@ -1,48 +1,51 @@
 "use client";
 
 import Link from "next/link";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
+import { TrOrderItemThumbs } from "@/components/tr/panel/TrOrderItemThumbs";
+import { TrOwnerOrderProcessGuide } from "@/components/tr/panel/TrOwnerOrderProcessGuide";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
+import {
+  FULFILLMENT_FILTERS,
+  FULFILLMENT_HINT,
+  FULFILLMENT_LABEL,
+  FULFILLMENT_TONE,
+  PAYMENT_LABEL,
+  formatOrderDateShort,
+} from "@/components/tr/panel/orderFulfillmentUi";
+import {
+  panelBackLinkClass,
+  panelChipClass,
+  panelEmptyClass,
+  panelErrorClass,
+  panelHintClass,
+  panelPageTitleClass,
+} from "@/components/tr/panel/panelUi";
 import {
   TrPanelFadeIn,
   TrPanelLoading,
+  TrPanelStagger,
+  trPanelStaggerItem,
 } from "@/components/tr/panel/TrPanelMotion";
 import { fetchOwnerOrders } from "@/lib/tr/ownerClient";
-import {
-  trPanelOrderPath,
-  trPanelPath,
-} from "@/lib/tr/paths";
+import { markOrdersSeen } from "@/lib/tr/orderNotifications";
+import { trPanelOrderPath, trPanelPath } from "@/lib/tr/paths";
 import {
   formatTryFromKurus,
   type TrFulfillmentStatus,
   type TrOrderWithItems,
 } from "@/types/tr-marketplace";
 
-const FULFILLMENT_LABEL: Record<TrFulfillmentStatus, string> = {
-  created: "Oluşturuldu",
-  ready: "Kargoya hazır",
-  shipped: "Gönderildi",
-  delivered: "Teslim edildi",
-  cancelled: "İptal",
-};
-
-function formatOrderDate(iso: string): string {
-  return new Intl.DateTimeFormat("tr-TR", {
-    timeZone: "Europe/Istanbul",
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(iso));
-}
-
 function OrdersList({ boutiqueId }: { boutiqueId: string }) {
   const [orders, setOrders] = useState<TrOrderWithItems[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | TrFulfillmentStatus>("all");
+
+  useEffect(() => {
+    markOrdersSeen(boutiqueId);
+  }, [boutiqueId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -78,75 +81,123 @@ function OrdersList({ boutiqueId }: { boutiqueId: string }) {
     [filter, orders],
   );
 
+  const pendingCount = useMemo(
+    () =>
+      orders.filter(
+        (o) =>
+          o.fulfillmentStatus === "created" || o.fulfillmentStatus === "ready",
+      ).length,
+    [orders],
+  );
+
   return (
     <AnimatePresence mode="wait">
       {loading ? (
         <TrPanelLoading key="orders-loading" label="Siparişler yükleniyor…" />
       ) : error ? (
         <TrPanelFadeIn key="orders-error">
-          <p className="border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-800">
-            {error}
-          </p>
+          <p className={panelErrorClass}>{error}</p>
         </TrPanelFadeIn>
       ) : (
-        <TrPanelFadeIn key="orders-ready" className="space-y-4">
-          <div className="flex flex-wrap gap-2">
-            {(
-              [
-                "all",
-                "created",
-                "ready",
-                "shipped",
-                "delivered",
-                "cancelled",
-              ] as const
-            ).map((key) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => setFilter(key)}
-                className={`px-3 py-1.5 text-[11px] tracking-[0.08em] uppercase ${
-                  filter === key
-                    ? "bg-neutral-950 text-white"
-                    : "border border-black/10 bg-white text-neutral-700"
-                }`}
-              >
-                {key === "all" ? "Tümü" : FULFILLMENT_LABEL[key]}
-              </button>
-            ))}
+        <TrPanelFadeIn key="orders-ready" className="space-y-5">
+          <TrOwnerOrderProcessGuide />
+
+          <div className="space-y-3">
+            <p className="text-[17px] font-medium text-neutral-700">
+              {orders.length === 0
+                ? "Henüz sipariş yok"
+                : pendingCount > 0
+                  ? `${pendingCount} sipariş bekliyor · toplam ${orders.length}`
+                  : `${orders.length} sipariş`}
+            </p>
+            <p className={panelHintClass}>
+              Filtreyle sadece ilgilenmeniz gerekenleri gösterin. Bir satıra
+              dokunarak detayı açın.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {FULFILLMENT_FILTERS.map((key) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setFilter(key)}
+                  className={panelChipClass(filter === key)}
+                  style={
+                    filter === key
+                      ? { backgroundColor: "var(--panel-accent)" }
+                      : undefined
+                  }
+                >
+                  {key === "all" ? "Tümü" : FULFILLMENT_LABEL[key]}
+                </button>
+              ))}
+            </div>
           </div>
 
           {visible.length === 0 ? (
-            <p className="border border-black/10 bg-white px-4 py-8 text-[13px] text-neutral-600">
-              Bu filtrede sipariş yok.
+            <p className={panelEmptyClass}>
+              {orders.length === 0
+                ? "Müşteri alışveriş yapınca siparişler burada görünür."
+                : "Bu filtrede sipariş yok. “Tümü”ne geçmeyi deneyin."}
             </p>
           ) : (
-            <ul className="divide-y divide-black/10 border border-black/10 bg-white">
-              {visible.map((order) => (
-                <li key={order.id}>
-                  <Link
-                    href={trPanelOrderPath(order.id)}
-                    className="flex flex-wrap items-center justify-between gap-3 px-4 py-4 transition-colors hover:bg-neutral-50"
-                  >
-                    <div>
-                      <p className="text-[14px] font-medium text-neutral-900">
-                        {order.customerName}
-                      </p>
-                      <p className="mt-1 text-[11px] text-neutral-500">
-                        {formatOrderDate(order.createdAt)} ·{" "}
-                        {FULFILLMENT_LABEL[order.fulfillmentStatus]}
-                        {order.isSandbox || order.paymentStatus === "sandbox"
-                          ? " · Sandbox"
-                          : ""}
-                      </p>
-                    </div>
-                    <p className="font-serif text-lg tabular-nums text-neutral-950">
-                      {formatTryFromKurus(order.totalKurus)}
-                    </p>
-                  </Link>
-                </li>
-              ))}
-            </ul>
+            <TrPanelStagger className="space-y-3">
+              {visible.map((order) => {
+                const itemCount = order.items.reduce(
+                  (sum, item) => sum + item.quantity,
+                  0,
+                );
+                const paymentKey =
+                  order.isSandbox || order.paymentStatus === "sandbox"
+                    ? "sandbox"
+                    : order.paymentStatus;
+
+                return (
+                  <motion.div key={order.id} variants={trPanelStaggerItem}>
+                    <Link
+                      href={trPanelOrderPath(order.id)}
+                      className="block rounded-2xl border border-[color:var(--panel-accent-border)] bg-white p-4 shadow-sm transition-colors hover:bg-[color:var(--panel-accent-soft)] sm:p-5"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1 space-y-3">
+                          <p className="text-[19px] font-semibold text-neutral-900 sm:text-[20px]">
+                            {order.customerName}
+                          </p>
+                          <p className="text-[15px] text-neutral-600">
+                            {formatOrderDateShort(order.createdAt)} ·{" "}
+                            {itemCount} ürün
+                          </p>
+                          <div>
+                            <p className="mb-2 text-[14px] font-medium text-neutral-600">
+                              Paketlenecek ürünler
+                            </p>
+                            <TrOrderItemThumbs items={order.items} size="md" />
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span
+                              className={`rounded-lg px-2.5 py-1 text-[14px] font-semibold ${FULFILLMENT_TONE[order.fulfillmentStatus]}`}
+                            >
+                              {FULFILLMENT_LABEL[order.fulfillmentStatus]}
+                            </span>
+                            <span className="rounded-lg bg-neutral-100 px-2.5 py-1 text-[14px] font-medium text-neutral-700">
+                              {PAYMENT_LABEL[paymentKey]}
+                            </span>
+                          </div>
+                          <p className="text-[15px] leading-relaxed text-neutral-600">
+                            {FULFILLMENT_HINT[order.fulfillmentStatus]}
+                          </p>
+                          <p className="text-[15px] font-medium text-[color:var(--panel-accent-deep)]">
+                            Detayı aç →
+                          </p>
+                        </div>
+                        <p className="text-[22px] font-semibold tabular-nums text-neutral-950">
+                          {formatTryFromKurus(order.totalKurus)}
+                        </p>
+                      </div>
+                    </Link>
+                  </motion.div>
+                );
+              })}
+            </TrPanelStagger>
           )}
         </TrPanelFadeIn>
       )}
@@ -158,17 +209,16 @@ export function TrOwnerOrdersPage() {
   return (
     <TrOwnerPanelGate>
       {({ activeBoutique }) => (
-        <div className="space-y-4">
+        <div className="space-y-5">
           <div>
-            <Link
-              href={trPanelPath()}
-              className="inline-block text-[11px] tracking-[0.1em] text-neutral-500 uppercase"
-            >
+            <Link href={trPanelPath()} className={panelBackLinkClass}>
               ← Ana sayfa
             </Link>
-            <h2 className="mt-2 font-serif text-2xl tracking-tight text-neutral-950">
-              Siparişler
-            </h2>
+            <h2 className={panelPageTitleClass}>Siparişler</h2>
+            <p className="mt-2 text-[16px] leading-relaxed text-neutral-600">
+              Gelen siparişleri buradan takip edin: paketleyin, barkodu
+              yapıştırın, kargoya verin.
+            </p>
           </div>
           <OrdersList boutiqueId={activeBoutique.id} />
         </div>

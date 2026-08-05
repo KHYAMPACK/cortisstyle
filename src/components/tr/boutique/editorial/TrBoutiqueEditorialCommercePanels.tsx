@@ -12,7 +12,7 @@ import {
   useTrScopedFavorites,
 } from "@/components/tr/boutique/TrBoutiqueCommerceScope";
 import { formatTryFromKurus } from "@/types/tr-marketplace";
-import { cartTotalKurus } from "@/types/tr-cart";
+import { cartLineKey, cartTotalKurus } from "@/types/tr-cart";
 import {
   trBoutiqueCartPath,
   trBoutiqueCheckoutPath,
@@ -96,7 +96,7 @@ function CartPanel() {
       ) : (
         <ul className="space-y-4">
           {cart.items.map((item) => (
-            <li key={item.productId} className="flex gap-3 border-b border-black/5 pb-4">
+            <li key={cartLineKey(item)} className="flex gap-3 border-b border-black/5 pb-4">
               <div className="relative h-20 w-16 shrink-0 overflow-hidden bg-neutral-100">
                 {item.image ? (
                   <Image
@@ -126,7 +126,7 @@ function CartPanel() {
                 </p>
                 <button
                   type="button"
-                  onClick={() => cart.removeItem(item.productId)}
+                  onClick={() => cart.removeItem(item.productId, item.size)}
                   className="mt-2 text-[11px] text-neutral-500 underline-offset-2 hover:underline"
                 >
                   Kaldır

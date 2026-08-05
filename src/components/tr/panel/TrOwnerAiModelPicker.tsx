@@ -1,47 +1,6 @@
 "use client";
 
-import { getBoutiqueAiModelIdentity } from "@/lib/tr/aiModel/registry";
-
-export interface TrOwnerModelOption {
-  id: string;
-  label: string;
-  hint: string;
-  ready: boolean;
-}
-
-function buildModelOptions(boutiqueSlug: string | null | undefined): TrOwnerModelOption[] {
-  const options: TrOwnerModelOption[] = [];
-  const slug = boutiqueSlug?.trim().toLowerCase() ?? "";
-  const boutiqueModel = slug ? getBoutiqueAiModelIdentity(slug) : null;
-
-  if (boutiqueModel) {
-    options.push({
-      id: `boutique:${boutiqueModel.boutiqueSlug}`,
-      label: boutiqueModel.displayName,
-      hint: boutiqueModel.referenceImageUrls.length
-        ? "Butik modeli"
-        : "Referans fotoğrafı yakında",
-      ready: boutiqueModel.referenceImageUrls.some((url) => Boolean(url?.trim())),
-    });
-  }
-
-  options.push(
-    {
-      id: "studio:ayla",
-      label: "Ayla",
-      hint: "Stüdyo modeli · yakında",
-      ready: false,
-    },
-    {
-      id: "studio:deniz",
-      label: "Deniz",
-      hint: "Stüdyo modeli · yakında",
-      ready: false,
-    },
-  );
-
-  return options;
-}
+import { listAiModelOptions } from "@/lib/tr/aiModel/registry";
 
 interface TrOwnerAiModelPickerProps {
   boutiqueSlug?: string | null;
@@ -56,7 +15,7 @@ export function TrOwnerAiModelPicker({
   onChange,
   disabled = false,
 }: TrOwnerAiModelPickerProps) {
-  const options = buildModelOptions(boutiqueSlug);
+  const options = listAiModelOptions(boutiqueSlug);
 
   return (
     <div className="space-y-3">
@@ -65,8 +24,7 @@ export function TrOwnerAiModelPicker({
           Model seçimi
         </p>
         <p className="mt-1 text-[14px] text-neutral-600">
-          Seçilen modele kıyafet giydirme yakında. Şimdilik tercih kaydı için
-          seçebilirsiniz.
+          Model üzerinde satış fotoğrafı için seçin. Stüdyo veya butik modeli.
         </p>
       </div>
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
@@ -76,8 +34,11 @@ export function TrOwnerAiModelPicker({
             <button
               key={option.id}
               type="button"
-              disabled={disabled}
-              onClick={() => onChange(active ? null : option.id)}
+              disabled={disabled || !option.ready}
+              onClick={() => {
+                if (!option.ready) return;
+                onChange(active ? null : option.id);
+              }}
               className={`rounded-2xl border-2 px-4 py-4 text-left transition-all ${
                 active
                   ? "border-[color:var(--panel-accent)] bg-[color:var(--panel-accent-softer)]"
@@ -93,7 +54,7 @@ export function TrOwnerAiModelPicker({
               </span>
               {!option.ready ? (
                 <span className="mt-2 inline-block rounded-lg bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-900">
-                  Yakında
+                  Referans bekleniyor
                 </span>
               ) : (
                 <span className="mt-2 inline-block rounded-lg bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-900">

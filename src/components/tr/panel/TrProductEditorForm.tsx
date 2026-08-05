@@ -1,36 +1,61 @@
 "use client";
 
-import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { TrCatalogBackgroundPicker } from "@/components/tr/panel/TrCatalogBackgroundPicker";
-import { TrOwnerAiModelPicker } from "@/components/tr/panel/TrOwnerAiModelPicker";
+import { TrOwnerAiCatalogEnhance } from "@/components/tr/panel/TrOwnerAiCatalogEnhance";
+import { TrOwnerAiFillListing } from "@/components/tr/panel/TrOwnerAiFillListing";
+import {
+  emptyStockInputsForChart,
+  stockInputsFromSizeStocks,
+  TrOwnerSizeChartStock,
+} from "@/components/tr/panel/TrOwnerSizeChartStock";
+import {
+  hasRequiredProductPhotos,
+  TrOwnerGuidedPhotoUpload,
+} from "@/components/tr/panel/TrOwnerGuidedPhotoUpload";
 import { TrProductImageLightbox } from "@/components/tr/panel/TrProductImageLightbox";
 import { TR_BOUTIQUE_CATEGORIES } from "@/lib/tr/categories";
 import {
   DEFAULT_CATALOG_BACKGROUND_ID,
   getCatalogBackground,
 } from "@/lib/tr/catalogBackgrounds/registry";
-import { DEFAULT_LETTER_SIZES } from "@/lib/tr/productOptions";
+import {
+  detectSizeChart,
+  sizesForChart,
+  type TrSizeChartId,
+} from "@/lib/tr/productOptions";
 import {
   clampDescription,
   clampTitle,
-  getProductPhotoRole,
   isValidStock,
   isValidTryPrice,
-  productPhotoRoleLabel,
   sanitizeColorName,
-  sanitizeSizeLabel,
   sanitizeStockInput,
   sanitizeTryPriceInput,
-  shouldRemoveBackgroundForSlot,
   TR_OWNER_PRODUCT_LIMITS,
 } from "@/lib/tr/ownerProductConstraints";
 import {
   createOwnerProduct,
+  deleteOwnerProduct,
+  type OwnerListingDraft,
   updateOwnerProduct,
-  uploadOwnerProductImage,
 } from "@/lib/tr/ownerClient";
+import {
+  parseSizeStockInputs,
+  sumSizeStocks,
+} from "@/lib/tr/sizeStocks";
+import {
+  panelAddChipClass,
+  panelChipClass,
+  panelErrorClass,
+  panelFieldClass,
+  panelHintClass,
+  panelLabelClass,
+  panelPrimaryBtnClass,
+  panelSecondaryBtnClass,
+  panelSectionClass,
+} from "@/components/tr/panel/panelUi";
 import { formatTryFromKurus } from "@/types/tr-marketplace";
 import type { TrProduct, TrProductColor, TrProductStatus } from "@/types/tr-marketplace";
 
@@ -38,7 +63,7 @@ function InlineBusySpinner() {
   return (
     <motion.span
       aria-hidden
-      className="inline-block h-3 w-3 shrink-0 border border-current border-t-transparent"
+      className="inline-block h-4 w-4 shrink-0 border-2 border-current border-t-transparent"
       animate={{ rotate: 360 }}
       transition={{ duration: 0.9, repeat: Infinity, ease: "linear" }}
     />
@@ -61,14 +86,14 @@ function OptionToggle({
       aria-checked={checked}
       aria-label={label}
       onClick={() => onChange(!checked)}
-      className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
-        checked ? "bg-jet-black" : "bg-neutral-300"
+      className={`relative h-9 w-16 shrink-0 rounded-full transition-colors ${
+        checked ? "bg-[color:var(--panel-accent)]" : "bg-neutral-300"
       }`}
     >
       <span
         aria-hidden
-        className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
-          checked ? "translate-x-5" : "translate-x-0"
+        className={`absolute top-1 left-1 h-7 w-7 rounded-full bg-white shadow-sm transition-transform ${
+          checked ? "translate-x-7" : "translate-x-0"
         }`}
       />
     </button>
@@ -115,6 +140,7 @@ interface TrProductEditorFormProps {
   mode: "create" | "edit";
   initialProduct?: TrProduct | null;
   onSaved: (product: TrProduct) => void;
+  onDeleted?: () => void;
 }
 
 export function TrProductEditorForm({
@@ -123,15 +149,22 @@ export function TrProductEditorForm({
   mode,
   initialProduct,
   onSaved,
+  onDeleted,
 }: TrProductEditorFormProps) {
   const [title, setTitle] = useState(initialProduct?.title ?? "");
-  const [priceTry, setPriceTry] = useState(
-    initialProduct ? String(initialProduct.priceKurus / 100) : "",
-  );
-  const [compareAtPriceTry, setCompareAtPriceTry] = useState(
-    initialProduct?.compareAtPriceKurus
-      ? String(initialProduct.compareAtPriceKurus / 100)
-      : "",
+  const initialOnSale =
+    typeof initialProduct?.compareAtPriceKurus === "number" &&
+    initialProduct.compareAtPriceKurus > initialProduct.priceKurus;
+  const [priceTry, setPriceTry] = useState(() => {
+    if (!initialProduct) return "";
+    if (initialOnSale) {
+      return String(initialProduct.compareAtPriceKurus! / 100);
+    }
+    return String(initialProduct.priceKurus / 100);
+  });
+  const [discountEnabled, setDiscountEnabled] = useState(initialOnSale);
+  const [salePriceTry, setSalePriceTry] = useState(() =>
+    initialOnSale ? String(initialProduct!.priceKurus / 100) : "",
   );
   const [description, setDescription] = useState(
     initialProduct?.description ?? "",
@@ -145,8 +178,16 @@ export function TrProductEditorForm({
   const [sizesEnabled, setSizesEnabled] = useState(
     () => (initialProduct?.sizes.length ?? 0) > 0,
   );
-  const [sizes, setSizes] = useState<string[]>(initialProduct?.sizes ?? []);
-  const [extraSizes, setExtraSizes] = useState<string[]>([]);
+  const [sizeChart, setSizeChart] = useState<TrSizeChartId>(() =>
+    detectSizeChart(initialProduct?.sizes ?? []),
+  );
+  const [sizeStockInputs, setSizeStockInputs] = useState<
+    Record<string, string>
+  >(() => {
+    const chart = detectSizeChart(initialProduct?.sizes ?? []);
+    if (chart === "none") return {};
+    return stockInputsFromSizeStocks(chart, initialProduct?.sizeStocks);
+  });
   const [colorsEnabled, setColorsEnabled] = useState(
     () => (initialProduct?.colors.length ?? 0) > 0,
   );
@@ -159,6 +200,12 @@ export function TrProductEditorForm({
   const [images, setImages] = useState<string[]>(initialProduct?.images ?? []);
   const [marketplaceImages, setMarketplaceImages] = useState<string[]>(
     initialProduct?.marketplaceImages ?? [],
+  );
+  const [lifestyleImages, setLifestyleImages] = useState<string[]>(
+    initialProduct?.lifestyleImages ?? [],
+  );
+  const [listingDraft, setListingDraft] = useState<OwnerListingDraft | null>(
+    null,
   );
   const [catalogBackgroundId, setCatalogBackgroundId] = useState(
     initialProduct?.catalogBackgroundId ?? DEFAULT_CATALOG_BACKGROUND_ID,
@@ -173,36 +220,64 @@ export function TrProductEditorForm({
   );
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [addingCategory, setAddingCategory] = useState(false);
   const [newCategoryLabel, setNewCategoryLabel] = useState("");
-  const [addingSize, setAddingSize] = useState(false);
-  const [newSizeLabel, setNewSizeLabel] = useState("");
   const [addingColor, setAddingColor] = useState(false);
   const [newColorName, setNewColorName] = useState("");
   const [newColorHex, setNewColorHex] = useState("#C2185B");
 
   const catalogBackground = getCatalogBackground(catalogBackgroundId);
 
+  const applySizeChart = (next: TrSizeChartId) => {
+    setSizeChart(next);
+    setSizesEnabled(next !== "none");
+    if (next === "none") {
+      setSizeStockInputs({});
+      return;
+    }
+    setSizeStockInputs((current) => {
+      const nextInputs = emptyStockInputsForChart(next, "0");
+      for (const size of Object.keys(nextInputs)) {
+        if (current[size] !== undefined) nextInputs[size] = current[size]!;
+      }
+      return nextInputs;
+    });
+  };
+
   useEffect(() => {
     if (!initialProduct) return;
     setTitle(initialProduct.title);
-    setPriceTry(String(initialProduct.priceKurus / 100));
-    setCompareAtPriceTry(
-      initialProduct.compareAtPriceKurus
-        ? String(initialProduct.compareAtPriceKurus / 100)
-        : "",
-    );
+    const onSale =
+      typeof initialProduct.compareAtPriceKurus === "number" &&
+      initialProduct.compareAtPriceKurus > initialProduct.priceKurus;
+    setDiscountEnabled(onSale);
+    if (onSale) {
+      setPriceTry(String(initialProduct.compareAtPriceKurus! / 100));
+      setSalePriceTry(String(initialProduct.priceKurus / 100));
+    } else {
+      setPriceTry(String(initialProduct.priceKurus / 100));
+      setSalePriceTry("");
+    }
     setDescription(initialProduct.description ?? "");
     setCategory(initialProduct.category);
-    setSizesEnabled(initialProduct.sizes.length > 0);
-    setSizes(initialProduct.sizes);
+    const chart = detectSizeChart(initialProduct.sizes);
+    setSizeChart(chart);
+    setSizesEnabled(chart !== "none");
+    setSizeStockInputs(
+      chart === "none"
+        ? {}
+        : stockInputsFromSizeStocks(chart, initialProduct.sizeStocks),
+    );
     setColorsEnabled(initialProduct.colors.length > 0);
     setColors(initialProduct.colors);
     setStock(String(initialProduct.stock ?? 1));
     setImages(initialProduct.images);
     setMarketplaceImages(initialProduct.marketplaceImages ?? []);
+    setLifestyleImages(initialProduct.lifestyleImages ?? []);
     setCatalogBackgroundId(
       initialProduct.catalogBackgroundId ?? DEFAULT_CATALOG_BACKGROUND_ID,
     );
@@ -219,12 +294,6 @@ export function TrProductEditorForm({
         },
       ]);
     }
-
-    const unknownSizes = initialProduct.sizes.filter(
-      (size) =>
-        !(DEFAULT_LETTER_SIZES as readonly string[]).includes(size),
-    );
-    setExtraSizes(unknownSizes);
   }, [initialProduct]);
 
   const categoryOptions = useMemo(() => {
@@ -236,29 +305,6 @@ export function TrProductEditorForm({
     });
     return [...TR_BOUTIQUE_CATEGORIES, ...extras];
   }, [extraCategories]);
-
-  const sizeOptions = useMemo(() => {
-    const seen = new Set<string>(DEFAULT_LETTER_SIZES);
-    const extras = [
-      ...extraSizes,
-      ...sizes.filter(
-        (size) => !(DEFAULT_LETTER_SIZES as readonly string[]).includes(size),
-      ),
-    ].filter((size) => {
-      if (seen.has(size)) return false;
-      seen.add(size);
-      return true;
-    });
-    return [...DEFAULT_LETTER_SIZES, ...extras];
-  }, [extraSizes, sizes]);
-
-  const toggleSize = (size: string) => {
-    setSizes((current) =>
-      current.includes(size)
-        ? current.filter((entry) => entry !== size)
-        : [...current, size],
-    );
-  };
 
   const toggleColor = (color: TrProductColor) => {
     setColors((current) => {
@@ -291,19 +337,6 @@ export function TrProductEditorForm({
     setAddingCategory(false);
   };
 
-  const commitSize = () => {
-    const size = sanitizeSizeLabel(newSizeLabel);
-    if (!size) return;
-    if (!sizeOptions.includes(size)) {
-      setExtraSizes((current) => [...current, size]);
-    }
-    setSizes((current) =>
-      current.includes(size) ? current : [...current, size],
-    );
-    setNewSizeLabel("");
-    setAddingSize(false);
-  };
-
   const commitColor = () => {
     const name = sanitizeColorName(newColorName).trim();
     let hex = newColorHex.trim();
@@ -317,99 +350,6 @@ export function TrProductEditorForm({
     setNewColorName("");
     setNewColorHex("#C2185B");
     setAddingColor(false);
-  };
-
-  const handleFiles = async (fileList: FileList | null) => {
-    if (!fileList || fileList.length === 0) return;
-    const remaining = TR_OWNER_PRODUCT_LIMITS.maxImages - images.length;
-    if (remaining <= 0) {
-      setError(
-        `En fazla ${TR_OWNER_PRODUCT_LIMITS.maxImages} fotoğraf ekleyebilirsiniz.`,
-      );
-      return;
-    }
-    const files = Array.from(fileList).slice(0, remaining);
-    setUploading(true);
-    setError(null);
-    try {
-      const nextOriginals: string[] = [];
-      const nextMarketplace: string[] = [];
-      let failedCutouts = 0;
-      let cutoutCount = 0;
-      const baseCount = images.length;
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i]!;
-        const slot = baseCount + i;
-        const removeBackground = shouldRemoveBackgroundForSlot(slot);
-        const uploaded = await uploadOwnerProductImage(boutiqueId, file, {
-          removeBackground,
-        });
-        nextOriginals.push(uploaded.url);
-        nextMarketplace.push(uploaded.marketplaceUrl ?? "");
-        if (removeBackground) {
-          cutoutCount += 1;
-          if (uploaded.marketplaceStatus === "failed") {
-            failedCutouts += 1;
-          }
-        }
-      }
-      setImages((current) => [...current, ...nextOriginals]);
-      setMarketplaceImages((current) => [...current, ...nextMarketplace]);
-      if (failedCutouts > 0) {
-        setError(
-          failedCutouts === cutoutCount
-            ? "Fotoğraflar kaydedildi; katalog arka plan temizliği başarısız. Orijinal kullanılıyor."
-            : `${failedCutouts} fotoğrafta katalog kesiti oluşmadı; orijinal kaydedildi.`,
-        );
-      }
-    } catch (uploadError) {
-      setError(
-        uploadError instanceof Error
-          ? uploadError.message
-          : "Fotoğraf yüklenemedi.",
-      );
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const removeImage = (index: number) => {
-    setImages((current) => current.filter((_, i) => i !== index));
-    setMarketplaceImages((current) => current.filter((_, i) => i !== index));
-  };
-
-  const moveImage = (index: number, direction: -1 | 1) => {
-    const target = index + direction;
-    setImages((current) => {
-      if (target < 0 || target >= current.length) return current;
-      const next = [...current];
-      const tmp = next[index]!;
-      next[index] = next[target]!;
-      next[target] = tmp;
-      return next;
-    });
-    setMarketplaceImages((current) => {
-      if (target < 0 || target >= current.length) return current;
-      const next = [...current];
-      const tmp = next[index] ?? "";
-      next[index] = next[target] ?? "";
-      next[target] = tmp;
-      return next;
-    });
-  };
-
-  const makeCover = (index: number) => {
-    if (index === 0) return;
-    setImages((current) => {
-      const next = [...current];
-      const [picked] = next.splice(index, 1);
-      return [picked!, ...next];
-    });
-    setMarketplaceImages((current) => {
-      const next = [...current];
-      const [picked] = next.splice(index, 1);
-      return [picked ?? "", ...next];
-    });
   };
 
   const handleSubmit = async (event: FormEvent) => {
@@ -427,46 +367,66 @@ export function TrProductEditorForm({
       if (!title.trim()) {
         throw new Error("Başlık zorunlu.");
       }
-      if (images.length === 0) {
-        throw new Error("En az bir fotoğraf ekleyin.");
+      if (!hasRequiredProductPhotos(images)) {
+        throw new Error("Ön ve arka fotoğraf zorunlu.");
       }
-      if (!isValidStock(stock)) {
-        throw new Error(
-          `Stok ${TR_OWNER_PRODUCT_LIMITS.stockMin}–${TR_OWNER_PRODUCT_LIMITS.stockMax} arası olmalı.`,
-        );
-      }
-      const stockValue = Number.parseInt(stock, 10);
 
+      const activeSizes =
+        sizeChart === "none" || !sizesEnabled ? [] : sizesForChart(sizeChart);
+      let stockValue: number;
+      let sizeStocks: Record<string, number> = {};
+      if (activeSizes.length > 0) {
+        const parsed = parseSizeStockInputs(activeSizes, sizeStockInputs);
+        if (!parsed) {
+          throw new Error(
+            `Her beden için stok ${TR_OWNER_PRODUCT_LIMITS.stockMin}–${TR_OWNER_PRODUCT_LIMITS.stockMax} arası olmalı.`,
+          );
+        }
+        sizeStocks = parsed;
+        stockValue = sumSizeStocks(sizeStocks);
+        if (stockValue <= 0) {
+          throw new Error("En az bir bedende stok girin.");
+        }
+      } else {
+        if (!isValidStock(stock)) {
+          throw new Error(
+            `Stok ${TR_OWNER_PRODUCT_LIMITS.stockMin}–${TR_OWNER_PRODUCT_LIMITS.stockMax} arası olmalı.`,
+          );
+        }
+        stockValue = Number.parseInt(stock, 10);
+      }
+
+      let sellPrice = price;
       let compareAtPriceTryValue: number | null = null;
-      const compareRaw = compareAtPriceTry.trim();
-      if (compareRaw) {
-        if (!isValidTryPrice(compareRaw)) {
-          throw new Error("Geçerli bir eski fiyat girin veya boş bırakın.");
+      if (discountEnabled) {
+        if (!isValidTryPrice(salePriceTry)) {
+          throw new Error("Geçerli bir indirimli fiyat girin.");
         }
-        const compare = Number(compareRaw.replace(",", "."));
-        if (compare <= price) {
-          throw new Error("Eski fiyat, satış fiyatından yüksek olmalı.");
+        const sale = Number(salePriceTry.replace(",", "."));
+        if (sale >= price) {
+          throw new Error("İndirimli fiyat, normal fiyattan düşük olmalı.");
         }
-        compareAtPriceTryValue = compare;
+        sellPrice = sale;
+        compareAtPriceTryValue = price;
       }
 
       const payload = {
         boutiqueId,
         title: title.trim(),
         description: description.trim() || null,
-        priceTry: price,
+        priceTry: sellPrice,
         compareAtPriceTry: compareAtPriceTryValue,
-        sizes: sizesEnabled ? sizes : [],
+        sizes: activeSizes,
         colors: colorsEnabled ? colors : [],
         category,
         images,
         marketplaceImages: images.map((_, index) => marketplaceImages[index] ?? ""),
+        lifestyleImages,
         catalogBackgroundId,
         stock: stockValue,
+        sizeStocks,
         status,
       };
-
-      void selectedModelId;
 
       const product =
         mode === "create"
@@ -483,283 +443,208 @@ export function TrProductEditorForm({
     }
   };
 
-  const chipClass = (active: boolean) =>
-    [
-      "border px-3 py-2 text-[11px] tracking-[0.08em] uppercase transition-colors",
-      active
-        ? "border-jet-black bg-jet-black text-white"
-        : "border-black/15 bg-white text-neutral-800 hover:border-black/30",
-    ].join(" ");
-
-  const addChipClass =
-    "border border-dashed border-black/25 bg-white px-3 py-2 text-[11px] tracking-[0.08em] text-neutral-600 uppercase transition-colors hover:border-black/40 hover:text-neutral-900";
-
-  const fieldClass =
-    "w-full border border-black/15 bg-white px-3 py-3 text-[14px] outline-none focus:border-black/40";
+  const chipClass = (active: boolean) => panelChipClass(active);
+  const addChipClass = panelAddChipClass;
+  const fieldClass = panelFieldClass;
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
-      <section className="space-y-3">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <p className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
-              Fotoğraflar
-            </p>
-            <p className="mt-1 text-[12px] text-neutral-500">
-              1. ön · 2. arka (kesit) — ek fotoğraflar orijinal. Tıklayınca büyür.
-            </p>
-          </div>
-          <label
-            className={`inline-flex items-center gap-2 border border-black/15 bg-white px-4 py-3 text-[11px] tracking-[0.12em] uppercase ${
-              uploading ||
-              saving ||
-              images.length >= TR_OWNER_PRODUCT_LIMITS.maxImages
-                ? "cursor-not-allowed opacity-50"
-                : "cursor-pointer"
-            }`}
-          >
-            {uploading ? (
-              <>
-                <InlineBusySpinner />
-                Yükleniyor…
-              </>
-            ) : (
-              "Fotoğraf ekle"
-            )}
-            <input
-              type="file"
-              accept="image/png,image/jpeg,image/webp"
-              multiple
-              className="hidden"
-              disabled={
-                uploading ||
-                saving ||
-                images.length >= TR_OWNER_PRODUCT_LIMITS.maxImages
-              }
-              onChange={(event) => {
-                void handleFiles(event.target.files);
-                event.target.value = "";
-              }}
-            />
-          </label>
-        </div>
-        <p className="text-[11px] leading-relaxed text-meta">
-          {uploading
-            ? images.length < 2
-              ? "Arka plan temizleniyor…"
-              : "Fotoğraf kaydediliyor…"
-            : `En fazla ${TR_OWNER_PRODUCT_LIMITS.maxImages} fotoğraf.`}
-        </p>
-
-        {images.length > 0 ? (
-          <ol className="flex gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {images.map((url, index) => {
-              const catalogUrl = marketplaceImages[index]?.trim();
-              const previewSrc = catalogUrl || url;
-              const role = getProductPhotoRole(index);
-              const roleLabel = productPhotoRoleLabel(role);
-              return (
-                <li
-                  key={`${url}-${index}`}
-                  className={`relative w-[132px] shrink-0 overflow-hidden border bg-neutral-100 ${
-                    index === 0
-                      ? "border-jet-black ring-1 ring-jet-black"
-                      : "border-black/10"
-                  }`}
-                >
-                  <button
-                    type="button"
-                    className="relative block aspect-[3/4] w-full"
-                    style={
-                      catalogUrl
-                        ? { background: catalogBackground.css }
-                        : undefined
-                    }
-                    aria-label={`${roleLabel} — büyüt`}
-                    onClick={() =>
-                      setLightbox({ src: previewSrc, label: roleLabel })
-                    }
-                  >
-                    <Image
-                      src={previewSrc}
-                      alt={roleLabel}
-                      fill
-                      unoptimized
-                      className={
-                        catalogUrl ? "object-contain p-1.5" : "object-cover"
-                      }
-                      sizes="132px"
-                    />
-                    <span
-                      className={`absolute top-1.5 left-1.5 px-1.5 py-0.5 text-[9px] tracking-[0.08em] uppercase ${
-                        index === 0
-                          ? "bg-jet-black text-white"
-                          : "bg-white/90 text-neutral-800"
-                      }`}
-                    >
-                      {roleLabel}
-                    </span>
-                    {catalogUrl ? (
-                      <span className="absolute right-1.5 bottom-1.5 bg-emerald-700/90 px-1.5 py-0.5 text-[8px] tracking-[0.06em] text-white uppercase">
-                        Katalog
-                      </span>
-                    ) : null}
-                  </button>
-
-                  <div className="space-y-1 border-t border-black/10 bg-white p-1.5">
-                    <div className="flex gap-1">
-                      <button
-                        type="button"
-                        className="flex-1 border border-black/10 bg-white py-1.5 text-[10px] tracking-[0.06em] uppercase disabled:opacity-30"
-                        onClick={() => moveImage(index, -1)}
-                        disabled={index === 0}
-                        title="Sola taşı"
-                      >
-                        ←
-                      </button>
-                      <button
-                        type="button"
-                        className="flex-1 border border-black/10 bg-white py-1.5 text-[10px] tracking-[0.06em] uppercase disabled:opacity-30"
-                        onClick={() => moveImage(index, 1)}
-                        disabled={index === images.length - 1}
-                        title="Sağa taşı"
-                      >
-                        →
-                      </button>
-                    </div>
-                    {index !== 0 ? (
-                      <button
-                        type="button"
-                        className="w-full border border-black/10 bg-neutral-50 py-1.5 text-[10px] tracking-[0.06em] text-neutral-800 uppercase"
-                        onClick={() => makeCover(index)}
-                      >
-                        Kapak yap
-                      </button>
-                    ) : (
-                      <p className="py-1.5 text-center text-[10px] tracking-[0.06em] text-neutral-500 uppercase">
-                        Vitrin
-                      </p>
-                    )}
-                    <button
-                      type="button"
-                      className="w-full border border-black/10 bg-white py-1.5 text-[10px] tracking-[0.06em] text-red-700 uppercase"
-                      onClick={() => removeImage(index)}
-                    >
-                      Sil
-                    </button>
-                  </div>
-                </li>
-              );
-            })}
-          </ol>
-        ) : (
-          <p className="border border-dashed border-black/15 bg-neutral-50 px-4 py-6 text-[12px] text-neutral-500">
-            Henüz fotoğraf yok. Ön yüz (kapak) ile başlayın.
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <section className={panelSectionClass}>
+        <div>
+          <p className={panelLabelClass}>Fotoğraflar</p>
+          <p className={`mt-1 ${panelHintClass}`}>
+            Önce ön, sonra arka — her fotoğraf önizlenir.
           </p>
-        )}
+        </div>
 
-        {images.length > 0 ? (
-          <div className="space-y-6 border border-black/10 bg-neutral-50/80 p-4">
-            <TrCatalogBackgroundPicker
-              value={catalogBackgroundId}
-              onChange={setCatalogBackgroundId}
-              disabled={uploading || saving}
-            />
-            <TrOwnerAiModelPicker
+        <TrOwnerGuidedPhotoUpload
+          boutiqueId={boutiqueId}
+          images={images}
+          marketplaceImages={marketplaceImages}
+          catalogBackgroundCss={catalogBackground.css}
+          title={title}
+          category={category}
+          productId={initialProduct?.id}
+          uploading={uploading}
+          onUploadingChange={setUploading}
+          onImagesChange={setImages}
+          onMarketplaceImagesChange={setMarketplaceImages}
+          onError={setError}
+          onLightbox={setLightbox}
+          onListingDraft={setListingDraft}
+          disabled={saving}
+        />
+
+        {hasRequiredProductPhotos(images) ? (
+          <div className="space-y-6 rounded-xl border border-[color:var(--panel-accent-border)] bg-[color:var(--panel-accent-soft)] p-4 sm:p-5">
+            <TrOwnerAiCatalogEnhance
+              boutiqueId={boutiqueId}
               boutiqueSlug={boutiqueSlug}
-              value={selectedModelId}
-              onChange={setSelectedModelId}
+              productId={initialProduct?.id}
+              title={title}
+              category={category}
+              images={images}
+              marketplaceImages={marketplaceImages}
+              lifestyleImages={lifestyleImages}
+              selectedModelId={selectedModelId}
+              onSelectedModelIdChange={setSelectedModelId}
+              onMarketplaceImagesChange={setMarketplaceImages}
+              onLifestyleImagesChange={setLifestyleImages}
+              onListingDraft={setListingDraft}
               disabled={uploading || saving}
             />
+            {(marketplaceImages.some((url) => url?.trim()) ||
+              lifestyleImages.length > 0) && (
+              <TrCatalogBackgroundPicker
+                value={catalogBackgroundId}
+                onChange={setCatalogBackgroundId}
+                disabled={uploading || saving}
+              />
+            )}
           </div>
         ) : null}
       </section>
 
-      <label className="block space-y-2">
-        <span className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
-          Başlık
-        </span>
-        <input
-          value={title}
-          onChange={(event) => setTitle(clampTitle(event.target.value))}
-          className={fieldClass}
-          maxLength={TR_OWNER_PRODUCT_LIMITS.titleMax}
-          required
-        />
-        <span className="text-[11px] text-neutral-500">
-          {title.length}/{TR_OWNER_PRODUCT_LIMITS.titleMax}
-        </span>
-      </label>
-
-      <label className="block space-y-2">
-        <span className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
-          Fiyat (TL)
-        </span>
-        <input
-          value={priceTry}
-          onChange={(event) =>
-            setPriceTry(sanitizeTryPriceInput(event.target.value))
+      <section className={panelSectionClass}>
+        <TrOwnerAiFillListing
+          boutiqueId={boutiqueId}
+          sourceImageUrl={
+            marketplaceImages[0]?.trim() || images[0]?.trim() || null
           }
-          inputMode="decimal"
-          placeholder="899"
-          className={fieldClass}
-          required
+          category={category}
+          cachedDraft={listingDraft}
+          disabled={saving}
+          onError={setError}
+          onApply={(draft) => {
+            setTitle(clampTitle(draft.title));
+            setDescription(clampDescription(draft.description));
+            setListingDraft(draft);
+          }}
         />
-        {priceTry && Number(priceTry.replace(",", ".")) > 0 ? (
-          <span className="text-[11px] text-neutral-500">
-            {formatTryFromKurus(
-              Math.round(Number(priceTry.replace(",", ".")) * 100),
-            )}
+        <label className="block space-y-2">
+          <span className={panelLabelClass}>Ürün adı</span>
+          <input
+            value={title}
+            onChange={(event) => setTitle(clampTitle(event.target.value))}
+            className={fieldClass}
+            maxLength={TR_OWNER_PRODUCT_LIMITS.titleMax}
+            required
+          />
+          <span className={panelHintClass}>
+            {title.length}/{TR_OWNER_PRODUCT_LIMITS.titleMax}
           </span>
+        </label>
+
+        <label className="block space-y-2">
+          <span className={panelLabelClass}>Açıklama</span>
+          <textarea
+            value={description}
+            onChange={(event) =>
+              setDescription(clampDescription(event.target.value))
+            }
+            rows={5}
+            maxLength={TR_OWNER_PRODUCT_LIMITS.descriptionMax}
+            className={fieldClass}
+          />
+          <span className={panelHintClass}>
+            {description.length}/{TR_OWNER_PRODUCT_LIMITS.descriptionMax}
+          </span>
+        </label>
+      </section>
+
+      <section className={panelSectionClass}>
+        <label className="block space-y-2">
+          <span className={panelLabelClass}>Fiyat (TL)</span>
+          <input
+            value={priceTry}
+            onChange={(event) =>
+              setPriceTry(sanitizeTryPriceInput(event.target.value))
+            }
+            inputMode="decimal"
+            placeholder="899"
+            className={fieldClass}
+            required
+          />
+          {priceTry && Number(priceTry.replace(",", ".")) > 0 ? (
+            <span className={panelHintClass}>
+              {formatTryFromKurus(
+                Math.round(Number(priceTry.replace(",", ".")) * 100),
+              )}
+              {discountEnabled
+                ? " — normal / üstü çizili fiyat"
+                : " — müşterinin ödeyeceği fiyat"}
+            </span>
+          ) : null}
+        </label>
+
+        <button
+          type="button"
+          role="switch"
+          aria-checked={discountEnabled}
+          onClick={() => {
+            setDiscountEnabled((current) => !current);
+            if (discountEnabled) setSalePriceTry("");
+          }}
+          className="flex w-full items-center gap-4 rounded-2xl border-2 border-[color:var(--panel-accent-border)] bg-[color:var(--panel-accent-soft)] px-4 py-4 text-left"
+        >
+          <span
+            className={`relative h-8 w-14 shrink-0 rounded-full transition-colors ${
+              discountEnabled ? "" : "bg-neutral-300"
+            }`}
+            style={
+              discountEnabled
+                ? { backgroundColor: "var(--panel-accent)" }
+                : undefined
+            }
+          >
+            <span
+              className={`absolute top-1 left-1 h-6 w-6 rounded-full bg-white shadow transition-transform ${
+                discountEnabled ? "translate-x-6" : ""
+              }`}
+            />
+          </span>
+          <span>
+            <span className="block text-[18px] font-semibold text-neutral-900">
+              İndirim var mı?
+            </span>
+            <span className="mt-0.5 block text-[15px] text-neutral-600">
+              Açınca indirimli satış fiyatını girebilirsiniz
+            </span>
+          </span>
+        </button>
+
+        {discountEnabled ? (
+          <label className="block space-y-2">
+            <span className={panelLabelClass}>İndirimli fiyat (TL)</span>
+            <input
+              value={salePriceTry}
+              onChange={(event) =>
+                setSalePriceTry(sanitizeTryPriceInput(event.target.value))
+              }
+              inputMode="decimal"
+              placeholder="690"
+              className={fieldClass}
+            />
+            <span className={panelHintClass}>
+              Müşteri bunu öder; üstteki fiyat üstü çizili görünür.
+            </span>
+          </label>
         ) : null}
-      </label>
+      </section>
 
-      <label className="block space-y-2">
-        <span className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
-          Eski fiyat / liste (TL) — isteğe bağlı
-        </span>
-        <input
-          value={compareAtPriceTry}
-          onChange={(event) =>
-            setCompareAtPriceTry(sanitizeTryPriceInput(event.target.value))
-          }
-          inputMode="decimal"
-          placeholder="1299"
-          className={fieldClass}
-        />
-        <span className="text-[11px] text-neutral-500">
-          Doldurulursa ürün indirimli gösterilir (kampanya).
-        </span>
-      </label>
-
-      <label className="block space-y-2">
-        <span className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
-          Stok
-        </span>
-        <input
-          value={stock}
-          onChange={(event) => setStock(sanitizeStockInput(event.target.value))}
-          inputMode="numeric"
-          maxLength={4}
-          min={0}
-          step={1}
-          className={fieldClass}
-        />
-        <span className="text-[11px] text-neutral-500">
-          Varsayılan 1 — tek parça için değiştirmenize gerek yok.
-        </span>
-      </label>
-
-      <section className="space-y-3">
-        <p className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
-          Kategori
-        </p>
-        <div className="flex flex-wrap gap-2">
+      <section className={panelSectionClass}>
+        <p className={panelLabelClass}>Kategori</p>
+        <div className="flex flex-wrap gap-3">
           {categoryOptions.map((entry) => (
             <button
               key={entry.id}
               type="button"
               className={chipClass(category === entry.id)}
+              style={
+                category === entry.id
+                  ? { backgroundColor: "var(--panel-accent)" }
+                  : undefined
+              }
               onClick={() =>
                 setCategory((current) =>
                   current === entry.id ? null : entry.id,
@@ -785,13 +670,13 @@ export function TrProductEditorForm({
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -4 }}
-              className="flex flex-wrap items-center gap-2"
+              className="flex flex-wrap items-center gap-3"
             >
               <input
                 value={newCategoryLabel}
                 onChange={(event) => setNewCategoryLabel(event.target.value)}
                 placeholder="Örn. Aksesuar"
-                className="min-w-[160px] flex-1 border border-black/15 bg-white px-3 py-2 text-[13px] outline-none focus:border-black/40"
+                className={`${fieldClass} min-w-[160px] flex-1`}
                 onKeyDown={(event) => {
                   if (event.key === "Enter") {
                     event.preventDefault();
@@ -801,14 +686,15 @@ export function TrProductEditorForm({
               />
               <button
                 type="button"
-                className="border border-jet-black bg-jet-black px-3 py-2 text-[11px] tracking-[0.08em] text-white uppercase"
+                className={panelPrimaryBtnClass}
+                style={{ backgroundColor: "var(--panel-accent)" }}
                 onClick={commitCategory}
               >
                 Ekle
               </button>
               <button
                 type="button"
-                className="border border-black/15 px-3 py-2 text-[11px] tracking-[0.08em] uppercase"
+                className={panelSecondaryBtnClass}
                 onClick={() => {
                   setAddingCategory(false);
                   setNewCategoryLabel("");
@@ -821,108 +707,26 @@ export function TrProductEditorForm({
         </AnimatePresence>
       </section>
 
-      <section className="space-y-3">
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
-            Bedenler
-          </p>
-          <OptionToggle
-            label="Beden seçenekleri"
-            checked={sizesEnabled}
-            onChange={(next) => {
-              setSizesEnabled(next);
-              if (!next) {
-                setAddingSize(false);
-                setNewSizeLabel("");
-              }
-            }}
-          />
-        </div>
-        {!sizesEnabled ? (
-          <p className="text-[12px] text-neutral-500">
-            Kapalıyken mağazada beden seçimi gösterilmez.
-          </p>
-        ) : null}
-        <AnimatePresence initial={false}>
-          {sizesEnabled ? (
-            <motion.div
-              key="sizes-panel"
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              className="space-y-3 overflow-hidden"
-            >
-              <div className="flex flex-wrap gap-2">
-                {sizeOptions.map((size) => (
-                  <button
-                    key={size}
-                    type="button"
-                    className={chipClass(sizes.includes(size))}
-                    onClick={() => toggleSize(size)}
-                  >
-                    {size}
-                  </button>
-                ))}
-                {!addingSize ? (
-                  <button
-                    type="button"
-                    className={addChipClass}
-                    onClick={() => setAddingSize(true)}
-                  >
-                    + Beden ekle
-                  </button>
-                ) : null}
-              </div>
-              <AnimatePresence>
-                {addingSize ? (
-                  <motion.div
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -4 }}
-                    className="flex flex-wrap items-center gap-2"
-                  >
-                    <input
-                      value={newSizeLabel}
-                      onChange={(event) => setNewSizeLabel(event.target.value)}
-                      placeholder="Örn. 38 veya XXL"
-                      className="min-w-[140px] flex-1 border border-black/15 bg-white px-3 py-2 text-[13px] outline-none focus:border-black/40"
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter") {
-                          event.preventDefault();
-                          commitSize();
-                        }
-                      }}
-                    />
-                    <button
-                      type="button"
-                      className="border border-jet-black bg-jet-black px-3 py-2 text-[11px] tracking-[0.08em] text-white uppercase"
-                      onClick={commitSize}
-                    >
-                      Ekle
-                    </button>
-                    <button
-                      type="button"
-                      className="border border-black/15 px-3 py-2 text-[11px] tracking-[0.08em] uppercase"
-                      onClick={() => {
-                        setAddingSize(false);
-                        setNewSizeLabel("");
-                      }}
-                    >
-                      Vazgeç
-                    </button>
-                  </motion.div>
-                ) : null}
-              </AnimatePresence>
-            </motion.div>
-          ) : null}
-        </AnimatePresence>
+      <section className={panelSectionClass}>
+        <TrOwnerSizeChartStock
+          chart={sizeChart}
+          onChartChange={applySizeChart}
+          stockInputs={sizeStockInputs}
+          onStockInputsChange={setSizeStockInputs}
+          stock={stock}
+          onStockChange={setStock}
+          variant="editor"
+        />
       </section>
 
-      <section className="space-y-3">
+      <section className={panelSectionClass}>
         <div className="flex items-center justify-between gap-3">
-          <p className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
-            Renkler
-          </p>
+          <div>
+            <p className={panelLabelClass}>Renkler</p>
+            <p className={`mt-1 ${panelHintClass}`}>
+              İsterseniz açın — kapalıysa mağazada renk seçimi çıkmaz.
+            </p>
+          </div>
           <OptionToggle
             label="Renk seçenekleri"
             checked={colorsEnabled}
@@ -936,11 +740,6 @@ export function TrProductEditorForm({
             }}
           />
         </div>
-        {!colorsEnabled ? (
-          <p className="text-[12px] text-neutral-500">
-            Kapalıyken mağazada renk seçimi gösterilmez.
-          </p>
-        ) : null}
         <AnimatePresence initial={false}>
           {colorsEnabled ? (
             <motion.div
@@ -948,9 +747,9 @@ export function TrProductEditorForm({
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              className="space-y-3 overflow-hidden"
+              className="space-y-4 overflow-hidden"
             >
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center gap-3">
                 {PRESET_COLORS.map((color) => {
                   const active = colors.some(
                     (entry) =>
@@ -961,11 +760,14 @@ export function TrProductEditorForm({
                       key={color.hex}
                       type="button"
                       title={color.name}
+                      aria-label={color.name}
                       onClick={() => toggleColor(color)}
-                      className="h-8 w-8 border-2"
+                      className="h-12 w-12 rounded-lg border-2"
                       style={{
                         backgroundColor: color.hex,
-                        borderColor: active ? "#0d0d0d" : "rgba(0,0,0,0.15)",
+                        borderColor: active
+                          ? "var(--panel-accent)"
+                          : "rgba(0,0,0,0.15)",
                       }}
                     />
                   );
@@ -983,9 +785,13 @@ export function TrProductEditorForm({
                       key={color.hex}
                       type="button"
                       title={color.name}
+                      aria-label={color.name}
                       onClick={() => toggleColor(color)}
-                      className="h-8 w-8 border-2 border-jet-black"
-                      style={{ backgroundColor: color.hex }}
+                      className="h-12 w-12 rounded-lg border-2"
+                      style={{
+                        backgroundColor: color.hex,
+                        borderColor: "var(--panel-accent)",
+                      }}
                     />
                   ))}
                 {!addingColor ? (
@@ -999,8 +805,8 @@ export function TrProductEditorForm({
                 ) : null}
               </div>
               {colors.length > 0 ? (
-                <p className="text-[11px] text-neutral-600">
-                  {colors.map((color) => color.name).join(", ")}
+                <p className="text-[16px] text-neutral-700">
+                  Seçili: {colors.map((color) => color.name).join(", ")}
                 </p>
               ) : null}
               <AnimatePresence>
@@ -1009,13 +815,13 @@ export function TrProductEditorForm({
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -4 }}
-                    className="flex flex-wrap items-center gap-2"
+                    className="flex flex-wrap items-center gap-3"
                   >
                     <input
                       value={newColorName}
                       onChange={(event) => setNewColorName(event.target.value)}
                       placeholder="Renk adı"
-                      className="min-w-[120px] flex-1 border border-black/15 bg-white px-3 py-2 text-[13px] outline-none focus:border-black/40"
+                      className={`${fieldClass} min-w-[140px] flex-1`}
                     />
                     <input
                       type="color"
@@ -1025,14 +831,14 @@ export function TrProductEditorForm({
                           : "#C2185B"
                       }
                       onChange={(event) => setNewColorHex(event.target.value)}
-                      className="h-10 w-12 cursor-pointer border border-black/15 bg-white p-1"
+                      className="h-14 w-16 cursor-pointer rounded-xl border-2 border-[color:var(--panel-accent-border)] bg-white p-1"
                       title="Renk seç"
                     />
                     <input
                       value={newColorHex}
                       onChange={(event) => setNewColorHex(event.target.value)}
                       placeholder="#C2185B"
-                      className="w-28 border border-black/15 bg-white px-3 py-2 text-[13px] outline-none focus:border-black/40"
+                      className={`${fieldClass} w-36`}
                       onKeyDown={(event) => {
                         if (event.key === "Enter") {
                           event.preventDefault();
@@ -1042,14 +848,15 @@ export function TrProductEditorForm({
                     />
                     <button
                       type="button"
-                      className="border border-jet-black bg-jet-black px-3 py-2 text-[11px] tracking-[0.08em] text-white uppercase"
+                      className={panelPrimaryBtnClass}
+                      style={{ backgroundColor: "var(--panel-accent)" }}
                       onClick={commitColor}
                     >
                       Ekle
                     </button>
                     <button
                       type="button"
-                      className="border border-black/15 px-3 py-2 text-[11px] tracking-[0.08em] uppercase"
+                      className={panelSecondaryBtnClass}
                       onClick={() => {
                         setAddingColor(false);
                         setNewColorName("");
@@ -1066,35 +873,20 @@ export function TrProductEditorForm({
         </AnimatePresence>
       </section>
 
-      <label className="block space-y-2">
-        <span className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
-          Açıklama
-        </span>
-        <textarea
-          value={description}
-          onChange={(event) =>
-            setDescription(clampDescription(event.target.value))
-          }
-          rows={4}
-          maxLength={TR_OWNER_PRODUCT_LIMITS.descriptionMax}
-          className={fieldClass}
-        />
-        <span className="text-[11px] text-neutral-500">
-          {description.length}/{TR_OWNER_PRODUCT_LIMITS.descriptionMax}
-        </span>
-      </label>
-
       {mode === "edit" ? (
-        <section className="space-y-3">
-          <p className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
-            Durum
-          </p>
-          <div className="flex flex-wrap gap-2">
+        <section className={panelSectionClass}>
+          <p className={panelLabelClass}>Durum</p>
+          <div className="flex flex-wrap gap-3">
             {STATUS_OPTIONS.map((option) => (
               <button
                 key={option.id}
                 type="button"
                 className={chipClass(status === option.id)}
+                style={
+                  status === option.id
+                    ? { backgroundColor: "var(--panel-accent)" }
+                    : undefined
+                }
                 onClick={() => setStatus(option.id)}
               >
                 {option.label}
@@ -1104,16 +896,13 @@ export function TrProductEditorForm({
         </section>
       ) : null}
 
-      {error ? (
-        <p className="border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-800">
-          {error}
-        </p>
-      ) : null}
+      {error ? <p className={panelErrorClass}>{error}</p> : null}
 
       <button
         type="submit"
-        disabled={saving || uploading}
-        className="btn-primary inline-flex w-full items-center justify-center gap-2 px-6 py-4 text-[11px] tracking-[0.16em] disabled:opacity-50"
+        disabled={saving || uploading || deleting}
+        className={`${panelPrimaryBtnClass} w-full gap-3`}
+        style={{ backgroundColor: "var(--panel-accent)" }}
       >
         {saving ? (
           <>
@@ -1123,9 +912,85 @@ export function TrProductEditorForm({
         ) : mode === "create" ? (
           "Ürünü ekle"
         ) : (
-          "Kaydet"
+          "Değişiklikleri kaydet"
         )}
       </button>
+
+      {mode === "edit" && initialProduct ? (
+        <div className="space-y-3 pt-2">
+          {!confirmDelete ? (
+            <button
+              type="button"
+              disabled={saving || uploading || deleting}
+              onClick={() => setConfirmDelete(true)}
+              className={`${panelSecondaryBtnClass} w-full border-red-300 text-red-800`}
+            >
+              Ürünü sil
+            </button>
+          ) : (
+            <div
+              className="space-y-4 rounded-2xl border-2 border-red-300 bg-red-50 p-5"
+              role="alertdialog"
+              aria-labelledby="delete-product-title"
+            >
+              <p
+                id="delete-product-title"
+                className="text-[18px] font-semibold text-neutral-900"
+              >
+                Ürünü silmek istediğinize emin misiniz?
+              </p>
+              <p className="text-[16px] leading-relaxed text-neutral-700">
+                <span className="font-semibold">{initialProduct.title}</span>{" "}
+                kalıcı olarak silinir. Bu işlem geri alınamaz.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  disabled={deleting}
+                  className={`${panelPrimaryBtnClass} bg-red-700`}
+                  onClick={() => {
+                    void (async () => {
+                      setDeleting(true);
+                      setError(null);
+                      try {
+                        await deleteOwnerProduct(initialProduct.id);
+                        onDeleted?.();
+                      } catch (deleteError) {
+                        setError(
+                          deleteError instanceof Error
+                            ? deleteError.message
+                            : "Ürün silinemedi.",
+                        );
+                        setConfirmDelete(false);
+                      } finally {
+                        setDeleting(false);
+                      }
+                    })();
+                  }}
+                >
+                  {deleting ? (
+                    <>
+                      <InlineBusySpinner />
+                      Siliniyor…
+                    </>
+                  ) : (
+                    "Evet, sil"
+                  )}
+                </button>
+                <button
+                  type="button"
+                  disabled={deleting}
+                  className={panelSecondaryBtnClass}
+                  onClick={() => setConfirmDelete(false)}
+                >
+                  Vazgeç
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : null}
+
       <TrProductImageLightbox
         open={Boolean(lightbox)}
         src={lightbox?.src ?? null}

@@ -9,7 +9,7 @@ import {
   useTrScopedFavorites,
 } from "@/components/tr/boutique/TrBoutiqueCommerceScope";
 import { useTrBoutiqueProductsOptional } from "@/components/tr/boutique/TrBoutiqueProductsContext";
-import { TrBoutiqueEditorialProductCard } from "@/components/tr/boutique/editorial/TrBoutiqueEditorialProductCard";
+import { TrBoutiqueYouMayAlsoLike } from "@/components/tr/boutique/TrBoutiqueYouMayAlsoLike";
 import { TrDemoGarmentVisual } from "@/components/tr/demo/TrDemoGarmentVisual";
 import {
   TrSandboxBanner,
@@ -29,7 +29,7 @@ import {
   pickFavoriteProducts,
   pickRelatedProducts,
 } from "@/lib/tr/recommendations";
-import { cartTotalKurus, type TrCartLineItem } from "@/types/tr-cart";
+import { cartLineKey, cartTotalKurus, type TrCartLineItem } from "@/types/tr-cart";
 import {
   formatTryFromKurus,
   type TrBoutiquePublic,
@@ -86,12 +86,13 @@ function CartLineRow({
   item: TrCartLineItem;
   boutiqueSlug: string;
   selected: boolean;
-  onToggle: (productId: string, next: boolean) => void;
-  onRemove: (productId: string) => void;
+  onToggle: (lineKey: string, next: boolean) => void;
+  onRemove: (productId: string, size?: string | null) => void;
 }) {
   const cutout =
     !isTrDemoIconSrc(item.image) && isCatalogCutoutImage(item.image);
   const href = trBoutiqueProductPath(boutiqueSlug, item.productId);
+  const lineKey = cartLineKey(item);
 
   return (
     <div
@@ -102,7 +103,7 @@ function CartLineRow({
       <div className="flex shrink-0 items-start pt-1">
         <CartCheckbox
           checked={selected}
-          onChange={(next) => onToggle(item.productId, next)}
+          onChange={(next) => onToggle(lineKey, next)}
           label={`${item.title} seç`}
         />
       </div>
@@ -153,7 +154,7 @@ function CartLineRow({
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => onRemove(item.productId)}
+              onClick={() => onRemove(item.productId, item.size)}
               className="inline-flex items-center gap-1 text-[11px] tracking-[0.08em] text-neutral-500 uppercase transition-colors hover:text-neutral-900"
             >
               <Trash2 className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
@@ -166,7 +167,7 @@ function CartLineRow({
             >
               <button
                 type="button"
-                onClick={() => onRemove(item.productId)}
+                onClick={() => onRemove(item.productId, item.size)}
                 aria-label="Kaldır"
                 className="px-2.5 py-1.5 transition-colors hover:bg-black/5"
               >
@@ -196,43 +197,6 @@ function CartLineRow({
   );
 }
 
-function BoutiqueYouMayAlsoLike({
-  boutique,
-  products,
-  title = "Bunları da beğenebilirsiniz",
-  className = "",
-}: {
-  boutique: TrBoutiquePublic;
-  products: TrProductWithBoutique[];
-  title?: string;
-  className?: string;
-}) {
-  if (products.length === 0) return null;
-
-  return (
-    <section
-      aria-label={title}
-      className={`border-t border-black/5 ${className}`}
-    >
-      <p className="px-5 pt-10 pb-5 text-[10px] tracking-[0.28em] text-neutral-500 uppercase md:px-10">
-        {title}
-      </p>
-      <div className="grid grid-cols-2 gap-px bg-black/5 md:grid-cols-4">
-        {products.map((product, index) => (
-          <div key={product.id} className="bg-white">
-            <TrBoutiqueEditorialProductCard
-              product={product}
-              boutiqueSlug={boutique.slug}
-              boutiqueName={boutique.name}
-              priority={index < 4}
-            />
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
 interface TrBoutiqueCartPageContentProps {
   boutique: TrBoutiquePublic;
   catalog?: TrProductWithBoutique[];
@@ -259,7 +223,7 @@ export function TrBoutiqueCartPageContent({
   const knownIdsRef = useRef<Set<string>>(new Set());
 
   useLayoutEffect(() => {
-    const currentIds = items.map((item) => item.productId);
+    const currentIds = items.map((item) => cartLineKey(item));
     const known = knownIdsRef.current;
 
     setSelectedIds((prev) => {
@@ -276,7 +240,7 @@ export function TrBoutiqueCartPageContent({
   }, [items]);
 
   const selectedItems = useMemo(
-    () => items.filter((item) => selectedIds.has(item.productId)),
+    () => items.filter((item) => selectedIds.has(cartLineKey(item))),
     [items, selectedIds],
   );
   const selectedTotal = cartTotalKurus(selectedItems);
@@ -314,13 +278,13 @@ export function TrBoutiqueCartPageContent({
 
   const recommendations = (
     <div className={count === 0 ? "pb-16" : "pb-44"}>
-      <BoutiqueYouMayAlsoLike
+      <TrBoutiqueYouMayAlsoLike
         boutique={boutique}
         products={favoriteProducts}
         title="Favorileriniz"
         className={count === 0 ? "" : "mt-14"}
       />
-      <BoutiqueYouMayAlsoLike
+      <TrBoutiqueYouMayAlsoLike
         boutique={boutique}
         products={relatedProducts}
         title="Bunları da beğenebilirsiniz"
@@ -329,11 +293,11 @@ export function TrBoutiqueCartPageContent({
     </div>
   );
 
-  const toggleItem = (productId: string, next: boolean) => {
+  const toggleItem = (lineKey: string, next: boolean) => {
     setSelectedIds((prev) => {
       const copy = new Set(prev);
-      if (next) copy.add(productId);
-      else copy.delete(productId);
+      if (next) copy.add(lineKey);
+      else copy.delete(lineKey);
       return copy;
     });
   };
@@ -387,11 +351,11 @@ export function TrBoutiqueCartPageContent({
           >
             <ul className="divide-y divide-black/5">
               {items.map((item) => (
-                <li key={item.productId}>
+                <li key={cartLineKey(item)}>
                   <CartLineRow
                     item={item}
                     boutiqueSlug={boutique.slug}
-                    selected={selectedIds.has(item.productId)}
+                    selected={selectedIds.has(cartLineKey(item))}
                     onToggle={toggleItem}
                     onRemove={removeItem}
                   />

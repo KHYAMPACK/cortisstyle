@@ -6,7 +6,7 @@ import {
 import { getBoutiqueByIdAdmin } from "@/lib/tr/boutiques";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+export const maxDuration = 180;
 
 type Body = {
   boutiqueId: string;
@@ -16,11 +16,13 @@ type Body = {
   title?: string;
   category?: string | null;
   pose?: "standing-front" | "standing-three-quarter" | "full-body" | "waist-up";
+  /** `boutique:{slug}` or `studio:ayla` / `studio:deniz` */
+  modelId?: string;
 };
 
 /**
  * POST /api/tr/owner/ai-model/generate
- * Scaffold endpoint — returns structured stub until a real provider is wired.
+ * FASHN tryon-max when configured; otherwise structured stub.
  */
 export async function POST(request: Request) {
   const authResult = await requireTrOwner(request);
@@ -54,13 +56,16 @@ export async function POST(request: Request) {
   const cutoutImageUrl = body.cutoutImageUrl?.trim();
   if (!cutoutImageUrl) {
     return Response.json(
-      { error: "cutoutImageUrl zorunlu (katalog kesiti)." },
+      { error: "cutoutImageUrl zorunlu (katalog / packshot görseli)." },
       { status: 400 },
     );
   }
 
   const result = await generateBoutiqueAiModelImage({
     boutiqueSlug: boutique.slug,
+    boutiqueId,
+    userId: authResult.auth.user.id,
+    modelId: body.modelId?.trim() || undefined,
     garment: {
       productId: body.productId,
       title: body.title,

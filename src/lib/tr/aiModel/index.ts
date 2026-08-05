@@ -1,13 +1,11 @@
 /**
  * AI on-model / lifestyle generation for boutique product photos.
  *
- * Pipeline (planned):
+ * Pipeline:
  * 1. Owner uploads flat-lay → Photoroom cutout (marketplaceImages)
- * 2. Boutique has a registered model identity (reference photos of the owner)
- * 3. Provider composites garment cutout onto the model → lifestyle URL
- * 4. Result stored alongside product (future: lifestyleImages[])
- *
- * Providers are swappable via registry — do not hardcode a vendor in UI.
+ * 2. Optional FASHN packshot polish → marketplaceImages
+ * 3. Model identity from registry (boutique house or studio:ayla/deniz)
+ * 4. FASHN tryon-max → lifestyleImages + content packs
  */
 
 export type {
@@ -16,13 +14,17 @@ export type {
   TrAiModelGenerateResult,
   TrAiModelIdentity,
   TrAiModelJobStatus,
+  TrAiModelOption,
   TrAiModelPose,
   TrAiModelProviderId,
 } from "@/lib/tr/aiModel/types";
 
 export {
+  aiModelOptionHasReferences,
   boutiqueAiModelHasReferences,
+  getAiModelOptionById,
   getBoutiqueAiModelIdentity,
+  listAiModelOptions,
   listRegisteredAiModelBoutiqueSlugs,
   registerBoutiqueAiModelIdentity,
 } from "@/lib/tr/aiModel/registry";

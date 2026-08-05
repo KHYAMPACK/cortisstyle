@@ -4,17 +4,41 @@ import {
   mapOrderRow,
   shippingAddressToJson,
 } from "@/lib/tr/mappers";
-import { markProductsSoldAdmin } from "@/lib/tr/products";
+import { getProductCoverImageFor } from "@/lib/tr/productImages";
+import {
+  listProductsByIdsAdmin,
+  markProductsSoldAdmin,
+} from "@/lib/tr/products";
 import type {
   CreateTrOrderInput,
   TrFulfillmentStatus,
   TrOrder,
+  TrOrderItem,
   TrOrderWithItems,
   TrOwnerCustomer,
   TrPaymentStatus,
 } from "@/types/tr-marketplace";
 
 const PAID_LIKE: TrPaymentStatus[] = ["paid", "sandbox"];
+
+async function withProductImages(
+  items: TrOrderItem[],
+): Promise<TrOrderItem[]> {
+  if (items.length === 0) return items;
+  const products = await listProductsByIdsAdmin(
+    items.map((item) => item.productId),
+  );
+  const coverById = new Map(
+    products.map((product) => [
+      product.id,
+      getProductCoverImageFor("boutique", product),
+    ]),
+  );
+  return items.map((item) => ({
+    ...item,
+    imageUrl: coverById.get(item.productId) ?? null,
+  }));
+}
 
 export async function createOrderAdmin(
   input: CreateTrOrderInput,
@@ -74,8 +98,10 @@ export async function createOrderAdmin(
 
   return {
     ...order,
-    items: (itemRows ?? []).map((row) =>
-      mapOrderItemRow(row as Record<string, unknown>),
+    items: await withProductImages(
+      (itemRows ?? []).map((row) =>
+        mapOrderItemRow(row as Record<string, unknown>),
+      ),
     ),
   };
 }
@@ -109,8 +135,10 @@ export async function getOrderByIdAdmin(
 
   return {
     ...order,
-    items: (itemRows ?? []).map((row) =>
-      mapOrderItemRow(row as Record<string, unknown>),
+    items: await withProductImages(
+      (itemRows ?? []).map((row) =>
+        mapOrderItemRow(row as Record<string, unknown>),
+      ),
     ),
   };
 }
@@ -151,13 +179,25 @@ export async function listOrdersByBoutiqueIdAdmin(
     itemsByOrder.set(orderId, list);
   }
 
-  return (orderRows ?? []).map((row) => {
+  const mapped = (orderRows ?? []).map((row) => {
     const order = mapOrderRow(row as Record<string, unknown>);
     const items = (itemsByOrder.get(order.id) ?? []).map((item) =>
       mapOrderItemRow(item as Record<string, unknown>),
     );
     return { ...order, items };
   });
+
+  const allItems = mapped.flatMap((order) => order.items);
+  const withImages = await withProductImages(allItems);
+  const imageByItemId = new Map(withImages.map((item) => [item.id, item.imageUrl]));
+
+  return mapped.map((order) => ({
+    ...order,
+    items: order.items.map((item) => ({
+      ...item,
+      imageUrl: imageByItemId.get(item.id) ?? null,
+    })),
+  }));
 }
 
 export async function updateOrderFulfillmentStatusAdmin(

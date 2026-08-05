@@ -1,13 +1,13 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { TrCartLineItem } from "@/types/tr-cart";
+import { sameCartLine, type TrCartLineItem } from "@/types/tr-cart";
 
 interface TrCartStore {
   items: TrCartLineItem[];
   addItem: (item: TrCartLineItem) => boolean;
-  removeItem: (productId: string) => void;
+  removeItem: (productId: string, size?: string | null) => void;
   clearCart: () => void;
-  hasItem: (productId: string) => boolean;
+  hasItem: (productId: string, size?: string | null) => boolean;
 }
 
 export const TR_CART_STORAGE_KEY = "cortis-tr-cart";
@@ -18,7 +18,7 @@ export const useTrCartStore = create<TrCartStore>()(
       items: [],
 
       addItem: (item) => {
-        if (get().items.some((entry) => entry.productId === item.productId)) {
+        if (get().items.some((entry) => sameCartLine(entry, item))) {
           return false;
         }
 
@@ -26,13 +26,26 @@ export const useTrCartStore = create<TrCartStore>()(
         return true;
       },
 
-      removeItem: (productId) => {
-        set({ items: get().items.filter((entry) => entry.productId !== productId) });
+      removeItem: (productId, size) => {
+        set({
+          items: get().items.filter((entry) => {
+            if (size === undefined) {
+              return entry.productId !== productId;
+            }
+            return !sameCartLine(entry, { productId, size });
+          }),
+        });
       },
 
       clearCart: () => set({ items: [] }),
 
-      hasItem: (productId) => get().items.some((entry) => entry.productId === productId),
+      hasItem: (productId, size) =>
+        get().items.some((entry) => {
+          if (size === undefined) {
+            return entry.productId === productId;
+          }
+          return sameCartLine(entry, { productId, size });
+        }),
     }),
     {
       name: TR_CART_STORAGE_KEY,

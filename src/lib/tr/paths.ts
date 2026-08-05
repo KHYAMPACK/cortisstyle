@@ -193,6 +193,14 @@ export function trPanelCampaignsPath(): string {
   return "/tr/panel/kampanyalar";
 }
 
+export function trPanelContentPath(): string {
+  return "/tr/panel/icerik";
+}
+
+export function trPanelContentPackPath(packId: string): string {
+  return `/tr/panel/icerik/${encodeURIComponent(packId)}`;
+}
+
 export function trPanelReportsPath(): string {
   return "/tr/panel/raporlar";
 }

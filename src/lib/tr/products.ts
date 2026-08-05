@@ -11,11 +11,59 @@ import type {
   UpdateTrProductInput,
 } from "@/types/tr-marketplace";
 
-const PUBLIC_PRODUCT_COLUMNS =
-  "id, boutique_id, title, description, price_kurus, compare_at_price_kurus, size, sizes, colors, condition_label, category, images, marketplace_images, catalog_background_id, status, stock, sort_order, created_at, updated_at";
+const PRODUCT_COLUMNS_CORE =
+  "id, boutique_id, title, description, price_kurus, compare_at_price_kurus, size, sizes, colors, condition_label, category, images, marketplace_images, lifestyle_images, catalog_background_id, status, stock, sort_order, created_at, updated_at";
 
-function productInsertRow(input: CreateTrProductInput) {
-  return {
+/** Includes size_stocks when the migration has been applied. */
+const PUBLIC_PRODUCT_COLUMNS = `${PRODUCT_COLUMNS_CORE}, size_stocks`;
+
+function isMissingColumnError(
+  error: {
+    message?: string;
+    details?: string;
+    hint?: string;
+    code?: string;
+  },
+  column?: string,
+): boolean {
+  const blob = [error.message, error.details, error.hint, error.code]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  const looksMissing =
+    blob.includes("does not exist") ||
+    blob.includes("schema cache") ||
+    blob.includes("could not find") ||
+    blob.includes("pgrst204");
+  if (!looksMissing) return false;
+  if (!column) return true;
+  return blob.includes(column.toLowerCase());
+}
+
+function isMissingSizeStocksColumn(error: {
+  message?: string;
+  details?: string;
+  hint?: string;
+  code?: string;
+}): boolean {
+  return isMissingColumnError(error, "size_stocks");
+}
+
+/** PostgREST: "Could not find the 'col' column of 'tr_products' in the schema cache" */
+function missingColumnFromError(error: {
+  message?: string;
+}): string | null {
+  const match = error.message?.match(
+    /could not find the '([^']+)' column/i,
+  );
+  return match?.[1] ?? null;
+}
+
+function productInsertRow(
+  input: CreateTrProductInput,
+  omitColumns: ReadonlySet<string> = new Set(),
+) {
+  const row: Record<string, unknown> = {
     boutique_id: input.boutiqueId,
     title: input.title.trim(),
     description: input.description?.trim() ?? null,
@@ -28,11 +76,17 @@ function productInsertRow(input: CreateTrProductInput) {
     category: input.category?.trim() ?? null,
     images: input.images ?? [],
     marketplace_images: input.marketplaceImages ?? [],
+    lifestyle_images: input.lifestyleImages ?? [],
     catalog_background_id: input.catalogBackgroundId?.trim() || null,
     status: input.status ?? "available",
     stock: input.stock ?? 1,
+    size_stocks: input.sizeStocks ?? {},
     sort_order: input.sortOrder ?? 0,
   };
+  for (const column of omitColumns) {
+    delete row[column];
+  }
+  return row;
 }
 
 export async function listPublicProductsByBoutiqueSlug(
@@ -60,6 +114,21 @@ export async function listPublicProductsByBoutiqueId(
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: false });
 
+  if (error && isMissingSizeStocksColumn(error)) {
+    const fallback = await supabase
+      .from("tr_products")
+      .select(PRODUCT_COLUMNS_CORE)
+      .eq("boutique_id", boutiqueId)
+      .in("status", ["available", "sold"])
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: false });
+    if (fallback.error) throw fallback.error;
+    return (fallback.data ?? []).map((row) => ({
+      ...mapProductRow(row as Record<string, unknown>),
+      boutique,
+    }));
+  }
+
   if (error) throw error;
 
   return (data ?? []).map((row) => ({
@@ -74,17 +143,27 @@ export async function getPublicProductById(
 ): Promise<TrProductWithBoutique | null> {
   const supabase = client ?? getSupabaseClient();
 
-  const { data, error } = await supabase
+  const primary = await supabase
     .from("tr_products")
     .select(PUBLIC_PRODUCT_COLUMNS)
     .eq("id", productId)
     .in("status", ["available", "sold"])
     .maybeSingle();
 
-  if (error) throw error;
-  if (!data) return null;
+  const result =
+    primary.error && isMissingSizeStocksColumn(primary.error)
+      ? await supabase
+          .from("tr_products")
+          .select(PRODUCT_COLUMNS_CORE)
+          .eq("id", productId)
+          .in("status", ["available", "sold"])
+          .maybeSingle()
+      : primary;
 
-  const product = mapProductRow(data as Record<string, unknown>);
+  if (result.error) throw result.error;
+  if (!result.data) return null;
+
+  const product = mapProductRow(result.data as Record<string, unknown>);
   const boutique = await getPublicBoutiqueById(product.boutiqueId, client);
   if (!boutique) return null;
 
@@ -97,16 +176,25 @@ export async function listPublicAvailableProducts(
 ): Promise<TrProductWithBoutique[]> {
   const supabase = client ?? getSupabaseClient();
 
-  const { data, error } = await supabase
+  const primary = await supabase
     .from("tr_products")
     .select(PUBLIC_PRODUCT_COLUMNS)
     .eq("status", "available")
     .order("created_at", { ascending: false });
 
-  if (error) throw error;
+  const result =
+    primary.error && isMissingSizeStocksColumn(primary.error)
+      ? await supabase
+          .from("tr_products")
+          .select(PRODUCT_COLUMNS_CORE)
+          .eq("status", "available")
+          .order("created_at", { ascending: false })
+      : primary;
+
+  if (result.error) throw result.error;
 
   const products: TrProductWithBoutique[] = [];
-  for (const row of data ?? []) {
+  for (const row of result.data ?? []) {
     const product = mapProductRow(row as Record<string, unknown>);
     const boutique = await getPublicBoutiqueById(product.boutiqueId, client);
     if (boutique) {
@@ -144,15 +232,34 @@ export async function createProductAdmin(
     throw new Error("Supabase service role is not configured.");
   }
 
-  const { data, error } = await supabase
-    .from("tr_products")
-    .insert(productInsertRow(input))
-    .select("*")
-    .single();
+  const omitColumns = new Set<string>();
+  // Optional columns that older DBs may not have yet.
+  const optionalRetryBudget = 6;
 
-  if (error) throw error;
+  for (let attempt = 0; attempt < optionalRetryBudget; attempt += 1) {
+    const { data, error } = await supabase
+      .from("tr_products")
+      .insert(productInsertRow(input, omitColumns))
+      .select("*")
+      .single();
 
-  return mapProductRow(data as Record<string, unknown>);
+    if (!error) {
+      return mapProductRow(data as Record<string, unknown>);
+    }
+
+    const missing = missingColumnFromError(error);
+    if (missing && isMissingColumnError(error, missing)) {
+      console.warn(
+        `[tr/products] column '${missing}' missing — saving without it. Apply matching supabase/patch_*.sql when ready.`,
+      );
+      omitColumns.add(missing);
+      continue;
+    }
+
+    throw error;
+  }
+
+  throw new Error("Ürün oluşturulamadı (şema uyumsuzluğu).");
 }
 
 export async function getProductByIdAdmin(
@@ -173,6 +280,26 @@ export async function getProductByIdAdmin(
   if (!data) return null;
 
   return mapProductRow(data as Record<string, unknown>);
+}
+
+export async function listProductsByIdsAdmin(
+  productIds: string[],
+): Promise<TrProduct[]> {
+  const unique = [...new Set(productIds.map((id) => id.trim()).filter(Boolean))];
+  if (unique.length === 0) return [];
+
+  const supabase = getServiceSupabase();
+  if (!supabase) {
+    throw new Error("Supabase service role is not configured.");
+  }
+
+  const { data, error } = await supabase
+    .from("tr_products")
+    .select("*")
+    .in("id", unique);
+
+  if (error) throw error;
+  return (data ?? []).map((row) => mapProductRow(row as Record<string, unknown>));
 }
 
 function productUpdateRow(input: UpdateTrProductInput): Record<string, unknown> {
@@ -199,11 +326,15 @@ function productUpdateRow(input: UpdateTrProductInput): Record<string, unknown> 
   if (input.marketplaceImages !== undefined) {
     row.marketplace_images = input.marketplaceImages;
   }
+  if (input.lifestyleImages !== undefined) {
+    row.lifestyle_images = input.lifestyleImages;
+  }
   if (input.catalogBackgroundId !== undefined) {
     row.catalog_background_id = input.catalogBackgroundId?.trim() || null;
   }
   if (input.status !== undefined) row.status = input.status;
   if (input.stock !== undefined) row.stock = input.stock;
+  if (input.sizeStocks !== undefined) row.size_stocks = input.sizeStocks;
   if (input.sortOrder !== undefined) row.sort_order = input.sortOrder;
 
   return row;
@@ -232,7 +363,24 @@ export async function updateProductAdmin(
     .select("*")
     .single();
 
-  if (error) throw error;
+  if (error) {
+    const missing = missingColumnFromError(error);
+    if (missing && missing in row && isMissingColumnError(error, missing)) {
+      console.warn(
+        `[tr/products] column '${missing}' missing on update — applying without it.`,
+      );
+      const { [missing]: _omit, ...rest } = row;
+      const retry = await supabase
+        .from("tr_products")
+        .update(rest)
+        .eq("id", productId)
+        .select("*")
+        .single();
+      if (retry.error) throw retry.error;
+      return mapProductRow(retry.data as Record<string, unknown>);
+    }
+    throw error;
+  }
 
   return mapProductRow(data as Record<string, unknown>);
 }
@@ -270,9 +418,11 @@ export async function duplicateProductAdmin(
     category: existing.category,
     images: existing.images,
     marketplaceImages: existing.marketplaceImages,
+    lifestyleImages: existing.lifestyleImages,
     catalogBackgroundId: existing.catalogBackgroundId,
     status: "hidden",
     stock: existing.stock,
+    sizeStocks: existing.sizeStocks,
     sortOrder: existing.sortOrder,
   });
 }

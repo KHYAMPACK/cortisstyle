@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import { getServiceSupabase } from "@/lib/supabaseAdmin";
 import type { StudioImportPipeline } from "@/types/studioImportCache";
 
@@ -17,7 +16,7 @@ export function buildStudioAssetPath(
   extension = "png",
 ): string {
   const folder = draftId ? sanitizeSegment(draftId) : "scratch";
-  const fileName = `${sanitizeSegment(itemId)}-${randomUUID().slice(0, 8)}.${extension}`;
+  const fileName = `${sanitizeSegment(itemId)}-${crypto.randomUUID().slice(0, 8)}.${extension}`;
   return `${sanitizeSegment(userId)}/${folder}/${fileName}`;
 }
 

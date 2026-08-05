@@ -1,53 +1,82 @@
 "use client";
 
-import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { TrCatalogBackgroundPicker } from "@/components/tr/panel/TrCatalogBackgroundPicker";
-import { TrOwnerAiModelPicker } from "@/components/tr/panel/TrOwnerAiModelPicker";
+import { TrOwnerAiCatalogEnhance } from "@/components/tr/panel/TrOwnerAiCatalogEnhance";
+import { TrOwnerAiFillListing } from "@/components/tr/panel/TrOwnerAiFillListing";
+import {
+  hasRequiredProductPhotos,
+  hasRequiredProductPhotosStarted,
+  TrOwnerGuidedPhotoUpload,
+} from "@/components/tr/panel/TrOwnerGuidedPhotoUpload";
+import { TrOwnerStorePreview } from "@/components/tr/panel/TrOwnerStorePreview";
+import { TrOwnerWizardPipelineStatus } from "@/components/tr/panel/TrOwnerWizardPipelineStatus";
 import { TrProductImageLightbox } from "@/components/tr/panel/TrProductImageLightbox";
+import {
+  emptyStockInputsForChart,
+  TrOwnerSizeChartStock,
+} from "@/components/tr/panel/TrOwnerSizeChartStock";
 import { TR_BOUTIQUE_CATEGORIES } from "@/lib/tr/categories";
+import type { PipelineJobItem } from "@/lib/tr/aiCatalog/pipelineProgress";
 import {
   DEFAULT_CATALOG_BACKGROUND_ID,
   getCatalogBackground,
 } from "@/lib/tr/catalogBackgrounds/registry";
 import {
-  DEFAULT_COLOR_PRESETS,
-  DEFAULT_LETTER_SIZES,
+  sizesForChart,
+  type TrSizeChartId,
 } from "@/lib/tr/productOptions";
 import {
   clampDescription,
   clampTitle,
-  getProductPhotoRole,
   isValidStock,
   isValidTryPrice,
-  productPhotoRoleLabel,
-  sanitizeColorName,
-  sanitizeSizeLabel,
-  sanitizeStockInput,
   sanitizeTryPriceInput,
-  shouldRemoveBackgroundForSlot,
   TR_OWNER_PRODUCT_LIMITS,
 } from "@/lib/tr/ownerProductConstraints";
 import {
   createOwnerProduct,
-  fetchOwnerBoutiqueOptions,
-  updateOwnerBoutiqueOptions,
-  uploadOwnerProductImage,
+  type OwnerListingDraft,
 } from "@/lib/tr/ownerClient";
+import {
+  parseSizeStockInputs,
+  sumSizeStocks,
+} from "@/lib/tr/sizeStocks";
 import { formatTryFromKurus } from "@/types/tr-marketplace";
-import type { TrProduct, TrProductColor } from "@/types/tr-marketplace";
+import type { TrProduct } from "@/types/tr-marketplace";
 
 const STEPS = [
   {
     id: "photo",
     title: "Fotoğraf",
-    hint: "1. ön, 2. arka (arka plan temizlenir) — ek fotoğraflar olduğu gibi kalır",
+    hint: "Ön tanıma bitince devam — katalog arka planda üretilir",
   },
-  { id: "name", title: "İsim", hint: "Ürüne bir isim verin" },
-  { id: "price", title: "Fiyat", hint: "Fiyat ve stok" },
-  { id: "details", title: "Detay", hint: "Kategori, beden, renk" },
-  { id: "review", title: "Kaydet", hint: "Kontrol edip yayınlayın" },
+  {
+    id: "name",
+    title: "İsim",
+    hint: "Ürün adı ve kısa açıklama",
+  },
+  {
+    id: "price",
+    title: "Fiyat",
+    hint: "Fiyat ve kategori",
+  },
+  {
+    id: "sizes",
+    title: "Beden",
+    hint: "Harf veya numara tablosu seçin, stokları yazın",
+  },
+  {
+    id: "model",
+    title: "Model",
+    hint: "İsterseniz model üzerinde satış fotoğrafı",
+  },
+  {
+    id: "review",
+    title: "Önizleme",
+    hint: "Kontrol edin ve kaydedin",
+  },
 ] as const;
 
 const fieldClass =
@@ -79,26 +108,25 @@ export function TrProductCreateWizard({
   const [discountEnabled, setDiscountEnabled] = useState(false);
   const [salePriceTry, setSalePriceTry] = useState("");
   const [stock, setStock] = useState("1");
+  const [sizeChart, setSizeChart] = useState<TrSizeChartId>("letter");
+  const [sizeStockInputs, setSizeStockInputs] = useState<
+    Record<string, string>
+  >(() => emptyStockInputsForChart("letter", "0"));
   const [category, setCategory] = useState<string | null>(null);
-  const [sizes, setSizes] = useState<string[]>([]);
-  const [sizeOptions, setSizeOptions] = useState<string[]>([
-    ...DEFAULT_LETTER_SIZES,
-  ]);
-  const [colors, setColors] = useState<TrProductColor[]>([]);
-  const [colorOptions, setColorOptions] = useState<TrProductColor[]>(
-    DEFAULT_COLOR_PRESETS.map((c) => ({ ...c })),
-  );
-  const [pendingDelete, setPendingDelete] = useState<
-    | { kind: "size"; value: string }
-    | { kind: "color"; value: TrProductColor }
-    | null
-  >(null);
   const [images, setImages] = useState<string[]>([]);
   const [marketplaceImages, setMarketplaceImages] = useState<string[]>([]);
+  const [lifestyleImages, setLifestyleImages] = useState<string[]>([]);
+  const [listingDraft, setListingDraft] = useState<OwnerListingDraft | null>(
+    null,
+  );
+  const [frontAnalysisDone, setFrontAnalysisDone] = useState(false);
+  const [frontDraftFailed, setFrontDraftFailed] = useState(false);
   const [catalogBackgroundId, setCatalogBackgroundId] = useState(
     DEFAULT_CATALOG_BACKGROUND_ID,
   );
   const [selectedModelId, setSelectedModelId] = useState<string | null>(null);
+  const [photoJobs, setPhotoJobs] = useState<PipelineJobItem[]>([]);
+  const [modelJobs, setModelJobs] = useState<PipelineJobItem[]>([]);
   const [lightbox, setLightbox] = useState<{
     src: string;
     label: string;
@@ -107,61 +135,57 @@ export function TrProductCreateWizard({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [addingSize, setAddingSize] = useState(false);
-  const [newSizeLabel, setNewSizeLabel] = useState("");
-  const [addingColor, setAddingColor] = useState(false);
-  const [newColorName, setNewColorName] = useState("");
-  const [newColorHex, setNewColorHex] = useState("#C2185B");
+  const chartSizes = useMemo(() => sizesForChart(sizeChart), [sizeChart]);
 
   const catalogBackground = getCatalogBackground(catalogBackgroundId);
+  const modelGenerating = modelJobs.some((j) => j.status === "running");
+  const pipelineJobs = useMemo(
+    () => [...photoJobs, ...modelJobs],
+    [photoJobs, modelJobs],
+  );
 
-  useEffect(() => {
-    let cancelled = false;
-    async function loadOptions() {
-      try {
-        const options = await fetchOwnerBoutiqueOptions(boutiqueId);
-        if (cancelled) return;
-        setSizeOptions(options.sizePresets);
-        setColorOptions(options.colorPresets);
-      } catch {
-        // Keep defaults if presets fail to load.
+  const applySizeChart = (next: TrSizeChartId) => {
+    setSizeChart(next);
+    if (next === "none") {
+      setSizeStockInputs({});
+      return;
+    }
+    setSizeStockInputs((current) => {
+      const nextInputs = emptyStockInputsForChart(next, "0");
+      for (const size of Object.keys(nextInputs)) {
+        if (current[size] !== undefined) nextInputs[size] = current[size]!;
       }
-    }
-    void loadOptions();
-    return () => {
-      cancelled = true;
-    };
-  }, [boutiqueId]);
-
-  const persistPresets = async (
-    nextSizes: string[],
-    nextColors: TrProductColor[],
-  ) => {
-    setSizeOptions(nextSizes);
-    setColorOptions(nextColors);
-    try {
-      const saved = await updateOwnerBoutiqueOptions(boutiqueId, {
-        sizePresets: nextSizes,
-        colorPresets: nextColors,
-      });
-      setSizeOptions(saved.sizePresets);
-      setColorOptions(saved.colorPresets);
-    } catch (persistError) {
-      setError(
-        persistError instanceof Error
-          ? persistError.message
-          : "Beden/renk listesi kaydedilemedi.",
-      );
-    }
+      return nextInputs;
+    });
   };
 
   const progress = ((stepIndex + 1) / STEPS.length) * 100;
 
+  const photoStepPhotosReady = useMemo(
+    () =>
+      hasRequiredProductPhotosStarted(images, photoJobs) &&
+      Boolean(images[0]?.trim()),
+    [images, photoJobs],
+  );
+
+  /** Front AI prepare still running — Devam shows loading instead of an error. */
+  const awaitingFrontAi =
+    step.id === "photo" && photoStepPhotosReady && !frontAnalysisDone;
+
+  /** Hide Devam entirely until photos are confirmed on the first step. */
+  const showContinueButton =
+    step.id !== "review" &&
+    (step.id !== "photo" || photoStepPhotosReady);
+
   const canContinue = useMemo(() => {
-    if (step.id === "photo") return images.length > 0;
+    if (step.id === "photo") {
+      const draftReady =
+        Boolean(listingDraft?.title?.trim()) || frontDraftFailed;
+      return photoStepPhotosReady && frontAnalysisDone && draftReady;
+    }
     if (step.id === "name") return title.trim().length > 0;
     if (step.id === "price") {
-      if (!isValidTryPrice(priceTry) || !isValidStock(stock)) return false;
+      if (!isValidTryPrice(priceTry)) return false;
       if (discountEnabled) {
         if (!isValidTryPrice(salePriceTry)) return false;
         const price = Number(priceTry.replace(",", "."));
@@ -170,96 +194,52 @@ export function TrProductCreateWizard({
       }
       return true;
     }
+    if (step.id === "sizes") {
+      if (sizeChart === "none") return isValidStock(stock);
+      if (
+        !chartSizes.every((size) => isValidStock(sizeStockInputs[size] ?? ""))
+      ) {
+        return false;
+      }
+      const parsed = parseSizeStockInputs(chartSizes, sizeStockInputs);
+      return parsed !== null && sumSizeStocks(parsed) > 0;
+    }
+    if (step.id === "model") return true;
     return true;
   }, [
+    chartSizes,
     discountEnabled,
-    images.length,
+    frontAnalysisDone,
+    frontDraftFailed,
+    listingDraft,
+    photoStepPhotosReady,
     priceTry,
     salePriceTry,
+    sizeChart,
+    sizeStockInputs,
     step.id,
     stock,
     title,
   ]);
 
-  const nextPhotoHint = useMemo(() => {
-    if (images.length === 0) {
-      return "Ön yüz fotoğrafı ekleyin (arka plan temizlenir)";
-    }
-    if (images.length === 1) {
-      return "Arka yüz fotoğrafı ekleyin (arka plan temizlenir)";
-    }
-    if (images.length >= TR_OWNER_PRODUCT_LIMITS.maxImages) {
-      return `En fazla ${TR_OWNER_PRODUCT_LIMITS.maxImages} fotoğraf`;
-    }
-    return "Ek fotoğraf ekleyin (arka plan temizlenmez)";
-  }, [images.length]);
-
-  const handleFiles = async (fileList: FileList | null) => {
-    if (!fileList || fileList.length === 0) return;
-    const remaining = TR_OWNER_PRODUCT_LIMITS.maxImages - images.length;
-    if (remaining <= 0) {
-      setError(
-        `En fazla ${TR_OWNER_PRODUCT_LIMITS.maxImages} fotoğraf ekleyebilirsiniz.`,
-      );
-      return;
-    }
-
-    const files = Array.from(fileList).slice(0, remaining);
-    setUploading(true);
-    setError(null);
-    try {
-      const nextOriginals: string[] = [];
-      const nextMarketplace: string[] = [];
-      let failedCutouts = 0;
-      let cutoutCount = 0;
-      const baseCount = images.length;
-
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i]!;
-        const slot = baseCount + i;
-        const removeBackground = shouldRemoveBackgroundForSlot(slot);
-        const uploaded = await uploadOwnerProductImage(boutiqueId, file, {
-          removeBackground,
-        });
-        nextOriginals.push(uploaded.url);
-        nextMarketplace.push(uploaded.marketplaceUrl ?? "");
-        if (removeBackground) {
-          cutoutCount += 1;
-          if (uploaded.marketplaceStatus === "failed") {
-            failedCutouts += 1;
-          }
-        }
-      }
-      setImages((current) => [...current, ...nextOriginals]);
-      setMarketplaceImages((current) => [...current, ...nextMarketplace]);
-      if (failedCutouts > 0) {
-        setError(
-          failedCutouts === cutoutCount
-            ? "Fotoğraflar kaydedildi; katalog arka plan temizliği başarısız. Orijinal kullanılıyor."
-            : `${failedCutouts} fotoğrafta katalog kesiti oluşmadı; orijinal kaydedildi.`,
-        );
-      }
-    } catch (uploadError) {
-      setError(
-        uploadError instanceof Error
-          ? uploadError.message
-          : "Fotoğraf yüklenemedi.",
-      );
-    } finally {
-      setUploading(false);
-    }
-  };
-
   const goNext = () => {
     setError(null);
+    if (step.id === "photo" && (!photoStepPhotosReady || awaitingFrontAi)) {
+      return;
+    }
     if (!canContinue) {
-      if (step.id === "photo") setError("Devam etmek için bir fotoğraf ekleyin.");
-      else if (step.id === "name") setError("Ürün adı zorunlu.");
+      if (step.id === "name") setError("Ürün adı zorunlu.");
       else if (step.id === "price") {
         setError(
           discountEnabled
             ? "İndirimli fiyat, normal fiyattan düşük olmalı."
-            : "Geçerli bir fiyat ve stok girin.",
+            : "Geçerli bir fiyat girin.",
+        );
+      } else if (step.id === "sizes") {
+        setError(
+          sizeChart === "none"
+            ? "Geçerli bir stok girin."
+            : "Her beden için stok girin; en az bir bedende stok 1 veya daha fazla olmalı.",
         );
       }
       return;
@@ -283,13 +263,42 @@ export function TrProductCreateWizard({
       }
       const listPrice = Number(priceTry.replace(",", "."));
       if (!title.trim()) throw new Error("Başlık zorunlu.");
-      if (images.length === 0) throw new Error("En az bir fotoğraf ekleyin.");
-      if (!isValidStock(stock)) {
+      if (!hasRequiredProductPhotos(images)) {
         throw new Error(
-          `Stok ${TR_OWNER_PRODUCT_LIMITS.stockMin}–${TR_OWNER_PRODUCT_LIMITS.stockMax} arası olmalı.`,
+          uploading
+            ? "Fotoğraflar hâlâ hazırlanıyor. Biraz bekleyip tekrar deneyin."
+            : "Ön ve arka fotoğraf zorunlu.",
         );
       }
-      const stockValue = Number.parseInt(stock, 10);
+
+      if (modelGenerating) {
+        throw new Error("Model görselleri hâlâ hazırlanıyor. Biraz bekleyin.");
+      }
+
+      let stockValue: number;
+      let sizeStocks: Record<string, number> = {};
+      const sizes =
+        sizeChart === "none" ? [] : sizesForChart(sizeChart);
+      if (sizes.length > 0) {
+        const parsed = parseSizeStockInputs(sizes, sizeStockInputs);
+        if (!parsed) {
+          throw new Error(
+            `Her beden için stok ${TR_OWNER_PRODUCT_LIMITS.stockMin}–${TR_OWNER_PRODUCT_LIMITS.stockMax} arası olmalı.`,
+          );
+        }
+        sizeStocks = parsed;
+        stockValue = sumSizeStocks(sizeStocks);
+        if (stockValue <= 0) {
+          throw new Error("En az bir bedende stok girin.");
+        }
+      } else {
+        if (!isValidStock(stock)) {
+          throw new Error(
+            `Stok ${TR_OWNER_PRODUCT_LIMITS.stockMin}–${TR_OWNER_PRODUCT_LIMITS.stockMax} arası olmalı.`,
+          );
+        }
+        stockValue = Number.parseInt(stock, 10);
+      }
 
       let sellPrice = listPrice;
       let compareAtPriceTryValue: number | null = null;
@@ -312,35 +321,18 @@ export function TrProductCreateWizard({
         priceTry: sellPrice,
         compareAtPriceTry: compareAtPriceTryValue,
         sizes,
-        colors,
+        colors: [],
         category,
         images,
         marketplaceImages: images.map(
           (_, index) => marketplaceImages[index] ?? "",
         ),
+        lifestyleImages,
         catalogBackgroundId,
         stock: stockValue,
+        sizeStocks,
         status: "available",
       });
-
-      const mergedSizes = [...sizeOptions];
-      for (const size of sizes) {
-        if (!mergedSizes.includes(size)) mergedSizes.push(size);
-      }
-      const mergedColors = [...colorOptions];
-      for (const color of colors) {
-        if (
-          !mergedColors.some(
-            (entry) => entry.hex.toLowerCase() === color.hex.toLowerCase(),
-          )
-        ) {
-          mergedColors.push(color);
-        }
-      }
-      void persistPresets(mergedSizes, mergedColors);
-
-      // selectedModelId reserved for AI try-on — not persisted yet
-      void selectedModelId;
 
       onSaved(product);
     } catch (saveError) {
@@ -350,99 +342,6 @@ export function TrProductCreateWizard({
     } finally {
       setSaving(false);
     }
-  };
-
-  const toggleSize = (size: string) => {
-    setSizes((current) =>
-      current.includes(size)
-        ? current.filter((entry) => entry !== size)
-        : [...current, size],
-    );
-  };
-
-  const toggleColor = (color: TrProductColor) => {
-    setColors((current) => {
-      const exists = current.some(
-        (entry) => entry.hex.toLowerCase() === color.hex.toLowerCase(),
-      );
-      if (exists) {
-        return current.filter(
-          (entry) => entry.hex.toLowerCase() !== color.hex.toLowerCase(),
-        );
-      }
-      return [...current, color];
-    });
-  };
-
-  const addSize = () => {
-    const size = sanitizeSizeLabel(newSizeLabel);
-    if (!size) return;
-    const nextSizes = sizeOptions.includes(size)
-      ? sizeOptions
-      : [...sizeOptions, size];
-    setSizes((current) => (current.includes(size) ? current : [...current, size]));
-    setNewSizeLabel("");
-    setAddingSize(false);
-    void persistPresets(nextSizes, colorOptions);
-  };
-
-  const addColor = () => {
-    const name = sanitizeColorName(newColorName).trim();
-    let hex = newColorHex.trim();
-    if (!name) return;
-    if (!hex.startsWith("#")) hex = `#${hex}`;
-    if (!/^#[0-9A-Fa-f]{6}$/.test(hex)) {
-      setError("Renk için geçerli bir hex kodu girin (ör. #C2185B).");
-      return;
-    }
-    const color = { name, hex: hex.toUpperCase() };
-    const nextColors = colorOptions.some(
-      (entry) => entry.hex.toLowerCase() === color.hex.toLowerCase(),
-    )
-      ? colorOptions
-      : [...colorOptions, color];
-    toggleColor(color);
-    setNewColorName("");
-    setNewColorHex("#C2185B");
-    setAddingColor(false);
-    setError(null);
-    void persistPresets(sizeOptions, nextColors);
-  };
-
-  const removeSizeOption = (size: string) => {
-    const nextSizes = sizeOptions.filter((entry) => entry !== size);
-    setSizes((current) => current.filter((entry) => entry !== size));
-    void persistPresets(nextSizes, colorOptions);
-  };
-
-  const removeColorOption = (color: TrProductColor) => {
-    const nextColors = colorOptions.filter(
-      (entry) => entry.hex.toLowerCase() !== color.hex.toLowerCase(),
-    );
-    setColors((current) =>
-      current.filter(
-        (entry) => entry.hex.toLowerCase() !== color.hex.toLowerCase(),
-      ),
-    );
-    void persistPresets(sizeOptions, nextColors);
-  };
-
-  const requestRemoveSizeOption = (size: string) => {
-    setPendingDelete({ kind: "size", value: size });
-  };
-
-  const requestRemoveColorOption = (color: TrProductColor) => {
-    setPendingDelete({ kind: "color", value: color });
-  };
-
-  const confirmPendingDelete = () => {
-    if (!pendingDelete) return;
-    if (pendingDelete.kind === "size") {
-      removeSizeOption(pendingDelete.value);
-    } else {
-      removeColorOption(pendingDelete.value);
-    }
-    setPendingDelete(null);
   };
 
   const displaySellPrice = discountEnabled ? salePriceTry : priceTry;
@@ -474,661 +373,333 @@ export function TrProductCreateWizard({
         <p className="mt-3 text-[18px] text-neutral-700">{step.hint}</p>
       </div>
 
+      <TrOwnerWizardPipelineStatus jobs={pipelineJobs} />
+
       {error ? (
         <p className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-[16px] text-red-800">
           {error}
         </p>
       ) : null}
 
-      <AnimatePresence>
-        {pendingDelete ? (
-          <motion.div
-            key="delete-confirm"
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-            className="rounded-2xl border-2 border-amber-300 bg-amber-50 p-5 shadow-sm sm:p-6"
-            role="alertdialog"
-            aria-modal="true"
-            aria-labelledby="pending-delete-title"
-          >
-            <p
-              id="pending-delete-title"
-              className="text-[18px] font-semibold text-neutral-900"
-            >
-              Emin misiniz?
-            </p>
-            <p className="mt-2 text-[16px] leading-relaxed text-neutral-700">
-              {pendingDelete.kind === "size" ? (
-                <>
-                  <span className="font-semibold">{pendingDelete.value}</span>{" "}
-                  bedeni bu butikteki listeden silinecek. Sonraki ürünlerde
-                  görünmez.
-                </>
-              ) : (
-                <>
-                  <span className="font-semibold">
-                    {pendingDelete.value.name}
-                  </span>{" "}
-                  rengi bu butikteki listeden silinecek. Sonraki ürünlerde
-                  görünmez.
-                </>
-              )}
-            </p>
-            <div className="mt-5 flex flex-wrap gap-3">
-              <button
-                type="button"
-                className={primaryBtn}
-                style={{ backgroundColor: "#B45309" }}
-                onClick={confirmPendingDelete}
-              >
-                Evet, sil
-              </button>
-              <button
-                type="button"
-                className={secondaryBtn}
-                onClick={() => setPendingDelete(null)}
-              >
-                Vazgeç
-              </button>
-            </div>
-          </motion.div>
+      {/* Photo step stays mounted (hidden) so packshot jobs survive Geri */}
+      <div
+        className={`rounded-2xl border border-[color:var(--panel-accent-border)] bg-white p-5 shadow-sm sm:p-6 ${
+          step.id === "photo" ? "space-y-6" : "hidden"
+        }`}
+      >
+        <TrOwnerGuidedPhotoUpload
+          boutiqueId={boutiqueId}
+          images={images}
+          marketplaceImages={marketplaceImages}
+          catalogBackgroundCss={catalogBackground.css}
+          title={title}
+          category={category}
+          uploading={uploading}
+          onUploadingChange={setUploading}
+          onImagesChange={setImages}
+          onMarketplaceImagesChange={setMarketplaceImages}
+          onError={setError}
+          onLightbox={setLightbox}
+          onListingDraft={(draft) => {
+            if (draft.title.trim()) setListingDraft(draft);
+          }}
+          onFrontAnalysisComplete={({ draft }) => {
+            setFrontAnalysisDone(true);
+            if (draft?.title?.trim()) {
+              setListingDraft(draft);
+              setFrontDraftFailed(false);
+            } else {
+              setFrontDraftFailed(true);
+              setListingDraft(null);
+            }
+          }}
+          onFrontSlotReset={() => {
+            setFrontAnalysisDone(false);
+            setFrontDraftFailed(false);
+            setListingDraft(null);
+          }}
+          onPhotoJobsChange={setPhotoJobs}
+          disabled={saving}
+        />
+        {frontAnalysisDone && listingDraft?.title ? (
+          <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-[14px] text-emerald-900">
+            Ön fotoğraf tanındı — sonraki adımda “AI ile doldur” hazır.
+          </p>
         ) : null}
-      </AnimatePresence>
+        {frontDraftFailed && frontAnalysisDone ? (
+          <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[14px] text-amber-950">
+            AI isim önerisi alınamadı. İsim adımında tekrar deneyebilir veya elle
+            yazabilirsiniz.
+          </p>
+        ) : null}
+      </div>
 
       <AnimatePresence mode="wait">
-        <motion.div
-          key={step.id}
-          initial={{ opacity: 0, x: 16 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -12 }}
-          transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-          className="rounded-2xl border border-[color:var(--panel-accent-border)] bg-white p-5 shadow-sm sm:p-6"
-        >
-          {step.id === "photo" ? (
-            <div className="space-y-6">
-              <label
-                className={`flex min-h-48 flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-[color:var(--panel-accent-border)] bg-[color:var(--panel-accent-softer)] px-6 py-10 text-center ${
-                  images.length >= TR_OWNER_PRODUCT_LIMITS.maxImages || uploading
-                    ? "cursor-not-allowed opacity-60"
-                    : "cursor-pointer"
-                }`}
-              >
-                <span
-                  className="text-[22px] font-semibold"
-                  style={{ color: "var(--panel-accent-deep)" }}
-                >
-                  {uploading ? "Yükleniyor…" : "Fotoğraf seçin"}
-                </span>
-                <span className="max-w-sm text-[16px] text-neutral-600">
-                  {uploading
-                    ? images.length < 2
-                      ? "Arka plan temizleniyor…"
-                      : "Fotoğraf kaydediliyor…"
-                    : nextPhotoHint}
-                </span>
-                <input
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp"
-                  multiple
-                  className="hidden"
-                  disabled={
-                    uploading ||
-                    images.length >= TR_OWNER_PRODUCT_LIMITS.maxImages
+        {step.id !== "photo" ? (
+          <motion.div
+            key={step.id}
+            initial={{ opacity: 0, x: 16 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -12 }}
+            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            className="rounded-2xl border border-[color:var(--panel-accent-border)] bg-white p-5 shadow-sm sm:p-6"
+          >
+            {step.id === "name" ? (
+              <div className="space-y-5">
+                <TrOwnerAiFillListing
+                  boutiqueId={boutiqueId}
+                  sourceImageUrl={
+                    marketplaceImages[0]?.trim() || images[0]?.trim() || null
                   }
-                  onChange={(event) => {
-                    void handleFiles(event.target.files);
-                    event.target.value = "";
+                  category={category}
+                  cachedDraft={listingDraft}
+                  awaitingDraft={
+                    !frontAnalysisDone &&
+                    photoJobs.some(
+                      (j) =>
+                        j.kind === "photo-front" && j.status === "running",
+                    )
+                  }
+                  disabled={saving}
+                  onError={setError}
+                  onApply={(draft) => {
+                    setTitle(clampTitle(draft.title));
+                    setDescription(clampDescription(draft.description));
+                    setListingDraft(draft);
                   }}
                 />
-              </label>
-
-              {images.length > 0 ? (
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                  {images.map((url, index) => {
-                    const catalogUrl = marketplaceImages[index]?.trim();
-                    const previewSrc = catalogUrl || url;
-                    const role = getProductPhotoRole(index);
-                    const roleLabel = productPhotoRoleLabel(role);
-                    const useBg = Boolean(catalogUrl);
-                    return (
-                      <div
-                        key={`${url}-${index}`}
-                        className="relative aspect-[3/4] overflow-hidden rounded-xl bg-[#F3F1EC]"
-                        style={
-                          useBg
-                            ? { background: catalogBackground.css }
-                            : undefined
-                        }
-                      >
-                        <button
-                          type="button"
-                          className="absolute inset-0 z-[1]"
-                          aria-label={`${roleLabel} — büyüt`}
-                          onClick={() =>
-                            setLightbox({
-                              src: previewSrc,
-                              label: roleLabel,
-                            })
-                          }
-                        />
-                        <Image
-                          src={previewSrc}
-                          alt={roleLabel}
-                          fill
-                          unoptimized
-                          className={
-                            catalogUrl ? "object-contain p-2" : "object-cover"
-                          }
-                          sizes="160px"
-                        />
-                        <span className="pointer-events-none absolute top-2 left-2 z-[2] rounded-lg bg-white px-2 py-1 text-[13px] font-semibold">
-                          {roleLabel}
-                        </span>
-                        {catalogUrl ? (
-                          <span className="pointer-events-none absolute top-2 right-2 z-[2] rounded-lg bg-emerald-700 px-2 py-1 text-[12px] font-semibold text-white">
-                            Katalog hazır
-                          </span>
-                        ) : (
-                          <span className="pointer-events-none absolute top-2 right-2 z-[2] rounded-lg bg-amber-700 px-2 py-1 text-[12px] font-semibold text-white">
-                            Orijinal
-                          </span>
-                        )}
-                        <button
-                          type="button"
-                          className="absolute right-2 bottom-2 z-[2] rounded-lg bg-white px-3 py-2 text-[14px] font-semibold text-red-700"
-                          onClick={() => {
-                            setImages((current) =>
-                              current.filter((_, i) => i !== index),
-                            );
-                            setMarketplaceImages((current) =>
-                              current.filter((_, i) => i !== index),
-                            );
-                          }}
-                        >
-                          Sil
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : null}
-
-              {images.length > 0 ? (
-                <>
-                  <TrCatalogBackgroundPicker
-                    value={catalogBackgroundId}
-                    onChange={setCatalogBackgroundId}
-                    disabled={uploading}
-                  />
-                  <TrOwnerAiModelPicker
-                    boutiqueSlug={boutiqueSlug}
-                    value={selectedModelId}
-                    onChange={setSelectedModelId}
-                    disabled={uploading}
-                  />
-                </>
-              ) : null}
-            </div>
-          ) : null}
-
-          {step.id === "name" ? (
-            <div className="space-y-5">
-              <label className="block space-y-2">
-                <span className="text-[17px] font-semibold text-neutral-800">
-                  Ürün adı
-                </span>
-                <input
-                  value={title}
-                  onChange={(event) =>
-                    setTitle(clampTitle(event.target.value))
-                  }
-                  className={fieldClass}
-                  placeholder="Örn. Siyah Bluz"
-                  maxLength={TR_OWNER_PRODUCT_LIMITS.titleMax}
-                  autoFocus
-                  required
-                />
-                <span className="text-[13px] text-neutral-500">
-                  {title.length}/{TR_OWNER_PRODUCT_LIMITS.titleMax}
-                </span>
-              </label>
-              <label className="block space-y-2">
-                <span className="text-[17px] font-semibold text-neutral-800">
-                  Kısa açıklama (isteğe bağlı)
-                </span>
-                <textarea
-                  value={description}
-                  onChange={(event) =>
-                    setDescription(clampDescription(event.target.value))
-                  }
-                  className={`${fieldClass} min-h-28`}
-                  placeholder="Kumaş, kesim, kullanım…"
-                  maxLength={TR_OWNER_PRODUCT_LIMITS.descriptionMax}
-                />
-                <span className="text-[13px] text-neutral-500">
-                  {description.length}/{TR_OWNER_PRODUCT_LIMITS.descriptionMax}
-                </span>
-              </label>
-            </div>
-          ) : null}
-
-          {step.id === "price" ? (
-            <div className="space-y-5">
-              <label className="block space-y-2">
-                <span className="text-[17px] font-semibold text-neutral-800">
-                  Fiyat (TL)
-                </span>
-                <input
-                  value={priceTry}
-                  onChange={(event) =>
-                    setPriceTry(sanitizeTryPriceInput(event.target.value))
-                  }
-                  className={fieldClass}
-                  inputMode="decimal"
-                  placeholder="890"
-                  autoFocus
-                  required
-                />
-                {priceTry && isValidTryPrice(priceTry) ? (
-                  <span className="text-[15px] text-neutral-600">
-                    {formatTryFromKurus(
-                      Math.round(Number(priceTry.replace(",", ".")) * 100),
-                    )}
-                  </span>
-                ) : (
-                  <span className="text-[13px] text-neutral-500">
-                    {TR_OWNER_PRODUCT_LIMITS.priceMinTry}–
-                    {TR_OWNER_PRODUCT_LIMITS.priceMaxTry} TL
-                  </span>
-                )}
-              </label>
-
-              <label className="block space-y-2">
-                <span className="text-[17px] font-semibold text-neutral-800">
-                  Stok adedi
-                </span>
-                <input
-                  value={stock}
-                  onChange={(event) =>
-                    setStock(sanitizeStockInput(event.target.value))
-                  }
-                  className={fieldClass}
-                  inputMode="numeric"
-                  maxLength={4}
-                  required
-                />
-              </label>
-
-              <button
-                type="button"
-                role="switch"
-                aria-checked={discountEnabled}
-                onClick={() => {
-                  setDiscountEnabled((current) => !current);
-                  if (discountEnabled) setSalePriceTry("");
-                }}
-                className="flex w-full items-center gap-4 rounded-2xl border-2 border-[color:var(--panel-accent-border)] bg-[color:var(--panel-accent-softer)] px-4 py-4 text-left"
-              >
-                <span
-                  className={`relative h-8 w-14 shrink-0 rounded-full transition-colors ${
-                    discountEnabled ? "" : "bg-neutral-300"
-                  }`}
-                  style={
-                    discountEnabled
-                      ? { backgroundColor: "var(--panel-accent)" }
-                      : undefined
-                  }
-                >
-                  <span
-                    className={`absolute top-1 left-1 h-6 w-6 rounded-full bg-white shadow transition-transform ${
-                      discountEnabled ? "translate-x-6" : ""
-                    }`}
-                  />
-                </span>
-                <span>
-                  <span className="block text-[18px] font-semibold text-neutral-900">
-                    İndirim var mı?
-                  </span>
-                  <span className="mt-0.5 block text-[15px] text-neutral-600">
-                    Açınca indirimli satış fiyatını girebilirsiniz
-                  </span>
-                </span>
-              </button>
-
-              {discountEnabled ? (
                 <label className="block space-y-2">
                   <span className="text-[17px] font-semibold text-neutral-800">
-                    İndirimli fiyat (TL)
+                    Ürün adı
                   </span>
                   <input
-                    value={salePriceTry}
+                    value={title}
                     onChange={(event) =>
-                      setSalePriceTry(sanitizeTryPriceInput(event.target.value))
+                      setTitle(clampTitle(event.target.value))
+                    }
+                    className={fieldClass}
+                    placeholder="Örn. Siyah Bluz"
+                    maxLength={TR_OWNER_PRODUCT_LIMITS.titleMax}
+                    autoFocus
+                    required
+                  />
+                  <span className="text-[13px] text-neutral-500">
+                    {title.length}/{TR_OWNER_PRODUCT_LIMITS.titleMax}
+                  </span>
+                </label>
+                <label className="block space-y-2">
+                  <span className="text-[17px] font-semibold text-neutral-800">
+                    Kısa açıklama (isteğe bağlı)
+                  </span>
+                  <textarea
+                    value={description}
+                    onChange={(event) =>
+                      setDescription(clampDescription(event.target.value))
+                    }
+                    className={`${fieldClass} min-h-28`}
+                    placeholder="Kumaş, kesim, kullanım…"
+                    maxLength={TR_OWNER_PRODUCT_LIMITS.descriptionMax}
+                  />
+                  <span className="text-[13px] text-neutral-500">
+                    {description.length}/
+                    {TR_OWNER_PRODUCT_LIMITS.descriptionMax}
+                  </span>
+                </label>
+              </div>
+            ) : null}
+
+            {step.id === "price" ? (
+              <div className="space-y-6">
+                <label className="block space-y-2">
+                  <span className="text-[17px] font-semibold text-neutral-800">
+                    Fiyat (TL)
+                  </span>
+                  <input
+                    value={priceTry}
+                    onChange={(event) =>
+                      setPriceTry(sanitizeTryPriceInput(event.target.value))
                     }
                     className={fieldClass}
                     inputMode="decimal"
-                    placeholder="690"
+                    placeholder="890"
+                    autoFocus
+                    required
                   />
-                  <span className="text-[15px] text-neutral-600">
-                    Müşteri bunu öder; üstteki fiyat üstü çizili görünür.
-                  </span>
+                  {priceTry && isValidTryPrice(priceTry) ? (
+                    <span className="text-[15px] text-neutral-600">
+                      {formatTryFromKurus(
+                        Math.round(Number(priceTry.replace(",", ".")) * 100),
+                      )}
+                    </span>
+                  ) : (
+                    <span className="text-[13px] text-neutral-500">
+                      {TR_OWNER_PRODUCT_LIMITS.priceMinTry}–
+                      {TR_OWNER_PRODUCT_LIMITS.priceMaxTry} TL
+                    </span>
+                  )}
                 </label>
-              ) : null}
-            </div>
-          ) : null}
 
-          {step.id === "details" ? (
-            <div className="space-y-8">
-              <div className="space-y-3">
-                <p className="text-[17px] font-semibold text-neutral-800">
-                  Kategori
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {TR_BOUTIQUE_CATEGORIES.map((entry) => {
-                    const active = category === entry.id;
-                    return (
-                      <button
-                        key={entry.id}
-                        type="button"
-                        onClick={() =>
-                          setCategory((current) =>
-                            current === entry.id ? null : entry.id,
-                          )
-                        }
-                        className={`rounded-full px-4 py-3 text-[16px] font-semibold ${
-                          active
-                            ? "text-white"
-                            : "bg-white text-neutral-800 ring-1 ring-[color:var(--panel-accent-border)]"
-                        }`}
-                        style={
-                          active
-                            ? { backgroundColor: "var(--panel-accent)" }
-                            : undefined
-                        }
-                      >
-                        {entry.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <p className="text-[17px] font-semibold text-neutral-800">
-                  Bedenler (isteğe bağlı)
-                </p>
-                <p className="text-[14px] text-neutral-600">
-                  Eklediğiniz bedenler bu butikte saklanır; sonraki ürünlerde
-                  tekrar görünür.
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {sizeOptions.map((size) => {
-                    const active = sizes.includes(size);
-                    return (
-                      <div
-                        key={size}
-                        className={`inline-flex items-center gap-1 rounded-full pl-4 ${
-                          active
-                            ? "text-white"
-                            : "bg-white text-neutral-800 ring-1 ring-[color:var(--panel-accent-border)]"
-                        }`}
-                        style={
-                          active
-                            ? { backgroundColor: "var(--panel-accent)" }
-                            : undefined
-                        }
-                      >
-                        <button
-                          type="button"
-                          onClick={() => toggleSize(size)}
-                          className="min-w-8 py-3 text-[16px] font-semibold"
-                        >
-                          {size}
-                        </button>
-                        <button
-                          type="button"
-                          aria-label={`${size} sil`}
-                          onClick={() => requestRemoveSizeOption(size)}
-                          className={`mr-1 flex h-8 w-8 items-center justify-center rounded-full text-[18px] ${
-                            active
-                              ? "bg-white/20 text-white"
-                              : "text-neutral-500 hover:bg-neutral-100"
-                          }`}
-                        >
-                          ×
-                        </button>
-                      </div>
-                    );
-                  })}
-                  {!addingSize ? (
-                    <button
-                      type="button"
-                      onClick={() => setAddingSize(true)}
-                      className="rounded-full border-2 border-dashed border-[color:var(--panel-accent-border)] px-4 py-3 text-[16px] font-semibold text-neutral-700"
-                    >
-                      + Beden ekle
-                    </button>
-                  ) : (
-                    <div className="flex w-full flex-wrap items-center gap-2">
-                      <input
-                        value={newSizeLabel}
-                        onChange={(event) =>
-                          setNewSizeLabel(sanitizeSizeLabel(event.target.value))
-                        }
-                        className={`${fieldClass} max-w-[8rem]`}
-                        placeholder="Örn. 38"
-                        maxLength={TR_OWNER_PRODUCT_LIMITS.sizeLabelMax}
-                        autoFocus
-                      />
-                      <button
-                        type="button"
-                        className={primaryBtn}
-                        style={{ backgroundColor: "var(--panel-accent)" }}
-                        onClick={addSize}
-                      >
-                        Ekle
-                      </button>
-                      <button
-                        type="button"
-                        className={secondaryBtn}
-                        onClick={() => {
-                          setAddingSize(false);
-                          setNewSizeLabel("");
-                        }}
-                      >
-                        Vazgeç
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <p className="text-[17px] font-semibold text-neutral-800">
-                  Renkler (isteğe bağlı)
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {colorOptions.map((color) => {
-                    const active = colors.some(
-                      (entry) =>
-                        entry.hex.toLowerCase() === color.hex.toLowerCase(),
-                    );
-                    return (
-                      <div
-                        key={color.hex}
-                        className={`inline-flex items-center gap-1 rounded-full pl-3 ${
-                          active
-                            ? "text-white"
-                            : "bg-white text-neutral-800 ring-1 ring-[color:var(--panel-accent-border)]"
-                        }`}
-                        style={
-                          active
-                            ? { backgroundColor: "var(--panel-accent)" }
-                            : undefined
-                        }
-                      >
-                        <button
-                          type="button"
-                          onClick={() => toggleColor(color)}
-                          className="inline-flex items-center gap-2 py-3 pr-1 text-[16px] font-semibold"
-                        >
-                          <span
-                            className="h-4 w-4 rounded-full ring-1 ring-black/10"
-                            style={{ backgroundColor: color.hex }}
-                          />
-                          {color.name}
-                        </button>
-                        <button
-                          type="button"
-                          aria-label={`${color.name} sil`}
-                          onClick={() => requestRemoveColorOption(color)}
-                          className={`mr-1 flex h-8 w-8 items-center justify-center rounded-full text-[18px] ${
-                            active
-                              ? "bg-white/20 text-white"
-                              : "text-neutral-500 hover:bg-neutral-100"
-                          }`}
-                        >
-                          ×
-                        </button>
-                      </div>
-                    );
-                  })}
-                  {!addingColor ? (
-                    <button
-                      type="button"
-                      onClick={() => setAddingColor(true)}
-                      className="rounded-full border-2 border-dashed border-[color:var(--panel-accent-border)] px-4 py-3 text-[16px] font-semibold text-neutral-700"
-                    >
-                      + Renk ekle
-                    </button>
-                  ) : (
-                    <div className="flex w-full flex-wrap items-center gap-2">
-                      <input
-                        value={newColorName}
-                        onChange={(event) =>
-                          setNewColorName(sanitizeColorName(event.target.value))
-                        }
-                        className={`${fieldClass} max-w-[10rem]`}
-                        placeholder="Renk adı"
-                        maxLength={TR_OWNER_PRODUCT_LIMITS.colorNameMax}
-                        autoFocus
-                      />
-                      <input
-                        type="color"
-                        value={newColorHex}
-                        onChange={(event) => setNewColorHex(event.target.value)}
-                        className="h-14 w-14 rounded-xl border-2 border-[color:var(--panel-accent-border)] bg-white p-1"
-                        aria-label="Renk seç"
-                      />
-                      <button
-                        type="button"
-                        className={primaryBtn}
-                        style={{ backgroundColor: "var(--panel-accent)" }}
-                        onClick={addColor}
-                      >
-                        Ekle
-                      </button>
-                      <button
-                        type="button"
-                        className={secondaryBtn}
-                        onClick={() => {
-                          setAddingColor(false);
-                          setNewColorName("");
-                          setNewColorHex("#C2185B");
-                        }}
-                      >
-                        Vazgeç
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          ) : null}
-
-          {step.id === "review" ? (
-            <div className="space-y-4 text-[17px] text-neutral-800">
-              <div className="flex gap-4">
-                {images[0] ? (
-                  <div
-                    className="relative h-32 w-24 shrink-0 overflow-hidden rounded-xl"
-                    style={{
-                      background: marketplaceImages[0]
-                        ? catalogBackground.css
-                        : "#F3F1EC",
-                    }}
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={discountEnabled}
+                  onClick={() => {
+                    setDiscountEnabled((current) => !current);
+                    if (discountEnabled) setSalePriceTry("");
+                  }}
+                  className="flex w-full items-center gap-4 rounded-2xl border-2 border-[color:var(--panel-accent-border)] bg-[color:var(--panel-accent-softer)] px-4 py-4 text-left"
+                >
+                  <span
+                    className={`relative h-8 w-14 shrink-0 rounded-full transition-colors ${
+                      discountEnabled ? "" : "bg-neutral-300"
+                    }`}
+                    style={
+                      discountEnabled
+                        ? { backgroundColor: "var(--panel-accent)" }
+                        : undefined
+                    }
                   >
-                    <Image
-                      src={marketplaceImages[0]?.trim() || images[0]}
-                      alt=""
-                      fill
-                      unoptimized
-                      className={
-                        marketplaceImages[0]?.trim()
-                          ? "object-contain p-1"
-                          : "object-cover"
-                      }
-                      sizes="96px"
+                    <span
+                      className={`absolute top-1 left-1 h-6 w-6 rounded-full bg-white shadow transition-transform ${
+                        discountEnabled ? "translate-x-6" : ""
+                      }`}
                     />
-                  </div>
-                ) : null}
-                <div className="min-w-0 space-y-1">
-                  <p className="text-[22px] font-semibold">{title || "—"}</p>
-                  <p>
-                    {displaySellPrice
-                      ? formatTryFromKurus(
-                          Math.round(
-                            Number(displaySellPrice.replace(",", ".")) * 100,
-                          ),
+                  </span>
+                  <span>
+                    <span className="block text-[18px] font-semibold text-neutral-900">
+                      İndirim var mı?
+                    </span>
+                    <span className="mt-0.5 block text-[15px] text-neutral-600">
+                      Açınca indirimli satış fiyatını girebilirsiniz
+                    </span>
+                  </span>
+                </button>
+
+                {discountEnabled ? (
+                  <label className="block space-y-2">
+                    <span className="text-[17px] font-semibold text-neutral-800">
+                      İndirimli fiyat (TL)
+                    </span>
+                    <input
+                      value={salePriceTry}
+                      onChange={(event) =>
+                        setSalePriceTry(
+                          sanitizeTryPriceInput(event.target.value),
                         )
-                      : "—"}
-                    {displayListPrice &&
-                    Number(displayListPrice.replace(",", ".")) > 0 ? (
-                      <span className="ml-2 text-neutral-500 line-through">
-                        {formatTryFromKurus(
-                          Math.round(
-                            Number(displayListPrice.replace(",", ".")) * 100,
-                          ),
-                        )}
-                      </span>
-                    ) : null}{" "}
-                    · Stok {stock}
+                      }
+                      className={fieldClass}
+                      inputMode="decimal"
+                      placeholder="690"
+                    />
+                    <span className="text-[15px] text-neutral-600">
+                      Müşteri bunu öder; üstteki fiyat üstü çizili görünür.
+                    </span>
+                  </label>
+                ) : null}
+
+                <div className="space-y-3">
+                  <p className="text-[17px] font-semibold text-neutral-800">
+                    Kategori
                   </p>
-                  {category ? (
-                    <p className="text-neutral-600">
-                      Kategori:{" "}
-                      {TR_BOUTIQUE_CATEGORIES.find((c) => c.id === category)
-                        ?.label ?? category}
-                    </p>
-                  ) : null}
-                  {sizes.length > 0 ? (
-                    <p className="text-neutral-600">
-                      Beden: {sizes.join(", ")}
-                    </p>
-                  ) : null}
-                  {colors.length > 0 ? (
-                    <p className="text-neutral-600">
-                      Renk: {colors.map((c) => c.name).join(", ")}
-                    </p>
-                  ) : null}
-                  <p className="text-neutral-600">
-                    Arka plan: {catalogBackground.label}
-                  </p>
-                  {selectedModelId ? (
-                    <p className="text-neutral-500">
-                      Model seçildi (AI yakında)
-                    </p>
-                  ) : null}
+                  <div className="flex flex-wrap gap-2">
+                    {TR_BOUTIQUE_CATEGORIES.map((entry) => {
+                      const active = category === entry.id;
+                      return (
+                        <button
+                          key={entry.id}
+                          type="button"
+                          onClick={() =>
+                            setCategory((current) =>
+                              current === entry.id ? null : entry.id,
+                            )
+                          }
+                          className={`rounded-full px-4 py-3 text-[16px] font-semibold ${
+                            active
+                              ? "text-white"
+                              : "bg-white text-neutral-800 ring-1 ring-[color:var(--panel-accent-border)]"
+                          }`}
+                          style={
+                            active
+                              ? { backgroundColor: "var(--panel-accent)" }
+                              : undefined
+                          }
+                        >
+                          {entry.label}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
-              <p className="rounded-xl bg-[color:var(--panel-accent-soft)] px-4 py-3 text-[16px]">
-                Kaydettiğinizde ürün satışta görünür.
-              </p>
-            </div>
-          ) : null}
-        </motion.div>
+            ) : null}
+
+            {step.id === "sizes" ? (
+              <TrOwnerSizeChartStock
+                chart={sizeChart}
+                onChartChange={applySizeChart}
+                stockInputs={sizeStockInputs}
+                onStockInputsChange={setSizeStockInputs}
+                stock={stock}
+                onStockChange={setStock}
+                variant="wizard"
+              />
+            ) : null}
+
+            {step.id === "model" ? (
+              <div className="space-y-6">
+                {!hasRequiredProductPhotos(images) ? (
+                  <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[14px] text-amber-950">
+                    Katalog fotoğrafları hazırlanıyor. Hazır olunca model
+                    çekimini başlatabilirsiniz — diğer adımlara geçebilirsiniz.
+                  </p>
+                ) : null}
+                <TrOwnerAiCatalogEnhance
+                  boutiqueId={boutiqueId}
+                  boutiqueSlug={boutiqueSlug}
+                  title={title}
+                  category={category}
+                  images={images}
+                  marketplaceImages={marketplaceImages}
+                  lifestyleImages={lifestyleImages}
+                  selectedModelId={selectedModelId}
+                  onSelectedModelIdChange={setSelectedModelId}
+                  onMarketplaceImagesChange={setMarketplaceImages}
+                  onLifestyleImagesChange={setLifestyleImages}
+                  onListingDraft={setListingDraft}
+                  onModelJobsChange={setModelJobs}
+                  disabled={saving || !hasRequiredProductPhotos(images)}
+                />
+              </div>
+            ) : null}
+
+            {step.id === "review" ? (
+              <div className="space-y-5">
+                <TrCatalogBackgroundPicker
+                  value={catalogBackgroundId}
+                  onChange={setCatalogBackgroundId}
+                  disabled={saving}
+                />
+                <TrOwnerStorePreview
+                  title={title}
+                  description={description}
+                  priceTry={displaySellPrice}
+                  compareAtPriceTry={displayListPrice}
+                  images={images}
+                  marketplaceImages={marketplaceImages}
+                  lifestyleImages={lifestyleImages}
+                  catalogBackgroundId={catalogBackgroundId}
+                  sizes={chartSizes}
+                />
+                <p className="rounded-xl bg-[color:var(--panel-accent-soft)] px-4 py-3 text-[16px] text-neutral-800">
+                  Kaydettiğinizde ürün satışta görünür.
+                  {uploading || modelGenerating
+                    ? " Arka plan işleri bitmeden kaydetmeyin."
+                    : ""}
+                </p>
+              </div>
+            ) : null}
+          </motion.div>
+        ) : null}
       </AnimatePresence>
 
       <div className="flex flex-wrap gap-3">
@@ -1137,27 +708,32 @@ export function TrProductCreateWizard({
             Geri
           </button>
         ) : null}
-        {step.id !== "review" ? (
+        {showContinueButton ? (
           <button
             type="button"
-            className={`${primaryBtn} flex-1`}
+            className={`${primaryBtn} flex-1 disabled:opacity-60`}
             style={{ backgroundColor: "var(--panel-accent)" }}
             onClick={goNext}
-            disabled={uploading}
+            disabled={awaitingFrontAi}
           >
-            Devam
+            {awaitingFrontAi ? "AI ile hazırlanıyor…" : "Devam"}
           </button>
-        ) : (
+        ) : null}
+        {step.id === "review" ? (
           <button
             type="button"
             className={`${primaryBtn} flex-1`}
             style={{ backgroundColor: "var(--panel-accent)" }}
             onClick={() => void save()}
-            disabled={saving}
+            disabled={saving || uploading || modelGenerating}
           >
-            {saving ? "Kaydediliyor…" : "Ürünü kaydet"}
+            {saving
+              ? "Kaydediliyor…"
+              : uploading || modelGenerating
+                ? "Görseller hazırlanıyor…"
+                : "Ürünü kaydet"}
           </button>
-        )}
+        ) : null}
       </div>
 
       <TrProductImageLightbox

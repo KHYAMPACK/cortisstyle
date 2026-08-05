@@ -1,8 +1,14 @@
 import { listPublicAvailableProducts } from "@/lib/tr/products";
 
-/** Platform-wide TR marketplace checkout — not per-boutique. */
+/**
+ * Platform-wide TR marketplace checkout — not per-boutique.
+ * Uses NEXT_PUBLIC_ so Client Component SSR and hydration see the same value
+ * (`next.config.ts` mirrors `TR_CHECKOUT_ENABLED` when the public var is unset).
+ */
 export function isTrCheckoutEnabled(): boolean {
-  return process.env.TR_CHECKOUT_ENABLED?.trim().toLowerCase() === "true";
+  return (
+    process.env.NEXT_PUBLIC_TR_CHECKOUT_ENABLED?.trim().toLowerCase() === "true"
+  );
 }
 
 /** Live catalog empty → full icon / store / cart demo UX. */

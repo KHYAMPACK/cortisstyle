@@ -1,7 +1,7 @@
-import { TrBoutiqueCatalogCutout } from "@/components/tr/boutique/pdp/TrBoutiqueCatalogCutout";
+import { TrBoutiquePdpRelated } from "@/components/tr/boutique/pdp/TrBoutiquePdpRelated";
 import { TrProductDetailPanel } from "@/components/tr/TrProductDetailPanel";
 import { TrProductGallery } from "@/components/tr/TrProductGallery";
-import { getMarketplaceProductImages } from "@/lib/tr/productImages";
+import { getStorefrontGalleryImages } from "@/lib/tr/productImages";
 import type { TrProductWithBoutique } from "@/types/tr-marketplace";
 
 interface TrBoutiquePdpSplitProps {
@@ -10,6 +10,10 @@ interface TrBoutiquePdpSplitProps {
   entry?: "cadde" | "store";
 }
 
+/**
+ * Mobile DOM order: gallery → product info (incl. banner) → you may also like.
+ * Desktop: gallery | info, with recommendations under the gallery.
+ */
 export function TrBoutiquePdpSplit({
   product,
   branded,
@@ -17,7 +21,7 @@ export function TrBoutiquePdpSplit({
 }: TrBoutiquePdpSplitProps) {
   const galleryProduct = {
     ...product,
-    images: getMarketplaceProductImages(product),
+    images: getStorefrontGalleryImages(product),
   };
 
   const wrapperClass = branded
@@ -40,15 +44,30 @@ export function TrBoutiquePdpSplit({
             }
           >
             <TrProductGallery product={galleryProduct} />
-            <TrBoutiqueCatalogCutout product={product} branded={branded} />
           </div>
 
-          <div className={branded ? "" : "px-5 py-8 md:px-10 md:py-10"}>
+          <div
+            className={
+              branded
+                ? "lg:row-span-2"
+                : "border-b border-blueprint-border px-5 py-8 md:px-10 md:py-10 lg:row-span-2 lg:border-b-0"
+            }
+          >
             <TrProductDetailPanel
               product={product}
               branded={branded}
               entry={entry}
             />
+          </div>
+
+          <div
+            className={
+              branded
+                ? ""
+                : "px-5 py-6 md:px-10 lg:border-r lg:border-blueprint-border"
+            }
+          >
+            <TrBoutiquePdpRelated product={product} branded={branded} />
           </div>
         </div>
       </div>

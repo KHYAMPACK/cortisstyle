@@ -12,6 +12,18 @@ export function buildWhatsAppOrderUrl(phone: string, message: string): string {
   return `https://wa.me/${digits}?${params.toString()}`;
 }
 
+export function buildSizeRestockNotifyMessage(product: {
+  title: string;
+  size: string;
+}): string {
+  return [
+    "Merhaba, stok gelince haber vermenizi istiyorum.",
+    "",
+    `Ürün: ${product.title}`,
+    `Beden: ${product.size}`,
+  ].join("\n");
+}
+
 export function buildProductOrderMessage(product: {
   title: string;
   priceKurus: number;

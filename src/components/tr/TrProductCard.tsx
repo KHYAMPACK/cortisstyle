@@ -10,6 +10,7 @@ import { getTrCategoryLabel } from "@/lib/tr/categories";
 import { isTrDemoIconSrc } from "@/lib/tr/demoIcons";
 import {
   getProductCoverImageFor,
+  getProductHoverImage,
   isCatalogCutoutImage,
 } from "@/lib/tr/productImages";
 import { trClothPath, trProductPath } from "@/lib/tr/paths";
@@ -47,6 +48,7 @@ export function TrProductCard({
   onSelect,
 }: TrProductCardProps) {
   const coverImage = getProductCoverImageFor(variant, product);
+  const hoverImage = getProductHoverImage(product);
   const demoIcon = isTrDemoIconSrc(coverImage);
   const catalogCutout =
     !demoIcon &&
@@ -84,19 +86,35 @@ export function TrProductCard({
         {demoIcon ? (
           <TrDemoGarmentVisual src={coverImage} showLabel />
         ) : coverImage ? (
-          <Image
-            src={coverImage}
-            alt=""
-            fill
-            priority={priority}
-            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-            unoptimized
-            className={`transition-transform duration-700 group-hover:scale-[1.03] ${
-              catalogCutout
-                ? "object-contain p-5 md:p-7"
-                : "object-cover"
-            } ${isSold ? "opacity-60" : ""}`}
-          />
+          <>
+            <Image
+              src={coverImage}
+              alt=""
+              fill
+              priority={priority}
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              unoptimized
+              className={`${
+                catalogCutout ? "object-contain p-5 md:p-7" : "object-cover"
+              } transition-opacity duration-500 ${
+                hoverImage
+                  ? "opacity-100 group-hover:opacity-0"
+                  : "transition-transform duration-700 group-hover:scale-[1.03]"
+              } ${isSold ? "opacity-60" : ""}`}
+            />
+            {hoverImage ? (
+              <Image
+                src={hoverImage}
+                alt=""
+                fill
+                unoptimized
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                className={`object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-100 ${
+                  isSold ? "!opacity-60" : ""
+                }`}
+              />
+            ) : null}
+          </>
         ) : (
           <div className="flex h-full items-center justify-center bg-neutral-100 px-4 text-center">
             <span className="font-serif text-lg text-neutral-700">

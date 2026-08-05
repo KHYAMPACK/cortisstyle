@@ -3,13 +3,25 @@
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
+import { TrOrderItemThumbs } from "@/components/tr/panel/TrOrderItemThumbs";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
+import {
+  FULFILLMENT_LABEL,
+  FULFILLMENT_TONE,
+  formatOrderDateShort,
+} from "@/components/tr/panel/orderFulfillmentUi";
+import {
+  panelEmptyClass,
+  panelHintClass,
+  panelSectionClass,
+} from "@/components/tr/panel/panelUi";
 import {
   TrPanelFadeIn,
   TrPanelLoading,
   TrPanelStagger,
   trPanelStaggerItem,
 } from "@/components/tr/panel/TrPanelMotion";
+import { useOwnerOrderAlerts } from "@/hooks/useOwnerOrderAlerts";
 import {
   fetchOwnerSummary,
   type TrOwnerSummaryResponse,
@@ -17,14 +29,8 @@ import {
 import { PANEL_DEMO_TODAY } from "@/lib/tr/panelTheme";
 import {
   trBoutiquePath,
-  trPanelCampaignsPath,
-  trPanelCustomersPath,
-  trPanelNewProductPath,
+  trPanelOrderPath,
   trPanelOrdersPath,
-  trPanelProductsPath,
-  trPanelReportsPath,
-  trPanelSettingsPath,
-  trPanelStockPath,
 } from "@/lib/tr/paths";
 import { formatTryFromKurus } from "@/types/tr-marketplace";
 
@@ -46,9 +52,11 @@ function todayLabel(): string {
 function MetricCard({
   value,
   label,
+  hint,
 }: {
   value: string;
   label: string;
+  hint?: string;
 }) {
   return (
     <motion.div
@@ -64,39 +72,7 @@ function MetricCard({
       <p className="mt-3 text-[16px] leading-snug font-medium text-neutral-700">
         {label}
       </p>
-    </motion.div>
-  );
-}
-
-function QuickTile({
-  href,
-  label,
-  hint,
-}: {
-  href: string;
-  label: string;
-  hint?: string;
-}) {
-  return (
-    <motion.div variants={trPanelStaggerItem}>
-      <Link
-        href={href}
-        className="flex min-h-[4.5rem] items-center justify-between gap-3 rounded-2xl border border-[color:var(--panel-accent-border)] bg-white px-5 py-4 shadow-sm transition-colors hover:bg-[color:var(--panel-accent-softer)]"
-      >
-        <div>
-          <p className="text-[18px] font-semibold text-neutral-900">{label}</p>
-          {hint ? (
-            <p className="mt-1 text-[14px] text-neutral-600">{hint}</p>
-          ) : null}
-        </div>
-        <span
-          className="flex h-10 w-10 items-center justify-center rounded-full text-xl text-white"
-          style={{ backgroundColor: "var(--panel-accent)" }}
-          aria-hidden
-        >
-          →
-        </span>
-      </Link>
+      {hint ? <p className={`mt-2 ${panelHintClass}`}>{hint}</p> : null}
     </motion.div>
   );
 }
@@ -110,9 +86,6 @@ function resolveTodayMetrics(summary: TrOwnerSummaryResponse) {
     useDemo,
     orderCount: useDemo ? PANEL_DEMO_TODAY.orderCount : liveOrders,
     revenueKurus: useDemo ? PANEL_DEMO_TODAY.revenueKurus : liveRevenue,
-    pendingFulfillment: useDemo
-      ? PANEL_DEMO_TODAY.pendingFulfillment
-      : (summary.period?.pendingFulfillment ?? 0),
   };
 }
 
@@ -128,6 +101,10 @@ function HomeDashboard({
   const [summary, setSummary] = useState<TrOwnerSummaryResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const {
+    recentOrders,
+    loading: ordersLoading,
+  } = useOwnerOrderAlerts(boutiqueId);
 
   useEffect(() => {
     let cancelled = false;
@@ -210,56 +187,96 @@ function HomeDashboard({
                       gelince burası otomatik güncellenir.
                     </p>
                   ) : null}
-                  <TrPanelStagger className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                    <MetricCard
-                      value={String(today.orderCount)}
-                      label="Bugün alınan sipariş"
-                    />
+                  <TrPanelStagger className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <MetricCard
                       value={formatTryFromKurus(today.revenueKurus)}
-                      label="Bugünkü ciro"
+                      label="Günlük ciro"
+                      hint="Bugün satılan ürünlerin toplamı"
                     />
                     <MetricCard
-                      value={String(today.pendingFulfillment)}
-                      label="Bekleyen kargo"
+                      value={String(today.orderCount)}
+                      label="Yeni sipariş"
+                      hint="Bugün gelen sipariş sayısı"
                     />
                   </TrPanelStagger>
                 </>
               );
             })()}
 
-            <TrPanelStagger className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <MetricCard
-                value={String(summary.inventory.available)}
-                label="Satışta ürün"
-              />
-              <MetricCard
-                value={String(summary.inventory.lowStock ?? 0)}
-                label="Düşük stok"
-              />
-              <MetricCard
-                value={String(summary.inventory.total)}
-                label="Toplam ürün"
-              />
-            </TrPanelStagger>
-
             <section className="space-y-4">
-              <p
-                className="text-[18px] font-semibold"
-                style={{ color: "var(--panel-accent-deep)" }}
-              >
-                Hızlı erişim
-              </p>
-              <TrPanelStagger className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <QuickTile href={trPanelProductsPath()} label="Ürünler" />
-                <QuickTile href={trPanelNewProductPath()} label="Yeni ürün" />
-                <QuickTile href={trPanelStockPath()} label="Stok" />
-                <QuickTile href={trPanelOrdersPath()} label="Siparişler" />
-                <QuickTile href={trPanelCustomersPath()} label="Müşteriler" />
-                <QuickTile href={trPanelCampaignsPath()} label="Kampanyalar" />
-                <QuickTile href={trPanelReportsPath()} label="Raporlar" />
-                <QuickTile href={trPanelSettingsPath()} label="Ayarlar" />
-              </TrPanelStagger>
+              <div className="flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <p
+                    className="text-[18px] font-semibold"
+                    style={{ color: "var(--panel-accent-deep)" }}
+                  >
+                    Yeni siparişler
+                  </p>
+                  <p className={`mt-1 ${panelHintClass}`}>
+                    Son gelen siparişler — detay için dokunun.
+                  </p>
+                </div>
+                <Link
+                  href={trPanelOrdersPath()}
+                  className="text-[16px] font-semibold text-[color:var(--panel-accent-deep)]"
+                >
+                  Tümünü gör →
+                </Link>
+              </div>
+
+              {ordersLoading ? (
+                <TrPanelLoading label="Siparişler yükleniyor…" />
+              ) : recentOrders.length === 0 ? (
+                <p className={panelEmptyClass}>
+                  Henüz yeni sipariş yok. Müşteri alışveriş yapınca burada
+                  görünür.
+                </p>
+              ) : (
+                <TrPanelStagger className="space-y-3">
+                  {recentOrders.map((order) => {
+                    const itemCount = order.items.reduce(
+                      (sum, item) => sum + item.quantity,
+                      0,
+                    );
+                    return (
+                      <motion.div
+                        key={order.id}
+                        variants={trPanelStaggerItem}
+                      >
+                        <Link
+                          href={trPanelOrderPath(order.id)}
+                          className={`${panelSectionClass} block transition-colors hover:bg-[color:var(--panel-accent-soft)]`}
+                        >
+                          <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div className="min-w-0 space-y-2">
+                              <p className="text-[18px] font-semibold text-neutral-900">
+                                {order.customerName}
+                              </p>
+                              <p className="text-[15px] text-neutral-600">
+                                {formatOrderDateShort(order.createdAt)} ·{" "}
+                                {itemCount} ürün
+                              </p>
+                              <TrOrderItemThumbs
+                                items={order.items}
+                                size="sm"
+                                max={3}
+                              />
+                              <span
+                                className={`inline-block rounded-lg px-2.5 py-1 text-[14px] font-semibold ${FULFILLMENT_TONE[order.fulfillmentStatus]}`}
+                              >
+                                {FULFILLMENT_LABEL[order.fulfillmentStatus]}
+                              </span>
+                            </div>
+                            <p className="text-[20px] font-semibold tabular-nums text-neutral-950">
+                              {formatTryFromKurus(order.totalKurus)}
+                            </p>
+                          </div>
+                        </Link>
+                      </motion.div>
+                    );
+                  })}
+                </TrPanelStagger>
+              )}
             </section>
           </TrPanelFadeIn>
         ) : null}

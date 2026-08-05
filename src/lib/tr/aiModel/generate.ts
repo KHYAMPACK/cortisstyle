@@ -1,5 +1,6 @@
 import {
-  boutiqueAiModelHasReferences,
+  aiModelOptionHasReferences,
+  getAiModelOptionById,
   getBoutiqueAiModelIdentity,
 } from "@/lib/tr/aiModel/registry";
 import { resolveAiModelProvider } from "@/lib/tr/aiModel/providers";
@@ -9,30 +10,40 @@ import type {
 } from "@/lib/tr/aiModel/types";
 
 /**
- * Orchestrate on-model generation for a boutique garment cutout.
+ * Orchestrate on-model generation for a boutique garment cutout / packshot.
  * Safe to call from owner APIs — returns structured status, never throws for stub.
  */
 export async function generateBoutiqueAiModelImage(
   request: TrAiModelGenerateRequest,
 ): Promise<TrAiModelGenerateResult> {
   const slug = request.boutiqueSlug.trim().toLowerCase();
-  const identity = getBoutiqueAiModelIdentity(slug);
+  const modelId =
+    request.modelId?.trim() ||
+    (getBoutiqueAiModelIdentity(slug) ? `boutique:${slug}` : "");
 
-  if (!identity) {
+  const option = modelId
+    ? getAiModelOptionById(modelId, slug)
+    : getBoutiqueAiModelIdentity(slug)
+      ? getAiModelOptionById(`boutique:${slug}`, slug)
+      : null;
+
+  if (!option) {
     return {
       status: "failed",
       providerId: request.providerId ?? "stub",
-      error: `Bu butik için AI model kimliği tanımlı değil (${slug}).`,
+      error: modelId
+        ? `Model bulunamadı (${modelId}).`
+        : `Bu butik için AI model kimliği tanımlı değil (${slug}).`,
     };
   }
 
-  if (!boutiqueAiModelHasReferences(slug)) {
+  if (!aiModelOptionHasReferences(option.id)) {
     return {
       status: "not_configured",
       providerId: "stub",
       stub: true,
       error:
-        "Model referans fotoğrafları eksik. Butikte çekilen portreleri registry'ye ekleyin.",
+        "Model referans fotoğrafları eksik. Stüdyo modeli için env URL'leri veya butik portrelerini ekleyin.",
     };
   }
 
@@ -40,7 +51,7 @@ export async function generateBoutiqueAiModelImage(
     return {
       status: "failed",
       providerId: request.providerId ?? "stub",
-      error: "Garment cutout URL gerekli (önce arka plan temizliği).",
+      error: "Garment cutout / packshot URL gerekli.",
     };
   }
 
@@ -48,8 +59,9 @@ export async function generateBoutiqueAiModelImage(
   return provider.generate({
     ...request,
     boutiqueSlug: slug,
-    pose: request.pose ?? identity.defaultPose ?? "standing-front",
-    modelReferenceUrls: identity.referenceImageUrls,
-    faceReferenceUrls: identity.faceReferenceUrls ?? [],
+    modelId: option.id,
+    pose: request.pose ?? option.defaultPose ?? "standing-front",
+    modelReferenceUrls: option.referenceImageUrls,
+    faceReferenceUrls: option.faceReferenceUrls,
   });
 }
