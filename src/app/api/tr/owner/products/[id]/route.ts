@@ -249,8 +249,15 @@ export async function DELETE(request: Request, context: RouteContext) {
   }
 
   try {
-    await deleteProductAdmin(id);
-    return Response.json({ ok: true });
+    const result = await deleteProductAdmin(id);
+    return Response.json({
+      ok: true,
+      mode: result.mode,
+      message:
+        result.mode === "hidden"
+          ? "Ürün sipariş geçmişinde olduğu için kalıcı silinemedi; mağazadan gizlendi."
+          : undefined,
+    });
   } catch (error) {
     console.error("[tr/owner/products/[id]] delete failed:", error);
     return Response.json(

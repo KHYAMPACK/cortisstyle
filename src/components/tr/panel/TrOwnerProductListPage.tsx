@@ -44,6 +44,21 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
   const [products, setProducts] = useState<TrProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const raw = window.sessionStorage.getItem(
+        "tr-panel-product-delete-notice",
+      );
+      if (raw) {
+        setNotice(raw);
+        window.sessionStorage.removeItem("tr-panel-product-delete-notice");
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -83,6 +98,11 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
         </TrPanelFadeIn>
       ) : (
         <TrPanelFadeIn key="products-ready" className="space-y-5">
+          {notice ? (
+            <p className="rounded-2xl border-2 border-amber-200 bg-amber-50 px-5 py-4 text-[16px] text-amber-950">
+              {notice}
+            </p>
+          ) : null}
           <div className="flex flex-wrap items-center justify-between gap-4">
             <p className="text-[17px] font-medium text-neutral-700">
               {products.length} ürün

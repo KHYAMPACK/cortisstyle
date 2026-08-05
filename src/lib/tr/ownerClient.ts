@@ -411,15 +411,28 @@ export async function fetchOwnerSummary(
   return data.summary;
 }
 
-export async function deleteOwnerProduct(productId: string): Promise<void> {
+export async function deleteOwnerProduct(
+  productId: string,
+): Promise<{ mode: "deleted" | "hidden"; message?: string }> {
   const response = await ownerFetch(
     `/api/tr/owner/products/${encodeURIComponent(productId)}`,
     { method: "DELETE" },
   );
-  const data = (await response.json()) as { error?: string };
+  let data: { error?: string; mode?: "deleted" | "hidden"; message?: string };
+  try {
+    data = (await response.json()) as typeof data;
+  } catch {
+    throw new Error(
+      response.ok ? "Silme yanıtı okunamadı." : "Ürün silinemedi.",
+    );
+  }
   if (!response.ok) {
     throw new Error(data.error ?? "Ürün silinemedi.");
   }
+  return {
+    mode: data.mode === "hidden" ? "hidden" : "deleted",
+    message: data.message,
+  };
 }
 
 export async function duplicateOwnerProduct(

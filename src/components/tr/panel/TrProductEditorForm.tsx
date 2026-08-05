@@ -953,7 +953,15 @@ export function TrProductEditorForm({
                       setDeleting(true);
                       setError(null);
                       try {
-                        await deleteOwnerProduct(initialProduct.id);
+                        const result = await deleteOwnerProduct(
+                          initialProduct.id,
+                        );
+                        if (result.message && typeof window !== "undefined") {
+                          window.sessionStorage.setItem(
+                            "tr-panel-product-delete-notice",
+                            result.message,
+                          );
+                        }
                         onDeleted?.();
                       } catch (deleteError) {
                         setError(

@@ -92,12 +92,13 @@ export async function getOwnerBoutiqueSummary(
       if (item.boutiqueId !== boutiqueId) continue;
       const line = item.priceKurus * item.quantity;
       revenueKurus += line;
-      const existing = topMap.get(item.productId);
+      const key = item.productId ?? `title:${item.title}`;
+      const existing = topMap.get(key);
       if (existing) {
         existing.quantity += item.quantity;
         existing.revenueKurus += line;
       } else {
-        topMap.set(item.productId, {
+        topMap.set(key, {
           title: item.title,
           quantity: item.quantity,
           revenueKurus: line,

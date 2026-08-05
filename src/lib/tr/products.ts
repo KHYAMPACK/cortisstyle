@@ -385,18 +385,68 @@ export async function updateProductAdmin(
   return mapProductRow(data as Record<string, unknown>);
 }
 
-export async function deleteProductAdmin(productId: string): Promise<void> {
+function isForeignKeyViolation(error: {
+  code?: string;
+  message?: string;
+  details?: string;
+}): boolean {
+  if (error.code === "23503") return true;
+  const blob = [error.message, error.details].filter(Boolean).join(" ").toLowerCase();
+  return (
+    blob.includes("foreign key") ||
+    blob.includes("violates foreign key") ||
+    blob.includes("tr_order_items")
+  );
+}
+
+export type DeleteProductResult = {
+  /** Hard-removed from DB. */
+  mode: "deleted" | "hidden";
+};
+
+/**
+ * Remove a product from the catalog.
+ * - Prefer hard delete (order lines detach when SQL patch is applied).
+ * - If past orders still block the FK, hide the product so the storefront is clear.
+ */
+export async function deleteProductAdmin(
+  productId: string,
+): Promise<DeleteProductResult> {
   const supabase = getServiceSupabase();
   if (!supabase) {
     throw new Error("Supabase service role is not configured.");
   }
 
-  const { error } = await supabase
+  // Best-effort detach when product_id is nullable (patch_tr_order_items_product_on_delete.sql).
+  const { error: detachError } = await supabase
+    .from("tr_order_items")
+    .update({ product_id: null })
+    .eq("product_id", productId);
+  if (detachError) {
+    // Expected before the SQL patch (NOT NULL / FK). Hard delete or soft-hide handles next.
+  }
+
+  const { error: deleteError } = await supabase
     .from("tr_products")
     .delete()
     .eq("id", productId);
 
-  if (error) throw error;
+  if (!deleteError) {
+    return { mode: "deleted" };
+  }
+
+  if (!isForeignKeyViolation(deleteError)) {
+    throw deleteError;
+  }
+
+  const { error: hideError } = await supabase
+    .from("tr_products")
+    .update({ status: "hidden", stock: 0 })
+    .eq("id", productId);
+
+  if (hideError) throw hideError;
+
+  return { mode: "hidden" };
 }
 
 export async function duplicateProductAdmin(

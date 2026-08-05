@@ -26,7 +26,9 @@ async function withProductImages(
 ): Promise<TrOrderItem[]> {
   if (items.length === 0) return items;
   const products = await listProductsByIdsAdmin(
-    items.map((item) => item.productId),
+    items
+      .map((item) => item.productId)
+      .filter((id): id is string => Boolean(id)),
   );
   const coverById = new Map(
     products.map((product) => [
@@ -36,7 +38,9 @@ async function withProductImages(
   );
   return items.map((item) => ({
     ...item,
-    imageUrl: coverById.get(item.productId) ?? null,
+    imageUrl: item.productId
+      ? (coverById.get(item.productId) ?? null)
+      : null,
   }));
 }
 
@@ -289,7 +293,11 @@ export async function updateOrderPaymentStatusAdmin(
   if (paymentStatus === "paid" || paymentStatus === "sandbox") {
     const items = await getOrderByIdAdmin(orderId);
     if (items) {
-      await markProductsSoldAdmin(items.items.map((item) => item.productId));
+      await markProductsSoldAdmin(
+        items.items
+          .map((item) => item.productId)
+          .filter((id): id is string => Boolean(id)),
+      );
     }
   }
 

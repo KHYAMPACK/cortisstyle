@@ -214,10 +214,14 @@ export function mapDiscountCodeRow(row: Record<string, unknown>): TrDiscountCode
 }
 
 export function mapOrderItemRow(row: Record<string, unknown>): TrOrderItem {
+  const productIdRaw = row.product_id;
   return {
     id: row.id as string,
     orderId: row.order_id as string,
-    productId: row.product_id as string,
+    productId:
+      typeof productIdRaw === "string" && productIdRaw.trim()
+        ? productIdRaw
+        : null,
     boutiqueId: row.boutique_id as string,
     title: row.title as string,
     priceKurus: row.price_kurus as number,

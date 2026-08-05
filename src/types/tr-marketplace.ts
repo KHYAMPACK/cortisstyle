@@ -155,7 +155,8 @@ export interface TrOwnerCustomer {
 export interface TrOrderItem {
   id: string;
   orderId: string;
-  productId: string;
+  /** Null when the catalog product was deleted after the order. */
+  productId: string | null;
   boutiqueId: string;
   title: string;
   priceKurus: number;
