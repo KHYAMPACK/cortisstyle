@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { TrPanelSwBridge } from "@/components/tr/panel/TrPanelSwBridge";
 
 export const metadata: Metadata = {
   title: {
@@ -34,6 +35,7 @@ export default function TrPanelLayout({
         backgroundColor: "var(--panel-accent-softer, #FFF5F8)",
       }}
     >
+      <TrPanelSwBridge />
       {children}
     </div>
   );

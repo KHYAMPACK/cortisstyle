@@ -110,20 +110,25 @@ export async function createOrderAdmin(
     ...new Set(items.map((item) => item.boutiqueId).filter(Boolean)),
   ];
 
-  for (const boutiqueId of boutiqueIds) {
-    const boutiqueTotal = items
-      .filter((item) => item.boutiqueId === boutiqueId)
-      .reduce((sum, item) => sum + item.priceKurus * item.quantity, 0);
-
+  // Await push so serverless (Vercel) does not freeze before FCM/Mozilla gets the message.
+  // Fire-and-forget here often means the alert only appears after the owner opens the app.
+  if (boutiqueIds.length > 0) {
     const { notifyBoutiqueOwnersOfNewOrderSafe } = await import(
       "@/lib/tr/pushNotify"
     );
-    notifyBoutiqueOwnersOfNewOrderSafe({
-      boutiqueId,
-      orderId: order.id,
-      customerName: order.customerName,
-      totalKurus: boutiqueTotal || order.totalKurus,
-    });
+    await Promise.all(
+      boutiqueIds.map((boutiqueId) => {
+        const boutiqueTotal = items
+          .filter((item) => item.boutiqueId === boutiqueId)
+          .reduce((sum, item) => sum + item.priceKurus * item.quantity, 0);
+        return notifyBoutiqueOwnersOfNewOrderSafe({
+          boutiqueId,
+          orderId: order.id,
+          customerName: order.customerName,
+          totalKurus: boutiqueTotal || order.totalKurus,
+        });
+      }),
+    );
   }
 
   return {

@@ -36,7 +36,7 @@ function statusLabel(status: OwnerPushStatus): string {
 function statusHint(status: OwnerPushStatus): string {
   switch (status) {
     case "subscribed":
-      return "Yeni siparişlerde telefona bildirim gelir (panel kapalıyken de).";
+      return "Yeni siparişlerde telefona bildirim gelir (panel kapalıyken de). iPhone’da Ana Ekrana Ekle şart; Android’de Chrome’un arka planda çalışmasına izin verin.";
     case "denied":
       return "Tarayıcı ayarlarından bildirim iznini açmanız gerekir.";
     case "unconfigured":
@@ -44,7 +44,7 @@ function statusHint(status: OwnerPushStatus): string {
     case "unsupported":
       return "iPhone’da Ana Ekrana Ekle ile PWA olarak açın; Android’de Chrome yeterlidir.";
     default:
-      return "iPhone: Ana Ekrana Ekle gerekli. Android: Chrome veya yüklü PWA.";
+      return "Önce paneli Ana Ekrana ekleyin, sonra Bildirimleri aç’a basın. Kapalıyken de çalışması için tarayıcının arka planı engellenmemeli.";
   }
 }
 

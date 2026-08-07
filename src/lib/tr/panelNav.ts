@@ -22,10 +22,10 @@ export interface TrPanelNavItem {
 /** Ikas-like merchant sidebar modules. */
 export const TR_PANEL_NAV: TrPanelNavItem[] = [
   { href: trPanelPath(), label: "Ana Sayfa", match: "exact" },
+  { href: trPanelOrdersPath(), label: "Siparişler", match: "prefix" },
   { href: trPanelProductsPath(), label: "Ürünler", match: "products" },
   { href: trPanelNewProductPath(), label: "Yeni ürün", match: "new-product" },
   { href: trPanelStockPath(), label: "Stok", match: "prefix" },
-  { href: trPanelOrdersPath(), label: "Siparişler", match: "prefix" },
   { href: trPanelCustomersPath(), label: "Müşteriler", match: "prefix" },
   { href: trPanelCampaignsPath(), label: "Kampanyalar", match: "prefix" },
   { href: trPanelContentPath(), label: "İçerik", match: "prefix" },

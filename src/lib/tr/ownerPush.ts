@@ -1,5 +1,4 @@
 const SW_URL = "/tr-panel-sw.js";
-const SW_SCOPE = "/tr/panel";
 
 export type OwnerPushStatus =
   | "unsupported"
@@ -31,8 +30,16 @@ export function isOwnerPushSupported(): boolean {
 
 export async function registerOwnerPushServiceWorker(): Promise<ServiceWorkerRegistration | null> {
   if (!isOwnerPushSupported()) return null;
-  return navigator.serviceWorker.register(SW_URL, { scope: SW_SCOPE });
+  // Root scope (SW lives at /tr-panel-sw.js) so the worker stays eligible for
+  // background push even when no /tr/panel tab is open.
+  const registration = await navigator.serviceWorker.register(SW_URL, {
+    scope: "/",
+    updateViaCache: "none",
+  });
+  await navigator.serviceWorker.ready;
+  return registration;
 }
+
 
 async function fetchVapidPublicKey(): Promise<string | null> {
   const response = await fetch("/api/tr/owner/push/vapid-public-key");
@@ -90,13 +97,16 @@ export async function enableOwnerPush(input: {
 
   await navigator.serviceWorker.ready;
 
-  let subscription = await registration.pushManager.getSubscription();
-  if (!subscription) {
-    subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(publicKey),
-    });
+  // Prefer a fresh subscription after SW updates / scope changes.
+  const existing = await registration.pushManager.getSubscription();
+  if (existing) {
+    await existing.unsubscribe().catch(() => undefined);
   }
+
+  const subscription = await registration.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: urlBase64ToUint8Array(publicKey),
+  });
 
   const json = subscription.toJSON();
   const endpoint = json.endpoint;

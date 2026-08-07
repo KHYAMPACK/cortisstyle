@@ -27,6 +27,17 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_TR_VAPID_PUBLIC_KEY: trVapidPublicKey,
   },
   reactCompiler: true,
+  async headers() {
+    return [
+      {
+        source: "/tr-panel-sw.js",
+        headers: [
+          { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
+          { key: "Service-Worker-Allowed", value: "/" },
+        ],
+      },
+    ];
+  },
   images: {
     remotePatterns: [
       {

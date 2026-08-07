@@ -76,6 +76,11 @@ export async function notifyBoutiqueOwnersOfNewOrder(input: {
             keys: { p256dh: sub.p256dh, auth: sub.auth },
           },
           payload,
+          {
+            // Keep on push service until device/browser can wake (seconds).
+            TTL: 60 * 60 * 24,
+            urgency: "high",
+          },
         );
       } catch (error) {
         const statusCode =
@@ -104,11 +109,15 @@ export async function notifyBoutiqueOwnersOfNewOrder(input: {
   );
 }
 
-/** Fire-and-forget; never throws to callers. */
-export function notifyBoutiqueOwnersOfNewOrderSafe(
+/**
+ * Awaitable notify that never throws (order create must not fail on push).
+ */
+export async function notifyBoutiqueOwnersOfNewOrderSafe(
   input: Parameters<typeof notifyBoutiqueOwnersOfNewOrder>[0],
-): void {
-  void notifyBoutiqueOwnersOfNewOrder(input).catch((error) => {
+): Promise<void> {
+  try {
+    await notifyBoutiqueOwnersOfNewOrder(input);
+  } catch (error) {
     console.error("[tr/pushNotify] unexpected:", error);
-  });
+  }
 }
