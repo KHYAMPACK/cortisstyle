@@ -100,13 +100,35 @@ export async function createOrderAdmin(
 
   if (itemsError) throw itemsError;
 
+  const items = await withProductImages(
+    (itemRows ?? []).map((row) =>
+      mapOrderItemRow(row as Record<string, unknown>),
+    ),
+  );
+
+  const boutiqueIds = [
+    ...new Set(items.map((item) => item.boutiqueId).filter(Boolean)),
+  ];
+
+  for (const boutiqueId of boutiqueIds) {
+    const boutiqueTotal = items
+      .filter((item) => item.boutiqueId === boutiqueId)
+      .reduce((sum, item) => sum + item.priceKurus * item.quantity, 0);
+
+    const { notifyBoutiqueOwnersOfNewOrderSafe } = await import(
+      "@/lib/tr/pushNotify"
+    );
+    notifyBoutiqueOwnersOfNewOrderSafe({
+      boutiqueId,
+      orderId: order.id,
+      customerName: order.customerName,
+      totalKurus: boutiqueTotal || order.totalKurus,
+    });
+  }
+
   return {
     ...order,
-    items: await withProductImages(
-      (itemRows ?? []).map((row) =>
-        mapOrderItemRow(row as Record<string, unknown>),
-      ),
-    ),
+    items,
   };
 }
 

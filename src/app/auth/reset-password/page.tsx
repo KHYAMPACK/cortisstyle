@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { BrandLogo } from "@/components/BrandLogo";
 import { SiteFooter } from "@/components/SiteFooter";
 import { useAuth } from "@/context/AuthContext";
@@ -12,8 +12,17 @@ const monoInputClass =
 const primaryButtonClass =
   "mt-6 w-full border border-jet-black bg-jet-black px-5 py-4 text-center font-mono text-[10px] tracking-[0.32em] text-white uppercase transition-opacity hover:opacity-90 disabled:opacity-60";
 
+function safeNextPath(raw: string | null): string {
+  if (!raw || !raw.startsWith("/") || raw.startsWith("//")) {
+    return "/wardrobe";
+  }
+  return raw;
+}
+
 export default function ResetPasswordPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const returnTo = safeNextPath(searchParams.get("next"));
   const {
     isAuthenticated,
     isInitializing,
@@ -43,7 +52,7 @@ export default function ResetPasswordPage() {
       await setAccountPassword(password);
       setIsComplete(true);
       window.setTimeout(() => {
-        router.replace("/wardrobe");
+        router.replace(returnTo);
       }, 1200);
     } catch {
       // Error handled in context.

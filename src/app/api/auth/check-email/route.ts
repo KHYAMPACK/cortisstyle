@@ -5,6 +5,7 @@ export const runtime = "nodejs";
 
 interface CheckEmailPayload {
   email?: string;
+  boutiqueSlug?: string;
 }
 
 export async function POST(request: Request) {
@@ -17,6 +18,7 @@ export async function POST(request: Request) {
   }
 
   const email = payload.email?.trim().toLowerCase() ?? "";
+  const boutiqueSlug = payload.boutiqueSlug?.trim().toLowerCase() || null;
 
   if (!isValidNotifyEmail(email)) {
     return Response.json({ error: "Enter a valid email address." }, { status: 400 });
@@ -36,7 +38,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const status = await resolveEmailAuthStatusServer(email);
+    const status = await resolveEmailAuthStatusServer(email, { boutiqueSlug });
 
     if (!status) {
       return Response.json(
@@ -47,6 +49,9 @@ export async function POST(request: Request) {
 
     return Response.json({
       route: status.route,
+      ...(status.accountOrigin
+        ? { accountOrigin: status.accountOrigin }
+        : {}),
     });
   } catch (error) {
     console.error("Auth email check failed:", error);

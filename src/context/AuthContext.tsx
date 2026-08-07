@@ -11,7 +11,11 @@ import {
   type ReactNode,
 } from "react";
 import { resolveEmailAuthStatus } from "@/lib/authEmailCheck";
-import { isPasswordSetInMetadata, type EmailAuthRoute } from "@/lib/authTypes";
+import {
+  isPasswordSetInMetadata,
+  type EmailAuthStatus,
+  type ResolveEmailAuthOptions,
+} from "@/lib/authTypes";
 import { getPasswordResetRedirectUrl } from "@/lib/authRedirect";
 import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabaseClient";
 import {
@@ -41,13 +45,25 @@ interface AuthContextValue {
   savedOutfits: SavedWardrobeOutfitBlueprint[];
   wardrobeLoadError: string | null;
   ownedClothes: WardrobeClothingItem[];
-  resolveEmailAuthRoute: (email: string) => Promise<EmailAuthRoute>;
-  dispatchSignUpOtp: (email: string) => Promise<void>;
-  resendSignUpOtp: (email: string) => Promise<void>;
+  resolveEmailAuthRoute: (
+    email: string,
+    options?: ResolveEmailAuthOptions,
+  ) => Promise<EmailAuthStatus>;
+  dispatchSignUpOtp: (
+    email: string,
+    options?: ResolveEmailAuthOptions,
+  ) => Promise<void>;
+  resendSignUpOtp: (
+    email: string,
+    options?: ResolveEmailAuthOptions,
+  ) => Promise<void>;
   signInWithPassword: (email: string, password: string) => Promise<void>;
   verifySignUpOtp: (email: string, token: string) => Promise<void>;
   setAccountPassword: (password: string) => Promise<void>;
-  requestPasswordReset: (email: string) => Promise<void>;
+  requestPasswordReset: (
+    email: string,
+    options?: ResolveEmailAuthOptions,
+  ) => Promise<void>;
   needsPasswordSetup: boolean;
   signOut: () => Promise<void>;
   refreshWardrobe: () => Promise<void>;
@@ -238,6 +254,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await refreshSavedOutfits(userId);
   }, [refreshSavedOutfits, userId]);
 
+  const sendBoutiqueSignupOtpEmail = useCallback(
+    async (email: string, boutiqueSlug: string) => {
+      const response = await fetch("/api/tr/customer/auth/send-signup-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, boutiqueSlug }),
+      });
+      const body = (await response.json().catch(() => ({}))) as {
+        error?: string;
+      };
+      if (!response.ok) {
+        throw new Error(
+          body.error ??
+            "Markalı doğrulama e-postası gönderilemedi. RESEND_API_KEY kontrol edin.",
+        );
+      }
+      return;
+    },
+    [],
+  );
+
   const startSignUp = useCallback(async (email: string) => {
     const supabase = getSupabaseClient();
     const { error } = await supabase.auth.signUp({
@@ -250,37 +287,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const resendSignUpOtp = useCallback(async (email: string) => {
-    if (!isSupabaseConfigured()) {
-      setAuthError("Supabase is not configured.");
-      return;
-    }
-
-    setIsAuthenticating(true);
-    setAuthError(null);
-
-    try {
-      const supabase = getSupabaseClient();
-      const { error } = await supabase.auth.resend({
-        type: "signup",
-        email,
-      });
-
-      if (error) throw error;
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Unable to resend verification code.";
-      setAuthError(message);
-      throw error;
-    } finally {
-      setIsAuthenticating(false);
-    }
-  }, []);
-
-  const dispatchSignUpOtp = useCallback(
-    async (email: string) => {
+  const resendSignUpOtp = useCallback(
+    async (email: string, options?: ResolveEmailAuthOptions) => {
       if (!isSupabaseConfigured()) {
         setAuthError("Supabase is not configured.");
         return;
@@ -290,13 +298,58 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setAuthError(null);
 
       try {
+        const boutiqueSlug = options?.boutiqueSlug?.trim().toLowerCase();
+        if (boutiqueSlug) {
+          // Boutique auth must use branded Resend mail — never Supabase templates.
+          await sendBoutiqueSignupOtpEmail(email, boutiqueSlug);
+          return;
+        }
+
+        const supabase = getSupabaseClient();
+        const { error } = await supabase.auth.resend({
+          type: "signup",
+          email,
+        });
+
+        if (error) throw error;
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Unable to resend verification code.";
+        setAuthError(message);
+        throw error;
+      } finally {
+        setIsAuthenticating(false);
+      }
+    },
+    [sendBoutiqueSignupOtpEmail],
+  );
+
+  const dispatchSignUpOtp = useCallback(
+    async (email: string, options?: ResolveEmailAuthOptions) => {
+      if (!isSupabaseConfigured()) {
+        setAuthError("Supabase is not configured.");
+        return;
+      }
+
+      setIsAuthenticating(true);
+      setAuthError(null);
+
+      try {
+        const boutiqueSlug = options?.boutiqueSlug?.trim().toLowerCase();
+        if (boutiqueSlug) {
+          await sendBoutiqueSignupOtpEmail(email, boutiqueSlug);
+          return;
+        }
+
         await startSignUp(email);
       } catch (error) {
         if (
           error instanceof Error &&
           isAlreadyRegisteredAuthError(error.message)
         ) {
-          await resendSignUpOtp(email);
+          await resendSignUpOtp(email, options);
           return;
         }
 
@@ -310,11 +363,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsAuthenticating(false);
       }
     },
-    [resendSignUpOtp, startSignUp],
+    [resendSignUpOtp, sendBoutiqueSignupOtpEmail, startSignUp],
   );
 
   const resolveEmailAuthRoute = useCallback(
-    async (email: string): Promise<EmailAuthRoute> => {
+    async (
+      email: string,
+      options?: ResolveEmailAuthOptions,
+    ): Promise<EmailAuthStatus> => {
       if (!isSupabaseConfigured()) {
         setAuthError("Supabase is not configured.");
         throw new Error("Supabase is not configured.");
@@ -324,17 +380,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setAuthError(null);
 
       try {
-        const status = await resolveEmailAuthStatus(email);
+        const status = await resolveEmailAuthStatus(email, options);
 
         if (status.route === "signup" || status.route === "verify_signup") {
           if (status.route === "signup") {
-            await dispatchSignUpOtp(email);
+            await dispatchSignUpOtp(email, options);
           } else {
-            await resendSignUpOtp(email);
+            await resendSignUpOtp(email, options);
           }
         }
 
-        return status.route;
+        return status;
       } catch (error) {
         const message =
           error instanceof Error
@@ -401,13 +457,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     try {
       const supabase = getSupabaseClient();
-      const { data, error } = await supabase.auth.verifyOtp({
-        email,
-        token,
-        type: "signup",
-      });
+      const types = ["signup", "magiclink", "email"] as const;
+      let lastError: Error | null = null;
+      let verified = false;
 
-      if (error) throw error;
+      for (const type of types) {
+        const { error } = await supabase.auth.verifyOtp({
+          email,
+          token,
+          type,
+        });
+        if (!error) {
+          verified = true;
+          break;
+        }
+        lastError = error;
+      }
+
+      if (!verified) {
+        throw lastError ?? new Error("Unable to verify access token.");
+      }
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Unable to verify access token.";
@@ -449,33 +518,58 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const requestPasswordReset = useCallback(async (email: string) => {
-    if (!isSupabaseConfigured()) {
-      setAuthError("Supabase is not configured.");
-      return;
-    }
+  const requestPasswordReset = useCallback(
+    async (email: string, options?: ResolveEmailAuthOptions) => {
+      if (!isSupabaseConfigured()) {
+        setAuthError("Supabase is not configured.");
+        return;
+      }
 
-    setIsAuthenticating(true);
-    setAuthError(null);
+      setIsAuthenticating(true);
+      setAuthError(null);
 
-    try {
-      const supabase = getSupabaseClient();
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: getPasswordResetRedirectUrl(),
-      });
+      try {
+        const boutiqueSlug = options?.boutiqueSlug?.trim().toLowerCase();
+        if (boutiqueSlug) {
+          const response = await fetch(
+            "/api/tr/customer/auth/send-password-reset",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email, boutiqueSlug }),
+            },
+          );
+          const body = (await response.json().catch(() => ({}))) as {
+            error?: string;
+          };
+          if (!response.ok) {
+            throw new Error(
+              body.error ??
+                "Markalı şifre sıfırlama e-postası gönderilemedi. RESEND_API_KEY kontrol edin.",
+            );
+          }
+          return;
+        }
 
-      if (error) throw error;
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Unable to send password reset email.";
-      setAuthError(message);
-      throw error;
-    } finally {
-      setIsAuthenticating(false);
-    }
-  }, []);
+        const supabase = getSupabaseClient();
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: getPasswordResetRedirectUrl(),
+        });
+
+        if (error) throw error;
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Unable to send password reset email.";
+        setAuthError(message);
+        throw error;
+      } finally {
+        setIsAuthenticating(false);
+      }
+    },
+    [],
+  );
 
   const signOut = useCallback(async () => {
     if (!isSupabaseConfigured()) return;
@@ -514,9 +608,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
   }, [session?.user]);
 
+  /** Fully usable session — OTP-verified but password not set does not count. */
+  const isAuthenticated = Boolean(session?.user) && !needsPasswordSetup;
+
   const value = useMemo(
     () => ({
-      isAuthenticated: Boolean(session?.user),
+      isAuthenticated,
       isInitializing,
       isAuthenticating,
       isResolvingAuthRedirect,
@@ -542,7 +639,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsResolvingAuthRedirect,
     }),
     [
-      session,
+      isAuthenticated,
       isInitializing,
       isAuthenticating,
       isResolvingAuthRedirect,

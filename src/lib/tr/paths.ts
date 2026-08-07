@@ -213,6 +213,10 @@ export function trPanelSettingsPath(): string {
   return "/tr/panel/ayarlar";
 }
 
+export function trPanelInvoicesPath(): string {
+  return "/tr/panel/faturalar";
+}
+
 export function getProductCoverImage(product: Pick<TrProduct, "images" | "title">): string | null {
   return product.images[0] ?? null;
 }

@@ -18,6 +18,7 @@ import {
   panelErrorClass,
   panelHintClass,
   panelPageTitleClass,
+  panelPrimaryBtnClass,
   panelSectionClass,
 } from "@/components/tr/panel/panelUi";
 import {
@@ -25,9 +26,14 @@ import {
   TrPanelLoading,
 } from "@/components/tr/panel/TrPanelMotion";
 import {
+  buildDemoCargoLabelHtml,
+  demoTrackingNumber,
+} from "@/lib/tr/demoCargoLabel";
+import {
   fetchOwnerOrder,
   updateOwnerOrderFulfillment,
 } from "@/lib/tr/ownerClient";
+import { printHtmlDocument } from "@/lib/tr/printDocument";
 import { trPanelOrdersPath, trPanelPath } from "@/lib/tr/paths";
 import {
   formatTryFromKurus,
@@ -45,15 +51,18 @@ const FULFILLMENT_OPTIONS: TrFulfillmentStatus[] = [
 
 function OrderDetail({
   boutiqueId,
+  boutiqueName,
   orderId,
 }: {
   boutiqueId: string;
+  boutiqueName: string;
   orderId: string;
 }) {
   const [order, setOrder] = useState<TrOrderWithItems | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [printError, setPrintError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -103,6 +112,29 @@ function OrderDetail({
     }
   };
 
+  const printLabel = () => {
+    if (!order) return;
+    setPrintError(null);
+    try {
+      printHtmlDocument(
+        buildDemoCargoLabelHtml({
+          order,
+          boutiqueName,
+        }),
+        `Kargo etiketi · ${demoTrackingNumber(order.id)}`,
+      );
+    } catch (printErr) {
+      setPrintError(
+        printErr instanceof Error
+          ? printErr.message
+          : "Etiket yazdırılamadı.",
+      );
+    }
+  };
+
+  const canPrintLabel =
+    order != null && order.fulfillmentStatus !== "cancelled";
+
   return (
     <AnimatePresence mode="wait">
       {loading ? (
@@ -114,6 +146,7 @@ function OrderDetail({
       ) : order ? (
         <TrPanelFadeIn key="od-ready" className="space-y-5">
           {error ? <p className={panelErrorClass}>{error}</p> : null}
+          {printError ? <p className={panelErrorClass}>{printError}</p> : null}
 
           <section className={panelSectionClass}>
             <p className="text-[15px] text-neutral-600">
@@ -149,13 +182,36 @@ function OrderDetail({
 
           <section className={panelSectionClass}>
             <p className="text-[19px] font-semibold text-neutral-900">
+              Kargo etiketi
+            </p>
+            <p className={`mt-2 ${panelHintClass}`}>
+              Yazdırın, pakete yapıştırın. Kurye çıkış adresinizden alır —
+              şubeye gitmeniz gerekmez.
+            </p>
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={printLabel}
+                disabled={!canPrintLabel}
+                className={panelPrimaryBtnClass}
+                style={{ backgroundColor: "var(--panel-accent)" }}
+              >
+                Kargo etiketi yazdır
+              </button>
+              {canPrintLabel ? (
+                <p className="text-[14px] tabular-nums text-neutral-600">
+                  Takip: {demoTrackingNumber(order.id)}
+                </p>
+              ) : null}
+            </div>
+          </section>
+
+          <section className={panelSectionClass}>
+            <p className="text-[19px] font-semibold text-neutral-900">
               Sipariş durumu
             </p>
             <p className={`mt-2 ${panelHintClass}`}>
               {FULFILLMENT_HINT[order.fulfillmentStatus]}
-            </p>
-            <p className={`mt-3 ${panelHintClass}`}>
-              İşlem ilerledikçe aşağıdaki düğmelerden durumu güncelleyin.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               {FULFILLMENT_OPTIONS.map((id) => (
@@ -183,9 +239,6 @@ function OrderDetail({
           <section className={panelSectionClass}>
             <p className="text-[19px] font-semibold text-neutral-900">
               Paketlenecek ürünler
-            </p>
-            <p className={`mt-1 ${panelHintClass}`}>
-              Bunları kutuya koyun, sonra barkodu yapıştırın.
             </p>
             <ul className="mt-4 divide-y divide-[color:var(--panel-accent-border)]">
               {order.items.map((item) => (
@@ -227,9 +280,6 @@ function OrderDetail({
             <p className="text-[19px] font-semibold text-neutral-900">
               Teslimat adresi
             </p>
-            <p className={`mt-1 ${panelHintClass}`}>
-              Kargo etiketindeki adres bu olmalı.
-            </p>
             <div className="mt-4 space-y-1 text-[17px] leading-relaxed text-neutral-800">
               <p>{order.shippingAddress.line1}</p>
               {order.shippingAddress.line2 ? (
@@ -258,10 +308,6 @@ export function TrOwnerOrderDetailPage({ orderId }: { orderId: string }) {
               ← Siparişler
             </Link>
             <h2 className={panelPageTitleClass}>Sipariş detayı</h2>
-            <p className="mt-2 text-[16px] leading-relaxed text-neutral-600">
-              Ürünleri paketleyin, barkodu yapıştırın, kargoya verin; durumu
-              buradan güncelleyin.
-            </p>
             <Link
               href={trPanelPath()}
               className={`mt-2 block ${panelBackLinkClass}`}
@@ -269,7 +315,11 @@ export function TrOwnerOrderDetailPage({ orderId }: { orderId: string }) {
               Ana sayfa
             </Link>
           </div>
-          <OrderDetail boutiqueId={activeBoutique.id} orderId={orderId} />
+          <OrderDetail
+            boutiqueId={activeBoutique.id}
+            boutiqueName={activeBoutique.name}
+            orderId={orderId}
+          />
         </div>
       )}
     </TrOwnerPanelGate>

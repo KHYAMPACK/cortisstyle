@@ -1,12 +1,16 @@
 "use client";
 
+import { useState } from "react";
 import type { TrSizeChartId } from "@/lib/tr/productOptions";
-import { sizesForChart } from "@/lib/tr/productOptions";
+import { sizesForChart, sortProductSizes } from "@/lib/tr/productOptions";
 import { sanitizeStockInput } from "@/lib/tr/ownerProductConstraints";
 import {
+  panelAddChipClass,
   panelFieldClass,
   panelHintClass,
   panelLabelClass,
+  panelPrimaryBtnClass,
+  panelSecondaryBtnClass,
 } from "@/components/tr/panel/panelUi";
 
 const CHART_OPTIONS: Array<{ id: TrSizeChartId; label: string; hint: string }> =
@@ -36,8 +40,22 @@ interface TrOwnerSizeChartStockProps {
   /** Single stock when chart is none. */
   stock?: string;
   onStockChange?: (value: string) => void;
+  /** Allow “+ Beden ekle” for sizes outside the default chart. */
+  allowCustomSizes?: boolean;
   /** @deprecated Both surfaces use the large accessible UI. */
   variant?: "wizard" | "editor";
+}
+
+function displaySizesForChart(
+  chart: TrSizeChartId,
+  stockInputs: Record<string, string>,
+): string[] {
+  if (chart === "none") return [];
+  const chartSizes = sizesForChart(chart);
+  const extras = Object.keys(stockInputs).filter(
+    (size) => size.trim() && !chartSizes.includes(size),
+  );
+  return sortProductSizes([...chartSizes, ...extras]);
 }
 
 export function TrOwnerSizeChartStock({
@@ -47,8 +65,35 @@ export function TrOwnerSizeChartStock({
   onStockInputsChange,
   stock = "1",
   onStockChange,
+  allowCustomSizes = false,
 }: TrOwnerSizeChartStockProps) {
-  const chartSizes = sizesForChart(chart);
+  const chartSizes = displaySizesForChart(chart, stockInputs);
+  const [addingSize, setAddingSize] = useState(false);
+  const [newSize, setNewSize] = useState("");
+
+  const commitSize = () => {
+    const size = newSize.trim().toLocaleUpperCase("en");
+    if (!size) return;
+    if (Object.keys(stockInputs).some((key) => key.toUpperCase() === size)) {
+      setAddingSize(false);
+      setNewSize("");
+      return;
+    }
+    onStockInputsChange({ ...stockInputs, [size]: stockInputs[size] ?? "0" });
+    setAddingSize(false);
+    setNewSize("");
+  };
+
+  const removeSize = (size: string) => {
+    const next = { ...stockInputs };
+    delete next[size];
+    // Keep chart defaults present as "0" so the row stays until chart change.
+    const defaults = new Set(sizesForChart(chart));
+    if (defaults.has(size)) {
+      next[size] = "0";
+    }
+    onStockInputsChange(next);
+  };
 
   return (
     <div className="space-y-6">
@@ -111,32 +156,94 @@ export function TrOwnerSizeChartStock({
         <div className="space-y-3">
           <p className={panelLabelClass}>Beden stokları</p>
           <div className="space-y-3">
-            {chartSizes.map((size) => (
-              <label
-                key={size}
-                className="flex items-center gap-4 rounded-xl border-2 border-[color:var(--panel-accent-border)] bg-white px-4 py-3"
-              >
-                <span className="w-16 shrink-0 text-[18px] font-semibold text-neutral-900">
-                  {size}
-                </span>
-                <input
-                  value={stockInputs[size] ?? ""}
-                  onChange={(event) => {
-                    const value = sanitizeStockInput(event.target.value);
-                    onStockInputsChange({
-                      ...stockInputs,
-                      [size]: value,
-                    });
-                  }}
-                  className={panelFieldClass}
-                  inputMode="numeric"
-                  maxLength={4}
-                  placeholder="0"
-                  aria-label={`${size} stok`}
-                />
-              </label>
-            ))}
+            {chartSizes.map((size) => {
+              const isCustom = !sizesForChart(chart).includes(size);
+              return (
+                <label
+                  key={size}
+                  className="flex items-center gap-3 rounded-xl border-2 border-[color:var(--panel-accent-border)] bg-white px-4 py-3"
+                >
+                  <span className="w-16 shrink-0 text-[18px] font-semibold text-neutral-900">
+                    {size}
+                  </span>
+                  <input
+                    value={stockInputs[size] ?? ""}
+                    onChange={(event) => {
+                      const value = sanitizeStockInput(event.target.value);
+                      onStockInputsChange({
+                        ...stockInputs,
+                        [size]: value,
+                      });
+                    }}
+                    className={panelFieldClass}
+                    inputMode="numeric"
+                    maxLength={4}
+                    placeholder="0"
+                    aria-label={`${size} stok`}
+                  />
+                  {allowCustomSizes && isCustom ? (
+                    <button
+                      type="button"
+                      className="shrink-0 text-[15px] font-semibold text-red-700"
+                      onClick={() => removeSize(size)}
+                    >
+                      Kaldır
+                    </button>
+                  ) : null}
+                </label>
+              );
+            })}
           </div>
+
+          {allowCustomSizes ? (
+            <div className="space-y-3 pt-1">
+              {!addingSize ? (
+                <button
+                  type="button"
+                  className={panelAddChipClass}
+                  onClick={() => setAddingSize(true)}
+                >
+                  + Beden ekle
+                </button>
+              ) : (
+                <div className="flex flex-wrap items-center gap-3">
+                  <input
+                    value={newSize}
+                    onChange={(event) => setNewSize(event.target.value)}
+                    placeholder="Örn. XXL veya 42"
+                    className={`${panelFieldClass} min-w-[140px] flex-1`}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        commitSize();
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className={panelPrimaryBtnClass}
+                    style={{ backgroundColor: "var(--panel-accent)" }}
+                    onClick={commitSize}
+                  >
+                    Ekle
+                  </button>
+                  <button
+                    type="button"
+                    className={panelSecondaryBtnClass}
+                    onClick={() => {
+                      setAddingSize(false);
+                      setNewSize("");
+                    }}
+                  >
+                    Vazgeç
+                  </button>
+                </div>
+              )}
+              <p className={panelHintClass}>
+                Tabloda olmayan beden ekleyebilirsiniz (XXL, 42 vb.).
+              </p>
+            </div>
+          ) : null}
         </div>
       )}
     </div>
@@ -160,11 +267,20 @@ export function stockInputsFromSizeStocks(
 ): Record<string, string> {
   const out = emptyStockInputsForChart(chart, "0");
   if (!sizeStocks) return out;
-  for (const size of Object.keys(out)) {
-    const n = sizeStocks[size];
+  for (const [size, n] of Object.entries(sizeStocks)) {
+    if (!size.trim()) continue;
     if (typeof n === "number" && Number.isFinite(n)) {
       out[size] = String(Math.max(0, Math.floor(n)));
     }
   }
   return out;
+}
+
+/** Sizes to persist: chart defaults plus any custom keys in the stock inputs. */
+export function sizesFromStockInputs(
+  chart: TrSizeChartId,
+  stockInputs: Record<string, string>,
+): string[] {
+  if (chart === "none") return [];
+  return displaySizesForChart(chart, stockInputs);
 }

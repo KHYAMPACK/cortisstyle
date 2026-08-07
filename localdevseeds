@@ -5,8 +5,15 @@ NEXT_PUBLIC_SITE_URL=https://cortisstyle.com
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 
+# Branded boutique auth emails (OTP + password reset) via Resend
+# From address must be on a verified Resend domain (e.g. noreply@cortisstyle.com)
+RESEND_API_KEY=
+# Optional alias used in some local setups:
+# RESEND_API_KEY_PERVIN_SOYSAL_BUTIK=
+AUTH_EMAIL_FROM="Cortisstyle <noreply@cortisstyle.com>"
+
 # Custom SMTP — configure matching values in Supabase Dashboard → Auth → SMTP
-# so magic-link emails send from noreply@cortisstyle.com instead of noreply@supabase.co
+# so default (non-boutique) magic-link emails send from noreply@cortisstyle.com
 SUPABASE_SMTP_HOST=
 SUPABASE_SMTP_PORT=
 SUPABASE_SMTP_USER=

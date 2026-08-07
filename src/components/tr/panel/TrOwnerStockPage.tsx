@@ -224,6 +224,8 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
                   ? sizes.reduce((sum, size) => sum + sizeQty(product, size), 0)
                   : product.stock;
                 const low = product.status === "available" && total <= LOW_STOCK;
+                const outOfStock =
+                  product.status === "available" && total === 0;
                 const busy = savingKey?.startsWith(product.id) ?? false;
 
                 return (
@@ -231,8 +233,8 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
                     key={product.id}
                     variants={trPanelStaggerItem}
                     className={`rounded-2xl border bg-white p-4 shadow-sm sm:p-5 ${
-                      low
-                        ? "border-amber-300"
+                      outOfStock
+                        ? "border-neutral-300"
                         : "border-[color:var(--panel-accent-border)]"
                     }`}
                   >
@@ -256,8 +258,12 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
                         <p className="text-[19px] leading-snug font-semibold text-neutral-900">
                           {product.title}
                         </p>
-                        {low ? (
-                          <p className="inline-flex rounded-lg bg-amber-100 px-2.5 py-1 text-[14px] font-semibold text-amber-950">
+                        {outOfStock ? (
+                          <p className="inline-flex rounded-lg bg-neutral-100 px-2.5 py-1 text-[14px] font-semibold text-neutral-600">
+                            Stokta yok
+                          </p>
+                        ) : low ? (
+                          <p className="text-[14px] font-semibold text-neutral-700">
                             Düşük stok — dikkat
                           </p>
                         ) : null}
@@ -285,13 +291,16 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
                         {sizes.map((size) => {
                           const qty = sizeQty(product, size);
                           const sizeLow =
-                            product.status === "available" && qty <= LOW_STOCK;
+                            product.status === "available" &&
+                            qty > 0 &&
+                            qty <= LOW_STOCK;
+                          const empty = qty === 0;
                           return (
                             <div
                               key={size}
                               className={`flex items-center justify-between gap-3 rounded-xl px-3 py-3 ${
-                                sizeLow
-                                  ? "bg-amber-50"
+                                empty
+                                  ? "bg-neutral-100"
                                   : "bg-[color:var(--panel-accent-soft)]"
                               }`}
                             >
@@ -299,8 +308,14 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
                                 <p className="text-[18px] font-semibold text-neutral-900">
                                   {size}
                                 </p>
-                                <p className="text-[14px] text-neutral-600">
-                                  {qty === 0
+                                <p
+                                  className={`text-[14px] ${
+                                    empty
+                                      ? "font-medium text-neutral-500"
+                                      : "text-neutral-600"
+                                  }`}
+                                >
+                                  {empty
                                     ? "Stokta yok"
                                     : sizeLow
                                       ? "Az kaldı"

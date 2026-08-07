@@ -21,9 +21,14 @@ export function getMagicLinkRedirectUrl(): string {
 }
 
 /** Password recovery link — lands on reset form after callback. */
-export function getPasswordResetRedirectUrl(): string {
-  const next = encodeURIComponent("/auth/reset-password");
-  return `${getSiteUrl()}/auth/callback?next=${next}`;
+export function getPasswordResetRedirectUrl(options?: {
+  nextPath?: string;
+}): string {
+  const afterReset = options?.nextPath?.trim() || "/wardrobe";
+  const resetNext = encodeURIComponent(
+    `/auth/reset-password?next=${encodeURIComponent(afterReset)}`,
+  );
+  return `${getSiteUrl()}/auth/callback?next=${resetNext}`;
 }
 
 export function isAuthCallbackPath(pathname: string): boolean {

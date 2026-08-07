@@ -215,7 +215,8 @@ export function getTrLegalDoc(
           heading: "Hesap",
           paragraphs: [
             `Üyelik, ${seller} mağazasında alışveriş ve sipariş takibi için oluşturulur. Hesap bilgilerinizin doğruluğundan siz sorumlusunuz.`,
-            "Aynı e-posta ile bu platformdaki diğer mağazalarda da giriş yapılabilir; kayıt kaynağı sistemde saklanır.",
+            "Aynı e-posta ve şifre ile bu platformdaki diğer mağazalarda da giriş yapılabilir. İlk kayıt mağazası sistemde saklanır; sipariş, sepet ve favoriler her mağazada ayrı tutulur.",
+            "Şifre sıfırlama tüm mağazalar için geçerlidir.",
           ],
         },
         {

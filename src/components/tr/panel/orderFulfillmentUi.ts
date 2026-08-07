@@ -15,7 +15,7 @@ export const FULFILLMENT_LABEL: Record<TrFulfillmentStatus, string> = {
 /** What the boutique owner should do next. */
 export const FULFILLMENT_HINT: Record<TrFulfillmentStatus, string> = {
   created: "Ürünü paketleyin, sonra “Kargoya hazır” seçin.",
-  ready: "Barkodu yazdırıp pakete yapıştırın ve kargoya verin.",
+  ready: "“Kargo etiketi yazdır” ile etiketi basıp yapıştırın; kurye adresten alır.",
   shipped: "Kargo yolda — müşteriye ulaşınca “Teslim edildi” yapın.",
   delivered: "Bu sipariş tamamlandı.",
   cancelled: "Bu sipariş iptal edildi.",

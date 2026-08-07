@@ -1,4 +1,9 @@
-import type { EmailAuthRoute, EmailAuthStatus } from "@/lib/authTypes";
+import type {
+  EmailAccountOrigin,
+  EmailAuthRoute,
+  EmailAuthStatus,
+  ResolveEmailAuthOptions,
+} from "@/lib/authTypes";
 
 function isAlreadyRegisteredError(message: string, code?: string): boolean {
   const normalized = message.toLowerCase();
@@ -12,21 +17,31 @@ function isAlreadyRegisteredError(message: string, code?: string): boolean {
 
 export async function resolveEmailAuthStatus(
   email: string,
+  options?: ResolveEmailAuthOptions,
 ): Promise<EmailAuthStatus> {
+  const boutiqueSlug = options?.boutiqueSlug?.trim().toLowerCase() || null;
+
   const response = await fetch("/api/auth/check-email", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email }),
+    body: JSON.stringify({
+      email,
+      ...(boutiqueSlug ? { boutiqueSlug } : {}),
+    }),
   });
 
   const body = (await response.json().catch(() => ({}))) as {
     route?: EmailAuthRoute;
+    accountOrigin?: EmailAccountOrigin | null;
     error?: string;
     fallback?: boolean;
   };
 
   if (response.ok && body.route) {
-    return { route: body.route };
+    return {
+      route: body.route,
+      ...(body.accountOrigin ? { accountOrigin: body.accountOrigin } : {}),
+    };
   }
 
   if (response.status === 503 && body.fallback) {

@@ -1,4 +1,6 @@
 import { getServiceSupabase } from "@/lib/supabaseAdmin";
+import { resolveBoutiqueBrandLabel } from "@/lib/tr/boutiqueBrand";
+import type { EmailAccountOrigin } from "@/lib/authTypes";
 
 export type EnsureTrCustomerProfileInput = {
   userId: string;
@@ -40,4 +42,54 @@ export async function ensureTrCustomerProfile(
     // Race: another request inserted first — ignore unique violation.
     console.error("tr_customer_profiles insert failed:", insertError.message);
   }
+}
+
+/**
+ * Returns primary registration boutique for cross-store login notices.
+ * Service-role only (used during unauthenticated email checks).
+ */
+export async function getTrCustomerAccountOrigin(
+  userId: string,
+): Promise<EmailAccountOrigin | null> {
+  const supabase = getServiceSupabase();
+  if (!supabase) return null;
+
+  const { data, error } = await supabase
+    .from("tr_customer_profiles")
+    .select("primary_registration_slug, primary_registration_boutique_id")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("tr_customer_profiles origin read failed:", error.message);
+    return null;
+  }
+
+  const slug = data?.primary_registration_slug?.trim().toLowerCase() || null;
+  if (!slug) return null;
+
+  let boutiqueName: string | null = null;
+  const boutiqueId = data?.primary_registration_boutique_id as string | null;
+  if (boutiqueId) {
+    const { data: boutique } = await supabase
+      .from("tr_boutiques")
+      .select("name, slug")
+      .eq("id", boutiqueId)
+      .maybeSingle();
+    boutiqueName = boutique?.name?.trim() || null;
+  }
+
+  if (!boutiqueName) {
+    const { data: boutique } = await supabase
+      .from("tr_boutiques")
+      .select("name")
+      .eq("slug", slug)
+      .maybeSingle();
+    boutiqueName = boutique?.name?.trim() || null;
+  }
+
+  return {
+    boutiqueSlug: slug,
+    boutiqueName: resolveBoutiqueBrandLabel(slug, boutiqueName),
+  };
 }

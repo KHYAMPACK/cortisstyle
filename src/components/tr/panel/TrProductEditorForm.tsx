@@ -7,6 +7,7 @@ import { TrOwnerAiCatalogEnhance } from "@/components/tr/panel/TrOwnerAiCatalogE
 import { TrOwnerAiFillListing } from "@/components/tr/panel/TrOwnerAiFillListing";
 import {
   emptyStockInputsForChart,
+  sizesFromStockInputs,
   stockInputsFromSizeStocks,
   TrOwnerSizeChartStock,
 } from "@/components/tr/panel/TrOwnerSizeChartStock";
@@ -22,7 +23,6 @@ import {
 } from "@/lib/tr/catalogBackgrounds/registry";
 import {
   detectSizeChart,
-  sizesForChart,
   type TrSizeChartId,
 } from "@/lib/tr/productOptions";
 import {
@@ -117,6 +117,19 @@ const STATUS_OPTIONS: Array<{ id: TrProductStatus; label: string }> = [
   { id: "hidden", label: "Gizli" },
 ];
 
+/** Edit mode: jump between sections (durum stays visible except on Sil). */
+const EDIT_STEPS = [
+  { id: "photos", title: "Fotoğraflar" },
+  { id: "name", title: "İsim" },
+  { id: "price", title: "Fiyat" },
+  { id: "category", title: "Kategori" },
+  { id: "sizes", title: "Beden" },
+  { id: "colors", title: "Renkler" },
+  { id: "danger", title: "Sil" },
+] as const;
+
+type EditStepId = (typeof EDIT_STEPS)[number]["id"];
+
 function slugifyCustomId(label: string): string {
   return label
     .trim()
@@ -151,6 +164,13 @@ export function TrProductEditorForm({
   onSaved,
   onDeleted,
 }: TrProductEditorFormProps) {
+  const [editStepIndex, setEditStepIndex] = useState(0);
+  const editStep = EDIT_STEPS[editStepIndex] ?? EDIT_STEPS[0]!;
+  const sectioned = mode === "edit";
+  const showSection = (id: EditStepId) =>
+    !sectioned || editStep.id === id;
+  const showStatusEverywhere = sectioned && editStep.id !== "danger";
+
   const [title, setTitle] = useState(initialProduct?.title ?? "");
   const initialOnSale =
     typeof initialProduct?.compareAtPriceKurus === "number" &&
@@ -240,9 +260,17 @@ export function TrProductEditorForm({
       return;
     }
     setSizeStockInputs((current) => {
+      const prevDefaults =
+        sizeChart === "none"
+          ? new Set<string>()
+          : new Set(Object.keys(emptyStockInputsForChart(sizeChart, "0")));
       const nextInputs = emptyStockInputsForChart(next, "0");
-      for (const size of Object.keys(nextInputs)) {
-        if (current[size] !== undefined) nextInputs[size] = current[size]!;
+      for (const [size, value] of Object.entries(current)) {
+        if (size in nextInputs) {
+          nextInputs[size] = value;
+        } else if (!prevDefaults.has(size)) {
+          nextInputs[size] = value;
+        }
       }
       return nextInputs;
     });
@@ -372,7 +400,9 @@ export function TrProductEditorForm({
       }
 
       const activeSizes =
-        sizeChart === "none" || !sizesEnabled ? [] : sizesForChart(sizeChart);
+        sizeChart === "none" || !sizesEnabled
+          ? []
+          : sizesFromStockInputs(sizeChart, sizeStockInputs);
       let stockValue: number;
       let sizeStocks: Record<string, number> = {};
       if (activeSizes.length > 0) {
@@ -449,7 +479,62 @@ export function TrProductEditorForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <section className={panelSectionClass}>
+      {mode === "edit" ? (
+        <section
+          className={`${panelSectionClass} ${showStatusEverywhere ? "" : "hidden"}`}
+        >
+          <p className={panelLabelClass}>Durum</p>
+          <p className={`mt-1 ${panelHintClass}`}>
+            Satışta görünür, gizlide mağazada çıkmaz.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-3">
+            {STATUS_OPTIONS.map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                className={chipClass(status === option.id)}
+                style={
+                  status === option.id
+                    ? { backgroundColor: "var(--panel-accent)" }
+                    : undefined
+                }
+                onClick={() => setStatus(option.id)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {sectioned ? (
+        <div className="rounded-2xl border border-[color:var(--panel-accent-border)] bg-white p-5 shadow-sm sm:p-6">
+          <div className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {EDIT_STEPS.map((step, index) => (
+              <button
+                key={step.id}
+                type="button"
+                onClick={() => {
+                  setError(null);
+                  setEditStepIndex(index);
+                }}
+                className={panelChipClass(index === editStepIndex)}
+                style={
+                  index === editStepIndex
+                    ? { backgroundColor: "var(--panel-accent)" }
+                    : undefined
+                }
+              >
+                {step.title}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      <section
+        className={`${panelSectionClass} ${showSection("photos") ? "" : "hidden"}`}
+      >
         <div>
           <p className={panelLabelClass}>Fotoğraflar</p>
           <p className={`mt-1 ${panelHintClass}`}>
@@ -505,7 +590,9 @@ export function TrProductEditorForm({
         ) : null}
       </section>
 
-      <section className={panelSectionClass}>
+      <section
+        className={`${panelSectionClass} ${showSection("name") ? "" : "hidden"}`}
+      >
         <TrOwnerAiFillListing
           boutiqueId={boutiqueId}
           sourceImageUrl={
@@ -552,7 +639,9 @@ export function TrProductEditorForm({
         </label>
       </section>
 
-      <section className={panelSectionClass}>
+      <section
+        className={`${panelSectionClass} ${showSection("price") ? "" : "hidden"}`}
+      >
         <label className="block space-y-2">
           <span className={panelLabelClass}>Fiyat (TL)</span>
           <input
@@ -632,7 +721,9 @@ export function TrProductEditorForm({
         ) : null}
       </section>
 
-      <section className={panelSectionClass}>
+      <section
+        className={`${panelSectionClass} ${showSection("category") ? "" : "hidden"}`}
+      >
         <p className={panelLabelClass}>Kategori</p>
         <div className="flex flex-wrap gap-3">
           {categoryOptions.map((entry) => (
@@ -707,7 +798,9 @@ export function TrProductEditorForm({
         </AnimatePresence>
       </section>
 
-      <section className={panelSectionClass}>
+      <section
+        className={`${panelSectionClass} ${showSection("sizes") ? "" : "hidden"}`}
+      >
         <TrOwnerSizeChartStock
           chart={sizeChart}
           onChartChange={applySizeChart}
@@ -715,11 +808,14 @@ export function TrProductEditorForm({
           onStockInputsChange={setSizeStockInputs}
           stock={stock}
           onStockChange={setStock}
+          allowCustomSizes
           variant="editor"
         />
       </section>
 
-      <section className={panelSectionClass}>
+      <section
+        className={`${panelSectionClass} ${showSection("colors") ? "" : "hidden"}`}
+      >
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className={panelLabelClass}>Renkler</p>
@@ -873,131 +969,132 @@ export function TrProductEditorForm({
         </AnimatePresence>
       </section>
 
-      {mode === "edit" ? (
-        <section className={panelSectionClass}>
-          <p className={panelLabelClass}>Durum</p>
-          <div className="flex flex-wrap gap-3">
-            {STATUS_OPTIONS.map((option) => (
-              <button
-                key={option.id}
-                type="button"
-                className={chipClass(status === option.id)}
-                style={
-                  status === option.id
-                    ? { backgroundColor: "var(--panel-accent)" }
-                    : undefined
-                }
-                onClick={() => setStatus(option.id)}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        </section>
-      ) : null}
-
       {error ? <p className={panelErrorClass}>{error}</p> : null}
 
-      <button
-        type="submit"
-        disabled={saving || uploading || deleting}
-        className={`${panelPrimaryBtnClass} w-full gap-3`}
-        style={{ backgroundColor: "var(--panel-accent)" }}
-      >
-        {saving ? (
-          <>
-            <InlineBusySpinner />
-            Kaydediliyor…
-          </>
-        ) : mode === "create" ? (
-          "Ürünü ekle"
-        ) : (
-          "Değişiklikleri kaydet"
-        )}
-      </button>
-
       {mode === "edit" && initialProduct ? (
-        <div className="space-y-3 pt-2">
-          {!confirmDelete ? (
-            <button
-              type="button"
-              disabled={saving || uploading || deleting}
-              onClick={() => setConfirmDelete(true)}
-              className={`${panelSecondaryBtnClass} w-full border-red-300 text-red-800`}
-            >
-              Ürünü sil
-            </button>
-          ) : (
-            <div
-              className="space-y-4 rounded-2xl border-2 border-red-300 bg-red-50 p-5"
-              role="alertdialog"
-              aria-labelledby="delete-product-title"
-            >
-              <p
-                id="delete-product-title"
-                className="text-[18px] font-semibold text-neutral-900"
+        <div className={showSection("danger") ? "" : "hidden"}>
+          <section className={panelSectionClass}>
+            <p className={panelLabelClass}>Ürünü sil</p>
+            <p className={`mt-1 ${panelHintClass}`}>
+              Bu işlem mağazadan ürünü kaldırır. Emin değilseniz dokunmayın.
+            </p>
+            {!confirmDelete ? (
+              <button
+                type="button"
+                disabled={saving || uploading || deleting}
+                onClick={() => setConfirmDelete(true)}
+                className={`${panelSecondaryBtnClass} mt-4 w-full border-red-300 text-red-800`}
               >
-                Ürünü silmek istediğinize emin misiniz?
-              </p>
-              <p className="text-[16px] leading-relaxed text-neutral-700">
-                <span className="font-semibold">{initialProduct.title}</span>{" "}
-                kalıcı olarak silinir. Bu işlem geri alınamaz.
-              </p>
-              <div className="flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  disabled={deleting}
-                  className={`${panelPrimaryBtnClass} bg-red-700`}
-                  onClick={() => {
-                    void (async () => {
-                      setDeleting(true);
-                      setError(null);
-                      try {
-                        const result = await deleteOwnerProduct(
-                          initialProduct.id,
-                        );
-                        if (result.message && typeof window !== "undefined") {
-                          window.sessionStorage.setItem(
-                            "tr-panel-product-delete-notice",
-                            result.message,
+                Ürünü sil
+              </button>
+            ) : (
+              <div
+                className="mt-4 space-y-4 rounded-2xl border-2 border-red-300 bg-red-50 p-5"
+                role="alertdialog"
+                aria-labelledby="delete-product-title"
+              >
+                <p
+                  id="delete-product-title"
+                  className="text-[18px] font-semibold text-neutral-900"
+                >
+                  Ürünü silmek istediğinize emin misiniz?
+                </p>
+                <p className="text-[16px] leading-relaxed text-neutral-700">
+                  <span className="font-semibold">{initialProduct.title}</span>{" "}
+                  kalıcı olarak silinir. Bu işlem geri alınamaz.
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    disabled={deleting}
+                    className={`${panelPrimaryBtnClass} bg-red-700`}
+                    onClick={() => {
+                      void (async () => {
+                        setDeleting(true);
+                        setError(null);
+                        try {
+                          const result = await deleteOwnerProduct(
+                            initialProduct.id,
                           );
+                          if (result.message && typeof window !== "undefined") {
+                            window.sessionStorage.setItem(
+                              "tr-panel-product-delete-notice",
+                              result.message,
+                            );
+                          }
+                          onDeleted?.();
+                        } catch (deleteError) {
+                          setError(
+                            deleteError instanceof Error
+                              ? deleteError.message
+                              : "Ürün silinemedi.",
+                          );
+                          setConfirmDelete(false);
+                        } finally {
+                          setDeleting(false);
                         }
-                        onDeleted?.();
-                      } catch (deleteError) {
-                        setError(
-                          deleteError instanceof Error
-                            ? deleteError.message
-                            : "Ürün silinemedi.",
-                        );
-                        setConfirmDelete(false);
-                      } finally {
-                        setDeleting(false);
-                      }
-                    })();
-                  }}
-                >
-                  {deleting ? (
-                    <>
-                      <InlineBusySpinner />
-                      Siliniyor…
-                    </>
-                  ) : (
-                    "Evet, sil"
-                  )}
-                </button>
-                <button
-                  type="button"
-                  disabled={deleting}
-                  className={panelSecondaryBtnClass}
-                  onClick={() => setConfirmDelete(false)}
-                >
-                  Vazgeç
-                </button>
+                      })();
+                    }}
+                  >
+                    {deleting ? (
+                      <>
+                        <InlineBusySpinner />
+                        Siliniyor…
+                      </>
+                    ) : (
+                      "Evet, sil"
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={deleting}
+                    className={panelSecondaryBtnClass}
+                    onClick={() => setConfirmDelete(false)}
+                  >
+                    Vazgeç
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </section>
         </div>
       ) : null}
+
+      {sectioned ? (
+        <div className="sticky bottom-3 z-10 rounded-2xl border border-[color:var(--panel-accent-border)] bg-white/95 p-4 shadow-lg backdrop-blur-sm sm:p-5">
+          <button
+            type="submit"
+            disabled={saving || uploading || deleting}
+            className={`${panelPrimaryBtnClass} w-full gap-3`}
+            style={{ backgroundColor: "var(--panel-accent)" }}
+          >
+            {saving ? (
+              <>
+                <InlineBusySpinner />
+                Kaydediliyor…
+              </>
+            ) : (
+              "Değişiklikleri kaydet"
+            )}
+          </button>
+        </div>
+      ) : (
+        <button
+          type="submit"
+          disabled={saving || uploading || deleting}
+          className={`${panelPrimaryBtnClass} w-full gap-3`}
+          style={{ backgroundColor: "var(--panel-accent)" }}
+        >
+          {saving ? (
+            <>
+              <InlineBusySpinner />
+              Kaydediliyor…
+            </>
+          ) : (
+            "Ürünü ekle"
+          )}
+        </button>
+      )}
 
       <TrProductImageLightbox
         open={Boolean(lightbox)}

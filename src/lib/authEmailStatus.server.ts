@@ -2,9 +2,10 @@ import type { User } from "@supabase/supabase-js";
 import { getServiceSupabase } from "@/lib/supabaseAdmin";
 import {
   isPasswordSetInMetadata,
-  type EmailAuthRoute,
   type EmailAuthStatus,
+  type ResolveEmailAuthOptions,
 } from "@/lib/authTypes";
+import { getTrCustomerAccountOrigin } from "@/lib/tr/customerProfiles";
 
 async function findAuthUserByEmail(email: string): Promise<User | null> {
   const admin = getServiceSupabase();
@@ -40,8 +41,39 @@ async function findAuthUserByEmail(email: string): Promise<User | null> {
   return null;
 }
 
+async function attachCrossBoutiqueOrigin(
+  status: EmailAuthStatus,
+  userId: string,
+  options?: ResolveEmailAuthOptions,
+): Promise<EmailAuthStatus> {
+  const currentSlug = options?.boutiqueSlug?.trim().toLowerCase() || null;
+  if (!currentSlug) {
+    return status;
+  }
+
+  // Origin notice only matters once the shopper can log in with a password.
+  if (status.route !== "login" && status.route !== "complete_signup") {
+    return status;
+  }
+
+  const origin = await getTrCustomerAccountOrigin(userId);
+  if (!origin) {
+    return status;
+  }
+
+  if (origin.boutiqueSlug === currentSlug) {
+    return status;
+  }
+
+  return {
+    ...status,
+    accountOrigin: origin,
+  };
+}
+
 export async function resolveEmailAuthStatusServer(
   email: string,
+  options?: ResolveEmailAuthOptions,
 ): Promise<EmailAuthStatus | null> {
   const admin = getServiceSupabase();
   if (!admin) {
@@ -67,9 +99,10 @@ export async function resolveEmailAuthStatusServer(
     .eq("email", email)
     .maybeSingle();
 
-  if (passwordSet || profile) {
-    return { route: "login" };
-  }
+  const base: EmailAuthStatus =
+    passwordSet || profile
+      ? { route: "login" }
+      : { route: "complete_signup" };
 
-  return { route: "complete_signup" };
+  return attachCrossBoutiqueOrigin(base, authUser.id, options);
 }

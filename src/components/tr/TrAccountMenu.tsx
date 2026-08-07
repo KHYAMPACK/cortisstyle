@@ -151,6 +151,7 @@ export function TrAccountMenu({
         isOpen={showAuthPopup}
         onClose={() => setShowAuthPopup(false)}
         description="Giriş yaparak favorilerinizi ve siparişlerinizi ileride senkronize edebileceksiniz."
+        brand={{ locale: "tr" }}
       />
     </div>
   );

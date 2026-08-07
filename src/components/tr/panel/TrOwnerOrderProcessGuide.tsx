@@ -15,16 +15,16 @@ const STEPS: Array<{ title: string; body: string }> = [
     body: "Ödeme tamamlanınca sipariş bu listede görünür. Müşteri adı, adres ve ürünler buradadır.",
   },
   {
-    title: "2. Barkod / kargo etiketi gelir",
-    body: "Sipariş için kargo barkodu hazırlanır. Etiketi buradan veya e-postanızdan alırsınız.",
+    title: "2. Paketleyin",
+    body: "Ürünleri kutuya koyun. Fatura arka planda otomatik kesilir — sizin ekstra bir işleminiz yok.",
   },
   {
-    title: "3. Yazdırıp pakete yapıştırın",
-    body: "Etiketi yazdırın, ürünü dikkatlice paketleyin ve barkodu paketin üstüne yapıştırın.",
+    title: "3. Kargo etiketini yazdırın",
+    body: "Sipariş detayında “Kargo etiketi yazdır”a basın. Etiketi paketin üstüne yapıştırın.",
   },
   {
-    title: "4. Kargoya verin",
-    body: "Paketi kargo firmasına teslim edin. Sonra sipariş durumunu “Kargoda” yapın ki takip net olsun.",
+    title: "4. Kurye adresten alır",
+    body: "Paketi çıkış adresinizde bırakın; kurye gelir alır. Şubeye gitmeniz gerekmez. Sonra durumu “Kargoda” yapın.",
   },
 ];
 
@@ -106,8 +106,8 @@ export function TrOwnerOrderProcessGuide() {
             <p
               className={`${panelHintClass} mt-4 rounded-xl bg-[color:var(--panel-accent-soft)] px-4 py-3`}
             >
-              İpucu: Listedeki bir siparişe dokunarak detayı açın. Orada durumu
-              adım adım güncelleyebilirsiniz.
+              İpucu: Sipariş detayında “Kargo etiketi yazdır” ile demo etiketi
+              basabilirsiniz. Faturalar menüsünden kesilen faturaları görürsünüz.
             </p>
           </motion.div>
         ) : null}

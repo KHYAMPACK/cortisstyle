@@ -1,12 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { AnimatePresence } from "framer-motion";
-import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { useEffect, useMemo, useState } from "react";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
+import {
+  panelBackLinkClass,
+  panelEmptyClass,
+  panelErrorClass,
+  panelHintClass,
+  panelPageTitleClass,
+} from "@/components/tr/panel/panelUi";
 import {
   TrPanelFadeIn,
   TrPanelLoading,
+  TrPanelStagger,
+  trPanelStaggerItem,
 } from "@/components/tr/panel/TrPanelMotion";
 import { fetchOwnerCustomers } from "@/lib/tr/ownerClient";
 import { trPanelCustomerPath, trPanelPath } from "@/lib/tr/paths";
@@ -19,6 +28,7 @@ function CustomersList({ boutiqueId }: { boutiqueId: string }) {
   const [customers, setCustomers] = useState<TrOwnerCustomer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -46,54 +56,86 @@ function CustomersList({ boutiqueId }: { boutiqueId: string }) {
     };
   }, [boutiqueId]);
 
+  const visible = useMemo(() => {
+    const q = query.trim().toLocaleLowerCase("tr");
+    if (!q) return customers;
+    return customers.filter((customer) => {
+      const haystack = [
+        customer.name,
+        customer.email,
+        customer.phone ?? "",
+      ]
+        .join(" ")
+        .toLocaleLowerCase("tr");
+      return haystack.includes(q);
+    });
+  }, [customers, query]);
+
   return (
     <AnimatePresence mode="wait">
       {loading ? (
         <TrPanelLoading key="c-loading" label="Müşteriler yükleniyor…" />
       ) : error ? (
         <TrPanelFadeIn key="c-error">
-          <p className="border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-800">
-            {error}
-          </p>
+          <p className={panelErrorClass}>{error}</p>
         </TrPanelFadeIn>
       ) : (
-        <TrPanelFadeIn key="c-ready" className="space-y-4">
-          <p className="text-[12px] text-neutral-600">
-            {customers.length} müşteri
-          </p>
+        <TrPanelFadeIn key="c-ready" className="space-y-5">
+          <div className="space-y-3">
+            <p className="text-[17px] font-medium text-neutral-700">
+              {query.trim()
+                ? `${visible.length} / ${customers.length} müşteri`
+                : `${customers.length} müşteri`}
+            </p>
+            {customers.length > 0 ? (
+              <input
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="İsim, e-posta veya telefon ara…"
+                className="w-full rounded-xl border-2 border-[color:var(--panel-accent-border)] bg-white px-4 py-3.5 text-[17px] text-neutral-900 outline-none focus:border-[color:var(--panel-accent)]"
+              />
+            ) : null}
+          </div>
+
           {customers.length === 0 ? (
-            <p className="border border-black/10 bg-white px-4 py-8 text-[13px] text-neutral-600">
+            <p className={panelEmptyClass}>
               Henüz sipariş veren müşteri yok.
             </p>
+          ) : visible.length === 0 ? (
+            <p className={panelEmptyClass}>Aramanıza uyan müşteri yok.</p>
           ) : (
-            <ul className="divide-y divide-black/10 border border-black/10 bg-white">
-              {customers.map((customer) => (
-                <li key={customer.email}>
+            <TrPanelStagger className="space-y-3">
+              {visible.map((customer) => (
+                <motion.div key={customer.email} variants={trPanelStaggerItem}>
                   <Link
                     href={trPanelCustomerPath(customer.email)}
-                    className="flex flex-wrap items-center justify-between gap-3 px-4 py-4 transition-colors hover:bg-neutral-50"
+                    className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[color:var(--panel-accent-border)] bg-white p-4 shadow-sm transition-colors hover:bg-[color:var(--panel-accent-soft)] sm:p-5"
                   >
-                    <div>
-                      <p className="text-[14px] font-medium text-neutral-900">
+                    <div className="min-w-0 space-y-1">
+                      <p className="text-[19px] font-semibold text-neutral-900">
                         {customer.name}
                       </p>
-                      <p className="mt-1 text-[11px] text-neutral-500">
+                      <p className="text-[15px] text-neutral-600">
                         {customer.email}
                         {customer.phone ? ` · ${customer.phone}` : ""}
                       </p>
+                      <p className="text-[15px] font-medium text-[color:var(--panel-accent-deep)]">
+                        Detayı aç →
+                      </p>
                     </div>
                     <div className="text-right">
-                      <p className="font-serif text-lg tabular-nums">
+                      <p className="text-[22px] font-semibold tabular-nums text-neutral-950">
                         {formatTryFromKurus(customer.spendKurus)}
                       </p>
-                      <p className="text-[11px] text-neutral-500">
+                      <p className="mt-1 text-[14px] text-neutral-600">
                         {customer.orderCount} sipariş
                       </p>
                     </div>
                   </Link>
-                </li>
+                </motion.div>
               ))}
-            </ul>
+            </TrPanelStagger>
           )}
         </TrPanelFadeIn>
       )}
@@ -105,17 +147,15 @@ export function TrOwnerCustomersPage() {
   return (
     <TrOwnerPanelGate>
       {({ activeBoutique }) => (
-        <div className="space-y-4">
+        <div className="space-y-5">
           <div>
-            <Link
-              href={trPanelPath()}
-              className="inline-block text-[11px] tracking-[0.1em] text-neutral-500 uppercase"
-            >
+            <Link href={trPanelPath()} className={panelBackLinkClass}>
               ← Ana sayfa
             </Link>
-            <h2 className="mt-2 font-serif text-2xl tracking-tight text-neutral-950">
-              Müşteriler
-            </h2>
+            <h2 className={panelPageTitleClass}>Müşteriler</h2>
+            <p className={`mt-2 ${panelHintClass}`}>
+              Sipariş veren müşterilerinizi buradan görün.
+            </p>
           </div>
           <CustomersList boutiqueId={activeBoutique.id} />
         </div>

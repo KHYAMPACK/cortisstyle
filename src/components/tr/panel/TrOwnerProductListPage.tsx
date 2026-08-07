@@ -3,12 +3,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
 import {
   panelBackLinkClass,
+  panelChipClass,
   panelEmptyClass,
   panelErrorClass,
+  panelHintClass,
   panelPageTitleClass,
   panelPrimaryBtnClass,
 } from "@/components/tr/panel/panelUi";
@@ -18,6 +20,10 @@ import {
   TrPanelStagger,
   trPanelStaggerItem,
 } from "@/components/tr/panel/TrPanelMotion";
+import {
+  getTrCategoryLabel,
+  listCategoriesForProducts,
+} from "@/lib/tr/categories";
 import { getProductCoverImageFor } from "@/lib/tr/productImages";
 import { fetchOwnerProducts } from "@/lib/tr/ownerClient";
 import {
@@ -45,6 +51,7 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState<string | "all">("all");
 
   useEffect(() => {
     try {
@@ -88,6 +95,26 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
     };
   }, [boutiqueId]);
 
+  const categories = useMemo(
+    () => listCategoriesForProducts(products),
+    [products],
+  );
+
+  const uncategorizedCount = useMemo(
+    () => products.filter((product) => !product.category?.trim()).length,
+    [products],
+  );
+
+  const visible = useMemo(() => {
+    if (categoryFilter === "all") return products;
+    if (categoryFilter === "uncategorized") {
+      return products.filter((product) => !product.category?.trim());
+    }
+    return products.filter(
+      (product) => product.category?.trim() === categoryFilter,
+    );
+  }, [categoryFilter, products]);
+
   return (
     <AnimatePresence mode="wait">
       {loading ? (
@@ -105,7 +132,9 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
           ) : null}
           <div className="flex flex-wrap items-center justify-between gap-4">
             <p className="text-[17px] font-medium text-neutral-700">
-              {products.length} ürün
+              {categoryFilter === "all"
+                ? `${products.length} ürün`
+                : `${visible.length} / ${products.length} ürün`}
             </p>
             <Link
               href={trPanelNewProductPath()}
@@ -115,6 +144,57 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
               + Yeni ürün ekle
             </Link>
           </div>
+
+          {products.length > 0 ? (
+            <div className="space-y-2">
+              <p className={panelHintClass}>Kategoriye göre filtreleyin</p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCategoryFilter("all")}
+                  className={panelChipClass(categoryFilter === "all")}
+                  style={
+                    categoryFilter === "all"
+                      ? { backgroundColor: "var(--panel-accent)" }
+                      : undefined
+                  }
+                >
+                  Tümü
+                </button>
+                {categories.map((entry) => (
+                  <button
+                    key={entry.id}
+                    type="button"
+                    onClick={() => setCategoryFilter(entry.id)}
+                    className={panelChipClass(categoryFilter === entry.id)}
+                    style={
+                      categoryFilter === entry.id
+                        ? { backgroundColor: "var(--panel-accent)" }
+                        : undefined
+                    }
+                  >
+                    {entry.label}
+                  </button>
+                ))}
+                {uncategorizedCount > 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => setCategoryFilter("uncategorized")}
+                    className={panelChipClass(
+                      categoryFilter === "uncategorized",
+                    )}
+                    style={
+                      categoryFilter === "uncategorized"
+                        ? { backgroundColor: "var(--panel-accent)" }
+                        : undefined
+                    }
+                  >
+                    Kategorisiz
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
 
           {products.length === 0 ? (
             <p className={panelEmptyClass}>
@@ -128,9 +208,13 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
                 İlk ürününüzü ekleyin
               </Link>
             </p>
+          ) : visible.length === 0 ? (
+            <p className={panelEmptyClass}>
+              Bu kategoride ürün yok. “Tümü”ne geçmeyi deneyin.
+            </p>
           ) : (
             <TrPanelStagger className="space-y-3">
-              {products.map((product) => {
+              {visible.map((product) => {
                 const cover =
                   getProductCoverImageFor("marketplace", product) ??
                   product.images[0] ??
@@ -142,6 +226,7 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
                 const onSale =
                   typeof product.compareAtPriceKurus === "number" &&
                   product.compareAtPriceKurus > product.priceKurus;
+                const categoryLabel = getTrCategoryLabel(product.category);
 
                 return (
                   <motion.div key={product.id} variants={trPanelStaggerItem}>
@@ -179,6 +264,11 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
                           >
                             {statusLabel}
                           </span>
+                          {categoryLabel ? (
+                            <span className="rounded-lg bg-[color:var(--panel-accent-soft)] px-2.5 py-1 text-[14px] font-medium text-neutral-800">
+                              {categoryLabel}
+                            </span>
+                          ) : null}
                           <span className="rounded-lg bg-neutral-100 px-2.5 py-1 text-[14px] font-medium text-neutral-700">
                             Stok: {product.stock}
                           </span>
@@ -219,9 +309,6 @@ export function TrOwnerProductListPage() {
               ← Ana sayfa
             </Link>
             <h2 className={panelPageTitleClass}>Ürünler</h2>
-            <p className="mt-2 text-[16px] leading-relaxed text-neutral-600">
-              Ürünlerinizi buradan görün ve düzenleyin.
-            </p>
           </div>
           <ProductList boutiqueId={activeBoutique.id} />
         </div>

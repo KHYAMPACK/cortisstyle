@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { AuthPopup } from "@/components/AuthPopup";
 import {
   TrPanelLoading,
@@ -97,6 +97,23 @@ export function TrOwnerPanelGate({ children }: TrOwnerPanelGateProps) {
     isAuthenticated && activeBoutique ? activeBoutique.id : null,
   );
 
+  const navRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    const el = navRef.current;
+    if (!el) return;
+
+    const onWheel = (event: WheelEvent) => {
+      if (el.scrollWidth <= el.clientWidth) return;
+      if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+      el.scrollLeft += event.deltaY;
+      event.preventDefault();
+    };
+
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, [isAuthenticated, activeBoutique?.id]);
+
   const accentStyle = panelAccentCssVars(
     activeBoutique?.themeAccent,
   ) as CSSProperties;
@@ -111,6 +128,12 @@ export function TrOwnerPanelGate({ children }: TrOwnerPanelGateProps) {
         onClose={() => setShowAuth(false)}
         onAuthSuccess={() => setShowAuth(false)}
         description="Butik panelinize giriş yapmak için e-posta adresinizi girin."
+        brand={{
+          locale: "tr",
+          successHref: pathname?.startsWith("/tr/panel")
+            ? pathname
+            : trPanelPath(),
+        }}
       />
 
       <header className="mb-6 overflow-hidden rounded-2xl border border-[color:var(--panel-accent-border)] bg-white shadow-sm">
@@ -203,8 +226,9 @@ export function TrOwnerPanelGate({ children }: TrOwnerPanelGateProps) {
 
         {isAuthenticated && activeBoutique ? (
           <nav
+            ref={navRef}
             aria-label="Panel menüsü"
-            className="flex gap-2 overflow-x-auto p-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            className="flex gap-2 overflow-x-auto overscroll-x-contain p-3 pb-2 [scrollbar-gutter:stable] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-2.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--panel-accent-border)] [&::-webkit-scrollbar-track]:bg-transparent"
             style={{ backgroundColor: "var(--panel-accent-softer)" }}
           >
             {TR_PANEL_NAV.map((item) => {

@@ -1,12 +1,26 @@
 "use client";
 
 import Link from "next/link";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState, type FormEvent } from "react";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
 import {
+  panelBackLinkClass,
+  panelEmptyClass,
+  panelErrorClass,
+  panelFieldClass,
+  panelHintClass,
+  panelLabelClass,
+  panelPageTitleClass,
+  panelPrimaryBtnClass,
+  panelSecondaryBtnClass,
+  panelSectionClass,
+} from "@/components/tr/panel/panelUi";
+import {
   TrPanelFadeIn,
   TrPanelLoading,
+  TrPanelStagger,
+  trPanelStaggerItem,
 } from "@/components/tr/panel/TrPanelMotion";
 import {
   createOwnerDiscountCode,
@@ -15,10 +29,7 @@ import {
   setOwnerDiscountCodeActive,
   updateOwnerProduct,
 } from "@/lib/tr/ownerClient";
-import {
-  trPanelEditProductPath,
-  trPanelPath,
-} from "@/lib/tr/paths";
+import { trPanelEditProductPath, trPanelPath } from "@/lib/tr/paths";
 import {
   formatTryFromKurus,
   type TrDiscountCode,
@@ -137,83 +148,88 @@ function CampaignsBoard({ boutiqueId }: { boutiqueId: string }) {
       {loading ? (
         <TrPanelLoading key="camp-loading" label="Kampanyalar yükleniyor…" />
       ) : (
-        <TrPanelFadeIn key="camp-ready" className="space-y-8">
-          {error ? (
-            <p className="border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-800">
-              {error}
-            </p>
-          ) : null}
+        <TrPanelFadeIn key="camp-ready" className="space-y-6">
+          {error ? <p className={panelErrorClass}>{error}</p> : null}
 
           <section className="space-y-3">
-            <h3 className="text-[12px] tracking-[0.14em] text-neutral-700 uppercase">
-              Ürün indirimleri
-            </h3>
+            <div>
+              <h3 className="text-[19px] font-semibold text-neutral-900">
+                Ürün indirimleri
+              </h3>
+              <p className={`mt-1 ${panelHintClass}`}>
+                Ürün düzenlerken eski fiyat girerek indirim açın.
+              </p>
+            </div>
             {onSale.length === 0 ? (
-              <p className="border border-black/10 bg-white px-4 py-6 text-[13px] text-neutral-600">
-                Aktif ürün indirimi yok. Ürün düzenlerken &quot;Eski fiyat&quot;
-                alanını doldurun.
+              <p className={panelEmptyClass}>
+                Aktif ürün indirimi yok.
               </p>
             ) : (
-              <ul className="divide-y divide-black/10 border border-black/10 bg-white">
+              <TrPanelStagger className="space-y-3">
                 {onSale.map((product) => (
-                  <li
-                    key={product.id}
-                    className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
-                  >
-                    <Link
-                      href={trPanelEditProductPath(product.id)}
-                      className="min-w-0 flex-1 text-[14px] text-neutral-900 hover:underline"
-                    >
-                      {product.title}
-                      <span className="mt-1 block text-[11px] text-neutral-500">
-                        {formatTryFromKurus(product.priceKurus)}
-                        {product.compareAtPriceKurus
-                          ? ` · liste ${formatTryFromKurus(product.compareAtPriceKurus)}`
-                          : ""}
-                      </span>
-                    </Link>
-                    <button
-                      type="button"
-                      disabled={saving}
-                      onClick={() => void clearSale(product)}
-                      className="border border-black/15 px-3 py-2 text-[11px] tracking-[0.08em] uppercase disabled:opacity-50"
-                    >
-                      İndirimi kaldır
-                    </button>
-                  </li>
+                  <motion.div key={product.id} variants={trPanelStaggerItem}>
+                    <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[color:var(--panel-accent-border)] bg-white p-4 shadow-sm sm:p-5">
+                      <Link
+                        href={trPanelEditProductPath(product.id)}
+                        className="min-w-0 flex-1"
+                      >
+                        <p className="text-[18px] font-semibold text-neutral-900">
+                          {product.title}
+                        </p>
+                        <p className="mt-1 text-[15px] text-neutral-600">
+                          {formatTryFromKurus(product.priceKurus)}
+                          {product.compareAtPriceKurus ? (
+                            <span className="ml-2 text-neutral-400 line-through">
+                              {formatTryFromKurus(product.compareAtPriceKurus)}
+                            </span>
+                          ) : null}
+                        </p>
+                      </Link>
+                      <button
+                        type="button"
+                        disabled={saving}
+                        onClick={() => void clearSale(product)}
+                        className={panelSecondaryBtnClass}
+                      >
+                        İndirimi kaldır
+                      </button>
+                    </div>
+                  </motion.div>
                 ))}
-              </ul>
+              </TrPanelStagger>
             )}
           </section>
 
           <section className="space-y-3">
-            <h3 className="text-[12px] tracking-[0.14em] text-neutral-700 uppercase">
-              Kupon kodları
-            </h3>
+            <div>
+              <h3 className="text-[19px] font-semibold text-neutral-900">
+                Kupon kodları
+              </h3>
+              <p className={`mt-1 ${panelHintClass}`}>
+                Müşterilerin kullanabileceği indirim kodu oluşturun.
+              </p>
+            </div>
+
             <form
               onSubmit={(event) => void createCoupon(event)}
-              className="flex flex-wrap items-end gap-3 border border-black/10 bg-white px-4 py-4"
+              className={`${panelSectionClass} sm:flex sm:flex-wrap sm:items-end sm:gap-4`}
             >
-              <label className="space-y-1">
-                <span className="block text-[10px] tracking-[0.1em] text-neutral-500 uppercase">
-                  Kod
-                </span>
+              <label className="block min-w-[10rem] flex-1 space-y-2">
+                <span className={panelLabelClass}>Kod</span>
                 <input
                   value={code}
                   onChange={(event) => setCode(event.target.value)}
-                  className="border border-black/15 px-3 py-2 text-[13px]"
+                  className={panelFieldClass}
                   placeholder="YAZ10"
                   required
                 />
               </label>
-              <label className="space-y-1">
-                <span className="block text-[10px] tracking-[0.1em] text-neutral-500 uppercase">
-                  % indirim
-                </span>
+              <label className="mt-4 block w-full space-y-2 sm:mt-0 sm:w-28">
+                <span className={panelLabelClass}>% indirim</span>
                 <input
                   value={percentOff}
                   onChange={(event) => setPercentOff(event.target.value)}
-                  className="w-20 border border-black/15 px-3 py-2 text-[13px]"
+                  className={panelFieldClass}
                   inputMode="numeric"
                   required
                 />
@@ -221,57 +237,65 @@ function CampaignsBoard({ boutiqueId }: { boutiqueId: string }) {
               <button
                 type="submit"
                 disabled={saving}
-                className="btn-primary px-4 py-2.5 text-[10px] tracking-[0.14em] disabled:opacity-50"
+                className={`${panelPrimaryBtnClass} mt-4 w-full sm:mt-0 sm:w-auto`}
+                style={{ backgroundColor: "var(--panel-accent)" }}
               >
                 Kupon ekle
               </button>
             </form>
 
             {codes.length === 0 ? (
-              <p className="text-[13px] text-neutral-600">Henüz kupon yok.</p>
+              <p className={panelEmptyClass}>Henüz kupon yok.</p>
             ) : (
-              <ul className="divide-y divide-black/10 border border-black/10 bg-white">
+              <TrPanelStagger className="space-y-3">
                 {codes.map((entry) => (
-                  <li
-                    key={entry.id}
-                    className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
-                  >
-                    <div>
-                      <p className="font-medium tracking-[0.08em] text-neutral-900">
-                        {entry.code}
-                      </p>
-                      <p className="mt-1 text-[11px] text-neutral-500">
-                        {entry.percentOff != null
-                          ? `%${entry.percentOff}`
-                          : entry.amountOffKurus
-                            ? formatTryFromKurus(entry.amountOffKurus)
-                            : "—"}{" "}
-                        · {entry.active ? "Aktif" : "Pasif"} ·{" "}
-                        {entry.usedCount} kullanım
-                      </p>
+                  <motion.div key={entry.id} variants={trPanelStaggerItem}>
+                    <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[color:var(--panel-accent-border)] bg-white p-4 shadow-sm sm:p-5">
+                      <div className="min-w-0">
+                        <p className="text-[18px] font-semibold tracking-wide text-neutral-900">
+                          {entry.code}
+                        </p>
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                          <span className="rounded-lg bg-[color:var(--panel-accent-soft)] px-2.5 py-1 text-[14px] font-semibold text-neutral-800">
+                            {entry.percentOff != null
+                              ? `%${entry.percentOff}`
+                              : entry.amountOffKurus
+                                ? formatTryFromKurus(entry.amountOffKurus)
+                                : "—"}
+                          </span>
+                          <span
+                            className={`rounded-lg px-2.5 py-1 text-[14px] font-semibold ${
+                              entry.active
+                                ? "bg-emerald-50 text-emerald-900"
+                                : "bg-neutral-100 text-neutral-600"
+                            }`}
+                          >
+                            {entry.active ? "Aktif" : "Pasif"}
+                          </span>
+                          <span className="rounded-lg bg-neutral-100 px-2.5 py-1 text-[14px] font-medium text-neutral-700">
+                            {entry.usedCount} kullanım
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        disabled={saving}
+                        onClick={() =>
+                          void setOwnerDiscountCodeActive(
+                            boutiqueId,
+                            entry.id,
+                            !entry.active,
+                          ).then(reload)
+                        }
+                        className={panelSecondaryBtnClass}
+                      >
+                        {entry.active ? "Pasifleştir" : "Aktifleştir"}
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      disabled={saving}
-                      onClick={() =>
-                        void setOwnerDiscountCodeActive(
-                          boutiqueId,
-                          entry.id,
-                          !entry.active,
-                        ).then(reload)
-                      }
-                      className="border border-black/15 px-3 py-2 text-[11px] tracking-[0.08em] uppercase disabled:opacity-50"
-                    >
-                      {entry.active ? "Pasifleştir" : "Aktifleştir"}
-                    </button>
-                  </li>
+                  </motion.div>
                 ))}
-              </ul>
+              </TrPanelStagger>
             )}
-            <p className="text-[11px] text-neutral-500">
-              Not: Kuponlar panelde yönetilir; ödeme sayfasına bağlama sonraki
-              adımda eklenecek.
-            </p>
           </section>
         </TrPanelFadeIn>
       )}
@@ -283,20 +307,12 @@ export function TrOwnerCampaignsPage() {
   return (
     <TrOwnerPanelGate>
       {({ activeBoutique }) => (
-        <div className="space-y-4">
+        <div className="space-y-5">
           <div>
-            <Link
-              href={trPanelPath()}
-              className="inline-block text-[11px] tracking-[0.1em] text-neutral-500 uppercase"
-            >
+            <Link href={trPanelPath()} className={panelBackLinkClass}>
               ← Ana sayfa
             </Link>
-            <h2 className="mt-2 font-serif text-2xl tracking-tight text-neutral-950">
-              Kampanyalar
-            </h2>
-            <p className="mt-1 text-[13px] text-neutral-600">
-              Ürün indirimleri ve kupon kodları.
-            </p>
+            <h2 className={panelPageTitleClass}>Kampanyalar</h2>
           </div>
           <CampaignsBoard boutiqueId={activeBoutique.id} />
         </div>

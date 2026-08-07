@@ -4,6 +4,7 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState, type FormEvent } from "react";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
+import { TrOwnerPushNotificationsCard } from "@/components/tr/panel/TrOwnerPushNotificationsCard";
 import {
   TrPanelFadeIn,
   TrPanelLoading,
@@ -288,15 +289,18 @@ export function TrOwnerSettingsPage() {
     <TrOwnerPanelGate>
       {({ activeBoutique }) => (
         <div className="space-y-6">
-          <Link
-            href={trPanelPath()}
-            className="inline-block text-[11px] tracking-[0.1em] text-neutral-500 uppercase"
-          >
-            ← Ana sayfa
-          </Link>
-          <h2 className="font-serif text-2xl tracking-tight text-neutral-950">
-            Ayarlar
-          </h2>
+          <div>
+            <Link
+              href={trPanelPath()}
+              className="inline-block text-[16px] font-medium text-[color:var(--panel-accent-deep)]"
+            >
+              ← Ana sayfa
+            </Link>
+            <h2 className="mt-2 text-[1.75rem] font-semibold tracking-tight text-[color:var(--panel-accent-deep)] sm:text-[2rem]">
+              Ayarlar
+            </h2>
+          </div>
+          <TrOwnerPushNotificationsCard boutiqueId={activeBoutique.id} />
           <SettingsForm boutiqueId={activeBoutique.id} />
         </div>
       )}

@@ -9,6 +9,7 @@
 - **Gated live pay:** `TR_CHECKOUT_ENABLED` — when false, WhatsApp order path (`src/lib/tr/whatsapp.ts`, sandbox/`is_sandbox` payment status)
 - Discount codes (`discountCodes.ts`, `patch_tr_discount_codes.sql`, panel kampanyalar)
 - Fulfillment fields (`patch_tr_order_fulfillment.sql`)
+- Owner Web Push for new orders (`patch_tr_owner_push_subscriptions.sql`, `pushNotify.ts`, panel Ayarlar)
 - Customer profiles for storefront (`tr_customer_profiles`, registration-source API)
 - Admin seed/ops with `TR_ADMIN_SECRET` (`adminAuth.ts`)
 

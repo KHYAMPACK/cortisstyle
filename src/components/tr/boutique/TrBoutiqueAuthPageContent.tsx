@@ -22,7 +22,7 @@ import {
 import { TrBoutiqueEditorialProductCard } from "@/components/tr/boutique/editorial/TrBoutiqueEditorialProductCard";
 import { useTrBoutiqueProductsOptional } from "@/components/tr/boutique/TrBoutiqueProductsContext";
 import { useAuth } from "@/context/AuthContext";
-import { resolveBoutiqueLogoUrl, resolveBoutiqueThemeAccent } from "@/lib/tr/boutiqueBrand";
+import { resolveBoutiqueBrandLabel, resolveBoutiqueLogoUrl, resolveBoutiqueThemeAccent } from "@/lib/tr/boutiqueBrand";
 import { getSupabaseClient } from "@/lib/supabaseClient";
 import {
   trBoutiqueAuthPath,
@@ -70,7 +70,7 @@ const ACTION =
 export function TrBoutiqueAuthPageContent({
   boutique,
 }: TrBoutiqueAuthPageContentProps) {
-  const { user, signOut } = useAuth();
+  const { user, isAuthenticated, needsPasswordSetup, signOut } = useAuth();
   const commerce = useTrBoutiqueCommerceScope();
   const favorites = useTrScopedFavorites();
   const boutiqueProducts = useTrBoutiqueProductsOptional();
@@ -80,20 +80,21 @@ export function TrBoutiqueAuthPageContent({
   const accent = resolveBoutiqueThemeAccent(boutique);
   const logoUrl = resolveBoutiqueLogoUrl(boutique);
   const firstName = getTrUserFirstName(user);
-  const brandTitle =
-    boutique.slug === "pervinsoysalbutik" ? "Pervin Soysal" : boutique.name;
-
-  useEffect(() => {
-    if (!user) return;
-    void recordRegistrationSource(boutique.slug);
-  }, [user, boutique.slug]);
+  const brandTitle = resolveBoutiqueBrandLabel(boutique.slug, boutique.name);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (window.location.hash !== "#favoriler") return;
     const el = document.getElementById("favoriler");
     el?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, [user, favorites.items.length]);
+  }, [isAuthenticated, favorites.items.length]);
+
+  // Incomplete signup (OTP done, no password): keep the auth modal open.
+  useEffect(() => {
+    if (needsPasswordSetup) {
+      setAuthOpen(true);
+    }
+  }, [needsPasswordSetup]);
 
   const favoriteProducts = useMemo(() => {
     const catalog = boutiqueProducts?.products ?? [];
@@ -147,18 +148,18 @@ export function TrBoutiqueAuthPageContent({
         transition={{ duration: 0.35, ease: trPanelEase }}
       >
         <h1 className="text-center font-serif text-2xl tracking-tight text-neutral-950 md:text-3xl">
-          {user ? "Hesabım" : "Giriş / Üyelik"}
+          {isAuthenticated ? "Hesabım" : "Giriş / Üyelik"}
         </h1>
         <p className="mx-auto mt-3 max-w-md text-center text-[14px] leading-relaxed text-neutral-600">
-          {user
+          {isAuthenticated
             ? firstName
-              ? `Merhaba ${firstName} — ${brandTitle} hesabınız.`
-              : `${brandTitle} hesabınız.`
-            : `${brandTitle} hesabı oluşturun veya giriş yapın.`}
-      </p>
+              ? `Merhaba ${firstName}. ${brandTitle} mağaza hesabınız — sipariş ve favorileriniz bu mağazaya özeldir.`
+              : `${brandTitle} mağaza hesabınız. Sipariş ve favorileriniz bu mağazaya özeldir.`
+            : `Giriş yapın veya üye olun. Aynı e-posta ile platformdaki diğer mağazalarda da giriş yapabilirsiniz; siparişleriniz her mağazada ayrı tutulur.`}
+        </p>
       </motion.div>
 
-      {!user ? (
+      {!isAuthenticated ? (
         <>
           <button
             type="button"
@@ -197,7 +198,7 @@ export function TrBoutiqueAuthPageContent({
             <p className="text-[10px] tracking-[0.2em] text-neutral-500 uppercase">
               Oturum
             </p>
-            <p className="mt-1 text-[13px] text-neutral-900">{user.email}</p>
+            <p className="mt-1 text-[13px] text-neutral-900">{user?.email}</p>
           </div>
 
           <section aria-label="Hızlı işlemler">
@@ -436,11 +437,14 @@ export function TrBoutiqueAuthPageContent({
       <AuthPopup
         isOpen={authOpen}
         onClose={() => setAuthOpen(false)}
-        onAuthSuccess={() => {
+        onAuthSuccess={async (meta) => {
+          if (meta?.isNewAccount) {
+            await recordRegistrationSource(boutique.slug);
+            return;
+          }
           setAuthOpen(false);
-          void recordRegistrationSource(boutique.slug);
         }}
-        description={`${brandTitle} hesabınıza giriş yapın veya oluşturun.`}
+        description={`${brandTitle} için giriş yapın veya üye olun. Aynı e-posta ile platformdaki diğer mağazalarda da giriş yapabilirsiniz.`}
         brand={{
           logoUrl,
           logoAlt: boutique.name,
@@ -450,6 +454,7 @@ export function TrBoutiqueAuthPageContent({
           privacyHref: trBoutiqueLegalPath(boutique.slug, "gizlilik"),
           locale: "tr",
           accent,
+          boutiqueSlug: boutique.slug,
         }}
       />
     </div>

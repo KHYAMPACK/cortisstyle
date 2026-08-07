@@ -17,6 +17,18 @@ const INTRO_BRAND_LABELS: Partial<Record<string, string>> = {
   pervinsoysalbutik: "Pervin Soysal",
 };
 
+/** Human-facing boutique label for auth/legal copy. */
+export function resolveBoutiqueBrandLabel(
+  slug: string,
+  fallbackName?: string | null,
+): string {
+  const override = INTRO_BRAND_LABELS[slug.trim().toLowerCase()];
+  if (override) return override;
+  const name = fallbackName?.trim();
+  if (name) return name;
+  return slug;
+}
+
 /** Boutiques with logo or accent get the branded shell. */
 export function hasBoutiqueBrand(boutique: TrBoutiquePublic): boolean {
   return Boolean(boutique.logoUrl?.trim() || boutique.themeAccent?.trim());

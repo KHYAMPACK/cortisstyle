@@ -73,9 +73,6 @@ export function TrOwnerEditProductPage({ productId }: TrOwnerEditProductPageProp
               ← Ürün listesine dön
             </Link>
             <h2 className={panelPageTitleClass}>Ürünü düzenle</h2>
-            <p className="mt-2 text-[16px] leading-relaxed text-neutral-600">
-              Değişiklikleri kaydetmeden önce kontrol edin.
-            </p>
           </div>
 
           <AnimatePresence mode="wait">

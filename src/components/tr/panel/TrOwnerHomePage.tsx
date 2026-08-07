@@ -12,6 +12,7 @@ import {
 } from "@/components/tr/panel/orderFulfillmentUi";
 import {
   panelEmptyClass,
+  panelErrorClass,
   panelHintClass,
   panelSectionClass,
 } from "@/components/tr/panel/panelUi";
@@ -23,16 +24,24 @@ import {
 } from "@/components/tr/panel/TrPanelMotion";
 import { useOwnerOrderAlerts } from "@/hooks/useOwnerOrderAlerts";
 import {
+  buildDemoCargoLabelHtml,
+  demoTrackingNumber,
+} from "@/lib/tr/demoCargoLabel";
+import {
   fetchOwnerSummary,
   type TrOwnerSummaryResponse,
 } from "@/lib/tr/ownerClient";
 import { PANEL_DEMO_TODAY } from "@/lib/tr/panelTheme";
+import { printHtmlDocument } from "@/lib/tr/printDocument";
 import {
   trBoutiquePath,
   trPanelOrderPath,
   trPanelOrdersPath,
 } from "@/lib/tr/paths";
-import { formatTryFromKurus } from "@/types/tr-marketplace";
+import {
+  formatTryFromKurus,
+  type TrOrderWithItems,
+} from "@/types/tr-marketplace";
 
 function greetingForHour(hour: number): string {
   if (hour < 12) return "Günaydın";
@@ -101,10 +110,27 @@ function HomeDashboard({
   const [summary, setSummary] = useState<TrOwnerSummaryResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [printError, setPrintError] = useState<string | null>(null);
   const {
     recentOrders,
     loading: ordersLoading,
   } = useOwnerOrderAlerts(boutiqueId);
+
+  const printLabel = (order: TrOrderWithItems) => {
+    setPrintError(null);
+    try {
+      printHtmlDocument(
+        buildDemoCargoLabelHtml({ order, boutiqueName }),
+        `Kargo etiketi · ${demoTrackingNumber(order.id)}`,
+      );
+    } catch (printErr) {
+      setPrintError(
+        printErr instanceof Error
+          ? printErr.message
+          : "Etiket yazdırılamadı.",
+      );
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -224,6 +250,10 @@ function HomeDashboard({
                 </Link>
               </div>
 
+              {printError ? (
+                <p className={panelErrorClass}>{printError}</p>
+              ) : null}
+
               {ordersLoading ? (
                 <TrPanelLoading label="Siparişler yükleniyor…" />
               ) : recentOrders.length === 0 ? (
@@ -238,17 +268,15 @@ function HomeDashboard({
                       (sum, item) => sum + item.quantity,
                       0,
                     );
+                    const canPrint = order.fulfillmentStatus !== "cancelled";
                     return (
                       <motion.div
                         key={order.id}
                         variants={trPanelStaggerItem}
                       >
-                        <Link
-                          href={trPanelOrderPath(order.id)}
-                          className={`${panelSectionClass} block transition-colors hover:bg-[color:var(--panel-accent-soft)]`}
-                        >
+                        <div className={`${panelSectionClass}`}>
                           <div className="flex flex-wrap items-start justify-between gap-3">
-                            <div className="min-w-0 space-y-2">
+                            <div className="min-w-0 flex-1 space-y-2">
                               <p className="text-[18px] font-semibold text-neutral-900">
                                 {order.customerName}
                               </p>
@@ -266,12 +294,31 @@ function HomeDashboard({
                               >
                                 {FULFILLMENT_LABEL[order.fulfillmentStatus]}
                               </span>
+                              <Link
+                                href={trPanelOrderPath(order.id)}
+                                className="inline-block text-[15px] font-medium text-[color:var(--panel-accent-deep)]"
+                              >
+                                Detayı aç →
+                              </Link>
                             </div>
-                            <p className="text-[20px] font-semibold tabular-nums text-neutral-950">
-                              {formatTryFromKurus(order.totalKurus)}
-                            </p>
+                            <div className="flex shrink-0 flex-col items-end gap-4 self-stretch">
+                              <p className="text-[20px] font-semibold tabular-nums text-neutral-950">
+                                {formatTryFromKurus(order.totalKurus)}
+                              </p>
+                              <button
+                                type="button"
+                                disabled={!canPrint}
+                                onClick={() => printLabel(order)}
+                                className="mt-auto inline-flex min-h-11 items-center justify-center rounded-xl px-5 py-2.5 text-[15px] font-semibold text-white disabled:opacity-50"
+                                style={{
+                                  backgroundColor: "var(--panel-accent)",
+                                }}
+                              >
+                                Yazdır
+                              </button>
+                            </div>
                           </div>
-                        </Link>
+                        </div>
                       </motion.div>
                     );
                   })}

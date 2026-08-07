@@ -16,9 +16,15 @@ const trCheckoutEnabled =
   process.env.TR_CHECKOUT_ENABLED?.trim() ||
   "false";
 
+const trVapidPublicKey =
+  process.env.NEXT_PUBLIC_TR_VAPID_PUBLIC_KEY?.trim() ||
+  process.env.TR_VAPID_PUBLIC_KEY?.trim() ||
+  "";
+
 const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_TR_CHECKOUT_ENABLED: trCheckoutEnabled,
+    NEXT_PUBLIC_TR_VAPID_PUBLIC_KEY: trVapidPublicKey,
   },
   reactCompiler: true,
   images: {
