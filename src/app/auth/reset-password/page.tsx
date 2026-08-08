@@ -1,22 +1,33 @@
 "use client";
 
+import Image from "next/image";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { BrandLogo } from "@/components/BrandLogo";
 import { SiteFooter } from "@/components/SiteFooter";
 import { useAuth } from "@/context/AuthContext";
+import {
+  resolveBoutiqueBrandLabel,
+  resolveBoutiqueLogoUrl,
+  resolveBoutiqueThemeAccentBySlug,
+} from "@/lib/tr/boutiqueBrand";
 
 const monoInputClass =
-  "w-full border border-jet-black bg-white px-4 py-4 text-center font-mono text-[11px] tracking-[0.12em] text-neutral-900 outline-none transition-colors placeholder:text-neutral-400 focus:border-jet-black disabled:opacity-60";
+  "w-full border border-neutral-900 bg-white px-4 py-4 text-center font-mono text-[11px] tracking-[0.12em] text-neutral-900 outline-none transition-colors placeholder:text-neutral-400 focus:border-neutral-900 disabled:opacity-60";
 
 const primaryButtonClass =
-  "mt-6 w-full border border-jet-black bg-jet-black px-5 py-4 text-center font-mono text-[10px] tracking-[0.32em] text-white uppercase transition-opacity hover:opacity-90 disabled:opacity-60";
+  "mt-6 w-full border border-neutral-900 bg-neutral-900 px-5 py-4 text-center font-mono text-[10px] tracking-[0.32em] text-white uppercase transition-opacity hover:opacity-90 disabled:opacity-60";
 
 function safeNextPath(raw: string | null): string {
   if (!raw || !raw.startsWith("/") || raw.startsWith("//")) {
     return "/wardrobe";
   }
   return raw;
+}
+
+function boutiqueSlugFromNext(path: string): string | null {
+  const match = path.match(/^\/tr\/([^/]+)\/giris\/?$/i);
+  return match?.[1] ? decodeURIComponent(match[1]).toLowerCase() : null;
 }
 
 function isBoutiqueReturnPath(path: string): boolean {
@@ -31,10 +42,25 @@ export default function ResetPasswordPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const returnTo = safeNextPath(searchParams.get("next"));
+  const boutiqueSlug = useMemo(() => {
+    const fromQuery = searchParams.get("boutique")?.trim().toLowerCase();
+    if (fromQuery) return fromQuery;
+    return boutiqueSlugFromNext(returnTo);
+  }, [searchParams, returnTo]);
   const boutiqueFlow = useMemo(
-    () => isBoutiqueReturnPath(returnTo),
-    [returnTo],
+    () => Boolean(boutiqueSlug) || isBoutiqueReturnPath(returnTo),
+    [boutiqueSlug, returnTo],
   );
+  const brandTitle = boutiqueSlug
+    ? resolveBoutiqueBrandLabel(boutiqueSlug)
+    : null;
+  const logoUrl = boutiqueSlug
+    ? resolveBoutiqueLogoUrl({ slug: boutiqueSlug, logoUrl: null })
+    : null;
+  const accentColor = boutiqueSlug
+    ? resolveBoutiqueThemeAccentBySlug(boutiqueSlug)
+    : null;
+
   const {
     isAuthenticated,
     isInitializing,
@@ -73,8 +99,8 @@ export default function ResetPasswordPage() {
 
   if (isInitializing) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-ice-floor px-4">
-        <p className="text-meta font-mono text-[10px] tracking-[0.35em] uppercase">
+      <div className="flex min-h-screen items-center justify-center bg-[#FAFAF8] px-4">
+        <p className="text-center font-mono text-[10px] tracking-[0.35em] text-neutral-500 uppercase">
           {boutiqueFlow ? "Oturum hazırlanıyor…" : "Loading archive session..."}
         </p>
       </div>
@@ -83,8 +109,18 @@ export default function ResetPasswordPage() {
 
   if (!isAuthenticated) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-ice-floor px-4">
-        <div className="w-full max-w-md border border-blueprint-border bg-white p-8 text-center shadow-2xl">
+      <div className="flex min-h-screen items-center justify-center bg-[#FAFAF8] px-4">
+        <div className="w-full max-w-md border border-black/10 bg-white p-8 text-center shadow-sm">
+          {logoUrl ? (
+            <Image
+              src={logoUrl}
+              alt={brandTitle ?? ""}
+              width={120}
+              height={120}
+              className="mx-auto mb-5 h-16 w-auto object-contain"
+              unoptimized
+            />
+          ) : null}
           <h1 className="font-serif text-2xl text-neutral-950">
             {boutiqueFlow ? "Bağlantı süresi doldu" : "Link expired"}
           </h1>
@@ -97,6 +133,11 @@ export default function ResetPasswordPage() {
             type="button"
             onClick={() => router.push(boutiqueFlow ? returnTo : "/")}
             className={`${primaryButtonClass} mt-8`}
+            style={
+              accentColor
+                ? { backgroundColor: accentColor, borderColor: accentColor }
+                : undefined
+            }
           >
             {boutiqueFlow ? "Girişe dön" : "Back to lookbook"}
           </button>
@@ -106,14 +147,33 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-ice-floor">
+    <div className="flex min-h-screen flex-col bg-[#FAFAF8]">
       <div className="flex flex-1 items-center justify-center px-4 py-10">
-        <div className="w-full max-w-md border border-blueprint-border bg-white p-8 shadow-2xl md:p-10">
-          <div className="mb-6 flex justify-center">
-            <BrandLogo variant="onLight" className="h-20 w-auto" />
+        <div className="w-full max-w-md border border-black/10 bg-white p-8 shadow-sm md:p-10">
+          <div className="mb-6 flex flex-col items-center">
+            {boutiqueFlow && logoUrl ? (
+              <>
+                <Image
+                  src={logoUrl}
+                  alt={brandTitle ?? ""}
+                  width={160}
+                  height={160}
+                  className="h-20 w-auto object-contain"
+                  unoptimized
+                  priority
+                />
+                {brandTitle ? (
+                  <p className="mt-4 font-serif text-[1.35rem] tracking-[0.04em] text-neutral-950">
+                    {brandTitle}
+                  </p>
+                ) : null}
+              </>
+            ) : (
+              <BrandLogo variant="onLight" className="h-20 w-auto" />
+            )}
           </div>
 
-          <p className="text-meta mb-3 text-center text-[9px] tracking-[0.4em] uppercase">
+          <p className="mb-3 text-center text-[9px] tracking-[0.4em] text-neutral-500 uppercase">
             {boutiqueFlow ? "Hesap güvenliği" : "Archive Security"}
           </p>
 
@@ -130,10 +190,10 @@ export default function ResetPasswordPage() {
           <p className="mt-4 text-center text-sm leading-relaxed text-neutral-600">
             {isComplete
               ? boutiqueFlow
-                ? "Mağaza girişine yönlendiriliyorsunuz…"
+                ? `${brandTitle ?? "Mağaza"} girişine yönlendiriliyorsunuz…`
                 : "Redirecting you to your wardrobe archive..."
               : boutiqueFlow
-                ? "Butik hesabınız için yeni bir şifre seçin."
+                ? "Yeni şifreniz bu platformdaki tüm mağazalarda geçerlidir."
                 : "Choose a new curator password for your archive profile."}
           </p>
 
@@ -188,6 +248,11 @@ export default function ResetPasswordPage() {
                   password !== confirmPassword
                 }
                 className={primaryButtonClass}
+                style={
+                  accentColor
+                    ? { backgroundColor: accentColor, borderColor: accentColor }
+                    : undefined
+                }
               >
                 {isAuthenticating
                   ? boutiqueFlow
@@ -201,7 +266,13 @@ export default function ResetPasswordPage() {
           ) : null}
         </div>
       </div>
-      <SiteFooter />
+      {boutiqueFlow ? (
+        <p className="pb-8 text-center text-[11px] tracking-[0.08em] text-neutral-400">
+          {brandTitle ?? "Butik"}
+        </p>
+      ) : (
+        <SiteFooter />
+      )}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { WARDROBE_APP_PATH } from "@/lib/wardrobeGate";
 import {
+  getBoutiqueDomainMap,
   normalizeBoutiqueHost,
   resolveBoutiqueSlugFromHost,
 } from "@/lib/tr/customDomain";
@@ -19,12 +20,14 @@ export function getSiteUrl(): string {
 }
 
 /**
- * Prefer a boutique custom-domain origin when the host maps to `boutiqueSlug`.
- * Falls back to platform site URL (session lands on cortisstyle).
+ * Prefer a boutique custom-domain origin when the host maps to `boutiqueSlug`,
+ * or when the boutique has a known custom domain. Falls back to platform site URL.
  */
 export function resolveAuthRedirectOrigin(options?: {
   boutiqueSlug?: string | null;
   requestOrigin?: string | null;
+  /** DB / seed custom domain host (e.g. lilaboutiquedenizli.com). */
+  customDomain?: string | null;
 }): string {
   const slug = options?.boutiqueSlug?.trim().toLowerCase() || null;
   const originRaw = options?.requestOrigin?.trim() || "";
@@ -42,7 +45,26 @@ export function resolveAuthRedirectOrigin(options?: {
     }
   }
 
+  if (slug) {
+    const fromRecord = normalizePublicHost(options?.customDomain);
+    if (fromRecord && resolveBoutiqueSlugFromHost(fromRecord) === slug) {
+      return `https://${fromRecord}`;
+    }
+    const fromMap = Object.entries(getBoutiqueDomainMap()).find(
+      ([, mappedSlug]) => mappedSlug === slug,
+    )?.[0];
+    if (fromMap) {
+      return `https://${normalizeBoutiqueHost(fromMap)}`;
+    }
+  }
+
   return getSiteUrl();
+}
+
+function normalizePublicHost(raw?: string | null): string | null {
+  const value = raw?.trim().toLowerCase();
+  if (!value) return null;
+  return value.replace(/^https?:\/\//, "").replace(/\/$/, "").replace(/:\d+$/, "");
 }
 
 /** Supabase magic-link return URL — validates session then routes to wardrobe. */
@@ -77,9 +99,17 @@ export function buildPasswordResetCallbackUrl(options: {
   tokenHash: string;
   nextPath?: string;
   siteOrigin?: string;
+  boutiqueSlug?: string | null;
 }): string {
   const afterReset = options.nextPath?.trim() || "/wardrobe";
-  const resetPath = `/auth/reset-password?next=${encodeURIComponent(afterReset)}`;
+  const resetParams = new URLSearchParams({
+    next: afterReset,
+  });
+  const boutiqueSlug = options.boutiqueSlug?.trim().toLowerCase();
+  if (boutiqueSlug) {
+    resetParams.set("boutique", boutiqueSlug);
+  }
+  const resetPath = `/auth/reset-password?${resetParams.toString()}`;
   const origin = (options.siteOrigin?.trim() || getSiteUrl()).replace(/\/$/, "");
   const params = new URLSearchParams({
     token_hash: options.tokenHash,

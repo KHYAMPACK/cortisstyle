@@ -24,7 +24,9 @@ Middleware does **not** enforce general login — it handles maintenance, geo, s
 
 ### Boutique password reset
 
-Branded reset (`/api/tr/customer/auth/send-password-reset`) uses `admin.generateLink` then emails a **`token_hash` callback** (`buildPasswordResetCallbackUrl` → `/auth/callback?token_hash=…&type=recovery&next=…`). Do **not** email Supabase `action_link` for this path — it is implicit/non-PKCE and often never establishes a session in `AuthCallbackHandler`. Callback verifies via `verifyOtp`, then routes to `/auth/reset-password`.
+Branded reset (`/api/tr/customer/auth/send-password-reset`) uses `admin.generateLink` then emails a **`token_hash` callback** (`buildPasswordResetCallbackUrl` → `/auth/callback?token_hash=…&type=recovery&next=…`). Do **not** email Supabase `action_link` for this path — it is implicit/non-PKCE and often never establishes a session in `AuthCallbackHandler`. Callback verifies via `verifyOtp`, then routes to `/auth/reset-password?boutique={slug}`.
+
+**Origin:** prefer boutique custom domain (request host → DB `customDomain` → `TR_BOUTIQUE_DOMAINS` map) so reset stays white-label; platform host is fallback with `/tr/{slug}/giris` return. Password remains one platform credential (works across boutiques); only the link + UI are boutique-branded.
 
 ## Important env vars (non-exhaustive)
 

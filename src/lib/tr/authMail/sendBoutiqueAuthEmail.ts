@@ -136,8 +136,9 @@ export async function sendBoutiquePasswordReset(input: {
   const siteOrigin = resolveAuthRedirectOrigin({
     boutiqueSlug,
     requestOrigin: input.requestOrigin,
+    customDomain: boutique.customDomain,
   });
-  // On custom domain, return to short /giris; on platform, full boutique path.
+  // On boutique custom domain, return to short /giris; on platform host, full boutique path.
   const nextPath =
     siteOrigin === getSiteUrl()
       ? trBoutiqueAuthPath(boutiqueSlug)
@@ -166,6 +167,7 @@ export async function sendBoutiquePasswordReset(input: {
     tokenHash,
     nextPath,
     siteOrigin,
+    boutiqueSlug,
   });
   const content = buildPasswordResetEmail({ brand, resetUrl });
 

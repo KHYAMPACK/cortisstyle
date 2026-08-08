@@ -3,6 +3,12 @@ import type { TrBoutiquePublic } from "@/types/tr-marketplace";
 const DEFAULT_THEME_ACCENT = "#C2185B";
 const DEFAULT_BOUTIQUE_BG = "#FFFBFC";
 
+/** Known accents when DB row is not loaded (auth pages, emails). */
+const THEME_ACCENT_OVERRIDES: Partial<Record<string, string>> = {
+  lilabutik: "#9B7EBD",
+  pervinsoysalbutik: "#C2185B",
+};
+
 /** Known storefront logo overrides (e.g. after recreating assets before DB re-seed). */
 const LOGO_OVERRIDES: Partial<Record<string, string>> = {
   pervinsoysalbutik: "/tr/boutiques/pervinsoysalbutik/logo.png",
@@ -80,7 +86,15 @@ export function hasBoutiqueBrand(boutique: TrBoutiquePublic): boolean {
 }
 
 export function resolveBoutiqueThemeAccent(boutique: TrBoutiquePublic): string {
-  return boutique.themeAccent?.trim() || DEFAULT_THEME_ACCENT;
+  return (
+    boutique.themeAccent?.trim() ||
+    THEME_ACCENT_OVERRIDES[boutique.slug] ||
+    DEFAULT_THEME_ACCENT
+  );
+}
+
+export function resolveBoutiqueThemeAccentBySlug(slug: string): string {
+  return THEME_ACCENT_OVERRIDES[slug.trim().toLowerCase()] || DEFAULT_THEME_ACCENT;
 }
 
 export function resolveBoutiqueBackground(): string {
