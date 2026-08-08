@@ -6,6 +6,8 @@ import { TrMarketplaceChrome } from "@/components/tr/TrMarketplaceChrome";
 import {
   hasBoutiqueBrand,
   resolveBoutiqueBrandLabel,
+  resolveBoutiqueDocumentDescription,
+  resolveBoutiqueDocumentTitle,
   resolveBoutiqueFaviconUrl,
 } from "@/lib/tr/boutiqueBrand";
 import { resolveBoutiqueHomeLayout } from "@/lib/tr/boutiqueHome";
@@ -57,15 +59,24 @@ export async function generateMetadata({
 
   const favicon = resolveBoutiqueFaviconUrl(boutique);
   const brandTitle = resolveBoutiqueBrandLabel(boutique.slug, boutique.name);
+  const documentTitle = resolveBoutiqueDocumentTitle(
+    boutique.slug,
+    boutique.name,
+  );
+  const documentDescription = resolveBoutiqueDocumentDescription(
+    boutique.slug,
+    boutique.description,
+    boutique.name,
+  );
 
   return {
+    // `absolute` + local template so parent `/tr` “— Cortisstyle” does not leak onto white-label boutiques.
     title: {
-      default: brandTitle,
+      absolute: documentTitle,
+      default: documentTitle,
       template: `%s · ${brandTitle}`,
     },
-    description:
-      boutique.description ??
-      `${brandTitle} — online butik ürün kataloğu.`,
+    description: documentDescription,
     icons: favicon
       ? {
           icon: [{ url: favicon, type: "image/png" }],

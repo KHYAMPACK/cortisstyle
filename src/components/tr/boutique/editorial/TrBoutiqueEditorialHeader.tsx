@@ -218,6 +218,8 @@ export function TrBoutiqueEditorialHeader({
   const favCount = favorites.hydrated ? favorites.itemCount : 0;
   const productsPath = trBoutiqueProductsPath(boutique.slug);
   const onProductsPage = pathname.includes("/urunler");
+  const hideCategoryNav =
+    atelier && /\/(giris|sepet|favoriler)(\/|$)/.test(pathname);
   const brandTitle = resolveBoutiqueBrandLabel(boutique.slug, boutique.name);
   const openMegaItem =
     atelier && megaId
@@ -241,6 +243,10 @@ export function TrBoutiqueEditorialHeader({
       document.body.style.overflow = prev;
     };
   }, [menuOpen]);
+
+  useEffect(() => {
+    if (hideCategoryNav) setMegaId(null);
+  }, [hideCategoryNav]);
 
   useEffect(() => {
     if (!megaId) return;
@@ -540,6 +546,7 @@ export function TrBoutiqueEditorialHeader({
         )}
       </div>
 
+      {!hideCategoryNav ? (
       <div
         className={
           atelier
@@ -669,6 +676,7 @@ export function TrBoutiqueEditorialHeader({
           ) : null}
         </AnimatePresence>
       </div>
+      ) : null}
 
       {menu}
     </header>

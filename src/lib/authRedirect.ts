@@ -68,6 +68,38 @@ export function getPasswordResetRedirectUrl(options?: {
   return `${origin}/auth/callback?next=${resetNext}`;
 }
 
+/**
+ * Branded recovery email href using `token_hash` + client `verifyOtp`.
+ * Prefer this over Supabase `action_link` — admin generateLink is not PKCE-compatible,
+ * so hash redirects often never create a session in the App Router callback.
+ */
+export function buildPasswordResetCallbackUrl(options: {
+  tokenHash: string;
+  nextPath?: string;
+  siteOrigin?: string;
+}): string {
+  const afterReset = options.nextPath?.trim() || "/wardrobe";
+  const resetPath = `/auth/reset-password?next=${encodeURIComponent(afterReset)}`;
+  const origin = (options.siteOrigin?.trim() || getSiteUrl()).replace(/\/$/, "");
+  const params = new URLSearchParams({
+    token_hash: options.tokenHash,
+    type: "recovery",
+    next: resetPath,
+  });
+  return `${origin}/auth/callback?${params.toString()}`;
+}
+
+/** Soft-sanitize post-auth next paths (same-origin relative only). */
+export function safeAuthNextPath(
+  raw: string | null | undefined,
+  fallback = "/wardrobe",
+): string {
+  if (!raw) return fallback;
+  const path = raw.trim();
+  if (!path.startsWith("/") || path.startsWith("//")) return fallback;
+  return path;
+}
+
 export function isAuthCallbackPath(pathname: string): boolean {
   return pathname === "/auth/callback" || pathname.startsWith("/auth/callback/");
 }

@@ -1,4 +1,5 @@
 import {
+  buildPasswordResetCallbackUrl,
   getPasswordResetRedirectUrl,
   getSiteUrl,
   resolveAuthRedirectOrigin,
@@ -153,13 +154,19 @@ export async function sendBoutiquePasswordReset(input: {
   });
 
   // Always return ok for unknown emails (avoid account enumeration).
-  if (error || !data.properties?.action_link) {
+  const tokenHash = data?.properties?.hashed_token?.trim();
+  if (error || !tokenHash) {
     console.error("Boutique password reset generateLink:", error?.message);
     return { ok: true };
   }
 
-  // Prefer action_link as returned; ensure redirect_to is our boutique callback when possible.
-  const resetUrl = data.properties.action_link;
+  // Own callback URL with token_hash — do not email action_link (implicit/hash flow
+  // breaks under the browser client's PKCE session handling).
+  const resetUrl = buildPasswordResetCallbackUrl({
+    tokenHash,
+    nextPath,
+    siteOrigin,
+  });
   const content = buildPasswordResetEmail({ brand, resetUrl });
 
   try {

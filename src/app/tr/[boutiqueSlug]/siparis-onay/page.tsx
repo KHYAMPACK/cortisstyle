@@ -27,7 +27,7 @@ export async function generateMetadata({
   const boutique = await safeGetPublicBoutique(boutiqueSlug);
   if (!boutique) return { title: "Sipariş onayı" };
   return {
-    title: `Sipariş onayı — ${boutique.name}`,
+    title: "Sipariş onayı",
   };
 }
 

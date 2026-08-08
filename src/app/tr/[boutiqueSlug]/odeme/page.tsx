@@ -15,7 +15,7 @@ export async function generateMetadata({
   const boutique = await safeGetPublicBoutique(boutiqueSlug);
   if (!boutique) return { title: "Ödeme" };
   return {
-    title: `Ödeme — ${boutique.name}`,
+    title: "Ödeme",
     description: `${boutique.name} sipariş ödeme sayfası.`,
   };
 }

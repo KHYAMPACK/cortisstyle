@@ -13,7 +13,7 @@
 | Shell hook | `data-editorial-skin` on `TrBoutiqueEditorialShell` |
 | Accent | `#9B7EBD` (`themeAccent` in seed / DB) |
 | Seed | `src/data/tr/lilabutik-seed.json` · `scripts/seed-lilabutik.md` |
-| Logo | `public/tr/boutiques/lilabutik/logo.png` (black) · `logo-white.png` (campaigns) |
+| Logo | `logo.png` (black) · `logo-white.png` (campaigns) · `favicon.png` (white-bg tab icon) |
 
 ```text
 editorial shell (shared)

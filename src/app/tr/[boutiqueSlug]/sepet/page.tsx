@@ -21,7 +21,7 @@ export async function generateMetadata({
   }
 
   return {
-    title: `Sepet — ${storefront.name}`,
+    title: "Sepet",
     description: `${storefront.name} sepetiniz.`,
   };
 }

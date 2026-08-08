@@ -20,7 +20,7 @@ export async function generateMetadata({
   }
 
   return {
-    title: `Favoriler — ${storefront.name}`,
+    title: "Favoriler",
     description: `${storefront.name} favorileriniz.`,
   };
 }

@@ -22,6 +22,10 @@
 
 Middleware does **not** enforce general login — it handles maintenance, geo, studio SPA, custom domain rewrite (`src/middleware.ts`).
 
+### Boutique password reset
+
+Branded reset (`/api/tr/customer/auth/send-password-reset`) uses `admin.generateLink` then emails a **`token_hash` callback** (`buildPasswordResetCallbackUrl` → `/auth/callback?token_hash=…&type=recovery&next=…`). Do **not** email Supabase `action_link` for this path — it is implicit/non-PKCE and often never establishes a session in `AuthCallbackHandler`. Callback verifies via `verifyOtp`, then routes to `/auth/reset-password`.
+
 ## Important env vars (non-exhaustive)
 
 | Var | Area |

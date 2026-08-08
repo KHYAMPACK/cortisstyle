@@ -10,6 +10,8 @@ import { TrProductCard } from "@/components/tr/TrProductCard";
 import { TrSectionHeader } from "@/components/tr/TrSectionHeader";
 import {
   hasBoutiqueBrand,
+  resolveBoutiqueDocumentDescription,
+  resolveBoutiqueDocumentTitle,
   resolveBoutiqueThemeAccent,
 } from "@/lib/tr/boutiqueBrand";
 import { resolveBoutiqueHomeLayout } from "@/lib/tr/boutiqueHome";
@@ -35,11 +37,20 @@ export async function generateMetadata({
     return { title: "Butik bulunamadı" };
   }
 
+  const documentTitle = resolveBoutiqueDocumentTitle(
+    storefront.slug,
+    storefront.name,
+  );
+
   return {
-    title: storefront.name,
-    description:
-      storefront.description ??
-      `${storefront.name} — bağımsız butik ürün kataloğu.`,
+    title: {
+      absolute: documentTitle,
+    },
+    description: resolveBoutiqueDocumentDescription(
+      storefront.slug,
+      storefront.description,
+      storefront.name,
+    ),
   };
 }
 

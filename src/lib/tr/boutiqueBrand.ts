@@ -17,11 +17,25 @@ const LOGO_ON_DARK_OVERRIDES: Partial<Record<string, string>> = {
 /** High-contrast favicons (tab icons) — prefer readable marks over dark-on-dark logos. */
 const FAVICON_OVERRIDES: Partial<Record<string, string>> = {
   pervinsoysalbutik: "/tr/boutiques/pervinsoysalbutik/logo-accent.png",
+  lilabutik: "/tr/boutiques/lilabutik/favicon.png?v=1",
 };
 
 const INTRO_BRAND_LABELS: Partial<Record<string, string>> = {
   pervinsoysalbutik: "Pervin Soysal",
   lilabutik: "Lila Boutique",
+};
+
+/** Browser / SEO document titles (home). Keep UI labels shorter via `resolveBoutiqueBrandLabel`. */
+const DOCUMENT_TITLES: Partial<Record<string, string>> = {
+  lilabutik: "Lila Boutique | Shop Women's Clothing",
+  pervinsoysalbutik: "Pervin Soysal | Shop Women's Fashion",
+};
+
+const DOCUMENT_DESCRIPTIONS: Partial<Record<string, string>> = {
+  lilabutik:
+    "Shop women's clothing at Lila Boutique — dresses, tops, bags and accessories. Online boutique from Denizli.",
+  pervinsoysalbutik:
+    "Shop women's fashion at Pervin Soysal Butik — dresses, tops and seasonal pieces with shipping across Turkey.",
 };
 
 /** Human-facing boutique label for auth/legal copy. */
@@ -34,6 +48,30 @@ export function resolveBoutiqueBrandLabel(
   const name = fallbackName?.trim();
   if (name) return name;
   return slug;
+}
+
+/** Full SEO title for the boutique home / default document title. */
+export function resolveBoutiqueDocumentTitle(
+  slug: string,
+  fallbackName?: string | null,
+): string {
+  const key = slug.trim().toLowerCase();
+  return DOCUMENT_TITLES[key] ?? resolveBoutiqueBrandLabel(slug, fallbackName);
+}
+
+/** SEO meta description for boutique storefronts. */
+export function resolveBoutiqueDocumentDescription(
+  slug: string,
+  fallbackDescription?: string | null,
+  fallbackName?: string | null,
+): string {
+  const key = slug.trim().toLowerCase();
+  const override = DOCUMENT_DESCRIPTIONS[key];
+  if (override) return override;
+  const fromBoutique = fallbackDescription?.trim();
+  if (fromBoutique) return fromBoutique;
+  const brand = resolveBoutiqueBrandLabel(slug, fallbackName);
+  return `${brand} — shop women's clothing online.`;
 }
 
 /** Boutiques with logo or accent get the branded shell. */
