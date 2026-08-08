@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500;1,600&family=Inter:wght@400;500;600;700;800;900&display=swap");
 @import "tailwindcss";
 
 :root {
@@ -220,6 +220,16 @@ html.intro-loading-boutique body {
     .editorial-promo-cta {
       animation: none;
     }
+  }
+
+  /* Cecilie-structure calm skin (Lila atelier) — presentation only */
+  [data-editorial-skin="atelier"] .editorial-promo-cta {
+    animation: none;
+  }
+
+  [data-editorial-skin="atelier"] .editorial-sale-badge,
+  [data-editorial-skin="atelier"] .editorial-sale-text {
+    animation: none;
   }
 
   /* Boutique route skeletons */

@@ -117,3 +117,54 @@ export async function getDiscountCodeByIdAdmin(
 
   return mapDiscountCodeRow(data as Record<string, unknown>);
 }
+
+export async function getDiscountCodeForBoutiqueAdmin(
+  boutiqueId: string,
+  code: string,
+): Promise<TrDiscountCode | null> {
+  const supabase = getServiceSupabase();
+  if (!supabase) {
+    throw new Error("Supabase service role is not configured.");
+  }
+
+  const normalized = code.trim().toUpperCase();
+  if (!normalized) return null;
+
+  const { data, error } = await supabase
+    .from("tr_discount_codes")
+    .select("*")
+    .eq("boutique_id", boutiqueId)
+    .eq("code", normalized)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) return null;
+
+  return mapDiscountCodeRow(data as Record<string, unknown>);
+}
+
+export async function incrementDiscountCodeUsageAdmin(
+  id: string,
+): Promise<boolean> {
+  const supabase = getServiceSupabase();
+  if (!supabase) {
+    throw new Error("Supabase service role is not configured.");
+  }
+
+  const existing = await getDiscountCodeByIdAdmin(id);
+  if (!existing) return false;
+
+  let query = supabase
+    .from("tr_discount_codes")
+    .update({ used_count: existing.usedCount + 1 })
+    .eq("id", id)
+    .eq("used_count", existing.usedCount);
+
+  if (existing.usageLimit != null) {
+    query = query.lt("used_count", existing.usageLimit);
+  }
+
+  const { data, error } = await query.select("id").maybeSingle();
+  if (error) throw error;
+  return Boolean(data);
+}

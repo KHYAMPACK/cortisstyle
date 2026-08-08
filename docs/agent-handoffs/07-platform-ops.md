@@ -29,7 +29,10 @@ Middleware does **not** enforce general login — it handles maintenance, geo, s
 | `NEXT_PUBLIC_SUPABASE_*`, `SUPABASE_SERVICE_ROLE_KEY` | DB/auth |
 | `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_STUDIO_URL` | Origins |
 | `STUDIO_CURATOR_EMAILS` | Studio access |
-| `TR_CHECKOUT_ENABLED` / `NEXT_PUBLIC_TR_CHECKOUT_ENABLED` | Real vs WhatsApp/sandbox checkout (`next.config` mirrors private → public for Client SSR) |
+| `TR_CHECKOUT_ENABLED` / `NEXT_PUBLIC_TR_CHECKOUT_ENABLED` | Cadde checkout gating (`next.config` mirrors private → public) |
+| `TR_CHECKOUT_SANDBOX` / `NEXT_PUBLIC_TR_CHECKOUT_SANDBOX` | Staging sandbox orders (default off → pending) |
+| `TR_IYZICO_ENABLED` / `NEXT_PUBLIC_TR_IYZICO_ENABLED` | Hide “kart yakında” banner — only when card capture is live |
+| `TR_ORDER_CONFIRM_SECRET` | HMAC for sipariş-onay links (required in production) |
 | `TR_VAPID_PUBLIC_KEY` / `TR_VAPID_PRIVATE_KEY` / `TR_VAPID_SUBJECT` | Owner panel Web Push (`next.config` mirrors public key → `NEXT_PUBLIC_TR_VAPID_PUBLIC_KEY`) |
 | `TR_ADMIN_SECRET` | Admin APIs |
 | `TR_BOUTIQUE_DOMAINS` | Host → slug JSON for Edge |

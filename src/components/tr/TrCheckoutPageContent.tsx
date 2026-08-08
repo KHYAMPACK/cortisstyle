@@ -12,6 +12,10 @@ import {
   loadSavedCheckoutProfile,
   saveCheckoutProfile,
 } from "@/lib/tr/checkoutProfile";
+import {
+  clearBoutiqueCheckoutSelection,
+  loadBoutiqueCheckoutSelection,
+} from "@/lib/tr/checkoutSelection";
 import { isTrCheckoutEnabled } from "@/lib/tr/platform";
 import {
   trBoutiqueCartPath,
@@ -24,6 +28,7 @@ import { getTrUserFirstName } from "@/lib/tr/userDisplayName";
 import { getTrBoutiqueLocalCartStore } from "@/store/trBoutiqueLocalCartStore";
 import { useTrCartStore } from "@/store/trCartStore";
 import {
+  cartLineKey,
   cartTotalKurus,
   EMPTY_CHECKOUT_FORM,
   groupCartItemsByBoutique,
@@ -41,12 +46,14 @@ type CheckoutStep = "phone" | "identity" | "address" | "review";
 
 function useCheckoutCart(boutiqueSlug: string | null): {
   items: TrCartLineItem[];
-  clearCart: () => void;
+  allItems: TrCartLineItem[];
+  clearCheckedOut: () => void;
   hydrated: boolean;
 } {
   const globalItems = useTrCartStore((state) => state.items);
   const clearGlobal = useTrCartStore((state) => state.clearCart);
   const [localItems, setLocalItems] = useState<TrCartLineItem[]>([]);
+  const [selectedKeys, setSelectedKeys] = useState<string[] | null>(null);
   const [hydrated, setHydrated] = useState(!boutiqueSlug);
 
   useEffect(() => {
@@ -56,7 +63,10 @@ function useCheckoutCart(boutiqueSlug: string | null): {
     }
 
     const store = getTrBoutiqueLocalCartStore(boutiqueSlug);
-    const sync = () => setLocalItems(store.getState().items);
+    const sync = () => {
+      setLocalItems(store.getState().items);
+      setSelectedKeys(loadBoutiqueCheckoutSelection(boutiqueSlug));
+    };
     sync();
 
     const unsub = store.subscribe(sync);
@@ -75,15 +85,39 @@ function useCheckoutCart(boutiqueSlug: string | null): {
   }, [boutiqueSlug]);
 
   if (boutiqueSlug) {
+    const selected =
+      selectedKeys && selectedKeys.length > 0
+        ? localItems.filter((item) =>
+            selectedKeys.includes(cartLineKey(item)),
+          )
+        : localItems;
     return {
-      items: localItems,
-      clearCart: () =>
-        getTrBoutiqueLocalCartStore(boutiqueSlug).getState().clearCart(),
+      items: selected.length > 0 ? selected : localItems,
+      allItems: localItems,
+      clearCheckedOut: () => {
+        const store = getTrBoutiqueLocalCartStore(boutiqueSlug);
+        const keys = new Set(
+          (selected.length > 0 ? selected : localItems).map((item) =>
+            cartLineKey(item),
+          ),
+        );
+        for (const item of store.getState().items) {
+          if (keys.has(cartLineKey(item))) {
+            store.getState().removeItem(item.productId, item.size);
+          }
+        }
+        clearBoutiqueCheckoutSelection(boutiqueSlug);
+      },
       hydrated,
     };
   }
 
-  return { items: globalItems, clearCart: clearGlobal, hydrated: true };
+  return {
+    items: globalItems,
+    allItems: globalItems,
+    clearCheckedOut: clearGlobal,
+    hydrated: true,
+  };
 }
 
 function stepTitle(step: CheckoutStep): string {
@@ -102,7 +136,7 @@ function stepTitle(step: CheckoutStep): string {
 function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
   const router = useRouter();
   const { user } = useAuth();
-  const { items, clearCart, hydrated } = useCheckoutCart(boutiqueSlug);
+  const { items, clearCheckedOut, hydrated } = useCheckoutCart(boutiqueSlug);
   const [form, setForm] = useState<TrCheckoutFormData>(EMPTY_CHECKOUT_FORM);
   const [step, setStep] = useState<CheckoutStep>("phone");
   const [submitting, setSubmitting] = useState(false);
@@ -111,6 +145,7 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
   const [acceptedKvkk, setAcceptedKvkk] = useState(false);
   const [saveProfile, setSaveProfile] = useState(true);
   const [profileReady, setProfileReady] = useState(false);
+  const [discountCode, setDiscountCode] = useState("");
 
   const profileScope = boutiqueSlug?.trim() || "marketplace";
   const authEmail = user?.email?.trim() || "";
@@ -166,7 +201,7 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
   if (items.length === 0) {
     return (
       <div className="space-y-6 px-5 py-10 md:px-10">
-        <TrSandboxBanner demo={demoCart || !isTrCheckoutEnabled()} />
+        <TrSandboxBanner demo={demoCart} />
         <p className="max-w-xl text-[12px] leading-relaxed text-neutral-600">
           Ödeme için önce sepetinize ürün ekleyin.
         </p>
@@ -260,7 +295,7 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
       }
 
       if (demoCart) {
-        clearCart();
+        clearCheckedOut();
         const base = trOrderConfirmationPath(
           boutiqueSlug ? { boutique: boutiqueSlug } : undefined,
         );
@@ -287,10 +322,12 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
           items: items.map((item) => ({
             productId: item.productId,
             boutiqueId: item.boutiqueId,
-            title: item.title,
-            priceKurus: item.priceKurus,
+            size: item.size,
             quantity: 1,
           })),
+          discountCode: boutiqueSlug
+            ? discountCode.trim() || undefined
+            : undefined,
           acceptedDistanceSales: acceptedDistance,
           acceptedKvkk,
         }),
@@ -299,6 +336,8 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
       const data = (await response.json()) as {
         ok?: boolean;
         orderId?: string;
+        confirmToken?: string;
+        sandbox?: boolean;
         error?: string;
       };
 
@@ -306,12 +345,17 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
         throw new Error(data.error ?? "Sipariş oluşturulamadı.");
       }
 
-      clearCart();
+      clearCheckedOut();
       const confirm = trOrderConfirmationPath(
         boutiqueSlug ? { boutique: boutiqueSlug } : undefined,
       );
+      const token = data.confirmToken
+        ? `&token=${encodeURIComponent(data.confirmToken)}`
+        : "";
       router.push(
-        `${confirm}${confirm.includes("?") ? "&" : "?"}order=${encodeURIComponent(data.orderId)}&sandbox=1`,
+        `${confirm}${confirm.includes("?") ? "&" : "?"}order=${encodeURIComponent(data.orderId)}${
+          data.sandbox ? "&sandbox=1" : ""
+        }${token}`,
       );
     } catch (submitError) {
       setError(
@@ -330,7 +374,7 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
     <div className="px-5 py-8 md:px-10 md:py-10">
       <TrSandboxBanner
         className="mb-8"
-        demo={demoCart || !isTrCheckoutEnabled()}
+        demo={demoCart}
       />
 
       <div className="grid gap-10 lg:grid-cols-[1fr_360px] lg:items-start">
@@ -587,6 +631,19 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
                 </div>
               </dl>
 
+              {boutiqueSlug ? (
+                <label className="block space-y-2">
+                  <span className={labelClassName}>Kupon kodu (opsiyonel)</span>
+                  <input
+                    value={discountCode}
+                    onChange={(event) => setDiscountCode(event.target.value)}
+                    className={inputClassName}
+                    placeholder="Örn. YAZ10"
+                    autoComplete="off"
+                  />
+                </label>
+              ) : null}
+
               <label className="flex items-start gap-3 border border-black/5 bg-neutral-50 px-3 py-3 text-[13px]">
                 <input
                   type="checkbox"
@@ -723,10 +780,18 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
                 <ul className="mt-2 space-y-1 text-[12px] text-neutral-800">
                   {group.items.map((item) => (
                     <li
-                      key={item.productId}
+                      key={cartLineKey(item)}
                       className="flex justify-between gap-3"
                     >
-                      <span className="truncate">{item.title}</span>
+                      <span className="truncate">
+                        {item.title}
+                        {item.size ? (
+                          <span className="text-neutral-500">
+                            {" "}
+                            · {item.size}
+                          </span>
+                        ) : null}
+                      </span>
                       <span className="shrink-0 text-brand-primary">
                         {formatTryFromKurus(item.priceKurus)}
                       </span>

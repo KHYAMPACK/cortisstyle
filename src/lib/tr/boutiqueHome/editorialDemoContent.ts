@@ -13,14 +13,45 @@ export type EditorialNavItem = {
   accent?: "sale";
 };
 
-/** One slide in the auto-rotating promotion hero. */
+/** One clickable action inside a campaign-template hero (PF-style). */
+export type EditorialCampaignAction = {
+  label: string;
+  /**
+   * Where the action goes: `"sale"`, `"all"`, or a category id.
+   * Defaults to `"all"`.
+   */
+  target?: "sale" | "all" | string;
+};
+
+/**
+ * Hero campaign slide — supports classic (single CTA) and campaign template
+ * (subText → name → up to 4 actions → subText2 + bg) for owner-editable promos.
+ */
 export type EditorialHeroPromotion = {
   id: string;
   image?: string;
-  /** Small line above the discount, e.g. "Seçili ürünlerde" */
+  /** Solid/gradient fill when no image — e.g. boutique accent. */
+  backgroundColor?: string;
+  /** Large faint word behind the title (e.g. "İNDİRİM"). */
+  watermark?: string;
+  /**
+   * Template variant. `"campaign"` = PF-style stacked layout.
+   * `"brand"` = logo + name only (atelier intro slide).
+   * Default / omit = classic single-CTA hero (Pervin).
+   */
+  template?: "classic" | "campaign" | "brand";
+  /** Sub text 1 (top eyebrow). Alias: kept as promoLine for older JSON. */
   promoLine: string;
-  /** Large discount line, e.g. "%50'YE VARAN İNDİRİM" */
+  /** Campaign name (large). Alias: kept as discountLine for older JSON. */
   discountLine: string;
+  /** Optional clearer aliases — win over promoLine / discountLine when set. */
+  subText?: string;
+  campaignName?: string;
+  /** Bottom supporting lines under the action grid. */
+  subText2?: string | string[];
+  /** Up to 4 CTAs for campaign template. */
+  actions?: EditorialCampaignAction[];
+  /** Legacy single CTA when `actions` is empty. */
   cta: string;
   /**
    * Where CTA goes: `"sale"` (default), a category id, or `"all"` for full PLP.
@@ -77,6 +108,51 @@ export type EditorialDemoContent = {
     label: string;
     icon: "secure" | "customers" | "shipping" | "payment";
   }>;
+  /**
+   * Atelier / PF-style home blocks (optional). Classic Pervin home ignores these.
+   */
+  shopByCategoryTitle?: string;
+  /** Flat category row; falls back to featuredPair + categoryTiles when omitted. */
+  shopCategories?: Array<{
+    categoryId: string;
+    label: string;
+    image?: string;
+  }>;
+  infoStrip?: Array<{
+    id: string;
+    title: string;
+    body: string;
+    icon?: "fit" | "returns" | "shipping" | "exchange" | "secure" | "payment";
+  }>;
+  trends?: {
+    title: string;
+    items: Array<{
+      id: string;
+      title: string;
+      cta: string;
+      target?: "sale" | "all" | string;
+      image?: string;
+    }>;
+  };
+  midCampaign?: {
+    eyebrow: string;
+    title: string;
+    cta: string;
+    target?: "sale" | "all" | string;
+    image?: string;
+  };
+  join?: {
+    eyebrow: string;
+    title: string;
+    body: string;
+    primaryCta: string;
+    secondaryCta?: string;
+    benefits: Array<{
+      id: string;
+      label: string;
+      icon?: "points" | "early" | "promo" | "shipping" | "support" | "heart";
+    }>;
+  };
   footer: {
     newsletterTitle: string;
     newsletterBody: string;

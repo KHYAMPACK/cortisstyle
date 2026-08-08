@@ -183,6 +183,12 @@ export function mapOrderRow(row: Record<string, unknown>): TrOrder {
     customerPhone: (row.customer_phone as string | null) ?? null,
     shippingAddress: readShippingAddress(row.shipping_address),
     totalKurus: row.total_kurus as number,
+    discountCode:
+      typeof row.discount_code === "string" && row.discount_code.trim()
+        ? (row.discount_code as string)
+        : null,
+    discountKurus:
+      typeof row.discount_kurus === "number" ? (row.discount_kurus as number) : 0,
     paymentStatus: row.payment_status as TrOrder["paymentStatus"],
     fulfillmentStatus: readFulfillmentStatus(row.fulfillment_status),
     isSandbox: Boolean(row.is_sandbox),
@@ -215,6 +221,7 @@ export function mapDiscountCodeRow(row: Record<string, unknown>): TrDiscountCode
 
 export function mapOrderItemRow(row: Record<string, unknown>): TrOrderItem {
   const productIdRaw = row.product_id;
+  const sizeRaw = row.size;
   return {
     id: row.id as string,
     orderId: row.order_id as string,
@@ -226,6 +233,8 @@ export function mapOrderItemRow(row: Record<string, unknown>): TrOrderItem {
     title: row.title as string,
     priceKurus: row.price_kurus as number,
     quantity: (row.quantity as number) ?? 1,
+    size:
+      typeof sizeRaw === "string" && sizeRaw.trim() ? sizeRaw.trim() : null,
     createdAt: row.created_at as string,
     imageUrl: null,
   };

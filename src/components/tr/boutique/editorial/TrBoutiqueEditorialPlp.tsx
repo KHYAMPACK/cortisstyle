@@ -4,7 +4,9 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Search } from "lucide-react";
+import { TrBoutiqueAtelierPlp } from "@/components/tr/boutique/editorial/TrBoutiqueAtelierPlp";
 import { TrBoutiqueEditorialProductCard } from "@/components/tr/boutique/editorial/TrBoutiqueEditorialProductCard";
+import { isAtelierEditorialSkin } from "@/lib/tr/boutiqueHome";
 import { getTrCategoryLabel } from "@/lib/tr/categories";
 import { trBoutiquePath, trBoutiqueProductsPath } from "@/lib/tr/paths";
 import { resolveProductColors } from "@/lib/tr/productOptions";
@@ -31,6 +33,19 @@ function isOnSale(product: TrProduct): boolean {
 }
 
 export function TrBoutiqueEditorialPlp({
+  boutique,
+  products,
+}: TrBoutiqueEditorialPlpProps) {
+  if (isAtelierEditorialSkin(boutique.slug)) {
+    return <TrBoutiqueAtelierPlp boutique={boutique} products={products} />;
+  }
+
+  return (
+    <TrBoutiqueClassicEditorialPlp boutique={boutique} products={products} />
+  );
+}
+
+function TrBoutiqueClassicEditorialPlp({
   boutique,
   products,
 }: TrBoutiqueEditorialPlpProps) {

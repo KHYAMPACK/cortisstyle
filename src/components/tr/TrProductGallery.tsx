@@ -60,7 +60,7 @@ export function TrProductGallery({ product }: TrProductGalleryProps) {
 
   const thumbs = multi ? (
     <div
-      className="hidden shrink-0 flex-col justify-start gap-2 self-stretch py-1 md:flex"
+      className="flex shrink-0 flex-row gap-2 overflow-x-auto self-start py-0 md:flex-col md:justify-start md:overflow-visible md:py-1"
       role="tablist"
       aria-label="Görsel seç"
     >
@@ -75,7 +75,7 @@ export function TrProductGallery({ product }: TrProductGalleryProps) {
             aria-selected={selected}
             aria-label={`Görsel ${index + 1}`}
             onClick={() => setActiveIndex(index)}
-            className={`relative h-16 w-12 overflow-hidden bg-[#f3f1ec] transition-opacity ${
+            className={`relative h-14 w-11 shrink-0 overflow-hidden bg-[#f3f1ec] transition-opacity md:h-16 md:w-12 ${
               selected
                 ? "opacity-100 ring-1 ring-neutral-900"
                 : "opacity-70 hover:opacity-100"
@@ -96,10 +96,10 @@ export function TrProductGallery({ product }: TrProductGalleryProps) {
   ) : null;
 
   return (
-    <div className="flex items-start gap-3 md:gap-4">
+    <div className="flex flex-col gap-3 md:flex-row md:items-start md:gap-4">
       {thumbs}
 
-      <div className="relative min-w-0 flex-1 aspect-[2/3] overflow-hidden bg-[#f3f1ec]">
+      <div className="relative aspect-[2/3] min-w-0 flex-1 overflow-hidden bg-[#f3f1ec]">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeImage}

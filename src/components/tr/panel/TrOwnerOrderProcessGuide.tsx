@@ -11,26 +11,25 @@ const STORAGE_KEY = "tr-panel-orders-process-open";
 
 const STEPS: Array<{ title: string; body: string }> = [
   {
-    title: "1. Müşteri satın alır",
-    body: "Ödeme tamamlanınca sipariş bu listede görünür. Müşteri adı, adres ve ürünler buradadır.",
+    title: "1. Sipariş düşer",
+    body: "Müşteri checkout tamamlayınca sipariş bu listede görünür. Kart (iyzico) açılana kadar durum “Ödeme bekleniyor” olabilir — tahsilatı onaylayınca “Ödendi” işaretleyin.",
   },
   {
     title: "2. Paketleyin",
-    body: "Ürünleri kutuya koyun. Fatura arka planda otomatik kesilir — sizin ekstra bir işleminiz yok.",
+    body: "Ödeme onayından sonra ürünleri kontrol edip paketleyin. e-Fatura GİB entegrasyonu gelene kadar faturayı kendi sürecinizle kesin.",
   },
   {
-    title: "3. Kargo etiketini yazdırın",
-    body: "Sipariş detayında “Kargo etiketi yazdır”a basın. Etiketi paketin üstüne yapıştırın.",
+    title: "3. Kargoya verin",
+    body: "Kargo firmanız bağlanınca etiket buradan basılacak. Şimdilik kendi kargo panelinizden gönderi oluşturun.",
   },
   {
-    title: "4. Kurye adresten alır",
-    body: "Paketi çıkış adresinizde bırakın; kurye gelir alır. Şubeye gitmeniz gerekmez. Sonra durumu “Kargoda” yapın.",
+    title: "4. Durumu güncelleyin",
+    body: "Gönderiyi oluşturduktan sonra siparişi “Kargoda”, teslimde “Teslim” yapın. İptalde stok otomatik geri gelir.",
   },
 ];
 
 /**
  * Collapsible “how orders work” primer for boutique owners.
- * Open/closed preference is stored in localStorage.
  */
 export function TrOwnerOrderProcessGuide() {
   const [open, setOpen] = useState(true);
@@ -39,19 +38,19 @@ export function TrOwnerOrderProcessGuide() {
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
       if (raw === "0") setOpen(false);
-      else if (raw === "1") setOpen(true);
+      if (raw === "1") setOpen(true);
     } catch {
-      /* ignore */
+      // ignore
     }
   }, []);
 
   const toggle = () => {
-    setOpen((prev) => {
-      const next = !prev;
+    setOpen((current) => {
+      const next = !current;
       try {
         window.localStorage.setItem(STORAGE_KEY, next ? "1" : "0");
       } catch {
-        /* ignore */
+        // ignore
       }
       return next;
     });
@@ -62,35 +61,26 @@ export function TrOwnerOrderProcessGuide() {
       <button
         type="button"
         onClick={toggle}
-        className="flex w-full items-start justify-between gap-4 text-left"
-        aria-expanded={open}
+        className="flex w-full items-center justify-between gap-3 text-left"
       >
         <div>
-          <p className="text-[19px] font-semibold text-neutral-900">
-            Sipariş süreci nasıl işler?
+          <p className="text-[18px] font-semibold text-neutral-900">
+            Sipariş süreci
           </p>
           <p className={`mt-1 ${panelHintClass}`}>
-            {open
-              ? "Gizlemek için dokunun."
-              : "Kısa anlatım — göstermek için dokunun."}
+            Paketlemeden teslime — kısa rehber
           </p>
         </div>
-        <span
-          className="mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-2 border-[color:var(--panel-accent-border)] text-[22px] font-semibold text-neutral-800"
-          aria-hidden
-        >
-          {open ? "−" : "+"}
-        </span>
+        <span className="text-[20px] text-neutral-500">{open ? "−" : "+"}</span>
       </button>
 
       <AnimatePresence initial={false}>
         {open ? (
           <motion.div
-            key="process-steps"
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.22 }}
             className="overflow-hidden"
           >
             <ol className="mt-5 space-y-4 border-t border-[color:var(--panel-accent-border)] pt-5">
@@ -103,12 +93,6 @@ export function TrOwnerOrderProcessGuide() {
                 </li>
               ))}
             </ol>
-            <p
-              className={`${panelHintClass} mt-4 rounded-xl bg-[color:var(--panel-accent-soft)] px-4 py-3`}
-            >
-              İpucu: Sipariş detayında “Kargo etiketi yazdır” ile demo etiketi
-              basabilirsiniz. Faturalar menüsünden kesilen faturaları görürsünüz.
-            </p>
           </motion.div>
         ) : null}
       </AnimatePresence>

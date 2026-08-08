@@ -18,7 +18,6 @@ import {
   panelErrorClass,
   panelHintClass,
   panelPageTitleClass,
-  panelPrimaryBtnClass,
   panelSectionClass,
 } from "@/components/tr/panel/panelUi";
 import {
@@ -26,14 +25,10 @@ import {
   TrPanelLoading,
 } from "@/components/tr/panel/TrPanelMotion";
 import {
-  buildDemoCargoLabelHtml,
-  demoTrackingNumber,
-} from "@/lib/tr/demoCargoLabel";
-import {
   fetchOwnerOrder,
   updateOwnerOrderFulfillment,
+  updateOwnerOrderPaymentPaid,
 } from "@/lib/tr/ownerClient";
-import { printHtmlDocument } from "@/lib/tr/printDocument";
 import { trPanelOrdersPath, trPanelPath } from "@/lib/tr/paths";
 import {
   formatTryFromKurus,
@@ -51,18 +46,15 @@ const FULFILLMENT_OPTIONS: TrFulfillmentStatus[] = [
 
 function OrderDetail({
   boutiqueId,
-  boutiqueName,
   orderId,
 }: {
   boutiqueId: string;
-  boutiqueName: string;
   orderId: string;
 }) {
   const [order, setOrder] = useState<TrOrderWithItems | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [printError, setPrintError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -112,28 +104,23 @@ function OrderDetail({
     }
   };
 
-  const printLabel = () => {
-    if (!order) return;
-    setPrintError(null);
+  const markPaid = async () => {
+    if (!order || saving) return;
+    setSaving(true);
+    setError(null);
     try {
-      printHtmlDocument(
-        buildDemoCargoLabelHtml({
-          order,
-          boutiqueName,
-        }),
-        `Kargo etiketi · ${demoTrackingNumber(order.id)}`,
+      const updated = await updateOwnerOrderPaymentPaid(boutiqueId, orderId);
+      setOrder(updated);
+    } catch (saveError) {
+      setError(
+        saveError instanceof Error
+          ? saveError.message
+          : "Ödeme durumu güncellenemedi.",
       );
-    } catch (printErr) {
-      setPrintError(
-        printErr instanceof Error
-          ? printErr.message
-          : "Etiket yazdırılamadı.",
-      );
+    } finally {
+      setSaving(false);
     }
   };
-
-  const canPrintLabel =
-    order != null && order.fulfillmentStatus !== "cancelled";
 
   return (
     <AnimatePresence mode="wait">
@@ -146,7 +133,6 @@ function OrderDetail({
       ) : order ? (
         <TrPanelFadeIn key="od-ready" className="space-y-5">
           {error ? <p className={panelErrorClass}>{error}</p> : null}
-          {printError ? <p className={panelErrorClass}>{printError}</p> : null}
 
           <section className={panelSectionClass}>
             <p className="text-[15px] text-neutral-600">
@@ -162,6 +148,13 @@ function OrderDetail({
             <p className="mt-4 text-[28px] font-semibold tabular-nums text-neutral-950">
               {formatTryFromKurus(order.totalKurus)}
             </p>
+            {order.discountKurus > 0 ? (
+              <p className={`mt-2 ${panelHintClass}`}>
+                İndirim
+                {order.discountCode ? ` (${order.discountCode})` : ""}: −
+                {formatTryFromKurus(order.discountKurus)}
+              </p>
+            ) : null}
             <div className="mt-3 flex flex-wrap gap-2">
               <span
                 className={`rounded-lg px-2.5 py-1 text-[14px] font-semibold ${FULFILLMENT_TONE[order.fulfillmentStatus]}`}
@@ -178,32 +171,30 @@ function OrderDetail({
                 }
               </span>
             </div>
+            {order.paymentStatus === "pending" && !order.isSandbox ? (
+              <div className="mt-4 space-y-2">
+                <p className={panelHintClass}>
+                  Kart ödemesi henüz açık değil. Havale / WhatsApp ile tahsil
+                  ettiğinizde “Ödendi” işaretleyin; sonra paketleyin.
+                </p>
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={() => void markPaid()}
+                  className={panelChipClass(false)}
+                >
+                  Ödendi olarak işaretle
+                </button>
+              </div>
+            ) : null}
           </section>
 
           <section className={panelSectionClass}>
-            <p className="text-[19px] font-semibold text-neutral-900">
-              Kargo etiketi
-            </p>
+            <p className="text-[19px] font-semibold text-neutral-900">Kargo</p>
             <p className={`mt-2 ${panelHintClass}`}>
-              Yazdırın, pakete yapıştırın. Kurye çıkış adresinizden alır —
-              şubeye gitmeniz gerekmez.
+              Kargo taşıyıcı entegrasyonu yakında. Şimdilik kendi kargo
+              panelinizden gönderi oluşturun.
             </p>
-            <div className="mt-4 flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                onClick={printLabel}
-                disabled={!canPrintLabel}
-                className={panelPrimaryBtnClass}
-                style={{ backgroundColor: "var(--panel-accent)" }}
-              >
-                Kargo etiketi yazdır
-              </button>
-              {canPrintLabel ? (
-                <p className="text-[14px] tabular-nums text-neutral-600">
-                  Takip: {demoTrackingNumber(order.id)}
-                </p>
-              ) : null}
-            </div>
           </section>
 
           <section className={panelSectionClass}>
@@ -265,6 +256,7 @@ function OrderDetail({
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-neutral-900">{item.title}</p>
                     <p className="mt-1 text-[15px] text-neutral-600">
+                      {item.size ? `Beden: ${item.size} · ` : null}
                       Adet: {item.quantity}
                     </p>
                   </div>
@@ -317,7 +309,6 @@ export function TrOwnerOrderDetailPage({ orderId }: { orderId: string }) {
           </div>
           <OrderDetail
             boutiqueId={activeBoutique.id}
-            boutiqueName={activeBoutique.name}
             orderId={orderId}
           />
         </div>

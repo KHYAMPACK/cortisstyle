@@ -5,8 +5,12 @@ import {
 import {
   getOrderByIdAdmin,
   updateOrderFulfillmentStatusAdmin,
+  updateOrderPaymentStatusAdmin,
 } from "@/lib/tr/orders";
-import type { TrFulfillmentStatus } from "@/types/tr-marketplace";
+import type {
+  TrFulfillmentStatus,
+  TrPaymentStatus,
+} from "@/types/tr-marketplace";
 
 export const runtime = "nodejs";
 
@@ -24,7 +28,7 @@ const FULFILLMENT: TrFulfillmentStatus[] = [
 
 /**
  * GET /api/tr/owner/orders/[id]?boutiqueId=
- * PATCH /api/tr/owner/orders/[id] { boutiqueId, fulfillmentStatus }
+ * PATCH /api/tr/owner/orders/[id] { boutiqueId, fulfillmentStatus? | paymentStatus?: "paid" }
  */
 export async function GET(request: Request, context: RouteContext) {
   const authResult = await requireTrOwner(request);
@@ -50,13 +54,26 @@ export async function GET(request: Request, context: RouteContext) {
     return Response.json({ error: "Sipariş bulunamadı." }, { status: 404 });
   }
 
+  const scopedItems = order.items.filter(
+    (item) => item.boutiqueId === boutique.id,
+  );
+  const boutiqueSubtotal = scopedItems.reduce(
+    (sum, item) => sum + item.priceKurus * item.quantity,
+    0,
+  );
+
   return Response.json({
     boutique: {
       id: boutique.id,
       slug: boutique.slug,
       name: boutique.name,
     },
-    order,
+    order: {
+      ...order,
+      items: scopedItems,
+      // Keep order-level totals; UI should show discount breakdown.
+      boutiqueSubtotalKurus: boutiqueSubtotal,
+    },
   });
 }
 
@@ -91,23 +108,44 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 
   const fulfillmentStatus = body.fulfillmentStatus;
-  if (
-    typeof fulfillmentStatus !== "string" ||
-    !FULFILLMENT.includes(fulfillmentStatus as TrFulfillmentStatus)
-  ) {
+  const paymentStatus = body.paymentStatus;
+
+  const hasFulfillment =
+    typeof fulfillmentStatus === "string" &&
+    FULFILLMENT.includes(fulfillmentStatus as TrFulfillmentStatus);
+  // Manual mark-paid until iyzico capture is wired (havale / WhatsApp confirm).
+  const hasPayment =
+    paymentStatus === "paid" &&
+    (existing.paymentStatus === "pending" ||
+      existing.paymentStatus === "failed");
+
+  if (!hasFulfillment && !hasPayment) {
     return Response.json(
-      { error: "Geçersiz sipariş durumu." },
+      { error: "Geçersiz sipariş veya ödeme durumu." },
       { status: 400 },
     );
   }
 
   try {
-    await updateOrderFulfillmentStatusAdmin(
-      id,
-      fulfillmentStatus as TrFulfillmentStatus,
-    );
+    if (hasPayment) {
+      await updateOrderPaymentStatusAdmin(id, "paid" as TrPaymentStatus);
+    }
+    if (hasFulfillment) {
+      await updateOrderFulfillmentStatusAdmin(
+        id,
+        fulfillmentStatus as TrFulfillmentStatus,
+      );
+    }
     const order = await getOrderByIdAdmin(id);
-    return Response.json({ order });
+    if (!order) {
+      return Response.json({ error: "Sipariş bulunamadı." }, { status: 404 });
+    }
+    return Response.json({
+      order: {
+        ...order,
+        items: order.items.filter((item) => item.boutiqueId === boutique.id),
+      },
+    });
   } catch (error) {
     console.error("[tr/owner/orders/[id]] patch failed:", error);
     return Response.json(

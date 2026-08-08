@@ -143,6 +143,11 @@ export function trBoutiqueAuthPath(boutiqueSlug: string): string {
   return `/tr/${encodeURIComponent(boutiqueSlug)}/giris`;
 }
 
+/** Boutique-scoped favorites page (local favorites store). */
+export function trBoutiqueFavoritesPath(boutiqueSlug: string): string {
+  return `/tr/${encodeURIComponent(boutiqueSlug)}/favoriler`;
+}
+
 export function trComingSoonPath(): string {
   return "/tr/yakinda";
 }

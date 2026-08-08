@@ -5,6 +5,7 @@ import { TrBoutiqueEditorialShell } from "@/components/tr/boutique/editorial/TrB
 import { TrMarketplaceChrome } from "@/components/tr/TrMarketplaceChrome";
 import {
   hasBoutiqueBrand,
+  resolveBoutiqueBrandLabel,
   resolveBoutiqueFaviconUrl,
 } from "@/lib/tr/boutiqueBrand";
 import { resolveBoutiqueHomeLayout } from "@/lib/tr/boutiqueHome";
@@ -13,6 +14,7 @@ import {
   safeGetBoutiqueStorefront,
   safeGetPublicBoutique,
 } from "@/lib/tr/publicData";
+import { resolveStorefrontTheme } from "@/lib/tr/storefrontTheme";
 
 /** Static marketplace segments — must not be captured by [boutiqueSlug]. */
 const RESERVED_BOUTIQUE_SLUGS = new Set([
@@ -54,8 +56,7 @@ export async function generateMetadata({
   }
 
   const favicon = resolveBoutiqueFaviconUrl(boutique);
-  const brandTitle =
-    boutique.slug === "pervinsoysalbutik" ? "Pervin Soysal" : boutique.name;
+  const brandTitle = resolveBoutiqueBrandLabel(boutique.slug, boutique.name);
 
   return {
     title: {
@@ -95,8 +96,9 @@ export default async function BoutiqueLayout({
     boutiqueSlug,
     boutique.homeLayout,
   );
+  const theme = resolveStorefrontTheme(boutiqueSlug, boutique.homeLayout);
 
-  if (homeLayout === "editorial") {
+  if (theme === "editorial" || homeLayout === "editorial") {
     const storefront = await safeGetBoutiqueStorefront(boutiqueSlug);
     const products = withEditorialDemoProducts(
       boutique,

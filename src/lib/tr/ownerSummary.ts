@@ -1,4 +1,3 @@
-import { getServiceSupabase } from "@/lib/supabaseAdmin";
 import { listOrdersByBoutiqueIdAdmin } from "@/lib/tr/orders";
 import { isTrCheckoutEnabled } from "@/lib/tr/platform";
 import { listProductsByBoutiqueIdAdmin } from "@/lib/tr/products";
@@ -14,22 +13,27 @@ export interface TrOwnerSummary {
     total: number;
     lowStock: number;
   };
-  /** Present when checkout is enabled. */
   period: {
     range: TrOwnerSummaryRange;
     orderCount: number;
     revenueKurus: number;
     pendingFulfillment: number;
-    topProducts: Array<{ title: string; quantity: number; revenueKurus: number }>;
-  } | null;
-  /** Legacy alias for home when range=today. */
+    topProducts: Array<{
+      title: string;
+      quantity: number;
+      revenueKurus: number;
+    }>;
+  };
   today: {
     orderCount: number;
     revenueKurus: number;
-  } | null;
+  };
 }
 
-function istanbulDayBounds(now = new Date()): { startIso: string; endIso: string } {
+function istanbulDayBounds(now = new Date()): {
+  startIso: string;
+  endIso: string;
+} {
   const formatter = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Europe/Istanbul",
     year: "numeric",
@@ -42,11 +46,56 @@ function istanbulDayBounds(now = new Date()): { startIso: string; endIso: string
   return { startIso, endIso };
 }
 
-function rangeStartIso(range: TrOwnerSummaryRange, now = new Date()): string | null {
+function rangeStartIso(
+  range: TrOwnerSummaryRange,
+  now = new Date(),
+): string | null {
   if (range === "all") return null;
   if (range === "today") return istanbulDayBounds(now).startIso;
   const days = range === "7d" ? 7 : 30;
   return new Date(now.getTime() - days * 24 * 60 * 60 * 1000).toISOString();
+}
+
+function isActiveOrder(order: {
+  fulfillmentStatus: string;
+  paymentStatus: string;
+}): boolean {
+  if (order.fulfillmentStatus === "cancelled") return false;
+  return (
+    order.paymentStatus === "paid" ||
+    order.paymentStatus === "pending" ||
+    order.paymentStatus === "sandbox"
+  );
+}
+
+function boutiqueLineRevenue(
+  order: {
+    items: Array<{
+      boutiqueId: string;
+      priceKurus: number;
+      quantity: number;
+      productId: string | null;
+      title: string;
+    }>;
+    discountKurus: number;
+    totalKurus: number;
+  },
+  boutiqueId: string,
+): number {
+  const lines = order.items.filter((item) => item.boutiqueId === boutiqueId);
+  const subtotal = lines.reduce(
+    (sum, item) => sum + item.priceKurus * item.quantity,
+    0,
+  );
+  if (subtotal <= 0) return 0;
+  // Allocate order-level discount proportionally across this boutique's lines.
+  const orderSubtotal = order.items.reduce(
+    (sum, item) => sum + item.priceKurus * item.quantity,
+    0,
+  );
+  if (orderSubtotal <= 0) return subtotal;
+  const share = subtotal / orderSubtotal;
+  return Math.max(0, Math.round(subtotal - order.discountKurus * share));
 }
 
 export async function getOwnerBoutiqueSummary(
@@ -65,20 +114,12 @@ export async function getOwnerBoutiqueSummary(
   };
 
   const checkoutEnabled = isTrCheckoutEnabled();
-  if (!checkoutEnabled) {
-    return { checkoutEnabled, inventory, period: null, today: null };
-  }
-
-  const supabase = getServiceSupabase();
-  if (!supabase) {
-    throw new Error("Supabase service role is not configured.");
-  }
-
   const orders = await listOrdersByBoutiqueIdAdmin(boutiqueId);
   const startIso = rangeStartIso(range);
-  const paid = orders.filter(
+
+  const scoped = orders.filter(
     (order) =>
-      (order.paymentStatus === "paid" || order.paymentStatus === "sandbox") &&
+      isActiveOrder(order) &&
       (startIso == null || order.createdAt >= startIso),
   );
 
@@ -87,11 +128,17 @@ export async function getOwnerBoutiqueSummary(
     { title: string; quantity: number; revenueKurus: number }
   >();
   let revenueKurus = 0;
-  for (const order of paid) {
+
+  for (const order of scoped) {
+    // Ciro: only captured card payments (not pending / sandbox).
+    if (order.paymentStatus !== "paid") continue;
+
+    const net = boutiqueLineRevenue(order, boutiqueId);
+    revenueKurus += net;
+
     for (const item of order.items) {
       if (item.boutiqueId !== boutiqueId) continue;
       const line = item.priceKurus * item.quantity;
-      revenueKurus += line;
       const key = item.productId ?? `title:${item.title}`;
       const existing = topMap.get(key);
       if (existing) {
@@ -113,33 +160,30 @@ export async function getOwnerBoutiqueSummary(
 
   const pendingFulfillment = orders.filter(
     (order) =>
-      (order.paymentStatus === "paid" || order.paymentStatus === "sandbox") &&
+      isActiveOrder(order) &&
       (order.fulfillmentStatus === "created" ||
         order.fulfillmentStatus === "ready"),
   ).length;
 
   const period = {
     range,
-    orderCount: paid.length,
+    orderCount: scoped.length,
     revenueKurus,
     pendingFulfillment,
     topProducts,
   };
 
   const todayBounds = istanbulDayBounds();
-  const todayPaid = orders.filter(
+  const todayOrders = orders.filter(
     (order) =>
-      (order.paymentStatus === "paid" || order.paymentStatus === "sandbox") &&
+      isActiveOrder(order) &&
       order.createdAt >= todayBounds.startIso &&
       order.createdAt <= todayBounds.endIso,
   );
   let todayRevenue = 0;
-  for (const order of todayPaid) {
-    for (const item of order.items) {
-      if (item.boutiqueId === boutiqueId) {
-        todayRevenue += item.priceKurus * item.quantity;
-      }
-    }
+  for (const order of todayOrders) {
+    if (order.paymentStatus !== "paid") continue;
+    todayRevenue += boutiqueLineRevenue(order, boutiqueId);
   }
 
   return {
@@ -147,7 +191,7 @@ export async function getOwnerBoutiqueSummary(
     inventory,
     period,
     today: {
-      orderCount: todayPaid.length,
+      orderCount: todayOrders.length,
       revenueKurus: todayRevenue,
     },
   };

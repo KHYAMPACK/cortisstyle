@@ -14,7 +14,6 @@ import {
   fetchOwnerSummary,
   type TrOwnerSummaryResponse,
 } from "@/lib/tr/ownerClient";
-import { PANEL_DEMO_TODAY } from "@/lib/tr/panelTheme";
 import { trPanelPath } from "@/lib/tr/paths";
 import { formatTryFromKurus } from "@/types/tr-marketplace";
 
@@ -27,39 +26,17 @@ const RANGE_LABEL: Record<Range, string> = {
   all: "Tümü",
 };
 
-const DEMO_TOP = [
-  { title: "Siyah Bluz", quantity: 4, revenueKurus: 356_000 },
-  { title: "Çiçekli Elbise", quantity: 2, revenueKurus: 378_000 },
-  { title: "Jean Pantolon", quantity: 3, revenueKurus: 357_000 },
-] as const;
-
-function resolvePeriod(summary: TrOwnerSummaryResponse, range: Range) {
+function resolvePeriod(summary: TrOwnerSummaryResponse) {
   const liveOrders = summary.period?.orderCount ?? summary.today?.orderCount ?? 0;
   const liveRevenue =
     summary.period?.revenueKurus ?? summary.today?.revenueKurus ?? 0;
-  const useDemo = liveOrders === 0 && liveRevenue === 0;
-
-  const scale =
-    range === "today" ? 1 : range === "7d" ? 4 : range === "30d" ? 12 : 20;
 
   return {
-    useDemo,
-    orderCount: useDemo
-      ? PANEL_DEMO_TODAY.orderCount * scale
-      : liveOrders,
-    revenueKurus: useDemo
-      ? PANEL_DEMO_TODAY.revenueKurus * scale
-      : liveRevenue,
-    pendingFulfillment: useDemo
-      ? PANEL_DEMO_TODAY.pendingFulfillment
-      : (summary.period?.pendingFulfillment ?? 0),
-    topProducts: useDemo
-      ? DEMO_TOP.map((entry) => ({
-          title: entry.title,
-          quantity: entry.quantity * Math.max(1, Math.round(scale / 2)),
-          revenueKurus: entry.revenueKurus * Math.max(1, Math.round(scale / 2)),
-        }))
-      : (summary.period?.topProducts ?? []),
+    isEmpty: liveOrders === 0 && liveRevenue === 0,
+    orderCount: liveOrders,
+    revenueKurus: liveRevenue,
+    pendingFulfillment: summary.period?.pendingFulfillment ?? 0,
+    topProducts: summary.period?.topProducts ?? [],
   };
 }
 
@@ -131,13 +108,13 @@ function ReportsBoard({ boutiqueId }: { boutiqueId: string }) {
         ) : summary ? (
           <TrPanelFadeIn key="r-ready" className="space-y-6">
             {(() => {
-              const period = resolvePeriod(summary, range);
+              const period = resolvePeriod(summary);
               return (
                 <>
-                  {period.useDemo ? (
+                  {period.isEmpty ? (
                     <p className="rounded-2xl border border-[color:var(--panel-accent-border)] bg-[color:var(--panel-accent-soft)] px-5 py-3 text-[15px] text-neutral-800">
-                      Örnek demo ciro — gerçek siparişler gelince burası
-                      otomatik güncellenir.
+                      Bu dönemde henüz sipariş yok — raporlar gerçek
+                      satışlardan oluşur.
                     </p>
                   ) : null}
                   <TrPanelStagger className="grid gap-4 sm:grid-cols-3">

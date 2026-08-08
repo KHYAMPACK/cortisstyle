@@ -15,7 +15,7 @@ function buildAnnouncementSegments(boutique: TrBoutiquePublic): string[] {
   if (exchange) segments.push(exchange);
 
   if (segments.length === 0) {
-    segments.push("Türkiye geneli ücretsiz kargo");
+    segments.push("Yeni sezon · alışverişe başla");
   }
 
   return segments;

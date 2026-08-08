@@ -8,6 +8,8 @@
 const DEFAULT_DOMAIN_MAP: Record<string, string> = {
   "pervinsoysal.com": "pervinsoysalbutik",
   "www.pervinsoysal.com": "pervinsoysalbutik",
+  "lilaboutiquedenizli.com": "lilabutik",
+  "www.lilaboutiquedenizli.com": "lilabutik",
 };
 
 function parseEnvDomainMap(): Record<string, string> {
@@ -88,6 +90,9 @@ export function rewriteBoutiqueDomainPath(
   }
   if (pathname === "/sepet") {
     return `${base}/sepet`;
+  }
+  if (pathname === "/favoriler") {
+    return `${base}/favoriler`;
   }
   if (pathname === "/odeme") {
     return `${base}/odeme`;

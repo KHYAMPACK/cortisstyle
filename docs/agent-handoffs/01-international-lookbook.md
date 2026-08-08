@@ -34,3 +34,7 @@
 - Do not route international users into TR cart/checkout by accident.
 - Extend looks via **registry/data**, not one-off conditionals in the home page.
 - Affiliate compliance lives in `docs/legal-and-affiliate-compliance.md`.
+
+## Design inspiration
+
+- Cortisstyle lookbook / AI discovery (not boutiques): [11-cortisstyle-design-inspiration.md](./11-cortisstyle-design-inspiration.md)

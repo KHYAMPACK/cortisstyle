@@ -6,7 +6,8 @@
 
 - Per-tenant storefront at `/tr/[boutiqueSlug]` (home, PLP, PDP, local cart, checkout, legal, login)
 - **Custom domains** rewrite into boutique paths (`src/lib/tr/customDomain.ts` + middleware; e.g. pervinsoysal)
-- **Editorial** home/PDP templates via registries (`src/lib/tr/boutiqueHome/`, `boutiquePdp/`)
+- **Storefront themes** — same panel/APIs for all; **unique UI per boutique** via theme packs / editorial skins (Pervin = `classic` editorial; Lila = `atelier` skin). See [lila-butik-e-ticaret-setup.md](../lila-butik-e-ticaret-setup.md). Do not skin with `if (slug)` inside one chrome tree.
+- **Editorial** home/PDP templates via registries (`src/lib/tr/boutiqueHome/`, `boutiquePdp/`) — moving toward `storefront/themes/{id}/`
 - **Owner panel** at `/tr/panel` — Ikas-like modules (products, stock, orders, customers, campaigns, content packs, reports, settings)
 - Owner APIs: `src/app/api/tr/owner/*` authenticated via boutique `owner_user_id`
 - Onboarding seeds: `scripts/seed-pervinsoysalbutik.*`, `src/data/tr/pervinsoysalbutik-seed.json`
@@ -38,3 +39,9 @@
 - Prefer extending **boutiqueHome / boutiquePdp registries** over forking a new layout per client.
 - Boutique cart: `src/store/trBoutiqueLocalCartStore.ts` (not the Cadde platform cart).
 - Demo/editorial content (`demo-maya`, `editorialDemo*`) is placeholder — don’t treat as production inventory.
+
+## Clone / health / design
+
+- Audit (Pervin as reference tenant): [08-boutique-audit-pervin.md](./08-boutique-audit-pervin.md)
+- Onboard next boutique (system checklist): [09-boutique-clone-playbook.md](./09-boutique-clone-playbook.md)
+- External visual inspiration / **storefront templates** (1 Balmoral, 2 Cecilie, 3 Marine Layer — pick by catalog/vibe, numbers ≠ priority): [10-boutique-design-inspiration.md](./10-boutique-design-inspiration.md)

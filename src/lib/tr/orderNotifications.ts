@@ -6,14 +6,24 @@ function storageKey(boutiqueId: string): string {
   return `tr-panel-orders-seen:${boutiqueId}`;
 }
 
-export function isPaidLikeOrder(
-  order: Pick<TrOrder, "paymentStatus" | "isSandbox">,
+/** Orders that should surface in owner alerts (incl. pre-iyzico pending). */
+export function isActionableOwnerOrder(
+  order: Pick<TrOrder, "paymentStatus" | "isSandbox" | "fulfillmentStatus">,
 ): boolean {
+  if (order.fulfillmentStatus === "cancelled") return false;
   return (
     order.isSandbox ||
     order.paymentStatus === "paid" ||
-    order.paymentStatus === "sandbox"
+    order.paymentStatus === "sandbox" ||
+    order.paymentStatus === "pending"
   );
+}
+
+/** @deprecated Prefer isActionableOwnerOrder — name kept for older imports. */
+export function isPaidLikeOrder(
+  order: Pick<TrOrder, "paymentStatus" | "isSandbox" | "fulfillmentStatus">,
+): boolean {
+  return isActionableOwnerOrder(order);
 }
 
 export function getOrdersSeenAt(boutiqueId: string): string | null {
@@ -42,7 +52,7 @@ export function markOrdersSeen(boutiqueId: string): void {
 }
 
 /**
- * New-order alert: unpaid-attention pipeline, or any paid order newer than last visit.
+ * New-order alert: unpaid-attention pipeline, or any actionable order newer than last visit.
  */
 export function hasUnseenOrders(
   orders: Array<
@@ -53,16 +63,16 @@ export function hasUnseenOrders(
   >,
   seenAt: string | null,
 ): boolean {
-  const paid = orders.filter(isPaidLikeOrder);
-  if (paid.length === 0) return false;
+  const actionable = orders.filter(isActionableOwnerOrder);
+  if (actionable.length === 0) return false;
 
   if (!seenAt) {
-    return paid.some(
+    return actionable.some(
       (order) =>
         order.fulfillmentStatus === "created" ||
         order.fulfillmentStatus === "ready",
     );
   }
 
-  return paid.some((order) => order.createdAt > seenAt);
+  return actionable.some((order) => order.createdAt > seenAt);
 }

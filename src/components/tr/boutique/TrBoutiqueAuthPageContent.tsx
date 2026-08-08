@@ -27,6 +27,7 @@ import { getSupabaseClient } from "@/lib/supabaseClient";
 import {
   trBoutiqueAuthPath,
   trBoutiqueCartPath,
+  trBoutiqueFavoritesPath,
   trBoutiqueLegalPath,
   trBoutiquePath,
   trBoutiqueProductsPath,
@@ -212,7 +213,7 @@ export function TrBoutiqueAuthPageContent({
                   Sepet
                 </span>
               </Link>
-              <a href="#favoriler" className={ACTION}>
+              <Link href={trBoutiqueFavoritesPath(boutique.slug)} className={ACTION}>
                 <Heart className="h-4 w-4 shrink-0" strokeWidth={1.5} />
                 <span className="text-[12px] tracking-[0.12em] uppercase">
                   Favoriler
@@ -220,7 +221,7 @@ export function TrBoutiqueAuthPageContent({
                     ? ` (${favorites.itemCount})`
                     : ""}
                 </span>
-              </a>
+              </Link>
               <button
                 type="button"
                 onClick={() => commerce.openPanel("tracking")}

@@ -1,0 +1,27 @@
+---
+description: Boutique storefront templates — Balmoral, Cecilie, Marine Layer (IDs not priority)
+globs: src/components/tr/boutique/**/*,src/lib/tr/boutiqueHome/**/*,src/lib/tr/boutiquePdp/**/*,src/app/tr/[boutiqueSlug]/**/*
+alwaysApply: false
+---
+
+# Boutique storefront templates + inspiration
+
+When creating or refining a boutique storefront, read `docs/agent-handoffs/10-boutique-design-inspiration.md`.
+
+## Official templates (standards)
+
+| ID | Site | URL |
+|----|------|-----|
+| **standard1** / **template1** | Balmoral Running | https://www.balmoralrunning.com/ |
+| **standard2** / **template2** | Cecilie Bahnsen | https://ceciliebahnsen.com/ |
+| **standard3** / **template3** | Marine Layer | https://www.marinelayer.com/ |
+
+- Numbers are **IDs only — not priority**. Do not prefer a lower number by default.
+- Choose the template from **what the boutique sells** and brand vibe (or the ID the user names).
+- Open the live template URL; apply layout/rhythm/chrome via boutique home/PDP registries.
+- Do not copy assets, branding, or build a pixel clone.
+
+## Inspiration accents (not full-site standards)
+
+- Roberto Collina: PDP product display + model poses.
+- Serotoninn: typography + model/type composition.

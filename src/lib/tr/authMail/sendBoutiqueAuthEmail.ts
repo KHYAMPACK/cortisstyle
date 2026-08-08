@@ -1,4 +1,8 @@
-import { getPasswordResetRedirectUrl } from "@/lib/authRedirect";
+import {
+  getPasswordResetRedirectUrl,
+  getSiteUrl,
+  resolveAuthRedirectOrigin,
+} from "@/lib/authRedirect";
 import { isValidNotifyEmail, getServiceSupabase } from "@/lib/supabaseAdmin";
 import { sendPlatformEmail, isPlatformMailConfigured } from "@/lib/mail/sendPlatformEmail";
 import { getPublicBoutiqueBySlug } from "@/lib/tr/boutiques";
@@ -99,6 +103,8 @@ export async function sendBoutiqueSignupOtp(input: {
 export async function sendBoutiquePasswordReset(input: {
   email: string;
   boutiqueSlug: string;
+  /** Browser Origin when reset was requested (custom domain preferred). */
+  requestOrigin?: string | null;
 }): Promise<{ ok: true } | { ok: false; error: string; status: number }> {
   if (!isPlatformMailConfigured()) {
     return {
@@ -126,8 +132,18 @@ export async function sendBoutiquePasswordReset(input: {
   }
 
   const brand = resolveBoutiqueAuthMailBrand(boutique);
+  const siteOrigin = resolveAuthRedirectOrigin({
+    boutiqueSlug,
+    requestOrigin: input.requestOrigin,
+  });
+  // On custom domain, return to short /giris; on platform, full boutique path.
+  const nextPath =
+    siteOrigin === getSiteUrl()
+      ? trBoutiqueAuthPath(boutiqueSlug)
+      : "/giris";
   const redirectTo = getPasswordResetRedirectUrl({
-    nextPath: trBoutiqueAuthPath(boutiqueSlug),
+    nextPath,
+    siteOrigin,
   });
 
   const { data, error } = await admin.auth.admin.generateLink({

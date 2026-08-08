@@ -350,6 +350,28 @@ export async function updateProductAdmin(
   }
 
   const row = productUpdateRow(input);
+
+  // Restocking a sold-out product should make it buyable again.
+  if (
+    input.status === undefined &&
+    (input.stock !== undefined || input.sizeStocks !== undefined)
+  ) {
+    const existing = await getProductByIdAdmin(productId);
+    if (!existing) throw new Error("Product not found.");
+    const nextStock =
+      input.stock !== undefined
+        ? input.stock
+        : input.sizeStocks !== undefined
+          ? Object.values(input.sizeStocks).reduce((sum, n) => sum + n, 0)
+          : existing.stock;
+    if (nextStock > 0 && existing.status === "sold") {
+      row.status = "available";
+    }
+    if (nextStock <= 0 && existing.status === "available") {
+      row.status = "sold";
+    }
+  }
+
   if (Object.keys(row).length === 0) {
     const existing = await getProductByIdAdmin(productId);
     if (!existing) throw new Error("Product not found.");

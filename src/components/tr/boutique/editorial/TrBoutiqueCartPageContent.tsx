@@ -18,6 +18,9 @@ import {
 import { TrSoftNavLink } from "@/components/tr/TrSoftNavLink";
 import { trPanelEase } from "@/components/tr/panel/TrPanelMotion";
 import { isTrDemoIconSrc } from "@/lib/tr/demoIcons";
+import { saveBoutiqueCheckoutSelection } from "@/lib/tr/checkoutSelection";
+import { resolveBoutiqueBrandLabel } from "@/lib/tr/boutiqueBrand";
+import { useTrBoutiqueCartRevalidate } from "@/lib/tr/useTrBoutiqueCartRevalidate";
 import { isCatalogCutoutImage } from "@/lib/tr/productImages";
 import {
   trBoutiqueCheckoutPath,
@@ -218,6 +221,7 @@ export function TrBoutiqueCartPageContent({
   const removeItem = cart.removeItem;
   const demoCart = cartHasDemoItems(items);
   const count = items.length;
+  useTrBoutiqueCartRevalidate(boutique.slug);
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const knownIdsRef = useRef<Set<string>>(new Set());
@@ -302,14 +306,12 @@ export function TrBoutiqueCartPageContent({
     });
   };
 
-  const brandTitle =
-    boutique.slug === "pervinsoysalbutik" ? "Pervin Soysal" : boutique.name;
+  const brandTitle = resolveBoutiqueBrandLabel(boutique.slug, boutique.name);
 
   if (count === 0) {
     return (
       <div className="pt-6 md:pt-8">
         <div className="mx-auto max-w-3xl px-5 pb-10 md:px-10">
-          <TrSandboxBanner demo />
           <p className="mt-10 text-center text-[11px] tracking-[0.22em] text-neutral-500 uppercase">
             Sepetiniz boş
           </p>
@@ -386,6 +388,12 @@ export function TrBoutiqueCartPageContent({
           {selectedCount > 0 ? (
             <TrSoftNavLink
               href={trBoutiqueCheckoutPath(boutique.slug)}
+              onNavigate={() => {
+                saveBoutiqueCheckoutSelection(
+                  boutique.slug,
+                  selectedItems.map((item) => cartLineKey(item)),
+                );
+              }}
               className="inline-flex min-w-[12rem] items-center justify-center bg-brand-primary px-8 py-3.5 text-[11px] tracking-[0.22em] text-white uppercase transition-colors hover:bg-brand-primary-hover"
             >
               Sepeti onayla ({selectedCount})

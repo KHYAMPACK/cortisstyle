@@ -8,7 +8,7 @@ import {
   discountPercentFromPrices,
 } from "@/components/tr/boutique/editorial/TrEditorialSaleBadge";
 import { TrBoutiquePendingLink } from "@/components/tr/boutique/editorial/TrBoutiqueNavPending";
-import { EDITORIAL_SALE_RED } from "@/lib/tr/boutiqueHome";
+import { EDITORIAL_SALE_RED, isAtelierEditorialSkin } from "@/lib/tr/boutiqueHome";
 import { trProductPath } from "@/lib/tr/paths";
 import { resolveProductColors } from "@/lib/tr/productOptions";
 import {
@@ -47,6 +47,8 @@ export function TrBoutiqueEditorialProductCard({
     ? discountPercentFromPrices(product.priceKurus, compareAt)
     : 0;
   const productHref = trProductPath(product.id, boutiqueSlug);
+  const atelier = isAtelierEditorialSkin(boutiqueSlug);
+  const saleColor = atelier ? "var(--boutique-accent)" : EDITORIAL_SALE_RED;
 
   const withBoutique: TrProductWithBoutique = {
     ...product,
@@ -73,11 +75,13 @@ export function TrBoutiqueEditorialProductCard({
   };
 
   return (
-    <article className="group relative bg-white">
+    <article
+      className={`group relative ${atelier ? "bg-transparent" : "bg-white"}`}
+    >
       <div
-        className={`relative aspect-[3/4] overflow-hidden ${
-          coverIsCutout ? "bg-[#F3F1EC]" : "bg-neutral-100"
-        }`}
+        className={`relative overflow-hidden ${
+          atelier ? "aspect-[3/4.2]" : "aspect-[3/4]"
+        } ${coverIsCutout ? "bg-[#F3F1EC]" : atelier ? "bg-[#F0EEEA]" : "bg-neutral-100"}`}
       >
         <TrBoutiquePendingLink
           href={productHref}
@@ -170,9 +174,17 @@ export function TrBoutiqueEditorialProductCard({
       <TrBoutiquePendingLink
         href={productHref}
         kind="product"
-        className="block px-1 pt-3 pb-5 text-left outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2 md:px-1.5"
+        className={`block text-left outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2 ${
+          atelier ? "px-0.5 pt-4 pb-8 md:px-1" : "px-1 pt-3 pb-5 md:px-1.5"
+        }`}
       >
-        <h3 className="line-clamp-2 text-[12px] leading-snug text-neutral-900 md:text-[13px]">
+        <h3
+          className={`line-clamp-2 leading-snug text-neutral-900 ${
+            atelier
+              ? "font-serif text-[14px] tracking-[0.02em] md:text-[15px]"
+              : "text-[12px] md:text-[13px]"
+          }`}
+        >
           {product.title}
         </h3>
 
@@ -183,15 +195,21 @@ export function TrBoutiqueEditorialProductCard({
                 {formatTryFromKurus(compareAt)}
               </span>
               <span
-                className="text-[13px] font-medium"
-                style={{ color: EDITORIAL_SALE_RED }}
+                className={`font-semibold tracking-[-0.01em] ${
+                  atelier ? "text-[14px] md:text-[15px]" : "text-[13px]"
+                }`}
+                style={{ color: saleColor }}
               >
                 {formatTryFromKurus(product.priceKurus)}
               </span>
               {pct > 0 ? <TrEditorialSaleBadge percent={pct} /> : null}
             </>
           ) : (
-            <span className="text-[13px] font-medium text-neutral-900">
+            <span
+              className={`font-semibold tracking-[-0.01em] text-neutral-950 ${
+                atelier ? "text-[14px] md:text-[15px]" : "text-[13px]"
+              }`}
+            >
               {formatTryFromKurus(product.priceKurus)}
             </span>
           )}

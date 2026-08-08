@@ -25,7 +25,7 @@ export function TrBoutiquePdpRelated({
         catalog,
         excludeIds: [product.id],
         category: product.category,
-        limit: 4,
+        limit: 8,
       }),
     [catalog, product.id, product.category],
   );

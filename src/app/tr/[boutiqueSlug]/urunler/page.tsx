@@ -5,6 +5,7 @@ import { TrBoutiqueEditorialPlp } from "@/components/tr/boutique/editorial/TrBou
 import { resolveBoutiqueHomeLayout } from "@/lib/tr/boutiqueHome";
 import { withEditorialDemoProducts } from "@/lib/tr/looks/editorialDemoProducts";
 import { safeGetBoutiqueStorefront } from "@/lib/tr/publicData";
+import { resolveStorefrontTheme } from "@/lib/tr/storefrontTheme";
 
 interface BoutiqueProductsPageProps {
   params: Promise<{ boutiqueSlug: string }>;
@@ -38,25 +39,26 @@ export default async function BoutiqueProductsPage({
     notFound();
   }
 
+  const theme = resolveStorefrontTheme(boutiqueSlug, storefront.homeLayout);
+  const products = withEditorialDemoProducts(storefront, storefront.products);
+
   if (
-    resolveBoutiqueHomeLayout(boutiqueSlug, storefront.homeLayout) !==
-    "editorial"
+    theme === "editorial" ||
+    resolveBoutiqueHomeLayout(boutiqueSlug, storefront.homeLayout) ===
+      "editorial"
   ) {
-    notFound();
+    return (
+      <Suspense
+        fallback={
+          <div className="px-5 py-16 text-center text-[12px] tracking-[0.14em] text-neutral-500 uppercase">
+            Ürünler yükleniyor…
+          </div>
+        }
+      >
+        <TrBoutiqueEditorialPlp boutique={storefront} products={products} />
+      </Suspense>
+    );
   }
 
-  return (
-    <Suspense
-      fallback={
-        <div className="px-5 py-16 text-center text-[12px] tracking-[0.14em] text-neutral-500 uppercase">
-          Ürünler yükleniyor…
-        </div>
-      }
-    >
-      <TrBoutiqueEditorialPlp
-        boutique={storefront}
-        products={withEditorialDemoProducts(storefront, storefront.products)}
-      />
-    </Suspense>
-  );
+  notFound();
 }

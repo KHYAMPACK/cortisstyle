@@ -108,6 +108,26 @@ export async function listAllBoutiquesAdmin(): Promise<TrBoutique[]> {
   return (data ?? []).map((row) => mapBoutiqueRow(row as Record<string, unknown>));
 }
 
+export async function getBoutiqueBySlugAdmin(
+  slug: string,
+): Promise<TrBoutique | null> {
+  const supabase = getServiceSupabase();
+  if (!supabase) {
+    throw new Error("Supabase service role is not configured.");
+  }
+
+  const { data, error } = await supabase
+    .from("tr_boutiques")
+    .select("*")
+    .eq("slug", slug.trim().toLowerCase())
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) return null;
+
+  return mapBoutiqueRow(data as Record<string, unknown>);
+}
+
 export async function getBoutiqueByIdAdmin(id: string): Promise<TrBoutique | null> {
   const supabase = getServiceSupabase();
   if (!supabase) {

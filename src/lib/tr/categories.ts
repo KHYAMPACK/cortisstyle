@@ -10,6 +10,8 @@ export const TR_BOUTIQUE_CATEGORIES: TrCategoryDefinition[] = [
   { id: "alt-giyim", label: "Alt giyim" },
   { id: "dis-giyim", label: "Dış giyim" },
   { id: "takim", label: "Takım" },
+  { id: "canta", label: "Çanta" },
+  { id: "aksesuar", label: "Aksesuar" },
 ];
 
 const LABEL_BY_ID = new Map(

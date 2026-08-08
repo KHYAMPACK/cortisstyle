@@ -6,6 +6,7 @@ import { TrSizeGateSheet } from "@/components/tr/TrSizeGateSheet";
 import { isProductCartCheckoutEnabled } from "@/lib/tr/cartCheckout";
 import { getProductCoverImageFor } from "@/lib/tr/productImages";
 import { resolveProductSizes } from "@/lib/tr/productOptions";
+import { isProductSizeSellable } from "@/lib/tr/sizeStocks";
 import { useTrAddedToCartStore } from "@/store/trAddedToCartStore";
 import type { TrProductWithBoutique } from "@/types/tr-marketplace";
 
@@ -75,7 +76,20 @@ export function TrQuickAddToCartButton({
       setSizeSheetOpen(true);
       return;
     }
-    commit(sizes.length === 1 ? sizes[0]! : (product.size ?? null));
+    const size = sizes.length === 1 ? sizes[0]! : (product.size ?? null);
+    if (
+      size &&
+      !isProductSizeSellable({
+        sizes,
+        size,
+        sizeStocks: product.sizeStocks,
+        unitStock: product.stock,
+      })
+    ) {
+      return;
+    }
+    if (!size && product.stock <= 0) return;
+    commit(size);
   };
 
   const defaultClass = iconOnly

@@ -6,6 +6,7 @@ const DEFAULT_LAYOUT: TrBoutiqueHomeLayoutId = "default";
 const SLUG_OVERRIDES: Partial<Record<string, TrBoutiqueHomeLayoutId>> = {
   "demo-maya": "editorial",
   pervinsoysalbutik: "editorial",
+  lilabutik: "editorial",
 };
 
 export function resolveBoutiqueHomeLayout(

@@ -505,6 +505,29 @@ export async function updateOwnerOrderFulfillment(
   return data.order;
 }
 
+/** Mark pending order as paid (manual until iyzico). */
+export async function updateOwnerOrderPaymentPaid(
+  boutiqueId: string,
+  orderId: string,
+) {
+  const response = await ownerFetch(
+    `/api/tr/owner/orders/${encodeURIComponent(orderId)}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ boutiqueId, paymentStatus: "paid" }),
+    },
+  );
+  const data = (await response.json()) as {
+    order?: import("@/types/tr-marketplace").TrOrderWithItems;
+    error?: string;
+  };
+  if (!response.ok) {
+    throw new Error(data.error ?? "Ödeme durumu güncellenemedi.");
+  }
+  if (!data.order) throw new Error("Ödeme durumu güncellenemedi.");
+  return data.order;
+}
+
 export async function fetchOwnerCustomers(boutiqueId: string) {
   const response = await ownerFetch(
     `/api/tr/owner/customers?boutiqueId=${encodeURIComponent(boutiqueId)}`,

@@ -15,8 +15,11 @@ export function readSizeStocks(value: unknown): SizeStocks {
 }
 
 /**
- * Units for a size. When `sizeStocks` is empty (legacy products), treat as in stock.
- * Missing key with a populated map → 0 (out of stock).
+ * Units for a size.
+ * - Empty `sizeStocks` map + product has sizes → treat as **out of stock**
+ *   (legacy gap / never initialized). Callers that only have stocks (no sizes
+ *   list) still get `null` = unknown / legacy unlimited for maps that are empty
+ *   when the product truly has no sizes — prefer `isProductSizeSellable`.
  */
 export function getSizeStockQuantity(
   sizeStocks: SizeStocks | null | undefined,
@@ -32,7 +35,39 @@ export function isSizeInStock(
   size: string,
 ): boolean {
   const qty = getSizeStockQuantity(sizeStocks, size);
-  return qty === null || qty > 0;
+  // Empty map → not sellable via per-size path (use isProductSizeSellable + unitStock for legacy).
+  if (qty === null) return false;
+  return qty > 0;
+}
+
+/**
+ * Sellability for a sized SKU. When the product declares sizes but has an empty
+ * size_stocks map, do **not** treat as unlimited — require unit stock fallback
+ * only when explicitly allowed by the caller via `unitStock`.
+ */
+export function isProductSizeSellable(input: {
+  sizes: string[];
+  size: string;
+  sizeStocks: SizeStocks | null | undefined;
+  /** Fallback when size_stocks is empty (legacy). */
+  unitStock?: number;
+}): boolean {
+  const size = input.size.trim();
+  if (!size) return false;
+
+  const map = input.sizeStocks ?? {};
+  const hasMap = Object.keys(map).length > 0;
+
+  if (hasMap) {
+    return (map[size] ?? 0) > 0;
+  }
+
+  // Sized product without per-size map: only sellable if unit stock remains.
+  if (input.sizes.length > 0) {
+    return (input.unitStock ?? 0) > 0;
+  }
+
+  return (input.unitStock ?? 0) > 0;
 }
 
 export function sumSizeStocks(stocks: SizeStocks): number {

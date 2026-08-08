@@ -5,7 +5,7 @@ import { fetchOwnerOrders } from "@/lib/tr/ownerClient";
 import {
   getOrdersSeenAt,
   hasUnseenOrders,
-  isPaidLikeOrder,
+  isActionableOwnerOrder,
   ORDERS_SEEN_EVENT,
 } from "@/lib/tr/orderNotifications";
 import type { TrOrderWithItems } from "@/types/tr-marketplace";
@@ -71,7 +71,7 @@ export function useOwnerOrderAlerts(boutiqueId: string | null | undefined) {
     };
   }, [boutiqueId]);
 
-  const recentOrders = orders.filter(isPaidLikeOrder).slice(0, 8);
+  const recentOrders = orders.filter(isActionableOwnerOrder).slice(0, 8);
 
   return { orders, recentOrders, hasNewOrders, loading };
 }

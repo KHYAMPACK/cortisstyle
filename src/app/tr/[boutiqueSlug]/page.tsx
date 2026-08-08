@@ -19,6 +19,7 @@ import { isTrCheckoutEnabled, isTrMarketplaceCartEnabled } from "@/lib/tr/platfo
 import { trHomePath } from "@/lib/tr/paths";
 import { safeGetBoutiqueStorefront } from "@/lib/tr/publicData";
 import { isTrDemoBoutiqueSlug } from "@/lib/tr/looks/demoCatalog";
+import { resolveStorefrontTheme } from "@/lib/tr/storefrontTheme";
 
 interface BoutiqueStorefrontPageProps {
   params: Promise<{ boutiqueSlug: string }>;
@@ -52,15 +53,16 @@ export default async function BoutiqueStorefrontPage({
     notFound();
   }
 
+  const theme = resolveStorefrontTheme(boutiqueSlug, storefront.homeLayout);
+  const products = withEditorialDemoProducts(storefront, storefront.products);
+
   if (
+    theme === "editorial" ||
     resolveBoutiqueHomeLayout(boutiqueSlug, storefront.homeLayout) ===
-    "editorial"
+      "editorial"
   ) {
     return (
-      <TrBoutiqueEditorialHome
-        boutique={storefront}
-        products={withEditorialDemoProducts(storefront, storefront.products)}
-      />
+      <TrBoutiqueEditorialHome boutique={storefront} products={products} />
     );
   }
 

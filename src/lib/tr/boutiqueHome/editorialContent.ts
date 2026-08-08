@@ -3,6 +3,7 @@
  * Code defaults (Maya demo or brand-derived) + optional DB `editorial_content` merge.
  */
 
+import { resolveBoutiqueContactEmail } from "@/lib/tr/checkoutMode";
 import {
   EDITORIAL_DEMO_SLUG,
   getEditorialDemoContent,
@@ -86,16 +87,16 @@ export function buildBoutiqueEditorialDefaults(
     | "whatsappPhone"
     | "instagramHandle"
     | "shippingNote"
+    | "customDomain"
   >,
 ): EditorialDemoContent {
   const phoneDisplay = boutique.whatsappPhone
     ? formatPhoneDisplay(boutique.whatsappPhone)
     : "İletişim yakında";
-  const email =
-    boutique.slug === "pervinsoysalbutik"
-      ? "info@pervinsoysal.com"
-      : "info@cortisstyle.com";
+  const email = resolveBoutiqueContactEmail(boutique);
   const handle = boutique.instagramHandle?.replace(/^@/, "") ?? boutique.slug;
+  const shippingLabel =
+    boutique.shippingNote?.trim() || "Kargo bilgisi yakında";
 
   return {
     nav: [
@@ -113,38 +114,38 @@ export function buildBoutiqueEditorialDefaults(
       },
     ],
     promoBar: {
-      text: "Seçili ürünlerde %50'ye varan indirim",
+      text: `${boutique.name} — yeni sezon`,
       cta: "Alışverişe başla",
     },
     categoryHero: {
       image: TEMPLATE_ASSET("cat-trenckot.jpg"),
-      promoLine: "Seçili ürünlerde",
-      discountLine: "%50'ye varan indirim",
+      promoLine: "Yeni sezon",
+      discountLine: "Koleksiyonu keşfet",
       cta: "Alışverişe başla",
     },
     heroPromotions: [
-      {
-        id: "sale-50",
-        image: TEMPLATE_ASSET("cat-trenckot.jpg"),
-        promoLine: "Seçili ürünlerde",
-        discountLine: "%50'ye varan indirim",
-        cta: "Alışverişe başla",
-        target: "sale",
-      },
-      {
-        id: "free-shipping",
-        image: TEMPLATE_ASSET("cat-ceket.jpg"),
-        promoLine: "Tüm Türkiye'ye",
-        discountLine: "Ücretsiz kargo",
-        cta: "Alışverişe başla",
-        target: "all",
-      },
       {
         id: "new-arrivals",
         image: TEMPLATE_ASSET("cat-parka.jpg"),
         promoLine: "Yeni gelenler",
         discountLine: "Sezonun parçaları",
         cta: "Keşfet",
+        target: "all",
+      },
+      {
+        id: "sale",
+        image: TEMPLATE_ASSET("cat-trenckot.jpg"),
+        promoLine: "İndirimdekiler",
+        discountLine: "Kampanyalı ürünler",
+        cta: "İncele",
+        target: "sale",
+      },
+      {
+        id: "shipping",
+        image: TEMPLATE_ASSET("cat-ceket.jpg"),
+        promoLine: "Teslimat",
+        discountLine: shippingLabel,
+        cta: "Alışverişe başla",
         target: "all",
       },
     ],
@@ -200,13 +201,13 @@ export function buildBoutiqueEditorialDefaults(
     usps: [
       { id: "secure", label: "Güvenli Alışveriş", icon: "secure" },
       { id: "customers", label: "Müşteri Memnuniyeti", icon: "customers" },
-      { id: "shipping", label: "Ücretsiz / Hızlı Kargo", icon: "shipping" },
-      { id: "payment", label: "Güvenli Ödeme", icon: "payment" },
+      { id: "shipping", label: shippingLabel, icon: "shipping" },
+      { id: "payment", label: "Sipariş kaydı", icon: "payment" },
     ],
     footer: {
       newsletterTitle: "E-Bülten Kayıt",
       newsletterBody:
-        "Yeni sezon ve özel fırsatlar için bültenimize kayıt olun.",
+        "Yeni sezon ve özel fırsatlar için bizi takip edin.",
       newsletterPlaceholder: "E-posta adresinizi girin",
       newsletterCta: "Gönder",
       phone: phoneDisplay,
@@ -280,4 +281,59 @@ export function resolveEditorialHeroPromotions(
       target: "sale",
     },
   ];
+}
+
+/** Sub text 1 for a campaign slide. */
+export function resolveCampaignSubText(promo: EditorialHeroPromotion): string {
+  return promo.subText?.trim() || promo.promoLine;
+}
+
+/** Large campaign title. */
+export function resolveCampaignName(promo: EditorialHeroPromotion): string {
+  return promo.campaignName?.trim() || promo.discountLine;
+}
+
+/** Bottom lines under the action grid. */
+export function resolveCampaignSubText2(
+  promo: EditorialHeroPromotion,
+): string[] {
+  if (!promo.subText2) return [];
+  if (Array.isArray(promo.subText2)) {
+    return promo.subText2.map((line) => line.trim()).filter(Boolean);
+  }
+  return promo.subText2
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+export function resolveCampaignActions(
+  promo: EditorialHeroPromotion,
+): Array<{ label: string; target: string }> {
+  if (promo.actions && promo.actions.length > 0) {
+    return promo.actions.slice(0, 4).map((action) => ({
+      label: action.label,
+      target: action.target?.trim() || "all",
+    }));
+  }
+  return [
+    {
+      label: promo.cta,
+      target: promo.target?.trim() || "sale",
+    },
+  ];
+}
+
+export function isCampaignHeroTemplate(
+  promo: EditorialHeroPromotion,
+): boolean {
+  if (promo.template === "campaign") return true;
+  if (promo.template === "classic" || promo.template === "brand") return false;
+  return Boolean(promo.actions && promo.actions.length > 0);
+}
+
+export function isBrandHeroTemplate(
+  promo: EditorialHeroPromotion,
+): boolean {
+  return promo.template === "brand";
 }

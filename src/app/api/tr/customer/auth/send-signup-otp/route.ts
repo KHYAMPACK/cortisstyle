@@ -1,4 +1,10 @@
 import { sendBoutiqueSignupOtp } from "@/lib/tr/authMail/sendBoutiqueAuthEmail";
+import {
+  clientIpFromRequest,
+  consumeRateLimit,
+  rateLimitResponse,
+} from "@/lib/tr/rateLimit";
+import { AUTH_MAIL_RATE_LIMITS } from "@/lib/tr/rateLimitPolicies";
 
 export const runtime = "nodejs";
 
@@ -15,9 +21,27 @@ export async function POST(request: Request) {
     return Response.json({ error: "Invalid JSON payload." }, { status: 400 });
   }
 
+  const email = (body.email ?? "").trim().toLowerCase();
+  const boutiqueSlug = (body.boutiqueSlug ?? "").trim().toLowerCase();
+  const ip = clientIpFromRequest(request);
+
+  const ipLimit = consumeRateLimit({
+    key: `auth-otp:ip:${ip}`,
+    ...AUTH_MAIL_RATE_LIMITS.otpPerIp,
+  });
+  if (!ipLimit.ok) return rateLimitResponse(ipLimit.retryAfterSec);
+
+  if (email && boutiqueSlug) {
+    const emailLimit = consumeRateLimit({
+      key: `auth-otp:email:${boutiqueSlug}:${email}`,
+      ...AUTH_MAIL_RATE_LIMITS.otpPerEmail,
+    });
+    if (!emailLimit.ok) return rateLimitResponse(emailLimit.retryAfterSec);
+  }
+
   const result = await sendBoutiqueSignupOtp({
-    email: body.email ?? "",
-    boutiqueSlug: body.boutiqueSlug ?? "",
+    email,
+    boutiqueSlug,
   });
 
   if (!result.ok) {

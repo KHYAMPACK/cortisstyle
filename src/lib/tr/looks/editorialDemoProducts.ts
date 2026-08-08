@@ -132,12 +132,17 @@ export function getEditorialDemoProduct(
   return { ...product, boutique };
 }
 
-/** Use live catalog when present; otherwise interactive demo SKUs. */
+/** Use live catalog when present; otherwise interactive demo SKUs only for demo tenants. */
 export function withEditorialDemoProducts(
   boutique: TrBoutiquePublic,
   products: TrProduct[],
 ): TrProduct[] {
   const available = products.filter((p) => p.status === "available");
   if (available.length > 0) return products;
+
+  // Never inject fake SKUs onto a real boutique that sold out / is empty.
+  const slug = boutique.slug.trim().toLowerCase();
+  if (!slug.startsWith("demo-")) return products;
+
   return buildEditorialDemoProducts(boutique);
 }

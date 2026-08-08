@@ -5,19 +5,24 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
-import { useEffect, useId, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useId, useState, type ReactNode } from "react";
 import {
   useTrBoutiqueCommerceScope,
   useTrScopedCart,
   useTrScopedFavorites,
 } from "@/components/tr/boutique/TrBoutiqueCommerceScope";
-import { formatTryFromKurus } from "@/types/tr-marketplace";
-import { cartLineKey, cartTotalKurus } from "@/types/tr-cart";
+import { useTrBoutiqueProductsOptional } from "@/components/tr/boutique/TrBoutiqueProductsContext";
+import { TrSizeGateSheet } from "@/components/tr/TrSizeGateSheet";
+import { saveBoutiqueCheckoutSelection } from "@/lib/tr/checkoutSelection";
+import { resolveProductSizes } from "@/lib/tr/productOptions";
+import { isProductSizeSellable } from "@/lib/tr/sizeStocks";
 import {
   trBoutiqueCartPath,
   trBoutiqueCheckoutPath,
   trBoutiqueProductPath,
 } from "@/lib/tr/paths";
+import { cartLineKey, cartTotalKurus } from "@/types/tr-cart";
+import { formatTryFromKurus } from "@/types/tr-marketplace";
 
 function PanelShell({
   title,
@@ -158,6 +163,10 @@ function CartPanel() {
           <button
             type="button"
             onClick={() => {
+              saveBoutiqueCheckoutSelection(
+                boutiqueSlug,
+                cart.items.map((item) => cartLineKey(item)),
+              );
               closePanel();
               router.push(trBoutiqueCheckoutPath(boutiqueSlug));
             }}
@@ -176,6 +185,65 @@ function FavoritesPanel() {
     useTrBoutiqueCommerceScope();
   const favorites = useTrScopedFavorites();
   const cart = useTrScopedCart();
+  const catalog = useTrBoutiqueProductsOptional();
+  const [sizeGateProductId, setSizeGateProductId] = useState<string | null>(
+    null,
+  );
+
+  const sizeGateProduct = catalog?.products.find(
+    (product) => product.id === sizeGateProductId,
+  );
+  const sizeGateSizes = sizeGateProduct
+    ? resolveProductSizes(sizeGateProduct)
+    : [];
+
+  const addFavoriteToCart = (item: (typeof favorites.items)[number]) => {
+    const product = catalog?.products.find(
+      (entry) => entry.id === item.productId,
+    );
+    if (product && product.status !== "available") {
+      return;
+    }
+    const sizes = product ? resolveProductSizes(product) : [];
+
+    if (sizes.length > 1) {
+      setSizeGateProductId(item.productId);
+      return;
+    }
+
+    const size =
+      sizes.length === 1
+        ? sizes[0]!
+        : product?.size?.trim() || null;
+
+    if (
+      size &&
+      product &&
+      !isProductSizeSellable({
+        sizes,
+        size,
+        sizeStocks: product.sizeStocks,
+        unitStock: product.stock,
+      })
+    ) {
+      return;
+    }
+    if (!size && product && product.stock <= 0) {
+      return;
+    }
+
+    cart.addItem({
+      productId: item.productId,
+      boutiqueId: item.boutiqueId,
+      boutiqueName: item.boutiqueName,
+      boutiqueSlug: item.boutiqueSlug,
+      title: item.title,
+      priceKurus: item.priceKurus,
+      image: item.image,
+      size,
+    });
+    openPanel("cart");
+  };
 
   return (
     <PanelShell title={`${boutiqueName} Favoriler`} onClose={closePanel}>
@@ -214,19 +282,7 @@ function FavoritesPanel() {
                 <div className="mt-2 flex gap-3">
                   <button
                     type="button"
-                    onClick={() => {
-                      cart.addItem({
-                        productId: item.productId,
-                        boutiqueId: item.boutiqueId,
-                        boutiqueName: item.boutiqueName,
-                        boutiqueSlug: item.boutiqueSlug,
-                        title: item.title,
-                        priceKurus: item.priceKurus,
-                        image: item.image,
-                        size: null,
-                      });
-                      openPanel("cart");
-                    }}
+                    onClick={() => addFavoriteToCart(item)}
                     className="text-[11px] tracking-[0.08em] text-neutral-900 uppercase underline-offset-2 hover:underline"
                   >
                     Sepete ekle
@@ -244,102 +300,92 @@ function FavoritesPanel() {
           ))}
         </ul>
       )}
+
+      <TrSizeGateSheet
+        open={Boolean(sizeGateProduct)}
+        onClose={() => setSizeGateProductId(null)}
+        sizes={sizeGateSizes}
+        sizeStocks={sizeGateProduct?.sizeStocks}
+        productTitle={sizeGateProduct?.title ?? ""}
+        whatsappPhone={sizeGateProduct?.boutique.whatsappPhone}
+        onConfirm={(size) => {
+          const item = favorites.items.find(
+            (entry) => entry.productId === sizeGateProductId,
+          );
+          if (!item) {
+            setSizeGateProductId(null);
+            return;
+          }
+          cart.addItem({
+            productId: item.productId,
+            boutiqueId: item.boutiqueId,
+            boutiqueName: item.boutiqueName,
+            boutiqueSlug: item.boutiqueSlug,
+            title: item.title,
+            priceKurus: item.priceKurus,
+            image: item.image,
+            size,
+          });
+          setSizeGateProductId(null);
+          openPanel("cart");
+        }}
+      />
     </PanelShell>
   );
 }
 
 function TrackingPanel() {
-  const { boutiqueName, closePanel } = useTrBoutiqueCommerceScope();
-  const [code, setCode] = useState("");
-  const [result, setResult] = useState<string | null>(null);
-
-  const onSubmit = (event: FormEvent) => {
-    event.preventDefault();
-    const trimmed = code.trim();
-    if (!trimmed) return;
-    setResult(
-      `Demo takip: “${trimmed.toUpperCase()}” için kargo hazırlanıyor. ${boutiqueName} vitrininde gerçek gönderim yoktur.`,
-    );
-  };
+  const { closePanel } = useTrBoutiqueCommerceScope();
 
   return (
     <PanelShell title="Kargo Takip" onClose={closePanel}>
       <p className="text-[13px] leading-relaxed text-neutral-600">
-        Sipariş numaranızı girerek demo kargo durumunu görüntüleyin.
+        Kargo takip entegrasyonu yakında. Siparişiniz kargoya verildiğinde
+        bilgilendirme WhatsApp veya e-posta ile iletilecek.
       </p>
-      <form onSubmit={onSubmit} className="mt-5 space-y-3">
-        <input
-          type="text"
-          value={code}
-          onChange={(event) => setCode(event.target.value)}
-          placeholder="Örn. MAYA-DEMO-1234"
-          className="w-full border border-neutral-300 px-3 py-2.5 text-[13px] outline-none focus:border-neutral-900"
-        />
-        <button
-          type="submit"
-          className="w-full bg-neutral-900 px-4 py-3 text-[11px] tracking-[0.16em] text-white uppercase"
-        >
-          Sorgula
-        </button>
-      </form>
-      {result ? (
-        <p className="mt-5 border border-black/5 bg-neutral-50 px-3 py-3 text-[13px] leading-relaxed text-neutral-700">
-          {result}
-        </p>
-      ) : null}
+      <button
+        type="button"
+        onClick={closePanel}
+        className="mt-6 w-full bg-neutral-900 px-4 py-3 text-[11px] tracking-[0.16em] text-white uppercase"
+      >
+        Tamam
+      </button>
     </PanelShell>
   );
 }
 
 function ReportPanel() {
   const { boutiqueName, closePanel } = useTrBoutiqueCommerceScope();
-  const [message, setMessage] = useState("");
-  const [sent, setSent] = useState(false);
-
-  const onSubmit = (event: FormEvent) => {
-    event.preventDefault();
-    if (!message.trim()) return;
-    setSent(true);
-  };
+  const catalog = useTrBoutiqueProductsOptional();
+  const phone = catalog?.boutique.whatsappPhone?.replace(/\D/g, "") ?? "";
+  const waHref = phone
+    ? `https://wa.me/${phone}?text=${encodeURIComponent(`Merhaba ${boutiqueName}, sipariş / ürün hakkında yazıyorum.`)}`
+    : null;
 
   return (
-    <PanelShell title="Sorun Bildir" onClose={closePanel}>
-      {sent ? (
-        <>
-          <p className="text-[14px] leading-relaxed text-neutral-700">
-            Bildiriminiz demo olarak kaydedildi. {boutiqueName} ekibine gerçek
-            mesaj gönderilmez.
-          </p>
-          <button
-            type="button"
-            onClick={closePanel}
-            className="mt-6 w-full bg-neutral-900 px-4 py-3 text-[11px] tracking-[0.16em] text-white uppercase"
-          >
-            Kapat
-          </button>
-        </>
+    <PanelShell title="Yardım" onClose={closePanel}>
+      <p className="text-[13px] leading-relaxed text-neutral-600">
+        Sipariş, kargo veya ürün ile ilgili sorularınız için {boutiqueName}{" "}
+        ekibine WhatsApp’tan yazın.
+      </p>
+      {waHref ? (
+        <a
+          href={waHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={closePanel}
+          className="mt-6 flex w-full items-center justify-center bg-neutral-900 px-4 py-3 text-[11px] tracking-[0.16em] text-white uppercase"
+        >
+          WhatsApp ile yaz
+        </a>
       ) : (
-        <>
-          <p className="text-[13px] leading-relaxed text-neutral-600">
-            Sipariş, kargo veya ürün ile ilgili bir sorun mu yaşıyorsunuz?
-          </p>
-          <form onSubmit={onSubmit} className="mt-5 space-y-3">
-            <textarea
-              value={message}
-              onChange={(event) => setMessage(event.target.value)}
-              rows={5}
-              required
-              placeholder="Sorununuzu kısaca yazın…"
-              className="w-full resize-y border border-neutral-300 px-3 py-2.5 text-[13px] outline-none focus:border-neutral-900"
-            />
-            <button
-              type="submit"
-              className="w-full bg-neutral-900 px-4 py-3 text-[11px] tracking-[0.16em] text-white uppercase"
-            >
-              Gönder
-            </button>
-          </form>
-        </>
+        <button
+          type="button"
+          onClick={closePanel}
+          className="mt-6 w-full bg-neutral-900 px-4 py-3 text-[11px] tracking-[0.16em] text-white uppercase"
+        >
+          Tamam
+        </button>
       )}
     </PanelShell>
   );
@@ -348,19 +394,19 @@ function ReportPanel() {
 const HELP_REPLIES: Array<{ q: string; a: string }> = [
   {
     q: "Kargo ne kadar sürer?",
-    a: "Demo butikte gerçek kargo yok. Canlı mağazada tipik süre 1–3 iş günüdür.",
+    a: "Sipariş onayından ve ödeme teyidinden sonra ürünler paketlenir. Kargo takip entegrasyonu yakında; gönderi hazır olunca bilgilendirilirsiniz.",
   },
   {
     q: "İade var mı?",
-    a: "Demo iade politikası: 14 gün içinde değişim. Gerçek iade işlemi yapılmaz.",
+    a: "İade ve cayma koşulları yasal metinler sayfasındadır. Sorunuz olursa WhatsApp’tan yazın.",
   },
   {
     q: "Ödeme güvenli mi?",
-    a: "Bu vitrin demo ödemesi kullanır; kart çekimi yoktur. Canlı mağazada güvenli ödeme yakında açılacak.",
+    a: "Kart ödemesi iyzico ile açılacak. Siparişiniz güvenle kaydedilir; ödeme onayı sonrası kargoya çıkar.",
   },
   {
     q: "Beden tablosu",
-    a: "Ürün sayfasındaki beden seçeneklerini kullanın. Emin değilseniz bir beden büyük tercih edin.",
+    a: "Ürün sayfasındaki beden seçeneklerini kullanın. Emin değilseniz WhatsApp’tan beden danışın.",
   },
 ];
 

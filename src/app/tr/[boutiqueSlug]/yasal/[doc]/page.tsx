@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { resolveBoutiqueContactEmail } from "@/lib/tr/checkoutMode";
 import {
   getTrLegalDoc,
   isTrLegalDocId,
@@ -24,10 +25,7 @@ export default async function BoutiqueLegalPage({ params }: LegalPageProps) {
     notFound();
   }
 
-  const email =
-    boutique.slug === "pervinsoysalbutik"
-      ? "info@pervinsoysal.com"
-      : "info@cortisstyle.com";
+  const email = resolveBoutiqueContactEmail(boutique);
 
   const ctx: TrLegalBoutiqueContext = {
     name: boutique.name,

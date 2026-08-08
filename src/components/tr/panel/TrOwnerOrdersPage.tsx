@@ -29,13 +29,8 @@ import {
   TrPanelStagger,
   trPanelStaggerItem,
 } from "@/components/tr/panel/TrPanelMotion";
-import {
-  buildDemoCargoLabelHtml,
-  demoTrackingNumber,
-} from "@/lib/tr/demoCargoLabel";
 import { fetchOwnerOrders } from "@/lib/tr/ownerClient";
 import { markOrdersSeen } from "@/lib/tr/orderNotifications";
-import { printHtmlDocument } from "@/lib/tr/printDocument";
 import { trPanelOrderPath, trPanelPath } from "@/lib/tr/paths";
 import {
   formatTryFromKurus,
@@ -43,17 +38,10 @@ import {
   type TrOrderWithItems,
 } from "@/types/tr-marketplace";
 
-function OrdersList({
-  boutiqueId,
-  boutiqueName,
-}: {
-  boutiqueId: string;
-  boutiqueName: string;
-}) {
+function OrdersList({ boutiqueId }: { boutiqueId: string }) {
   const [orders, setOrders] = useState<TrOrderWithItems[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [printError, setPrintError] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | TrFulfillmentStatus>("all");
 
   useEffect(() => {
@@ -103,22 +91,6 @@ function OrdersList({
     [orders],
   );
 
-  const printLabel = (order: TrOrderWithItems) => {
-    setPrintError(null);
-    try {
-      printHtmlDocument(
-        buildDemoCargoLabelHtml({ order, boutiqueName }),
-        `Kargo etiketi · ${demoTrackingNumber(order.id)}`,
-      );
-    } catch (printErr) {
-      setPrintError(
-        printErr instanceof Error
-          ? printErr.message
-          : "Etiket yazdırılamadı.",
-      );
-    }
-  };
-
   return (
     <AnimatePresence mode="wait">
       {loading ? (
@@ -131,8 +103,6 @@ function OrdersList({
         <TrPanelFadeIn key="orders-ready" className="space-y-5">
           <TrOwnerPushPromptBanner boutiqueId={boutiqueId} />
           <TrOwnerOrderProcessGuide />
-
-          {printError ? <p className={panelErrorClass}>{printError}</p> : null}
 
           <div className="space-y-3">
             <p className="text-[17px] font-medium text-neutral-700">
@@ -182,7 +152,6 @@ function OrdersList({
                   order.isSandbox || order.paymentStatus === "sandbox"
                     ? "sandbox"
                     : order.paymentStatus;
-                const canPrint = order.fulfillmentStatus !== "cancelled";
 
                 return (
                   <motion.div key={order.id} variants={trPanelStaggerItem}>
@@ -222,20 +191,9 @@ function OrdersList({
                             Detayı aç →
                           </Link>
                         </div>
-                        <div className="flex shrink-0 flex-col items-end gap-4 self-stretch">
-                          <p className="text-[22px] font-semibold tabular-nums text-neutral-950">
-                            {formatTryFromKurus(order.totalKurus)}
-                          </p>
-                          <button
-                            type="button"
-                            disabled={!canPrint}
-                            onClick={() => printLabel(order)}
-                            className="mt-auto inline-flex min-h-11 items-center justify-center rounded-xl px-5 py-2.5 text-[15px] font-semibold text-white disabled:opacity-50"
-                            style={{ backgroundColor: "var(--panel-accent)" }}
-                          >
-                            Yazdır
-                          </button>
-                        </div>
+                        <p className="shrink-0 text-[22px] font-semibold tabular-nums text-neutral-950">
+                          {formatTryFromKurus(order.totalKurus)}
+                        </p>
                       </div>
                     </div>
                   </motion.div>
@@ -260,13 +218,10 @@ export function TrOwnerOrdersPage() {
             </Link>
             <h2 className={panelPageTitleClass}>Siparişler</h2>
             <p className="mt-2 text-[16px] leading-relaxed text-neutral-600">
-              Paketleyin, etiketi yazdırın — kurye adresten alır.
+              Paketleyin ve durumları güncelleyin. Kargo entegrasyonu yakında.
             </p>
           </div>
-          <OrdersList
-            boutiqueId={activeBoutique.id}
-            boutiqueName={activeBoutique.name}
-          />
+          <OrdersList boutiqueId={activeBoutique.id} />
         </div>
       )}
     </TrOwnerPanelGate>

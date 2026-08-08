@@ -1,4 +1,8 @@
-import { createBoutiqueAdmin } from "@/lib/tr/boutiques";
+import {
+  createBoutiqueAdmin,
+  getBoutiqueBySlugAdmin,
+  updateBoutiqueBrandAdmin,
+} from "@/lib/tr/boutiques";
 import { createDiscountCodeAdmin } from "@/lib/tr/discountCodes";
 import {
   createOrderAdmin,
@@ -89,30 +93,51 @@ export async function POST(request: Request) {
     const createdCodes: Array<{ code: string; boutiqueSlug: string }> = [];
 
     for (const boutiqueInput of payload.boutiques ?? []) {
-      const boutique = await createBoutiqueAdmin({
-        slug: boutiqueInput.slug,
-        name: boutiqueInput.name,
-        legalName: boutiqueInput.legalName,
-        description: boutiqueInput.description,
-        logoUrl: boutiqueInput.logoUrl,
-        whatsappPhone: boutiqueInput.whatsappPhone,
-        instagramHandle: boutiqueInput.instagramHandle,
-        themeAccent: boutiqueInput.themeAccent,
-        shippingNote: boutiqueInput.shippingNote,
-        exchangePolicy: boutiqueInput.exchangePolicy,
-        physicalAddress: boutiqueInput.physicalAddress,
-        homeLayout: boutiqueInput.homeLayout,
-        customDomain: boutiqueInput.customDomain,
-        editorialContent: boutiqueInput.editorialContent,
-        status: boutiqueInput.status ?? "verified",
-      });
+      const existing = await getBoutiqueBySlugAdmin(boutiqueInput.slug);
+      const boutique = existing
+        ? await updateBoutiqueBrandAdmin(existing.id, {
+            description: boutiqueInput.description,
+            logoUrl: boutiqueInput.logoUrl,
+            whatsappPhone: boutiqueInput.whatsappPhone,
+            instagramHandle: boutiqueInput.instagramHandle,
+            themeAccent: boutiqueInput.themeAccent,
+            shippingNote: boutiqueInput.shippingNote,
+            exchangePolicy: boutiqueInput.exchangePolicy,
+            physicalAddress: boutiqueInput.physicalAddress,
+            homeLayout: boutiqueInput.homeLayout,
+            customDomain: boutiqueInput.customDomain,
+            editorialContent: boutiqueInput.editorialContent,
+          })
+        : await createBoutiqueAdmin({
+            slug: boutiqueInput.slug,
+            name: boutiqueInput.name,
+            legalName: boutiqueInput.legalName,
+            description: boutiqueInput.description,
+            logoUrl: boutiqueInput.logoUrl,
+            whatsappPhone: boutiqueInput.whatsappPhone,
+            instagramHandle: boutiqueInput.instagramHandle,
+            themeAccent: boutiqueInput.themeAccent,
+            shippingNote: boutiqueInput.shippingNote,
+            exchangePolicy: boutiqueInput.exchangePolicy,
+            physicalAddress: boutiqueInput.physicalAddress,
+            homeLayout: boutiqueInput.homeLayout,
+            customDomain: boutiqueInput.customDomain,
+            editorialContent: boutiqueInput.editorialContent,
+            status: boutiqueInput.status ?? "verified",
+          });
 
       createdBoutiques.push({
         id: boutique.id,
         slug: boutique.slug,
         name: boutique.name,
         status: boutique.status,
+        updated: Boolean(existing),
       });
+
+      // On update-only passes, skip creating duplicate products/orders/codes.
+      if (existing) {
+        continue;
+      }
 
       const productIds: string[] = [];
       const productSnapshots: Array<{
@@ -187,6 +212,7 @@ export async function POST(request: Request) {
           isSandbox: true,
           createdAt,
           items,
+          decrementInventory: false,
         });
 
         if (orderInput.fulfillmentStatus) {
@@ -222,12 +248,23 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("TR admin seed failed:", error);
+    const message =
+      error instanceof Error
+        ? error.message
+        : typeof error === "object" &&
+            error &&
+            "message" in error &&
+            typeof (error as { message: unknown }).message === "string"
+          ? (error as { message: string }).message
+          : typeof error === "object" &&
+              error &&
+              "error" in error &&
+              typeof (error as { error: unknown }).error === "string"
+            ? (error as { error: string }).error
+            : JSON.stringify(error);
     return Response.json(
       {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Unable to seed TR marketplace data.",
+        error: message || "Unable to seed TR marketplace data.",
       },
       { status: 500 },
     );

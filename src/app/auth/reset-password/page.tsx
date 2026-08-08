@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { BrandLogo } from "@/components/BrandLogo";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -19,10 +19,22 @@ function safeNextPath(raw: string | null): string {
   return raw;
 }
 
+function isBoutiqueReturnPath(path: string): boolean {
+  return (
+    path === "/giris" ||
+    path === "/hesap" ||
+    /^\/tr\/[^/]+\/giris\/?$/.test(path)
+  );
+}
+
 export default function ResetPasswordPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const returnTo = safeNextPath(searchParams.get("next"));
+  const boutiqueFlow = useMemo(
+    () => isBoutiqueReturnPath(returnTo),
+    [returnTo],
+  );
   const {
     isAuthenticated,
     isInitializing,
@@ -63,7 +75,7 @@ export default function ResetPasswordPage() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-ice-floor px-4">
         <p className="text-meta font-mono text-[10px] tracking-[0.35em] uppercase">
-          Loading archive session...
+          {boutiqueFlow ? "Oturum hazırlanıyor…" : "Loading archive session..."}
         </p>
       </div>
     );
@@ -73,17 +85,20 @@ export default function ResetPasswordPage() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-ice-floor px-4">
         <div className="w-full max-w-md border border-blueprint-border bg-white p-8 text-center shadow-2xl">
-          <h1 className="font-serif text-2xl text-neutral-950">Link expired</h1>
+          <h1 className="font-serif text-2xl text-neutral-950">
+            {boutiqueFlow ? "Bağlantı süresi doldu" : "Link expired"}
+          </h1>
           <p className="mt-4 text-sm text-neutral-600">
-            This password reset link is invalid or has expired. Request a new
-            one from the sign-in screen.
+            {boutiqueFlow
+              ? "Şifre sıfırlama bağlantısı geçersiz veya süresi dolmuş. Giriş ekranından yeniden talep edin."
+              : "This password reset link is invalid or has expired. Request a new one from the sign-in screen."}
           </p>
           <button
             type="button"
-            onClick={() => router.push("/")}
+            onClick={() => router.push(boutiqueFlow ? returnTo : "/")}
             className={`${primaryButtonClass} mt-8`}
           >
-            Back to lookbook
+            {boutiqueFlow ? "Girişe dön" : "Back to lookbook"}
           </button>
         </div>
       </div>
@@ -94,74 +109,96 @@ export default function ResetPasswordPage() {
     <div className="flex min-h-screen flex-col bg-ice-floor">
       <div className="flex flex-1 items-center justify-center px-4 py-10">
         <div className="w-full max-w-md border border-blueprint-border bg-white p-8 shadow-2xl md:p-10">
-        <div className="mb-6 flex justify-center">
-          <BrandLogo variant="onLight" className="h-20 w-auto" />
-        </div>
+          <div className="mb-6 flex justify-center">
+            <BrandLogo variant="onLight" className="h-20 w-auto" />
+          </div>
 
-        <p className="text-meta mb-3 text-center text-[9px] tracking-[0.4em] uppercase">
-          Archive Security
-        </p>
+          <p className="text-meta mb-3 text-center text-[9px] tracking-[0.4em] uppercase">
+            {boutiqueFlow ? "Hesap güvenliği" : "Archive Security"}
+          </p>
 
-        <h1 className="text-center font-serif text-2xl text-neutral-950">
-          {isComplete ? "Password updated" : "Set a new password"}
-        </h1>
+          <h1 className="text-center font-serif text-2xl text-neutral-950">
+            {isComplete
+              ? boutiqueFlow
+                ? "Şifre güncellendi"
+                : "Password updated"
+              : boutiqueFlow
+                ? "Yeni şifre belirleyin"
+                : "Set a new password"}
+          </h1>
 
-        <p className="mt-4 text-center text-sm leading-relaxed text-neutral-600">
-          {isComplete
-            ? "Redirecting you to your wardrobe archive..."
-            : "Choose a new curator password for your archive profile."}
-        </p>
+          <p className="mt-4 text-center text-sm leading-relaxed text-neutral-600">
+            {isComplete
+              ? boutiqueFlow
+                ? "Mağaza girişine yönlendiriliyorsunuz…"
+                : "Redirecting you to your wardrobe archive..."
+              : boutiqueFlow
+                ? "Butik hesabınız için yeni bir şifre seçin."
+                : "Choose a new curator password for your archive profile."}
+          </p>
 
-        {!isComplete ? (
-          <form onSubmit={handleSubmit} className="mt-8 space-y-4">
-            <input
-              type="password"
-              required
-              minLength={6}
-              autoComplete="new-password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              disabled={isAuthenticating}
-              className={monoInputClass}
-              placeholder="NEW PASSWORD..."
-            />
-            <input
-              type="password"
-              required
-              minLength={6}
-              autoComplete="new-password"
-              value={confirmPassword}
-              onChange={(event) => setConfirmPassword(event.target.value)}
-              disabled={isAuthenticating}
-              className={monoInputClass}
-              placeholder="CONFIRM PASSWORD..."
-            />
+          {!isComplete ? (
+            <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+              <input
+                type="password"
+                required
+                minLength={6}
+                autoComplete="new-password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                disabled={isAuthenticating}
+                className={monoInputClass}
+                placeholder={boutiqueFlow ? "YENİ ŞİFRE…" : "NEW PASSWORD..."}
+              />
+              <input
+                type="password"
+                required
+                minLength={6}
+                autoComplete="new-password"
+                value={confirmPassword}
+                onChange={(event) => setConfirmPassword(event.target.value)}
+                disabled={isAuthenticating}
+                className={monoInputClass}
+                placeholder={
+                  boutiqueFlow ? "ŞİFREYİ TEKRARLA…" : "CONFIRM PASSWORD..."
+                }
+              />
 
-            {password.length >= 6 &&
-            confirmPassword.length >= 6 &&
-            password !== confirmPassword ? (
-              <p className="text-center text-[11px] text-red-600">
-                Passwords do not match.
-              </p>
-            ) : null}
+              {password.length >= 6 &&
+              confirmPassword.length >= 6 &&
+              password !== confirmPassword ? (
+                <p className="text-center text-[11px] text-red-600">
+                  {boutiqueFlow
+                    ? "Şifreler eşleşmiyor."
+                    : "Passwords do not match."}
+                </p>
+              ) : null}
 
-            {authError ? (
-              <p className="text-center text-[11px] text-red-600">{authError}</p>
-            ) : null}
+              {authError ? (
+                <p className="text-center text-[11px] text-red-600">
+                  {authError}
+                </p>
+              ) : null}
 
-            <button
-              type="submit"
-              disabled={
-                isAuthenticating ||
-                password.length < 6 ||
-                password !== confirmPassword
-              }
-              className={primaryButtonClass}
-            >
-              {isAuthenticating ? "SAVING..." : "UPDATE PASSWORD"}
-            </button>
-          </form>
-        ) : null}
+              <button
+                type="submit"
+                disabled={
+                  isAuthenticating ||
+                  password.length < 6 ||
+                  password !== confirmPassword
+                }
+                className={primaryButtonClass}
+              >
+                {isAuthenticating
+                  ? boutiqueFlow
+                    ? "KAYDEDİLİYOR…"
+                    : "SAVING..."
+                  : boutiqueFlow
+                    ? "ŞİFREYİ GÜNCELLE"
+                    : "UPDATE PASSWORD"}
+              </button>
+            </form>
+          ) : null}
         </div>
       </div>
       <SiteFooter />

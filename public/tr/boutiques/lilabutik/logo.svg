@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" fill="none" role="img" aria-label="Lila Boutique">
+  <defs>
+    <linearGradient id="lf1" x1="18" y1="28" x2="58" y2="78" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E6DCF0"/><stop offset=".42" stop-color="#AE92C8"/><stop offset="1" stop-color="#745990"/>
+    </linearGradient>
+    <linearGradient id="lf2" x1="8" y1="62" x2="50" y2="112" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#DDD0E9"/><stop offset=".4" stop-color="#9B7EBD"/><stop offset="1" stop-color="#6A5084"/>
+    </linearGradient>
+    <linearGradient id="lf3" x1="4" y1="108" x2="46" y2="150" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D2C0E1"/><stop offset=".48" stop-color="#9778B5"/><stop offset="1" stop-color="#634D7C"/>
+    </linearGradient>
+    <linearGradient id="lf4" x1="18" y1="146" x2="56" y2="186" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E0D2EB"/><stop offset=".5" stop-color="#9B7EBD"/><stop offset="1" stop-color="#70588C"/>
+    </linearGradient>
+    <linearGradient id="lf5" x1="42" y1="170" x2="76" y2="214" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E8DEF2"/><stop offset=".5" stop-color="#A58BC0"/><stop offset="1" stop-color="#7A6195"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Soft cream badge (matches reference; keeps mark readable on accent bg) -->
+  <circle cx="120" cy="120" r="112" fill="#F7F3EC"/>
+
+  <!-- Incomplete ring (opens left for sprig; tapers bottom-right by swash) -->
+  <path d="M124 36c46 0 83.5 37.5 83.5 83.5 0 35-21.5 65.2-52.4 77.6" stroke="#9B7EBD" stroke-width="1.3" stroke-linecap="round"/>
+  <path d="M124 36c-8.6 0-16.8 1.5-24.4 4.3" stroke="#9B7EBD" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M155 197.1c-9 3.2-18.6 3.4-27.2.2" stroke="#9B7EBD" stroke-width="1.05" stroke-linecap="round" opacity=".85"/>
+
+  <!-- Sprig stem -->
+  <g stroke="#9B7EBD" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="M94 42C66 68 54 103 58 138c2.5 21 13.5 39 31.5 50.5" stroke-width="1.15"/>
+    <path d="M73 71c-11-9-22-13.5-31-13" stroke-width=".95"/>
+    <path d="M63 103c-13-5-24-14-30.5-23" stroke-width=".95"/>
+    <path d="M57 134c-13 4.5-24 4-32.5-2.5" stroke-width=".9"/>
+    <path d="M63 158c-11 8.5-20 13-26.5 12.5" stroke-width=".9"/>
+    <path d="M76 176c-6.5 9-11 15.5-13 22" stroke-width=".85"/>
+    <path d="M69 87c-9-7-13.5-16-11-24.5" stroke-width=".8" opacity=".88"/>
+    <path d="M59 147c-9-4.5-13.5-13.5-11-22" stroke-width=".8" opacity=".88"/>
+  </g>
+
+  <!-- Leaves -->
+  <path d="M44 59c-7-11-9-24-1.5-33 11.5 8.5 17.5 22 16.5 33.5-4.5 1.5-9.5 1.5-15 0Z" fill="url(#lf1)"/>
+  <path d="M34 83c-11-8.5-20-24-13-36.5 13.5 8.5 22 22 23.5 36.5-4 1.8-7 2-10.5 0Z" fill="url(#lf2)"/>
+  <path d="M26 133c-13-2.5-24-15.5-19.5-30.5 13 6.5 24 18 25.5 30.5-2 1.8-4 2-6 0Z" fill="url(#lf3)"/>
+  <path d="M38 169c-11 6.5-24 4-30.5-7 11-6 22.5-2 30.5 4.5V169Z" fill="url(#lf4)"/>
+  <path d="M63 195c-8.5 11-11 22-4 30.5 11-8.5 17.5-19.5 15-30-3.5-.5-7.5-.5-11-.5Z" fill="url(#lf5)"/>
+  <path d="M57 91c-9-8.5-11.5-21.5-4.5-30 11 8.5 15.5 19.5 13 30-2.5 1.5-5 2-8.5 0Z" fill="url(#lf1)" opacity=".9"/>
+  <path d="M51 151c-9-6.5-11.5-19-4.5-27.5 11 8 15.5 17.5 13 27.5-2.5 1.5-5 2-8.5 0Z" fill="url(#lf2)" opacity=".88"/>
+
+  <g fill="#9B7EBD">
+    <circle cx="42" cy="57" r="1.55"/><circle cx="32" cy="81" r="1.4"/>
+    <circle cx="24" cy="131" r="1.45"/><circle cx="36" cy="167" r="1.3"/>
+    <circle cx="61" cy="193" r="1.2"/><circle cx="50" cy="75" r="1.05" opacity=".75"/>
+    <circle cx="44" cy="119" r="1" opacity=".7"/>
+  </g>
+
+  <!-- LB monogram — original vector recreation of the Didone lockup -->
+  <g fill="#9B7EBD">
+    <!-- L top bar (thin hairline + bracket serifs) -->
+    <path d="M91.8 69.2c0-1.2.7-2 2-2h18.6c1.3 0 2 .8 2 2v1.1c0 .9-.6 1.5-1.5 1.5h-5.1v2.2h-9.4v-2.2h-4.6c-1.1 0-2-.7-2-1.8v-.8z"/>
+    <!-- L stem (thick vertical) -->
+    <path d="M98.4 72h9.6v84.2h-9.6z"/>
+    <!-- L left top serif stub -->
+    <path d="M91.8 69.2h6.6v3.4h-4.6c-1.1 0-2-.8-2-1.9v-1.5z"/>
+    <!-- L swash foot (long under-B curve, tapering tip) -->
+    <path d="M98.4 150.8c14.2-1.6 31.6 3.2 47.8 15.6 9.8 7.5 17.2 15.4 18.6 18.8 1 2.4-.6 3.8-2.8 3.2-3.6-1-9.8-6.4-17.4-13.2-13.8-12.4-31.2-21.6-46.2-22.8v-1.6z"/>
+    <!-- Soft underside to thicken the swash near the stem -->
+    <path d="M98.4 156.2c12.8-.4 28.2 5.4 42.2 16.2 6.6 5.1 11.8 9.6 14.2 11.4-6.8-2.8-18.6-11.6-33.2-18.4-7.2-3.4-15-6.2-23.2-7.4v-1.8z" opacity=".55"/>
+
+    <!-- B top serif bar -->
+    <path d="M117.6 90.4h22.2c1.4 0 2.3.9 2.3 2.2v.6c0 1.2-.9 2-2.3 2h-22.2c-1.5 0-2.5-1-2.5-2.4s1.1-2.4 2.5-2.4z"/>
+    <!-- B stem -->
+    <path d="M117.6 94.6h10.4v62.8h-10.4z"/>
+    <!-- B upper bowl -->
+    <path fill-rule="evenodd" d="M128 94.6c17.4 0 29.2 9.4 29.2 22.4 0 11.2-8.4 18.2-21.2 20.2H128V94.6zm0 7.8v26.6h5.2c9.4 0 15.6-4.8 15.6-13.3S142.4 102.4 133.4 102.4H128z"/>
+    <!-- B lower bowl (larger) -->
+    <path fill-rule="evenodd" d="M128 136.8c21.4 0 35 9.8 35 24.6 0 15.6-13.2 25.8-32.6 25.8-5.8 0-10.4-1.4-12.8-3.2v-9.4H128v-37.8zm0 8v32h3.8c12.6 0 21.2-5.8 21.2-16 0-10.2-8.4-16-20.2-16H128z"/>
+  </g>
+</svg>

@@ -6,6 +6,12 @@ const DEFAULT_BOUTIQUE_BG = "#FFFBFC";
 /** Known storefront logo overrides (e.g. after recreating assets before DB re-seed). */
 const LOGO_OVERRIDES: Partial<Record<string, string>> = {
   pervinsoysalbutik: "/tr/boutiques/pervinsoysalbutik/logo.png",
+  lilabutik: "/tr/boutiques/lilabutik/logo.png?v=4",
+};
+
+/** Light / white marks for dark or accent campaign backgrounds. */
+const LOGO_ON_DARK_OVERRIDES: Partial<Record<string, string>> = {
+  lilabutik: "/tr/boutiques/lilabutik/logo-white.png?v=1",
 };
 
 /** High-contrast favicons (tab icons) — prefer readable marks over dark-on-dark logos. */
@@ -15,6 +21,7 @@ const FAVICON_OVERRIDES: Partial<Record<string, string>> = {
 
 const INTRO_BRAND_LABELS: Partial<Record<string, string>> = {
   pervinsoysalbutik: "Pervin Soysal",
+  lilabutik: "Lila Boutique",
 };
 
 /** Human-facing boutique label for auth/legal copy. */
@@ -49,6 +56,15 @@ export function resolveBoutiqueLogoUrl(
   const override = LOGO_OVERRIDES[boutique.slug];
   if (override) return override;
   return boutique.logoUrl?.trim() || null;
+}
+
+/** White/light logo for accent or dark campaign surfaces. Falls back to standard logo. */
+export function resolveBoutiqueLogoOnDarkUrl(
+  boutique: Pick<TrBoutiquePublic, "slug" | "logoUrl">,
+): string | null {
+  const override = LOGO_ON_DARK_OVERRIDES[boutique.slug];
+  if (override) return override;
+  return resolveBoutiqueLogoUrl(boutique);
 }
 
 /** Browser tab / apple touch icon for white-label boutique hosts. */

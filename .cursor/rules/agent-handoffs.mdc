@@ -18,6 +18,14 @@ Before non-trivial work, read `docs/agent-handoffs/00-overview.md`, then the mat
 | Checkout, orders, WhatsApp, iyzico | `05-commerce-rails.md` |
 | AI catalog, campaigns, TikTok growth | `06-sell-enablement.md` |
 | Env, Supabase, auth | `07-platform-ops.md` |
+| Pervin health / holes | `08-boutique-audit-pervin.md` |
+| Clone next boutique (system) | `09-boutique-clone-playbook.md` |
+| Boutique UI / visual direction | `10-boutique-design-inspiration.md` — standards **1 Balmoral · 2 Cecilie · 3 Marine Layer** (IDs not priority; pick by what the boutique sells) |
+| Cortisstyle lookbook / AI UX | `11-cortisstyle-design-inspiration.md` (not for boutiques) |
+| Boutique go-live | `12-boutique-go-live.md` |
+| Boutique themes (shared system, unique UI) | `docs/lila-butik-e-ticaret-setup.md` — multi-tenant + editorial skins (`classic` / `atelier`) |
+
+**Structural changes:** update the matching handoff (or focused ops doc) — see `.cursor/rules/document-structural-changes.mdc`. Do not leave architecture only in chat.
 
 Quick anchors: TR URLs `src/lib/tr/paths.ts` · types `src/types/tr-marketplace.ts` · edge `src/middleware.ts` · principles `.cursor/rules/implementation-principles.mdc`.
 

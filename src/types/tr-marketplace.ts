@@ -121,6 +121,10 @@ export interface TrOrder {
   customerPhone: string | null;
   shippingAddress: TrShippingAddress;
   totalKurus: number;
+  /** Coupon code applied at checkout, if any. */
+  discountCode: string | null;
+  /** Amount subtracted from line subtotal (kuruş). */
+  discountKurus: number;
   paymentStatus: TrPaymentStatus;
   fulfillmentStatus: TrFulfillmentStatus;
   isSandbox: boolean;
@@ -161,6 +165,8 @@ export interface TrOrderItem {
   title: string;
   priceKurus: number;
   quantity: number;
+  /** Selected beden at purchase; null when product has no sizes. */
+  size: string | null;
   createdAt: string;
   /** Cover for packing UI — resolved from live product when available. */
   imageUrl: string | null;
@@ -244,12 +250,17 @@ export interface CreateTrOrderInput {
   isSandbox?: boolean;
   /** Optional override for demo seeding historical orders. */
   createdAt?: string;
+  discountCode?: string | null;
+  discountKurus?: number;
+  /** When true (default for live checkout), decrement stock after insert. */
+  decrementInventory?: boolean;
   items: Array<{
     productId: string;
     boutiqueId: string;
     title: string;
     priceKurus: number;
     quantity?: number;
+    size?: string | null;
   }>;
 }
 

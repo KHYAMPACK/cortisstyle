@@ -9,6 +9,7 @@ interface TrBoutiqueLocalCartStore {
   addItem: (item: TrCartLineItem) => boolean;
   removeItem: (productId: string, size?: string | null) => void;
   clearCart: () => void;
+  setItems: (items: TrCartLineItem[]) => void;
   hasItem: (productId: string, size?: string | null) => boolean;
 }
 
@@ -42,6 +43,7 @@ function cartApi(set: (partial: { items: TrCartLineItem[] }) => void, get: () =>
       });
     },
     clearCart: () => set({ items: [] }),
+    setItems: (items: TrCartLineItem[]) => set({ items }),
     hasItem: (productId: string, size?: string | null) =>
       get().items.some((entry) => {
         if (size === undefined) {

@@ -1,0 +1,34 @@
+---
+description: Document structural/architecture changes for other agents
+alwaysApply: true
+---
+
+# Document structural changes
+
+When you change **how the product is structured** (architecture, tenancy, themes, money flow, shared vs forked apps, env contracts, major data model), **write it down** so the next agent does not re-learn or undo it.
+
+## Do document
+
+- Multi-tenant vs separate-app decisions
+- Storefront theme system, new theme IDs, registry locations
+- New/changed env vars that gate live behavior
+- Commerce mode changes (sandbox / pending / iyzico)
+- Panel ↔ storefront ownership boundaries
+- “Copy UX but not UI” / clone playbook updates
+- New handoff docs or renamed phase docs
+
+Update the **canonical place**: usually `docs/agent-handoffs/` (matching section or a focused ops doc like `docs/lila-butik-e-ticaret-setup.md`). Cross-link from `docs/agent-handoffs/README.md` and `.cursor/rules/agent-handoffs.mdc` when you add a new handoff-worthy doc.
+
+Keep entries short: **decision → where it lives in code → what not to do**.
+
+## Do not document (unless asked)
+
+- Logo/copy/color tweaks on one boutique
+- One-off bugfixes with no architectural impact
+- Formatting, renames without behavior change
+
+## Before finishing structural work
+
+1. Hand off doc updated (or new focused doc created)
+2. README / agent-handoffs index linked if it’s a new durable doc
+3. Do **not** leave the only explanation in chat history

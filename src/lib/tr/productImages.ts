@@ -62,20 +62,25 @@ export function hasRealMarketplaceImagery(
 }
 
 /**
- * Storefront PDP gallery: marketplace cutouts (front/back) then lifestyle shots.
+ * Storefront PDP gallery: marketplace cutouts + lifestyle, then remaining
+ * boutique originals so multi-photo thumbs appear like owner galleries.
  */
 export function getStorefrontGalleryImages(
   product: Pick<TrProduct, "images" | "marketplaceImages" | "lifestyleImages">,
 ): string[] {
   const catalog = getMarketplaceProductImages(product);
   const lifestyle = nonEmpty(product.lifestyleImages);
-  const seen = new Set(catalog);
-  const out = [...catalog];
-  for (const url of lifestyle) {
-    if (seen.has(url)) continue;
-    seen.add(url);
-    out.push(url);
+  const boutique = getBoutiqueProductImages(product);
+  const seen = new Set<string>();
+  const out: string[] = [];
+
+  for (const url of [...catalog, ...lifestyle, ...boutique]) {
+    const trimmed = url.trim();
+    if (!trimmed || seen.has(trimmed)) continue;
+    seen.add(trimmed);
+    out.push(trimmed);
   }
+
   return out;
 }
 

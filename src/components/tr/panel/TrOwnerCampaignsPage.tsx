@@ -206,7 +206,7 @@ function CampaignsBoard({ boutiqueId }: { boutiqueId: string }) {
                 Kupon kodları
               </h3>
               <p className={`mt-1 ${panelHintClass}`}>
-                Müşterilerin kullanabileceği indirim kodu oluşturun.
+                Ödeme adımında kupon kodu olarak kullanılır (yüzde indirim).
               </p>
             </div>
 

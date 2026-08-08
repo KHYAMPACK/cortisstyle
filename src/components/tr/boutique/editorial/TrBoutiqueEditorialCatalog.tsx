@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { TrBoutiqueEditorialProductCard } from "@/components/tr/boutique/editorial/TrBoutiqueEditorialProductCard";
 import { useTrBoutiqueCatalog } from "@/components/tr/boutique/TrBoutiqueCatalogContext";
+import { isAtelierEditorialSkin } from "@/lib/tr/boutiqueHome";
 import { getTrCategoryLabel } from "@/lib/tr/categories";
 import { trBoutiqueProductsPath } from "@/lib/tr/paths";
 import type { TrProduct } from "@/types/tr-marketplace";
@@ -167,8 +168,13 @@ export function TrBoutiqueEditorialCatalog({
       </div>
 
       {filtered.length > 0 ? (
-        <div className="mt-6 grid grid-cols-2 gap-x-2 gap-y-6 px-3 md:grid-cols-3 md:gap-x-4 md:px-6 lg:grid-cols-4 lg:px-8">
-          {filtered.map((product, index) => (
+        <div
+          className={`mt-6 grid grid-cols-2 px-3 md:grid-cols-3 md:px-6 lg:grid-cols-4 lg:px-8 ${
+            isAtelierEditorialSkin(boutiqueSlug)
+              ? "gap-x-3 gap-y-10 md:gap-x-6 md:gap-y-14"
+              : "gap-x-2 gap-y-6 md:gap-x-4"
+          }`}
+        >          {filtered.map((product, index) => (
             <TrBoutiqueEditorialProductCard
               key={product.id}
               product={product}

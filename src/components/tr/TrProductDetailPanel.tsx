@@ -155,11 +155,11 @@ export function TrProductDetailPanel({
 
         {onSale ? (
           <div className="mt-4 flex flex-wrap items-baseline gap-x-3 gap-y-2">
-            <span className="font-serif text-lg tracking-[-0.02em] text-neutral-400 line-through md:text-xl">
+            <span className="text-[15px] tracking-[-0.01em] text-neutral-400 line-through md:text-[16px]">
               {formatTryFromKurus(compareAt)}
             </span>
             <span
-              className="font-serif text-2xl tracking-[-0.02em] md:text-3xl"
+              className="text-[1.65rem] font-semibold tracking-[-0.02em] md:text-[1.85rem]"
               style={{ color: EDITORIAL_SALE_RED }}
             >
               {formatTryFromKurus(product.priceKurus)}
@@ -169,7 +169,13 @@ export function TrProductDetailPanel({
             ) : null}
           </div>
         ) : (
-          <p className="mt-4 font-serif text-2xl tracking-[-0.02em] text-brand-primary">
+          <p
+            className={
+              branded
+                ? "mt-4 text-[1.65rem] font-semibold tracking-[-0.02em] text-neutral-950 md:text-[1.85rem]"
+                : "mt-4 font-serif text-2xl tracking-[-0.02em] text-brand-primary"
+            }
+          >
             {formatTryFromKurus(product.priceKurus)}
           </p>
         )}

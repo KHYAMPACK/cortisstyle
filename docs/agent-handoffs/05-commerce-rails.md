@@ -4,11 +4,14 @@
 
 ## What we do today
 
-- Checkout API + client helpers (`src/app/api/tr/checkout`, `src/lib/tr/cartCheckout.ts`, `checkoutProfile.ts`)
-- Orders + line items (`src/lib/tr/orders.ts`, owner orders API)
-- **Gated live pay:** `TR_CHECKOUT_ENABLED` — when false, WhatsApp order path (`src/lib/tr/whatsapp.ts`, sandbox/`is_sandbox` payment status)
-- Discount codes (`discountCodes.ts`, `patch_tr_discount_codes.sql`, panel kampanyalar)
+- Checkout API + client helpers (`src/app/api/tr/checkout`, `src/lib/tr/cartCheckout.ts`, `checkoutProfile.ts`, `checkoutValidate.ts`, `checkoutSelection.ts`)
+- Server reprice / ownership / stock / size / coupon apply on boutique checkout
+- Orders + line items (`src/lib/tr/orders.ts`, `inventory.ts`, owner orders API)
+- **Payment modes:** `TR_CHECKOUT_SANDBOX` → sandbox orders; default → **pending** (stock reserved). Card capture when `TR_IYZICO_ENABLED` (not yet). Owner can mark pending → paid until then.
+- **Gated Cadde checkout:** `TR_CHECKOUT_ENABLED` — marketplace gating; does **not** equal iyzico live.
+- Discount codes (`discountCodes.ts`, `patch_tr_discount_codes.sql`, panel kampanyalar + checkout)
 - Fulfillment fields (`patch_tr_order_fulfillment.sql`)
+- Order line size + order discount columns (`patch_tr_order_items_size.sql`, `patch_tr_orders_discount.sql`)
 - Owner Web Push for new orders (`patch_tr_owner_push_subscriptions.sql`, `pushNotify.ts`, panel Ayarlar)
 - Customer profiles for storefront (`tr_customer_profiles`, registration-source API)
 - Admin seed/ops with `TR_ADMIN_SECRET` (`adminAuth.ts`)
@@ -33,7 +36,7 @@
 
 ## Agent rules of thumb
 
-- Never assume card pay is live — check `TR_CHECKOUT_ENABLED` / platform helpers.
+- Never assume card pay is live — check `TR_IYZICO_ENABLED` / `isTrIyzicoCaptureEnabled()`. Pending orders are real until capture.
 - Owner mutations often use **service role** after owner auth — don’t expose service key client-side.
 - Keep marketplace and boutique cart stores from writing into each other’s checkout blindly.
 - Tax/legal checklists are ops docs; don’t invent compliance copy without reading existing legal pages/`src/lib/tr/legal/`.

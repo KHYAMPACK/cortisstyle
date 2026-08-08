@@ -16,6 +16,18 @@ const trCheckoutEnabled =
   process.env.TR_CHECKOUT_ENABLED?.trim() ||
   "false";
 
+/** Explicit sandbox orders (staging). Default off for go-live pending orders. */
+const trCheckoutSandbox =
+  process.env.NEXT_PUBLIC_TR_CHECKOUT_SANDBOX?.trim() ||
+  process.env.TR_CHECKOUT_SANDBOX?.trim() ||
+  "false";
+
+/** Set only when iyzico card capture is actually wired and live. */
+const trIyzicoEnabled =
+  process.env.NEXT_PUBLIC_TR_IYZICO_ENABLED?.trim() ||
+  process.env.TR_IYZICO_ENABLED?.trim() ||
+  "false";
+
 const trVapidPublicKey =
   process.env.NEXT_PUBLIC_TR_VAPID_PUBLIC_KEY?.trim() ||
   process.env.TR_VAPID_PUBLIC_KEY?.trim() ||
@@ -24,6 +36,8 @@ const trVapidPublicKey =
 const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_TR_CHECKOUT_ENABLED: trCheckoutEnabled,
+    NEXT_PUBLIC_TR_CHECKOUT_SANDBOX: trCheckoutSandbox,
+    NEXT_PUBLIC_TR_IYZICO_ENABLED: trIyzicoEnabled,
     NEXT_PUBLIC_TR_VAPID_PUBLIC_KEY: trVapidPublicKey,
   },
   reactCompiler: true,

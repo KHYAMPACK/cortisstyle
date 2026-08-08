@@ -10,6 +10,8 @@ Requires:
    - `supabase/patch_tr_product_compare_at.sql` (**required** — without it public product select fails)
    - `supabase/patch_tr_product_catalog_background.sql` (catalog backdrop id per product)
    - `supabase/patch_tr_order_fulfillment.sql` (**required** for checkout — adds `fulfillment_status`)
+   - `supabase/patch_tr_order_items_size.sql` (**required** — beden on order lines)
+   - `supabase/patch_tr_orders_discount.sql` (**required** — coupon snapshot on orders)
    - `supabase/patch_tr_discount_codes.sql`
 2. Set `TR_ADMIN_SECRET` in `.env.local`
 3. Dev server: `npm run dev` (restart after changing `TR_CHECKOUT_ENABLED`)

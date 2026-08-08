@@ -58,10 +58,3 @@ export function panelAccentCssVars(hex: string | null | undefined): {
     "--panel-accent-border": mix(accent, { r: 255, g: 255, b: 255 }, 0.55),
   };
 }
-
-/** Demo storefront KPIs when the boutique has no live revenue yet. */
-export const PANEL_DEMO_TODAY = {
-  orderCount: 3,
-  revenueKurus: 485_000,
-  pendingFulfillment: 2,
-} as const;

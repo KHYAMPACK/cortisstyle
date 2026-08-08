@@ -1,0 +1,14 @@
+---
+description: Open Cortisstyle (not boutique) design inspiration for home/lookbook/AI discovery UX
+globs: src/app/page.tsx,src/app/**/HomePage*.tsx,src/components/**/Home*.tsx,src/app/wardrobe/**/*,src/lib/dynamicLooks/**/*
+alwaysApply: false
+---
+
+# Cortisstyle design inspiration (not boutiques)
+
+When designing Cortisstyle home, lookbook, wardrobe, or AI discovery UX, read `docs/agent-handoffs/11-cortisstyle-design-inspiration.md` and open the listed sites — especially each **What we like** section.
+
+- Brunello Cucinelli AI (`/en-gb/ai`): first-run **info cards** that teach the best experience, plus the full flow of **typing what you want** to discover looks/products.
+- Dolce & Gabbana gift finder quiz: guided **quiz → recommendations** pattern — adapt to clothing (occasion/vibe/look), not beauty.
+- These references are for **Cortisstyle**, not `/tr/[slug]` boutique storefronts (see `10-boutique-design-inspiration.md` for boutiques).
+- Do not copy assets, branding, or build a pixel clone.
