@@ -146,6 +146,7 @@ export async function sendBoutiquePasswordReset(input: {
   const redirectTo = getPasswordResetRedirectUrl({
     nextPath,
     siteOrigin,
+    boutiqueSlug,
   });
 
   const { data, error } = await admin.auth.admin.generateLink({

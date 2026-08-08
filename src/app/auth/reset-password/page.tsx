@@ -11,6 +11,7 @@ import {
   resolveBoutiqueLogoUrl,
   resolveBoutiqueThemeAccentBySlug,
 } from "@/lib/tr/boutiqueBrand";
+import { resolveBoutiqueSlugFromHost } from "@/lib/tr/customDomain";
 
 const monoInputClass =
   "w-full border border-neutral-900 bg-white px-4 py-4 text-center font-mono text-[11px] tracking-[0.12em] text-neutral-900 outline-none transition-colors placeholder:text-neutral-400 focus:border-neutral-900 disabled:opacity-60";
@@ -30,6 +31,19 @@ function boutiqueSlugFromNext(path: string): string | null {
   return match?.[1] ? decodeURIComponent(match[1]).toLowerCase() : null;
 }
 
+/** Pull `boutique` out of a relative URL that still has a query string. */
+function boutiqueSlugFromEmbeddedQuery(raw: string | null): string | null {
+  if (!raw || !raw.includes("boutique=")) return null;
+  try {
+    return new URL(raw, "https://local.invalid").searchParams
+      .get("boutique")
+      ?.trim()
+      .toLowerCase() || null;
+  } catch {
+    return null;
+  }
+}
+
 function isBoutiqueReturnPath(path: string): boolean {
   return (
     path === "/giris" ||
@@ -38,19 +52,44 @@ function isBoutiqueReturnPath(path: string): boolean {
   );
 }
 
+function resolveBoutiqueSlug(
+  searchParams: URLSearchParams,
+  returnTo: string,
+): string | null {
+  const fromQuery = searchParams.get("boutique")?.trim().toLowerCase();
+  if (fromQuery) return fromQuery;
+
+  const fromNextPath = boutiqueSlugFromNext(returnTo);
+  if (fromNextPath) return fromNextPath;
+
+  const fromEmbedded = boutiqueSlugFromEmbeddedQuery(searchParams.get("next"));
+  if (fromEmbedded) return fromEmbedded;
+
+  if (typeof window !== "undefined") {
+    const fromHost = resolveBoutiqueSlugFromHost(window.location.host);
+    if (fromHost) return fromHost;
+  }
+
+  return null;
+}
+
 export default function ResetPasswordPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const returnTo = safeNextPath(searchParams.get("next"));
+  const [hostSlug, setHostSlug] = useState<string | null>(null);
+
+  useEffect(() => {
+    setHostSlug(resolveBoutiqueSlugFromHost(window.location.host));
+  }, []);
+
   const boutiqueSlug = useMemo(() => {
-    const fromQuery = searchParams.get("boutique")?.trim().toLowerCase();
-    if (fromQuery) return fromQuery;
-    return boutiqueSlugFromNext(returnTo);
-  }, [searchParams, returnTo]);
-  const boutiqueFlow = useMemo(
-    () => Boolean(boutiqueSlug) || isBoutiqueReturnPath(returnTo),
-    [boutiqueSlug, returnTo],
-  );
+    return (
+      resolveBoutiqueSlug(searchParams, returnTo) || hostSlug
+    );
+  }, [searchParams, returnTo, hostSlug]);
+
+  const boutiqueFlow = Boolean(boutiqueSlug) || isBoutiqueReturnPath(returnTo);
   const brandTitle = boutiqueSlug
     ? resolveBoutiqueBrandLabel(boutiqueSlug)
     : null;
@@ -97,6 +136,33 @@ export default function ResetPasswordPage() {
     }
   };
 
+  const brandMark = boutiqueFlow ? (
+    <div className="mb-6 flex flex-col items-center">
+      {logoUrl ? (
+        <Image
+          src={logoUrl}
+          alt={brandTitle ?? ""}
+          width={160}
+          height={160}
+          className="h-20 w-auto object-contain"
+          unoptimized
+          priority
+        />
+      ) : null}
+      <p
+        className={`font-serif tracking-[0.04em] text-neutral-950 ${
+          logoUrl ? "mt-4 text-[1.35rem]" : "text-[1.75rem]"
+        }`}
+      >
+        {brandTitle ?? "Butik"}
+      </p>
+    </div>
+  ) : (
+    <div className="mb-6 flex justify-center">
+      <BrandLogo variant="onLight" className="h-20 w-auto" />
+    </div>
+  );
+
   if (isInitializing) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#FAFAF8] px-4">
@@ -111,16 +177,7 @@ export default function ResetPasswordPage() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#FAFAF8] px-4">
         <div className="w-full max-w-md border border-black/10 bg-white p-8 text-center shadow-sm">
-          {logoUrl ? (
-            <Image
-              src={logoUrl}
-              alt={brandTitle ?? ""}
-              width={120}
-              height={120}
-              className="mx-auto mb-5 h-16 w-auto object-contain"
-              unoptimized
-            />
-          ) : null}
+          {brandMark}
           <h1 className="font-serif text-2xl text-neutral-950">
             {boutiqueFlow ? "Bağlantı süresi doldu" : "Link expired"}
           </h1>
@@ -150,28 +207,7 @@ export default function ResetPasswordPage() {
     <div className="flex min-h-screen flex-col bg-[#FAFAF8]">
       <div className="flex flex-1 items-center justify-center px-4 py-10">
         <div className="w-full max-w-md border border-black/10 bg-white p-8 shadow-sm md:p-10">
-          <div className="mb-6 flex flex-col items-center">
-            {boutiqueFlow && logoUrl ? (
-              <>
-                <Image
-                  src={logoUrl}
-                  alt={brandTitle ?? ""}
-                  width={160}
-                  height={160}
-                  className="h-20 w-auto object-contain"
-                  unoptimized
-                  priority
-                />
-                {brandTitle ? (
-                  <p className="mt-4 font-serif text-[1.35rem] tracking-[0.04em] text-neutral-950">
-                    {brandTitle}
-                  </p>
-                ) : null}
-              </>
-            ) : (
-              <BrandLogo variant="onLight" className="h-20 w-auto" />
-            )}
-          </div>
+          {brandMark}
 
           <p className="mb-3 text-center text-[9px] tracking-[0.4em] text-neutral-500 uppercase">
             {boutiqueFlow ? "Hesap güvenliği" : "Archive Security"}

@@ -78,10 +78,14 @@ export function getPasswordResetRedirectUrl(options?: {
   nextPath?: string;
   /** When set to a boutique custom-domain origin, recovery completes there. */
   siteOrigin?: string;
+  boutiqueSlug?: string | null;
 }): string {
   const afterReset = options?.nextPath?.trim() || "/wardrobe";
+  const resetParams = new URLSearchParams({ next: afterReset });
+  const boutiqueSlug = options?.boutiqueSlug?.trim().toLowerCase();
+  if (boutiqueSlug) resetParams.set("boutique", boutiqueSlug);
   const resetNext = encodeURIComponent(
-    `/auth/reset-password?next=${encodeURIComponent(afterReset)}`,
+    `/auth/reset-password?${resetParams.toString()}`,
   );
   const origin = (options?.siteOrigin?.trim() || getSiteUrl()).replace(
     /\/$/,
