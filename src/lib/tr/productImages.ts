@@ -1,4 +1,5 @@
 import { isLookbookPieceImage } from "@/data/tr/lookbookPieceImages";
+import { TR_OWNER_PRODUCT_LIMITS } from "@/lib/tr/ownerProductConstraints";
 import { isTrMarketplaceAssetUrl } from "@/lib/tr/trAssetUrls";
 import type { TrProduct } from "@/types/tr-marketplace";
 
@@ -62,24 +63,45 @@ export function hasRealMarketplaceImagery(
 }
 
 /**
- * Storefront PDP gallery: marketplace cutouts + lifestyle, then remaining
- * boutique originals so multi-photo thumbs appear like owner galleries.
+ * Storefront PDP gallery: prefer marketplace cutouts (and lifestyle).
+ * Raw boutique uploads are owner-only for processed front/back slots —
+ * only unused extra slots (beyond cutout slots) may appear as originals.
  */
 export function getStorefrontGalleryImages(
   product: Pick<TrProduct, "images" | "marketplaceImages" | "lifestyleImages">,
 ): string[] {
-  const catalog = getMarketplaceProductImages(product);
+  const boutique = product.images ?? [];
+  const market = product.marketplaceImages ?? [];
   const lifestyle = nonEmpty(product.lifestyleImages);
-  const boutique = getBoutiqueProductImages(product);
+  const hasAnyCutout = market.some((url) => Boolean(url?.trim()));
+  const cutoutSlots = TR_OWNER_PRODUCT_LIMITS.cutoutPhotoSlots;
   const seen = new Set<string>();
   const out: string[] = [];
 
-  for (const url of [...catalog, ...lifestyle, ...boutique]) {
-    const trimmed = url.trim();
-    if (!trimmed || seen.has(trimmed)) continue;
+  const push = (url: string | undefined) => {
+    const trimmed = url?.trim();
+    if (!trimmed || seen.has(trimmed)) return;
     seen.add(trimmed);
     out.push(trimmed);
+  };
+
+  const slotCount = Math.max(boutique.length, market.length);
+  for (let i = 0; i < slotCount; i += 1) {
+    const cutout = market[i]?.trim();
+    const original = boutique[i]?.trim();
+    if (cutout) {
+      push(cutout);
+      continue;
+    }
+    if (!original) continue;
+    // No cutouts at all → show boutique gallery as-is.
+    // With cutouts → never re-surface raw front/back hanger shots.
+    if (!hasAnyCutout || i >= cutoutSlots) {
+      push(original);
+    }
   }
+
+  for (const url of lifestyle) push(url);
 
   return out;
 }

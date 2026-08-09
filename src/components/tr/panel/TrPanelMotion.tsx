@@ -57,7 +57,7 @@ export function TrPanelFadeIn({
   );
 }
 
-/** Soft spinner for senior-friendly panel. */
+/** Soft spinner — uses panel accent CSS vars (per-boutique), not hardcoded pink. */
 export function TrPanelLoading({
   label = "Yükleniyor…",
 }: {
@@ -65,7 +65,7 @@ export function TrPanelLoading({
 }) {
   return (
     <motion.div
-      className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-[#F5C6D6] bg-white px-6 py-14 shadow-sm"
+      className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-[color:var(--panel-accent-border)] bg-white px-6 py-14 shadow-sm lg:min-h-[280px] lg:rounded-xl"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -75,11 +75,13 @@ export function TrPanelLoading({
     >
       <motion.div
         aria-hidden
-        className="h-10 w-10 rounded-full border-4 border-[#F5C6D6] border-t-[#C2185B]"
+        className="h-10 w-10 rounded-full border-4 border-[color:var(--panel-accent-border)] border-t-[color:var(--panel-accent)]"
         animate={{ rotate: 360 }}
         transition={{ duration: 1.05, repeat: Infinity, ease: "linear" }}
       />
-      <p className="text-[17px] font-medium text-neutral-700">{label}</p>
+      <p className="text-[17px] font-medium text-neutral-700 lg:text-[14px]">
+        {label}
+      </p>
     </motion.div>
   );
 }

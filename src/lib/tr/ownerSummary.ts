@@ -28,19 +28,28 @@ export interface TrOwnerSummary {
     orderCount: number;
     revenueKurus: number;
   };
+  /** Paid revenue by Istanbul calendar day (sparse; oldest → newest). */
+  revenueSeries: Array<{
+    date: string;
+    revenueKurus: number;
+    orderCount: number;
+  }>;
+}
+
+function istanbulDayKey(iso: string): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Istanbul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(iso));
 }
 
 function istanbulDayBounds(now = new Date()): {
   startIso: string;
   endIso: string;
 } {
-  const formatter = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Europe/Istanbul",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
-  const day = formatter.format(now);
+  const day = istanbulDayKey(now.toISOString());
   const startIso = new Date(`${day}T00:00:00.000+03:00`).toISOString();
   const endIso = new Date(`${day}T23:59:59.999+03:00`).toISOString();
   return { startIso, endIso };
@@ -186,6 +195,32 @@ export async function getOwnerBoutiqueSummary(
     todayRevenue += boutiqueLineRevenue(order, boutiqueId);
   }
 
+  const dayMap = new Map<
+    string,
+    { revenueKurus: number; orderCount: number }
+  >();
+  for (const order of orders) {
+    if (order.fulfillmentStatus === "cancelled") continue;
+    if (order.paymentStatus !== "paid") continue;
+    const day = istanbulDayKey(order.createdAt);
+    const net = boutiqueLineRevenue(order, boutiqueId);
+    if (net <= 0) continue;
+    const existing = dayMap.get(day);
+    if (existing) {
+      existing.revenueKurus += net;
+      existing.orderCount += 1;
+    } else {
+      dayMap.set(day, { revenueKurus: net, orderCount: 1 });
+    }
+  }
+  const revenueSeries = [...dayMap.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, entry]) => ({
+      date,
+      revenueKurus: entry.revenueKurus,
+      orderCount: entry.orderCount,
+    }));
+
   return {
     checkoutEnabled,
     inventory,
@@ -194,5 +229,6 @@ export async function getOwnerBoutiqueSummary(
       orderCount: todayOrders.length,
       revenueKurus: todayRevenue,
     },
+    revenueSeries,
   };
 }

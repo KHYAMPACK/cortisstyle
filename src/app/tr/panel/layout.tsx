@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#C2185B",
+  themeColor: "#FFFFFF",
 };
 
 export default function TrPanelLayout({

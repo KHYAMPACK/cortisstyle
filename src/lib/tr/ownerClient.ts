@@ -126,7 +126,7 @@ export async function createOwnerProduct(
 
 export async function updateOwnerProduct(
   productId: string,
-  payload: Omit<TrOwnerProductPayload, "boutiqueId"> & {
+  payload: Partial<Omit<TrOwnerProductPayload, "boutiqueId">> & {
     boutiqueId?: string;
   },
 ): Promise<TrProduct> {
@@ -391,6 +391,11 @@ export interface TrOwnerSummaryResponse {
     orderCount: number;
     revenueKurus: number;
   } | null;
+  revenueSeries?: Array<{
+    date: string;
+    revenueKurus: number;
+    orderCount: number;
+  }>;
 }
 
 export async function fetchOwnerSummary(

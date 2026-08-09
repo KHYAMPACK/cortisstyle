@@ -9,6 +9,7 @@
 - **Storefront themes** — same panel/APIs for all; **unique UI per boutique** via theme packs / editorial skins (Pervin = `classic` editorial; Lila = `atelier` skin). See [lila-butik-e-ticaret-setup.md](../lila-butik-e-ticaret-setup.md). Do not skin with `if (slug)` inside one chrome tree.
 - **Editorial** home/PDP templates via registries (`src/lib/tr/boutiqueHome/`, `boutiquePdp/`) — moving toward `storefront/themes/{id}/`
 - **Owner panel** at `/tr/panel` — Ikas-like modules (products, stock, orders, customers, campaigns, content packs, reports, settings)
+  - **Responsive dual chrome:** below `lg` = mobile header + horizontal pill nav + card lists; `lg+` = left sidebar + wide main. Ürünler / Stok / Siparişler use dense selectable tables with inline + bulk edits (fan-out per-id PATCH via `src/lib/tr/ownerBulk.ts` — no bulk API). Shell: `TrOwnerPanelGate`, `TrPanelDesktopSidebar`, `TrPanelMobileChrome`.
 - Owner APIs: `src/app/api/tr/owner/*` authenticated via boutique `owner_user_id`
 - Onboarding seeds: `scripts/seed-pervinsoysalbutik.*`, `src/data/tr/pervinsoysalbutik-seed.json`
 - Brand fields: WhatsApp/IG, theme, commission, option presets, stock, compare-at pricing
