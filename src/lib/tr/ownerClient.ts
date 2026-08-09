@@ -130,11 +130,16 @@ export async function createOwnerProduct(
   return data.product;
 }
 
+/** Partial product fields for PATCH — API merges; full create still uses TrOwnerProductPayload. */
+export type TrOwnerProductPatch = Partial<
+  Omit<TrOwnerProductPayload, "boutiqueId">
+> & {
+  boutiqueId?: string;
+};
+
 export async function updateOwnerProduct(
   productId: string,
-  payload: Omit<TrOwnerProductPayload, "boutiqueId"> & {
-    boutiqueId?: string;
-  },
+  payload: TrOwnerProductPatch,
 ): Promise<TrProduct> {
   const response = await ownerFetch(
     `/api/tr/owner/products/${encodeURIComponent(productId)}`,
