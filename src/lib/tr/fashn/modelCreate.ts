@@ -61,7 +61,7 @@ export async function generateFashnModelCreate(
       aspect_ratio: params.aspectRatio ?? STUDIO_MODEL_CREATE_ASPECT_RATIO,
       resolution: params.resolution ?? getFashnDefaultResolution(),
       generation_mode: params.generationMode ?? getFashnDefaultMode(),
-      output_format: "jpg",
+      output_format: "jpeg",
     };
     const imageRef = params.imageReferenceUrl?.trim();
     if (imageRef) inputs.image_reference = imageRef;

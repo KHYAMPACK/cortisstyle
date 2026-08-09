@@ -27,7 +27,7 @@ Boutique owners polish product photos in create/edit:
 **Studio models (always available):**
 - `studio:ayla` (woman) → `public/tr/ai-models/studio-ayla.jpg` (or `TR_AI_STUDIO_AYLA_REF_URLS` / `NEXT_PUBLIC_…`)
 - `studio:deniz` (man) → `public/tr/ai-models/studio-deniz.jpg` (or env override)
-- Locked prompts: `src/lib/tr/aiModel/prompts.ts` (`NATURAL_TRYON_PROMPT`, Ayla/Deniz `model-create` prompts)
+- Locked prompts: `src/lib/tr/aiModel/prompts.ts` (`NATURAL_TRYON_PROMPT`, Ayla/Deniz `model-create` prompts) — simple room (wall + floor), no void; no invented pockets / hands-in-pockets; regenerate refs with `npm run tr:generate-studio-models`
 - Regenerate refs: `npm run tr:generate-studio-models` (needs `FASHN_API_KEY`)
 - Boutique extras: add a row in `BOUTIQUE_AI_MODELS` in `registry.ts` — **no** owner upload/create UI
 
