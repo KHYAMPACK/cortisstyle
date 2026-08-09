@@ -2,7 +2,10 @@
 
 import { useMemo, useState } from "react";
 import { TrOwnerAiModelPicker } from "@/components/tr/panel/TrOwnerAiModelPicker";
-import { describeEnhanceCredits } from "@/lib/tr/aiCatalog/uploadCostHints";
+import {
+  describeModelPackageCredits,
+  TR_AI_CATALOG_CREDITS,
+} from "@/lib/tr/aiCatalog/uploadCostHints";
 import {
   TrOwnerCreditsCostLine,
   TrOwnerCreditsMoreInfoLink,
@@ -13,12 +16,10 @@ import {
   requestOwnerPackshot,
 } from "@/lib/tr/ownerClient";
 import type { PipelineJobItem } from "@/lib/tr/aiCatalog/pipelineProgress";
+import type { TrAiModelPose } from "@/lib/tr/aiModel/types";
 
 const primaryBtn =
   "inline-flex min-h-12 w-full items-center justify-center rounded-xl px-5 py-3 text-[16px] font-semibold text-white disabled:opacity-50";
-
-const secondaryBtn =
-  "inline-flex min-h-10 items-center justify-center rounded-xl border-2 border-[color:var(--panel-accent-border)] bg-white px-3 py-2 text-[14px] font-semibold text-neutral-800 disabled:opacity-50";
 
 export interface TrOwnerAiCatalogEnhanceProps {
   boutiqueId: string;
@@ -38,6 +39,8 @@ export interface TrOwnerAiCatalogEnhanceProps {
     description: string;
   }) => void;
   onModelJobsChange?: (jobs: PipelineJobItem[]) => void;
+  /** Skip model shots and continue (optional step). */
+  onSkip?: () => void;
   disabled?: boolean;
 }
 
@@ -47,6 +50,12 @@ type EnhancePhase =
   | "tryon"
   | "done"
   | "error";
+
+const MODEL_SHOTS: Array<{ pose: TrAiModelPose; label: string; slot: 0 | 1 }> =
+  [
+    { pose: "standing-front", label: "Ön model", slot: 0 },
+    { pose: "standing-back", label: "Arka model", slot: 1 },
+  ];
 
 export function TrOwnerAiCatalogEnhance({
   boutiqueId,
@@ -63,9 +72,9 @@ export function TrOwnerAiCatalogEnhance({
   onLifestyleImagesChange,
   onListingDraft,
   onModelJobsChange,
+  onSkip,
   disabled = false,
 }: TrOwnerAiCatalogEnhanceProps) {
-  const [shotCount, setShotCount] = useState(2);
   const [phase, setPhase] = useState<EnhancePhase>("idle");
   const [progressLabel, setProgressLabel] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -86,10 +95,11 @@ export function TrOwnerAiCatalogEnhance({
     return slots;
   }, [images, marketplaceImages]);
 
+  const busy = phase === "packshot" || phase === "tryon";
+
   const canRun =
     !disabled &&
-    phase !== "packshot" &&
-    phase !== "tryon" &&
+    !busy &&
     slotSources.length >= 2 &&
     Boolean(selectedModelId) &&
     Boolean(selectedReady);
@@ -118,7 +128,6 @@ export function TrOwnerAiCatalogEnhance({
       for (let i = 0; i < slotSources.length; i++) {
         const slot = slotSources[i]!;
         const existing = nextMarketplace[slot.index]?.trim();
-        // Guided upload already packshots front/back — skip re-spend when present
         if (existing && existing !== images[slot.index]?.trim()) {
           continue;
         }
@@ -162,32 +171,30 @@ export function TrOwnerAiCatalogEnhance({
       onMarketplaceImagesChange(nextMarketplace);
 
       setPhase("tryon");
-      // Try-on requires front packshot only — never use raw upload as garment.
-      const garmentUrl = nextMarketplace[0]?.trim() || "";
-      if (!garmentUrl) {
+      const frontGarment = nextMarketplace[0]?.trim() || "";
+      const backGarment = nextMarketplace[1]?.trim() || "";
+      if (!frontGarment || !backGarment) {
         throw new Error(
-          "Giydirme için ön katalog (packshot) görseli yok. Önce katalog üretin.",
+          "Model için ön ve arka katalog (packshot) görselleri gerekli.",
         );
       }
 
-      const poses = [
-        "standing-front",
-        "standing-three-quarter",
-        "full-body",
-      ] as const;
       const newLifestyle: string[] = [];
-      const count = Math.min(3, Math.max(1, shotCount));
+      const total = MODEL_SHOTS.length;
 
-      for (let i = 0; i < count; i++) {
-        setProgressLabel(`Model çekimi ${i + 1}/${count}…`);
+      for (let i = 0; i < total; i++) {
+        const shot = MODEL_SHOTS[i]!;
+        const garmentUrl =
+          shot.slot === 0 ? frontGarment : backGarment;
+        setProgressLabel(`${shot.label} ${i + 1}/${total}…`);
         onModelJobsChange?.([
           {
             id: "model-pack",
             kind: "model",
             label: "Model çekimleri",
             status: "running",
-            progressPct: 45 + Math.round(((i + 1) / count) * 50),
-            detail: `Model çekimi ${i + 1}/${count}…`,
+            progressPct: 45 + Math.round(((i + 1) / total) * 50),
+            detail: `${shot.label}…`,
           },
         ]);
         const result = await requestOwnerAiModelGenerate({
@@ -197,7 +204,7 @@ export function TrOwnerAiCatalogEnhance({
           title,
           category,
           modelId: selectedModelId,
-          pose: poses[i] ?? "standing-front",
+          pose: shot.pose,
         });
         if (result.status !== "succeeded" || !result.imageUrl?.trim()) {
           throw new Error(result.error ?? "Model görseli üretilemedi.");
@@ -212,7 +219,7 @@ export function TrOwnerAiCatalogEnhance({
       onLifestyleImagesChange(Array.from(new Set(merged)));
       setPhase("done");
       setProgressLabel(
-        `${slotSources.length} katalog + ${newLifestyle.length} model görseli hazır.`,
+        `Ön + arka model görselleri hazır (${TR_AI_CATALOG_CREDITS.modelPackageShots} kredi).`,
       );
       onModelJobsChange?.([]);
     } catch (err) {
@@ -238,10 +245,11 @@ export function TrOwnerAiCatalogEnhance({
     <div className="space-y-4 rounded-2xl border-2 border-[color:var(--panel-accent-border)] bg-[color:var(--panel-accent-softer)]/40 p-4">
       <div>
         <p className="text-[17px] font-semibold text-neutral-800">
-          Katalog görselleri
+          Model fotoğrafları
         </p>
         <p className="mt-1 text-[14px] text-neutral-600">
-          Satışa hazır katalog ve model fotoğrafları oluşturun.
+          İsteğe bağlı — her zaman 2 kare: ön (ön katalog) + arka (arka katalog).
+          Atlayabilirsiniz.
         </p>
       </div>
 
@@ -249,37 +257,14 @@ export function TrOwnerAiCatalogEnhance({
         boutiqueSlug={boutiqueSlug}
         value={selectedModelId}
         onChange={onSelectedModelIdChange}
-        disabled={disabled || phase === "packshot" || phase === "tryon"}
+        disabled={disabled || busy}
       />
 
-      <div className="space-y-2">
-        <p className="text-[15px] font-semibold text-neutral-800">
-          Model çekimi sayısı
-        </p>
-        <div className="flex gap-2">
-          {[1, 2, 3].map((n) => (
-            <button
-              key={n}
-              type="button"
-              className={`${secondaryBtn} min-w-12 ${
-                shotCount === n
-                  ? "border-[color:var(--panel-accent)] bg-white"
-                  : ""
-              }`}
-              disabled={disabled || phase === "packshot" || phase === "tryon"}
-              onClick={() => setShotCount(n)}
-            >
-              {n}
-            </button>
-          ))}
-        </div>
-      </div>
-
       {lifestyleImages.some((u) => u?.trim()) ? (
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-2">
           {lifestyleImages
             .filter((u) => u?.trim())
-            .slice(0, 6)
+            .slice(0, 4)
             .map((url) => (
               <div
                 key={url}
@@ -303,13 +288,26 @@ export function TrOwnerAiCatalogEnhance({
         disabled={!canRun}
         onClick={() => void runEnhance()}
       >
-        {phase === "packshot" || phase === "tryon"
+        {busy
           ? "Hazırlanıyor…"
-          : "Katalog görsellerini oluştur"}
+          : phase === "done"
+            ? "Tekrar oluştur"
+            : "Ön + arka model oluştur"}
       </button>
 
+      {onSkip && phase !== "done" ? (
+        <button
+          type="button"
+          className="w-full text-center text-[14px] font-semibold text-neutral-600 underline-offset-2 hover:underline disabled:opacity-50"
+          disabled={disabled || busy}
+          onClick={onSkip}
+        >
+          Model istemiyorum — atla
+        </button>
+      ) : null}
+
       <TrOwnerCreditsCostLine
-        credits={describeEnhanceCredits(shotCount)}
+        credits={describeModelPackageCredits()}
         prefix="Bu işlem"
       />
       <TrOwnerCreditsMoreInfoLink />

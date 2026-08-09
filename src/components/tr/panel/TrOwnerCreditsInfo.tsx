@@ -113,13 +113,13 @@ export function TrOwnerCreditsTrigger({
                         {formatCreditPriceUsd(1)}
                       </p>
                       <p className="mt-2 text-[13px] text-neutral-600">
-                        Katalog + 3 model ={" "}
+                        Katalog + model (ön+arka) ={" "}
                         {TR_AI_CATALOG_CREDITS.productPackage +
-                          TR_AI_CATALOG_CREDITS.exampleModelShots}{" "}
+                          TR_AI_CATALOG_CREDITS.modelPackageShots}{" "}
                         kredi →{" "}
                         {formatCreditPriceBoth(
                           TR_AI_CATALOG_CREDITS.productPackage +
-                            TR_AI_CATALOG_CREDITS.exampleModelShots,
+                            TR_AI_CATALOG_CREDITS.modelPackageShots,
                         )}
                       </p>
                     </div>

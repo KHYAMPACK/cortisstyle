@@ -15,9 +15,15 @@ type Body = {
   productId?: string;
   title?: string;
   category?: string | null;
-  pose?: "standing-front" | "standing-three-quarter" | "full-body" | "waist-up";
+  pose?:
+    | "standing-front"
+    | "standing-back"
+    | "standing-three-quarter"
+    | "full-body"
+    | "waist-up";
   /** `boutique:{slug}` or `studio:ayla` / `studio:deniz` */
   modelId?: string;
+  prompt?: string;
 };
 
 /**
@@ -66,6 +72,7 @@ export async function POST(request: Request) {
     boutiqueId,
     userId: authResult.auth.user.id,
     modelId: body.modelId?.trim() || undefined,
+    prompt: body.prompt?.trim() || undefined,
     garment: {
       productId: body.productId,
       title: body.title,

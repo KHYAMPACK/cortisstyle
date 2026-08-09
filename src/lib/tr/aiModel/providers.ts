@@ -1,4 +1,4 @@
-import { NATURAL_TRYON_PROMPT } from "@/lib/tr/aiModel/prompts";
+import { tryOnPromptForPose } from "@/lib/tr/aiModel/prompts";
 import { isFashnConfigured } from "@/lib/tr/fashn/client";
 import { generateFashnTryOn } from "@/lib/tr/fashn/tryon";
 import { logTrAiUsageEvent } from "@/lib/tr/aiUsage";
@@ -81,7 +81,7 @@ const fashnProvider: TrAiModelProvider = {
     }
 
     const prompt =
-      request.prompt?.trim() || NATURAL_TRYON_PROMPT;
+      request.prompt?.trim() || tryOnPromptForPose(request.pose);
 
     const result = await generateFashnTryOn({
       productImageUrl,

@@ -33,6 +33,8 @@ export {
 
 export {
   NATURAL_TRYON_PROMPT,
+  NATURAL_TRYON_PROMPT_BACK,
+  tryOnPromptForPose,
   STUDIO_AYLA_MODEL_CREATE_PROMPT,
   STUDIO_DENIZ_MODEL_CREATE_PROMPT,
 } from "@/lib/tr/aiModel/prompts";

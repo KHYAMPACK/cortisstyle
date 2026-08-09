@@ -357,8 +357,14 @@ export async function requestOwnerAiModelGenerate(input: {
   productId?: string;
   title?: string;
   category?: string | null;
-  pose?: "standing-front" | "standing-three-quarter" | "full-body" | "waist-up";
+  pose?:
+    | "standing-front"
+    | "standing-back"
+    | "standing-three-quarter"
+    | "full-body"
+    | "waist-up";
   modelId?: string;
+  prompt?: string;
 }): Promise<OwnerAiModelGenerateResult> {
   const response = await ownerFetch("/api/tr/owner/ai-model/generate", {
     method: "POST",

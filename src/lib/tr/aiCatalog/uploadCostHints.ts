@@ -1,19 +1,19 @@
 /**
  * Owner-facing Cortisstyle credit pricing.
  *
- * Math: product photos (2) + 3 model shots (3) = 5 credits → charge ₺25 → 1 kredi = ₺5.
+ * Math: product photos (2) + model package front+back (2) = 4 credits → 1 kredi = ₺5.
  * USD shown for soft perception (~47.5 ₺/$).
  */
 
 export const TR_AI_CATALOG_CREDITS = {
   productPackage: 2,
   modelShotEach: 1,
+  /** Always front + back when model shots are requested */
+  modelPackageShots: 2,
   /** List price per credit */
   priceTryPerCredit: 5,
   /** Approx TRY per USD for display only */
   tryPerUsd: 47.5,
-  /** Example full product: package + 3 model shots */
-  exampleModelShots: 3,
 } as const;
 
 export function creditsToTry(credits: number): number {
@@ -30,7 +30,6 @@ export function formatCreditPriceTry(credits: number): string {
 
 export function formatCreditPriceUsd(credits: number): string {
   const usd = creditsToUsd(credits);
-  // Soft, small-looking dollar amount
   if (usd < 1) return `~$${usd.toFixed(2)}`;
   return `~$${usd.toFixed(2)}`;
 }
@@ -39,15 +38,17 @@ export function formatCreditPriceBoth(credits: number): string {
   return `${formatCreditPriceTry(credits)} (${formatCreditPriceUsd(credits)})`;
 }
 
+const modelPackageCredits =
+  TR_AI_CATALOG_CREDITS.modelPackageShots *
+  TR_AI_CATALOG_CREDITS.modelShotEach;
+
 const exampleFullCredits =
-  TR_AI_CATALOG_CREDITS.productPackage +
-  TR_AI_CATALOG_CREDITS.exampleModelShots *
-    TR_AI_CATALOG_CREDITS.modelShotEach;
+  TR_AI_CATALOG_CREDITS.productPackage + modelPackageCredits;
 
 export const TR_AI_CREDITS_INFO_LINES = [
   `Ürün katalog paketi (ön + arka): ${TR_AI_CATALOG_CREDITS.productPackage} kredi → ${formatCreditPriceBoth(TR_AI_CATALOG_CREDITS.productPackage)}`,
-  `Her model fotoğrafı: ${TR_AI_CATALOG_CREDITS.modelShotEach} kredi → ${formatCreditPriceBoth(TR_AI_CATALOG_CREDITS.modelShotEach)}`,
-  `Örnek: katalog + ${TR_AI_CATALOG_CREDITS.exampleModelShots} model = ${exampleFullCredits} kredi → ${formatCreditPriceBoth(exampleFullCredits)}`,
+  `Model fotoğrafları (ön + arka, isteğe bağlı): ${modelPackageCredits} kredi → ${formatCreditPriceBoth(modelPackageCredits)}`,
+  `Örnek: katalog + model = ${exampleFullCredits} kredi → ${formatCreditPriceBoth(exampleFullCredits)}`,
   "Ödeme: krediler butik hesabınızdan düşülür.",
   "Tahsilat: aylık paket veya dönem sonu fatura.",
   "Bakiye yetersizse işlem yapılmaz.",
@@ -97,6 +98,13 @@ export function describePhotoSlotCost(slotIndex: number): {
   };
 }
 
-export function describeEnhanceCredits(modelShots: number): number {
+/** Credits for the fixed front+back model package. */
+export function describeEnhanceCredits(
+  modelShots: number = TR_AI_CATALOG_CREDITS.modelPackageShots,
+): number {
   return Math.max(0, modelShots) * TR_AI_CATALOG_CREDITS.modelShotEach;
+}
+
+export function describeModelPackageCredits(): number {
+  return describeEnhanceCredits(TR_AI_CATALOG_CREDITS.modelPackageShots);
 }

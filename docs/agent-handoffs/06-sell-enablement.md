@@ -10,8 +10,12 @@ Boutique owners polish product photos in create/edit:
 
 1. Upload front/back → **Photoroom** cutouts (`marketplaceImages`) when `PHOTOROOM_API_KEY` is set
 2. **Katalogu güzelleştir** → **Gemini** (optional) refines packshot prompt from the photo → **FASHN packshot** rehosted to `tr-assets/.../marketplace/`
-3. Pick model (default **Ayla** woman / **Deniz** man) → **FASHN tryon-max** with **front packshot only** (`marketplaceImages[0]`) + locked product-first prompt → `lifestyleImages` under `tr-assets/.../lifestyle/`
+3. Pick model (optional) → always **2** try-ons: front packshot + back packshot → `lifestyleImages`
 4. Usage logged to `tr_ai_usage_events` (internal metering; no boutique billing UI yet)
+
+**Ürün yükleme draft:** Wizard state autosaves to `localStorage` (`src/lib/tr/productCreateDraft.ts`) — not a DB table. Image URLs already live in `tr-assets`; restore is instant on reload. Clear on successful save. Photo **Sil** uses a 10s soft undo toast (no confirm modal).
+
+**Try-on garment:** Front shot → `marketplaceImages[0]`; back shot → `marketplaceImages[1]` + `standing-back` prompt. Never send raw flat-lay when packshot is required.
 
 | Concern | Path |
 |---------|------|
@@ -30,8 +34,6 @@ Boutique owners polish product photos in create/edit:
 - Locked prompts: `src/lib/tr/aiModel/prompts.ts` (`NATURAL_TRYON_PROMPT`, Ayla/Deniz `model-create` prompts) — simple room (wall + floor), no void; no invented pockets / hands-in-pockets; regenerate refs with `npm run tr:generate-studio-models`
 - Regenerate refs: `npm run tr:generate-studio-models` (needs `FASHN_API_KEY`)
 - Boutique extras: add a row in `BOUTIQUE_AI_MODELS` in `registry.ts` — **no** owner upload/create UI
-
-**Try-on garment:** Always front packshot (`marketplaceImages[0]`). Never send the raw flat-lay upload when a packshot exists / is required.
 
 **Env (local + Vercel):** `FASHN_API_KEY`, `PHOTOROOM_API_KEY`, `GEMINI_API_KEY` (or `GOOGLE_API_KEY`). Optional: `FASHN_DEFAULT_RESOLUTION`, `FASHN_DEFAULT_MODE`, `NEXT_PUBLIC_TR_AI_STUDIO_AYLA_REF_URLS`, `NEXT_PUBLIC_TR_AI_STUDIO_DENIZ_REF_URLS` (override hosted public paths).
 

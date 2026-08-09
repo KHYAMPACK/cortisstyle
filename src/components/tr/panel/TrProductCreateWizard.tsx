@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { TrCatalogBackgroundPicker } from "@/components/tr/panel/TrCatalogBackgroundPicker";
 import { TrOwnerAiCatalogEnhance } from "@/components/tr/panel/TrOwnerAiCatalogEnhance";
 import { TrOwnerAiFillListing } from "@/components/tr/panel/TrOwnerAiFillListing";
@@ -40,6 +40,13 @@ import {
   type OwnerListingDraft,
 } from "@/lib/tr/ownerClient";
 import {
+  clearProductCreateDraft,
+  draftHasProgress,
+  readProductCreateDraft,
+  writeProductCreateDraft,
+  type ProductCreateDraftV1,
+} from "@/lib/tr/productCreateDraft";
+import {
   parseSizeStockInputs,
   sumSizeStocks,
 } from "@/lib/tr/sizeStocks";
@@ -70,7 +77,7 @@ const STEPS = [
   {
     id: "model",
     title: "Model",
-    hint: "İsterseniz model üzerinde satış fotoğrafı",
+    hint: "İsteğe bağlı — ön + arka model (2 kredi)",
   },
   {
     id: "review",
@@ -134,6 +141,72 @@ export function TrProductCreateWizard({
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [draftBanner, setDraftBanner] = useState<ProductCreateDraftV1 | null>(
+    null,
+  );
+  const draftHydratedRef = useRef(false);
+  const skipNextPersistRef = useRef(false);
+
+  useEffect(() => {
+    const existing = readProductCreateDraft(boutiqueId);
+    if (existing && draftHasProgress(existing)) {
+      setDraftBanner(existing);
+    }
+    draftHydratedRef.current = true;
+  }, [boutiqueId]);
+
+  useEffect(() => {
+    if (!draftHydratedRef.current) return;
+    if (skipNextPersistRef.current) {
+      skipNextPersistRef.current = false;
+      return;
+    }
+    if (draftBanner) return;
+    const handle = window.setTimeout(() => {
+      writeProductCreateDraft(boutiqueId, {
+        stepIndex,
+        title,
+        description,
+        priceTry,
+        discountEnabled,
+        salePriceTry,
+        stock,
+        sizeChart,
+        sizeStockInputs,
+        category,
+        images,
+        marketplaceImages,
+        lifestyleImages,
+        listingDraft,
+        frontAnalysisDone,
+        frontDraftFailed,
+        catalogBackgroundId,
+        selectedModelId,
+      });
+    }, 400);
+    return () => window.clearTimeout(handle);
+  }, [
+    boutiqueId,
+    catalogBackgroundId,
+    category,
+    description,
+    discountEnabled,
+    draftBanner,
+    frontAnalysisDone,
+    frontDraftFailed,
+    images,
+    lifestyleImages,
+    listingDraft,
+    marketplaceImages,
+    priceTry,
+    salePriceTry,
+    selectedModelId,
+    sizeChart,
+    sizeStockInputs,
+    stepIndex,
+    stock,
+    title,
+  ]);
 
   const chartSizes = useMemo(() => sizesForChart(sizeChart), [sizeChart]);
 
@@ -252,6 +325,38 @@ export function TrProductCreateWizard({
     setStepIndex((current) => Math.max(current - 1, 0));
   };
 
+  const restoreDraft = () => {
+    if (!draftBanner) return;
+    const draft = draftBanner;
+    skipNextPersistRef.current = true;
+    setStepIndex(Math.min(Math.max(0, draft.stepIndex), STEPS.length - 1));
+    setTitle(draft.title);
+    setDescription(draft.description);
+    setPriceTry(draft.priceTry);
+    setDiscountEnabled(draft.discountEnabled);
+    setSalePriceTry(draft.salePriceTry);
+    setStock(draft.stock);
+    setSizeChart(draft.sizeChart);
+    setSizeStockInputs(draft.sizeStockInputs ?? {});
+    setCategory(draft.category);
+    setImages(draft.images ?? []);
+    setMarketplaceImages(draft.marketplaceImages ?? []);
+    setLifestyleImages(draft.lifestyleImages ?? []);
+    setListingDraft(draft.listingDraft);
+    setFrontAnalysisDone(draft.frontAnalysisDone);
+    setFrontDraftFailed(draft.frontDraftFailed);
+    setCatalogBackgroundId(
+      draft.catalogBackgroundId || DEFAULT_CATALOG_BACKGROUND_ID,
+    );
+    setSelectedModelId(draft.selectedModelId);
+    setDraftBanner(null);
+  };
+
+  const discardDraft = () => {
+    clearProductCreateDraft(boutiqueId);
+    setDraftBanner(null);
+  };
+
   const save = async () => {
     setSaving(true);
     setError(null);
@@ -334,6 +439,7 @@ export function TrProductCreateWizard({
         status: "available",
       });
 
+      clearProductCreateDraft(boutiqueId);
       onSaved(product);
     } catch (saveError) {
       setError(
@@ -349,6 +455,32 @@ export function TrProductCreateWizard({
 
   return (
     <div className="space-y-6">
+      {draftBanner ? (
+        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+          <p className="min-w-0 flex-1 text-[14px] text-amber-950">
+            Kaydedilmemiş taslak bulundu
+            {draftBanner.updatedAt
+              ? ` (${new Date(draftBanner.updatedAt).toLocaleString("tr-TR")})`
+              : ""}
+            .
+          </p>
+          <button
+            type="button"
+            className="rounded-xl bg-amber-900 px-3 py-2 text-[14px] font-semibold text-white"
+            onClick={restoreDraft}
+          >
+            Devam et
+          </button>
+          <button
+            type="button"
+            className="rounded-xl border border-amber-300 bg-white px-3 py-2 text-[14px] font-semibold text-amber-950"
+            onClick={discardDraft}
+          >
+            Sil
+          </button>
+        </div>
+      ) : null}
+
       <div className="rounded-2xl border border-[color:var(--panel-accent-border)] bg-white p-5 shadow-sm sm:p-6">
         <div className="flex items-center justify-between gap-3">
           <p className="text-[16px] font-semibold text-neutral-700">
@@ -667,6 +799,7 @@ export function TrProductCreateWizard({
                   onLifestyleImagesChange={setLifestyleImages}
                   onListingDraft={setListingDraft}
                   onModelJobsChange={setModelJobs}
+                  onSkip={goNext}
                   disabled={saving || !hasRequiredProductPhotos(images)}
                 />
               </div>

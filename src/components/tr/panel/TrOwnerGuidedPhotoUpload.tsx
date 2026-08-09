@@ -173,12 +173,26 @@ export function TrOwnerGuidedPhotoUpload({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pending, setPending] = useState<PendingPreview | null>(null);
   const [jobs, setJobs] = useState<Record<number, ActiveSlotJob>>({});
-  const [pendingDeleteIndex, setPendingDeleteIndex] = useState<number | null>(
-    null,
-  );
+  const [softUndo, setSoftUndo] = useState<{
+    index: number;
+    image: string;
+    marketplace: string;
+    secondsLeft: number;
+  } | null>(null);
+  const softUndoTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const softUndoSnapshotRef = useRef<{
+    index: number;
+    image: string;
+    marketplace: string;
+  } | null>(null);
+  const onFrontSlotResetRef = useRef(onFrontSlotReset);
   const jobsRef = useRef(jobs);
   const imagesRef = useRef(images);
   const marketplaceRef = useRef(marketplaceImages);
+
+  useEffect(() => {
+    onFrontSlotResetRef.current = onFrontSlotReset;
+  }, [onFrontSlotReset]);
 
   useEffect(() => {
     jobsRef.current = jobs;
@@ -189,6 +203,15 @@ export function TrOwnerGuidedPhotoUpload({
   useEffect(() => {
     marketplaceRef.current = marketplaceImages;
   }, [marketplaceImages]);
+
+  useEffect(() => {
+    return () => {
+      if (softUndoTimerRef.current) {
+        clearInterval(softUndoTimerRef.current);
+        softUndoTimerRef.current = null;
+      }
+    };
+  }, []);
 
   const activeSlotSet = useMemo(
     () => new Set(Object.keys(jobs).map((k) => Number(k))),
@@ -456,30 +479,85 @@ export function TrOwnerGuidedPhotoUpload({
     }
   }
 
-  function removeAt(index: number) {
-    if (jobs[index]) return;
-    setPendingDeleteIndex(index);
+  function clearSoftUndoTimer() {
+    if (softUndoTimerRef.current) {
+      clearInterval(softUndoTimerRef.current);
+      softUndoTimerRef.current = null;
+    }
   }
 
-  function confirmRemove() {
-    const index = pendingDeleteIndex;
-    if (index == null || jobs[index]) {
-      setPendingDeleteIndex(null);
-      return;
+  function commitSoftDelete(index: number) {
+    softUndoSnapshotRef.current = null;
+    setSoftUndo(null);
+    clearSoftUndoTimer();
+    if (index === 0) {
+      onFrontSlotResetRef.current?.();
     }
+  }
+
+  function removeAt(index: number) {
+    if (jobs[index]) return;
+    const image = images[index]?.trim() || "";
+    const marketplace = marketplaceImages[index]?.trim() || "";
+    if (!image && !marketplace) return;
+
+    // Commit any previous soft-delete before starting a new one
+    if (softUndoSnapshotRef.current) {
+      commitSoftDelete(softUndoSnapshotRef.current.index);
+    }
+
+    softUndoSnapshotRef.current = { index, image, marketplace };
     if (index < 2) {
       onImagesChange(setSlotInList(images, index, ""));
       onMarketplaceImagesChange(setSlotInList(marketplaceImages, index, ""));
-      if (index === 0) {
-        onFrontSlotReset?.();
-      }
     } else {
       onImagesChange(images.filter((_, i) => i !== index));
       onMarketplaceImagesChange(
         marketplaceImages.filter((_, i) => i !== index),
       );
     }
-    setPendingDeleteIndex(null);
+
+    setSoftUndo({ index, image, marketplace, secondsLeft: 10 });
+    clearSoftUndoTimer();
+    softUndoTimerRef.current = setInterval(() => {
+      setSoftUndo((current) => {
+        if (!current) return null;
+        if (current.secondsLeft <= 1) {
+          clearSoftUndoTimer();
+          softUndoSnapshotRef.current = null;
+          if (current.index === 0) {
+            onFrontSlotResetRef.current?.();
+          }
+          return null;
+        }
+        return { ...current, secondsLeft: current.secondsLeft - 1 };
+      });
+    }, 1000);
+  }
+
+  function undoSoftDelete() {
+    const snap = softUndoSnapshotRef.current;
+    if (!snap) {
+      setSoftUndo(null);
+      clearSoftUndoTimer();
+      return;
+    }
+    clearSoftUndoTimer();
+    softUndoSnapshotRef.current = null;
+    setSoftUndo(null);
+    if (snap.index < 2) {
+      onImagesChange(setSlotInList(imagesRef.current, snap.index, snap.image));
+      onMarketplaceImagesChange(
+        setSlotInList(marketplaceRef.current, snap.index, snap.marketplace),
+      );
+    } else {
+      const nextImages = [...imagesRef.current];
+      const nextMarket = [...marketplaceRef.current];
+      nextImages.splice(snap.index, 0, snap.image);
+      nextMarket.splice(snap.index, 0, snap.marketplace);
+      onImagesChange(nextImages);
+      onMarketplaceImagesChange(nextMarket);
+    }
   }
 
   const pendingCost = pending
@@ -807,51 +885,30 @@ export function TrOwnerGuidedPhotoUpload({
       </AnimatePresence>
 
       <AnimatePresence>
-        {pendingDeleteIndex != null ? (
+        {softUndo ? (
           <motion.div
-            className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 p-4 sm:items-center"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            className="fixed inset-x-0 bottom-4 z-50 flex justify-center px-4"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 12 }}
+            transition={{ duration: 0.22 }}
           >
-            <motion.div
-              role="alertdialog"
-              aria-modal="true"
-              className="w-full max-w-md rounded-2xl border border-[color:var(--panel-accent-border)] bg-white p-5 shadow-xl"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 12 }}
-              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+            <div
+              role="status"
+              className="flex w-full max-w-md items-center gap-3 rounded-2xl border border-neutral-800 bg-neutral-900 px-4 py-3 text-white shadow-xl"
             >
-              <p className="text-[18px] font-semibold text-neutral-900">
-                Katalog görseli silinsin mi?
+              <p className="min-w-0 flex-1 text-[14px] font-medium">
+                {productPhotoRoleLabel(getProductPhotoRole(softUndo.index))}{" "}
+                silindi · {softUndo.secondsLeft}sn
               </p>
-              <p className="mt-2 text-[14px] leading-relaxed text-neutral-600">
-                {productPhotoRoleLabel(
-                  getProductPhotoRole(pendingDeleteIndex),
-                )}{" "}
-                fotoğrafı ve oluşturulmuş katalog görseli kaldırılacak. Bu işlem
-                geri alınamaz; yeniden yüklemeniz gerekir.
-              </p>
-              <div className="mt-5 flex gap-3">
-                <button
-                  type="button"
-                  className={secondaryBtn}
-                  onClick={() => setPendingDeleteIndex(null)}
-                >
-                  Vazgeç
-                </button>
-                <button
-                  type="button"
-                  className={primaryBtn}
-                  style={{ background: "#B91C1C" }}
-                  onClick={confirmRemove}
-                >
-                  Evet, sil
-                </button>
-              </div>
-            </motion.div>
+              <button
+                type="button"
+                className="shrink-0 rounded-lg bg-white px-3 py-2 text-[14px] font-semibold text-neutral-900"
+                onClick={undoSoftDelete}
+              >
+                Geri al
+              </button>
+            </div>
           </motion.div>
         ) : null}
       </AnimatePresence>

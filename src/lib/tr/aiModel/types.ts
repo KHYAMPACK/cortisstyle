@@ -4,6 +4,7 @@ export type TrAiModelProviderId = "stub" | "fashn" | "fal" | "replicate" | "cust
 /** Pose / framing hints for generation. */
 export type TrAiModelPose =
   | "standing-front"
+  | "standing-back"
   | "standing-three-quarter"
   | "full-body"
   | "waist-up";
