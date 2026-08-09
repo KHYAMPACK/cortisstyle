@@ -32,6 +32,9 @@ function SettingsForm({ boutiqueId }: { boutiqueId: string }) {
   const [shippingNote, setShippingNote] = useState("");
   const [exchangePolicy, setExchangePolicy] = useState("");
   const [physicalAddress, setPhysicalAddress] = useState("");
+  const [legalName, setLegalName] = useState("");
+  const [vergiNo, setVergiNo] = useState("");
+  const [iban, setIban] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -51,6 +54,9 @@ function SettingsForm({ boutiqueId }: { boutiqueId: string }) {
         setShippingNote(result.shippingNote ?? "");
         setExchangePolicy(result.exchangePolicy ?? "");
         setPhysicalAddress(result.physicalAddress ?? "");
+        setLegalName(result.legalName ?? "");
+        setVergiNo(result.vergiNo ?? "");
+        setIban(result.iban ?? "");
       } catch (loadError) {
         if (!cancelled) {
           setError(
@@ -85,6 +91,9 @@ function SettingsForm({ boutiqueId }: { boutiqueId: string }) {
         shippingNote: shippingNote.trim() || null,
         exchangePolicy: exchangePolicy.trim() || null,
         physicalAddress: physicalAddress.trim() || null,
+        legalName: legalName.trim() || null,
+        vergiNo: vergiNo.trim() || null,
+        iban: iban.trim() || null,
       });
       setSettings(updated);
       setSaved(true);
@@ -232,6 +241,54 @@ function SettingsForm({ boutiqueId }: { boutiqueId: string }) {
             className={fieldClass}
           />
         </label>
+
+        <div className="space-y-4 border border-black/10 bg-neutral-50 px-4 py-4">
+          <div>
+            <p className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
+              Satıcı / fatura bilgileri
+            </p>
+            <p className="mt-1 text-[12px] text-neutral-600">
+              Vergi levhası ve IBAN buraya yazılır (owner-only). Kimlik /
+              ikametgah belgelerini panele yüklemeyin; iyzico KYC için ayrı
+              saklayın.
+            </p>
+          </div>
+          <label className="block space-y-2">
+            <span className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
+              Ticari unvan / satıcı adı
+            </span>
+            <input
+              value={legalName}
+              onChange={(event) => setLegalName(event.target.value)}
+              className={fieldClass}
+              placeholder="Şahıs: Ad Soyad (vergi levhası)"
+            />
+          </label>
+          <label className="block space-y-2">
+            <span className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
+              Vergi no
+            </span>
+            <input
+              value={vergiNo}
+              onChange={(event) => setVergiNo(event.target.value)}
+              className={fieldClass}
+              inputMode="numeric"
+              autoComplete="off"
+            />
+          </label>
+          <label className="block space-y-2">
+            <span className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
+              IBAN
+            </span>
+            <input
+              value={iban}
+              onChange={(event) => setIban(event.target.value)}
+              className={fieldClass}
+              placeholder="TR…"
+              autoComplete="off"
+            />
+          </label>
+        </div>
 
         <AnimatePresence>
           {error ? (

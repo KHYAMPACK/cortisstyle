@@ -55,8 +55,38 @@ Hero slides in `editorial_content.heroPromotions[]` support a **campaign** layou
 
 Owners will eventually edit these in panel; until then seed/DB JSON is the source of truth.
 
+## Hero / campaign (atelier)
+
+- Auto **brand intro** slide (`template: "brand"`) prepended when `campaignPreferred`
+- Campaign slides: watermark wallpaper, white logo on accent, CTAs
+- Assets: black `logo.png`, `logo-white.png` for campaigns, `favicon.png` (white bg)
+
+## Storefront imagery
+
+- PDP gallery uses marketplace cutouts; raw front/back hanger uploads stay owner-only when cutouts exist (`getStorefrontGalleryImages`)
+
+## Auth (branded)
+
+- Reset emails: `token_hash` callback + boutique domain preference — see [07-platform-ops.md](./agent-handoffs/07-platform-ops.md) and [13-boutique-wire-in-and-go-live.md](./agent-handoffs/13-boutique-wire-in-and-go-live.md)
+
+## Legal pages (taslak)
+
+Templates in `src/lib/tr/legal/docs.ts` — KVKK, gizlilik, çerez, mesafeli satış, ön bilgilendirme, iade, üyelik, künye.
+
+Lila seller snapshot (fill Ayarlar / re-seed to sync DB):
+
+- Satıcı: Nefise Gül Cengiz Peker  
+- Vergi no: 2390389751 (künye’de yayınlanır; IBAN yayınlanmaz)  
+- Adres / iade: Bahçelievler Mh. Gülistan Cd. No:7/A Merkezefendi/Denizli  
+- Domain: lilaboutiquedenizli.com (`info@…` placeholder until mailbox exists)  
+- Kargo: anlaşmalı kargo mağazadan alır  
+- KEP / MERSİS: TBD · Marketing: yes (İYS / ayrı açık rıza later)
+
+Pages show amber “Taslak — avukat onayı” until lawyer signs off.
+
 ## Ops checklist
 
 1. Run seed (`scripts/seed-lilabutik.md`)
 2. Link owner (`scripts/link-tr-boutique-owner.md`) when ready
 3. Point DNS when go-live; smoke `/tr/lilabutik` vs `/tr/pervinsoysalbutik`
+4. Full pre-live list: [13-boutique-wire-in-and-go-live.md](./agent-handoffs/13-boutique-wire-in-and-go-live.md)

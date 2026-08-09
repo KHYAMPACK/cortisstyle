@@ -23,6 +23,7 @@ Before non-trivial work, read `docs/agent-handoffs/00-overview.md`, then the mat
 | Boutique UI / visual direction | `10-boutique-design-inspiration.md` — standards **1 Balmoral · 2 Cecilie · 3 Marine Layer** (IDs not priority; pick by what the boutique sells) |
 | Cortisstyle lookbook / AI UX | `11-cortisstyle-design-inspiration.md` (not for boutiques) |
 | Boutique go-live | `12-boutique-go-live.md` |
+| **Next boutique wire-in + checklist** | `13-boutique-wire-in-and-go-live.md` |
 | Boutique themes (shared system, unique UI) | `docs/lila-butik-e-ticaret-setup.md` — multi-tenant + editorial skins (`classic` / `atelier`) |
 
 **Structural changes:** update the matching handoff (or focused ops doc) — see `.cursor/rules/document-structural-changes.mdc`. Do not leave architecture only in chat.

@@ -11,4 +11,5 @@ export {
   generateFashnPackshot,
 } from "@/lib/tr/fashn/packshot";
 export { generateFashnTryOn } from "@/lib/tr/fashn/tryon";
+export { generateFashnModelCreate } from "@/lib/tr/fashn/modelCreate";
 export { rehostRemoteImageToTrAssets } from "@/lib/tr/fashn/rehost";

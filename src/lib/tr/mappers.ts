@@ -2,6 +2,7 @@ import type {
   TrBoutique,
   TrBoutiquePublic,
   TrDiscountCode,
+  TrInvoiceType,
   TrOrder,
   TrOrderItem,
   TrProduct,
@@ -9,6 +10,10 @@ import type {
   TrShippingAddress,
 } from "@/types/tr-marketplace";
 import { readSizeStocks } from "@/lib/tr/sizeStocks";
+
+function readInvoiceType(value: unknown): TrInvoiceType {
+  return value === "corporate" ? "corporate" : "individual";
+}
 
 function readStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
@@ -120,6 +125,7 @@ export function toPublicBoutique(boutique: TrBoutique): TrBoutiquePublic {
     physicalAddress: boutique.physicalAddress,
     homeLayout: boutique.homeLayout,
     customDomain: boutique.customDomain,
+    vergiNo: boutique.vergiNo,
     editorialContent: boutique.editorialContent,
     status: boutique.status,
     createdAt: boutique.createdAt,
@@ -189,6 +195,10 @@ export function mapOrderRow(row: Record<string, unknown>): TrOrder {
         : null,
     discountKurus:
       typeof row.discount_kurus === "number" ? (row.discount_kurus as number) : 0,
+    invoiceType: readInvoiceType(row.invoice_type),
+    buyerTaxId: (row.buyer_tax_id as string | null) ?? null,
+    buyerTaxOffice: (row.buyer_tax_office as string | null) ?? null,
+    buyerTitle: (row.buyer_title as string | null) ?? null,
     paymentStatus: row.payment_status as TrOrder["paymentStatus"],
     fulfillmentStatus: readFulfillmentStatus(row.fulfillment_status),
     isSandbox: Boolean(row.is_sandbox),

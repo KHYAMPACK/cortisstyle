@@ -2,6 +2,8 @@
 
 **Audience:** ops + agents preparing a boutique for real customers (Pervin first, then clones).
 
+**Full wire-in + checklist:** [13-boutique-wire-in-and-go-live.md](./13-boutique-wire-in-and-go-live.md) (prefer that for the next boutique). This page keeps **payment / env** truth.
+
 ## Payment mode (until iyzico is live)
 
 | Env | Effect |
@@ -28,7 +30,7 @@ When iyzico ships: capture → set `payment_status: paid` (inventory already res
 
 ## Removed / honest stubs (no fake ops)
 
-- Faturalar → empty “GİB yakında”
+- Faturalar → offline registry (`tr_invoices`): draft on mark-paid, mark issued + external no (no fake GİB)
 - Kargo etiket yazdır → removed
 - Storefront kargo takip / yardım → honest + WhatsApp
 - Fake newsletter → Instagram / WhatsApp
@@ -44,7 +46,7 @@ When iyzico ships: capture → set `payment_status: paid` (inventory already res
 5. Fill `legalName` / tax / MERSIS on boutique
 6. iyzico application + wire → then `TR_IYZICO_ENABLED=true`
 7. Carrier API + tracking
-8. e-Fatura / GİB
+8. e-Fatura / GİB API (offline Faturalar scaffold is enough for soft-live)
 9. Backfill `size_stocks` for sized SKUs
 10. Set boutique `shippingNote` (announcement bar no longer invents free shipping)
 

@@ -12,6 +12,7 @@ export type {
   TrAiModelGarmentInput,
   TrAiModelGenerateRequest,
   TrAiModelGenerateResult,
+  TrAiModelGender,
   TrAiModelIdentity,
   TrAiModelJobStatus,
   TrAiModelOption,
@@ -24,10 +25,17 @@ export {
   boutiqueAiModelHasReferences,
   getAiModelOptionById,
   getBoutiqueAiModelIdentity,
+  getDefaultReadyAiModelId,
   listAiModelOptions,
   listRegisteredAiModelBoutiqueSlugs,
   registerBoutiqueAiModelIdentity,
 } from "@/lib/tr/aiModel/registry";
+
+export {
+  NATURAL_TRYON_PROMPT,
+  STUDIO_AYLA_MODEL_CREATE_PROMPT,
+  STUDIO_DENIZ_MODEL_CREATE_PROMPT,
+} from "@/lib/tr/aiModel/prompts";
 
 export { generateBoutiqueAiModelImage } from "@/lib/tr/aiModel/generate";
 export { resolveAiModelProvider } from "@/lib/tr/aiModel/providers";

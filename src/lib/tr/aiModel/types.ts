@@ -15,13 +15,17 @@ export type TrAiModelJobStatus =
   | "failed"
   | "not_configured";
 
+export type TrAiModelGender = "woman" | "man";
+
 /**
  * Boutique "house model" — typically the owner, captured once in-shop.
  * Reference images stay private to generation; not public storefront assets.
+ * Add rows manually in the registry — no owner upload UI.
  */
 export interface TrAiModelIdentity {
   boutiqueSlug: string;
   displayName: string;
+  gender?: TrAiModelGender;
   /** Full-body / three-quarter reference URLs (studio or phone). */
   referenceImageUrls: string[];
   /** Optional face-close refs for identity lock. */
@@ -37,6 +41,7 @@ export interface TrAiModelOption {
   hint: string;
   ready: boolean;
   kind: "boutique" | "studio";
+  gender?: TrAiModelGender;
   referenceImageUrls: string[];
   faceReferenceUrls: string[];
   defaultPose?: TrAiModelPose;
@@ -64,6 +69,11 @@ export interface TrAiModelGenerateRequest {
    * When omitted, falls back to boutique house model for boutiqueSlug.
    */
   modelId?: string;
+  /**
+   * Optional try-on styling prompt. Providers default to NATURAL_TRYON_PROMPT
+   * (product-first Zara lookbook) when omitted.
+   */
+  prompt?: string;
   /** Storage context for re-hosting FASHN CDN outputs. */
   userId?: string;
   boutiqueId?: string;

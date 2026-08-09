@@ -67,6 +67,7 @@ export function TrBoutiqueEditorialProductCard({
       physicalAddress: null,
       homeLayout: "editorial",
       customDomain: null,
+      vergiNo: null,
       editorialContent: null,
       status: "verified",
       createdAt: product.createdAt,

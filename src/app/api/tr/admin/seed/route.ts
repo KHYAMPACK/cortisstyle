@@ -19,6 +19,7 @@ interface SeedBoutiquePayload {
   slug: string;
   name: string;
   legalName?: string;
+  vergiNo?: string;
   description?: string;
   logoUrl?: string;
   whatsappPhone?: string;
@@ -107,11 +108,14 @@ export async function POST(request: Request) {
             homeLayout: boutiqueInput.homeLayout,
             customDomain: boutiqueInput.customDomain,
             editorialContent: boutiqueInput.editorialContent,
+            legalName: boutiqueInput.legalName,
+            vergiNo: boutiqueInput.vergiNo,
           })
         : await createBoutiqueAdmin({
             slug: boutiqueInput.slug,
             name: boutiqueInput.name,
             legalName: boutiqueInput.legalName,
+            vergiNo: boutiqueInput.vergiNo,
             description: boutiqueInput.description,
             logoUrl: boutiqueInput.logoUrl,
             whatsappPhone: boutiqueInput.whatsappPhone,

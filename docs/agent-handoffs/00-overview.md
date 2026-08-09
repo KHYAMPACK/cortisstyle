@@ -61,7 +61,7 @@ Sell enablement (Phase 3)  → FASHN packshot/try-on, aiModel, catalogBackground
 3. TR domain types: `src/types/tr-marketplace.ts`.
 4. Edge behavior (geo, custom domain, studio SPA): `src/middleware.ts`.
 5. Env template: `localdevseeds` (incomplete — also grep `process.env` in the area you touch).
-6. Boutique health / next-tenant clone: [08-boutique-audit-pervin.md](./08-boutique-audit-pervin.md), [09-boutique-clone-playbook.md](./09-boutique-clone-playbook.md).
+6. Boutique health / next-tenant clone: [08-boutique-audit-pervin.md](./08-boutique-audit-pervin.md), [09-boutique-clone-playbook.md](./09-boutique-clone-playbook.md), wire-in + checklist [13-boutique-wire-in-and-go-live.md](./13-boutique-wire-in-and-go-live.md).
 
 ## Related deep docs
 

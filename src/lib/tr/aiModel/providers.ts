@@ -1,3 +1,4 @@
+import { NATURAL_TRYON_PROMPT } from "@/lib/tr/aiModel/prompts";
 import { isFashnConfigured } from "@/lib/tr/fashn/client";
 import { generateFashnTryOn } from "@/lib/tr/fashn/tryon";
 import { logTrAiUsageEvent } from "@/lib/tr/aiUsage";
@@ -68,14 +69,24 @@ const fashnProvider: TrAiModelProvider = {
       };
     }
 
-    const productImageUrl =
-      request.garment.cutoutImageUrl.trim() ||
-      request.garment.originalImageUrl?.trim() ||
-      "";
+    // Packshot / marketplace cutout only — never fall back to raw flat-lay.
+    const productImageUrl = request.garment.cutoutImageUrl.trim();
+    if (!productImageUrl) {
+      return {
+        status: "failed",
+        providerId: "fashn",
+        error:
+          "Giydirme için ön katalog (packshot) görseli gerekli. Önce katalog üretin.",
+      };
+    }
+
+    const prompt =
+      request.prompt?.trim() || NATURAL_TRYON_PROMPT;
 
     const result = await generateFashnTryOn({
       productImageUrl,
       modelImageUrl: modelImageUrl.trim(),
+      prompt,
       userId,
       boutiqueId,
       numImages: 1,

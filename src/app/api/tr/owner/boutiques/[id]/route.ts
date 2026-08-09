@@ -38,6 +38,7 @@ export async function GET(request: Request, context: RouteContext) {
       id: boutique.id,
       slug: boutique.slug,
       name: boutique.name,
+      legalName: boutique.legalName,
       description: boutique.description,
       logoUrl: boutique.logoUrl,
       whatsappPhone: boutique.whatsappPhone,
@@ -46,6 +47,8 @@ export async function GET(request: Request, context: RouteContext) {
       exchangePolicy: boutique.exchangePolicy,
       physicalAddress: boutique.physicalAddress,
       themeAccent: boutique.themeAccent,
+      vergiNo: boutique.vergiNo,
+      iban: boutique.iban,
       status: boutique.status,
     },
   });
@@ -92,6 +95,12 @@ export async function PATCH(request: Request, context: RouteContext) {
   if (physicalAddress !== undefined) patch.physicalAddress = physicalAddress;
   const themeAccent = stringOrNull(body.themeAccent);
   if (themeAccent !== undefined) patch.themeAccent = themeAccent;
+  const legalName = stringOrNull(body.legalName);
+  if (legalName !== undefined) patch.legalName = legalName;
+  const vergiNo = stringOrNull(body.vergiNo);
+  if (vergiNo !== undefined) patch.vergiNo = vergiNo;
+  const iban = stringOrNull(body.iban);
+  if (iban !== undefined) patch.iban = iban;
 
   try {
     const boutique = await updateBoutiqueBrandAdmin(id, patch);
@@ -100,6 +109,7 @@ export async function PATCH(request: Request, context: RouteContext) {
         id: boutique.id,
         slug: boutique.slug,
         name: boutique.name,
+        legalName: boutique.legalName,
         description: boutique.description,
         logoUrl: boutique.logoUrl,
         whatsappPhone: boutique.whatsappPhone,
@@ -108,6 +118,8 @@ export async function PATCH(request: Request, context: RouteContext) {
         exchangePolicy: boutique.exchangePolicy,
         physicalAddress: boutique.physicalAddress,
         themeAccent: boutique.themeAccent,
+        vergiNo: boutique.vergiNo,
+        iban: boutique.iban,
         status: boutique.status,
       },
     });

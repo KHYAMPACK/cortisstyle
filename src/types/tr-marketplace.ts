@@ -9,6 +9,11 @@ export type TrFulfillmentStatus =
   | "delivered"
   | "cancelled";
 
+/** Buyer invoice party at checkout (seller = boutique). */
+export type TrInvoiceType = "individual" | "corporate";
+/** Offline registry until GİB; no fake auto-issue. */
+export type TrInvoiceStatus = "draft" | "issued_offline" | "void";
+
 /** Common garment categories for outfit builder filtering (free text in DB). */
 export type TrGarmentCategory =
   | "top"
@@ -20,7 +25,7 @@ export type TrGarmentCategory =
   | "accessory"
   | "other";
 
-/** Public-safe boutique fields (no vergi_no / iban / commission). */
+/** Public-safe boutique fields (no iban / commission). Vergi no is on künye by design. */
 export interface TrBoutiquePublic {
   id: string;
   slug: string;
@@ -38,6 +43,8 @@ export interface TrBoutiquePublic {
   homeLayout: "default" | "editorial" | null;
   /** Custom host e.g. pervinsoysal.com */
   customDomain: string | null;
+  /** Tax id for künye / legal pages (not IBAN). */
+  vergiNo: string | null;
   /** Editorial homepage JSON; null → code defaults for that boutique. */
   editorialContent: Record<string, unknown> | null;
   status: TrBoutiqueStatus;
@@ -52,7 +59,6 @@ export interface TrProductColor {
 
 /** Full boutique record — service role / admin only. */
 export interface TrBoutique extends TrBoutiquePublic {
-  vergiNo: string | null;
   iban: string | null;
   commissionBps: number;
   ownerUserId: string | null;
@@ -125,11 +131,43 @@ export interface TrOrder {
   discountCode: string | null;
   /** Amount subtracted from line subtotal (kuruş). */
   discountKurus: number;
+  invoiceType: TrInvoiceType;
+  buyerTaxId: string | null;
+  buyerTaxOffice: string | null;
+  buyerTitle: string | null;
   paymentStatus: TrPaymentStatus;
   fulfillmentStatus: TrFulfillmentStatus;
   isSandbox: boolean;
   iyzicoPaymentId: string | null;
   iyzicoConversationId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TrInvoiceLineSummary {
+  title: string;
+  quantity: number;
+  priceKurus: number;
+  size: string | null;
+}
+
+export interface TrInvoice {
+  id: string;
+  boutiqueId: string;
+  orderId: string;
+  status: TrInvoiceStatus;
+  buyerName: string;
+  buyerEmail: string;
+  invoiceType: TrInvoiceType;
+  buyerTaxId: string | null;
+  buyerTaxOffice: string | null;
+  buyerTitle: string | null;
+  totalKurus: number;
+  lineSummary: TrInvoiceLineSummary[];
+  externalInvoiceNo: string | null;
+  issuedAt: string | null;
+  notes: string | null;
+  pdfUrl: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -247,6 +285,10 @@ export interface CreateTrOrderInput {
   customerName: string;
   customerPhone?: string | null;
   shippingAddress: TrShippingAddress;
+  invoiceType?: TrInvoiceType;
+  buyerTaxId?: string | null;
+  buyerTaxOffice?: string | null;
+  buyerTitle?: string | null;
   isSandbox?: boolean;
   /** Optional override for demo seeding historical orders. */
   createdAt?: string;

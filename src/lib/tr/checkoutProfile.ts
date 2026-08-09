@@ -3,6 +3,22 @@ import type { TrCheckoutFormData } from "@/types/tr-cart";
 const storageKey = (scope: string) =>
   `cortis-tr-checkout-profile:${scope.trim().toLowerCase() || "marketplace"}`;
 
+/** Persist contact/address only — never store TCKN/VKN in localStorage. */
+function profileForStorage(form: TrCheckoutFormData): Partial<TrCheckoutFormData> {
+  return {
+    customerName: form.customerName,
+    customerEmail: form.customerEmail,
+    customerPhone: form.customerPhone,
+    line1: form.line1,
+    line2: form.line2,
+    district: form.district,
+    city: form.city,
+    postalCode: form.postalCode,
+    country: form.country,
+    invoiceType: form.invoiceType === "corporate" ? "corporate" : "individual",
+  };
+}
+
 export function loadSavedCheckoutProfile(
   scope: string,
 ): TrCheckoutFormData | null {
@@ -22,6 +38,11 @@ export function loadSavedCheckoutProfile(
       city: String(parsed.city ?? ""),
       postalCode: String(parsed.postalCode ?? ""),
       country: String(parsed.country ?? "TR") || "TR",
+      invoiceType:
+        parsed.invoiceType === "corporate" ? "corporate" : "individual",
+      buyerTaxId: "",
+      buyerTaxOffice: String(parsed.buyerTaxOffice ?? ""),
+      buyerTitle: String(parsed.buyerTitle ?? ""),
     };
   } catch {
     return null;
@@ -34,7 +55,10 @@ export function saveCheckoutProfile(
 ): void {
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.setItem(storageKey(scope), JSON.stringify(form));
+    window.localStorage.setItem(
+      storageKey(scope),
+      JSON.stringify(profileForStorage(form)),
+    );
   } catch {
     // Ignore quota / private mode
   }

@@ -10,7 +10,7 @@ import type {
 } from "@/types/tr-marketplace";
 
 export const PUBLIC_BOUTIQUE_COLUMNS =
-  "id, slug, name, legal_name, description, logo_url, whatsapp_phone, instagram_handle, theme_accent, shipping_note, exchange_policy, physical_address, home_layout, custom_domain, editorial_content, status, created_at, updated_at";
+  "id, slug, name, legal_name, description, logo_url, whatsapp_phone, instagram_handle, theme_accent, shipping_note, exchange_policy, physical_address, home_layout, custom_domain, editorial_content, vergi_no, status, created_at, updated_at";
 
 function boutiqueInsertRow(input: CreateTrBoutiqueInput) {
   return {
@@ -219,6 +219,10 @@ export interface UpdateTrBoutiqueBrandInput {
   homeLayout?: "default" | "editorial" | null;
   customDomain?: string | null;
   editorialContent?: Record<string, unknown> | null;
+  /** Seller legal — owner panel only; not on public boutique. */
+  legalName?: string | null;
+  vergiNo?: string | null;
+  iban?: string | null;
 }
 
 export async function updateBoutiqueBrandAdmin(
@@ -264,6 +268,15 @@ export async function updateBoutiqueBrandAdmin(
   }
   if (input.editorialContent !== undefined) {
     row.editorial_content = input.editorialContent;
+  }
+  if (input.legalName !== undefined) {
+    row.legal_name = input.legalName?.trim() || null;
+  }
+  if (input.vergiNo !== undefined) {
+    row.vergi_no = input.vergiNo?.replace(/\s/g, "").trim() || null;
+  }
+  if (input.iban !== undefined) {
+    row.iban = input.iban?.replace(/\s/g, "").toUpperCase().trim() || null;
   }
 
   if (Object.keys(row).length === 0) {

@@ -16,7 +16,8 @@ Start here when picking up this repo. Read **[00-overview.md](./00-overview.md)*
 | [09-boutique-clone-playbook.md](./09-boutique-clone-playbook.md) | Phase 1 onboarding | Copy the **system** (not UI) for the next boutique |
 | [10-boutique-design-inspiration.md](./10-boutique-design-inspiration.md) | Phase 1 visual direction | Boutique **templates** (IDs not priority): 1 Balmoral, 2 Cecilie, 3 Marine Layer + accents |
 | [11-cortisstyle-design-inspiration.md](./11-cortisstyle-design-inspiration.md) | Cortisstyle (not boutiques) | Lookbook / AI discovery UX references |
-| [12-boutique-go-live.md](./12-boutique-go-live.md) | Phase 1 launch | Pending vs sandbox, iyzico flag, kill demo theater, smoke |
+| [12-boutique-go-live.md](./12-boutique-go-live.md) | Phase 1 launch | Payment modes (pending/sandbox/iyzico), secrets |
+| [13-boutique-wire-in-and-go-live.md](./13-boutique-wire-in-and-go-live.md) | Phase 1 onboarding | **Wire-in registry** + **pre-live checklist** (use for next boutique) |
 | [lila-butik-e-ticaret-setup.md](../lila-butik-e-ticaret-setup.md) | Phase 1 architecture | Shared rails + Lila `atelier` editorial skin |
 
 Deeper vision/roadmap (not handoffs): `docs/turkey-marketplace-concept.md`, `docs/turkey-shop-roadmap.md`, `docs/lookbook-studio-integration.md`.

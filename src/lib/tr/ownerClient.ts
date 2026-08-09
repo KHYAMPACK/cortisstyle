@@ -1,6 +1,12 @@
 import { getSupabaseClient } from "@/lib/supabaseClient";
 import { prepareOwnerUploadFile } from "@/lib/tr/prepareOwnerUploadFile";
-import type { TrProduct, TrProductColor, TrProductStatus } from "@/types/tr-marketplace";
+import type {
+  TrInvoice,
+  TrInvoiceStatus,
+  TrProduct,
+  TrProductColor,
+  TrProductStatus,
+} from "@/types/tr-marketplace";
 
 export interface TrOwnerBoutiqueSummary {
   id: string;
@@ -126,7 +132,7 @@ export async function createOwnerProduct(
 
 export async function updateOwnerProduct(
   productId: string,
-  payload: Partial<Omit<TrOwnerProductPayload, "boutiqueId">> & {
+  payload: Omit<TrOwnerProductPayload, "boutiqueId"> & {
     boutiqueId?: string;
   },
 ): Promise<TrProduct> {
@@ -391,11 +397,6 @@ export interface TrOwnerSummaryResponse {
     orderCount: number;
     revenueKurus: number;
   } | null;
-  revenueSeries?: Array<{
-    date: string;
-    revenueKurus: number;
-    orderCount: number;
-  }>;
 }
 
 export async function fetchOwnerSummary(
@@ -669,6 +670,7 @@ export interface TrOwnerBoutiqueSettings {
   id: string;
   slug: string;
   name: string;
+  legalName: string | null;
   description: string | null;
   logoUrl: string | null;
   whatsappPhone: string | null;
@@ -677,6 +679,8 @@ export interface TrOwnerBoutiqueSettings {
   exchangePolicy: string | null;
   physicalAddress: string | null;
   themeAccent: string | null;
+  vergiNo: string | null;
+  iban: string | null;
   status: string;
 }
 
@@ -710,6 +714,9 @@ export async function updateOwnerBoutiqueSettings(
       | "exchangePolicy"
       | "physicalAddress"
       | "themeAccent"
+      | "legalName"
+      | "vergiNo"
+      | "iban"
     >
   >,
 ): Promise<TrOwnerBoutiqueSettings> {
@@ -781,4 +788,66 @@ export async function updateOwnerBoutiqueOptions(
     sizePresets: data.sizePresets ?? [],
     colorPresets: data.colorPresets ?? [],
   };
+}
+
+export async function fetchOwnerInvoices(
+  boutiqueId: string,
+): Promise<TrInvoice[]> {
+  const response = await ownerFetch(
+    `/api/tr/owner/invoices?boutiqueId=${encodeURIComponent(boutiqueId)}`,
+  );
+  const data = (await response.json()) as {
+    invoices?: TrInvoice[];
+    error?: string;
+  };
+  if (!response.ok) {
+    throw new Error(data.error ?? "Faturalar yüklenemedi.");
+  }
+  return data.invoices ?? [];
+}
+
+export async function createOwnerInvoiceDraft(
+  boutiqueId: string,
+  orderId: string,
+): Promise<TrInvoice> {
+  const response = await ownerFetch(`/api/tr/owner/invoices`, {
+    method: "POST",
+    body: JSON.stringify({ boutiqueId, orderId }),
+  });
+  const data = (await response.json()) as {
+    invoice?: TrInvoice;
+    error?: string;
+  };
+  if (!response.ok) {
+    throw new Error(data.error ?? "Fatura kaydı oluşturulamadı.");
+  }
+  if (!data.invoice) throw new Error("Fatura kaydı oluşturulamadı.");
+  return data.invoice;
+}
+
+export async function updateOwnerInvoice(
+  invoiceId: string,
+  payload: {
+    boutiqueId: string;
+    status?: TrInvoiceStatus;
+    externalInvoiceNo?: string | null;
+    notes?: string | null;
+  },
+): Promise<TrInvoice> {
+  const response = await ownerFetch(
+    `/api/tr/owner/invoices/${encodeURIComponent(invoiceId)}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    },
+  );
+  const data = (await response.json()) as {
+    invoice?: TrInvoice;
+    error?: string;
+  };
+  if (!response.ok) {
+    throw new Error(data.error ?? "Fatura güncellenemedi.");
+  }
+  if (!data.invoice) throw new Error("Fatura güncellenemedi.");
+  return data.invoice;
 }

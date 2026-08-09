@@ -34,6 +34,11 @@ export interface TrCheckoutFormData {
   city: string;
   postalCode: string;
   country: string;
+  /** Bireysel (default) or kurumsal fatura. */
+  invoiceType: "individual" | "corporate";
+  buyerTaxId: string;
+  buyerTaxOffice: string;
+  buyerTitle: string;
 }
 
 export const EMPTY_CHECKOUT_FORM: TrCheckoutFormData = {
@@ -46,6 +51,10 @@ export const EMPTY_CHECKOUT_FORM: TrCheckoutFormData = {
   city: "",
   postalCode: "",
   country: "TR",
+  invoiceType: "individual",
+  buyerTaxId: "",
+  buyerTaxOffice: "",
+  buyerTitle: "",
 };
 
 export function cartTotalKurus(items: TrCartLineItem[]): number {

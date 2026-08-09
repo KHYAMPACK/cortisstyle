@@ -8,13 +8,17 @@ import {
 import { createOrderConfirmToken } from "@/lib/tr/orderConfirmToken";
 import { isTrCheckoutSandboxMode } from "@/lib/tr/checkoutMode";
 import {
+  normalizeBuyerTaxId,
+  validateCheckoutInvoiceFields,
+} from "@/lib/tr/invoiceFields";
+import {
   clientIpFromRequest,
   consumeRateLimit,
   rateLimitResponse,
 } from "@/lib/tr/rateLimit";
 import { CHECKOUT_RATE_LIMITS } from "@/lib/tr/rateLimitPolicies";
 import { isValidNotifyEmail } from "@/lib/supabaseAdmin";
-import type { CreateTrOrderInput } from "@/types/tr-marketplace";
+import type { CreateTrOrderInput, TrInvoiceType } from "@/types/tr-marketplace";
 
 export const runtime = "nodejs";
 
@@ -24,6 +28,10 @@ type CheckoutBody = {
   customerEmail: string;
   customerPhone?: string;
   shippingAddress: CreateTrOrderInput["shippingAddress"];
+  invoiceType?: TrInvoiceType | string;
+  buyerTaxId?: string;
+  buyerTaxOffice?: string;
+  buyerTitle?: string;
   items: CheckoutClientItem[];
   discountCode?: string;
   /** Accept mesafeli satış + ön bilgilendirme */
@@ -87,6 +95,16 @@ export async function POST(request: Request) {
     return Response.json({ error: fieldError }, { status: 400 });
   }
 
+  const invoiceError = validateCheckoutInvoiceFields({
+    invoiceType: body.invoiceType,
+    buyerTaxId: body.buyerTaxId,
+    buyerTaxOffice: body.buyerTaxOffice,
+    buyerTitle: body.buyerTitle,
+  });
+  if (invoiceError) {
+    return Response.json({ error: invoiceError }, { status: 400 });
+  }
+
   if (!Array.isArray(body.items) || body.items.length === 0) {
     return Response.json({ error: "Sepet boş." }, { status: 400 });
   }
@@ -126,11 +144,18 @@ export async function POST(request: Request) {
 
     const sandbox = isTrCheckoutSandboxMode();
 
+    const invoiceType: TrInvoiceType =
+      body.invoiceType === "corporate" ? "corporate" : "individual";
+
     const order = await createOrderAdmin({
       customerEmail: body.customerEmail,
       customerName: body.customerName,
       customerPhone: body.customerPhone,
       shippingAddress: body.shippingAddress,
+      invoiceType,
+      buyerTaxId: normalizeBuyerTaxId(body.buyerTaxId),
+      buyerTaxOffice: body.buyerTaxOffice,
+      buyerTitle: body.buyerTitle,
       items: checkout.lines.map((line) => ({
         productId: line.productId,
         boutiqueId: line.boutiqueId,

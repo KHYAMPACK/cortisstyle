@@ -92,7 +92,14 @@ export async function createOrderAdmin(
   let itemRows: Record<string, unknown>[] | null;
 
   try {
-    const orderInsert = await supabase
+    const invoiceType =
+    input.invoiceType === "corporate" ? "corporate" : "individual";
+  const buyerTaxId =
+    input.buyerTaxId?.replace(/\D/g, "").trim() || null;
+  const buyerTaxOffice = input.buyerTaxOffice?.trim() || null;
+  const buyerTitle = input.buyerTitle?.trim() || null;
+
+  const orderInsert = await supabase
       .from("tr_orders")
       .insert({
         customer_email: input.customerEmail.trim().toLowerCase(),
@@ -102,6 +109,10 @@ export async function createOrderAdmin(
         total_kurus: totalKurus,
         discount_code: discountCode,
         discount_kurus: discountKurus,
+        invoice_type: invoiceType,
+        buyer_tax_id: buyerTaxId,
+        buyer_tax_office: buyerTaxOffice,
+        buyer_title: buyerTitle,
         payment_status: paymentStatus,
         fulfillment_status: "created",
         is_sandbox: isSandbox,

@@ -256,6 +256,27 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
         setError("Adres alanlarını tamamlayın.");
         return false;
       }
+      if (form.invoiceType === "corporate") {
+        if (!form.buyerTitle.trim()) {
+          setError("Kurumsal fatura için unvan gerekli.");
+          return false;
+        }
+        const vkn = form.buyerTaxId.replace(/\D/g, "");
+        if (vkn.length !== 10) {
+          setError("Kurumsal fatura için 10 haneli VKN girin.");
+          return false;
+        }
+        if (!form.buyerTaxOffice.trim()) {
+          setError("Kurumsal fatura için vergi dairesi gerekli.");
+          return false;
+        }
+      } else {
+        const tckn = form.buyerTaxId.replace(/\D/g, "");
+        if (tckn && tckn.length !== 11) {
+          setError("TCKN 11 hane olmalıdır (veya boş bırakın).");
+          return false;
+        }
+      }
     }
     return true;
   };
@@ -319,6 +340,10 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
             postalCode: form.postalCode,
             country: form.country || "TR",
           },
+          invoiceType: form.invoiceType,
+          buyerTaxId: form.buyerTaxId.replace(/\D/g, "") || undefined,
+          buyerTaxOffice: form.buyerTaxOffice.trim() || undefined,
+          buyerTitle: form.buyerTitle.trim() || undefined,
           items: items.map((item) => ({
             productId: item.productId,
             boutiqueId: item.boutiqueId,
@@ -560,6 +585,106 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
                   autoComplete="postal-code"
                 />
               </label>
+
+              <div className="space-y-4 border-t border-black/10 pt-5">
+                <h3 className="font-serif text-lg tracking-tight text-neutral-950">
+                  Fatura bilgileri
+                </h3>
+                <p className="text-[12px] text-neutral-600">
+                  Varsayılan bireysel faturadır. Kurumsal için VKN ve unvan
+                  gerekir.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setForm((current) => ({
+                        ...current,
+                        invoiceType: "individual",
+                      }))
+                    }
+                    className={`px-3 py-2 text-[11px] tracking-[0.14em] uppercase ${
+                      form.invoiceType === "individual"
+                        ? "bg-neutral-950 text-white"
+                        : "border border-black/15 text-neutral-700"
+                    }`}
+                  >
+                    Bireysel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setForm((current) => ({
+                        ...current,
+                        invoiceType: "corporate",
+                      }))
+                    }
+                    className={`px-3 py-2 text-[11px] tracking-[0.14em] uppercase ${
+                      form.invoiceType === "corporate"
+                        ? "bg-neutral-950 text-white"
+                        : "border border-black/15 text-neutral-700"
+                    }`}
+                  >
+                    Kurumsal
+                  </button>
+                </div>
+                {form.invoiceType === "corporate" ? (
+                  <>
+                    <label className="block">
+                      <span className={labelClassName}>Ünvan</span>
+                      <input
+                        required
+                        value={form.buyerTitle}
+                        onChange={(event) =>
+                          updateField("buyerTitle", event.target.value)
+                        }
+                        className={`${inputClassName} mt-2`}
+                      />
+                    </label>
+                    <label className="block sm:max-w-xs">
+                      <span className={labelClassName}>VKN (10 hane)</span>
+                      <input
+                        required
+                        value={form.buyerTaxId}
+                        onChange={(event) =>
+                          updateField("buyerTaxId", event.target.value)
+                        }
+                        className={`${inputClassName} mt-2`}
+                        inputMode="numeric"
+                        autoComplete="off"
+                      />
+                    </label>
+                    <label className="block">
+                      <span className={labelClassName}>Vergi dairesi</span>
+                      <input
+                        required
+                        value={form.buyerTaxOffice}
+                        onChange={(event) =>
+                          updateField("buyerTaxOffice", event.target.value)
+                        }
+                        className={`${inputClassName} mt-2`}
+                      />
+                    </label>
+                  </>
+                ) : (
+                  <label className="block sm:max-w-xs">
+                    <span className={labelClassName}>
+                      TCKN (isteğe bağlı)
+                    </span>
+                    <input
+                      value={form.buyerTaxId}
+                      onChange={(event) =>
+                        updateField("buyerTaxId", event.target.value)
+                      }
+                      className={`${inputClassName} mt-2`}
+                      inputMode="numeric"
+                      autoComplete="off"
+                      placeholder="11 hane"
+                    />
+                  </label>
+                )}
+              </div>
+
               {error ? (
                 <p className="text-[13px] text-red-700">{error}</p>
               ) : null}
@@ -627,6 +752,17 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
                     {form.line2 ? `, ${form.line2}` : ""}
                     <br />
                     {form.district} / {form.city} {form.postalCode}
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-4 pt-1">
+                  <dt className="text-neutral-500">Fatura</dt>
+                  <dd className="text-right">
+                    {form.invoiceType === "corporate"
+                      ? `Kurumsal · ${form.buyerTitle || "—"}`
+                      : "Bireysel"}
+                    {form.buyerTaxId.replace(/\D/g, "")
+                      ? ` · ${form.buyerTaxId.replace(/\D/g, "")}`
+                      : ""}
                   </dd>
                 </div>
               </dl>

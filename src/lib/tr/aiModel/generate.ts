@@ -51,7 +51,8 @@ export async function generateBoutiqueAiModelImage(
     return {
       status: "failed",
       providerId: request.providerId ?? "stub",
-      error: "Garment cutout / packshot URL gerekli.",
+      error:
+        "Giydirme için ön katalog (packshot) görseli gerekli. Ham ürün fotoğrafı kullanılamaz.",
     };
   }
 

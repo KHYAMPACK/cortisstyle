@@ -10,19 +10,30 @@ Boutique owners polish product photos in create/edit:
 
 1. Upload front/back → **Photoroom** cutouts (`marketplaceImages`) when `PHOTOROOM_API_KEY` is set
 2. **Katalogu güzelleştir** → **Gemini** (optional) refines packshot prompt from the photo → **FASHN packshot** rehosted to `tr-assets/.../marketplace/`
-3. Pick model (boutique house and/or studio Ayla/Deniz) → **FASHN tryon-max** → `lifestyleImages` under `tr-assets/.../lifestyle/`
+3. Pick model (default **Ayla** woman / **Deniz** man) → **FASHN tryon-max** with **front packshot only** (`marketplaceImages[0]`) + locked product-first prompt → `lifestyleImages` under `tr-assets/.../lifestyle/`
 4. Usage logged to `tr_ai_usage_events` (internal metering; no boutique billing UI yet)
 
 | Concern | Path |
 |---------|------|
-| FASHN client | `src/lib/tr/fashn/` |
+| FASHN client | `src/lib/tr/fashn/` (`packshot`, `tryon`, `modelCreate`) |
 | Packshot prompt (heuristic + Gemini) | `src/lib/tr/aiCatalog/` (`resolvePackshotPrompt`, `packshotPrompt`) |
-| Try-on / model registry | `src/lib/tr/aiModel/` |
+| Try-on / model registry | `src/lib/tr/aiModel/` (`registry`, `prompts`, `providers`) |
 | Usage log | `src/lib/tr/aiUsage.ts`, `supabase/patch_tr_ai_usage.sql` |
 | APIs | `POST /api/tr/owner/ai-catalog/packshot`, `POST /api/tr/owner/ai-model/generate` |
-| Panel UI | `TrOwnerAiCatalogEnhance`, product wizard + editor |
+| Panel UI | `TrOwnerAiCatalogEnhance`, `TrOwnerAiModelPicker`, product wizard + editor |
 
-**Env (local + Vercel):** `FASHN_API_KEY`, `PHOTOROOM_API_KEY`, `GEMINI_API_KEY` (or `GOOGLE_API_KEY`). Optional: `FASHN_DEFAULT_RESOLUTION`, `FASHN_DEFAULT_MODE`, `NEXT_PUBLIC_TR_AI_STUDIO_AYLA_REF_URLS`, `NEXT_PUBLIC_TR_AI_STUDIO_DENIZ_REF_URLS`. Fill boutique `referenceImageUrls` in `aiModel/registry.ts` after the in-shop shoot.
+**FASHN limitation:** Try-On API has **no** default models — `model_image` is required. Studio “Starter Models” are UI-only (not API IDs). Platform refs are generated once with **`model-create`** and hosted under `public/tr/ai-models/`.
+
+**Studio models (always available):**
+- `studio:ayla` (woman) → `public/tr/ai-models/studio-ayla.jpg` (or `TR_AI_STUDIO_AYLA_REF_URLS` / `NEXT_PUBLIC_…`)
+- `studio:deniz` (man) → `public/tr/ai-models/studio-deniz.jpg` (or env override)
+- Locked prompts: `src/lib/tr/aiModel/prompts.ts` (`NATURAL_TRYON_PROMPT`, Ayla/Deniz `model-create` prompts)
+- Regenerate refs: `npm run tr:generate-studio-models` (needs `FASHN_API_KEY`)
+- Boutique extras: add a row in `BOUTIQUE_AI_MODELS` in `registry.ts` — **no** owner upload/create UI
+
+**Try-on garment:** Always front packshot (`marketplaceImages[0]`). Never send the raw flat-lay upload when a packshot exists / is required.
+
+**Env (local + Vercel):** `FASHN_API_KEY`, `PHOTOROOM_API_KEY`, `GEMINI_API_KEY` (or `GOOGLE_API_KEY`). Optional: `FASHN_DEFAULT_RESOLUTION`, `FASHN_DEFAULT_MODE`, `NEXT_PUBLIC_TR_AI_STUDIO_AYLA_REF_URLS`, `NEXT_PUBLIC_TR_AI_STUDIO_DENIZ_REF_URLS` (override hosted public paths).
 
 If Gemini is missing or fails, packshot still runs with the heuristic default prompt.
 
@@ -62,7 +73,8 @@ Boutique owners generate Instagram-ready **İçerik** packs from catalog product
 ## What we will do / direction
 
 - Boutique-facing credit wallet / ₺ packages + overage (metering table already exists)
-- Fill studio + house model reference URLs after shoots
+- Fill boutique house model `referenceImageUrls` in `registry.ts` after in-shop shoots (manual; no owner UI)
+- Studio Ayla/Deniz are platform defaults — regenerate with `npm run tr:generate-studio-models` if needed
 - Reels / image-to-video once still → link → checkout is measured
 - Optional Meta schedule/publish
 - Featured looks / paid homepage placement (marketplace concept later revenue)

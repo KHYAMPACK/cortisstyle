@@ -107,7 +107,7 @@ interface TrBoutiqueAtelierHomeSectionsProps {
 
 /**
  * Paul Fredrick–structure home body for atelier skin only:
- * shop-by-category → mid campaign (Seçili parçalar) → info strip → trends → products → join.
+ * shop-by-category → info strip → trends 2×2 → mid campaign → products → join.
  */
 export function TrBoutiqueAtelierHomeSections({
   boutique,
@@ -251,40 +251,11 @@ export function TrBoutiqueAtelierHomeSections({
         </div>
       </motion.section>
 
-      {/* Mid campaign — Seçili parçalar (before trust strip) */}
-      <motion.section
-        {...fadeUp}
-        aria-label="Kampanya"
-        className="grid md:grid-cols-2"
-      >
-        <div className="flex flex-col items-start justify-center bg-[#F3EEE6] px-6 py-14 md:px-12 md:py-20 lg:px-16">
-          <p className="text-[11px] tracking-[0.22em] text-neutral-600 uppercase">
-            {mid.eyebrow}
-          </p>
-          <h2 className="mt-4 max-w-md font-serif text-[1.85rem] leading-[1.15] tracking-[-0.02em] text-neutral-950 md:text-[2.35rem]">
-            {mid.title}
-          </h2>
-          <Link
-            href={categoryHref(slug, mid.target?.trim() || "all")}
-            className="mt-8 inline-flex min-h-12 items-center bg-neutral-950 px-8 text-[12px] tracking-[0.14em] text-white uppercase transition-opacity hover:opacity-85"
-          >
-            {mid.cta}
-          </Link>
-        </div>
-        <div className="relative min-h-[52vw] md:min-h-[28rem]">
-          <TileMedia
-            image={mid.image}
-            label={mid.title}
-            tone={3}
-          />
-        </div>
-      </motion.section>
-
       {/* Info strip — iade / kargo */}
       <motion.section
         {...fadeUp}
         aria-label="Alışveriş bilgileri"
-        className="border-y border-black/5 bg-[#F3EEE6] px-5 py-10 md:px-8 md:py-12"
+        className="mt-6 border-y border-black/5 bg-[#F3EEE6] px-5 py-10 md:mt-10 md:px-8 md:py-12"
       >
         <ul className="mx-auto grid max-w-6xl gap-8 md:grid-cols-3 md:gap-10">
           {infoItems.map((item) => {
@@ -343,7 +314,36 @@ export function TrBoutiqueAtelierHomeSections({
         </div>
       </motion.section>
 
-      {/* Product catalog */}
+      {/* Mid campaign split */}
+      <motion.section
+        {...fadeUp}
+        aria-label="Kampanya"
+        className="grid md:grid-cols-2"
+      >
+        <div className="flex flex-col items-start justify-center bg-[#F3EEE6] px-6 py-14 md:px-12 md:py-20 lg:px-16">
+          <p className="text-[11px] tracking-[0.22em] text-neutral-600 uppercase">
+            {mid.eyebrow}
+          </p>
+          <h2 className="mt-4 max-w-md font-serif text-[1.85rem] leading-[1.15] tracking-[-0.02em] text-neutral-950 md:text-[2.35rem]">
+            {mid.title}
+          </h2>
+          <Link
+            href={categoryHref(slug, mid.target?.trim() || "all")}
+            className="mt-8 inline-flex min-h-12 items-center bg-neutral-950 px-8 text-[12px] tracking-[0.14em] text-white uppercase transition-opacity hover:opacity-85"
+          >
+            {mid.cta}
+          </Link>
+        </div>
+        <div className="relative min-h-[52vw] md:min-h-[28rem]">
+          <TileMedia
+            image={mid.image}
+            label={mid.title}
+            tone={3}
+          />
+        </div>
+      </motion.section>
+
+      {/* Product catalog — after Seçili parçalar campaign */}
       <motion.div {...fadeUp} className="bg-white">
         <TrBoutiqueEditorialCatalog
           products={products}

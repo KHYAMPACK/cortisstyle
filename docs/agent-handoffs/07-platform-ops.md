@@ -10,6 +10,7 @@
 - Motion: keep transitions intentional (`.cursor/rules/smooth-transitions.mdc`)
 - Money in TR: integer **kuruş**
 - SQL: incremental `supabase/patch_*.sql` — no automated migrator; document when adding patches
+- Offline invoices: apply `supabase/patch_tr_invoices.sql` (buyer tax on orders + `tr_invoices`; GİB later)
 
 ## Auth matrix
 

@@ -2,6 +2,7 @@ import {
   requireOwnedBoutique,
   requireTrOwner,
 } from "@/lib/tr/ownerAuth";
+import { ensureDraftInvoiceForBoutiqueOrder } from "@/lib/tr/invoices";
 import {
   getOrderByIdAdmin,
   updateOrderFulfillmentStatusAdmin,
@@ -129,6 +130,14 @@ export async function PATCH(request: Request, context: RouteContext) {
   try {
     if (hasPayment) {
       await updateOrderPaymentStatusAdmin(id, "paid" as TrPaymentStatus);
+      try {
+        await ensureDraftInvoiceForBoutiqueOrder(boutique.id, id);
+      } catch (invoiceError) {
+        console.error(
+          "[tr/owner/orders/[id]] invoice draft after paid failed:",
+          invoiceError,
+        );
+      }
     }
     if (hasFulfillment) {
       await updateOrderFulfillmentStatusAdmin(

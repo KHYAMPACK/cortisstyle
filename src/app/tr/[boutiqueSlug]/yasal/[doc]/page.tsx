@@ -35,7 +35,12 @@ export default async function BoutiqueLegalPage({ params }: LegalPageProps) {
     whatsappPhone: boutique.whatsappPhone,
     email,
     exchangePolicy: boutique.exchangePolicy,
+    shippingNote: boutique.shippingNote,
     customDomain: boutique.customDomain,
+    vergiNo: boutique.vergiNo,
+    kepAddress: null,
+    mersisNo: null,
+    marketingEnabled: true,
   };
 
   const legal = getTrLegalDoc(doc, ctx);

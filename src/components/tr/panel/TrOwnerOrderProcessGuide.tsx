@@ -16,7 +16,7 @@ const STEPS: Array<{ title: string; body: string }> = [
   },
   {
     title: "2. Paketleyin",
-    body: "Ödeme onayından sonra ürünleri kontrol edip paketleyin. e-Fatura GİB entegrasyonu gelene kadar faturayı kendi sürecinizle kesin.",
+    body: "Ödeme onayından sonra ürünleri kontrol edip paketleyin. Faturalar sayfasında taslak oluşur — GİB gelene kadar faturayı kendi sürecinizle kesin ve numarayı yazın.",
   },
   {
     title: "3. Kargoya verin",

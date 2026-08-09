@@ -4,6 +4,8 @@
 
 **UI:** Unique per boutique via **editorial skins** / theme packs (`classic` vs `atelier`), not `if (slug)` inside Pervin’s chrome. See [lila-butik-e-ticaret-setup.md](../lila-butik-e-ticaret-setup.md).
 
+**Day-of ops:** use **[13-boutique-wire-in-and-go-live.md](./13-boutique-wire-in-and-go-live.md)** — wire-in registry + pre-live checklist (includes Lila 2026-08 learnings).
+
 **Read first:** [08-boutique-audit-pervin.md](./08-boutique-audit-pervin.md) (known holes). Do not promise real card pay, live cargo, e-invoice, or working coupons until those are fixed.
 
 **Product stance:** Phase 1 = **standalone boutique site**. Cadde marketplace cart (`trCartStore`, `/tr/sepet`) is out of scope for this playbook. New boutiques should use **editorial** home layout so local sepet/odeme/favoriler apply.

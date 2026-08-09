@@ -145,6 +145,14 @@ function OrderDetail({
               {order.customerEmail}
               {order.customerPhone ? ` · ${order.customerPhone}` : ""}
             </p>
+            <p className={`mt-2 ${panelHintClass}`}>
+              Fatura:{" "}
+              {order.invoiceType === "corporate"
+                ? `Kurumsal${order.buyerTitle ? ` · ${order.buyerTitle}` : ""}`
+                : "Bireysel"}
+              {order.buyerTaxId ? ` · ${order.buyerTaxId}` : ""}
+              {order.buyerTaxOffice ? ` · ${order.buyerTaxOffice}` : ""}
+            </p>
             <p className="mt-4 text-[28px] font-semibold tabular-nums text-neutral-950">
               {formatTryFromKurus(order.totalKurus)}
             </p>

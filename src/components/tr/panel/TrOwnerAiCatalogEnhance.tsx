@@ -162,13 +162,12 @@ export function TrOwnerAiCatalogEnhance({
       onMarketplaceImagesChange(nextMarketplace);
 
       setPhase("tryon");
-      const garmentUrl =
-        nextMarketplace[0]?.trim() ||
-        marketplaceImages[0]?.trim() ||
-        images[0]?.trim() ||
-        "";
+      // Try-on requires front packshot only — never use raw upload as garment.
+      const garmentUrl = nextMarketplace[0]?.trim() || "";
       if (!garmentUrl) {
-        throw new Error("Giydirme için katalog görseli yok.");
+        throw new Error(
+          "Giydirme için ön katalog (packshot) görseli yok. Önce katalog üretin.",
+        );
       }
 
       const poses = [
@@ -194,7 +193,6 @@ export function TrOwnerAiCatalogEnhance({
         const result = await requestOwnerAiModelGenerate({
           boutiqueId,
           cutoutImageUrl: garmentUrl,
-          originalImageUrl: images[0],
           productId: productId ?? undefined,
           title,
           category,
