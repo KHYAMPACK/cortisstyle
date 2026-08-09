@@ -4,10 +4,10 @@
  * - Platform defaults: `studio:ayla` (woman) + `studio:deniz` (man)
  * - Boutique extras: add a row in `BOUTIQUE_AI_MODELS` (no owner upload UI)
  *
- * Ref URLs: env comma-lists override; else absolute URLs to public/tr/ai-models.
+ * Ref URLs: env comma-lists override; else public/tr/ai-models paths.
+ * Server try-on resolves local paths via data URI (FASHN cannot fetch localhost).
  */
 
-import { getSiteUrl } from "@/lib/authRedirect";
 import {
   STUDIO_AYLA_PUBLIC_PATH,
   STUDIO_DENIZ_PUBLIC_PATH,
@@ -35,7 +35,24 @@ function parseEnvUrlList(envKey: string): string[] {
 
 function absolutePublicUrl(publicPath: string): string {
   const path = publicPath.startsWith("/") ? publicPath : `/${publicPath}`;
-  return `${getSiteUrl()}${path}`;
+  // Prefer env site URL only when not localhost — FASHN cannot fetch local origins.
+  // Client picker still works with relative /tr/ai-models paths via getSiteUrl.
+  const envSite = process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/$/, "");
+  const hostPart = envSite
+    ? envSite.replace(/^https?:\/\//i, "").split("/")[0] ?? ""
+    : "";
+  const isLocal =
+    Boolean(envSite) &&
+    /^(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?$/i.test(hostPart);
+  if (envSite && !isLocal) {
+    return `${envSite}${path}`;
+  }
+  if (typeof window !== "undefined") {
+    // Browser: relative is fine for <img>; keep absolute for consistency
+    return `${window.location.origin}${path}`;
+  }
+  // Server fallback: relative path — providers convert via resolveModelImageForRemoteApi
+  return path;
 }
 
 function hasRefs(urls: string[]): boolean {

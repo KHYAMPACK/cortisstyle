@@ -859,6 +859,11 @@ export function TrOwnerGuidedPhotoUpload({
                 className="mt-4"
                 credits={pendingCost.credits}
                 prefix={pendingCost.costPrefix || "Bu işlem"}
+                freeLabel={
+                  pending.slotIndex === 1
+                    ? "Ürün paketine dahil — ekstra kredi yok."
+                    : "Ekstra kredi yok."
+                }
               />
 
               <div className="mt-5 flex gap-3">

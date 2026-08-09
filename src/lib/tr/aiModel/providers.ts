@@ -1,4 +1,5 @@
 import { tryOnPromptForPose } from "@/lib/tr/aiModel/prompts";
+import { resolveModelImageForRemoteApi } from "@/lib/tr/aiModel/resolveModelImage";
 import { isFashnConfigured } from "@/lib/tr/fashn/client";
 import { generateFashnTryOn } from "@/lib/tr/fashn/tryon";
 import { logTrAiUsageEvent } from "@/lib/tr/aiUsage";
@@ -83,9 +84,23 @@ const fashnProvider: TrAiModelProvider = {
     const prompt =
       request.prompt?.trim() || tryOnPromptForPose(request.pose);
 
+    let fashnModelImage: string;
+    try {
+      fashnModelImage = await resolveModelImageForRemoteApi(modelImageUrl);
+    } catch (error) {
+      return {
+        status: "failed",
+        providerId: "fashn",
+        error:
+          error instanceof Error
+            ? error.message
+            : "Model referansı FASHN için hazırlanamadı.",
+      };
+    }
+
     const result = await generateFashnTryOn({
       productImageUrl,
-      modelImageUrl: modelImageUrl.trim(),
+      modelImageUrl: fashnModelImage,
       prompt,
       userId,
       boutiqueId,

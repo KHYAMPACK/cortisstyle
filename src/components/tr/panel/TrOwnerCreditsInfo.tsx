@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import {
   formatCreditPriceBoth,
   formatCreditPriceUsd,
+  priceTryPerCredit,
   TR_AI_CATALOG_CREDITS,
   TR_AI_CREDITS_INFO_LINES,
 } from "@/lib/tr/aiCatalog/uploadCostHints";
@@ -107,19 +108,19 @@ export function TrOwnerCreditsTrigger({
                     <div className="mt-3 rounded-xl bg-[color:var(--panel-accent-softer)] px-4 py-3">
                       <p className="text-[13px] text-neutral-600">Birim fiyat</p>
                       <p className="mt-0.5 text-[20px] font-semibold text-neutral-900">
-                        1 kredi = {TR_AI_CATALOG_CREDITS.priceTryPerCredit} ₺
+                        1 kredi = {priceTryPerCredit()} ₺
                       </p>
                       <p className="mt-1 text-[15px] font-medium text-neutral-700">
                         {formatCreditPriceUsd(1)}
                       </p>
                       <p className="mt-2 text-[13px] text-neutral-600">
-                        Katalog + model (ön+arka) ={" "}
+                        Katalog + model ={" "}
                         {TR_AI_CATALOG_CREDITS.productPackage +
-                          TR_AI_CATALOG_CREDITS.modelPackageShots}{" "}
+                          TR_AI_CATALOG_CREDITS.modelPackage}{" "}
                         kredi →{" "}
                         {formatCreditPriceBoth(
                           TR_AI_CATALOG_CREDITS.productPackage +
-                            TR_AI_CATALOG_CREDITS.modelPackageShots,
+                            TR_AI_CATALOG_CREDITS.modelPackage,
                         )}
                       </p>
                     </div>

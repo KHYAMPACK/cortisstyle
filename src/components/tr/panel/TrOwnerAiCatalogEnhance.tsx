@@ -16,7 +16,6 @@ import {
   requestOwnerPackshot,
 } from "@/lib/tr/ownerClient";
 import type { PipelineJobItem } from "@/lib/tr/aiCatalog/pipelineProgress";
-import type { TrAiModelPose } from "@/lib/tr/aiModel/types";
 
 const primaryBtn =
   "inline-flex min-h-12 w-full items-center justify-center rounded-xl px-5 py-3 text-[16px] font-semibold text-white disabled:opacity-50";
@@ -39,7 +38,7 @@ export interface TrOwnerAiCatalogEnhanceProps {
     description: string;
   }) => void;
   onModelJobsChange?: (jobs: PipelineJobItem[]) => void;
-  /** Skip model shots and continue (optional step). */
+  /** Skip model shot and continue (optional step). */
   onSkip?: () => void;
   disabled?: boolean;
 }
@@ -50,12 +49,6 @@ type EnhancePhase =
   | "tryon"
   | "done"
   | "error";
-
-const MODEL_SHOTS: Array<{ pose: TrAiModelPose; label: string; slot: 0 | 1 }> =
-  [
-    { pose: "standing-front", label: "Ön model", slot: 0 },
-    { pose: "standing-back", label: "Arka model", slot: 1 },
-  ];
 
 export function TrOwnerAiCatalogEnhance({
   boutiqueId,
@@ -172,54 +165,44 @@ export function TrOwnerAiCatalogEnhance({
 
       setPhase("tryon");
       const frontGarment = nextMarketplace[0]?.trim() || "";
-      const backGarment = nextMarketplace[1]?.trim() || "";
-      if (!frontGarment || !backGarment) {
+      if (!frontGarment) {
         throw new Error(
-          "Model için ön ve arka katalog (packshot) görselleri gerekli.",
+          "Model için ön katalog (packshot) görseli gerekli.",
         );
       }
 
-      const newLifestyle: string[] = [];
-      const total = MODEL_SHOTS.length;
-
-      for (let i = 0; i < total; i++) {
-        const shot = MODEL_SHOTS[i]!;
-        const garmentUrl =
-          shot.slot === 0 ? frontGarment : backGarment;
-        setProgressLabel(`${shot.label} ${i + 1}/${total}…`);
-        onModelJobsChange?.([
-          {
-            id: "model-pack",
-            kind: "model",
-            label: "Model çekimleri",
-            status: "running",
-            progressPct: 45 + Math.round(((i + 1) / total) * 50),
-            detail: `${shot.label}…`,
-          },
-        ]);
-        const result = await requestOwnerAiModelGenerate({
-          boutiqueId,
-          cutoutImageUrl: garmentUrl,
-          productId: productId ?? undefined,
-          title,
-          category,
-          modelId: selectedModelId,
-          pose: shot.pose,
-        });
-        if (result.status !== "succeeded" || !result.imageUrl?.trim()) {
-          throw new Error(result.error ?? "Model görseli üretilemedi.");
-        }
-        newLifestyle.push(result.imageUrl.trim());
+      setProgressLabel("Model fotoğrafı…");
+      onModelJobsChange?.([
+        {
+          id: "model-pack",
+          kind: "model",
+          label: "Model çekimi",
+          status: "running",
+          progressPct: 70,
+          detail: "Ön model…",
+        },
+      ]);
+      const result = await requestOwnerAiModelGenerate({
+        boutiqueId,
+        cutoutImageUrl: frontGarment,
+        productId: productId ?? undefined,
+        title,
+        category,
+        modelId: selectedModelId,
+        pose: "standing-front",
+      });
+      if (result.status !== "succeeded" || !result.imageUrl?.trim()) {
+        throw new Error(result.error ?? "Model görseli üretilemedi.");
       }
 
       const merged = [
         ...lifestyleImages.filter(Boolean),
-        ...newLifestyle,
+        result.imageUrl.trim(),
       ];
       onLifestyleImagesChange(Array.from(new Set(merged)));
       setPhase("done");
       setProgressLabel(
-        `Ön + arka model görselleri hazır (${TR_AI_CATALOG_CREDITS.modelPackageShots} kredi).`,
+        `Model fotoğrafı hazır (${TR_AI_CATALOG_CREDITS.modelPackage} kredi).`,
       );
       onModelJobsChange?.([]);
     } catch (err) {
@@ -245,11 +228,10 @@ export function TrOwnerAiCatalogEnhance({
     <div className="space-y-4 rounded-2xl border-2 border-[color:var(--panel-accent-border)] bg-[color:var(--panel-accent-softer)]/40 p-4">
       <div>
         <p className="text-[17px] font-semibold text-neutral-800">
-          Model fotoğrafları
+          Model fotoğrafı
         </p>
         <p className="mt-1 text-[14px] text-neutral-600">
-          İsteğe bağlı — her zaman 2 kare: ön (ön katalog) + arka (arka katalog).
-          Atlayabilirsiniz.
+          İsteğe bağlı — ön katalog ile 1 model karesi. Atlayabilirsiniz.
         </p>
       </div>
 
@@ -261,10 +243,10 @@ export function TrOwnerAiCatalogEnhance({
       />
 
       {lifestyleImages.some((u) => u?.trim()) ? (
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:max-w-xs">
           {lifestyleImages
             .filter((u) => u?.trim())
-            .slice(0, 4)
+            .slice(0, 2)
             .map((url) => (
               <div
                 key={url}
@@ -292,7 +274,7 @@ export function TrOwnerAiCatalogEnhance({
           ? "Hazırlanıyor…"
           : phase === "done"
             ? "Tekrar oluştur"
-            : "Ön + arka model oluştur"}
+            : "Model fotoğrafı oluştur"}
       </button>
 
       {onSkip && phase !== "done" ? (

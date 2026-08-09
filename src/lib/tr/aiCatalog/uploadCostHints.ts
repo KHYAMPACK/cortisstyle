@@ -1,27 +1,37 @@
 /**
  * Owner-facing Cortisstyle credit pricing.
  *
- * Math: product photos (2) + model package front+back (2) = 4 credits → 1 kredi = ₺5.
- * USD shown for soft perception (~47.5 ₺/$).
+ * - Ürün (ön + arka packshot): 1 kredi
+ * - Model (tek ön model shot, isteğe bağlı): 1 kredi
+ * - 1 kredi = $0.40 → TRY via tryPerUsd
  */
 
 export const TR_AI_CATALOG_CREDITS = {
-  productPackage: 2,
-  modelShotEach: 1,
-  /** Always front + back when model shots are requested */
-  modelPackageShots: 2,
-  /** List price per credit */
-  priceTryPerCredit: 5,
-  /** Approx TRY per USD for display only */
+  /** Front + back packshot together */
+  productPackage: 1,
+  /** Single front model try-on package */
+  modelPackage: 1,
+  /** How many lifestyle shots the model package produces */
+  modelPackageShots: 1,
+  /** List price per credit in USD */
+  priceUsdPerCredit: 0.4,
+  /** Approx TRY per USD for display */
   tryPerUsd: 47.5,
 } as const;
 
-export function creditsToTry(credits: number): number {
-  return credits * TR_AI_CATALOG_CREDITS.priceTryPerCredit;
+/** TRY list price per credit (rounded for display). */
+export function priceTryPerCredit(): number {
+  return Math.round(
+    TR_AI_CATALOG_CREDITS.priceUsdPerCredit * TR_AI_CATALOG_CREDITS.tryPerUsd,
+  );
 }
 
 export function creditsToUsd(credits: number): number {
-  return creditsToTry(credits) / TR_AI_CATALOG_CREDITS.tryPerUsd;
+  return credits * TR_AI_CATALOG_CREDITS.priceUsdPerCredit;
+}
+
+export function creditsToTry(credits: number): number {
+  return credits * priceTryPerCredit();
 }
 
 export function formatCreditPriceTry(credits: number): string {
@@ -38,17 +48,14 @@ export function formatCreditPriceBoth(credits: number): string {
   return `${formatCreditPriceTry(credits)} (${formatCreditPriceUsd(credits)})`;
 }
 
-const modelPackageCredits =
-  TR_AI_CATALOG_CREDITS.modelPackageShots *
-  TR_AI_CATALOG_CREDITS.modelShotEach;
-
 const exampleFullCredits =
-  TR_AI_CATALOG_CREDITS.productPackage + modelPackageCredits;
+  TR_AI_CATALOG_CREDITS.productPackage + TR_AI_CATALOG_CREDITS.modelPackage;
 
 export const TR_AI_CREDITS_INFO_LINES = [
   `Ürün katalog paketi (ön + arka): ${TR_AI_CATALOG_CREDITS.productPackage} kredi → ${formatCreditPriceBoth(TR_AI_CATALOG_CREDITS.productPackage)}`,
-  `Model fotoğrafları (ön + arka, isteğe bağlı): ${modelPackageCredits} kredi → ${formatCreditPriceBoth(modelPackageCredits)}`,
+  `Model fotoğrafı (ön, isteğe bağlı): ${TR_AI_CATALOG_CREDITS.modelPackage} kredi → ${formatCreditPriceBoth(TR_AI_CATALOG_CREDITS.modelPackage)}`,
   `Örnek: katalog + model = ${exampleFullCredits} kredi → ${formatCreditPriceBoth(exampleFullCredits)}`,
+  `1 kredi = $${TR_AI_CATALOG_CREDITS.priceUsdPerCredit.toFixed(2)} (~${priceTryPerCredit()} ₺)`,
   "Ödeme: krediler butik hesabınızdan düşülür.",
   "Tahsilat: aylık paket veya dönem sonu fatura.",
   "Bakiye yetersizse işlem yapılmaz.",
@@ -68,10 +75,11 @@ export function describePhotoSlotCost(slotIndex: number): {
         "Bu ham fotoğraf değil — onayda satışa hazır katalog görseli (packshot) oluşturulur.",
       bullets: [
         "Kaynak olarak seçtiğiniz kare kullanılır.",
+        "Ön + arka birlikte 1 kredi (ürün paketi).",
         "Sonuç: temiz, vitrin tipi ürün görseli.",
       ],
       credits: TR_AI_CATALOG_CREDITS.productPackage,
-      costPrefix: "Bu işlem",
+      costPrefix: "Ürün paketi",
     };
   }
 
@@ -82,10 +90,10 @@ export function describePhotoSlotCost(slotIndex: number): {
         "Bu ham fotoğraf değil — onayda satışa hazır katalog görseli (packshot) oluşturulur.",
       bullets: [
         "Kaynak olarak seçtiğiniz kare kullanılır.",
-        "Ön ile birlikte ürün katalog paketi tamamlanır.",
+        "Ön ile aynı ürün paketine dahil — ekstra kredi yok.",
       ],
-      credits: TR_AI_CATALOG_CREDITS.productPackage,
-      costPrefix: "Bu işlem",
+      credits: null,
+      costPrefix: "",
     };
   }
 
@@ -98,13 +106,12 @@ export function describePhotoSlotCost(slotIndex: number): {
   };
 }
 
-/** Credits for the fixed front+back model package. */
-export function describeEnhanceCredits(
-  modelShots: number = TR_AI_CATALOG_CREDITS.modelPackageShots,
-): number {
-  return Math.max(0, modelShots) * TR_AI_CATALOG_CREDITS.modelShotEach;
+/** Credits for the single front model package. */
+export function describeModelPackageCredits(): number {
+  return TR_AI_CATALOG_CREDITS.modelPackage;
 }
 
-export function describeModelPackageCredits(): number {
-  return describeEnhanceCredits(TR_AI_CATALOG_CREDITS.modelPackageShots);
+/** @deprecated Use describeModelPackageCredits */
+export function describeEnhanceCredits(_modelShots?: number): number {
+  return describeModelPackageCredits();
 }

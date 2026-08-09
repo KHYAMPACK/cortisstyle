@@ -6,6 +6,20 @@ import { motion, AnimatePresence } from "framer-motion";
 import { getCatalogBackground } from "@/lib/tr/catalogBackgrounds/registry";
 import { formatTryFromKurus } from "@/types/tr-marketplace";
 
+type GalleryEntry =
+  | {
+      kind: "catalog" | "lifestyle";
+      label: string;
+      src: string;
+      pending?: false;
+    }
+  | {
+      kind: "catalog" | "lifestyle";
+      label: string;
+      src?: undefined;
+      pending: true;
+    };
+
 export interface TrOwnerStorePreviewProps {
   title: string;
   description?: string | null;
@@ -17,10 +31,31 @@ export interface TrOwnerStorePreviewProps {
   catalogBackgroundId: string;
   sizes?: string[];
   colorNames?: string[];
+  /**
+   * When true, show 2 model-shot placeholders if lifestyle images are not ready yet
+   * (owner opted into model generation / jobs still running).
+   */
+  modelShotsPending?: boolean;
+  /** Expected model shot count while pending (default 2 = front + back). */
+  pendingModelShotCount?: number;
+}
+
+function PendingSlot({ label }: { label: string }) {
+  return (
+    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[#EEEEEA] px-6 text-center">
+      <span
+        className="h-9 w-9 animate-spin rounded-full border-2 border-neutral-300 border-t-[color:var(--panel-accent)]"
+        aria-hidden
+      />
+      <p className="text-[15px] font-semibold text-neutral-800">{label}</p>
+      <p className="text-[13px] text-neutral-500">Hazırlanıyor…</p>
+    </div>
+  );
 }
 
 /**
  * Generic Cadde-style storefront preview (not boutique-themed).
+ * Catalog slots use packshot/marketplace only — never raw uploads while processing.
  */
 export function TrOwnerStorePreview({
   title,
@@ -33,37 +68,74 @@ export function TrOwnerStorePreview({
   catalogBackgroundId,
   sizes = [],
   colorNames = [],
+  modelShotsPending = false,
+  pendingModelShotCount = 1,
 }: TrOwnerStorePreviewProps) {
   const bg = getCatalogBackground(catalogBackgroundId);
 
   const gallery = useMemo(() => {
-    const catalog = [0, 1]
-      .map((i) => ({
-        src: marketplaceImages[i]?.trim() || images[i]?.trim() || "",
-        kind: "catalog" as const,
-        label: i === 0 ? "Ön" : "Arka",
-      }))
-      .filter((entry) => entry.src);
+    const entries: GalleryEntry[] = [];
+
+    for (const i of [0, 1] as const) {
+      const packshot = marketplaceImages[i]?.trim() || "";
+      const original = images[i]?.trim() || "";
+      const label = i === 0 ? "Ön" : "Arka";
+      if (packshot) {
+        entries.push({ kind: "catalog", label, src: packshot });
+      } else if (original) {
+        // Original uploaded but catalog not ready — never show raw photo
+        entries.push({ kind: "catalog", label, pending: true });
+      }
+    }
+
     const lifestyle = lifestyleImages
       .filter((src) => Boolean(src?.trim()))
       .map((src, index) => ({
-        src: src.trim(),
         kind: "lifestyle" as const,
-        label: `Model ${index + 1}`,
+        label:
+          index === 0
+            ? "Model"
+            : `Model ${index + 1}`,
+        src: src.trim(),
       }));
-    return [...catalog, ...lifestyle];
-  }, [images, marketplaceImages, lifestyleImages]);
+
+    entries.push(...lifestyle);
+
+    if (modelShotsPending) {
+      const need = Math.max(0, pendingModelShotCount - lifestyle.length);
+      for (let i = 0; i < need; i++) {
+        const index = lifestyle.length + i;
+        entries.push({
+          kind: "lifestyle",
+          label: index === 0 ? "Model" : `Model ${index + 1}`,
+          pending: true,
+        });
+      }
+    }
+
+    return entries;
+  }, [
+    images,
+    marketplaceImages,
+    lifestyleImages,
+    modelShotsPending,
+    pendingModelShotCount,
+  ]);
 
   const [activeIndex, setActiveIndex] = useState(0);
 
   useEffect(() => {
     setActiveIndex(0);
-  }, [gallery.map((g) => g.src).join("|")]);
+  }, [
+    gallery
+      .map((g) => (g.pending ? `pending:${g.label}` : g.src))
+      .join("|"),
+  ]);
 
   const safeIndex =
     gallery.length === 0 ? 0 : Math.min(activeIndex, gallery.length - 1);
   const active = gallery[safeIndex] ?? null;
-  const isCatalogCover = active?.kind === "catalog";
+  const isCatalogCover = active?.kind === "catalog" && !active.pending;
 
   const sellKurus =
     priceTry && Number(priceTry.replace(",", ".")) > 0
@@ -105,7 +177,24 @@ export function TrOwnerStorePreview({
           style={isCatalogCover ? { background: bg.css } : undefined}
         >
           <AnimatePresence mode="wait">
-            {active ? (
+            {active?.pending ? (
+              <motion.div
+                key={`pending-${active.label}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.25 }}
+                className="absolute inset-0"
+              >
+                <PendingSlot
+                  label={
+                    active.kind === "lifestyle"
+                      ? "Model fotoğrafı hazırlanıyor"
+                      : "Katalog görseli hazırlanıyor"
+                  }
+                />
+              </motion.div>
+            ) : active?.src ? (
               <motion.div
                 key={active.src}
                 initial={{ opacity: 0 }}
@@ -120,7 +209,9 @@ export function TrOwnerStorePreview({
                   fill
                   unoptimized
                   className={
-                    isCatalogCover ? "object-contain p-6" : "object-cover"
+                    active.kind === "catalog"
+                      ? "object-contain p-6"
+                      : "object-cover"
                   }
                   sizes="(max-width: 640px) 100vw, 50vw"
                 />
@@ -199,7 +290,7 @@ export function TrOwnerStorePreview({
                 const selected = index === safeIndex;
                 return (
                   <button
-                    key={`${entry.kind}-${entry.src}-${index}`}
+                    key={`${entry.kind}-${entry.pending ? entry.label : entry.src}-${index}`}
                     type="button"
                     onClick={() => setActiveIndex(index)}
                     className={`relative h-16 w-12 shrink-0 overflow-hidden rounded-lg border-2 ${
@@ -208,25 +299,34 @@ export function TrOwnerStorePreview({
                         : "border-neutral-200"
                     }`}
                     style={
-                      entry.kind === "catalog"
+                      entry.kind === "catalog" && !entry.pending
                         ? { background: bg.css }
                         : { background: "#f5f5f5" }
                     }
                     aria-label={entry.label}
                     aria-pressed={selected}
                   >
-                    <Image
-                      src={entry.src}
-                      alt=""
-                      fill
-                      unoptimized
-                      className={
-                        entry.kind === "catalog"
-                          ? "object-contain p-1"
-                          : "object-cover"
-                      }
-                      sizes="48px"
-                    />
+                    {entry.pending ? (
+                      <span className="absolute inset-0 flex items-center justify-center">
+                        <span
+                          className="h-4 w-4 animate-spin rounded-full border-2 border-neutral-300 border-t-[color:var(--panel-accent)]"
+                          aria-hidden
+                        />
+                      </span>
+                    ) : (
+                      <Image
+                        src={entry.src}
+                        alt=""
+                        fill
+                        unoptimized
+                        className={
+                          entry.kind === "catalog"
+                            ? "object-contain p-1"
+                            : "object-cover"
+                        }
+                        sizes="48px"
+                      />
+                    )}
                   </button>
                 );
               })}

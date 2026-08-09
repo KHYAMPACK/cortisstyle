@@ -77,7 +77,7 @@ const STEPS = [
   {
     id: "model",
     title: "Model",
-    hint: "İsteğe bağlı — ön + arka model (2 kredi)",
+    hint: "İsteğe bağlı — 1 ön model (1 kredi)",
   },
   {
     id: "review",
@@ -455,31 +455,58 @@ export function TrProductCreateWizard({
 
   return (
     <div className="space-y-6">
-      {draftBanner ? (
-        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
-          <p className="min-w-0 flex-1 text-[14px] text-amber-950">
-            Kaydedilmemiş taslak bulundu
-            {draftBanner.updatedAt
-              ? ` (${new Date(draftBanner.updatedAt).toLocaleString("tr-TR")})`
-              : ""}
-            .
-          </p>
-          <button
-            type="button"
-            className="rounded-xl bg-amber-900 px-3 py-2 text-[14px] font-semibold text-white"
-            onClick={restoreDraft}
+      <AnimatePresence>
+        {draftBanner ? (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 p-4 sm:items-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
           >
-            Devam et
-          </button>
-          <button
-            type="button"
-            className="rounded-xl border border-amber-300 bg-white px-3 py-2 text-[14px] font-semibold text-amber-950"
-            onClick={discardDraft}
-          >
-            Sil
-          </button>
-        </div>
-      ) : null}
+            <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="product-create-draft-title"
+              className="w-full max-w-md rounded-2xl border border-[color:var(--panel-accent-border)] bg-white p-5 shadow-xl sm:p-6"
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 16 }}
+              transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <p
+                id="product-create-draft-title"
+                className="text-[20px] font-semibold text-neutral-900"
+              >
+                Yarım kalan ürün var
+              </p>
+              <p className="mt-2 text-[15px] leading-relaxed text-neutral-600">
+                Kaldığınız yerden devam etmek ister misiniz?
+                {draftBanner.updatedAt
+                  ? ` Son kayıt: ${new Date(draftBanner.updatedAt).toLocaleString("tr-TR")}.`
+                  : ""}
+              </p>
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                <button
+                  type="button"
+                  className={`${secondaryBtn} flex-1`}
+                  onClick={discardDraft}
+                >
+                  Yeni başla
+                </button>
+                <button
+                  type="button"
+                  className={`${primaryBtn} flex-1`}
+                  style={{ backgroundColor: "var(--panel-accent)" }}
+                  onClick={restoreDraft}
+                >
+                  Devam et
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
       <div className="rounded-2xl border border-[color:var(--panel-accent-border)] bg-white p-5 shadow-sm sm:p-6">
         <div className="flex items-center justify-between gap-3">
@@ -822,6 +849,8 @@ export function TrProductCreateWizard({
                   lifestyleImages={lifestyleImages}
                   catalogBackgroundId={catalogBackgroundId}
                   sizes={chartSizes}
+                  modelShotsPending={modelGenerating}
+                  pendingModelShotCount={1}
                 />
                 <p className="rounded-xl bg-[color:var(--panel-accent-soft)] px-4 py-3 text-[16px] text-neutral-800">
                   Kaydettiğinizde ürün satışta görünür.

@@ -10,12 +10,15 @@ Boutique owners polish product photos in create/edit:
 
 1. Upload front/back → **Photoroom** cutouts (`marketplaceImages`) when `PHOTOROOM_API_KEY` is set
 2. **Katalogu güzelleştir** → **Gemini** (optional) refines packshot prompt from the photo → **FASHN packshot** rehosted to `tr-assets/.../marketplace/`
-3. Pick model (optional) → always **2** try-ons: front packshot + back packshot → `lifestyleImages`
+3. Pick model (optional) → **1** try-on from front packshot → `lifestyleImages`
 4. Usage logged to `tr_ai_usage_events` (internal metering; no boutique billing UI yet)
 
 **Ürün yükleme draft:** Wizard state autosaves to `localStorage` (`src/lib/tr/productCreateDraft.ts`) — not a DB table. Image URLs already live in `tr-assets`; restore is instant on reload. Clear on successful save. Photo **Sil** uses a 10s soft undo toast (no confirm modal).
 
-**Try-on garment:** Front shot → `marketplaceImages[0]`; back shot → `marketplaceImages[1]` + `standing-back` prompt. Never send raw flat-lay when packshot is required.
+**Owner credits:** ürün packshot package (ön+arka) = **1 kredi**; model (1 front shot) = **1 kredi**; 1 kredi = **$0.40** (`src/lib/tr/aiCatalog/uploadCostHints.ts`).
+
+- Try-on garment: Front → `marketplaceImages[0]` only. Local studio refs are sent as data URIs when origin is localhost (FASHN cannot fetch `localhost`).
+- Mağaza önizleme: packshot-only (no raw uploads); pending catalog/model slots while AI runs.
 
 | Concern | Path |
 |---------|------|
