@@ -289,7 +289,48 @@ export function getEditorialContent(
       : merged.categoryTiles?.length > 0
         ? merged.categoryTiles
         : defaults.categoryTiles,
+    midCampaign: atelier
+      ? {
+          eyebrow: "Seçili parçalar",
+          title: "Yeni sezon şimdi Lila’da",
+          cta: "Alışverişe başla",
+          target: "all",
+          ...merged.midCampaign,
+          image: atelierHomeImage(boutique.slug, "mid-campaign"),
+        }
+      : merged.midCampaign,
+    join: atelier
+      ? {
+          eyebrow: "Üyelik",
+          title: `${boutique.name} ailesi`,
+          body: "Üye olun; siparişlerinizi takip edin, favorilerinizi saklayın ve kampanyalardan haberdar olun.",
+          primaryCta: "Üye ol / Giriş",
+          secondaryCta: "Alışverişe devam",
+          benefits: [
+            { id: "fav", label: "Favori listesi", icon: "heart" as const },
+            { id: "order", label: "Sipariş takibi", icon: "shipping" as const },
+            {
+              id: "promo",
+              label: "Kampanya bilgilendirme",
+              icon: "promo" as const,
+            },
+            { id: "support", label: "WhatsApp destek", icon: "support" as const },
+          ],
+          ...merged.join,
+          ...(boutique.slug === "lilabutik"
+            ? { title: "Lila Boutique Ailesine Katılın" }
+            : {}),
+          image: atelierHomeImage(boutique.slug, "join-club"),
+        }
+      : merged.join,
   };
+}
+
+function atelierHomeImage(
+  slug: string,
+  name: "mid-campaign" | "join-club",
+): string {
+  return `/tr/boutiques/${slug}/home/${name}.jpg`;
 }
 
 /** Yeni + taxonomy roots + İndirim — single source for atelier storefronts. */

@@ -154,6 +154,8 @@ export type EditorialDemoContent = {
     body: string;
     primaryCta: string;
     secondaryCta?: string;
+    /** Optional panel photo (atelier membership side). */
+    image?: string;
     benefits: Array<{
       id: string;
       label: string;

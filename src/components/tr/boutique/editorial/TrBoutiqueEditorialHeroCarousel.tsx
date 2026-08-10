@@ -24,6 +24,14 @@ const AUTO_MS = 5500;
 const ease = [0.22, 1, 0.36, 1] as const;
 const BRAND_INTRO_SLIDE_ID = "brand-intro";
 
+/** Soft atelier brand wash — panel-adjacent lilac, not saturated accent. */
+const BRAND_PANEL_CANVAS = "#F7F3F8";
+const BRAND_PANEL_SOFT = "#EDE6F2";
+const BRAND_PANEL_SOFTER = "#F3EEF6";
+const BRAND_PANEL_ACCENT_MUTED = "rgba(155, 126, 189, 0.18)";
+/** Matches brand type + tinted logo. */
+const BRAND_INK = "#5A4A78";
+
 const PLACEHOLDER_TONES = [
   "bg-[#2a2a2a]",
   "bg-[#1f1a1c]",
@@ -58,15 +66,207 @@ function campaignActionsGridClass(count: number): string {
   return "grid-cols-2 sm:grid-cols-3";
 }
 
-function buildBrandIntroSlide(accent?: string): EditorialHeroPromotion {
+function buildBrandIntroSlide(_accent?: string): EditorialHeroPromotion {
   return {
     id: BRAND_INTRO_SLIDE_ID,
     template: "brand",
-    backgroundColor: accent || "var(--boutique-accent)",
+    backgroundColor: BRAND_PANEL_CANVAS,
     promoLine: "",
     discountLine: "",
     cta: "",
   };
+}
+
+/** Quiet botanical line art — professional, denser corner flourishes. */
+function BrandHeroLineArt() {
+  const stroke = BRAND_INK;
+  return (
+    <svg
+      className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.26]"
+      viewBox="0 0 1200 800"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden
+      preserveAspectRatio="xMidYMid slice"
+    >
+      {/* Top-left stem + blooms */}
+      <g stroke={stroke} strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M72 40c18 70 28 140 22 220" />
+        <path d="M94 96c-28 8-48 34-42 58 14-6 34-10 48-22" />
+        <path d="M88 168c-32 12-52 40-44 66 16-8 38-14 52-28" />
+        <path d="M80 248c24-18 52-22 74-10" />
+        <path d="M70 130c-22 20-28 48-12 70" />
+        <path d="M110 210c18 16 22 42 8 62" />
+        <circle cx="94" cy="92" r="14" />
+        <circle cx="94" cy="92" r="5" />
+        <circle cx="86" cy="164" r="12" />
+        <circle cx="86" cy="164" r="4" />
+        <circle cx="78" cy="230" r="9" />
+        <path d="M100 88c10-16 28-22 40-14" />
+        <path d="M88 100c-8 14-6 32 6 42" />
+        <path d="M118 78c14-10 32-8 42 6" />
+        <path d="M54 150c-12 8-18 24-10 38" />
+      </g>
+      {/* Top-right cluster */}
+      <g
+        stroke={stroke}
+        strokeWidth="1.15"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        transform="translate(1200 0) scale(-1 1)"
+      >
+        <path d="M90 36c12 54 10 110 -6 168" />
+        <path d="M84 88c-24 14-36 40-24 62 12-10 30-18 44-20" />
+        <circle cx="82" cy="84" r="11" />
+        <circle cx="82" cy="84" r="4" />
+        <path d="M98 120c20-6 40 4 48 22" />
+        <path d="M70 140c-18 16-16 42 4 54" />
+        <circle cx="74" cy="148" r="8" />
+        <path d="M108 56c16-12 34-10 46 4" />
+      </g>
+      {/* Bottom-left cluster */}
+      <g
+        stroke={stroke}
+        strokeWidth="1.15"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        transform="translate(0 800) scale(1 -1)"
+      >
+        <path d="M90 36c12 54 10 110 -6 168" />
+        <path d="M84 88c-24 14-36 40-24 62 12-10 30-18 44-20" />
+        <circle cx="82" cy="84" r="11" />
+        <circle cx="82" cy="84" r="4" />
+        <path d="M98 120c20-6 40 4 48 22" />
+        <path d="M70 140c-18 16-16 42 4 54" />
+        <circle cx="74" cy="148" r="8" />
+      </g>
+      {/* Bottom-right mirror flourish */}
+      <g
+        stroke={stroke}
+        strokeWidth="1.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        transform="translate(1200 800) rotate(180)"
+      >
+        <path d="M72 40c18 70 28 140 22 220" />
+        <path d="M94 96c-28 8-48 34-42 58 14-6 34-10 48-22" />
+        <path d="M88 168c-32 12-52 40-44 66 16-8 38-14 52-28" />
+        <path d="M80 248c24-18 52-22 74-10" />
+        <path d="M70 130c-22 20-28 48-12 70" />
+        <circle cx="94" cy="92" r="14" />
+        <circle cx="94" cy="92" r="5" />
+        <circle cx="86" cy="164" r="12" />
+        <circle cx="86" cy="164" r="4" />
+        <circle cx="78" cy="230" r="9" />
+        <path d="M100 88c10-16 28-22 40-14" />
+        <path d="M88 100c-8 14-6 32 6 42" />
+      </g>
+      {/* Soft side arcs + mid accents */}
+      <path
+        d="M1080 120c40 80 48 170 20 260"
+        stroke={stroke}
+        strokeWidth="1"
+        strokeLinecap="round"
+        opacity="0.75"
+      />
+      <path
+        d="M1140 200c24 60 20 130 -8 190"
+        stroke={stroke}
+        strokeWidth="1"
+        strokeLinecap="round"
+        opacity="0.55"
+      />
+      <path
+        d="M120 620c-36-70-40-150-12-230"
+        stroke={stroke}
+        strokeWidth="1"
+        strokeLinecap="round"
+        opacity="0.75"
+      />
+      <path
+        d="M60 540c-20-54-14-120 12-176"
+        stroke={stroke}
+        strokeWidth="1"
+        strokeLinecap="round"
+        opacity="0.55"
+      />
+      <circle cx="1100" cy="300" r="7" stroke={stroke} strokeWidth="1" opacity="0.6" />
+      <circle cx="1124" cy="340" r="4" stroke={stroke} strokeWidth="1" opacity="0.5" />
+      <circle cx="100" cy="480" r="7" stroke={stroke} strokeWidth="1" opacity="0.6" />
+      <circle cx="76" cy="520" r="4" stroke={stroke} strokeWidth="1" opacity="0.5" />
+    </svg>
+  );
+}
+
+/** Matches logo-slide CTAs — lilac primary / soft secondary. */
+function heroCtaClassName(primary: boolean): string {
+  const base =
+    "inline-flex min-h-12 w-full items-center justify-center rounded-xl px-3 py-3 text-center text-[10px] font-bold tracking-[0.14em] uppercase shadow-sm sm:min-h-14 sm:text-[12px]";
+  if (primary) {
+    return `${base} bg-[#9B7EBD] text-white transition-opacity hover:opacity-90`;
+  }
+  return `${base} border border-[#9B7EBD]/35 bg-white/90 text-[#5A4A78] transition-colors hover:border-[#9B7EBD] hover:bg-[#9B7EBD] hover:text-white`;
+}
+
+function heroActionsGridClass(count: number): string {
+  if (count <= 1) return "grid-cols-1";
+  if (count === 3) return "grid-cols-1 sm:grid-cols-3";
+  return "grid-cols-2";
+}
+
+/**
+ * Professional panel-inspired wash for the logo intro —
+ * soft lilac canvas + quiet accent blooms + line art.
+ */
+function BrandHeroBackground() {
+  return (
+    <div className="absolute inset-0 overflow-hidden" aria-hidden>
+      <div
+        className="absolute inset-0"
+        style={{
+          background: `linear-gradient(
+            160deg,
+            #FFFFFF 0%,
+            ${BRAND_PANEL_CANVAS} 32%,
+            ${BRAND_PANEL_SOFTER} 62%,
+            ${BRAND_PANEL_SOFT} 100%
+          )`,
+        }}
+      />
+      <div
+        className="absolute inset-0 opacity-90"
+        style={{
+          background: `radial-gradient(
+            ellipse 85% 70% at 50% 28%,
+            rgba(255,255,255,0.95) 0%,
+            rgba(255,255,255,0.35) 42%,
+            transparent 72%
+          )`,
+        }}
+      />
+      <div
+        className="absolute -right-[12%] top-[8%] h-[48%] w-[42%] rounded-full"
+        style={{
+          background: `radial-gradient(ellipse at center, ${BRAND_PANEL_ACCENT_MUTED} 0%, transparent 70%)`,
+        }}
+      />
+      <div
+        className="absolute -left-[8%] bottom-[6%] h-[40%] w-[46%] rounded-full"
+        style={{
+          background:
+            "radial-gradient(ellipse at center, rgba(155, 126, 189, 0.1) 0%, transparent 72%)",
+        }}
+      />
+      <div
+        className="absolute inset-x-0 bottom-0 h-1/3"
+        style={{
+          background:
+            "linear-gradient(to top, rgba(237, 230, 242, 0.55) 0%, transparent 100%)",
+        }}
+      />
+      <BrandHeroLineArt />
+    </div>
+  );
 }
 
 interface TrBoutiqueEditorialHeroCarouselProps {
@@ -197,6 +397,8 @@ export function TrBoutiqueEditorialHeroCarousel({
               }
               unoptimized
             />
+          ) : brandMode ? (
+            <BrandHeroBackground />
           ) : bgColor ? (
             <div
               className="absolute inset-0"
@@ -232,7 +434,7 @@ export function TrBoutiqueEditorialHeroCarousel({
             ) : (
               <div className="absolute inset-0 bg-black/45" />
             )
-          ) : brandMode || campaignMode ? (
+          ) : campaignMode ? (
             <div
               className="absolute inset-0 opacity-[0.14]"
               style={{
@@ -241,9 +443,7 @@ export function TrBoutiqueEditorialHeroCarousel({
               }}
               aria-hidden
             />
-          ) : (
-            <div className="absolute inset-0 bg-black/45" />
-          )}
+          ) : null}
         </motion.div>
       </AnimatePresence>
 
@@ -290,14 +490,22 @@ function HeroSlideDots({
   slides,
   onGoTo,
   label = "Kampanya slaytları",
+  tone = "light",
 }: {
   multi: boolean;
   index: number;
   slides: EditorialHeroPromotion[];
   onGoTo: (next: number) => void;
   label?: string;
+  /** `light` = white dots on dark photos; `dark` = charcoal on soft brand wash. */
+  tone?: "light" | "dark";
 }) {
   if (!multi) return null;
+  const activeCls = tone === "dark" ? "bg-neutral-800" : "bg-white";
+  const idleCls =
+    tone === "dark"
+      ? "bg-neutral-800/25 hover:bg-neutral-800/50"
+      : "bg-white/40 hover:bg-white/70";
   return (
     <div
       className="absolute bottom-8 left-1/2 flex -translate-x-1/2 items-center gap-2 md:bottom-10"
@@ -315,9 +523,7 @@ function HeroSlideDots({
             aria-label={`Slayt ${slideIndex + 1}`}
             onClick={() => onGoTo(slideIndex)}
             className={`h-1.5 transition-all duration-300 ${
-              selected
-                ? "w-8 bg-white"
-                : "w-1.5 bg-white/40 hover:bg-white/70"
+              selected ? `w-8 ${activeCls}` : `w-1.5 ${idleCls}`
             }`}
           />
         );
@@ -347,7 +553,7 @@ function BrandHeroSlide({
   const saleHref = promotionHref(boutiqueSlug, "sale");
 
   return (
-    <div className="relative z-10 flex min-h-[70vh] w-full min-w-0 flex-col items-center justify-center overflow-hidden px-4 py-12 text-center text-white sm:px-5 md:min-h-[78vh] md:py-16">
+    <div className="relative z-10 flex min-h-[70vh] w-full min-w-0 flex-col items-center justify-center overflow-hidden px-4 py-12 text-center sm:px-5 md:min-h-[78vh] md:py-16">
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
           key={BRAND_INTRO_SLIDE_ID}
@@ -358,41 +564,65 @@ function BrandHeroSlide({
           className="relative flex w-full min-w-0 max-w-3xl flex-col items-center"
         >
           {logoUrl ? (
-            <Image
-              src={logoUrl}
-              alt=""
-              width={480}
-              height={480}
-              className="h-44 w-auto object-contain sm:h-52 md:h-60 lg:h-72"
-              unoptimized
-              priority
-            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.55, ease, delay: 0.05 }}
+              className="relative h-40 w-40 sm:h-48 sm:w-48 md:h-56 md:w-56 lg:h-64 lg:w-64"
+            >
+              {/* Hidden for layout/preload; visible mark is ink-tinted via mask */}
+              <Image
+                src={logoUrl}
+                alt=""
+                width={480}
+                height={480}
+                className="pointer-events-none absolute inset-0 h-full w-full object-contain opacity-0"
+                unoptimized
+                priority
+              />
+              <div
+                role="img"
+                aria-hidden
+                className="absolute inset-0"
+                style={{
+                  backgroundColor: BRAND_INK,
+                  WebkitMaskImage: `url(${logoUrl})`,
+                  WebkitMaskRepeat: "no-repeat",
+                  WebkitMaskPosition: "center",
+                  WebkitMaskSize: "contain",
+                  maskImage: `url(${logoUrl})`,
+                  maskRepeat: "no-repeat",
+                  maskPosition: "center",
+                  maskSize: "contain",
+                }}
+              />
+            </motion.div>
           ) : null}
           <div
-            className={`flex flex-col items-center text-neutral-950 ${
-              logoUrl ? "mt-7 md:mt-9" : ""
+            className={`flex flex-col items-center ${
+              logoUrl ? "mt-6 md:mt-8" : ""
             }`}
             aria-label={brandTitle}
           >
-            <p className="font-serif text-[clamp(3.5rem,11vw,6.5rem)] leading-none font-light tracking-[0.02em] italic">
+            <p
+              className="font-serif text-[clamp(3.25rem,10vw,6rem)] leading-none font-light tracking-[0.03em] italic"
+              style={{ color: BRAND_INK }}
+            >
               Lila
             </p>
-            <p className="mt-4 text-[13px] font-medium tracking-[0.48em] text-neutral-950 uppercase sm:text-[14px] md:mt-5 md:text-[16px]">
+            <p
+              className="mt-3 text-[12px] font-medium tracking-[0.42em] uppercase sm:text-[13px] md:mt-4 md:text-[15px]"
+              style={{ color: BRAND_INK, opacity: 0.7 }}
+            >
               Boutique
             </p>
           </div>
 
-          <div className="mt-8 grid w-full min-w-0 max-w-md grid-cols-2 gap-2.5 sm:mt-10 sm:gap-3">
-            <Link
-              href={shopHref}
-              className="inline-flex min-h-12 items-center justify-center bg-neutral-950 px-3 py-3 text-center text-[10px] font-bold tracking-[0.14em] text-white uppercase transition-opacity hover:opacity-90 sm:min-h-14 sm:text-[12px]"
-            >
+          <div className="mt-8 grid w-full min-w-0 max-w-sm grid-cols-2 gap-2.5 sm:mt-10 sm:max-w-md sm:gap-3">
+            <Link href={shopHref} className={heroCtaClassName(true)}>
               Alışverişe başla
             </Link>
-            <Link
-              href={saleHref}
-              className="inline-flex min-h-12 items-center justify-center border border-neutral-950 bg-transparent px-3 py-3 text-center text-[10px] font-bold tracking-[0.14em] text-neutral-950 uppercase transition-colors hover:bg-neutral-950 hover:text-white sm:min-h-14 sm:text-[12px]"
-            >
+            <Link href={saleHref} className={heroCtaClassName(false)}>
               İndirimdekiler
             </Link>
           </div>
@@ -405,6 +635,7 @@ function BrandHeroSlide({
         slides={slides}
         onGoTo={onGoTo}
         label="Marka ve kampanya slaytları"
+        tone="dark"
       />
     </div>
   );
@@ -493,15 +724,15 @@ function CampaignHeroSlide({
           </h2>
 
           <div
-            className={`mt-8 grid w-full min-w-0 max-w-xl gap-2.5 sm:gap-3 ${campaignActionsGridClass(actions.length)}`}
+            className={`mt-8 grid w-full min-w-0 max-w-md gap-2.5 sm:gap-3 ${campaignActionsGridClass(actions.length)}`}
           >
-            {actions.map((action) => (
+            {actions.map((action, actionIndex) => (
               <Link
                 key={`${action.label}-${action.target}-${action.indirim ? "sale" : "full"}`}
                 href={promotionHref(boutiqueSlug, action.target, {
                   indirim: action.indirim,
                 })}
-                className="inline-flex min-h-12 min-w-0 items-center justify-center bg-white px-2 py-3 text-center text-[10px] font-bold tracking-[0.1em] break-words text-neutral-950 uppercase transition-opacity hover:opacity-90 sm:min-h-14 sm:px-3 sm:text-[12px] md:text-[13px]"
+                className={heroCtaClassName(actionIndex === 0)}
               >
                 {action.label}
               </Link>
@@ -567,7 +798,7 @@ function ClassicHeroSlide({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.4, ease }}
-            className={`flex w-full max-w-xl flex-col items-center text-center md:items-stretch ${
+            className={`flex w-full max-w-xl flex-col items-center text-center ${
               align === "right"
                 ? "md:ml-auto md:items-end md:text-right"
                 : "md:mr-auto md:items-start md:text-left"
@@ -580,9 +811,7 @@ function ClassicHeroSlide({
               {title}
             </h2>
             <div
-              className={`mt-7 flex w-full max-w-md flex-wrap justify-center gap-2.5 ${
-                align === "right" ? "md:justify-end" : "md:justify-start"
-              }`}
+              className={`mt-7 grid w-full max-w-sm gap-2.5 sm:max-w-md sm:gap-3 ${heroActionsGridClass(actions.length)}`}
             >
               {actions.map((action, actionIndex) => (
                 <Link
@@ -590,11 +819,7 @@ function ClassicHeroSlide({
                   href={promotionHref(boutiqueSlug, action.target, {
                     indirim: action.indirim,
                   })}
-                  className={`inline-flex min-h-11 items-center justify-center px-5 py-3 text-[11px] font-bold tracking-[0.14em] uppercase transition-opacity hover:opacity-90 sm:min-h-12 sm:text-[12px] ${
-                    actionIndex === 0
-                      ? "bg-neutral-950 text-white"
-                      : "border border-white/80 bg-white/10 text-white backdrop-blur-sm"
-                  }`}
+                  className={heroCtaClassName(actionIndex === 0)}
                 >
                   {action.label}
                 </Link>
@@ -650,7 +875,7 @@ function ClassicHeroSlide({
             </p>
             <Link
               href={promotionHref(boutiqueSlug, promo.target)}
-              className="editorial-promo-cta mt-6 inline-flex min-h-11 items-center bg-brand-primary px-6 py-3 text-[12px] tracking-[0.2em] text-white uppercase transition-opacity hover:opacity-90 md:text-[13px]"
+              className={`${heroCtaClassName(true)} mt-6 max-w-xs`}
             >
               {promo.cta}
             </Link>

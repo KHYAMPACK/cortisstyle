@@ -205,7 +205,10 @@ export function TrBoutiqueAtelierHomeSections({
 
   const join = content.join ?? {
     eyebrow: "Üyelik",
-    title: `${boutique.name} ailesi`,
+    title:
+      slug === "lilabutik"
+        ? "Lila Boutique Ailesine Katılın"
+        : `${boutique.name} ailesi`,
     body: "Üye olun; siparişlerinizi takip edin, favorilerinizi saklayın ve kampanyalardan haberdar olun.",
     primaryCta: "Üye ol / Giriş",
     secondaryCta: "Alışverişe devam",
@@ -329,7 +332,7 @@ export function TrBoutiqueAtelierHomeSections({
           </h2>
           <Link
             href={categoryHref(slug, mid.target?.trim() || "all")}
-            className="mt-8 inline-flex min-h-12 items-center bg-neutral-950 px-8 text-[12px] tracking-[0.14em] text-white uppercase transition-opacity hover:opacity-85"
+            className="mt-8 inline-flex min-h-12 items-center justify-center rounded-xl bg-[#9B7EBD] px-8 text-[12px] font-bold tracking-[0.14em] text-white uppercase shadow-sm transition-opacity hover:opacity-90"
           >
             {mid.cta}
           </Link>
@@ -369,28 +372,45 @@ export function TrBoutiqueAtelierHomeSections({
             <p className="mt-4 max-w-md text-[14px] leading-relaxed text-neutral-600">
               {join.body}
             </p>
-            <div className="mt-8 flex flex-wrap gap-x-6 gap-y-3">
+            <div className="mt-8 grid w-full max-w-sm grid-cols-2 gap-2.5 sm:max-w-md sm:gap-3">
               <Link
                 href={authHref}
-                className="border-b border-neutral-950 pb-0.5 text-[13px] font-medium tracking-[0.04em] text-neutral-950"
+                className="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#9B7EBD] px-3 py-3 text-center text-[10px] font-bold tracking-[0.14em] text-white uppercase shadow-sm transition-opacity hover:opacity-90 sm:min-h-14 sm:text-[12px]"
               >
                 {join.primaryCta}
               </Link>
               {join.secondaryCta ? (
                 <Link
                   href={productsHref}
-                  className="border-b border-neutral-400 pb-0.5 text-[13px] tracking-[0.04em] text-neutral-600"
+                  className="inline-flex min-h-12 items-center justify-center rounded-xl border border-[#9B7EBD]/35 bg-white px-3 py-3 text-center text-[10px] font-bold tracking-[0.14em] text-[#5A4A78] uppercase shadow-sm transition-colors hover:border-[#9B7EBD] hover:bg-[#9B7EBD] hover:text-white sm:min-h-14 sm:text-[12px]"
                 >
                   {join.secondaryCta}
                 </Link>
               ) : null}
             </div>
           </div>
-          <div
-            className="relative flex min-h-[40vw] items-end justify-end p-8 md:min-h-[22rem]"
-            style={{ background: "var(--boutique-accent, #9B7EBD)" }}
-          >
-            <div className="flex h-28 w-28 items-center justify-center rounded-full border border-white/50 bg-white/15 text-center text-white backdrop-blur-sm md:h-32 md:w-32">
+          <div className="relative min-h-[52vw] overflow-hidden md:min-h-[22rem]">
+            {join.image ? (
+              <Image
+                src={join.image}
+                alt=""
+                fill
+                unoptimized
+                sizes="(max-width: 768px) 100vw, 50vw"
+                className="object-cover object-[center_20%]"
+              />
+            ) : (
+              <div
+                className="absolute inset-0"
+                style={{ background: "var(--boutique-accent, #9B7EBD)" }}
+                aria-hidden
+              />
+            )}
+            <div
+              className="absolute inset-0 bg-gradient-to-t from-[#5A4A78]/45 via-transparent to-transparent"
+              aria-hidden
+            />
+            <div className="absolute right-6 bottom-6 flex h-28 w-28 items-center justify-center rounded-full border border-white/55 bg-white/15 text-center text-white backdrop-blur-sm md:right-8 md:bottom-8 md:h-32 md:w-32">
               <span className="font-serif text-[15px] leading-tight tracking-[0.06em]">
                 Lila
                 <br />

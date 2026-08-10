@@ -194,14 +194,15 @@
           "title": "Yeni sezon şimdi Lila’da",
           "cta": "Alışverişe başla",
           "target": "all",
-          "image": "/tr/boutiques/lilabutik/categories/ust-giyim.jpg?v=2"
+          "image": "/tr/boutiques/lilabutik/home/mid-campaign.jpg"
         },
         "join": {
           "eyebrow": "Üyelik",
-          "title": "Lila Butik ailesi",
+          "title": "Lila Boutique Ailesine Katılın",
           "body": "Üye olun; siparişlerinizi takip edin, favorilerinizi saklayın ve kampanyalardan haberdar olun.",
           "primaryCta": "Üye ol / Giriş",
           "secondaryCta": "Alışverişe devam",
+          "image": "/tr/boutiques/lilabutik/home/join-club.jpg",
           "benefits": [
             { "id": "fav", "label": "Favori listesi", "icon": "heart" },
             { "id": "order", "label": "Sipariş takibi", "icon": "shipping" },
