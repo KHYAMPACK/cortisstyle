@@ -37,6 +37,8 @@ Boutique owners polish product photos in create/edit:
 - Locked prompts: `src/lib/tr/aiModel/prompts.ts` (`NATURAL_TRYON_PROMPT`, Ayla/Deniz `model-create` prompts) — simple room (wall + floor), no void; no invented pockets / hands-in-pockets; regenerate refs with `npm run tr:generate-studio-models`
 - Regenerate refs: `npm run tr:generate-studio-models` (needs `FASHN_API_KEY`)
 - Boutique extras: add a row in `BOUTIQUE_AI_MODELS` in `registry.ts` — **no** owner upload/create UI
+  - **Lila Butik** (`lilabutik`): house model **Lila** → `public/tr/ai-models/lilabutik-lila.jpg` (`boutique:lilabutik`) — same woman as storefront campaigns; auto-selected as default for that tenant only
+  - Pervin row exists but refs empty until portrait shoot
 
 **Env (local + Vercel):** `FASHN_API_KEY`, `PHOTOROOM_API_KEY`, `GEMINI_API_KEY` (or `GOOGLE_API_KEY`). Optional: `FASHN_DEFAULT_RESOLUTION`, `FASHN_DEFAULT_MODE`, `NEXT_PUBLIC_TR_AI_STUDIO_AYLA_REF_URLS`, `NEXT_PUBLIC_TR_AI_STUDIO_DENIZ_REF_URLS` (override hosted public paths).
 

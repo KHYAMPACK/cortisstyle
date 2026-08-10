@@ -1,5 +1,6 @@
 import {
-  TR_BOUTIQUE_CATEGORIES,
+  isTrCategoryMatch,
+  listTrCategoryRoots,
   type TrCategoryDefinition,
 } from "@/lib/tr/categories";
 import { getProductCoverImage } from "@/lib/tr/paths";
@@ -12,18 +13,18 @@ export interface TrFeaturedCategoryTile {
 
 const FEATURED_TILE_LIMIT = 4;
 
-/** Pick up to four category tiles with a cover image from the catalog. */
+/** Pick up to four root category tiles with a cover image from the catalog. */
 export function buildFeaturedCategoryTiles(
   products: TrProduct[],
 ): TrFeaturedCategoryTile[] {
   const available = products.filter((product) => product.status === "available");
   const tiles: TrFeaturedCategoryTile[] = [];
 
-  for (const category of TR_BOUTIQUE_CATEGORIES) {
+  for (const category of listTrCategoryRoots()) {
     if (tiles.length >= FEATURED_TILE_LIMIT) break;
 
-    const match = available.find(
-      (product) => product.category?.trim() === category.id,
+    const match = available.find((product) =>
+      isTrCategoryMatch(product.category, category.id),
     );
     if (!match) continue;
 

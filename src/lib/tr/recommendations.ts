@@ -1,3 +1,4 @@
+import { isTrCategoryMatch } from "@/lib/tr/categories";
 import type { TrLookWithProducts } from "@/types/tr-look";
 import type { TrProductWithBoutique } from "@/types/tr-marketplace";
 
@@ -31,10 +32,10 @@ export function pickRelatedProducts(input: {
     .sort(byId);
 
   const sameCategory = category
-    ? pool.filter((product) => product.category === category)
+    ? pool.filter((product) => isTrCategoryMatch(product.category, category))
     : [];
   const rest = category
-    ? pool.filter((product) => product.category !== category)
+    ? pool.filter((product) => !isTrCategoryMatch(product.category, category))
     : pool;
 
   const picked: TrProductWithBoutique[] = [];

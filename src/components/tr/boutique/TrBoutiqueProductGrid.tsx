@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { TrProductCard } from "@/components/tr/TrProductCard";
 import { useTrBoutiqueCatalog } from "@/components/tr/boutique/TrBoutiqueCatalogContext";
-import { TR_BOUTIQUE_CATEGORIES } from "@/lib/tr/categories";
+import { getTrCategoryLabel, isTrCategoryMatch } from "@/lib/tr/categories";
 import type { TrProduct } from "@/types/tr-marketplace";
 
 interface TrBoutiqueProductGridProps {
@@ -15,10 +15,7 @@ interface TrBoutiqueProductGridProps {
 
 function getActiveCategoryLabel(categoryId: string | null): string {
   if (!categoryId) return "Tüm ürünler";
-  return (
-    TR_BOUTIQUE_CATEGORIES.find((entry) => entry.id === categoryId)?.label ??
-    categoryId
-  );
+  return getTrCategoryLabel(categoryId) ?? categoryId;
 }
 
 export function TrBoutiqueProductGrid({
@@ -31,7 +28,9 @@ export function TrBoutiqueProductGrid({
 
   const filteredProducts = useMemo(() => {
     if (!activeCategory) return products;
-    return products.filter((product) => product.category === activeCategory);
+    return products.filter((product) =>
+      isTrCategoryMatch(product.category, activeCategory),
+    );
   }, [activeCategory, products]);
 
   if (products.length === 0) {

@@ -7,9 +7,13 @@ import { resolveBoutiqueContactEmail } from "@/lib/tr/checkoutMode";
 import {
   EDITORIAL_DEMO_SLUG,
   getEditorialDemoContent,
+  type EditorialCampaignAction,
   type EditorialDemoContent,
   type EditorialHeroPromotion,
+  type EditorialNavItem,
 } from "@/lib/tr/boutiqueHome/editorialDemoContent";
+import { isAtelierEditorialSkin } from "@/lib/tr/boutiqueHome/editorialSkin";
+import { listTrCategoryRoots } from "@/lib/tr/categories";
 import { trBoutiqueLegalPath, trBoutiquePath } from "@/lib/tr/paths";
 import type { TrBoutiquePublic } from "@/types/tr-marketplace";
 
@@ -102,10 +106,10 @@ export function buildBoutiqueEditorialDefaults(
     nav: [
       { id: "new", label: "Yeni", categoryId: null },
       { id: "elbise", label: "Elbise", categoryId: "elbise" },
-      { id: "ust", label: "Üst Giyim", categoryId: "ust-giyim" },
-      { id: "alt", label: "Alt Giyim", categoryId: "alt-giyim" },
+      { id: "ust", label: "Üst giyim", categoryId: "ust-giyim" },
+      { id: "alt", label: "Alt giyim", categoryId: "alt-giyim" },
       { id: "aksesuar", label: "Aksesuar", categoryId: "aksesuar" },
-      { id: "dis", label: "Dış Giyim", categoryId: "dis-giyim" },
+      { id: "dis", label: "Dış giyim", categoryId: "dis-giyim" },
       {
         id: "sale",
         label: "İndirim",
@@ -152,7 +156,7 @@ export function buildBoutiqueEditorialDefaults(
     featuredPair: [
       {
         categoryId: "ust-giyim",
-        label: "Üst Giyim",
+        label: "Üst giyim",
         image: TEMPLATE_ASSET("cat-ceket.jpg"),
         cta: "Hemen keşfet",
       },
@@ -166,13 +170,13 @@ export function buildBoutiqueEditorialDefaults(
     categoryTiles: [
       {
         categoryId: "alt-giyim",
-        label: "Alt Giyim",
+        label: "Alt giyim",
         image: TEMPLATE_ASSET("cat-jean.jpg"),
         cta: "Ürünleri incele",
       },
       {
         categoryId: "dis-giyim",
-        label: "Dış Giyim",
+        label: "Dış giyim",
         image: TEMPLATE_ASSET("cat-trenckot.jpg"),
         cta: "Ürünleri incele",
       },
@@ -237,13 +241,35 @@ export function getEditorialContent(
   const merged = mergeEditorial(defaults, boutique.editorialContent);
 
   // Ensure structural sections survive partial DB overrides from older JSON shapes.
-  const heroPromotions =
+  const mergedHeroPromotions =
     Array.isArray(merged.heroPromotions) && merged.heroPromotions.length > 0
       ? merged.heroPromotions
       : defaults.heroPromotions;
 
+  // Atelier nav + hero CTA packs + shop category row are taxonomy-owned (avoids DB drift).
+  const atelier = isAtelierEditorialSkin(boutique.slug);
+  const nav = atelier ? buildAtelierTaxonomyNav() : merged.nav;
+  const heroPromotions = atelier
+    ? buildAtelierHeroPromotions(
+        boutique.themeAccent?.trim() || "#9B7EBD",
+        mergedHeroPromotions,
+      )
+    : mergedHeroPromotions;
+  const shopCategories = atelier
+    ? buildAtelierShopCategories(boutique.slug)
+    : merged.shopCategories;
+  const trends = atelier
+    ? buildAtelierTrends(boutique.slug)
+    : merged.trends;
+
   return {
     ...merged,
+    nav,
+    shopCategories,
+    trends,
+    shopByCategoryTitle: atelier
+      ? merged.shopByCategoryTitle?.trim() || "Kategorilere göz atın"
+      : merged.shopByCategoryTitle,
     promoBar: merged.promoBar ?? defaults.promoBar,
     categoryHero: {
       ...defaults.categoryHero,
@@ -253,15 +279,167 @@ export function getEditorialContent(
         defaults.categoryHero.discountLine,
     },
     heroPromotions,
-    featuredPair:
-      merged.featuredPair?.length >= 2
+    featuredPair: atelier
+      ? buildAtelierFeaturedPair(boutique.slug)
+      : merged.featuredPair?.length >= 2
         ? merged.featuredPair
         : defaults.featuredPair,
-    categoryTiles:
-      merged.categoryTiles?.length > 0
+    categoryTiles: atelier
+      ? buildAtelierCategoryTiles(boutique.slug)
+      : merged.categoryTiles?.length > 0
         ? merged.categoryTiles
         : defaults.categoryTiles,
   };
+}
+
+/** Yeni + taxonomy roots + İndirim — single source for atelier storefronts. */
+function buildAtelierTaxonomyNav(): EditorialNavItem[] {
+  return [
+    { id: "new", label: "Yeni", categoryId: null },
+    ...listTrCategoryRoots().map((root) => ({
+      id: root.id,
+      label: root.label,
+      categoryId: root.id,
+    })),
+    {
+      id: "sale",
+      label: "İndirim",
+      categoryId: "sale",
+      accent: "sale" as const,
+    },
+  ];
+}
+
+/** Category photo path under public/tr/boutiques/{slug}/categories/. */
+function atelierCategoryImage(slug: string, categoryId: string): string {
+  // v=2 busts stale DB / CDN placeholders that pointed at wrong stock art.
+  return `/tr/boutiques/${encodeURIComponent(slug)}/categories/${encodeURIComponent(categoryId)}.jpg?v=2`;
+}
+
+/** Homepage “Kategorilere göz atın” row — taxonomy roots only. */
+function buildAtelierShopCategories(slug: string) {
+  return listTrCategoryRoots().map((root) => ({
+    categoryId: root.id,
+    label: root.label,
+    image: atelierCategoryImage(slug, root.id),
+  }));
+}
+
+function buildAtelierFeaturedPair(slug: string) {
+  const roots = listTrCategoryRoots();
+  const first = roots[0];
+  const second = roots[1];
+  if (!first || !second) return [];
+  return [
+    {
+      categoryId: first.id,
+      label: first.label,
+      image: atelierCategoryImage(slug, first.id),
+      cta: "Keşfet",
+    },
+    {
+      categoryId: second.id,
+      label: second.label,
+      image: atelierCategoryImage(slug, second.id),
+      cta: "Keşfet",
+    },
+  ];
+}
+
+function buildAtelierCategoryTiles(slug: string) {
+  return listTrCategoryRoots()
+    .slice(2)
+    .map((root) => ({
+      categoryId: root.id,
+      label: root.label,
+      image: atelierCategoryImage(slug, root.id),
+      cta: "İncele",
+    }));
+}
+
+/** Homepage trends 2×2 — four campaigns including İndirim. */
+function buildAtelierTrends(slug: string) {
+  const base = `/tr/boutiques/${encodeURIComponent(slug)}/trends`;
+  return {
+    title: "Trendleri keşfedin",
+    items: [
+      {
+        id: "trend-elbise",
+        title: "Zarif elbiseler.",
+        cta: "Elbiseleri incele",
+        target: "elbise",
+        image: `${base}/elbise.jpg?v=1`,
+      },
+      {
+        id: "trend-ust",
+        title: "Günlük üstler.",
+        cta: "Üst giyimi incele",
+        target: "ust-giyim",
+        image: `${base}/ust-giyim.jpg?v=1`,
+      },
+      {
+        id: "trend-aksesuar",
+        title: "Aksesuarlar.",
+        cta: "Aksesuarları incele",
+        target: "aksesuar",
+        image: `${base}/aksesuar.jpg?v=1`,
+      },
+      {
+        id: "trend-indirim",
+        title: "İndirimdekiler.",
+        cta: "Fırsatları gör",
+        target: "sale",
+        image: `${base}/indirim.jpg?v=1`,
+      },
+    ],
+  };
+}
+
+/**
+ * Atelier hero pack: photo Keşfet + İndirimler (brand logo slide is prepended in UI).
+ */
+function buildAtelierHeroPromotions(
+  _accent: string,
+  _fromDb: EditorialHeroPromotion[] | undefined,
+): EditorialHeroPromotion[] {
+  const base = `/tr/boutiques/lilabutik/hero`;
+  return [
+    {
+      id: "hero-kesfet",
+      template: "classic",
+      // Model is on the right — keep copy/CTAs on the left open side.
+      contentAlign: "left",
+      image: `${base}/kesfet.jpg?v=1`,
+      subText: "Yeni sezon",
+      campaignName: "Her anınıza şıklık katın",
+      promoLine: "Yeni sezon",
+      discountLine: "Her anınıza şıklık katın",
+      cta: "Hemen gör",
+      target: "all",
+      actions: [
+        { label: "Keşfet", target: "all" },
+        { label: "Elbise", target: "elbise" },
+      ],
+    },
+    {
+      id: "hero-indirim",
+      template: "classic",
+      // Model is on the left — keep copy/CTAs on the right open side.
+      contentAlign: "right",
+      image: `${base}/indirim.jpg?v=1`,
+      subText: "Seçili ürünlerde",
+      campaignName: "İndirimler",
+      promoLine: "Seçili ürünlerde",
+      discountLine: "İndirimler",
+      cta: "Fırsatları gör",
+      target: "sale",
+      actions: [
+        { label: "İndirimdekiler", target: "sale" },
+        { label: "Elbise", target: "elbise", indirim: true },
+        { label: "Üst giyim", target: "ust-giyim", indirim: true },
+      ],
+    },
+  ];
 }
 
 /** Prefer `heroPromotions`; fall back to legacy single `categoryHero` slide. */
@@ -309,19 +487,90 @@ export function resolveCampaignSubText2(
 
 export function resolveCampaignActions(
   promo: EditorialHeroPromotion,
-): Array<{ label: string; target: string }> {
-  if (promo.actions && promo.actions.length > 0) {
-    return promo.actions.slice(0, 4).map((action) => ({
+): Array<{ label: string; target: string; indirim?: boolean }> {
+  const mapActions = (actions: EditorialCampaignAction[]) =>
+    actions.slice(0, 6).map((action) => ({
       label: action.label,
       target: action.target?.trim() || "all",
+      indirim: action.indirim === true,
     }));
+
+  // Photo heroes with explicit CTAs — respect authoring (don't expand to taxonomy grid).
+  if (
+    promo.actions &&
+    promo.actions.length > 0 &&
+    (promo.template === "classic" ||
+      promo.contentAlign === "left" ||
+      promo.contentAlign === "right")
+  ) {
+    return mapActions(promo.actions);
   }
+
+  // Sale / outlet solid campaigns → main taxonomy categories (unless already rich)
+  if (isSaleOrientedCampaign(promo)) {
+    const roots = new Set(listTrCategoryRoots().map((root) => root.id));
+    const categoryHits =
+      promo.actions?.filter((action) =>
+        roots.has((action.target ?? "").trim()),
+      ) ?? [];
+    if (categoryHits.length >= 3) {
+      return mapActions(promo.actions ?? []);
+    }
+    return mapActions(
+      buildMainCategoryCampaignActions({
+        shopAllLabel: "Tüm indirimler",
+        shopAllTarget: "sale",
+        indirim: true,
+      }),
+    );
+  }
+
+  if (promo.actions && promo.actions.length > 0) {
+    return mapActions(promo.actions);
+  }
+
   return [
     {
       label: promo.cta,
-      target: promo.target?.trim() || "sale",
+      target: promo.target?.trim() || "all",
     },
   ];
+}
+
+/** Taxonomy roots as hero / mega CTAs (Elbise · Üst · Alt · Aksesuar · Ev). */
+export function buildMainCategoryCampaignActions(options?: {
+  shopAllLabel?: string;
+  shopAllTarget?: string;
+  /** Apply `indirim=1` on category targets (sale hero / sale mega). */
+  indirim?: boolean;
+}): EditorialCampaignAction[] {
+  const actions: EditorialCampaignAction[] = [];
+  if (options?.shopAllLabel) {
+    actions.push({
+      label: options.shopAllLabel,
+      target: options.shopAllTarget ?? "all",
+    });
+  }
+  for (const root of listTrCategoryRoots()) {
+    actions.push({
+      label: root.label,
+      target: root.id,
+      indirim: options?.indirim === true,
+    });
+  }
+  return actions;
+}
+
+function isSaleOrientedCampaign(promo: EditorialHeroPromotion): boolean {
+  if (promo.target === "sale") return true;
+  const id = promo.id?.toLocaleLowerCase("tr-TR") ?? "";
+  if (id.includes("sale") || id.includes("indirim") || id.includes("outlet")) {
+    return true;
+  }
+  const watermark = promo.watermark?.toLocaleLowerCase("tr-TR") ?? "";
+  if (watermark.includes("indirim") || watermark.includes("outlet")) return true;
+  const name = resolveCampaignName(promo).toLocaleLowerCase("tr-TR");
+  return name.includes("indirim") || name.includes("outlet");
 }
 
 export function isCampaignHeroTemplate(

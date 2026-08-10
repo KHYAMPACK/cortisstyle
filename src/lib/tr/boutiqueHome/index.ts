@@ -16,6 +16,7 @@ export {
 } from "@/lib/tr/boutiqueHome/editorialDemoContent";
 export {
   buildBoutiqueEditorialDefaults,
+  buildMainCategoryCampaignActions,
   getEditorialContent,
   isBrandHeroTemplate,
   isCampaignHeroTemplate,

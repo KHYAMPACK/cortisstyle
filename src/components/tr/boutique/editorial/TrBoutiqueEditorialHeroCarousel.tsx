@@ -30,15 +30,32 @@ const PLACEHOLDER_TONES = [
   "bg-[#242018]",
 ] as const;
 
-function promotionHref(boutiqueSlug: string, target?: string) {
+function promotionHref(
+  boutiqueSlug: string,
+  target?: string,
+  options?: { indirim?: boolean },
+) {
   const resolved = target?.trim() || "sale";
   if (resolved === "sale") {
     return trBoutiqueProductsPath(boutiqueSlug, { indirim: true });
   }
   if (resolved === "all") {
-    return trBoutiqueProductsPath(boutiqueSlug);
+    return trBoutiqueProductsPath(boutiqueSlug, {
+      indirim: options?.indirim === true ? true : undefined,
+    });
   }
-  return trBoutiqueProductsPath(boutiqueSlug, { kategori: resolved });
+  return trBoutiqueProductsPath(boutiqueSlug, {
+    kategori: resolved,
+    indirim: options?.indirim === true ? true : undefined,
+  });
+}
+
+function campaignActionsGridClass(count: number): string {
+  if (count <= 1) return "mx-auto max-w-sm grid-cols-1";
+  if (count === 2) return "grid-cols-1 sm:grid-cols-2";
+  if (count === 3) return "grid-cols-1 sm:grid-cols-3";
+  if (count === 4) return "grid-cols-2";
+  return "grid-cols-2 sm:grid-cols-3";
 }
 
 function buildBrandIntroSlide(accent?: string): EditorialHeroPromotion {
@@ -101,6 +118,12 @@ export function TrBoutiqueEditorialHeroCarousel({
     !brandMode &&
     (isCampaignHeroTemplate(active) ||
       (campaignPreferred && !active.template));
+  const contentAlign = active.contentAlign ?? "center";
+  const photoAlignMode =
+    !brandMode &&
+    !campaignMode &&
+    Boolean(active.image) &&
+    (contentAlign === "left" || contentAlign === "right");
 
   const goTo = useCallback(
     (next: number) => {
@@ -163,7 +186,15 @@ export function TrBoutiqueEditorialHeroCarousel({
               fill
               priority={index === 0}
               sizes="100vw"
-              className="object-cover"
+              className={
+                photoAlignMode
+                  ? contentAlign === "left"
+                    ? // Woman on right — crop open left side on mobile to center her
+                      "object-cover object-[82%_18%] scale-[1.2] translate-y-[6%] md:object-[68%_20%] md:scale-[1.15] md:translate-y-[8%]"
+                    : // Woman on left — crop open right side on mobile to center her
+                      "object-cover object-[18%_18%] scale-[1.2] translate-y-[6%] md:object-[32%_20%] md:scale-[1.15] md:translate-y-[8%]"
+                  : "object-cover"
+              }
               unoptimized
             />
           ) : bgColor ? (
@@ -183,7 +214,24 @@ export function TrBoutiqueEditorialHeroCarousel({
             </div>
           )}
           {active.image ? (
-            <div className="absolute inset-0 bg-black/45" />
+            photoAlignMode ? (
+              <>
+                <div
+                  className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/25 to-transparent md:hidden"
+                  aria-hidden
+                />
+                <div
+                  className={`absolute inset-0 hidden md:block ${
+                    contentAlign === "left"
+                      ? "bg-gradient-to-r from-black/55 via-black/25 to-transparent"
+                      : "bg-gradient-to-l from-black/55 via-black/25 to-transparent"
+                  }`}
+                  aria-hidden
+                />
+              </>
+            ) : (
+              <div className="absolute inset-0 bg-black/45" />
+            )
           ) : brandMode || campaignMode ? (
             <div
               className="absolute inset-0 opacity-[0.14]"
@@ -445,16 +493,14 @@ function CampaignHeroSlide({
           </h2>
 
           <div
-            className={`mt-8 grid w-full min-w-0 max-w-xl gap-2.5 sm:gap-3 ${
-              actions.length <= 2
-                ? "grid-cols-1 sm:grid-cols-2"
-                : "grid-cols-2"
-            }`}
+            className={`mt-8 grid w-full min-w-0 max-w-xl gap-2.5 sm:gap-3 ${campaignActionsGridClass(actions.length)}`}
           >
             {actions.map((action) => (
               <Link
-                key={`${action.label}-${action.target}`}
-                href={promotionHref(boutiqueSlug, action.target)}
+                key={`${action.label}-${action.target}-${action.indirim ? "sale" : "full"}`}
+                href={promotionHref(boutiqueSlug, action.target, {
+                  indirim: action.indirim,
+                })}
                 className="inline-flex min-h-12 min-w-0 items-center justify-center bg-white px-2 py-3 text-center text-[10px] font-bold tracking-[0.1em] break-words text-neutral-950 uppercase transition-opacity hover:opacity-90 sm:min-h-14 sm:px-3 sm:text-[12px] md:text-[13px]"
               >
                 {action.label}
@@ -505,6 +551,68 @@ function ClassicHeroSlide({
   slides: EditorialHeroPromotion[];
   onGoTo: (next: number) => void;
 }) {
+  const align = promo.contentAlign ?? "center";
+  const sideAligned = align === "left" || align === "right";
+  const actions = resolveCampaignActions(promo).slice(0, 3);
+  const subText = resolveCampaignSubText(promo);
+  const title = resolveCampaignName(promo);
+
+  if (sideAligned) {
+    return (
+      <div className="relative z-10 flex min-h-[70vh] w-full min-w-0 items-end justify-center px-5 pb-16 pt-20 text-white sm:px-8 md:min-h-[78vh] md:items-center md:justify-start md:px-12 md:pb-14 md:pt-14 lg:px-16">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={promo.id}
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.4, ease }}
+            className={`flex w-full max-w-xl flex-col items-center text-center md:items-stretch ${
+              align === "right"
+                ? "md:ml-auto md:items-end md:text-right"
+                : "md:mr-auto md:items-start md:text-left"
+            }`}
+          >
+            <p className="text-[11px] tracking-[0.22em] text-white/85 uppercase sm:text-[12px]">
+              {subText}
+            </p>
+            <h2 className="mt-4 text-[clamp(1.85rem,5vw,3.5rem)] leading-[1.05] font-semibold tracking-[-0.02em] text-white uppercase drop-shadow-[0_2px_18px_rgba(0,0,0,0.35)]">
+              {title}
+            </h2>
+            <div
+              className={`mt-7 flex w-full max-w-md flex-wrap justify-center gap-2.5 ${
+                align === "right" ? "md:justify-end" : "md:justify-start"
+              }`}
+            >
+              {actions.map((action, actionIndex) => (
+                <Link
+                  key={`${action.label}-${action.target}`}
+                  href={promotionHref(boutiqueSlug, action.target, {
+                    indirim: action.indirim,
+                  })}
+                  className={`inline-flex min-h-11 items-center justify-center px-5 py-3 text-[11px] font-bold tracking-[0.14em] uppercase transition-opacity hover:opacity-90 sm:min-h-12 sm:text-[12px] ${
+                    actionIndex === 0
+                      ? "bg-neutral-950 text-white"
+                      : "border border-white/80 bg-white/10 text-white backdrop-blur-sm"
+                  }`}
+                >
+                  {action.label}
+                </Link>
+              ))}
+            </div>
+          </motion.div>
+        </AnimatePresence>
+
+        <HeroSlideDots
+          multi={multi}
+          index={index}
+          slides={slides}
+          onGoTo={onGoTo}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="relative z-10 flex min-h-[72vh] flex-col items-center justify-between px-5 py-10 text-center text-white md:min-h-[85vh] md:py-14">
       <div className="flex flex-col items-center pt-2 md:pt-6">
@@ -535,10 +643,10 @@ function ClassicHeroSlide({
             className="flex flex-col items-center"
           >
             <p className="text-[13px] tracking-[0.08em] text-white/80 uppercase md:text-[15px]">
-              {resolveCampaignSubText(promo)}
+              {subText}
             </p>
             <p className="editorial-sale-text mt-3 text-[28px] leading-tight font-semibold tracking-[-0.02em] uppercase md:text-5xl lg:text-6xl">
-              {resolveCampaignName(promo)}
+              {title}
             </p>
             <Link
               href={promotionHref(boutiqueSlug, promo.target)}
@@ -549,32 +657,12 @@ function ClassicHeroSlide({
           </motion.div>
         </AnimatePresence>
 
-        {multi ? (
-          <div
-            className="mt-8 flex items-center gap-2"
-            role="tablist"
-            aria-label="Kampanya slaytları"
-          >
-            {slides.map((slide, slideIndex) => {
-              const selected = slideIndex === index % slides.length;
-              return (
-                <button
-                  key={slide.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={selected}
-                  aria-label={`Kampanya ${slideIndex + 1}`}
-                  onClick={() => onGoTo(slideIndex)}
-                  className={`h-1.5 transition-all duration-300 ${
-                    selected
-                      ? "w-8 bg-white"
-                      : "w-1.5 bg-white/40 hover:bg-white/70"
-                  }`}
-                />
-              );
-            })}
-          </div>
-        ) : null}
+        <HeroSlideDots
+          multi={multi}
+          index={index}
+          slides={slides}
+          onGoTo={onGoTo}
+        />
       </div>
     </div>
   );

@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { Heart, Menu, Search, User, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Heart, Menu, Search, User, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -27,6 +27,12 @@ import {
   resolveBoutiqueBrandLabel,
   resolveBoutiqueLogoUrl,
 } from "@/lib/tr/boutiqueBrand";
+import {
+  getTrCategoryNavChildren,
+  getTrCategoryShopAllLabel,
+  listTrCategoryRoots,
+  resolveTrCategoryDisplayLabel,
+} from "@/lib/tr/categories";
 import {
   trBoutiqueAuthPath,
   trBoutiquePath,
@@ -82,6 +88,16 @@ function resolveShopTiles(content: EditorialDemoContent) {
   ];
 }
 
+function navItemDisplayLabel(item: EditorialNavItem): string {
+  if (item.accent === "sale" || item.categoryId === "sale" || item.id === "new") {
+    return item.label;
+  }
+  if (item.categoryId) {
+    return resolveTrCategoryDisplayLabel(item.categoryId, item.label);
+  }
+  return item.label;
+}
+
 function buildMegaFeatured(
   slug: string,
   item: EditorialNavItem,
@@ -89,17 +105,14 @@ function buildMegaFeatured(
 ): MegaFeatured[] {
   const tiles = resolveShopTiles(content);
   const trends = content.trends?.items ?? [];
+  const primaryHref = navItemHref(slug, item);
+  const itemLabel = navItemDisplayLabel(item);
 
   const matched =
     tiles.find((tile) => tile.categoryId === item.categoryId) ??
     tiles.find((tile) =>
       item.id === "new" ? false : tile.label === item.label,
     );
-
-  const secondary =
-    tiles.find((tile) => tile.categoryId !== matched?.categoryId) ??
-    tiles[1] ??
-    tiles[0];
 
   const trendMatch =
     trends.find((trend) => trend.target === item.categoryId) ?? trends[0];
@@ -109,6 +122,7 @@ function buildMegaFeatured(
   if (item.accent === "sale" || item.categoryId === "sale") {
     const saleTile =
       tiles.find((tile) => tile.categoryId === "sale") ?? matched;
+    const next = nextShopCategoryTile(null, tiles, ["sale"]);
     return [
       {
         label: saleTile?.label ?? "İndirim",
@@ -116,10 +130,12 @@ function buildMegaFeatured(
         href: trBoutiqueProductsPath(slug, { indirim: true }),
       },
       {
-        label: secondary?.label ?? "Yeni",
-        image: secondary?.image ?? trendAlt?.image,
-        href: secondary
-          ? categoryProductsHref(slug, secondary.categoryId)
+        label: next
+          ? resolveTrCategoryDisplayLabel(next.categoryId, next.label)
+          : "Yeni",
+        image: next?.image ?? trendAlt?.image,
+        href: next
+          ? categoryProductsHref(slug, next.categoryId)
           : trBoutiqueProductsPath(slug, { sira: "new" }),
       },
     ].filter((entry) => entry.label);
@@ -127,26 +143,75 @@ function buildMegaFeatured(
 
   if (item.id === "new") {
     return tiles.slice(0, 2).map((tile) => ({
-      label: tile.label,
+      label: resolveTrCategoryDisplayLabel(tile.categoryId, tile.label),
       image: tile.image,
       href: categoryProductsHref(slug, tile.categoryId),
     }));
   }
 
+  const parentImage = matched?.image ?? trendMatch?.image;
+  const next = nextShopCategoryTile(item.categoryId, tiles);
+
   return [
     {
-      label: matched?.label ?? item.label,
-      image: matched?.image ?? trendMatch?.image,
-      href: navItemHref(slug, item),
+      label: resolveTrCategoryDisplayLabel(
+        matched?.categoryId ?? item.categoryId,
+        matched?.label ?? itemLabel,
+      ),
+      image: parentImage,
+      href: primaryHref,
     },
     {
-      label: secondary?.label ?? trendAlt?.title ?? "Koleksiyon",
-      image: secondary?.image ?? trendAlt?.image,
-      href: secondary
-        ? categoryProductsHref(slug, secondary.categoryId)
+      label: next
+        ? resolveTrCategoryDisplayLabel(next.categoryId, next.label)
+        : (trendAlt?.title ?? "Koleksiyon"),
+      image: next?.image ?? trendAlt?.image,
+      href: next
+        ? categoryProductsHref(slug, next.categoryId)
         : trBoutiqueProductsPath(slug),
     },
   ];
+}
+
+/** Next main category tile with a different photo (wraps around the root list). */
+function nextShopCategoryTile(
+  currentId: string | null | undefined,
+  tiles: Array<{ categoryId: string; label: string; image?: string }>,
+  excludeIds: string[] = [],
+): { categoryId: string; label: string; image?: string } | null {
+  const roots = listTrCategoryRoots().filter(
+    (root) => !excludeIds.includes(root.id),
+  );
+  if (roots.length === 0) {
+    return (
+      tiles.find(
+        (tile) =>
+          tile.categoryId !== currentId &&
+          !excludeIds.includes(tile.categoryId),
+      ) ?? null
+    );
+  }
+
+  const currentIndex = roots.findIndex((root) => root.id === currentId);
+  const nextRoot =
+    roots[(currentIndex >= 0 ? currentIndex + 1 : 0) % roots.length]!;
+  if (nextRoot.id === currentId && roots.length > 1) {
+    const fallback = roots.find((root) => root.id !== currentId)!;
+    const tile =
+      tiles.find((entry) => entry.categoryId === fallback.id) ?? null;
+    return {
+      categoryId: fallback.id,
+      label: fallback.label,
+      image: tile?.image,
+    };
+  }
+
+  const tile = tiles.find((entry) => entry.categoryId === nextRoot.id);
+  return {
+    categoryId: nextRoot.id,
+    label: nextRoot.label,
+    image: tile?.image,
+  };
 }
 
 function buildMegaLinks(
@@ -160,43 +225,65 @@ function buildMegaLinks(
   if (item.accent === "sale" || item.categoryId === "sale") {
     return [
       { label: "Tüm indirimler", href: primaryHref },
-      ...tiles
-        .filter((tile) => tile.categoryId !== "sale")
-        .map((tile) => ({
-          label: `${tile.label} indirim`,
-          href: categoryProductsHref(slug, tile.categoryId),
-        })),
-      {
-        label: "Yeni gelenler",
-        href: trBoutiqueProductsPath(slug, { sira: "new" }),
-      },
+      ...listTrCategoryRoots().map((root) => ({
+        label: root.label,
+        href: trBoutiqueProductsPath(slug, {
+          kategori: root.id,
+          indirim: true,
+        }),
+      })),
     ];
   }
 
   if (item.id === "new") {
     return [
       { label: "Tüm yeniler", href: primaryHref },
-      ...tiles.map((tile) => ({
-        label: tile.label,
-        href: categoryProductsHref(slug, tile.categoryId),
+      ...listTrCategoryRoots().map((root) => ({
+        label: root.label,
+        href: trBoutiqueProductsPath(slug, {
+          kategori: root.id,
+          sira: "new",
+        }),
+      })),
+    ];
+  }
+
+  const children = item.categoryId
+    ? getTrCategoryNavChildren(item.categoryId)
+    : [];
+
+  const shopAll = item.categoryId
+    ? getTrCategoryShopAllLabel(item.categoryId)
+    : (() => {
+        const label = navItemDisplayLabel(item);
+        return `Tüm ${label.charAt(0).toLocaleLowerCase("tr-TR")}${label.slice(1)}`;
+      })();
+
+  if (children.length > 0) {
+    return [
+      { label: shopAll, href: primaryHref },
+      ...children.map((child) => ({
+        label: child.label,
+        href: categoryProductsHref(slug, child.id),
       })),
     ];
   }
 
   return [
-    { label: `Tüm ${item.label}`, href: primaryHref },
-    ...tiles
-      .filter((tile) => tile.categoryId !== item.categoryId)
-      .slice(0, 5)
-      .map((tile) => ({
-        label: tile.label,
-        href: categoryProductsHref(slug, tile.categoryId),
-      })),
+    { label: shopAll, href: primaryHref },
     {
       label: "İndirimdekiler",
       href: trBoutiqueProductsPath(slug, { indirim: true }),
     },
   ];
+}
+
+function navItemCanDrill(
+  slug: string,
+  item: EditorialNavItem,
+  content: EditorialDemoContent,
+): boolean {
+  return buildMegaLinks(slug, item, content).length > 1;
 }
 
 export function TrBoutiqueEditorialHeader({
@@ -211,6 +298,7 @@ export function TrBoutiqueEditorialHeader({
   const logoUrl = resolveBoutiqueLogoUrl(boutique);
   const atelier = isAtelierEditorialSkin(boutique.slug);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [mobileDrillId, setMobileDrillId] = useState<string | null>(null);
   const [megaId, setMegaId] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const megaCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -231,9 +319,18 @@ export function TrBoutiqueEditorialHeader({
   }, []);
 
   useEffect(() => {
-    if (!menuOpen) return;
+    if (!menuOpen) {
+      setMobileDrillId(null);
+      return;
+    }
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setMenuOpen(false);
+      if (event.key === "Escape") {
+        if (mobileDrillId) {
+          setMobileDrillId(null);
+          return;
+        }
+        setMenuOpen(false);
+      }
     };
     window.addEventListener("keydown", onKey);
     const prev = document.body.style.overflow;
@@ -242,7 +339,7 @@ export function TrBoutiqueEditorialHeader({
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = prev;
     };
-  }, [menuOpen]);
+  }, [menuOpen, mobileDrillId]);
 
   useEffect(() => {
     if (hideCategoryNav) setMegaId(null);
@@ -282,6 +379,7 @@ export function TrBoutiqueEditorialHeader({
 
   const navigateTo = (href: string) => {
     setMenuOpen(false);
+    setMobileDrillId(null);
     setMegaId(null);
     if (navPending) {
       navPending.beginNavigation(href, { kind: "products" });
@@ -293,6 +391,25 @@ export function TrBoutiqueEditorialHeader({
   const selectNav = (item: EditorialNavItem) => {
     navigateTo(navItemHref(boutique.slug, item));
   };
+
+  const openMobileDrill = (item: EditorialNavItem) => {
+    if (atelier && navItemCanDrill(boutique.slug, item, content)) {
+      setMobileDrillId(item.id);
+      return;
+    }
+    selectNav(item);
+  };
+
+  const mobileDrillItem =
+    mobileDrillId != null
+      ? (content.nav.find((item) => item.id === mobileDrillId) ?? null)
+      : null;
+  const mobileDrillLinks = mobileDrillItem
+    ? buildMegaLinks(boutique.slug, mobileDrillItem, content)
+    : [];
+  const mobileDrillFeatured = mobileDrillItem
+    ? buildMegaFeatured(boutique.slug, mobileDrillItem, content)[0]
+    : null;
 
   const iconBtn =
     "inline-flex h-10 w-10 shrink-0 items-center justify-center text-neutral-900 transition-opacity hover:opacity-60 md:h-11 md:w-11";
@@ -386,9 +503,23 @@ export function TrBoutiqueEditorialHeader({
             />
             <div className="absolute inset-y-0 left-0 flex w-full flex-col bg-white md:w-1/2 md:max-w-xl md:shadow-xl">
               <div className="flex h-14 shrink-0 items-center justify-between border-b border-black/5 px-4 md:h-16">
-                <p className="font-serif text-lg tracking-[0.06em]">
-                  {brandTitle}
-                </p>
+                {atelier && mobileDrillItem ? (
+                  <button
+                    type="button"
+                    onClick={() => setMobileDrillId(null)}
+                    className="inline-flex items-center gap-1 text-left transition-opacity hover:opacity-70"
+                    aria-label="Geri"
+                  >
+                    <ChevronLeft className="h-5 w-5" strokeWidth={1.5} />
+                    <span className="text-[13px] tracking-[0.08em] uppercase">
+                      {navItemDisplayLabel(mobileDrillItem)}
+                    </span>
+                  </button>
+                ) : (
+                  <p className="font-serif text-lg tracking-[0.06em]">
+                    {brandTitle}
+                  </p>
+                )}
                 <button
                   type="button"
                   className={iconBtn}
@@ -403,63 +534,126 @@ export function TrBoutiqueEditorialHeader({
                 className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-2"
                 aria-label="Kategoriler"
               >
-                <ul>
-                  {content.nav.map((item) => (
-                    <li key={item.id} className="border-b border-black/5">
+                {atelier && mobileDrillItem ? (
+                  <>
+                    <ul>
+                      {mobileDrillLinks.map((link) => (
+                        <li
+                          key={`${link.href}-${link.label}`}
+                          className="border-b border-black/5"
+                        >
+                          <button
+                            type="button"
+                            onClick={() => navigateTo(link.href)}
+                            className="flex w-full items-center justify-between gap-3 py-5 text-left transition-opacity hover:opacity-70"
+                          >
+                            <span className="text-[22px] leading-none font-semibold tracking-[-0.02em] text-neutral-950 uppercase md:text-[28px]">
+                              {link.label}
+                            </span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                    {mobileDrillFeatured?.image ? (
                       <button
                         type="button"
-                        onClick={() => selectNav(item)}
-                        className="block w-full py-5 text-left transition-opacity hover:opacity-70"
+                        onClick={() => navigateTo(mobileDrillFeatured.href)}
+                        className="relative mt-8 mb-10 aspect-[4/5] w-full overflow-hidden bg-neutral-100 text-left"
                       >
-                        <span
-                          className="block text-[28px] leading-none font-semibold tracking-[-0.02em] uppercase md:text-[34px]"
-                          style={
-                            item.accent === "sale"
-                              ? {
-                                  color: atelier
-                                    ? "var(--boutique-accent)"
-                                    : EDITORIAL_SALE_RED,
-                                }
-                              : { color: "#111" }
-                          }
-                        >
-                          {item.label}
+                        <Image
+                          src={mobileDrillFeatured.image}
+                          alt=""
+                          fill
+                          unoptimized
+                          sizes="(max-width: 768px) 100vw, 480px"
+                          className="object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
+                        <span className="absolute inset-x-0 bottom-0 px-4 pb-4 text-[15px] tracking-[0.04em] text-white">
+                          {mobileDrillFeatured.label}
                         </span>
                       </button>
-                    </li>
-                  ))}
-                </ul>
+                    ) : (
+                      <div className="pb-10" />
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <ul>
+                      {content.nav.map((item) => {
+                        const canDrill =
+                          atelier &&
+                          navItemCanDrill(boutique.slug, item, content);
+                        return (
+                          <li key={item.id} className="border-b border-black/5">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                canDrill
+                                  ? openMobileDrill(item)
+                                  : selectNav(item)
+                              }
+                              className="flex w-full items-center justify-between gap-3 py-5 text-left transition-opacity hover:opacity-70"
+                            >
+                              <span
+                                className="block text-[28px] leading-none font-semibold tracking-[-0.02em] uppercase md:text-[34px]"
+                                style={
+                                  item.accent === "sale"
+                                    ? {
+                                        color: atelier
+                                          ? "var(--boutique-accent)"
+                                          : EDITORIAL_SALE_RED,
+                                      }
+                                    : { color: "#111" }
+                                }
+                              >
+                                {navItemDisplayLabel(item)}
+                              </span>
+                              {canDrill ? (
+                                <ChevronRight
+                                  className="h-5 w-5 shrink-0 text-neutral-400"
+                                  strokeWidth={1.5}
+                                  aria-hidden
+                                />
+                              ) : null}
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
 
-                <div className="mt-6 space-y-1 pb-10">
-                  <TrBoutiquePendingLink
-                    href={trBoutiqueAuthPath(boutique.slug)}
-                    kind="account"
-                    onNavigate={() => setMenuOpen(false)}
-                    className="block py-3 text-[12px] tracking-[0.14em] text-neutral-600 uppercase"
-                  >
-                    Giriş / Hesap
-                  </TrBoutiquePendingLink>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      commerce.openPanel("tracking");
-                    }}
-                    className="block w-full py-3 text-left text-[12px] tracking-[0.14em] text-neutral-600 uppercase"
-                  >
-                    Kargo takip
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      commerce.openPanel("report");
-                    }}
-                    className="block w-full py-3 text-left text-[12px] tracking-[0.14em] text-neutral-600 uppercase"
-                  >
-                    Sorun bildir
-                  </button>
-                </div>
+                    <div className="mt-6 space-y-1 pb-10">
+                      <TrBoutiquePendingLink
+                        href={trBoutiqueAuthPath(boutique.slug)}
+                        kind="account"
+                        onNavigate={() => setMenuOpen(false)}
+                        className="block py-3 text-[12px] tracking-[0.14em] text-neutral-600 uppercase"
+                      >
+                        Giriş / Hesap
+                      </TrBoutiquePendingLink>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMenuOpen(false);
+                          commerce.openPanel("tracking");
+                        }}
+                        className="block w-full py-3 text-left text-[12px] tracking-[0.14em] text-neutral-600 uppercase"
+                      >
+                        Kargo takip
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMenuOpen(false);
+                          commerce.openPanel("report");
+                        }}
+                        className="block w-full py-3 text-left text-[12px] tracking-[0.14em] text-neutral-600 uppercase"
+                      >
+                        Sorun bildir
+                      </button>
+                    </div>
+                  </>
+                )}
               </nav>
             </div>
           </div>,
@@ -603,7 +797,7 @@ export function TrBoutiqueEditorialHeader({
                         : undefined
                     }
                   >
-                    {item.label}
+                    {navItemDisplayLabel(item)}
                   </button>
                 </li>
               );
@@ -616,7 +810,7 @@ export function TrBoutiqueEditorialHeader({
             <motion.div
               key={openMegaItem.id}
               role="region"
-              aria-label={`${openMegaItem.label} menü`}
+              aria-label={`${navItemDisplayLabel(openMegaItem)} menü`}
               className="absolute inset-x-0 top-full z-40 border-b border-black/[0.06] bg-white shadow-[0_18px_40px_rgba(0,0,0,0.08)]"
               onMouseEnter={clearMegaClose}
               initial={{ opacity: 0, y: -6 }}
@@ -627,7 +821,7 @@ export function TrBoutiqueEditorialHeader({
               <div className="mx-auto grid max-w-7xl gap-8 px-4 py-8 sm:px-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] md:gap-10 md:px-8 md:py-10 lg:grid-cols-[minmax(12rem,0.85fr)_minmax(0,1.4fr)]">
                 <div>
                   <p className="text-[12px] font-semibold tracking-[0.08em] text-neutral-950 uppercase">
-                    {openMegaItem.label}
+                    {navItemDisplayLabel(openMegaItem)}
                   </p>
                   <ul className="mt-4 space-y-2.5">
                     {megaLinks.map((link) => (

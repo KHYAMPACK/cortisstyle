@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { TrBoutiqueEditorialProductCard } from "@/components/tr/boutique/editorial/TrBoutiqueEditorialProductCard";
 import { useTrBoutiqueCatalog } from "@/components/tr/boutique/TrBoutiqueCatalogContext";
 import { isAtelierEditorialSkin } from "@/lib/tr/boutiqueHome";
-import { getTrCategoryLabel } from "@/lib/tr/categories";
+import { getTrCategoryLabel, isTrCategoryMatch } from "@/lib/tr/categories";
 import { trBoutiqueProductsPath } from "@/lib/tr/paths";
 import type { TrProduct } from "@/types/tr-marketplace";
 
@@ -53,7 +53,9 @@ export function TrBoutiqueEditorialCatalog({
           p.compareAtPriceKurus > p.priceKurus,
       );
     } else if (activeCategory) {
-      list = list.filter((p) => p.category === activeCategory);
+      list = list.filter((p) =>
+        isTrCategoryMatch(p.category, activeCategory),
+      );
     }
 
     if (searchQuery) {

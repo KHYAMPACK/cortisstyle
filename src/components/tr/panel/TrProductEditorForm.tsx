@@ -16,6 +16,7 @@ import {
   TrOwnerGuidedPhotoUpload,
 } from "@/components/tr/panel/TrOwnerGuidedPhotoUpload";
 import { TrProductImageLightbox } from "@/components/tr/panel/TrProductImageLightbox";
+import { TrOwnerCategoryPicker } from "@/components/tr/panel/TrOwnerCategoryPicker";
 import { TR_BOUTIQUE_CATEGORIES } from "@/lib/tr/categories";
 import {
   DEFAULT_CATALOG_BACKGROUND_ID,
@@ -326,12 +327,11 @@ export function TrProductEditorForm({
 
   const categoryOptions = useMemo(() => {
     const seen = new Set(TR_BOUTIQUE_CATEGORIES.map((entry) => entry.id));
-    const extras = extraCategories.filter((entry) => {
+    return extraCategories.filter((entry) => {
       if (seen.has(entry.id)) return false;
       seen.add(entry.id);
       return true;
     });
-    return [...TR_BOUTIQUE_CATEGORIES, ...extras];
   }, [extraCategories]);
 
   const toggleColor = (color: TrProductColor) => {
@@ -725,26 +725,12 @@ export function TrProductEditorForm({
         className={`${panelSectionClass} ${showSection("category") ? "" : "hidden"}`}
       >
         <p className={panelLabelClass}>Kategori</p>
-        <div className="flex flex-wrap gap-3">
-          {categoryOptions.map((entry) => (
-            <button
-              key={entry.id}
-              type="button"
-              className={chipClass(category === entry.id)}
-              style={
-                category === entry.id
-                  ? { backgroundColor: "var(--panel-accent)" }
-                  : undefined
-              }
-              onClick={() =>
-                setCategory((current) =>
-                  current === entry.id ? null : entry.id,
-                )
-              }
-            >
-              {entry.label}
-            </button>
-          ))}
+        <TrOwnerCategoryPicker
+          value={category}
+          onChange={setCategory}
+          extras={categoryOptions}
+        />
+        <div className="mt-3 flex flex-wrap gap-3">
           {!addingCategory ? (
             <button
               type="button"
@@ -761,7 +747,7 @@ export function TrProductEditorForm({
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -4 }}
-              className="flex flex-wrap items-center gap-3"
+              className="mt-3 flex flex-wrap items-center gap-3"
             >
               <input
                 value={newCategoryLabel}

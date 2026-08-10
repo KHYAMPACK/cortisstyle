@@ -5,7 +5,7 @@
       "name": "Lila Butik",
       "legalName": "Nefise Gül Cengiz Peker",
       "vergiNo": "2390389751",
-      "description": "Denizli Lila Butik — elbise, üst giyim, çanta ve aksesuar.",
+      "description": "Denizli Lila Butik — elbise, üst/alt giyim, aksesuar ve ev tekstili.",
       "logoUrl": "/tr/boutiques/lilabutik/logo.png",
       "whatsappPhone": "905496088860",
       "instagramHandle": "lilaboutiquedenizli",
@@ -19,9 +19,10 @@
         "nav": [
           { "id": "new", "label": "Yeni", "categoryId": null },
           { "id": "elbise", "label": "Elbise", "categoryId": "elbise" },
-          { "id": "ust", "label": "Üst", "categoryId": "ust-giyim" },
-          { "id": "canta", "label": "Çanta", "categoryId": "canta" },
+          { "id": "ust", "label": "Üst giyim", "categoryId": "ust-giyim" },
+          { "id": "alt", "label": "Alt giyim", "categoryId": "alt-giyim" },
           { "id": "aksesuar", "label": "Aksesuar", "categoryId": "aksesuar" },
+          { "id": "ev", "label": "Ev", "categoryId": "ev" },
           {
             "id": "sale",
             "label": "İndirim",
@@ -40,47 +41,36 @@
         },
         "heroPromotions": [
           {
-            "id": "season-open",
-            "template": "campaign",
-            "backgroundColor": "#9B7EBD",
-            "watermark": "LİLA",
-            "subText": "Sınırlı süre",
-            "campaignName": "Yeni sezon",
-            "promoLine": "Sınırlı süre",
-            "discountLine": "Yeni sezon",
-            "cta": "Keşfet",
+            "id": "hero-kesfet",
+            "template": "classic",
+            "contentAlign": "left",
+            "image": "/tr/boutiques/lilabutik/hero/kesfet.jpg?v=1",
+            "subText": "Yeni sezon",
+            "campaignName": "Her anınıza şıklık katın",
+            "promoLine": "Yeni sezon",
+            "discountLine": "Her anınıza şıklık katın",
+            "cta": "Hemen gör",
             "target": "all",
             "actions": [
-              { "label": "Elbise", "target": "elbise" },
-              { "label": "Üst", "target": "ust-giyim" },
-              { "label": "Çanta", "target": "canta" },
-              { "label": "Aksesuar", "target": "aksesuar" }
-            ],
-            "subText2": [
-              "Koleksiyonu keşfedin",
-              "WhatsApp ile destek — kolay sipariş"
+              { "label": "Keşfet", "target": "all" },
+              { "label": "Elbise", "target": "elbise" }
             ]
           },
           {
-            "id": "sale-picks",
-            "template": "campaign",
-            "backgroundColor": "#7A5F9A",
-            "watermark": "İNDİRİM",
+            "id": "hero-indirim",
+            "template": "classic",
+            "contentAlign": "right",
+            "image": "/tr/boutiques/lilabutik/hero/indirim.jpg?v=1",
             "subText": "Seçili ürünlerde",
             "campaignName": "İndirimler",
             "promoLine": "Seçili ürünlerde",
             "discountLine": "İndirimler",
-            "cta": "İncele",
+            "cta": "Fırsatları gör",
             "target": "sale",
             "actions": [
               { "label": "İndirimdekiler", "target": "sale" },
-              { "label": "Elbise", "target": "elbise" },
-              { "label": "Üst", "target": "ust-giyim" },
-              { "label": "Tümü", "target": "all" }
-            ],
-            "subText2": [
-              "Fırsat ürünleri",
-              "Stoklar sınırlıdır"
+              { "label": "Elbise", "target": "elbise", "indirim": true },
+              { "label": "Üst giyim", "target": "ust-giyim", "indirim": true }
             ]
           }
         ],
@@ -88,33 +78,33 @@
           {
             "categoryId": "elbise",
             "label": "Elbise",
-            "image": "/tr/boutiques/demo-maya/p-3.jpg",
+            "image": "/tr/boutiques/lilabutik/categories/elbise.jpg?v=2",
             "cta": "Keşfet"
           },
           {
             "categoryId": "ust-giyim",
-            "label": "Üst",
-            "image": "/tr/boutiques/demo-maya/p-1.jpg",
+            "label": "Üst giyim",
+            "image": "/tr/boutiques/lilabutik/categories/ust-giyim.jpg?v=2",
             "cta": "Keşfet"
           }
         ],
         "categoryTiles": [
           {
-            "categoryId": "canta",
-            "label": "Çanta",
-            "image": "/tr/boutiques/demo-maya/p-2.jpg",
+            "categoryId": "alt-giyim",
+            "label": "Alt giyim",
+            "image": "/tr/boutiques/lilabutik/categories/alt-giyim.jpg?v=2",
             "cta": "İncele"
           },
           {
             "categoryId": "aksesuar",
             "label": "Aksesuar",
-            "image": "/tr/boutiques/demo-maya/ig-2.jpg",
+            "image": "/tr/boutiques/lilabutik/categories/aksesuar.jpg?v=2",
             "cta": "İncele"
           },
           {
-            "categoryId": "sale",
-            "label": "İndirim",
-            "image": "/tr/boutiques/demo-maya/cat-trenckot.jpg",
+            "categoryId": "ev",
+            "label": "Ev",
+            "image": "/tr/boutiques/lilabutik/categories/ev.jpg?v=2",
             "cta": "İncele"
           }
         ],
@@ -123,27 +113,27 @@
           {
             "categoryId": "elbise",
             "label": "Elbise",
-            "image": "/tr/boutiques/demo-maya/p-3.jpg"
+            "image": "/tr/boutiques/lilabutik/categories/elbise.jpg?v=2"
           },
           {
             "categoryId": "ust-giyim",
-            "label": "Üst",
-            "image": "/tr/boutiques/demo-maya/p-1.jpg"
+            "label": "Üst giyim",
+            "image": "/tr/boutiques/lilabutik/categories/ust-giyim.jpg?v=2"
           },
           {
-            "categoryId": "canta",
-            "label": "Çanta",
-            "image": "/tr/boutiques/demo-maya/p-2.jpg"
+            "categoryId": "alt-giyim",
+            "label": "Alt giyim",
+            "image": "/tr/boutiques/lilabutik/categories/alt-giyim.jpg?v=2"
           },
           {
             "categoryId": "aksesuar",
             "label": "Aksesuar",
-            "image": "/tr/boutiques/demo-maya/ig-2.jpg"
+            "image": "/tr/boutiques/lilabutik/categories/aksesuar.jpg?v=2"
           },
           {
-            "categoryId": "sale",
-            "label": "İndirim",
-            "image": "/tr/boutiques/demo-maya/cat-trenckot.jpg"
+            "categoryId": "ev",
+            "label": "Ev",
+            "image": "/tr/boutiques/lilabutik/categories/ev.jpg?v=2"
           }
         ],
         "infoStrip": [
@@ -174,28 +164,28 @@
               "title": "Zarif elbiseler.",
               "cta": "Elbiseleri incele",
               "target": "elbise",
-              "image": "/tr/boutiques/demo-maya/p-3.jpg"
+              "image": "/tr/boutiques/lilabutik/trends/elbise.jpg?v=1"
             },
             {
               "id": "trend-ust",
               "title": "Günlük üstler.",
-              "cta": "Üstleri incele",
+              "cta": "Üst giyimi incele",
               "target": "ust-giyim",
-              "image": "/tr/boutiques/demo-maya/p-1.jpg"
+              "image": "/tr/boutiques/lilabutik/trends/ust-giyim.jpg?v=1"
             },
             {
-              "id": "trend-canta",
-              "title": "Çantalar.",
-              "cta": "Çantaları incele",
-              "target": "canta",
-              "image": "/tr/boutiques/demo-maya/p-2.jpg"
+              "id": "trend-aksesuar",
+              "title": "Aksesuarlar.",
+              "cta": "Aksesuarları incele",
+              "target": "aksesuar",
+              "image": "/tr/boutiques/lilabutik/trends/aksesuar.jpg?v=1"
             },
             {
-              "id": "trend-sale",
+              "id": "trend-indirim",
               "title": "İndirimdekiler.",
               "cta": "Fırsatları gör",
               "target": "sale",
-              "image": "/tr/boutiques/demo-maya/cat-trenckot.jpg"
+              "image": "/tr/boutiques/lilabutik/trends/indirim.jpg?v=1"
             }
           ]
         },
@@ -204,7 +194,7 @@
           "title": "Yeni sezon şimdi Lila’da",
           "cta": "Alışverişe başla",
           "target": "all",
-          "image": "/tr/boutiques/demo-maya/cat-ceket.jpg"
+          "image": "/tr/boutiques/lilabutik/categories/ust-giyim.jpg?v=2"
         },
         "join": {
           "eyebrow": "Üyelik",
@@ -222,7 +212,7 @@
           ]
         },
         "highlight": {
-          "body": "Lila Butik koleksiyonunu keşfedin — elbise, üst, çanta ve aksesuar.",
+          "body": "Lila Butik koleksiyonunu keşfedin — elbise, üst/alt giyim, aksesuar ve ev tekstili.",
           "cta": "Tüm ürünler"
         },
         "instagram": {
@@ -243,12 +233,12 @@
           "images": ["/tr/boutiques/demo-maya/p-3.jpg"]
         },
         {
-          "title": "Krem Üst",
-          "description": "Hafif krem üst.",
+          "title": "Krem Bluz",
+          "description": "Hafif krem bluz.",
           "priceTry": 890,
           "sizes": ["S", "M", "L"],
           "colors": [{ "name": "Krem", "hex": "#F4EEE8" }],
-          "category": "ust-giyim",
+          "category": "bluz",
           "stock": 5,
           "images": ["/tr/boutiques/demo-maya/p-1.jpg"]
         },
@@ -263,13 +253,13 @@
           "images": ["/tr/boutiques/demo-maya/p-2.jpg"]
         },
         {
-          "title": "Aksesuar Seti",
-          "description": "Tamamlayıcı aksesuar.",
+          "title": "Şal",
+          "description": "Tamamlayıcı şal.",
           "priceTry": 450,
           "compareAtPriceTry": 590,
           "sizes": ["Tek beden"],
           "colors": [{ "name": "Altın", "hex": "#C9A227" }],
-          "category": "aksesuar",
+          "category": "sal",
           "stock": 8,
           "images": ["/tr/boutiques/demo-maya/ig-2.jpg"]
         }

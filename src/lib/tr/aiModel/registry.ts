@@ -64,6 +64,16 @@ function hasRefs(urls: string[]): boolean {
  * Populate referenceImageUrls after in-shop portrait shoot (manual only).
  */
 const BOUTIQUE_AI_MODELS: Record<string, TrAiModelIdentity> = {
+  lilabutik: {
+    boutiqueSlug: "lilabutik",
+    displayName: "Lila",
+    gender: "woman",
+    referenceImageUrls: ["/tr/ai-models/lilabutik-lila.jpg"],
+    faceReferenceUrls: [],
+    defaultPose: "standing-front",
+    notes:
+      "House model for Lila Butik only — same woman as storefront campaign photos. Used for on-model AI try-on.",
+  },
   pervinsoysalbutik: {
     boutiqueSlug: "pervinsoysalbutik",
     displayName: "Pervin Soysal",
@@ -143,10 +153,12 @@ function boutiqueOption(identity: TrAiModelIdentity): TrAiModelOption {
   };
 }
 
-/** Ready first; prefer woman among ready options (Ayla). */
+/** Ready first; boutique house model before studio; prefer woman among ready options. */
 function sortPickerOptions(options: TrAiModelOption[]): TrAiModelOption[] {
   return [...options].sort((a, b) => {
     if (a.ready !== b.ready) return a.ready ? -1 : 1;
+    if (a.kind === "boutique" && b.kind !== "boutique") return -1;
+    if (b.kind === "boutique" && a.kind !== "boutique") return 1;
     if (a.gender === "woman" && b.gender !== "woman") return -1;
     if (b.gender === "woman" && a.gender !== "woman") return 1;
     return a.label.localeCompare(b.label, "tr");
@@ -224,10 +236,12 @@ export function aiModelOptionHasReferences(modelId: string): boolean {
   return Boolean(option?.ready);
 }
 
-/** First ready model for auto-select (prefers woman via sort). */
+/** First ready model for auto-select (boutique house model wins when ready). */
 export function getDefaultReadyAiModelId(
   boutiqueSlug: string | null | undefined,
 ): string | null {
-  const ready = listAiModelOptions(boutiqueSlug).find((o) => o.ready);
-  return ready?.id ?? null;
+  const options = listAiModelOptions(boutiqueSlug);
+  const boutique = options.find((o) => o.kind === "boutique" && o.ready);
+  if (boutique) return boutique.id;
+  return options.find((o) => o.ready)?.id ?? null;
 }

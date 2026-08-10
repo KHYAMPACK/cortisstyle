@@ -17,7 +17,7 @@ import {
   emptyStockInputsForChart,
   TrOwnerSizeChartStock,
 } from "@/components/tr/panel/TrOwnerSizeChartStock";
-import { TR_BOUTIQUE_CATEGORIES } from "@/lib/tr/categories";
+import { TrOwnerCategoryPicker } from "@/components/tr/panel/TrOwnerCategoryPicker";
 import type { PipelineJobItem } from "@/lib/tr/aiCatalog/pipelineProgress";
 import {
   DEFAULT_CATALOG_BACKGROUND_ID,
@@ -760,34 +760,10 @@ export function TrProductCreateWizard({
                   <p className="text-[17px] font-semibold text-neutral-800">
                     Kategori
                   </p>
-                  <div className="flex flex-wrap gap-2">
-                    {TR_BOUTIQUE_CATEGORIES.map((entry) => {
-                      const active = category === entry.id;
-                      return (
-                        <button
-                          key={entry.id}
-                          type="button"
-                          onClick={() =>
-                            setCategory((current) =>
-                              current === entry.id ? null : entry.id,
-                            )
-                          }
-                          className={`rounded-full px-4 py-3 text-[16px] font-semibold ${
-                            active
-                              ? "text-white"
-                              : "bg-white text-neutral-800 ring-1 ring-[color:var(--panel-accent-border)]"
-                          }`}
-                          style={
-                            active
-                              ? { backgroundColor: "var(--panel-accent)" }
-                              : undefined
-                          }
-                        >
-                          {entry.label}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <TrOwnerCategoryPicker
+                    value={category}
+                    onChange={setCategory}
+                  />
                 </div>
               </div>
             ) : null}

@@ -27,6 +27,45 @@ editorial shell (shared)
 - Do **not** change Pervin’s classic look when tuning atelier classes.
 - Do **not** invent a parallel cart/checkout for Lila.
 
+## Category taxonomy
+
+Shared registry: `src/lib/tr/categories.ts` (hierarchical `parentId`).
+
+**Tops (nav / home tiles):** `elbise` · `ust-giyim` · `alt-giyim` · `aksesuar` · `ev`
+
+Atelier header nav is **taxonomy-owned** (`buildAtelierTaxonomyNav`) — not DB `editorialContent.nav` — so Alt giyim can’t disappear and Çanta stays under Aksesuar.
+
+**Shop leaves (mega / panel):**
+
+```text
+elbise
+ust-giyim → gömlek · tunik · triko · penye · bluz · tişört · ceket · mont · trençkot · kaban · takım
+alt-giyim → etek · pantolon · eşofman
+aksesuar  → çanta · eşarp · şal
+ev        → nevresim
+```
+
+**Style variants** (not in nav; still match under the leaf): `deri-ceket`→ceket · `kase-kaban`/`kurk-mont`→mont · `kot-pantolon`/`kumas-pantolon`→pantolon · `nevresim-takimi`→nevresim.
+
+Products should store a **shop leaf** (`mont`, not `kase-kaban`). Filtering `?kategori=ust-giyim` or `?kategori=mont` includes variants via `isTrCategoryMatch`.
+
+**Nav (atelier):** Desktop hover mega lists `getTrCategoryNavChildren` + featured tiles. Mobile is drill-down. Shop-all copy via `getTrCategoryShopAllLabel` (e.g. `Tüm elbiseler`). Implementation: `TrBoutiqueEditorialHeader.tsx`.
+
+**Category photos (drop-in):**
+
+```text
+public/tr/boutiques/lilabutik/categories/
+  elbise.jpg
+  ust-giyim.jpg
+  alt-giyim.jpg
+  aksesuar.jpg
+  ev.jpg
+```
+
+Seed `shopCategories` / tiles / trends point at these paths. Atelier homepage category row is **code-owned** (`buildAtelierShopCategories`) so DB stock art can’t replace Elbise · Üst giyim · Alt giyim · Aksesuar · Ev.
+
+**Trends 2×2** (also code-owned via `buildAtelierTrends`): Zarif elbiseler · Günlük üstler · Aksesuarlar · İndirimdekiler — images under `public/tr/boutiques/lilabutik/trends/`.
+
 ## Home body (atelier / PF structure)
 
 After the campaign hero, Lila home uses:
@@ -48,22 +87,33 @@ Hero slides in `editorial_content.heroPromotions[]` support a **campaign** layou
 | `template: "campaign"` | PF stack (vs classic single CTA) |
 | `subText` / `promoLine` | Top eyebrow |
 | `campaignName` / `discountLine` | Big title |
-| `actions[]` | Up to 4 buttons `{ label, target }` |
+| `actions[]` | 1–6 buttons `{ label, target, indirim? }` — **1** centered · **2** pair · **3** three-up · **4–6** category grid |
 | `subText2` | Bottom lines (string or string[]) |
 | `backgroundColor` / `image` | Solid fill or photo |
 | `watermark` | Optional giant faint word |
 
-Owners will eventually edit these in panel; until then seed/DB JSON is the source of truth.
+Atelier heroes are **code-owned** (`buildAtelierHeroPromotions`): Yeni **1 / 2 / 3 CTA** slides + İndirim with main categories (`Tüm indirimler` + Elbise / Üst / Alt / Aksesuar / Ev). Sale photo from DB is kept when present. Yeni / İndirim nav megas also use `listTrCategoryRoots`.
+
+Owners will eventually edit these in panel; seed JSON mirrors the pack.
 
 ## Hero / campaign (atelier)
 
 - Auto **brand intro** slide (`template: "brand"`) prepended when `campaignPreferred`
-- Campaign slides: watermark wallpaper, white logo on accent, CTAs
-- Assets: black `logo.png`, `logo-white.png` for campaigns, `favicon.png` (white bg)
+- Then two **photo** campaigns: Keşfet (`contentAlign: "left"`) + İndirimler (`contentAlign: "right"`) — CTAs sit in open space opposite the model
+- Photo heroes shift/crop downward so heads clear the sticky header
+- Images: `public/tr/boutiques/lilabutik/hero/{kesfet,indirim}.jpg`
+- Assets: black `logo.png`, `logo-white.png` for accent slides, `favicon.png` (white bg)
 
 ## Storefront imagery
 
 - PDP gallery uses marketplace cutouts; raw front/back hanger uploads stay owner-only when cutouts exist (`getStorefrontGalleryImages`)
+
+## AI house model (Lila only)
+
+- Registry: `BOUTIQUE_AI_MODELS.lilabutik` in `src/lib/tr/aiModel/registry.ts`
+- Ref plate: `public/tr/ai-models/lilabutik-lila.jpg` — same woman as category/hero campaigns
+- Panel picker id: `boutique:lilabutik` (default for Lila; Ayla/Deniz still available)
+- Do **not** reuse this ref for other boutiques
 
 ## Auth (branded)
 

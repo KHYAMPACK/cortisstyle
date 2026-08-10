@@ -21,6 +21,8 @@ export type EditorialCampaignAction = {
    * Defaults to `"all"`.
    */
   target?: "sale" | "all" | string;
+  /** When true with a category target, opens PLP with `indirim=1`. */
+  indirim?: boolean;
 };
 
 /**
@@ -37,9 +39,14 @@ export type EditorialHeroPromotion = {
   /**
    * Template variant. `"campaign"` = PF-style stacked layout.
    * `"brand"` = logo + name only (atelier intro slide).
-   * Default / omit = classic single-CTA hero (Pervin).
+   * `"classic"` / omit = photo hero (single CTA or small action set).
    */
   template?: "classic" | "campaign" | "brand";
+  /**
+   * Where headline + CTAs sit on a photo hero so they don’t cover the subject.
+   * `"left"` | `"right"` | `"center"` (default).
+   */
+  contentAlign?: "left" | "right" | "center";
   /** Sub text 1 (top eyebrow). Alias: kept as promoLine for older JSON. */
   promoLine: string;
   /** Campaign name (large). Alias: kept as discountLine for older JSON. */
@@ -49,7 +56,7 @@ export type EditorialHeroPromotion = {
   campaignName?: string;
   /** Bottom supporting lines under the action grid. */
   subText2?: string | string[];
-  /** Up to 4 CTAs for campaign template. */
+  /** Up to 6 CTAs for campaign template (1 / 2 / 3 layouts + main-category grids). */
   actions?: EditorialCampaignAction[];
   /** Legacy single CTA when `actions` is empty. */
   cta: string;
@@ -197,10 +204,10 @@ export function getEditorialDemoContent(): EditorialDemoContent {
     nav: [
       { id: "new", label: "Yeni", categoryId: null },
       { id: "elbise", label: "Elbise", categoryId: "elbise" },
-      { id: "ust", label: "Üst Giyim", categoryId: "ust-giyim" },
-      { id: "alt", label: "Alt Giyim", categoryId: "alt-giyim" },
+      { id: "ust", label: "Üst giyim", categoryId: "ust-giyim" },
+      { id: "alt", label: "Alt giyim", categoryId: "alt-giyim" },
       { id: "beach", label: "Beach", categoryId: "beach" },
-      { id: "dis", label: "Dış Giyim", categoryId: "dis-giyim" },
+      { id: "dis", label: "Dış giyim", categoryId: "dis-giyim" },
       {
         id: "sale",
         label: "İndirim",
@@ -247,7 +254,7 @@ export function getEditorialDemoContent(): EditorialDemoContent {
     featuredPair: [
       {
         categoryId: "ust-giyim",
-        label: "Üst Giyim",
+        label: "Üst giyim",
         image: ASSET("cat-ceket.jpg"),
         cta: "Hemen keşfet",
       },
@@ -261,13 +268,13 @@ export function getEditorialDemoContent(): EditorialDemoContent {
     categoryTiles: [
       {
         categoryId: "alt-giyim",
-        label: "Alt Giyim",
+        label: "Alt giyim",
         image: ASSET("cat-jean.jpg"),
         cta: "Ürünleri incele",
       },
       {
         categoryId: "dis-giyim",
-        label: "Dış Giyim",
+        label: "Dış giyim",
         image: ASSET("cat-trenckot.jpg"),
         cta: "Ürünleri incele",
       },
