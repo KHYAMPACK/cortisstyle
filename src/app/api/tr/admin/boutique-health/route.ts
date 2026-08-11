@@ -133,6 +133,7 @@ export async function GET(request: Request) {
     },
     hints: [
       "tr_boutiques_public only returns status=verified",
+      "Empty storefront + panel has SKUs → product RLS still references tr_boutiques after anon SELECT revoke. Run supabase/patch_tr_products_public_read_via_view.sql",
       "Storefront soft-404 with Lila chrome = boutique OK but products query failed (see products.*)",
       "If products probe fails with column/schema errors, apply product patches or rely on resilient column fallbacks",
       "If service probe fails with JWT errors, rotate SUPABASE_SERVICE_ROLE_KEY in Vercel to match the project",

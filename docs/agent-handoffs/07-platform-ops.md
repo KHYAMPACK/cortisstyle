@@ -14,6 +14,7 @@
 - Drop dormant intl tables (once): `supabase/patch_drop_international_tables.sql` — keeps `profiles` + all `tr_*`
 - Boutique public view: `supabase/patch_tr_boutiques_public_view.sql`
 - Boutique 404 diagnose SQL: `supabase/fix_tr_boutiques_public_visibility.sql`
+- Products public RLS (empty storefront catalog): `supabase/patch_tr_products_public_read_via_view.sql`
 - Boutique health (admin): `GET /api/tr/admin/boutique-health` — Bearer `TR_ADMIN_SECRET`
 
 ## Auth matrix
@@ -30,6 +31,7 @@ Middleware does **not** enforce general login — it handles maintenance, `/` �
 
 - **Orders, discounts, invoices, push subscriptions:** app uses **service role** after `requireTrOwner` / admin checks. RLS is fail-closed for anon; it is **not** the owner tenancy boundary.
 - **Public boutiques:** read `tr_boutiques_public` via **anon server client** (`getPublicCatalogSupabase` in `src/lib/supabase/supabaseServer.ts`) so a bad/rotated `SUPABASE_SERVICE_ROLE_KEY` cannot 404 storefronts. Apply `supabase/patch_tr_boutiques_public_view.sql` so anon cannot `SELECT *` sensitive columns on `tr_boutiques` (IBAN, contact, shipping addresses). View filter: `status = 'verified'` only.
+- **Public products:** RLS must `EXISTS` against `tr_boutiques_public`, not `tr_boutiques`. After the view patch revoked anon `SELECT` on the base table, the old products policy hid **every** SKU on storefronts while the owner panel (service role) still showed them. Fix: `supabase/patch_tr_products_public_read_via_view.sql`. App also retries service role if anon product reads return empty/error.
 - **Storefront 404 (“Butik bulunamadı”):** layout calls `notFound()` when `safeGetPublicBoutique` returns null. Check SQL `fix_tr_boutiques_public_visibility.sql`, then `/api/tr/admin/boutique-health`. Demo `demo-maya` is code-only and does not prove DB connectivity.
 - **Order confirm tokens:** require `TR_ORDER_CONFIRM_SECRET` in production (no fallback to service role / admin secret).
 - **PhotoRoom panel cutout:** `src/lib/tr/ai/photoroomRemoveBg.ts` + `PHOTOROOM_API_KEY` — not Lookbook Studio.

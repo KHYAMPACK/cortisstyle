@@ -1,7 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getPublicBoutiqueById, getPublicBoutiqueBySlug } from "@/lib/tr/boutiques";
 import { getServiceSupabase } from "@/lib/supabaseAdmin";
-import { getPublicCatalogSupabase } from "@/lib/supabase/supabaseServer";
+import {
+  getPublicCatalogSupabase,
+  getServerServiceSupabase,
+} from "@/lib/supabase/supabaseServer";
 import { mapProductRow } from "@/lib/tr/mappers";
 import type {
   CreateTrProductInput,
@@ -16,6 +19,33 @@ const PRODUCT_COLUMNS_CORE =
 
 /** Includes size_stocks when the migration has been applied. */
 const PUBLIC_PRODUCT_COLUMNS = `${PRODUCT_COLUMNS_CORE}, size_stocks`;
+
+/**
+ * Anon product RLS historically referenced `tr_boutiques` after anon SELECT was
+ * revoked → empty catalogs. Prefer anon; if empty/error, retry service role
+ * (bypasses RLS). Permanent fix: patch_tr_products_public_read_via_view.sql.
+ */
+function resolvePublicProductClients(
+  client?: SupabaseClient,
+): SupabaseClient[] {
+  if (client) return [client];
+  const clients: SupabaseClient[] = [];
+  try {
+    clients.push(getPublicCatalogSupabase());
+  } catch {
+    // fall through to service
+  }
+  const service = getServerServiceSupabase();
+  if (service && !clients.includes(service)) {
+    clients.push(service);
+  }
+  if (clients.length === 0) {
+    throw new Error(
+      "Supabase is not configured for public product reads.",
+    );
+  }
+  return clients;
+}
 
 function isMissingColumnError(
   error: {
@@ -106,17 +136,14 @@ const PRODUCT_SELECT_CANDIDATES: readonly string[] = [
   "id, boutique_id, title, description, price_kurus, size, category, images, status, sort_order, created_at, updated_at",
 ];
 
-export async function listPublicProductsByBoutiqueId(
+async function queryProductsByBoutiqueId(
+  supabase: SupabaseClient,
   boutiqueId: string,
   boutique: TrProductWithBoutique["boutique"],
-  client?: SupabaseClient,
 ): Promise<TrProductWithBoutique[]> {
-  const supabase = getPublicCatalogSupabase(client);
-
   let lastError: { message?: string; code?: string } | null = null;
 
   for (const columns of PRODUCT_SELECT_CANDIDATES) {
-    // Dynamic column fallbacks — bypass PostgREST select literal parsing.
     const { data, error } = await supabase
       .from("tr_products")
       .select(columns as typeof PUBLIC_PRODUCT_COLUMNS)
@@ -144,72 +171,148 @@ export async function listPublicProductsByBoutiqueId(
   return [];
 }
 
+export async function listPublicProductsByBoutiqueId(
+  boutiqueId: string,
+  boutique: TrProductWithBoutique["boutique"],
+  client?: SupabaseClient,
+): Promise<TrProductWithBoutique[]> {
+  const clients = resolvePublicProductClients(client);
+  let lastError: unknown = null;
+
+  for (let i = 0; i < clients.length; i += 1) {
+    try {
+      const rows = await queryProductsByBoutiqueId(
+        clients[i]!,
+        boutiqueId,
+        boutique,
+      );
+      if (rows.length > 0 || i === clients.length - 1) {
+        if (i > 0 && rows.length > 0) {
+          console.warn(
+            `Public products for boutique ${boutiqueId} required service-role fallback (anon RLS empty/broken). Apply supabase/patch_tr_products_public_read_via_view.sql`,
+          );
+        }
+        return rows;
+      }
+      // Anon returned [] — try service before concluding catalog is empty.
+    } catch (error) {
+      lastError = error;
+      if (i === clients.length - 1) throw error;
+      console.error(
+        `Public product read failed (client ${i}); retrying fallback:`,
+        error,
+      );
+    }
+  }
+
+  if (lastError) throw lastError;
+  return [];
+}
+
 export async function getPublicProductById(
   productId: string,
   client?: SupabaseClient,
 ): Promise<TrProductWithBoutique | null> {
-  const supabase = getPublicCatalogSupabase(client);
+  const clients = resolvePublicProductClients(client);
+  let lastError: unknown = null;
 
-  const primary = await supabase
-    .from("tr_products")
-    .select(PUBLIC_PRODUCT_COLUMNS)
-    .eq("id", productId)
-    .in("status", ["available", "sold"])
-    .maybeSingle();
+  for (let i = 0; i < clients.length; i += 1) {
+    try {
+      const supabase = clients[i]!;
+      const primary = await supabase
+        .from("tr_products")
+        .select(PUBLIC_PRODUCT_COLUMNS)
+        .eq("id", productId)
+        .in("status", ["available", "sold"])
+        .maybeSingle();
 
-  const result =
-    primary.error && isMissingSizeStocksColumn(primary.error)
-      ? await supabase
-          .from("tr_products")
-          .select(PRODUCT_COLUMNS_CORE)
-          .eq("id", productId)
-          .in("status", ["available", "sold"])
-          .maybeSingle()
-      : primary;
+      const result =
+        primary.error && isMissingSizeStocksColumn(primary.error)
+          ? await supabase
+              .from("tr_products")
+              .select(PRODUCT_COLUMNS_CORE)
+              .eq("id", productId)
+              .in("status", ["available", "sold"])
+              .maybeSingle()
+          : primary;
 
-  if (result.error) throw result.error;
-  if (!result.data) return null;
+      if (result.error) throw result.error;
+      if (!result.data) {
+        if (i === clients.length - 1) return null;
+        continue;
+      }
 
-  const product = mapProductRow(result.data as Record<string, unknown>);
-  const boutique = await getPublicBoutiqueById(product.boutiqueId);
-  if (!boutique) return null;
+      const product = mapProductRow(
+        result.data as unknown as Record<string, unknown>,
+      );
+      const boutique = await getPublicBoutiqueById(product.boutiqueId);
+      if (!boutique) return null;
 
-  return { ...product, boutique };
+      return { ...product, boutique };
+    } catch (error) {
+      lastError = error;
+      if (i === clients.length - 1) throw error;
+    }
+  }
+
+  if (lastError) throw lastError;
+  return null;
 }
 
 /** All available items from verified boutiques — for marketplace browse / outfit builder. */
 export async function listPublicAvailableProducts(
   client?: SupabaseClient,
 ): Promise<TrProductWithBoutique[]> {
-  const supabase = getPublicCatalogSupabase(client);
+  const clients = resolvePublicProductClients(client);
+  let lastError: unknown = null;
 
-  const primary = await supabase
-    .from("tr_products")
-    .select(PUBLIC_PRODUCT_COLUMNS)
-    .eq("status", "available")
-    .order("created_at", { ascending: false });
+  for (let i = 0; i < clients.length; i += 1) {
+    try {
+      const supabase = clients[i]!;
+      const primary = await supabase
+        .from("tr_products")
+        .select(PUBLIC_PRODUCT_COLUMNS)
+        .eq("status", "available")
+        .order("created_at", { ascending: false });
 
-  const result =
-    primary.error && isMissingSizeStocksColumn(primary.error)
-      ? await supabase
-          .from("tr_products")
-          .select(PRODUCT_COLUMNS_CORE)
-          .eq("status", "available")
-          .order("created_at", { ascending: false })
-      : primary;
+      const result =
+        primary.error && isMissingSizeStocksColumn(primary.error)
+          ? await supabase
+              .from("tr_products")
+              .select(PRODUCT_COLUMNS_CORE)
+              .eq("status", "available")
+              .order("created_at", { ascending: false })
+          : primary;
 
-  if (result.error) throw result.error;
+      if (result.error) throw result.error;
 
-  const products: TrProductWithBoutique[] = [];
-  for (const row of result.data ?? []) {
-    const product = mapProductRow(row as Record<string, unknown>);
-    const boutique = await getPublicBoutiqueById(product.boutiqueId);
-    if (boutique) {
-      products.push({ ...product, boutique });
+      const products: TrProductWithBoutique[] = [];
+      for (const row of result.data ?? []) {
+        const product = mapProductRow(
+          row as unknown as Record<string, unknown>,
+        );
+        const boutique = await getPublicBoutiqueById(product.boutiqueId);
+        if (boutique) {
+          products.push({ ...product, boutique });
+        }
+      }
+
+      if (products.length > 0 || i === clients.length - 1) {
+        if (i > 0 && products.length > 0) {
+          console.warn(
+            "listPublicAvailableProducts used service-role fallback — apply supabase/patch_tr_products_public_read_via_view.sql",
+          );
+        }
+        return products;
+      }
+    } catch (error) {
+      lastError = error;
+      if (i === clients.length - 1) throw error;
     }
   }
 
-  return products;
+  if (lastError) throw lastError;
+  return [];
 }
 
 export async function listProductsByBoutiqueIdAdmin(

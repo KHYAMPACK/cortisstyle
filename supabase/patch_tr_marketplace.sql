@@ -185,7 +185,10 @@ create policy "TR boutiques public read verified"
   on public.tr_boutiques for select
   using (status = 'verified');
 
--- Public read: products from verified boutiques (not hidden)
+-- Public read: products from verified boutiques (not hidden).
+-- Use tr_boutiques_public (anon-safe). Do NOT reference tr_boutiques here after
+-- patch_tr_boutiques_public_view.sql revokes anon SELECT on the base table —
+-- that made EXISTS always fail and emptied every storefront catalog.
 drop policy if exists "TR products public read" on public.tr_products;
 create policy "TR products public read"
   on public.tr_products for select
@@ -193,9 +196,8 @@ create policy "TR products public read"
     status in ('available', 'sold')
     and exists (
       select 1
-      from public.tr_boutiques b
+      from public.tr_boutiques_public b
       where b.id = boutique_id
-        and b.status = 'verified'
     )
   );
 
