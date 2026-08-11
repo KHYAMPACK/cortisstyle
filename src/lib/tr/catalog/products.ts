@@ -99,12 +99,12 @@ export async function listPublicProductsByBoutiqueSlug(
   return listPublicProductsByBoutiqueId(boutique.id, boutique, client);
 }
 
-const PRODUCT_SELECT_CANDIDATES = [
+const PRODUCT_SELECT_CANDIDATES: readonly string[] = [
   PUBLIC_PRODUCT_COLUMNS,
   PRODUCT_COLUMNS_CORE,
   // Minimal set if older prod DBs lack marketplace/lifestyle/catalog columns.
   "id, boutique_id, title, description, price_kurus, size, category, images, status, sort_order, created_at, updated_at",
-] as const;
+];
 
 export async function listPublicProductsByBoutiqueId(
   boutiqueId: string,
@@ -116,9 +116,10 @@ export async function listPublicProductsByBoutiqueId(
   let lastError: { message?: string; code?: string } | null = null;
 
   for (const columns of PRODUCT_SELECT_CANDIDATES) {
+    // Dynamic column fallbacks — bypass PostgREST select literal parsing.
     const { data, error } = await supabase
       .from("tr_products")
-      .select(columns)
+      .select(columns as typeof PUBLIC_PRODUCT_COLUMNS)
       .eq("boutique_id", boutiqueId)
       .in("status", ["available", "sold"])
       .order("sort_order", { ascending: true })
@@ -126,7 +127,7 @@ export async function listPublicProductsByBoutiqueId(
 
     if (!error) {
       return (data ?? []).map((row) => ({
-        ...mapProductRow(row as Record<string, unknown>),
+        ...mapProductRow(row as unknown as Record<string, unknown>),
         boutique,
       }));
     }
