@@ -123,6 +123,18 @@ Owners will eventually edit these in panel; seed JSON mirrors the pack.
 | Custom domain | `lilaboutiquedenizli.com` (+ `www`) in `src/lib/tr/customDomain.ts` / `TR_BOUTIQUE_DOMAINS` |
 | Google site verification | Root layout `metadata.verification.google` in `src/app/layout.tsx` → meta `google-site-verification` |
 | Current token | `lUtcENaTLXt-I3qvbtU_N3haAJ9CNXZ0QL7I1hZdGm8` |
+| `robots.txt` | Host-aware `src/app/robots.ts` — allows public storefront; blocks panel/cart/checkout/auth/api; points `Sitemap:` at same host |
+| `sitemap.xml` | Host-aware `src/app/sitemap.ts` — on Lila domain: `/`, `/urunler`, `/urun/{id}`, `/yasal/*`; on platform: marketing + `/tr/{slug}/…` for verified boutiques |
+| SEO helpers | `src/lib/tr/seo/storefrontSeo.ts` |
+| Google Merchant Center | Ops checklist in [13-boutique-wire-in-and-go-live.md](./agent-handoffs/13-boutique-wire-in-and-go-live.md) § C2 |
+
+**Search Console (Lila):**
+
+1. Deploy so verification meta + `/robots.txt` + `/sitemap.xml` are live on `https://lilaboutiquedenizli.com` (and www if used).
+2. Add property for the boutique domain (Domain or URL-prefix).
+3. Confirm HTML tag verification.
+4. **Sitemaps** → submit `https://lilaboutiquedenizli.com/sitemap.xml` (or www matching the property).
+5. Spot-check Coverage / Page indexing after crawl.
 
 Verify in Search Console **after deploy** (token must be live on the custom domain HTML). One root meta covers all hosts on this Next app; rotate/replace the token in `layout.tsx` if Google issues a new one.
 
@@ -151,4 +163,6 @@ Pages show amber “Taslak — avukat onayı” until lawyer signs off.
 2. Link owner (`scripts/link-tr-boutique-owner.md`) when ready
 3. Point DNS when go-live; smoke `/tr/lilabutik` vs `/tr/pervinsoysalbutik`
 4. Confirm Google Search Console meta on live domain (see Domain & Search Console above)
-5. Full pre-live list: [13-boutique-wire-in-and-go-live.md](./agent-handoffs/13-boutique-wire-in-and-go-live.md)
+5. Submit boutique `sitemap.xml` in Search Console; confirm `/robots.txt`
+6. Google Merchant Center (claim site + feed / free listings) — see [13 § C2](./agent-handoffs/13-boutique-wire-in-and-go-live.md)
+7. Full pre-live list: [13-boutique-wire-in-and-go-live.md](./agent-handoffs/13-boutique-wire-in-and-go-live.md)

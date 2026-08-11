@@ -20,7 +20,7 @@ Shipped on shared rails (do not re-invent):
 | Header | Hide category nav on `/giris`, `/sepet`, `/favoriler` (atelier) |
 | Auth | Branded OTP/reset via Resend; reset uses `token_hash` → `/auth/callback` → boutique-branded `/auth/reset-password?boutique=` |
 | Auth origin | Prefer boutique custom domain for reset links (`resolveAuthRedirectOrigin`) |
-| SEO | Per-boutique document title + description in `boutiqueBrand.ts` (no `— Cortisstyle` on boutique tabs) |
+| SEO | Per-boutique document title + description in `boutiqueBrand.ts` (no `— Cortisstyle` on boutique tabs); host-aware `robots.ts` / `sitemap.ts` (`src/lib/tr/seo/storefrontSeo.ts`) |
 | Images | Storefront gallery prefers marketplace cutouts; raw front/back hanger shots stay owner-only |
 | Promo bar | Atelier home skips top promo strip |
 
@@ -130,6 +130,17 @@ Copy for each launch. Check before announcing Instagram → site.
 - [ ] Meta description set
 - [ ] Favicon readable on dark browser chrome
 - [ ] Google Search Console: HTML meta via `src/app/layout.tsx` → `metadata.verification.google` (Lila token documented in [lila-butik-e-ticaret-setup.md](../lila-butik-e-ticaret-setup.md)); verify after deploy on custom domain
+- [ ] **robots.txt** live on boutique domain (`/robots.txt`) — allows storefront; disallows panel/cart/checkout/auth/api; `Sitemap:` points at same host (`src/app/robots.ts`)
+- [ ] **sitemap.xml** live on boutique domain (`/sitemap.xml`) — home, `/urunler`, product PDPs, `/yasal/*` with customer-facing paths (`src/app/sitemap.ts` + `src/lib/tr/seo/storefrontSeo.ts`)
+- [ ] Search Console → **Sitemaps** → submit `https://{boutique-domain}/sitemap.xml` (match www vs apex property)
+- [ ] Spot-check indexed URLs use boutique domain (not only `/tr/{slug}` on cortisstyle.com)
+- [ ] **Google Merchant Center** setup for the boutique domain:
+  - [ ] Create / claim Merchant Center account (business info + country TR)
+  - [ ] Verify & claim website (same domain as storefront; often via Search Console ownership)
+  - [ ] Shipping + returns policies match storefront / legal pages
+  - [ ] Product data: feed or free listings ready (title, price TRY, availability, image, link, GTIN/MPN or identifier-exempt as applicable)
+  - [ ] Submit products / free listings; fix disapprovals before ads
+  - [ ] Link Merchant Center ↔ Google Ads only when running Shopping ads
 
 ### C3. Catalog & imagery
 

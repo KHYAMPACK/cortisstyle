@@ -1,9 +1,21 @@
 import type { MetadataRoute } from "next";
-import { siteLegal } from "@/lib/siteLegal";
+import {
+  resolveSeoHostContext,
+  SEO_DISALLOW_PATHS,
+} from "@/lib/tr/seo/storefrontSeo";
 
-export default function robots(): MetadataRoute.Robots {
+export default async function robots(): Promise<MetadataRoute.Robots> {
+  const ctx = await resolveSeoHostContext();
+
   return {
-    rules: [{ userAgent: "*", allow: "/" }],
-    sitemap: `${siteLegal.siteUrl}/sitemap.xml`,
+    rules: [
+      {
+        userAgent: "*",
+        allow: "/",
+        disallow: [...SEO_DISALLOW_PATHS],
+      },
+    ],
+    sitemap: `${ctx.origin}/sitemap.xml`,
+    host: ctx.origin,
   };
 }

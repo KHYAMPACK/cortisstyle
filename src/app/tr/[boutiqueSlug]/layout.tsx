@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { TrBoutiqueBrandedShell } from "@/components/tr/boutique/TrBoutiqueBrandedShell";
 import { TrBoutiqueEditorialShell } from "@/components/tr/boutique/editorial/TrBoutiqueEditorialShell";
@@ -16,7 +17,11 @@ import {
   safeGetBoutiqueStorefront,
   safeGetPublicBoutique,
 } from "@/lib/tr/publicData";
+import { preferredBoutiqueOrigin } from "@/lib/tr/seo/storefrontSeo";
+import { siteLegal } from "@/lib/siteLegal";
 import { resolveStorefrontTheme } from "@/lib/tr/storefrontTheme";
+import { normalizeBoutiqueHost, resolveBoutiqueSlugFromHost } from "@/lib/tr/customDomain";
+import { trBoutiquePath } from "@/lib/tr/paths";
 
 /** Static marketplace segments — must not be captured by [boutiqueSlug]. */
 const RESERVED_BOUTIQUE_SLUGS = new Set([
@@ -69,14 +74,49 @@ export async function generateMetadata({
     boutique.name,
   );
 
+  const headerList = await headers();
+  const requestHost = normalizeBoutiqueHost(
+    headerList.get("x-forwarded-host")?.split(",")[0]?.trim() ||
+      headerList.get("host") ||
+      "",
+  );
+  const hostSlug = requestHost
+    ? resolveBoutiqueSlugFromHost(requestHost)
+    : null;
+  const onBoutiqueDomain = hostSlug === boutique.slug;
+  const metadataBase = new URL(
+    onBoutiqueDomain && requestHost
+      ? `https://${requestHost}`
+      : preferredBoutiqueOrigin(boutique.slug) || siteLegal.siteUrl,
+  );
+  const canonicalPath = onBoutiqueDomain
+    ? "/"
+    : trBoutiquePath(boutique.slug);
+
   return {
     // `absolute` + local template so parent `/tr` “— Cortisstyle” does not leak onto white-label boutiques.
+    metadataBase,
     title: {
       absolute: documentTitle,
       default: documentTitle,
       template: `%s · ${brandTitle}`,
     },
     description: documentDescription,
+    alternates: {
+      canonical: canonicalPath,
+    },
+    robots: {
+      index: true,
+      follow: true,
+    },
+    openGraph: {
+      type: "website",
+      locale: "tr_TR",
+      siteName: brandTitle,
+      title: documentTitle,
+      description: documentDescription,
+      url: canonicalPath,
+    },
     icons: favicon
       ? {
           icon: [{ url: favicon, type: "image/png" }],

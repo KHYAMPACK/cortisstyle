@@ -309,29 +309,52 @@ export function getTrLegalDoc(
     },
     iade: {
       id: "iade",
-      title: "İade, Cayma ve Değişim",
-      summary: "Yasal cayma hakkı ve değişim süreçleri (taslak).",
+      title: "İade ve İade Politikası",
+      summary:
+        "Mesafeli satışlarda cayma / iade koşulları, süreler, ücretler ve bedel iadesi.",
       sections: [
         {
-          heading: "Cayma hakkı (14 gün)",
+          heading: "Kapsam",
           paragraphs: [
-            returns,
-            "Cayma bildirimi e-posta, WhatsApp veya yazılı / kalıcı veri saklayıcısı ile yapılabilir.",
-            "Ürün; kullanılmamış, yeniden satılabilir durumda, mümkünse orijinal ambalajı ve varsa faturası / teslimat belgesi ile iade edilmelidir (yasal istisnalar saklıdır).",
+            `Bu iade politikası ${brand} (${seller}) tarafından Türkiye’de mesafeli satış yoluyla satılan ürünler için geçerlidir.`,
+            "Cayma hakkı (vazgeçme) ve ayıplı mal halleri 6502 sayılı Kanun ile Mesafeli Sözleşmeler Yönetmeliği çerçevesinde uygulanır.",
           ],
         },
         {
-          heading: "İade adresi ve kargo",
+          heading: "İade süresi (14 gün)",
+          paragraphs: [
+            returns,
+            "Süre, malın Alıcı’ya veya belirlediği kişiye teslim edildiği günden itibaren işlemeye başlar.",
+            "Bu süre içinde cayma / iade talebi iletilebilir; yalnızca kusurlu ürünler için değil, sebepsiz cayma (vazgeçme) için de geçerlidir (yasal istisnalar saklıdır).",
+          ],
+        },
+        {
+          heading: "İade nasıl yapılır",
+          paragraphs: [
+            `İade / cayma bildirimi e-posta (${ctx.email}), WhatsApp${ctx.whatsappPhone ? ` (${ctx.whatsappPhone})` : ""} veya yazılı / kalıcı veri saklayıcısı ile satıcıya iletilir.`,
+            "Bildirimde sipariş numarası, iade edilmek istenen ürün(ler) ve mümkünse iade nedeni belirtilmelidir.",
+            "Satıcı, iade adresini ve varsa anlaşmalı kargo yönlendirmesini bildirir; ürün bu talimata göre gönderilir.",
+          ],
+        },
+        {
+          heading: "Ürün durumu",
+          paragraphs: [
+            "Ürün; kullanılmamış, yeniden satılabilir durumda, mümkünse orijinal ambalajı ve varsa faturası / teslimat belgesi ile iade edilmelidir.",
+            "Hijyen nedeniyle iadesi uygun olmayan ürünler, kişiye özel üretilen mallar ve mevzuattaki diğer istisnalar cayma kapsamı dışında kalabilir.",
+          ],
+        },
+        {
+          heading: "İade adresi ve kargo ücreti",
           paragraphs: [
             `İade adresi (satıcı): ${address}`,
-            "Cayma hakkı kapsamındaki iadelerde kargo ücreti, mevzuat çerçevesinde satıcıya aittir. Ayıplı / hasarlı ürünlerde Alıcı’dan ek kargo bedeli talep edilmez.",
-            "Anlaşmalı kargo ile iade süreci satıcı tarafından WhatsApp / e-posta üzerinden yönlendirilebilir.",
+            "Cayma hakkı kapsamındaki iadelerde iade kargo ücreti, mevzuat çerçevesinde satıcıya aittir. Ayıplı / hasarlı ürünlerde Alıcı’dan ek kargo bedeli talep edilmez.",
+            "Yeniden stoklama (restocking) ücreti alınmaz.",
           ],
         },
         {
           heading: "Bedel iadesi",
           paragraphs: [
-            "Onaylanan cayma / iadelerde bedel, mevzuatta öngörülen süre içinde Alıcı’nın ödeme yaptığı yönteme iade edilir.",
+            "Onaylanan cayma / iadelerde ödenen bedel, mevzuatta öngörülen süre içinde (kural olarak malın satıcıya ulaşmasından itibaren on dört gün içinde) Alıcı’nın ödeme yaptığı yönteme iade edilir.",
             "Ayıplı mal halinde 6502 sayılı Kanun’daki seçimlik haklar saklıdır.",
           ],
         },
@@ -339,6 +362,15 @@ export function getTrLegalDoc(
           heading: "Değişim",
           paragraphs: [
             "Beden / model değişimi, stok durumuna göre satıcının takdirinde veya karşılıklı anlaşma ile yapılabilir. Değişim koşulları müşteri hizmetleri üzerinden netleştirilir.",
+          ],
+        },
+        {
+          heading: "İletişim",
+          paragraphs: [
+            `Satıcı: ${seller} (marka: ${brand}).`,
+            address,
+            contact,
+            "Şikayet ve uyuşmazlıklarda Tüketici Hakem Heyetleri ve Tüketici Mahkemeleri yetkilidir.",
           ],
         },
       ],
