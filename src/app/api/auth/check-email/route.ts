@@ -1,5 +1,10 @@
 import { resolveEmailAuthStatusServer } from "@/lib/authEmailStatus.server";
 import { getServiceSupabase, isValidNotifyEmail } from "@/lib/supabaseAdmin";
+import {
+  clientIpFromRequest,
+  consumeRateLimit,
+  rateLimitResponse,
+} from "@/lib/tr/rateLimit";
 
 export const runtime = "nodejs";
 
@@ -9,6 +14,16 @@ interface CheckEmailPayload {
 }
 
 export async function POST(request: Request) {
+  const ip = clientIpFromRequest(request);
+  const ipLimit = consumeRateLimit({
+    key: `auth-check-email:ip:${ip}`,
+    limit: 30,
+    windowMs: 60_000,
+  });
+  if (!ipLimit.ok) {
+    return rateLimitResponse(ipLimit.retryAfterSec);
+  }
+
   let payload: CheckEmailPayload;
 
   try {
@@ -22,6 +37,15 @@ export async function POST(request: Request) {
 
   if (!isValidNotifyEmail(email)) {
     return Response.json({ error: "Enter a valid email address." }, { status: 400 });
+  }
+
+  const emailLimit = consumeRateLimit({
+    key: `auth-check-email:email:${email}`,
+    limit: 10,
+    windowMs: 60_000,
+  });
+  if (!emailLimit.ok) {
+    return rateLimitResponse(emailLimit.retryAfterSec);
   }
 
   const admin = getServiceSupabase();

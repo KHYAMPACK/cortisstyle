@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { SiteFooter } from "@/components/SiteFooter";
 import { siteLegal } from "@/lib/siteLegal";
 
 interface LegalPageShellProps {
@@ -52,17 +51,17 @@ export function LegalList({ children }: { children: ReactNode }) {
 export function LegalPageShell({
   title,
   children,
-  kicker = "Legal",
+  kicker = "Yasal",
   showEffectiveDate = true,
 }: LegalPageShellProps) {
   return (
     <div className="min-h-full bg-ice-floor text-jet-black">
       <header className="border-b border-blueprint-border px-5 py-6 md:px-10">
         <Link
-          href="/"
+          href="/tr"
           className="text-meta text-[9px] tracking-[0.35em] uppercase transition-colors hover:text-jet-black"
         >
-          ← Lookbook
+          ← Cadde
         </Link>
       </header>
 
@@ -80,7 +79,15 @@ export function LegalPageShell({
         <div className="mt-10 border-t border-blueprint-border pt-8">{children}</div>
       </article>
 
-      <SiteFooter />
+      <footer className="border-t border-blueprint-border px-5 py-8 text-center text-[11px] text-neutral-500 md:px-10">
+        <Link href="/privacy" className="underline underline-offset-2">
+          Gizlilik
+        </Link>
+        <span className="mx-3">·</span>
+        <Link href="/terms" className="underline underline-offset-2">
+          Koşullar
+        </Link>
+      </footer>
     </div>
   );
 }

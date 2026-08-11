@@ -1,4 +1,4 @@
-import { resolveLlmProvider } from "@/lib/itemDraft/resolveLlmProvider";
+import { resolveLlmProvider } from "@/lib/tr/ai/resolveLlmProvider";
 import { TR_OWNER_PRODUCT_LIMITS } from "@/lib/tr/ownerProductConstraints";
 
 const GEMINI_MODELS = [

@@ -5,7 +5,7 @@ import {
   listHeroSlotPublicPaths,
   writeNormalizedHeroSlot,
 } from "@/lib/tr/outfitFrame/heroSlotFs";
-import { removeGarmentBackground } from "@/lib/studioRemoveBg";
+import { removeGarmentBackground } from "@/lib/tr/ai/photoroomRemoveBg";
 import type { OutfitFrameRole } from "@/lib/tr/outfitFrame/types";
 
 export const runtime = "nodejs";

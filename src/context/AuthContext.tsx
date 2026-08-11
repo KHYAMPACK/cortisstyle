@@ -17,34 +17,17 @@ import {
   type ResolveEmailAuthOptions,
 } from "@/lib/authTypes";
 import { getPasswordResetRedirectUrl } from "@/lib/authRedirect";
+import { ensureUserProfile } from "@/lib/auth/ensureUserProfile";
 import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabaseClient";
-import {
-  ensureUserProfile,
-  fetchUserWardrobeLookIds,
-  resolveOwnedClothesFromLooks,
-  resolvePurchasedLooks,
-} from "@/lib/wardrobe";
-import { fetchAllSavedOutfitsForUser } from "@/lib/savedWardrobeOutfitDb";
-import {
-  mapSupabaseUser,
-  type WardrobeClothingItem,
-  type WardrobeLook,
-  type WardrobeUser,
-} from "@/types/user";
-import type { SavedWardrobeOutfitBlueprint } from "@/types/wardrobe-builder";
+import { mapSupabaseUser, type AuthUser } from "@/types/user";
 
 interface AuthContextValue {
   isAuthenticated: boolean;
   isInitializing: boolean;
   isAuthenticating: boolean;
   isResolvingAuthRedirect: boolean;
-  wardrobeLoading: boolean;
   authError: string | null;
-  user: WardrobeUser | null;
-  purchasedLooks: WardrobeLook[];
-  savedOutfits: SavedWardrobeOutfitBlueprint[];
-  wardrobeLoadError: string | null;
-  ownedClothes: WardrobeClothingItem[];
+  user: AuthUser | null;
   resolveEmailAuthRoute: (
     email: string,
     options?: ResolveEmailAuthOptions,
@@ -66,8 +49,6 @@ interface AuthContextValue {
   ) => Promise<void>;
   needsPasswordSetup: boolean;
   signOut: () => Promise<void>;
-  refreshWardrobe: () => Promise<void>;
-  refreshSavedOutfits: () => Promise<void>;
   clearAuthError: () => void;
   setIsResolvingAuthRedirect: (value: boolean) => void;
 }
@@ -93,68 +74,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isInitializing, setIsInitializing] = useState(true);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [isResolvingAuthRedirect, setIsResolvingAuthRedirect] = useState(false);
-  const [wardrobeLoading, setWardrobeLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
-  const [purchasedLookIds, setPurchasedLookIds] = useState<string[]>([]);
-  const [savedOutfits, setSavedOutfits] = useState<SavedWardrobeOutfitBlueprint[]>(
-    [],
-  );
-  const [wardrobeLoadError, setWardrobeLoadError] = useState<string | null>(null);
 
   const user = useMemo(
     () => (session?.user ? mapSupabaseUser(session.user) : null),
     [session],
   );
-
-  const refreshWardrobe = useCallback(async (userId: string) => {
-    if (!isSupabaseConfigured()) {
-      setPurchasedLookIds([]);
-      return;
-    }
-
-    setWardrobeLoading(true);
-    setWardrobeLoadError(null);
-
-    try {
-      const supabase = getSupabaseClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user || user.id !== userId) {
-        setPurchasedLookIds([]);
-        return;
-      }
-
-      const lookIds = await fetchUserWardrobeLookIds(userId);
-      setPurchasedLookIds(lookIds);
-    } catch (error) {
-      console.error("Failed to load wardrobe:", error);
-      setWardrobeLoadError(
-        error instanceof Error
-          ? error.message
-          : "Unable to load unlocked looks.",
-      );
-      setPurchasedLookIds([]);
-    } finally {
-      setWardrobeLoading(false);
-    }
-  }, []);
-
-  const refreshSavedOutfits = useCallback(async (userId: string) => {
-    if (!isSupabaseConfigured()) {
-      setSavedOutfits([]);
-      return;
-    }
-
-    try {
-      const outfits = await fetchAllSavedOutfitsForUser(userId);
-      setSavedOutfits(outfits);
-    } catch (error) {
-      console.error("Failed to load saved outfits:", error);
-      setSavedOutfits([]);
-    }
-  }, []);
 
   useEffect(() => {
     if (!isSupabaseConfigured()) {
@@ -186,9 +111,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             });
           }, 0);
         }
-      } else {
-        setPurchasedLookIds([]);
-        setSavedOutfits([]);
       }
     });
 
@@ -227,32 +149,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       subscription.unsubscribe();
     };
   }, []);
-
-  const userId = session?.user?.id;
-
-  useEffect(() => {
-    if (isInitializing || !userId) return;
-    void refreshWardrobe(userId);
-    void refreshSavedOutfits(userId);
-  }, [isInitializing, userId, refreshWardrobe, refreshSavedOutfits]);
-
-  const refreshWardrobeForSession = useCallback(async () => {
-    if (!userId) {
-      setPurchasedLookIds([]);
-      return;
-    }
-
-    await refreshWardrobe(userId);
-  }, [refreshWardrobe, userId]);
-
-  const refreshSavedOutfitsForSession = useCallback(async () => {
-    if (!userId) {
-      setSavedOutfits([]);
-      return;
-    }
-
-    await refreshSavedOutfits(userId);
-  }, [refreshSavedOutfits, userId]);
 
   const sendBoutiqueSignupOtpEmail = useCallback(
     async (email: string, boutiqueSlug: string) => {
@@ -582,24 +478,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw error;
     }
 
-    setPurchasedLookIds([]);
-    setSavedOutfits([]);
     setAuthError(null);
   }, []);
 
   const clearAuthError = useCallback(() => {
     setAuthError(null);
   }, []);
-
-  const purchasedLooks = useMemo(
-    () => resolvePurchasedLooks(purchasedLookIds),
-    [purchasedLookIds],
-  );
-
-  const ownedClothes = useMemo(
-    () => resolveOwnedClothesFromLooks(purchasedLookIds),
-    [purchasedLookIds],
-  );
 
   const needsPasswordSetup = useMemo(() => {
     if (!session?.user) return false;
@@ -617,13 +501,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isInitializing,
       isAuthenticating,
       isResolvingAuthRedirect,
-      wardrobeLoading,
       authError,
       user,
-      purchasedLooks,
-      savedOutfits,
-      wardrobeLoadError,
-      ownedClothes,
       resolveEmailAuthRoute,
       dispatchSignUpOtp,
       resendSignUpOtp,
@@ -633,8 +512,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       requestPasswordReset,
       needsPasswordSetup,
       signOut,
-      refreshWardrobe: refreshWardrobeForSession,
-      refreshSavedOutfits: refreshSavedOutfitsForSession,
       clearAuthError,
       setIsResolvingAuthRedirect,
     }),
@@ -643,13 +520,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isInitializing,
       isAuthenticating,
       isResolvingAuthRedirect,
-      wardrobeLoading,
       authError,
       user,
-      purchasedLooks,
-      savedOutfits,
-      wardrobeLoadError,
-      ownedClothes,
       resolveEmailAuthRoute,
       dispatchSignUpOtp,
       resendSignUpOtp,
@@ -659,8 +531,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       requestPasswordReset,
       needsPasswordSetup,
       signOut,
-      refreshWardrobeForSession,
-      refreshSavedOutfitsForSession,
       clearAuthError,
     ],
   );

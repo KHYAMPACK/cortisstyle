@@ -14,6 +14,7 @@ import {
 } from "@/lib/tr/boutiqueHome";
 import { trBoutiquePath } from "@/lib/tr/paths";
 import { instagramProfileUrl } from "@/lib/tr/whatsapp";
+import { TrPlatformCredit } from "@/components/tr/TrPlatformCredit";
 import {
   TrIyzicoFooterPaymentBand,
 } from "@/components/tr/TrIyzicoPaymentBadges";
@@ -135,6 +136,7 @@ export function TrBoutiqueEditorialFooter({
                 </p>
               </div>
               <TrIyzicoFooterPaymentBand variant="dark" />
+              <TrPlatformCredit variant="dark" />
             </div>
             <Link
               href={trBoutiquePath(boutique.slug)}
@@ -271,6 +273,7 @@ export function TrBoutiqueEditorialFooter({
               © {new Date().getFullYear()} {boutique.name}
             </p>
             <TrIyzicoFooterPaymentBand variant="light" />
+            <TrPlatformCredit variant="light" />
           </div>
         </div>
       </div>

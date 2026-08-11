@@ -54,8 +54,7 @@ export function isBoutiqueDomainPassthroughPath(pathname: string): boolean {
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api/") ||
-    pathname.startsWith("/auth/") ||
-    pathname.startsWith("/studio")
+    pathname.startsWith("/auth/")
   ) {
     return true;
   }

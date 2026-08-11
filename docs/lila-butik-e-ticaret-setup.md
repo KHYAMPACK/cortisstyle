@@ -168,19 +168,22 @@ Lila seller snapshot (fill Ayarlar / re-seed to sync DB):
 
 ## Ops checklist
 
-1. Run seed (`scripts/seed-lilabutik.md`)
-2. Link owner (`scripts/link-tr-boutique-owner.md`) when ready
-3. Point DNS when go-live; smoke `/tr/lilabutik` vs `/tr/pervinsoysalbutik`
-4. Confirm Google Search Console meta on live domain (see Domain & Search Console above)
-5. Submit boutique `sitemap.xml` in Search Console; confirm `/robots.txt`
-6. **Google Merchant Center**
+1. Run seed (`scripts/seed-lilabutik.md`) against the **production** Supabase project (not only local)
+2. Confirm `status = verified` in `tr_boutiques_public` (`supabase/fix_tr_boutiques_public_visibility.sql`)
+3. Link owner (`scripts/link-tr-boutique-owner.md`) when ready
+4. Point DNS when go-live; smoke `/tr/lilabutik` vs `/tr/pervinsoysalbutik` **and** custom domain (private window)
+5. If 404 while SQL shows verified rows: redeploy + purge Vercel cache; hit `/api/tr/admin/boutique-health`
+6. Confirm Google Search Console meta on live domain (see Domain & Search Console above)
+7. Submit boutique `sitemap.xml` in Search Console; confirm `/robots.txt`
+8. **Google Merchant Center**
    - [ ] Claim / verify `lilaboutiquedenizli.com`
    - [ ] İade URL: `https://lilaboutiquedenizli.com/yasal/iade` (pakete dahil · restocking yok · 14 gün)
    - [ ] Feed URL live: `https://lilaboutiquedenizli.com/feeds/google-merchant.xml`
    - [ ] Add feed in Merchant → **zamanlanmış çekme (daily)** for automatic product sync
    - [ ] Fix product disapprovals before Shopping ads
-7. **iyzico website criteria**
+9. **iyzico website criteria**
    - [ ] Hakkımızda `/yasal/kunye` · Gizlilik · Mesafeli Satış · Teslimat ve İade in footer
    - [ ] Footer payment band (Visa / MC / iyzico) + checkout “iyzico ile öde” badge
    - [ ] HTTPS on custom domain
-8. Full pre-live list: [13-boutique-wire-in-and-go-live.md](./agent-handoffs/13-boutique-wire-in-and-go-live.md)
+10. **Ekiz Yazılım** footer watermark (`TrPlatformCredit`) live on storefront — shared for every boutique
+11. Full pre-live list: [13-boutique-wire-in-and-go-live.md](./agent-handoffs/13-boutique-wire-in-and-go-live.md)

@@ -1,7 +1,6 @@
-import { HomePageClient } from "@/app/HomePageClient";
-import { getLooks } from "@/data/looks";
-import { getDynamicCategories } from "@/lib/dynamicLooks/registry";
+import { redirect } from "next/navigation";
 
-export default function Home() {
-  return <HomePageClient looks={getLooks()} categories={getDynamicCategories()} />;
+/** Platform root — Turkey-first product lives under `/tr`. */
+export default function RootPage() {
+  redirect("/tr");
 }

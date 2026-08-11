@@ -124,7 +124,6 @@ export function boutiqueProductPlatformPath(
 export const SEO_DISALLOW_PATHS = [
   "/api/",
   "/auth/",
-  "/studio",
   "/tr/panel",
   "/tr/*/sepet",
   "/tr/*/odeme",
@@ -146,13 +145,8 @@ export function platformMarketingPaths(): Array<{
   priority: number;
 }> {
   return [
-    { path: "", changeFrequency: "weekly", priority: 1 },
-    { path: "/wardrobe", changeFrequency: "weekly", priority: 0.8 },
+    { path: trHomePath(), changeFrequency: "daily", priority: 1 },
     { path: "/privacy", changeFrequency: "monthly", priority: 0.4 },
     { path: "/terms", changeFrequency: "monthly", priority: 0.4 },
-    { path: "/affiliate-disclosure", changeFrequency: "monthly", priority: 0.4 },
-    { path: "/about", changeFrequency: "monthly", priority: 0.5 },
-    { path: "/contact", changeFrequency: "monthly", priority: 0.5 },
-    { path: trHomePath(), changeFrequency: "daily", priority: 0.9 },
   ];
 }

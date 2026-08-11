@@ -2,6 +2,7 @@ import {
   createBoutiqueAdmin,
   getBoutiqueBySlugAdmin,
   updateBoutiqueBrandAdmin,
+  updateBoutiqueStatusAdmin,
 } from "@/lib/tr/boutiques";
 import { createDiscountCodeAdmin } from "@/lib/tr/discountCodes";
 import {
@@ -95,7 +96,8 @@ export async function POST(request: Request) {
 
     for (const boutiqueInput of payload.boutiques ?? []) {
       const existing = await getBoutiqueBySlugAdmin(boutiqueInput.slug);
-      const boutique = existing
+      const desiredStatus = boutiqueInput.status ?? "verified";
+      let boutique = existing
         ? await updateBoutiqueBrandAdmin(existing.id, {
             description: boutiqueInput.description,
             logoUrl: boutiqueInput.logoUrl,
@@ -127,8 +129,13 @@ export async function POST(request: Request) {
             homeLayout: boutiqueInput.homeLayout,
             customDomain: boutiqueInput.customDomain,
             editorialContent: boutiqueInput.editorialContent,
-            status: boutiqueInput.status ?? "verified",
+            status: desiredStatus,
           });
+
+      // Re-seed must flip draft/pending → verified (public view filters status).
+      if (existing && boutique.status !== desiredStatus) {
+        boutique = await updateBoutiqueStatusAdmin(existing.id, desiredStatus);
+      }
 
       createdBoutiques.push({
         id: boutique.id,

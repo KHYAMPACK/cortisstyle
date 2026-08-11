@@ -4,8 +4,8 @@ import Image from "next/image";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { BrandLogo } from "@/components/BrandLogo";
-import { SiteFooter } from "@/components/SiteFooter";
 import { useAuth } from "@/context/AuthContext";
+import { DEFAULT_AUTH_NEXT_PATH } from "@/lib/authRedirect";
 import {
   resolveBoutiqueBrandLabel,
   resolveBoutiqueLogoUrl,
@@ -21,7 +21,7 @@ const primaryButtonClass =
 
 function safeNextPath(raw: string | null): string {
   if (!raw || !raw.startsWith("/") || raw.startsWith("//")) {
-    return "/wardrobe";
+    return DEFAULT_AUTH_NEXT_PATH;
   }
   return raw;
 }
@@ -227,7 +227,7 @@ export default function ResetPasswordPage() {
             {isComplete
               ? boutiqueFlow
                 ? `${brandTitle ?? "Mağaza"} girişine yönlendiriliyorsunuz…`
-                : "Redirecting you to your wardrobe archive..."
+                : "Redirecting you to Cadde..."
               : boutiqueFlow
                 ? "Yeni şifreniz bu platformdaki tüm mağazalarda geçerlidir."
                 : "Choose a new curator password for your archive profile."}
@@ -306,9 +306,7 @@ export default function ResetPasswordPage() {
         <p className="pb-8 text-center text-[11px] tracking-[0.08em] text-neutral-400">
           {brandTitle ?? "Butik"}
         </p>
-      ) : (
-        <SiteFooter />
-      )}
+      ) : null}
     </div>
   );
 }

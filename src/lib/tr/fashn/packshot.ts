@@ -9,7 +9,7 @@ import {
 import {
   isPhotoroomConfigured,
   removeGarmentBackground,
-} from "@/lib/studioRemoveBg";
+} from "@/lib/tr/ai/photoroomRemoveBg";
 import { uploadTrProductAsset } from "@/lib/tr/trAssetStorage";
 
 /** Staging for packshot — final marketplace asset is Photoroom transparent PNG. */

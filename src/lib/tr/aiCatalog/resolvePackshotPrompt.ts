@@ -1,4 +1,4 @@
-import { resolveLlmProvider } from "@/lib/itemDraft/resolveLlmProvider";
+import { resolveLlmProvider } from "@/lib/tr/ai/resolveLlmProvider";
 import { DEFAULT_PACKSHOT_PROMPT } from "@/lib/tr/fashn/packshot";
 import {
   buildPackshotPrompt,

@@ -5,27 +5,29 @@ alwaysApply: true
 
 # Cortisstyle — agent orientation
 
-Three business phases on one repo: **(1) boutique storefronts**, **(2) TR multi-tenant marketplace (Cadde)**, **(3) sell enablement**. Plus international lookbook/affiliate and Lookbook Studio.
+**Live product:** Turkey-first boutique storefronts + Cadde marketplace + sell enablement.
+**Archived elsewhere:** international lookbook / wardrobe / Lookbook Studio → sibling `cortisstyle-international`.
 
-Before non-trivial work, read `docs/agent-handoffs/00-overview.md`, then the matching section under `docs/agent-handoffs/`.
+Before non-trivial work, read `docs/agent-handoffs/00-overview.md` and `docs/agent-handoffs/14-tr-codemap.md`, then the matching section under `docs/agent-handoffs/`.
 
 | Task area | Handoff |
 |-----------|---------|
-| `/`, wardrobe, affiliate | `01-international-lookbook.md` |
-| `studio/`, `/api/studio` | `02-lookbook-studio.md` |
+| **Folder map / where to put code** | `14-tr-codemap.md` |
+| International lookbook (archived) | `01-international-lookbook.md` → `cortisstyle-international` |
+| Lookbook Studio (archived) | `02-lookbook-studio.md` → archive; **rmbg stays** at `src/lib/tr/ai/photoroomRemoveBg.ts` |
 | `/tr/[slug]`, `/tr/panel`, custom domains | `03-boutique-storefronts.md` |
 | `/tr` Cadde, looks, platform cart | `04-tr-marketplace.md` |
 | Checkout, orders, WhatsApp, iyzico | `05-commerce-rails.md` |
-| AI catalog, campaigns, TikTok growth | `06-sell-enablement.md` |
+| AI catalog, campaigns, growth | `06-sell-enablement.md` |
 | Env, Supabase, auth | `07-platform-ops.md` |
 | Pervin health / holes | `08-boutique-audit-pervin.md` |
 | Clone next boutique (system) | `09-boutique-clone-playbook.md` |
-| Boutique UI / visual direction | `10-boutique-design-inspiration.md` — standards **1 Balmoral · 2 Cecilie · 3 Marine Layer** (IDs not priority; pick by what the boutique sells) |
-| Cortisstyle lookbook / AI UX | `11-cortisstyle-design-inspiration.md` (not for boutiques) |
+| Boutique UI / visual direction | `10-boutique-design-inspiration.md` — standards **1 Balmoral · 2 Cecilie · 3 Marine Layer** |
+| Cortisstyle lookbook UX (archive design refs) | `11-cortisstyle-design-inspiration.md` |
 | Boutique go-live | `12-boutique-go-live.md` |
 | **Next boutique wire-in + checklist** | `13-boutique-wire-in-and-go-live.md` |
-| Boutique themes (shared system, unique UI) | `docs/lila-butik-e-ticaret-setup.md` — multi-tenant + editorial skins (`classic` / `atelier`) |
-| Boutique legal templates (yasal) | `docs/tr-boutique-legal-templates.md` — placeholders; runtime `src/lib/tr/legal/docs.ts` |
+| Boutique themes (shared system, unique UI) | `docs/lila-butik-e-ticaret-setup.md` |
+| Boutique legal templates (yasal) | `docs/tr-boutique-legal-templates.md` |
 
 **Structural changes:** update the matching handoff (or focused ops doc) — see `.cursor/rules/document-structural-changes.mdc`. Do not leave architecture only in chat.
 

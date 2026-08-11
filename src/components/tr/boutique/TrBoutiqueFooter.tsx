@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { TrPlatformCredit } from "@/components/tr/TrPlatformCredit";
 import { TrIyzicoFooterPaymentBand } from "@/components/tr/TrIyzicoPaymentBadges";
 import { trBoutiqueLegalPath } from "@/lib/tr/paths";
 import type { TrBoutiquePublic } from "@/types/tr-marketplace";
@@ -73,9 +74,12 @@ export function TrBoutiqueFooter({ boutique }: TrBoutiqueFooterProps) {
         </div>
       </div>
 
-      <p className="mx-auto mt-8 max-w-6xl text-center text-[10px] tracking-[0.12em] text-neutral-400">
-        © {new Date().getFullYear()} {boutique.name}
-      </p>
+      <div className="mx-auto mt-8 flex max-w-6xl flex-col items-center gap-3">
+        <p className="text-center text-[10px] tracking-[0.12em] text-neutral-400">
+          © {new Date().getFullYear()} {boutique.name}
+        </p>
+        <TrPlatformCredit variant="light" />
+      </div>
     </footer>
   );
 }

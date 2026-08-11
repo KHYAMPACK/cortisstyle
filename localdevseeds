@@ -21,9 +21,16 @@ SUPABASE_SMTP_PASS=
 
 # Impact (CJ / partner network) — homepage meta verification token
 # IMPACT_SITE_VERIFICATION=your-token-from-impact-dashboard
+# (International archive only — not used on TR-first cortisstyle)
 
 # Launch gates (opt-in)
 # NEXT_PUBLIC_MAINTENANCE_MODE=true
+
+# Order confirmation HMAC (required in production — no service-role fallback)
+TR_ORDER_CONFIRM_SECRET=
+
+# Panel / packshot PhotoRoom cutout
+PHOTOROOM_API_KEY=
 
 # TR marketplace — platform checkout (all boutiques). false = WhatsApp interim flow.
 # next.config mirrors this to NEXT_PUBLIC_TR_CHECKOUT_ENABLED for Client Component SSR.

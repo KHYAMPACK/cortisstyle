@@ -42,6 +42,10 @@ const RESERVED_BOUTIQUE_SLUGS = new Set([
   "dev",
 ]);
 
+/** Never cache empty/404 boutique lookups — storefronts are DB-backed. */
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 interface BoutiqueLayoutProps {
   children: React.ReactNode;
   params: Promise<{ boutiqueSlug: string }>;

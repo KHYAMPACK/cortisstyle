@@ -30,6 +30,8 @@ Invoke-RestMethod -Method POST `
 
 Seed creates: boutique + ~10 demo products + sample sandbox orders + coupon codes.
 
+**Public visibility:** `tr_boutiques_public` only includes `status = 'verified'`. Re-seed now updates status on existing rows. If `/tr/{slug}` 404s while the row exists, run `supabase/fix_tr_boutiques_public_visibility.sql` and `/api/tr/admin/boutique-health`.
+
 If the boutique slug already exists, delete related `tr_order_items` / `tr_orders` / `tr_products` / boutique row in Supabase before re-seeding (or start fresh).
 
 Then link owner (`scripts/link-tr-boutique-owner.md`) and open `/tr/panel`.

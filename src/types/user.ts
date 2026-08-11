@@ -1,22 +1,15 @@
-import type { ClothingItem } from "@/types/item";
-import type { Look } from "@/types/look";
 import type { User } from "@supabase/supabase-js";
 
-export interface WardrobeUser {
+export interface AuthUser {
   id: string;
   email: string | null;
   displayLabel: string;
 }
 
-export interface WardrobeLook extends Look {
-  unlocked: true;
-}
+/** @deprecated Use AuthUser — temporary alias for TR display helpers. */
+export type WardrobeUser = AuthUser;
 
-export interface WardrobeClothingItem extends ClothingItem {
-  sourceLookId: string;
-}
-
-export function mapSupabaseUser(user: User): WardrobeUser {
+export function mapSupabaseUser(user: User): AuthUser {
   const email = user.email ?? null;
 
   return {

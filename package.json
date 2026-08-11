@@ -5,12 +5,9 @@
   "scripts": {
     "dev": "next dev",
     "dev:webpack": "next dev --webpack",
-    "dev:studio": "vite --config studio/vite.config.ts",
-    "build:studio": "vite build --config studio/vite.config.ts",
-    "build": "npm run build:studio && next build",
+    "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "item:draft": "tsx scripts/generate-item-draft.mts",
     "favicon:generate": "tsx scripts/generate-favicon.mts",
     "tr:import-hero": "tsx scripts/import-tr-hero-slots.mts",
     "tr:generate-studio-models": "tsx scripts/generate-studio-ai-models.mts"
@@ -20,7 +17,6 @@
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
     "busboy": "^1.6.0",
-    "fabric": "^7.4.0",
     "fflate": "^0.8.3",
     "framer-motion": "^12.40.0",
     "html2canvas-pro": "^2.2.0",
@@ -35,19 +31,16 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "@tailwindcss/vite": "^4.3.1",
     "@types/busboy": "^1.5.4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/web-push": "^3.6.4",
-    "@vitejs/plugin-react": "^6.0.2",
     "babel-plugin-react-compiler": "1.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
     "tailwindcss": "^4",
     "tsx": "^4.20.3",
-    "typescript": "^5",
-    "vite": "^8.1.0"
+    "typescript": "^5"
   }
 }

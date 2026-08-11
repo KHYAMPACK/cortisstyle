@@ -11,17 +11,28 @@
 - Money in TR: integer **kuruş**
 - SQL: incremental `supabase/patch_*.sql` — no automated migrator; document when adding patches
 - Offline invoices: apply `supabase/patch_tr_invoices.sql` (buyer tax on orders + `tr_invoices`; GİB later)
+- Drop dormant intl tables (once): `supabase/patch_drop_international_tables.sql` — keeps `profiles` + all `tr_*`
+- Boutique public view: `supabase/patch_tr_boutiques_public_view.sql`
+- Boutique 404 diagnose SQL: `supabase/fix_tr_boutiques_public_visibility.sql`
+- Boutique health (admin): `GET /api/tr/admin/boutique-health` — Bearer `TR_ADMIN_SECRET`
 
 ## Auth matrix
 
 | Actor | Mechanism | Entry |
 |-------|-----------|--------|
 | Shopper | Supabase Auth | `AuthContext`, cookie storage |
-| Studio curator | Allowlist env and/or `studio_curators` | `/auth/studio`, studio APIs |
-| Boutique owner | JWT → boutiques where `owner_user_id` matches | `ownerAuth.ts`, `/tr/panel` |
-| TR admin | Bearer `TR_ADMIN_SECRET` | `adminAuth.ts`, `/api/tr/admin/*` |
+| Boutique owner | JWT → boutiques where `owner_user_id` matches | `lib/tr/panel/ownerAuth.ts`, `/tr/panel` |
+| TR admin | Bearer `TR_ADMIN_SECRET` (timing-safe compare) | `lib/tr/panel/adminAuth.ts`, `/api/tr/admin/*` |
 
-Middleware does **not** enforce general login — it handles maintenance, geo, studio SPA, custom domain rewrite (`src/middleware.ts`).
+Middleware does **not** enforce general login — it handles maintenance, `/` → `/tr`, and custom domain rewrite (`src/middleware.ts`).
+
+### Tenancy boundary (important)
+
+- **Orders, discounts, invoices, push subscriptions:** app uses **service role** after `requireTrOwner` / admin checks. RLS is fail-closed for anon; it is **not** the owner tenancy boundary.
+- **Public boutiques:** read `tr_boutiques_public` via **anon server client** (`getPublicCatalogSupabase` in `src/lib/supabase/supabaseServer.ts`) so a bad/rotated `SUPABASE_SERVICE_ROLE_KEY` cannot 404 storefronts. Apply `supabase/patch_tr_boutiques_public_view.sql` so anon cannot `SELECT *` sensitive columns on `tr_boutiques` (IBAN, contact, shipping addresses). View filter: `status = 'verified'` only.
+- **Storefront 404 (“Butik bulunamadı”):** layout calls `notFound()` when `safeGetPublicBoutique` returns null. Check SQL `fix_tr_boutiques_public_visibility.sql`, then `/api/tr/admin/boutique-health`. Demo `demo-maya` is code-only and does not prove DB connectivity.
+- **Order confirm tokens:** require `TR_ORDER_CONFIRM_SECRET` in production (no fallback to service role / admin secret).
+- **PhotoRoom panel cutout:** `src/lib/tr/ai/photoroomRemoveBg.ts` + `PHOTOROOM_API_KEY` — not Lookbook Studio.
 
 ### Boutique password reset
 
@@ -34,8 +45,9 @@ Branded reset (`/api/tr/customer/auth/send-password-reset`) uses `admin.generate
 | Var | Area |
 |-----|------|
 | `NEXT_PUBLIC_SUPABASE_*`, `SUPABASE_SERVICE_ROLE_KEY` | DB/auth |
-| `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_STUDIO_URL` | Origins |
-| `STUDIO_CURATOR_EMAILS` | Studio access |
+| `NEXT_PUBLIC_SITE_URL` | Origins / auth redirects |
+| `TR_ORDER_CONFIRM_SECRET` | Order confirmation HMAC (required in production) |
+| `PHOTOROOM_API_KEY` | Panel / packshot background removal |
 | `TR_CHECKOUT_ENABLED` / `NEXT_PUBLIC_TR_CHECKOUT_ENABLED` | Cadde checkout gating (`next.config` mirrors private → public) |
 | `TR_CHECKOUT_SANDBOX` / `NEXT_PUBLIC_TR_CHECKOUT_SANDBOX` | Staging sandbox orders (default off → pending) |
 | `TR_IYZICO_ENABLED` / `NEXT_PUBLIC_TR_IYZICO_ENABLED` | Hide “kart yakında” banner — only when card capture is live |

@@ -1,4 +1,4 @@
-import type { WardrobeUser } from "@/types/user";
+import type { AuthUser } from "@/types/user";
 
 function firstToken(value: string): string {
   return value.trim().split(/[\s_]+/)[0] ?? "";
@@ -6,10 +6,10 @@ function firstToken(value: string): string {
 
 /**
  * Uppercase first name for Zara-style chrome (e.g. "MERT").
- * Uses WardrobeUser.displayLabel, then email local-part.
+ * Uses AuthUser.displayLabel, then email local-part.
  */
 export function getTrUserFirstName(
-  user: Pick<WardrobeUser, "email" | "displayLabel"> | null | undefined,
+  user: Pick<AuthUser, "email" | "displayLabel"> | null | undefined,
 ): string | null {
   if (!user) return null;
 

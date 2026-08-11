@@ -32,6 +32,7 @@
 | Domain | `src/lib/tr/customDomain.ts` |
 | Types | `src/types/tr-marketplace.ts` |
 | Schema | `supabase/patch_tr_marketplace.sql` + `patch_tr_boutique_*`, `patch_tr_product_*` |
+| Platform credit (Ekiz Yazılım) | `TrPlatformCredit` + `src/lib/platform/platformCredit.ts` — all boutique footers |
 
 ## Agent rules of thumb
 
