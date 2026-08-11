@@ -71,11 +71,12 @@ Seed `shopCategories` / tiles / trends point at these paths. Atelier homepage ca
 After the campaign hero, Lila home uses:
 
 1. Shop by category (horizontal row)  
-2. Info strip (iade / kargo / değişim)  
+2. Product catalog (ürünler)  
 3. Trends 2×2  
 4. Mid campaign split  
 5. Join + benefits  
-6. Dark footer  
+6. Info strip (iade / kargo / değişim)  
+7. Dark footer  
 
 Content keys in `editorial_content`: `shopCategories`, `infoStrip`, `trends`, `midCampaign`, `join`.
 
@@ -115,6 +116,16 @@ Owners will eventually edit these in panel; seed JSON mirrors the pack.
 - Panel picker id: `boutique:lilabutik` (default for Lila; Ayla/Deniz still available)
 - Do **not** reuse this ref for other boutiques
 
+## Domain & Search Console
+
+| Concern | Value |
+|---------|--------|
+| Custom domain | `lilaboutiquedenizli.com` (+ `www`) in `src/lib/tr/customDomain.ts` / `TR_BOUTIQUE_DOMAINS` |
+| Google site verification | Root layout `metadata.verification.google` in `src/app/layout.tsx` → meta `google-site-verification` |
+| Current token | `lUtcENaTLXt-I3qvbtU_N3haAJ9CNXZ0QL7I1hZdGm8` |
+
+Verify in Search Console **after deploy** (token must be live on the custom domain HTML). One root meta covers all hosts on this Next app; rotate/replace the token in `layout.tsx` if Google issues a new one.
+
 ## Auth (branded)
 
 - Reset emails: `token_hash` callback + boutique domain preference — see [07-platform-ops.md](./agent-handoffs/07-platform-ops.md) and [13-boutique-wire-in-and-go-live.md](./agent-handoffs/13-boutique-wire-in-and-go-live.md)
@@ -139,4 +150,5 @@ Pages show amber “Taslak — avukat onayı” until lawyer signs off.
 1. Run seed (`scripts/seed-lilabutik.md`)
 2. Link owner (`scripts/link-tr-boutique-owner.md`) when ready
 3. Point DNS when go-live; smoke `/tr/lilabutik` vs `/tr/pervinsoysalbutik`
-4. Full pre-live list: [13-boutique-wire-in-and-go-live.md](./agent-handoffs/13-boutique-wire-in-and-go-live.md)
+4. Confirm Google Search Console meta on live domain (see Domain & Search Console above)
+5. Full pre-live list: [13-boutique-wire-in-and-go-live.md](./agent-handoffs/13-boutique-wire-in-and-go-live.md)

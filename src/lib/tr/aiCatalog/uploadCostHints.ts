@@ -3,7 +3,7 @@
  *
  * - Ürün (ön + arka packshot): 1 kredi
  * - Model (tek ön model shot, isteğe bağlı): 1 kredi
- * - 1 kredi = $0.40 → TRY via tryPerUsd
+ * - 1 kredi = $0.25 → TRY via tryPerUsd
  */
 
 export const TR_AI_CATALOG_CREDITS = {
@@ -14,10 +14,24 @@ export const TR_AI_CATALOG_CREDITS = {
   /** How many lifestyle shots the model package produces */
   modelPackageShots: 1,
   /** List price per credit in USD */
-  priceUsdPerCredit: 0.4,
+  priceUsdPerCredit: 0.25,
   /** Approx TRY per USD for display */
   tryPerUsd: 47.5,
 } as const;
+
+/** Boutique-facing credits per logged usage kind (not raw FASHN units). */
+export function boutiqueCreditsForUsageKind(
+  kind: "packshot" | "tryon" | "bg_removal",
+): number {
+  if (kind === "packshot") {
+    // Ön + arka together = 1 product package → 0.5 each event
+    return TR_AI_CATALOG_CREDITS.productPackage / 2;
+  }
+  if (kind === "tryon") {
+    return TR_AI_CATALOG_CREDITS.modelPackage;
+  }
+  return 0;
+}
 
 /** TRY list price per credit (rounded for display). */
 export function priceTryPerCredit(): number {

@@ -11,11 +11,11 @@ Boutique owners polish product photos in create/edit:
 1. Upload front/back → **Photoroom** cutouts (`marketplaceImages`) when `PHOTOROOM_API_KEY` is set
 2. **Katalogu güzelleştir** → **Gemini** (optional) refines packshot prompt from the photo → **FASHN packshot** rehosted to `tr-assets/.../marketplace/`
 3. Pick model (optional) → **1** try-on from front packshot → `lifestyleImages`
-4. Usage logged to `tr_ai_usage_events` (internal metering; no boutique billing UI yet)
+4. Usage logged to `tr_ai_usage_events` + light owner monthly kredi summary (`GET /api/tr/owner/ai-credits`)
 
 **Ürün yükleme draft:** Wizard state autosaves to `localStorage` (`src/lib/tr/productCreateDraft.ts`) — not a DB table. Image URLs already live in `tr-assets`; restore is instant on reload. Clear on successful save. Photo **Sil** uses a 10s soft undo toast (no confirm modal).
 
-**Owner credits:** ürün packshot package (ön+arka) = **1 kredi**; model (1 front shot) = **1 kredi**; 1 kredi = **$0.40** (`src/lib/tr/aiCatalog/uploadCostHints.ts`).
+**Owner credits:** ürün packshot package (ön+arka) = **1 kredi**; model (1 front shot) = **1 kredi**; 1 kredi = **$0.25** (`src/lib/tr/aiCatalog/uploadCostHints.ts`). Panel home shows a light month usage card; credits dialog can show the same when `boutiqueId` is passed.
 
 - Try-on garment: Front → `marketplaceImages[0]` only. Local studio refs are sent as data URIs when origin is localhost (FASHN cannot fetch `localhost`).
 - Mağaza önizleme: packshot-only (no raw uploads); pending catalog/model slots while AI runs.
@@ -25,7 +25,7 @@ Boutique owners polish product photos in create/edit:
 | FASHN client | `src/lib/tr/fashn/` (`packshot`, `tryon`, `modelCreate`) |
 | Packshot prompt (heuristic + Gemini) | `src/lib/tr/aiCatalog/` (`resolvePackshotPrompt`, `packshotPrompt`) |
 | Try-on / model registry | `src/lib/tr/aiModel/` (`registry`, `prompts`, `providers`) |
-| Usage log | `src/lib/tr/aiUsage.ts`, `supabase/patch_tr_ai_usage.sql` |
+| Usage log | `src/lib/tr/aiUsage.ts`, `supabase/patch_tr_ai_usage.sql`, `GET /api/tr/owner/ai-credits` |
 | APIs | `POST /api/tr/owner/ai-catalog/packshot`, `POST /api/tr/owner/ai-model/generate` |
 | Panel UI | `TrOwnerAiCatalogEnhance`, `TrOwnerAiModelPicker`, product wizard + editor |
 

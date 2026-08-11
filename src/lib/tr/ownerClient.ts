@@ -428,6 +428,34 @@ export async function fetchOwnerSummary(
   return data.summary;
 }
 
+export interface TrOwnerAiCreditUsage {
+  period: "month";
+  periodLabel: string;
+  creditsUsed: number;
+  creditsUsd: number;
+  creditsTry: number;
+  packshotCredits: number;
+  modelCredits: number;
+  eventCount: number;
+}
+
+export async function fetchOwnerAiCredits(
+  boutiqueId: string,
+): Promise<TrOwnerAiCreditUsage> {
+  const response = await ownerFetch(
+    `/api/tr/owner/ai-credits?boutiqueId=${encodeURIComponent(boutiqueId)}`,
+  );
+  const data = (await response.json()) as {
+    usage?: TrOwnerAiCreditUsage;
+    error?: string;
+  };
+  if (!response.ok) {
+    throw new Error(data.error ?? "Kredi özeti yüklenemedi.");
+  }
+  if (!data.usage) throw new Error("Kredi özeti yüklenemedi.");
+  return data.usage;
+}
+
 export async function deleteOwnerProduct(
   productId: string,
 ): Promise<{ mode: "deleted" | "hidden"; message?: string }> {

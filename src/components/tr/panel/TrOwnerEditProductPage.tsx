@@ -91,7 +91,6 @@ export function TrOwnerEditProductPage({ productId }: TrOwnerEditProductPageProp
                   initialProduct={product}
                   onSaved={(saved) => {
                     setProduct(saved);
-                    router.push(trPanelProductsPath());
                   }}
                   onDeleted={() => {
                     router.push(trPanelProductsPath());

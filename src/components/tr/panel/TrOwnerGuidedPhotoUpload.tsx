@@ -859,6 +859,7 @@ export function TrOwnerGuidedPhotoUpload({
                 className="mt-4"
                 credits={pendingCost.credits}
                 prefix={pendingCost.costPrefix || "Bu işlem"}
+                boutiqueId={boutiqueId}
                 freeLabel={
                   pending.slotIndex === 1
                     ? "Ürün paketine dahil — ekstra kredi yok."
@@ -883,7 +884,10 @@ export function TrOwnerGuidedPhotoUpload({
                   Onayla — katalog görseli oluştur
                 </button>
               </div>
-              <TrOwnerCreditsMoreInfoLink className="mt-3" />
+              <TrOwnerCreditsMoreInfoLink
+                className="mt-3"
+                boutiqueId={boutiqueId}
+              />
             </motion.div>
           </motion.div>
         ) : null}

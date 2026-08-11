@@ -254,33 +254,14 @@ export function TrBoutiqueAtelierHomeSections({
         </div>
       </motion.section>
 
-      {/* Info strip — iade / kargo */}
-      <motion.section
-        {...fadeUp}
-        aria-label="Alışveriş bilgileri"
-        className="mt-6 border-y border-black/5 bg-[#F3EEE6] px-5 py-10 md:mt-10 md:px-8 md:py-12"
-      >
-        <ul className="mx-auto grid max-w-6xl gap-8 md:grid-cols-3 md:gap-10">
-          {infoItems.map((item) => {
-            const Icon = INFO_ICONS[item.icon ?? "shipping"] ?? Truck;
-            return (
-              <li key={item.id} className="flex flex-col items-start text-left">
-                <Icon
-                  className="h-6 w-6 text-neutral-900"
-                  strokeWidth={1.5}
-                  aria-hidden
-                />
-                <p className="mt-4 text-[14px] font-semibold tracking-[-0.01em] text-neutral-950 md:text-[15px]">
-                  {item.title}
-                </p>
-                <p className="mt-2 text-[13px] leading-relaxed text-neutral-600 md:text-[14px]">
-                  {item.body}
-                </p>
-              </li>
-            );
-          })}
-        </ul>
-      </motion.section>
+      {/* Product catalog — under categories */}
+      <motion.div {...fadeUp} className="bg-white">
+        <TrBoutiqueEditorialCatalog
+          products={products}
+          boutiqueSlug={slug}
+          boutiqueName={boutique.name}
+        />
+      </motion.div>
 
       {/* Trends 2×2 */}
       <motion.section
@@ -345,15 +326,6 @@ export function TrBoutiqueAtelierHomeSections({
           />
         </div>
       </motion.section>
-
-      {/* Product catalog — after Seçili parçalar campaign */}
-      <motion.div {...fadeUp} className="bg-white">
-        <TrBoutiqueEditorialCatalog
-          products={products}
-          boutiqueSlug={slug}
-          boutiqueName={boutique.name}
-        />
-      </motion.div>
 
       {/* Join us */}
       <motion.section
@@ -435,6 +407,34 @@ export function TrBoutiqueAtelierHomeSections({
                 />
                 <p className="mt-3 max-w-[9rem] text-[12px] leading-snug text-neutral-800 md:text-[13px]">
                   {benefit.label}
+                </p>
+              </li>
+            );
+          })}
+        </ul>
+      </motion.section>
+
+      {/* Info strip — below join */}
+      <motion.section
+        {...fadeUp}
+        aria-label="Alışveriş bilgileri"
+        className="border-y border-black/5 bg-[#F3EEE6] px-5 py-10 md:px-8 md:py-12"
+      >
+        <ul className="mx-auto grid max-w-6xl gap-8 md:grid-cols-3 md:gap-10">
+          {infoItems.map((item) => {
+            const Icon = INFO_ICONS[item.icon ?? "shipping"] ?? Truck;
+            return (
+              <li key={item.id} className="flex flex-col items-start text-left">
+                <Icon
+                  className="h-6 w-6 text-neutral-900"
+                  strokeWidth={1.5}
+                  aria-hidden
+                />
+                <p className="mt-4 text-[14px] font-semibold tracking-[-0.01em] text-neutral-950 md:text-[15px]">
+                  {item.title}
+                </p>
+                <p className="mt-2 text-[13px] leading-relaxed text-neutral-600 md:text-[14px]">
+                  {item.body}
                 </p>
               </li>
             );

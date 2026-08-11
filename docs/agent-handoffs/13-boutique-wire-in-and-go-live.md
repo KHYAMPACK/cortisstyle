@@ -129,6 +129,7 @@ Copy for each launch. Check before announcing Instagram → site.
 - [ ] Tab title is boutique SEO title (no `— Cortisstyle`)
 - [ ] Meta description set
 - [ ] Favicon readable on dark browser chrome
+- [ ] Google Search Console: HTML meta via `src/app/layout.tsx` → `metadata.verification.google` (Lila token documented in [lila-butik-e-ticaret-setup.md](../lila-butik-e-ticaret-setup.md)); verify after deploy on custom domain
 
 ### C3. Catalog & imagery
 

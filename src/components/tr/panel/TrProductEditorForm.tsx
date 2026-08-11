@@ -1,7 +1,13 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+} from "react";
 import { TrCatalogBackgroundPicker } from "@/components/tr/panel/TrCatalogBackgroundPicker";
 import { TrOwnerAiCatalogEnhance } from "@/components/tr/panel/TrOwnerAiCatalogEnhance";
 import { TrOwnerAiFillListing } from "@/components/tr/panel/TrOwnerAiFillListing";
@@ -244,6 +250,13 @@ export function TrProductEditorForm({
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [autoSaveState, setAutoSaveState] = useState<
+    "idle" | "pending" | "saving" | "saved" | "error"
+  >("idle");
+  const [autoSaveError, setAutoSaveError] = useState<string | null>(null);
+  const autosaveReadyRef = useRef(false);
+  const autosaveSeqRef = useRef(0);
+  const lastSavedFingerprintRef = useRef<string | null>(null);
 
   const [addingCategory, setAddingCategory] = useState(false);
   const [newCategoryLabel, setNewCategoryLabel] = useState("");
@@ -279,6 +292,7 @@ export function TrProductEditorForm({
 
   useEffect(() => {
     if (!initialProduct) return;
+    autosaveReadyRef.current = false;
     setTitle(initialProduct.title);
     const onSale =
       typeof initialProduct.compareAtPriceKurus === "number" &&
@@ -311,6 +325,9 @@ export function TrProductEditorForm({
       initialProduct.catalogBackgroundId ?? DEFAULT_CATALOG_BACKGROUND_ID,
     );
     setStatus(initialProduct.status);
+    setAutoSaveState("idle");
+    setAutoSaveError(null);
+    lastSavedFingerprintRef.current = null;
 
     if (
       initialProduct.category &&
@@ -323,7 +340,13 @@ export function TrProductEditorForm({
         },
       ]);
     }
-  }, [initialProduct]);
+
+    // Allow autosave after hydrate settles (avoid saving the load itself).
+    const readyTimer = window.setTimeout(() => {
+      autosaveReadyRef.current = true;
+    }, 400);
+    return () => window.clearTimeout(readyTimer);
+  }, [initialProduct?.id]);
 
   const categoryOptions = useMemo(() => {
     const seen = new Set(TR_BOUTIQUE_CATEGORIES.map((entry) => entry.id));
@@ -380,90 +403,144 @@ export function TrProductEditorForm({
     setAddingColor(false);
   };
 
+  const buildPayload = () => {
+    if (!isValidTryPrice(priceTry)) {
+      throw new Error(
+        `Fiyat ${TR_OWNER_PRODUCT_LIMITS.priceMinTry}–${TR_OWNER_PRODUCT_LIMITS.priceMaxTry} TL arası olmalı.`,
+      );
+    }
+    const price = Number(priceTry.replace(",", "."));
+    if (!title.trim()) {
+      throw new Error("Başlık zorunlu.");
+    }
+    if (!hasRequiredProductPhotos(images)) {
+      throw new Error("Ön ve arka fotoğraf zorunlu.");
+    }
+
+    const activeSizes =
+      sizeChart === "none" || !sizesEnabled
+        ? []
+        : sizesFromStockInputs(sizeChart, sizeStockInputs);
+    let stockValue: number;
+    let sizeStocks: Record<string, number> = {};
+    if (activeSizes.length > 0) {
+      const parsed = parseSizeStockInputs(activeSizes, sizeStockInputs);
+      if (!parsed) {
+        throw new Error(
+          `Her beden için stok ${TR_OWNER_PRODUCT_LIMITS.stockMin}–${TR_OWNER_PRODUCT_LIMITS.stockMax} arası olmalı.`,
+        );
+      }
+      sizeStocks = parsed;
+      stockValue = sumSizeStocks(sizeStocks);
+      if (stockValue <= 0) {
+        throw new Error("En az bir bedende stok girin.");
+      }
+    } else {
+      if (!isValidStock(stock)) {
+        throw new Error(
+          `Stok ${TR_OWNER_PRODUCT_LIMITS.stockMin}–${TR_OWNER_PRODUCT_LIMITS.stockMax} arası olmalı.`,
+        );
+      }
+      stockValue = Number.parseInt(stock, 10);
+    }
+
+    let sellPrice = price;
+    let compareAtPriceTryValue: number | null = null;
+    if (discountEnabled) {
+      if (!isValidTryPrice(salePriceTry)) {
+        throw new Error("Geçerli bir indirimli fiyat girin.");
+      }
+      const sale = Number(salePriceTry.replace(",", "."));
+      if (sale >= price) {
+        throw new Error("İndirimli fiyat, normal fiyattan düşük olmalı.");
+      }
+      sellPrice = sale;
+      compareAtPriceTryValue = price;
+    }
+
+    return {
+      boutiqueId,
+      title: title.trim(),
+      description: description.trim() || null,
+      priceTry: sellPrice,
+      compareAtPriceTry: compareAtPriceTryValue,
+      sizes: activeSizes,
+      colors: colorsEnabled ? colors : [],
+      category,
+      images,
+      marketplaceImages: images.map(
+        (_, index) => marketplaceImages[index] ?? "",
+      ),
+      lifestyleImages: lifestyleImages
+        .map((url) => url.trim())
+        .filter(Boolean)
+        .slice(0, 1),
+      catalogBackgroundId,
+      stock: stockValue,
+      sizeStocks,
+      status,
+    };
+  };
+
+  const payloadFingerprint = useMemo(() => {
+    try {
+      return JSON.stringify(buildPayload());
+    } catch {
+      return null;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fingerprint follows form fields
+  }, [
+    boutiqueId,
+    title,
+    description,
+    priceTry,
+    discountEnabled,
+    salePriceTry,
+    sizeChart,
+    sizesEnabled,
+    sizeStockInputs,
+    colorsEnabled,
+    colors,
+    category,
+    images,
+    marketplaceImages,
+    lifestyleImages,
+    catalogBackgroundId,
+    stock,
+    status,
+  ]);
+
+  const persistProduct = async (options?: { manual?: boolean }) => {
+    const payload = buildPayload();
+    const fingerprint = JSON.stringify(payload);
+    if (
+      !options?.manual &&
+      lastSavedFingerprintRef.current === fingerprint
+    ) {
+      return null;
+    }
+
+    const product =
+      mode === "create"
+        ? await createOwnerProduct(payload)
+        : await updateOwnerProduct(initialProduct!.id, payload);
+
+    lastSavedFingerprintRef.current = fingerprint;
+    onSaved(product);
+    return product;
+  };
+
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
+    if (mode === "edit") {
+      // Edit relies on autosave; submit is a no-op safety net.
+      return;
+    }
     setSaving(true);
     setError(null);
 
     try {
-      if (!isValidTryPrice(priceTry)) {
-        throw new Error(
-          `Fiyat ${TR_OWNER_PRODUCT_LIMITS.priceMinTry}–${TR_OWNER_PRODUCT_LIMITS.priceMaxTry} TL arası olmalı.`,
-        );
-      }
-      const price = Number(priceTry.replace(",", "."));
-      if (!title.trim()) {
-        throw new Error("Başlık zorunlu.");
-      }
-      if (!hasRequiredProductPhotos(images)) {
-        throw new Error("Ön ve arka fotoğraf zorunlu.");
-      }
-
-      const activeSizes =
-        sizeChart === "none" || !sizesEnabled
-          ? []
-          : sizesFromStockInputs(sizeChart, sizeStockInputs);
-      let stockValue: number;
-      let sizeStocks: Record<string, number> = {};
-      if (activeSizes.length > 0) {
-        const parsed = parseSizeStockInputs(activeSizes, sizeStockInputs);
-        if (!parsed) {
-          throw new Error(
-            `Her beden için stok ${TR_OWNER_PRODUCT_LIMITS.stockMin}–${TR_OWNER_PRODUCT_LIMITS.stockMax} arası olmalı.`,
-          );
-        }
-        sizeStocks = parsed;
-        stockValue = sumSizeStocks(sizeStocks);
-        if (stockValue <= 0) {
-          throw new Error("En az bir bedende stok girin.");
-        }
-      } else {
-        if (!isValidStock(stock)) {
-          throw new Error(
-            `Stok ${TR_OWNER_PRODUCT_LIMITS.stockMin}–${TR_OWNER_PRODUCT_LIMITS.stockMax} arası olmalı.`,
-          );
-        }
-        stockValue = Number.parseInt(stock, 10);
-      }
-
-      let sellPrice = price;
-      let compareAtPriceTryValue: number | null = null;
-      if (discountEnabled) {
-        if (!isValidTryPrice(salePriceTry)) {
-          throw new Error("Geçerli bir indirimli fiyat girin.");
-        }
-        const sale = Number(salePriceTry.replace(",", "."));
-        if (sale >= price) {
-          throw new Error("İndirimli fiyat, normal fiyattan düşük olmalı.");
-        }
-        sellPrice = sale;
-        compareAtPriceTryValue = price;
-      }
-
-      const payload = {
-        boutiqueId,
-        title: title.trim(),
-        description: description.trim() || null,
-        priceTry: sellPrice,
-        compareAtPriceTry: compareAtPriceTryValue,
-        sizes: activeSizes,
-        colors: colorsEnabled ? colors : [],
-        category,
-        images,
-        marketplaceImages: images.map((_, index) => marketplaceImages[index] ?? ""),
-        lifestyleImages,
-        catalogBackgroundId,
-        stock: stockValue,
-        sizeStocks,
-        status,
-      };
-
-      const product =
-        mode === "create"
-          ? await createOwnerProduct(payload)
-          : await updateOwnerProduct(initialProduct!.id, payload);
-
-      onSaved(product);
+      await persistProduct({ manual: true });
     } catch (saveError) {
       setError(
         saveError instanceof Error ? saveError.message : "Kayıt başarısız.",
@@ -472,6 +549,64 @@ export function TrProductEditorForm({
       setSaving(false);
     }
   };
+
+  useEffect(() => {
+    if (mode !== "edit") return;
+    if (!autosaveReadyRef.current) return;
+    if (uploading || deleting) return;
+    if (!payloadFingerprint) {
+      setAutoSaveState("pending");
+      return;
+    }
+    if (lastSavedFingerprintRef.current === payloadFingerprint) {
+      setAutoSaveState((current) => (current === "saving" ? current : "saved"));
+      return;
+    }
+
+    setAutoSaveState("pending");
+    const seq = ++autosaveSeqRef.current;
+    const timer = window.setTimeout(() => {
+      void (async () => {
+        if (seq !== autosaveSeqRef.current) return;
+        if (!autosaveReadyRef.current) return;
+
+        // Seed baseline after hydrate — don't PATCH identical load state.
+        if (
+          lastSavedFingerprintRef.current === null &&
+          payloadFingerprint
+        ) {
+          lastSavedFingerprintRef.current = payloadFingerprint;
+          setAutoSaveState("saved");
+          return;
+        }
+
+        setAutoSaveState("saving");
+        setAutoSaveError(null);
+        setError(null);
+        try {
+          await persistProduct();
+          if (seq !== autosaveSeqRef.current) return;
+          setAutoSaveState("saved");
+        } catch (saveError) {
+          if (seq !== autosaveSeqRef.current) return;
+          const message =
+            saveError instanceof Error ? saveError.message : "Kayıt başarısız.";
+          setAutoSaveState("error");
+          setAutoSaveError(message);
+          setError(message);
+        }
+      })();
+    }, 700);
+
+    return () => window.clearTimeout(timer);
+    // persistProduct closes over latest fields; fingerprint drives the effect
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    mode,
+    payloadFingerprint,
+    uploading,
+    deleting,
+  ]);
 
   const chipClass = (active: boolean) => panelChipClass(active);
   const addChipClass = panelAddChipClass;
@@ -574,7 +709,10 @@ export function TrProductEditorForm({
               selectedModelId={selectedModelId}
               onSelectedModelIdChange={setSelectedModelId}
               onMarketplaceImagesChange={setMarketplaceImages}
-              onLifestyleImagesChange={setLifestyleImages}
+              onLifestyleImagesChange={(urls) => {
+                const first = urls.find((url) => url?.trim())?.trim();
+                setLifestyleImages(first ? [first] : []);
+              }}
               onListingDraft={setListingDraft}
               disabled={uploading || saving}
             />
@@ -1048,21 +1186,30 @@ export function TrProductEditorForm({
 
       {sectioned ? (
         <div className="sticky bottom-3 z-10 rounded-2xl border border-[color:var(--panel-accent-border)] bg-white/95 p-4 shadow-lg backdrop-blur-sm sm:p-5">
-          <button
-            type="submit"
-            disabled={saving || uploading || deleting}
-            className={`${panelPrimaryBtnClass} w-full gap-3`}
-            style={{ backgroundColor: "var(--panel-accent)" }}
-          >
-            {saving ? (
+          <div className="flex items-center gap-3 text-[14px] font-medium text-neutral-700">
+            {autoSaveState === "saving" || autoSaveState === "pending" ? (
               <>
                 <InlineBusySpinner />
-                Kaydediliyor…
+                <span>
+                  {autoSaveState === "pending"
+                    ? "Değişiklikler bekleniyor…"
+                    : "Otomatik kaydediliyor…"}
+                </span>
               </>
+            ) : autoSaveState === "saved" ? (
+              <span className="text-emerald-800">
+                Kaydedildi — değişiklikler otomatik güncellenir
+              </span>
+            ) : autoSaveState === "error" ? (
+              <span className="text-red-700">
+                {autoSaveError ?? "Kaydedilemedi"}
+              </span>
             ) : (
-              "Değişiklikleri kaydet"
+              <span className="text-neutral-500">
+                Değişiklikler otomatik kaydedilir
+              </span>
             )}
-          </button>
+          </div>
         </div>
       ) : (
         <button

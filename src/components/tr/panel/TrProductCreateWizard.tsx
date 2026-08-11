@@ -77,7 +77,7 @@ const STEPS = [
   {
     id: "model",
     title: "Model",
-    hint: "İsteğe bağlı — 1 ön model (1 kredi)",
+    hint: "Ürün başına 1 model fotoğrafı (1 kredi)",
   },
   {
     id: "review",
@@ -141,6 +141,7 @@ export function TrProductCreateWizard({
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmSkipModel, setConfirmSkipModel] = useState(false);
   const [draftBanner, setDraftBanner] = useState<ProductCreateDraftV1 | null>(
     null,
   );
@@ -250,6 +251,20 @@ export function TrProductCreateWizard({
     step.id !== "review" &&
     (step.id !== "photo" || photoStepPhotosReady);
 
+  const hasModelPhoto = useMemo(
+    () => lifestyleImages.some((url) => Boolean(url?.trim())),
+    [lifestyleImages],
+  );
+
+  useEffect(() => {
+    if (hasModelPhoto) setConfirmSkipModel(false);
+  }, [hasModelPhoto]);
+
+  const setLifestyleImagesSingle = (urls: string[]) => {
+    const first = urls.find((url) => url?.trim())?.trim();
+    setLifestyleImages(first ? [first] : []);
+  };
+
   const canContinue = useMemo(() => {
     if (step.id === "photo") {
       const draftReady =
@@ -317,11 +332,22 @@ export function TrProductCreateWizard({
       }
       return;
     }
+    if (step.id === "model" && !hasModelPhoto) {
+      setConfirmSkipModel(true);
+      return;
+    }
+    setStepIndex((current) => Math.min(current + 1, STEPS.length - 1));
+  };
+
+  const proceedWithoutModel = () => {
+    setConfirmSkipModel(false);
+    setError(null);
     setStepIndex((current) => Math.min(current + 1, STEPS.length - 1));
   };
 
   const goBack = () => {
     setError(null);
+    setConfirmSkipModel(false);
     setStepIndex((current) => Math.max(current - 1, 0));
   };
 
@@ -432,7 +458,10 @@ export function TrProductCreateWizard({
         marketplaceImages: images.map(
           (_, index) => marketplaceImages[index] ?? "",
         ),
-        lifestyleImages,
+        lifestyleImages: lifestyleImages
+          .map((url) => url.trim())
+          .filter(Boolean)
+          .slice(0, 1),
         catalogBackgroundId,
         stock: stockValue,
         sizeStocks,
@@ -799,12 +828,51 @@ export function TrProductCreateWizard({
                   selectedModelId={selectedModelId}
                   onSelectedModelIdChange={setSelectedModelId}
                   onMarketplaceImagesChange={setMarketplaceImages}
-                  onLifestyleImagesChange={setLifestyleImages}
+                  onLifestyleImagesChange={setLifestyleImagesSingle}
                   onListingDraft={setListingDraft}
                   onModelJobsChange={setModelJobs}
-                  onSkip={goNext}
+                  onSkip={() => setConfirmSkipModel(true)}
                   disabled={saving || !hasRequiredProductPhotos(images)}
                 />
+                {confirmSkipModel ? (
+                  <div
+                    className="rounded-2xl border-2 border-amber-300 bg-amber-50 p-5"
+                    role="alertdialog"
+                    aria-labelledby="skip-model-title"
+                    aria-describedby="skip-model-body"
+                  >
+                    <p
+                      id="skip-model-title"
+                      className="text-[18px] font-semibold text-neutral-900"
+                    >
+                      Model fotoğrafı oluşturmadınız
+                    </p>
+                    <p
+                      id="skip-model-body"
+                      className="mt-2 text-[15px] leading-relaxed text-neutral-700"
+                    >
+                      Model görseli ürünü mağazada daha iyi gösterir. Şimdi
+                      oluşturabilir veya yine de devam edebilirsiniz.
+                    </p>
+                    <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+                      <button
+                        type="button"
+                        className={`${primaryBtn} flex-1`}
+                        style={{ backgroundColor: "var(--panel-accent)" }}
+                        onClick={() => setConfirmSkipModel(false)}
+                      >
+                        Model fotoğrafı oluştur
+                      </button>
+                      <button
+                        type="button"
+                        className={`${secondaryBtn} flex-1`}
+                        onClick={proceedWithoutModel}
+                      >
+                        Yine de devam
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
               </div>
             ) : null}
 

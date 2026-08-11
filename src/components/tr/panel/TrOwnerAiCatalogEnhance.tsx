@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { useEffect, useMemo, useState } from "react";
 import { TrOwnerAiModelPicker } from "@/components/tr/panel/TrOwnerAiModelPicker";
 import {
   describeModelPackageCredits,
@@ -19,6 +20,11 @@ import type { PipelineJobItem } from "@/lib/tr/aiCatalog/pipelineProgress";
 
 const primaryBtn =
   "inline-flex min-h-12 w-full items-center justify-center rounded-xl px-5 py-3 text-[16px] font-semibold text-white disabled:opacity-50";
+
+const quietLinkBtn =
+  "w-full text-left text-[13px] font-medium text-neutral-500 underline-offset-2 hover:text-neutral-700 hover:underline disabled:opacity-50";
+
+const ease = [0.22, 1, 0.36, 1] as const;
 
 export interface TrOwnerAiCatalogEnhanceProps {
   boutiqueId: string;
@@ -50,6 +56,32 @@ type EnhancePhase =
   | "done"
   | "error";
 
+function firstLifestyleUrl(urls: string[]): string | null {
+  const url = urls.find((entry) => entry?.trim())?.trim();
+  return url || null;
+}
+
+function ModelBusySpinner({
+  className = "",
+  tone = "light",
+}: {
+  className?: string;
+  tone?: "light" | "accent";
+}) {
+  const border =
+    tone === "light"
+      ? "border-white border-t-transparent"
+      : "border-[color:var(--panel-accent)] border-t-transparent";
+  return (
+    <motion.span
+      aria-hidden
+      className={`inline-block shrink-0 rounded-full border-2 ${border} ${className}`}
+      animate={{ rotate: 360 }}
+      transition={{ duration: 0.85, repeat: Infinity, ease: "linear" }}
+    />
+  );
+}
+
 export function TrOwnerAiCatalogEnhance({
   boutiqueId,
   boutiqueSlug,
@@ -70,13 +102,20 @@ export function TrOwnerAiCatalogEnhance({
 }: TrOwnerAiCatalogEnhanceProps) {
   const [phase, setPhase] = useState<EnhancePhase>("idle");
   const [progressLabel, setProgressLabel] = useState("");
+  const [progressPct, setProgressPct] = useState(0);
+  const [progressTarget, setProgressTarget] = useState(0);
+  const [runMode, setRunMode] = useState<"create" | "replace" | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [confirmRegen, setConfirmRegen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const options = useMemo(
     () => listAiModelOptions(boutiqueSlug),
     [boutiqueSlug],
   );
   const selectedReady = options.find((o) => o.id === selectedModelId)?.ready;
+  const existingModelUrl = firstLifestyleUrl(lifestyleImages);
+  const hasModelPhoto = Boolean(existingModelUrl);
 
   const slotSources = useMemo(() => {
     const slots: Array<{ index: number; source: string }> = [];
@@ -90,27 +129,61 @@ export function TrOwnerAiCatalogEnhance({
 
   const busy = phase === "packshot" || phase === "tryon";
 
-  const canRun =
+  useEffect(() => {
+    if (!busy || progressPct >= progressTarget) return;
+    const timer = window.setInterval(() => {
+      setProgressPct((current) => {
+        if (current >= progressTarget) return current;
+        const step = phase === "tryon" ? 0.55 : 0.9;
+        return Math.min(progressTarget, current + step);
+      });
+    }, 120);
+    return () => window.clearInterval(timer);
+  }, [busy, phase, progressPct, progressTarget]);
+
+  const pushProgress = (
+    pct: number,
+    detail: string,
+    label = "Model / katalog",
+  ) => {
+    setProgressLabel(detail);
+    setProgressTarget(pct);
+    setProgressPct((current) => Math.max(current, Math.max(0, pct - 10)));
+    onModelJobsChange?.([
+      {
+        id: "model-pack",
+        kind: "model",
+        label,
+        status: "running",
+        progressPct: pct,
+        detail,
+      },
+    ]);
+  };
+
+  const canGenerate =
     !disabled &&
     !busy &&
     slotSources.length >= 2 &&
     Boolean(selectedModelId) &&
     Boolean(selectedReady);
 
-  async function runEnhance() {
-    if (!canRun || !selectedModelId) return;
+  async function runEnhance(mode: "create" | "replace") {
+    if (!canGenerate || !selectedModelId) return;
+    if (mode === "create" && hasModelPhoto) return;
+    if (mode === "replace" && !hasModelPhoto) return;
+
+    setConfirmRegen(false);
+    setConfirmDelete(false);
     setError(null);
+    setRunMode(mode);
     setPhase("packshot");
-    onModelJobsChange?.([
-      {
-        id: "model-pack",
-        kind: "model",
-        label: "Model / katalog",
-        status: "running",
-        progressPct: 12,
-        detail: "Katalog kontrolü…",
-      },
-    ]);
+    setProgressPct(4);
+    setProgressTarget(12);
+    pushProgress(
+      12,
+      mode === "replace" ? "Yenileme hazırlanıyor…" : "Katalog kontrolü…",
+    );
 
     try {
       const nextMarketplace = [...marketplaceImages];
@@ -124,19 +197,8 @@ export function TrOwnerAiCatalogEnhance({
         if (existing && existing !== images[slot.index]?.trim()) {
           continue;
         }
-        setProgressLabel(
-          `Katalog görseli ${i + 1}/${slotSources.length}…`,
-        );
-        onModelJobsChange?.([
-          {
-            id: "model-pack",
-            kind: "model",
-            label: "Model / katalog",
-            status: "running",
-            progressPct: 20 + i * 10,
-            detail: `Katalog görseli ${i + 1}/${slotSources.length}…`,
-          },
-        ]);
+        const detail = `Katalog görseli ${i + 1}/${slotSources.length}…`;
+        pushProgress(22 + i * 14, detail);
         const pack = await requestOwnerPackshot({
           boutiqueId,
           sourceImageUrl: slot.source,
@@ -171,17 +233,13 @@ export function TrOwnerAiCatalogEnhance({
         );
       }
 
-      setProgressLabel("Model fotoğrafı…");
-      onModelJobsChange?.([
-        {
-          id: "model-pack",
-          kind: "model",
-          label: "Model çekimi",
-          status: "running",
-          progressPct: 70,
-          detail: "Ön model…",
-        },
-      ]);
+      pushProgress(
+        72,
+        mode === "replace"
+          ? "Model fotoğrafı yenileniyor…"
+          : "Model fotoğrafı oluşturuluyor…",
+        "Model çekimi",
+      );
       const result = await requestOwnerAiModelGenerate({
         boutiqueId,
         cutoutImageUrl: frontGarment,
@@ -195,18 +253,23 @@ export function TrOwnerAiCatalogEnhance({
         throw new Error(result.error ?? "Model görseli üretilemedi.");
       }
 
-      const merged = [
-        ...lifestyleImages.filter(Boolean),
-        result.imageUrl.trim(),
-      ];
-      onLifestyleImagesChange(Array.from(new Set(merged)));
+      setProgressPct(100);
+      setProgressTarget(100);
+      // One model photo per product — replace, never append.
+      onLifestyleImagesChange([result.imageUrl.trim()]);
       setPhase("done");
       setProgressLabel(
-        `Model fotoğrafı hazır (${TR_AI_CATALOG_CREDITS.modelPackage} kredi).`,
+        mode === "replace"
+          ? `Model fotoğrafı yenilendi (${TR_AI_CATALOG_CREDITS.modelPackage} kredi).`
+          : `Model fotoğrafı hazır (${TR_AI_CATALOG_CREDITS.modelPackage} kredi).`,
       );
+      setRunMode(null);
       onModelJobsChange?.([]);
     } catch (err) {
       setPhase("error");
+      setRunMode(null);
+      setProgressPct(0);
+      setProgressTarget(0);
       setError(err instanceof Error ? err.message : "İşlem başarısız.");
       setProgressLabel("");
       onModelJobsChange?.([
@@ -222,7 +285,21 @@ export function TrOwnerAiCatalogEnhance({
     }
   }
 
+  function deleteModelPhoto() {
+    setConfirmDelete(false);
+    setConfirmRegen(false);
+    onLifestyleImagesChange([]);
+    setPhase("idle");
+    setProgressLabel("");
+    setProgressPct(0);
+    setProgressTarget(0);
+    setRunMode(null);
+    setError(null);
+  }
+
   if (images.length === 0) return null;
+
+  const roundedPct = Math.round(progressPct);
 
   return (
     <div className="space-y-4 rounded-2xl border-2 border-[color:var(--panel-accent-border)] bg-[color:var(--panel-accent-softer)]/40 p-4">
@@ -231,7 +308,8 @@ export function TrOwnerAiCatalogEnhance({
           Model fotoğrafı
         </p>
         <p className="mt-1 text-[14px] text-neutral-600">
-          İsteğe bağlı — ön katalog ile 1 model karesi. Atlayabilirsiniz.
+          Ürün başına 1 model karesi (ön).
+          {onSkip ? " İsterseniz bu adımı atlayabilirsiniz." : ""}
         </p>
       </div>
 
@@ -239,45 +317,246 @@ export function TrOwnerAiCatalogEnhance({
         boutiqueSlug={boutiqueSlug}
         value={selectedModelId}
         onChange={onSelectedModelIdChange}
-        disabled={disabled || busy}
+        disabled={disabled || busy || (hasModelPhoto && !confirmRegen)}
       />
 
-      {lifestyleImages.some((u) => u?.trim()) ? (
-        <div className="grid grid-cols-2 gap-2 sm:max-w-xs">
-          {lifestyleImages
-            .filter((u) => u?.trim())
-            .slice(0, 2)
-            .map((url) => (
-              <div
-                key={url}
-                className="relative aspect-[2/3] overflow-hidden rounded-xl bg-white"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={url}
-                  alt=""
-                  className="h-full w-full object-cover"
-                />
-              </div>
-            ))}
+      {existingModelUrl ? (
+        <div className="sm:max-w-xs">
+          <div className="relative aspect-[2/3] overflow-hidden rounded-xl bg-white">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={existingModelUrl}
+              alt=""
+              className={`h-full w-full object-cover transition-[filter,opacity,transform] duration-500 ease-out ${
+                busy
+                  ? "scale-[1.03] opacity-45 blur-[2px]"
+                  : "scale-100 opacity-100 blur-0"
+              }`}
+            />
+            <AnimatePresence>
+              {busy ? (
+                <motion.div
+                  key="model-busy-overlay"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.25, ease }}
+                  className="absolute inset-0 flex flex-col items-center justify-end bg-gradient-to-t from-black/70 via-black/35 to-black/10 p-4"
+                  aria-live="polite"
+                  aria-busy="true"
+                >
+                  <div className="mb-auto mt-10 flex flex-col items-center gap-3 text-center">
+                    <ModelBusySpinner className="h-8 w-8" />
+                    <p className="text-[13px] font-semibold tracking-[0.04em] text-white uppercase">
+                      {runMode === "replace" ? "Yenileniyor" : "Hazırlanıyor"}
+                    </p>
+                  </div>
+                  <div className="w-full space-y-2">
+                    <div className="flex items-end justify-between gap-2">
+                      <p className="min-w-0 text-[12px] leading-snug text-white/90">
+                        {progressLabel || "İşleniyor…"}
+                      </p>
+                      <span className="shrink-0 text-[12px] font-semibold tabular-nums text-white">
+                        {roundedPct}%
+                      </span>
+                    </div>
+                    <div className="h-1.5 overflow-hidden rounded-full bg-white/25">
+                      <motion.div
+                        className="h-full rounded-full bg-white"
+                        animate={{ width: `${progressPct}%` }}
+                        transition={{ duration: 0.35, ease }}
+                      />
+                    </div>
+                  </div>
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
+          </div>
+          {!busy ? (
+            <p className="mt-2 text-[13px] font-medium text-emerald-800">
+              Model fotoğrafı hazır — ürün başına yalnızca 1 adet.
+            </p>
+          ) : null}
         </div>
       ) : null}
 
-      <button
-        type="button"
-        className={primaryBtn}
-        style={{ background: "var(--panel-accent)" }}
-        disabled={!canRun}
-        onClick={() => void runEnhance()}
-      >
-        {busy
-          ? "Hazırlanıyor…"
-          : phase === "done"
-            ? "Tekrar oluştur"
-            : "Model fotoğrafı oluştur"}
-      </button>
+      {!hasModelPhoto && busy ? (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, ease }}
+          className="sm:max-w-xs"
+          aria-live="polite"
+          aria-busy="true"
+        >
+          <div className="relative aspect-[2/3] overflow-hidden rounded-xl bg-[color:var(--panel-accent-soft)]">
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/35 to-transparent"
+              animate={{ x: ["-100%", "100%"] }}
+              transition={{
+                duration: 1.4,
+                repeat: Infinity,
+                ease: "linear",
+              }}
+            />
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-4 text-center">
+              <ModelBusySpinner className="h-8 w-8" tone="accent" />
+              <p className="text-[13px] font-semibold text-neutral-800">
+                Model oluşturuluyor
+              </p>
+              <p className="text-[12px] text-neutral-600">
+                {progressLabel || "Hazırlanıyor…"}
+              </p>
+            </div>
+            <div className="absolute inset-x-0 bottom-0 space-y-1.5 p-4">
+              <div className="flex justify-between text-[11px] font-semibold tabular-nums text-neutral-700">
+                <span>İlerleme</span>
+                <span>{roundedPct}%</span>
+              </div>
+              <div className="h-1.5 overflow-hidden rounded-full bg-white/70">
+                <motion.div
+                  className="h-full rounded-full"
+                  style={{ background: "var(--panel-accent)" }}
+                  animate={{ width: `${progressPct}%` }}
+                  transition={{ duration: 0.35, ease }}
+                />
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      ) : null}
 
-      {onSkip && phase !== "done" ? (
+      {!hasModelPhoto && !busy ? (
+        <button
+          type="button"
+          className={primaryBtn}
+          style={{ background: "var(--panel-accent)" }}
+          disabled={!canGenerate}
+          onClick={() => void runEnhance("create")}
+        >
+          Model fotoğrafı oluştur
+        </button>
+      ) : null}
+
+      {hasModelPhoto && !busy && !confirmRegen && !confirmDelete ? (
+        <div className="space-y-2 border-t border-black/5 pt-3">
+          <button
+            type="button"
+            className={quietLinkBtn}
+            disabled={disabled}
+            onClick={() => {
+              setConfirmDelete(false);
+              setConfirmRegen(true);
+            }}
+          >
+            Yeniden oluştur…
+          </button>
+          <button
+            type="button"
+            className={quietLinkBtn}
+            disabled={disabled}
+            onClick={() => {
+              setConfirmRegen(false);
+              setConfirmDelete(true);
+            }}
+          >
+            Model fotoğrafını sil…
+          </button>
+        </div>
+      ) : null}
+
+      {confirmRegen && !busy ? (
+        <div
+          className="rounded-xl border border-neutral-200 bg-white p-4"
+          role="alertdialog"
+          aria-labelledby="regen-model-title"
+          aria-describedby="regen-model-body"
+        >
+          <p
+            id="regen-model-title"
+            className="text-[15px] font-semibold text-neutral-900"
+          >
+            Model fotoğrafı yenilensin mi?
+          </p>
+          <p
+            id="regen-model-body"
+            className="mt-1.5 text-[13px] leading-relaxed text-neutral-600"
+          >
+            Mevcut görsel değişir; ikinci fotoğraf eklenmez. Bu işlem{" "}
+            {TR_AI_CATALOG_CREDITS.modelPackage} kredi kullanır.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="inline-flex min-h-10 items-center justify-center rounded-lg px-4 text-[14px] font-semibold text-white disabled:opacity-50"
+              style={{ background: "var(--panel-accent)" }}
+              disabled={!canGenerate}
+              onClick={() => void runEnhance("replace")}
+            >
+              Evet, yenile
+            </button>
+            <button
+              type="button"
+              className="inline-flex min-h-10 items-center justify-center rounded-lg border border-neutral-200 bg-white px-4 text-[14px] font-semibold text-neutral-700 disabled:opacity-50"
+              disabled={disabled || busy}
+              onClick={() => setConfirmRegen(false)}
+            >
+              Vazgeç
+            </button>
+          </div>
+          {!selectedModelId ? (
+            <p className="mt-2 text-[12px] text-neutral-600">
+              Önce bir model seçin.
+            </p>
+          ) : !selectedReady ? (
+            <p className="mt-2 text-[12px] text-amber-800">
+              Bu modelin referans fotoğrafları henüz eklenmedi.
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
+      {confirmDelete && !busy ? (
+        <div
+          className="rounded-xl border border-red-200 bg-red-50/80 p-4"
+          role="alertdialog"
+          aria-labelledby="delete-model-title"
+          aria-describedby="delete-model-body"
+        >
+          <p
+            id="delete-model-title"
+            className="text-[15px] font-semibold text-neutral-900"
+          >
+            Model fotoğrafı silinsin mi?
+          </p>
+          <p
+            id="delete-model-body"
+            className="mt-1.5 text-[13px] leading-relaxed text-neutral-700"
+          >
+            Üründen kaldırılır. Kaydettiğinizde mağazada da görünmez.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="inline-flex min-h-10 items-center justify-center rounded-lg bg-red-700 px-4 text-[14px] font-semibold text-white disabled:opacity-50"
+              disabled={disabled || busy}
+              onClick={deleteModelPhoto}
+            >
+              Evet, sil
+            </button>
+            <button
+              type="button"
+              className="inline-flex min-h-10 items-center justify-center rounded-lg border border-neutral-200 bg-white px-4 text-[14px] font-semibold text-neutral-700 disabled:opacity-50"
+              disabled={disabled || busy}
+              onClick={() => setConfirmDelete(false)}
+            >
+              Vazgeç
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {onSkip && !hasModelPhoto && !busy && phase !== "done" ? (
         <button
           type="button"
           className="w-full text-center text-[14px] font-semibold text-neutral-600 underline-offset-2 hover:underline disabled:opacity-50"
@@ -288,22 +567,27 @@ export function TrOwnerAiCatalogEnhance({
         </button>
       ) : null}
 
-      <TrOwnerCreditsCostLine
-        credits={describeModelPackageCredits()}
-        prefix="Bu işlem"
-      />
-      <TrOwnerCreditsMoreInfoLink />
+      {(!hasModelPhoto && !busy) || (confirmRegen && !busy) ? (
+        <>
+          <TrOwnerCreditsCostLine
+            credits={describeModelPackageCredits()}
+            prefix="Bu işlem"
+            boutiqueId={boutiqueId}
+          />
+          <TrOwnerCreditsMoreInfoLink boutiqueId={boutiqueId} />
+        </>
+      ) : null}
 
-      {!selectedModelId ? (
+      {!hasModelPhoto && !busy && !selectedModelId ? (
         <p className="text-[13px] text-neutral-600">Önce bir model seçin.</p>
-      ) : !selectedReady ? (
+      ) : !hasModelPhoto && !busy && !selectedReady ? (
         <p className="text-[13px] text-amber-800">
           Bu modelin referans fotoğrafları henüz eklenmedi.
         </p>
       ) : null}
 
-      {progressLabel ? (
-        <p className="text-[14px] font-medium text-neutral-700">
+      {!busy && progressLabel && phase === "done" ? (
+        <p className="text-[14px] font-medium text-emerald-800">
           {progressLabel}
         </p>
       ) : null}

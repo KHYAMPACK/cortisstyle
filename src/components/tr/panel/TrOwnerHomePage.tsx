@@ -4,6 +4,7 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { TrOrderItemThumbs } from "@/components/tr/panel/TrOrderItemThumbs";
+import { TrOwnerCreditsUsageCard } from "@/components/tr/panel/TrOwnerCreditsInfo";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
 import {
   FULFILLMENT_LABEL,
@@ -162,6 +163,10 @@ function HomeDashboard({
             Mağazayı görüntüle
           </Link>
         </section>
+      </TrPanelFadeIn>
+
+      <TrPanelFadeIn>
+        <TrOwnerCreditsUsageCard boutiqueId={boutiqueId} />
       </TrPanelFadeIn>
 
       <AnimatePresence mode="wait">

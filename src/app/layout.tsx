@@ -15,6 +15,9 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Cortisstyle — Lookbook",
   description: "An editorial fashion lookbook by Cortisstyle.",
+  verification: {
+    google: "lUtcENaTLXt-I3qvbtU_N3haAJ9CNXZ0QL7I1hZdGm8",
+  },
 };
 
 export default async function RootLayout({

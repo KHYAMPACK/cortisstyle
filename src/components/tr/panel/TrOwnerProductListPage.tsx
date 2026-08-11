@@ -15,6 +15,7 @@ import {
   panelDesktopBtnClass,
   panelDesktopInputClass,
   panelDesktopSearchClass,
+  panelDesktopSecondaryBtnClass,
   panelDesktopSelectClass,
 } from "@/components/tr/panel/panelDesktopUi";
 import {
@@ -40,6 +41,7 @@ import {
 import { runOwnerPatches } from "@/lib/tr/ownerBulk";
 import { getProductCoverImageFor } from "@/lib/tr/productImages";
 import {
+  deleteOwnerProduct,
   fetchOwnerProducts,
   updateOwnerProduct,
 } from "@/lib/tr/ownerClient";
@@ -99,6 +101,7 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
   );
   const [search, setSearch] = useState("");
   const [bulkBusy, setBulkBusy] = useState(false);
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
   const [savingIds, setSavingIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -190,6 +193,10 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
   const orderedIds = useMemo(() => visible.map((p) => p.id), [visible]);
   const selection = usePanelRowSelection(orderedIds);
 
+  useEffect(() => {
+    if (selection.selectedCount === 0) setConfirmBulkDelete(false);
+  }, [selection.selectedCount]);
+
   const markSaving = (id: string, on: boolean) => {
     setSavingIds((current) => {
       const next = new Set(current);
@@ -230,6 +237,7 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
   ) => {
     const ids = [...selection.selectedIds];
     if (ids.length === 0) return;
+    setConfirmBulkDelete(false);
     setBulkBusy(true);
     setError(null);
     const result = await runOwnerPatches(
@@ -243,6 +251,65 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
         `${result.failed.length} ürün güncellenemedi: ${result.failed[0]?.error}`,
       );
     }
+    setBulkBusy(false);
+    selection.clear();
+  };
+
+  const runBulkDelete = async () => {
+    const ids = [...selection.selectedIds];
+    if (ids.length === 0) return;
+    setBulkBusy(true);
+    setError(null);
+    setNotice(null);
+    const result = await runOwnerPatches(
+      ids,
+      async (id) => {
+        const deleted = await deleteOwnerProduct(id);
+        return { id, ...deleted };
+      },
+      { concurrency: 4 },
+    );
+
+    const deletedIds = new Set(
+      result.ok.filter((entry) => entry.mode === "deleted").map((e) => e.id),
+    );
+    const hiddenIds = new Set(
+      result.ok.filter((entry) => entry.mode === "hidden").map((e) => e.id),
+    );
+
+    setProducts((current) =>
+      current
+        .filter((product) => !deletedIds.has(product.id))
+        .map((product) =>
+          hiddenIds.has(product.id)
+            ? { ...product, status: "hidden" as const }
+            : product,
+        ),
+    );
+
+    const deletedCount = deletedIds.size;
+    const hiddenCount = hiddenIds.size;
+    if (hiddenCount > 0) {
+      setNotice(
+        deletedCount > 0
+          ? `${deletedCount} ürün silindi; ${hiddenCount} ürün sipariş geçmişinde olduğu için gizlendi.`
+          : `${hiddenCount} ürün sipariş geçmişinde olduğu için kalıcı silinemedi; mağazadan gizlendi.`,
+      );
+    } else if (deletedCount > 0) {
+      setNotice(
+        deletedCount === 1
+          ? "1 ürün silindi."
+          : `${deletedCount} ürün silindi.`,
+      );
+    }
+
+    if (result.failed.length > 0) {
+      setError(
+        `${result.failed.length} ürün silinemedi: ${result.failed[0]?.error}`,
+      );
+    }
+
+    setConfirmBulkDelete(false);
     setBulkBusy(false);
     selection.clear();
   };
@@ -688,7 +755,10 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
 
                 <TrPanelBulkBar
                   selectedCount={selection.selectedCount}
-                  onClear={selection.clear}
+                  onClear={() => {
+                    setConfirmBulkDelete(false);
+                    selection.clear();
+                  }}
                   busy={bulkBusy}
                 >
                   <select
@@ -743,6 +813,38 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
                   >
                     Gizle
                   </button>
+                  {!confirmBulkDelete ? (
+                    <button
+                      type="button"
+                      disabled={bulkBusy}
+                      className={`${panelDesktopSecondaryBtnClass} border-red-300 text-red-800`}
+                      onClick={() => setConfirmBulkDelete(true)}
+                    >
+                      Sil
+                    </button>
+                  ) : (
+                    <>
+                      <span className="text-[12px] font-medium text-red-800">
+                        {selection.selectedCount} ürün silinsin mi?
+                      </span>
+                      <button
+                        type="button"
+                        disabled={bulkBusy}
+                        className={`${panelDesktopBtnClass} bg-red-700`}
+                        onClick={() => void runBulkDelete()}
+                      >
+                        Evet, sil
+                      </button>
+                      <button
+                        type="button"
+                        disabled={bulkBusy}
+                        className={panelDesktopSecondaryBtnClass}
+                        onClick={() => setConfirmBulkDelete(false)}
+                      >
+                        Vazgeç
+                      </button>
+                    </>
+                  )}
                 </TrPanelBulkBar>
               </div>
             </>
