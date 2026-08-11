@@ -138,8 +138,8 @@ Copy for each launch. Check before announcing Instagram → site.
   - [ ] Create / claim Merchant Center account (business info + country TR)
   - [ ] Verify & claim website (same domain as storefront; often via Search Console ownership)
   - [ ] Shipping + returns policies match storefront / legal pages
-  - [ ] Product data: feed or free listings ready (title, price TRY, availability, image, link, GTIN/MPN or identifier-exempt as applicable)
-  - [ ] Submit products / free listings; fix disapprovals before ads
+  - [ ] Product data: scheduled feed URL `https://{boutique-domain}/feeds/google-merchant.xml` (see `src/lib/tr/googleMerchant/feed.ts`; Lila: `lilaboutiquedenizli.com/feeds/google-merchant.xml`)
+  - [ ] Feed fetch daily; fix disapprovals before ads (`identifier_exists=false` until GTIN)
   - [ ] Link Merchant Center ↔ Google Ads only when running Shopping ads
 
 ### C3. Catalog & imagery

@@ -127,6 +127,14 @@ Owners will eventually edit these in panel; seed JSON mirrors the pack.
 | `sitemap.xml` | Host-aware `src/app/sitemap.ts` — on Lila domain: `/`, `/urunler`, `/urun/{id}`, `/yasal/*`; on platform: marketing + `/tr/{slug}/…` for verified boutiques |
 | SEO helpers | `src/lib/tr/seo/storefrontSeo.ts` |
 | Google Merchant Center | Ops checklist in [13-boutique-wire-in-and-go-live.md](./agent-handoffs/13-boutique-wire-in-and-go-live.md) § C2 |
+| Merchant product feed | `https://lilaboutiquedenizli.com/feeds/google-merchant.xml` (also `/tr/lilabutik/feeds/google-merchant.xml`) — lib `src/lib/tr/googleMerchant/feed.ts` |
+
+**Google Merchant feed (automatic catalog):**
+
+1. Deploy feed route.
+2. Merchant Center → Veri kaynakları → Dosyadan ürün ekle → URL: `https://lilaboutiquedenizli.com/feeds/google-merchant.xml`
+3. Set **zamanlanmış çekme** (daily). New/updated panel products appear on next fetch.
+4. Feed uses boutique-domain product links, `identifier_exists=false` (no GTIN yet), TRY prices, stock availability.
 
 **Search Console (Lila):**
 
@@ -151,7 +159,8 @@ Lila seller snapshot (fill Ayarlar / re-seed to sync DB):
 - Satıcı: Nefise Gül Cengiz Peker  
 - Vergi no: 2390389751 (künye’de yayınlanır; IBAN yayınlanmaz)  
 - Adres / iade: Bahçelievler Mh. Gülistan Cd. No:7/A Merkezefendi/Denizli  
-- Domain: lilaboutiquedenizli.com (`info@…` placeholder until mailbox exists)  
+- Domain: lilaboutiquedenizli.com  
+- E-posta (storefront / yasal): `ncp20@outlook.com` (`CONTACT_EMAIL_BY_SLUG` in `src/lib/tr/checkoutMode.ts`)  
 - Kargo: anlaşmalı kargo mağazadan alır  
 - KEP / MERSİS: TBD · Marketing: yes (İYS / ayrı açık rıza later)
 

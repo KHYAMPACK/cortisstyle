@@ -70,7 +70,7 @@ function legalFooterColumns(
       ],
     },
     {
-      title: "Alışveriş Rehberi",
+      title: "Sözleşmeler",
       links: [
         { label: "Mesafeli Satış", href: legal("mesafeli-satis") },
         { label: "Ön Bilgilendirme", href: legal("on-bilgilendirme") },
@@ -267,6 +267,13 @@ export function getEditorialContent(
     nav,
     shopCategories,
     trends,
+    // Contact email is brand/config-owned — do not keep stale DB footer.email.
+    footer: {
+      ...merged.footer,
+      email: resolveBoutiqueContactEmail(boutique),
+      // Legal link columns are code-owned (Kurumsal + Sözleşmeler).
+      columns: legalFooterColumns(boutique.slug),
+    },
     shopByCategoryTitle: atelier
       ? merged.shopByCategoryTitle?.trim() || "Kategorilere göz atın"
       : merged.shopByCategoryTitle,

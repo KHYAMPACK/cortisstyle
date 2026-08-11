@@ -29,7 +29,7 @@ export function TrBoutiqueEditorialFooter({
   const brandTitle = resolveBoutiqueBrandLabel(boutique.slug, boutique.name);
   const atelier = isAtelierEditorialSkin(boutique.slug);
   const contactEmail =
-    footer.email?.includes("@") && !footer.email.includes("cortisstyle.com")
+    footer.email?.includes("@")
       ? footer.email
       : resolveBoutiqueContactEmail(boutique);
 

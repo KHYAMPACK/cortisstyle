@@ -88,6 +88,13 @@ export function rewriteBoutiqueDomainPath(
   if (pathname.startsWith("/yasal/")) {
     return `${base}${pathname}`;
   }
+  // Google Merchant feed (scheduled fetch)
+  if (
+    pathname === "/feeds/google-merchant.xml" ||
+    pathname.startsWith("/feeds/")
+  ) {
+    return `${base}${pathname}`;
+  }
   if (pathname === "/sepet") {
     return `${base}/sepet`;
   }
