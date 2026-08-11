@@ -14,6 +14,9 @@ import {
 } from "@/lib/tr/boutiqueHome";
 import { trBoutiquePath } from "@/lib/tr/paths";
 import { instagramProfileUrl } from "@/lib/tr/whatsapp";
+import {
+  TrIyzicoFooterPaymentBand,
+} from "@/components/tr/TrIyzicoPaymentBadges";
 import type { TrBoutiquePublic } from "@/types/tr-marketplace";
 
 interface TrBoutiqueEditorialFooterProps {
@@ -113,22 +116,25 @@ export function TrBoutiqueEditorialFooter({
             ))}
           </div>
 
-          <div className="mt-12 flex flex-col gap-4 border-t border-white/15 pt-6 sm:flex-row sm:items-end sm:justify-between">
-            <div className="flex items-center gap-3">
-              {instagramUrl ? (
-                <a
-                  href={instagramUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Instagram"
-                  className="inline-flex h-9 w-9 items-center justify-center border border-white/25 transition-opacity hover:opacity-70"
-                >
-                  <InstagramIcon className="h-4 w-4" strokeWidth={1.75} />
-                </a>
-              ) : null}
-              <p className="text-[11px] text-white/45">
-                © {new Date().getFullYear()} {boutique.name}
-              </p>
+          <div className="mt-12 flex flex-col gap-6 border-t border-white/15 pt-6 sm:flex-row sm:items-end sm:justify-between">
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center gap-3">
+                {instagramUrl ? (
+                  <a
+                    href={instagramUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Instagram"
+                    className="inline-flex h-9 w-9 items-center justify-center border border-white/25 transition-opacity hover:opacity-70"
+                  >
+                    <InstagramIcon className="h-4 w-4" strokeWidth={1.75} />
+                  </a>
+                ) : null}
+                <p className="text-[11px] text-white/45">
+                  © {new Date().getFullYear()} {boutique.name}
+                </p>
+              </div>
+              <TrIyzicoFooterPaymentBand variant="dark" />
             </div>
             <Link
               href={trBoutiquePath(boutique.slug)}
@@ -259,10 +265,13 @@ export function TrBoutiqueEditorialFooter({
           </div>
         </div>
 
-        <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-black/10 pt-6 text-[11px] text-neutral-500 sm:flex-row">
-          <p>
-            © {new Date().getFullYear()} {boutique.name}
-          </p>
+        <div className="mt-10 flex flex-col gap-4 border-t border-black/10 pt-6 text-[11px] text-neutral-500 sm:flex-row sm:items-end sm:justify-between">
+          <div className="flex flex-col gap-3">
+            <p>
+              © {new Date().getFullYear()} {boutique.name}
+            </p>
+            <TrIyzicoFooterPaymentBand variant="light" />
+          </div>
         </div>
       </div>
     </footer>

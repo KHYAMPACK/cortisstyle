@@ -42,7 +42,7 @@ When iyzico ships: capture → set `payment_status: paid` (inventory already res
 1. SQL: `patch_tr_order_items_size.sql`, `patch_tr_orders_discount.sql` (+ earlier)
 2. Real product photos (no `demo-maya` seed images on prod)
 3. Delete sample/sandbox seed orders from prod DB
-4. Lawyer-approved legal pages (remove “Taslak” only after)
+4. Legal pages from shared templates (`src/lib/tr/legal/docs.ts` / [tr-boutique-legal-templates.md](../tr-boutique-legal-templates.md)); lawyer review recommended
 5. Fill `legalName` / tax / MERSIS on boutique
 6. iyzico application + wire → then `TR_IYZICO_ENABLED=true`
 7. Carrier API + tracking

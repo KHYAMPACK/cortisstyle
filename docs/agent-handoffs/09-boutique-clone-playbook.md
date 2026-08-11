@@ -68,6 +68,7 @@ UI reuse is intentional: **same components**, different `slug` + brand assets + 
 - [ ] Vergi levhası / contract (see roadmap + partnership draft)
 - [ ] Owner email that will sign up on Cortisstyle (or custom domain `/giris`)
 - [ ] WhatsApp number, Instagram handle, shipping/iade text, legal contact email
+- [ ] Legal fields for shared yasal templates (`legalName`, address, vergi) — pack: [tr-boutique-legal-templates.md](../tr-boutique-legal-templates.md)
 - [ ] Logo (PNG) + optional favicon/accent mark under `public/tr/boutiques/{slug}/`
 
 ### B. Schema (once per environment)

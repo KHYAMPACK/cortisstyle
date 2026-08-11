@@ -19,6 +19,7 @@ Start here when picking up this repo. Read **[00-overview.md](./00-overview.md)*
 | [12-boutique-go-live.md](./12-boutique-go-live.md) | Phase 1 launch | Payment modes (pending/sandbox/iyzico), secrets |
 | [13-boutique-wire-in-and-go-live.md](./13-boutique-wire-in-and-go-live.md) | Phase 1 onboarding | **Wire-in registry** + **pre-live checklist** (use for next boutique) |
 | [lila-butik-e-ticaret-setup.md](../lila-butik-e-ticaret-setup.md) | Phase 1 architecture | Shared rails + Lila `atelier` editorial skin |
+| [tr-boutique-legal-templates.md](../tr-boutique-legal-templates.md) | Phase 1 legal | Shared yasal sözleşme taslakları (placeholders → `src/lib/tr/legal/docs.ts`) |
 
 Deeper vision/roadmap (not handoffs): `docs/turkey-marketplace-concept.md`, `docs/turkey-shop-roadmap.md`, `docs/lookbook-studio-integration.md`.
 

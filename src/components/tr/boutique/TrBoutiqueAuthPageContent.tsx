@@ -176,7 +176,7 @@ export function TrBoutiqueAuthPageContent({
               href={trBoutiqueLegalPath(boutique.slug, "uyelik")}
               className="underline underline-offset-2"
             >
-              üyelik şartlarını
+              site kullanım şartları ve üyelik sözleşmesini
             </Link>{" "}
             ve{" "}
             <Link
@@ -429,7 +429,7 @@ export function TrBoutiqueAuthPageContent({
               href={trBoutiqueLegalPath(boutique.slug, "uyelik")}
               className="underline underline-offset-2"
             >
-              Üyelik
+              Kullanım şartları
             </Link>
           </p>
         </motion.div>

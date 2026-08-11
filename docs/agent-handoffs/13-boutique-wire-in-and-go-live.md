@@ -121,7 +121,14 @@ Copy for each launch. Check before announcing Instagram → site.
 - [ ] Panel **Ayarlar** → ticari unvan, vergi no, IBAN (from vergi levhası / IBAN; **never** upload kimlik scans)
 - [ ] Shipping / iade / değişim copy real (`shippingNote`, `exchangePolicy`)
 - [ ] WhatsApp + Instagram correct on storefront + panel Ayarlar
-- [ ] Legal pages reviewed (remove “Taslak” only after lawyer)
+- [ ] Legal pages live from shared templates (`src/lib/tr/legal/docs.ts`; clone pack [tr-boutique-legal-templates.md](../tr-boutique-legal-templates.md)) — lawyer review recommended before relying on them at scale
+- [ ] **iyzico website criteria** (visible on boutique domain):
+  - [ ] Hakkımızda → `/yasal/kunye`
+  - [ ] SSL (HTTPS live on custom domain)
+  - [ ] Teslimat ve İade → `/yasal/iade`
+  - [ ] Gizlilik → `/yasal/gizlilik`
+  - [ ] Mesafeli Satış → `/yasal/mesafeli-satis`
+  - [ ] Visa + Mastercard + **iyzico ile öde** logos in footer (`TrIyzicoFooterPaymentBand`) and checkout (`TrIyzicoCheckoutBadge`) — assets in `public/tr/payments/iyzico/`
 
 ### C2. Brand & SEO
 
@@ -138,8 +145,13 @@ Copy for each launch. Check before announcing Instagram → site.
   - [ ] Create / claim Merchant Center account (business info + country TR)
   - [ ] Verify & claim website (same domain as storefront; often via Search Console ownership)
   - [ ] Shipping + returns policies match storefront / legal pages
-  - [ ] Product data: scheduled feed URL `https://{boutique-domain}/feeds/google-merchant.xml` (see `src/lib/tr/googleMerchant/feed.ts`; Lila: `lilaboutiquedenizli.com/feeds/google-merchant.xml`)
-  - [ ] Feed fetch daily; fix disapprovals before ads (`identifier_exists=false` until GTIN)
+  - [ ] İade politikası URL: `https://{boutique-domain}/yasal/iade` (Lila: `https://lilaboutiquedenizli.com/yasal/iade`)
+  - [ ] Merchant iade fields match site: etiket **pakete dahil**, restocking **maliyet yok**, geri ödeme **14 gün**
+  - [ ] Contact / store email matches storefront (Lila: `ncp20@outlook.com`)
+  - [ ] Product feed live: open `https://{boutique-domain}/feeds/google-merchant.xml` (XML, not HTML) — code `src/lib/tr/googleMerchant/feed.ts`
+  - [ ] Lila feed URL: `https://lilaboutiquedenizli.com/feeds/google-merchant.xml` (fallback `/tr/lilabutik/feeds/google-merchant.xml`)
+  - [ ] Merchant → Veri kaynakları → dosyadan → paste feed URL → **zamanlanmış çekme (daily)**
+  - [ ] Fix disapprovals before ads (`identifier_exists=false` until GTIN; links on boutique domain)
   - [ ] Link Merchant Center ↔ Google Ads only when running Shopping ads
 
 ### C3. Catalog & imagery

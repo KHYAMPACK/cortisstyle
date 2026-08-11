@@ -7,6 +7,7 @@ import {
   TrSandboxBanner,
   cartHasDemoItems,
 } from "@/components/tr/TrSandboxBanner";
+import { TrIyzicoCheckoutBadge } from "@/components/tr/TrIyzicoPaymentBadges";
 import { useAuth } from "@/context/AuthContext";
 import {
   loadSavedCheckoutProfile,
@@ -866,6 +867,8 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
                   {error}
                 </p>
               ) : null}
+
+              <TrIyzicoCheckoutBadge className="border border-black/5 bg-neutral-50 px-4 py-3" />
 
               <div className="flex flex-wrap gap-3">
                 <button

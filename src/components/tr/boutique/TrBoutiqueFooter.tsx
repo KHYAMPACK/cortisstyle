@@ -1,3 +1,6 @@
+import Link from "next/link";
+import { TrIyzicoFooterPaymentBand } from "@/components/tr/TrIyzicoPaymentBadges";
+import { trBoutiqueLegalPath } from "@/lib/tr/paths";
 import type { TrBoutiquePublic } from "@/types/tr-marketplace";
 
 interface TrBoutiqueFooterProps {
@@ -17,6 +20,40 @@ export function TrBoutiqueFooter({ boutique }: TrBoutiqueFooterProps) {
               {boutique.physicalAddress}
             </p>
           ) : null}
+          <ul className="mt-4 space-y-1 text-[12px] text-neutral-600">
+            <li>
+              <Link
+                href={trBoutiqueLegalPath(boutique.slug, "kunye")}
+                className="underline underline-offset-2 hover:opacity-70"
+              >
+                Hakkımızda
+              </Link>
+            </li>
+            <li>
+              <Link
+                href={trBoutiqueLegalPath(boutique.slug, "gizlilik")}
+                className="underline underline-offset-2 hover:opacity-70"
+              >
+                Gizlilik Sözleşmesi
+              </Link>
+            </li>
+            <li>
+              <Link
+                href={trBoutiqueLegalPath(boutique.slug, "mesafeli-satis")}
+                className="underline underline-offset-2 hover:opacity-70"
+              >
+                Mesafeli Satış Sözleşmesi
+              </Link>
+            </li>
+            <li>
+              <Link
+                href={trBoutiqueLegalPath(boutique.slug, "iade")}
+                className="underline underline-offset-2 hover:opacity-70"
+              >
+                Teslimat ve İade / Cayma
+              </Link>
+            </li>
+          </ul>
         </div>
 
         <div className="space-y-2 text-[12px] leading-relaxed text-neutral-600">
@@ -32,6 +69,7 @@ export function TrBoutiqueFooter({ boutique }: TrBoutiqueFooterProps) {
               {boutique.shippingNote}
             </p>
           ) : null}
+          <TrIyzicoFooterPaymentBand variant="light" className="pt-4" />
         </div>
       </div>
 

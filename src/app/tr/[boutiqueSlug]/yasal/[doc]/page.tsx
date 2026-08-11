@@ -59,11 +59,6 @@ export default async function BoutiqueLegalPage({ params }: LegalPageProps) {
       <p className="mt-3 text-[14px] leading-relaxed text-neutral-600">
         {legal.summary}
       </p>
-      {doc !== "iade" ? (
-        <p className="mt-2 text-[11px] tracking-[0.08em] text-amber-800/90 uppercase">
-          Taslak metin — yayına almadan önce avukat onayı gerekir.
-        </p>
-      ) : null}
 
       <div className="mt-10 space-y-8">
         {legal.sections.map((section) => (

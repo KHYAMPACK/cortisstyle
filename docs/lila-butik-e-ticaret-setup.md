@@ -150,9 +150,11 @@ Verify in Search Console **after deploy** (token must be live on the custom doma
 
 - Reset emails: `token_hash` callback + boutique domain preference — see [07-platform-ops.md](./agent-handoffs/07-platform-ops.md) and [13-boutique-wire-in-and-go-live.md](./agent-handoffs/13-boutique-wire-in-and-go-live.md)
 
-## Legal pages (taslak)
+## Legal pages
 
-Templates in `src/lib/tr/legal/docs.ts` — KVKK, gizlilik, çerez, mesafeli satış, ön bilgilendirme, iade, üyelik, künye.
+Shared templates (all boutiques): runtime `src/lib/tr/legal/docs.ts` · clone/placeholder pack [tr-boutique-legal-templates.md](./tr-boutique-legal-templates.md).
+
+Docs: KVKK, gizlilik, çerez, mesafeli satış, ön bilgilendirme, tüketici hakları/iade, üyelik, künye — filled from boutique Ayarlar / seed.
 
 Lila seller snapshot (fill Ayarlar / re-seed to sync DB):
 
@@ -164,8 +166,6 @@ Lila seller snapshot (fill Ayarlar / re-seed to sync DB):
 - Kargo: anlaşmalı kargo mağazadan alır  
 - KEP / MERSİS: TBD · Marketing: yes (İYS / ayrı açık rıza later)
 
-Pages show amber “Taslak — avukat onayı” until lawyer signs off.
-
 ## Ops checklist
 
 1. Run seed (`scripts/seed-lilabutik.md`)
@@ -173,5 +173,14 @@ Pages show amber “Taslak — avukat onayı” until lawyer signs off.
 3. Point DNS when go-live; smoke `/tr/lilabutik` vs `/tr/pervinsoysalbutik`
 4. Confirm Google Search Console meta on live domain (see Domain & Search Console above)
 5. Submit boutique `sitemap.xml` in Search Console; confirm `/robots.txt`
-6. Google Merchant Center (claim site + feed / free listings) — see [13 § C2](./agent-handoffs/13-boutique-wire-in-and-go-live.md)
-7. Full pre-live list: [13-boutique-wire-in-and-go-live.md](./agent-handoffs/13-boutique-wire-in-and-go-live.md)
+6. **Google Merchant Center**
+   - [ ] Claim / verify `lilaboutiquedenizli.com`
+   - [ ] İade URL: `https://lilaboutiquedenizli.com/yasal/iade` (pakete dahil · restocking yok · 14 gün)
+   - [ ] Feed URL live: `https://lilaboutiquedenizli.com/feeds/google-merchant.xml`
+   - [ ] Add feed in Merchant → **zamanlanmış çekme (daily)** for automatic product sync
+   - [ ] Fix product disapprovals before Shopping ads
+7. **iyzico website criteria**
+   - [ ] Hakkımızda `/yasal/kunye` · Gizlilik · Mesafeli Satış · Teslimat ve İade in footer
+   - [ ] Footer payment band (Visa / MC / iyzico) + checkout “iyzico ile öde” badge
+   - [ ] HTTPS on custom domain
+8. Full pre-live list: [13-boutique-wire-in-and-go-live.md](./agent-handoffs/13-boutique-wire-in-and-go-live.md)

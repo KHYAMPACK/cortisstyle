@@ -62,19 +62,20 @@ function legalFooterColumns(
     {
       title: "Kurumsal",
       links: [
-        { label: "Hakkımızda / Künye", href: legal("kunye") },
+        { label: "Hakkımızda", href: legal("kunye") },
+        { label: "Künye / İletişim", href: legal("kunye") },
         { label: "KVKK Aydınlatma", href: legal("kvkk") },
-        { label: "Gizlilik", href: legal("gizlilik") },
-        { label: "Üyelik Sözleşmesi", href: legal("uyelik") },
+        { label: "Gizlilik Sözleşmesi", href: legal("gizlilik") },
+        { label: "Site Kullanım Şartları / Üyelik", href: legal("uyelik") },
         { label: "Çerez Politikası", href: legal("cerez") },
       ],
     },
     {
       title: "Sözleşmeler",
       links: [
-        { label: "Mesafeli Satış", href: legal("mesafeli-satis") },
+        { label: "Mesafeli Satış Sözleşmesi", href: legal("mesafeli-satis") },
         { label: "Ön Bilgilendirme", href: legal("on-bilgilendirme") },
-        { label: "İade & Cayma", href: legal("iade") },
+        { label: "Tüketici Hakları / İade", href: legal("iade") },
         { label: "Ana sayfa", href: trBoutiquePath(slug) },
       ],
     },

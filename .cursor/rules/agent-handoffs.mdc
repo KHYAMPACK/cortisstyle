@@ -25,6 +25,7 @@ Before non-trivial work, read `docs/agent-handoffs/00-overview.md`, then the mat
 | Boutique go-live | `12-boutique-go-live.md` |
 | **Next boutique wire-in + checklist** | `13-boutique-wire-in-and-go-live.md` |
 | Boutique themes (shared system, unique UI) | `docs/lila-butik-e-ticaret-setup.md` — multi-tenant + editorial skins (`classic` / `atelier`) |
+| Boutique legal templates (yasal) | `docs/tr-boutique-legal-templates.md` — placeholders; runtime `src/lib/tr/legal/docs.ts` |
 
 **Structural changes:** update the matching handoff (or focused ops doc) — see `.cursor/rules/document-structural-changes.mdc`. Do not leave architecture only in chat.
 
