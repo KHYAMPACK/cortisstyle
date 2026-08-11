@@ -99,6 +99,13 @@ export async function listPublicProductsByBoutiqueSlug(
   return listPublicProductsByBoutiqueId(boutique.id, boutique, client);
 }
 
+const PRODUCT_SELECT_CANDIDATES = [
+  PUBLIC_PRODUCT_COLUMNS,
+  PRODUCT_COLUMNS_CORE,
+  // Minimal set if older prod DBs lack marketplace/lifestyle/catalog columns.
+  "id, boutique_id, title, description, price_kurus, size, category, images, status, sort_order, created_at, updated_at",
+] as const;
+
 export async function listPublicProductsByBoutiqueId(
   boutiqueId: string,
   boutique: TrProductWithBoutique["boutique"],
@@ -106,35 +113,34 @@ export async function listPublicProductsByBoutiqueId(
 ): Promise<TrProductWithBoutique[]> {
   const supabase = getPublicCatalogSupabase(client);
 
-  const { data, error } = await supabase
-    .from("tr_products")
-    .select(PUBLIC_PRODUCT_COLUMNS)
-    .eq("boutique_id", boutiqueId)
-    .in("status", ["available", "sold"])
-    .order("sort_order", { ascending: true })
-    .order("created_at", { ascending: false });
+  let lastError: { message?: string; code?: string } | null = null;
 
-  if (error && isMissingSizeStocksColumn(error)) {
-    const fallback = await supabase
+  for (const columns of PRODUCT_SELECT_CANDIDATES) {
+    const { data, error } = await supabase
       .from("tr_products")
-      .select(PRODUCT_COLUMNS_CORE)
+      .select(columns)
       .eq("boutique_id", boutiqueId)
       .in("status", ["available", "sold"])
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: false });
-    if (fallback.error) throw fallback.error;
-    return (fallback.data ?? []).map((row) => ({
-      ...mapProductRow(row as Record<string, unknown>),
-      boutique,
-    }));
+
+    if (!error) {
+      return (data ?? []).map((row) => ({
+        ...mapProductRow(row as Record<string, unknown>),
+        boutique,
+      }));
+    }
+
+    lastError = error;
+    const missing = missingColumnFromError(error);
+    if (missing || isMissingColumnError(error)) {
+      continue;
+    }
+    throw error;
   }
 
-  if (error) throw error;
-
-  return (data ?? []).map((row) => ({
-    ...mapProductRow(row as Record<string, unknown>),
-    boutique,
-  }));
+  if (lastError) throw lastError;
+  return [];
 }
 
 export async function getPublicProductById(

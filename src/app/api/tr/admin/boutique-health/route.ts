@@ -56,6 +56,50 @@ export async function GET(request: Request) {
   const anonProbe = await probe("anon_public_view", anon);
   const serviceProbe = await probe("service_public_view", service);
 
+  async function probeProducts(slug: string) {
+    const client = anon ?? service;
+    if (!client) {
+      return { slug, ok: false, error: "client_unavailable", count: 0 };
+    }
+    const { data: boutiques, error: boutiqueError } = await client
+      .from(PUBLIC_BOUTIQUE_VIEW)
+      .select("id,slug")
+      .eq("slug", slug)
+      .maybeSingle();
+    if (boutiqueError) {
+      return {
+        slug,
+        ok: false,
+        error: boutiqueError.message || "boutique_query_failed",
+        count: 0,
+      };
+    }
+    if (!boutiques) {
+      return { slug, ok: false, error: "boutique_not_in_public_view", count: 0 };
+    }
+    const boutiqueId = String((boutiques as { id: string }).id);
+    const { data, error } = await client
+      .from("tr_products")
+      .select("id")
+      .eq("boutique_id", boutiqueId)
+      .in("status", ["available", "sold"])
+      .limit(5);
+    if (error) {
+      return {
+        slug,
+        ok: false,
+        error: error.message || error.code || "products_query_failed",
+        count: 0,
+      };
+    }
+    return { slug, ok: true, error: null as string | null, count: (data ?? []).length };
+  }
+
+  const productProbes = {
+    lilabutik: await probeProducts("lilabutik"),
+    pervinsoysalbutik: await probeProducts("pervinsoysalbutik"),
+  };
+
   let tableStatuses: Array<{ slug: string; status: string }> = [];
   let tableError: string | null = null;
   if (service) {
@@ -82,14 +126,15 @@ export async function GET(request: Request) {
       anon: anonProbe,
       service: serviceProbe,
     },
+    products: productProbes,
     table: {
       error: tableError,
       boutiques: tableStatuses,
     },
     hints: [
       "tr_boutiques_public only returns status=verified",
-      "Storefront 404 = safeGetPublicBoutique null (missing row, non-verified, or query error)",
-      "If anon probe fails but table has verified rows, re-apply supabase/patch_tr_boutiques_public_view.sql",
+      "Storefront soft-404 with Lila chrome = boutique OK but products query failed (see products.*)",
+      "If products probe fails with column/schema errors, apply product patches or rely on resilient column fallbacks",
       "If service probe fails with JWT errors, rotate SUPABASE_SERVICE_ROLE_KEY in Vercel to match the project",
     ],
   });

@@ -79,7 +79,18 @@ export async function safeGetBoutiqueStorefront(
       `Failed to load TR boutique storefront (${slug}):`,
       formatTrDataError(error),
     );
-    return null;
+    // Last resort: seller row only (empty catalog) so /tr/{slug} does not soft-404.
+    try {
+      const boutique = await getPublicBoutiqueBySlug(slug);
+      if (!boutique) return null;
+      return { ...boutique, products: [] };
+    } catch (fallbackError) {
+      console.error(
+        `Boutique-only fallback also failed (${slug}):`,
+        formatTrDataError(fallbackError),
+      );
+      return null;
+    }
   }
 }
 
