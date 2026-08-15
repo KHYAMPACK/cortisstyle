@@ -3,7 +3,13 @@
 import Image from "next/image";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { ZoomIn } from "lucide-react";
 import { TrDemoGarmentVisual } from "@/components/tr/demo/TrDemoGarmentVisual";
+import { TrProductGalleryLightbox } from "@/components/tr/product/TrProductGalleryLightbox";
+import {
+  TrProductHoverZoom,
+  useFinePointerHover,
+} from "@/components/tr/product/TrProductHoverZoom";
 import { isTrDemoIconSrc } from "@/lib/tr/demoIcons";
 import { isCatalogCutoutImage } from "@/lib/tr/productImages";
 import type { TrProduct } from "@/types/tr-marketplace";
@@ -14,11 +20,13 @@ interface TrProductGalleryProps {
 
 /**
  * PDP gallery: main canvas + arrows.
- * Desktop: thumbs sit outside to the left of the canvas.
- * Mobile: arrows only (swipe not required).
+ * Desktop: thumbs sit outside to the left of the canvas; hover magnifies, click expands.
+ * Mobile: tap the photo (or zoom control) to expand; arrows to switch.
  */
 export function TrProductGallery({ product }: TrProductGalleryProps) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const fineHover = useFinePointerHover();
 
   if (product.images.length === 0) {
     return (
@@ -99,41 +107,60 @@ export function TrProductGallery({ product }: TrProductGalleryProps) {
     <div className="flex flex-col gap-3 md:flex-row md:items-start md:gap-4">
       {thumbs}
 
-      <div className="relative aspect-[2/3] min-w-0 flex-1 overflow-hidden bg-[#f3f1ec]">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeImage}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute inset-0"
-          >
-            <Image
-              src={activeImage}
-              alt={
-                safeIndex === 0
-                  ? product.title
-                  : `${product.title} — görsel ${safeIndex + 1}`
-              }
-              fill
-              priority={safeIndex === 0}
-              sizes="(max-width: 1024px) 100vw, 50vw"
-              unoptimized
-              className={
-                activeIsCutout ? "object-contain p-6 md:p-10" : "object-cover"
-              }
-              draggable={false}
-            />
-          </motion.div>
-        </AnimatePresence>
+      <div
+        className={`relative aspect-[2/3] min-w-0 flex-1 overflow-hidden bg-[#f3f1ec] ${
+          fineHover ? "cursor-zoom-in" : "cursor-pointer"
+        }`}
+      >
+        <div className="absolute inset-0" onClick={() => setLightboxOpen(true)}>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeImage}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+              className="absolute inset-0"
+            >
+              <TrProductHoverZoom>
+                <Image
+                  src={activeImage}
+                  alt={
+                    safeIndex === 0
+                      ? product.title
+                      : `${product.title} — görsel ${safeIndex + 1}`
+                  }
+                  fill
+                  priority={safeIndex === 0}
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  unoptimized
+                  className={
+                    activeIsCutout
+                      ? "object-contain p-6 md:p-10"
+                      : "object-cover"
+                  }
+                  draggable={false}
+                />
+              </TrProductHoverZoom>
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setLightboxOpen(true)}
+          className="absolute top-3 right-3 z-10 flex h-11 w-11 items-center justify-center bg-white/90 text-neutral-800 shadow md:top-4 md:right-4"
+          aria-label="Fotoğrafı büyüt"
+        >
+          <ZoomIn className="h-4 w-4" strokeWidth={1.75} />
+        </button>
 
         {multi ? (
           <>
             <button
               type="button"
               onClick={goPrev}
-              className="absolute top-1/2 left-2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[20px] font-semibold text-neutral-800 shadow md:left-3"
+              className="absolute top-1/2 left-2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[20px] font-semibold text-neutral-800 shadow md:left-3"
               aria-label="Önceki görsel"
             >
               ‹
@@ -141,17 +168,26 @@ export function TrProductGallery({ product }: TrProductGalleryProps) {
             <button
               type="button"
               onClick={goNext}
-              className="absolute top-1/2 right-2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[20px] font-semibold text-neutral-800 shadow md:right-3"
+              className="absolute top-1/2 right-2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[20px] font-semibold text-neutral-800 shadow md:right-3"
               aria-label="Sonraki görsel"
             >
               ›
             </button>
-            <p className="absolute bottom-3 left-1/2 z-10 -translate-x-1/2 rounded-full bg-black/45 px-2.5 py-1 text-[11px] font-medium text-white md:hidden">
+            <p className="pointer-events-none absolute bottom-3 left-1/2 z-10 -translate-x-1/2 rounded-full bg-black/45 px-2.5 py-1 text-[11px] font-medium text-white md:hidden">
               {safeIndex + 1}/{product.images.length}
             </p>
           </>
         ) : null}
       </div>
+
+      <TrProductGalleryLightbox
+        open={lightboxOpen}
+        images={product.images}
+        index={safeIndex}
+        title={product.title}
+        onIndexChange={setActiveIndex}
+        onClose={() => setLightboxOpen(false)}
+      />
     </div>
   );
 }

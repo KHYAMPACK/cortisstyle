@@ -19,8 +19,10 @@ import { isProductSizeSellable } from "@/lib/tr/sizeStocks";
 import {
   trBoutiqueCartPath,
   trBoutiqueCheckoutPath,
+  trBoutiqueOrderTrackingPath,
   trBoutiqueProductPath,
 } from "@/lib/tr/paths";
+import { DEMO_SHOPPER_SHIPPED_ORDER_ID } from "@/lib/tr/commerce/demoShopperOrders";
 import { cartLineKey, cartTotalKurus } from "@/types/tr-cart";
 import { formatTryFromKurus } from "@/types/tr-marketplace";
 
@@ -335,21 +337,25 @@ function FavoritesPanel() {
 }
 
 function TrackingPanel() {
-  const { closePanel } = useTrBoutiqueCommerceScope();
+  const { boutiqueSlug, closePanel } = useTrBoutiqueCommerceScope();
+  const trackingHref = trBoutiqueOrderTrackingPath(
+    boutiqueSlug,
+    DEMO_SHOPPER_SHIPPED_ORDER_ID,
+  );
 
   return (
     <PanelShell title="Kargo Takip" onClose={closePanel}>
       <p className="text-[13px] leading-relaxed text-neutral-600">
-        Kargo takip entegrasyonu yakında. Siparişiniz kargoya verildiğinde
-        bilgilendirme WhatsApp veya e-posta ile iletilecek.
+        Demo kargo takibi. Canlı taşıyıcı entegrasyonu gelince gerçek gönderi
+        numarası burada açılır.
       </p>
-      <button
-        type="button"
+      <Link
+        href={trackingHref}
         onClick={closePanel}
-        className="mt-6 w-full bg-neutral-900 px-4 py-3 text-[11px] tracking-[0.16em] text-white uppercase"
+        className="mt-6 flex w-full items-center justify-center bg-neutral-900 px-4 py-3 text-[11px] tracking-[0.16em] text-white uppercase"
       >
-        Tamam
-      </button>
+        Demo takibi gör
+      </Link>
     </PanelShell>
   );
 }
@@ -394,7 +400,7 @@ function ReportPanel() {
 const HELP_REPLIES: Array<{ q: string; a: string }> = [
   {
     q: "Kargo ne kadar sürer?",
-    a: "Sipariş onayından ve ödeme teyidinden sonra ürünler paketlenir. Kargo takip entegrasyonu yakında; gönderi hazır olunca bilgilendirilirsiniz.",
+    a: "Sipariş onayından ve ödeme teyidinden sonra ürünler paketlenir. Demo kargo takibini Hesabım → Siparişler’den açabilirsiniz.",
   },
   {
     q: "İade var mı?",
@@ -411,7 +417,8 @@ const HELP_REPLIES: Array<{ q: string; a: string }> = [
 ];
 
 function HelpPanel() {
-  const { boutiqueName, closePanel, openPanel } = useTrBoutiqueCommerceScope();
+  const { boutiqueName, boutiqueSlug, closePanel, openPanel } =
+    useTrBoutiqueCommerceScope();
   const [messages, setMessages] = useState<Array<{ role: "bot" | "user"; text: string }>>(
     [
       {
@@ -460,13 +467,16 @@ function HelpPanel() {
       </div>
 
       <div className="mt-6 flex flex-col gap-2 border-t border-black/5 pt-4">
-        <button
-          type="button"
-          onClick={() => openPanel("tracking")}
+        <Link
+          href={trBoutiqueOrderTrackingPath(
+            boutiqueSlug,
+            DEMO_SHOPPER_SHIPPED_ORDER_ID,
+          )}
+          onClick={closePanel}
           className="text-left text-[12px] tracking-[0.08em] text-neutral-900 uppercase underline-offset-2 hover:underline"
         >
           Kargo takip →
-        </button>
+        </Link>
         <button
           type="button"
           onClick={() => openPanel("report")}

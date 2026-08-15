@@ -219,6 +219,9 @@ export function resolveBoutiqueSkeletonKind(
   if (/\/favoriler$/.test(path) || path === "/favoriler") {
     return "account";
   }
+  if (/\/siparisler/.test(path) || path === "/siparisler") {
+    return "generic";
+  }
   if (/\/odeme$/.test(path) || /\/checkout$/.test(path)) return "generic";
   if (/\/urunler$/.test(path) || path === "/urunler") return "products";
   if (/\/urun\//.test(path)) return "product";

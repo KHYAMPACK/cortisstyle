@@ -36,6 +36,7 @@ const RESERVED_BOUTIQUE_SLUGS = new Set([
   "cart",
   "checkout",
   "siparis-onay",
+  "siparisler",
   "yakinda",
   "shop",
   "panel",

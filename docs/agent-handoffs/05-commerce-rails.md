@@ -13,7 +13,8 @@
 - Fulfillment fields (`patch_tr_order_fulfillment.sql`)
 - Order line size + order discount columns (`patch_tr_order_items_size.sql`, `patch_tr_orders_discount.sql`)
 - Owner Web Push for new orders (`patch_tr_owner_push_subscriptions.sql`, `pushNotify.ts`, panel Ayarlar)
-- Customer profiles for storefront (`tr_customer_profiles`, registration-source API)
+- Customer profiles for storefront (`tr_customer_profiles` registration-source; `profiles.first_name` / `last_name` / `phone` from boutique signup + Hesabım edit — `patch_tr_customer_profile_fields.sql`; optional signup discovery — `patch_tr_customer_signup_discovery.sql`)
+- **Demo shopper orders / tracking** (UI only, not `tr_orders`): `src/lib/tr/commerce/demoShopperOrders.ts` → `/siparisler`, `/siparisler/[id]`, `/siparisler/[id]/takip`. Lookup (sipariş no + posta kodu) and cancel (processing only, sessionStorage) live in the same demo layer. Swap for live account orders when checkout is tied to auth.
 - Admin seed/ops with `TR_ADMIN_SECRET` (`adminAuth.ts`)
 
 ## What we will do / direction

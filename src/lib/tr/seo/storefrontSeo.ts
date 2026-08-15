@@ -131,12 +131,14 @@ export const SEO_DISALLOW_PATHS = [
   "/tr/*/hesap",
   "/tr/*/favoriler",
   "/tr/*/siparis-onay",
+  "/tr/*/siparisler",
   "/sepet",
   "/odeme",
   "/giris",
   "/hesap",
   "/favoriler",
   "/siparis-onay",
+  "/siparisler",
 ] as const;
 
 export function platformMarketingPaths(): Array<{

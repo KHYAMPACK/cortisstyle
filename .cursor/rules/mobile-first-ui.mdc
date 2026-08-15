@@ -1,0 +1,28 @@
+---
+description: Every UI change must work on mobile, not desktop-only
+alwaysApply: true
+---
+
+# Mobile is part of the implementation
+
+When you build or change UI, **ship mobile in the same change** — not a desktop layout with “we’ll add mobile later.” Boutique storefronts (Lila is the default pattern) are used on phones first.
+
+## Required habits
+
+1. **Same feature, both viewports.** Nav, PDP, PLP, cart, checkout, sheets, and filters must be usable on a narrow screen (~375px) and on desktop. If desktop gets a mega menu / split layout, mobile gets a drill-down, sheet, or stacked order — not a squeezed desktop.
+2. **Mobile DOM order.** Put the primary action path first on small screens (e.g. PDP: gallery → info / buy → related). Don’t hide size, price, or add-to-cart below unrelated blocks.
+3. **Touch targets.** Taps, swatches, size chips, and icon buttons need comfortable hit areas. Don’t rely on hover-only (mega menus, tooltips, “click to reveal”) without a tap equivalent.
+4. **Reuse existing patterns.** Atelier already has mobile drill-down nav, PLP filter overlay, stacked PDP. Match those before inventing a new mobile chrome.
+5. **Breakpoints, not duplicate pages.** Use the project’s Tailwind `md:` / `lg:` splits and shared shells. Do not fork a separate mobile route or `if (isMobile)` page tree.
+
+## Done means
+
+You considered phone layout in the same PR as desktop: no horizontal overflow, no truncated CTAs, no hover-only critical actions.
+
+```tsx
+// Prefer — stacked on phone, split on desktop
+<div className="grid gap-8 lg:grid-cols-2">{gallery}{info}</div>
+
+// Avoid — desktop-only chrome with no phone path
+<nav className="flex" onMouseEnter={openMega}>…</nav>
+```

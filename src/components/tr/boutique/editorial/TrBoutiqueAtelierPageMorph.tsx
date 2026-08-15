@@ -18,6 +18,8 @@ import {
 } from "@/components/tr/boutique/TrBoutiqueCommerceScope";
 import { TrBoutiquePendingLink } from "@/components/tr/boutique/editorial/TrBoutiqueNavPending";
 import type { TrBoutiqueSkeletonKind } from "@/components/tr/boutique/editorial/TrBoutiqueSkeletons";
+import { useAuth } from "@/context/AuthContext";
+import { getTrAccountChromeLabel } from "@/lib/tr/userDisplayName";
 import {
   trBoutiqueAuthPath,
   trBoutiqueCartPath,
@@ -128,10 +130,12 @@ export function TrBoutiqueAtelierPageMorph({
   className = "",
 }: TrBoutiqueAtelierPageMorphProps) {
   const pathname = usePathname();
+  const { user, isAuthenticated } = useAuth();
   const commerce = useTrBoutiqueCommerceScope();
   const favorites = useTrScopedFavorites();
   const cart = useTrScopedCart();
   const pages = buildPages(boutiqueSlug);
+  const accountLabel = getTrAccountChromeLabel(user, isAuthenticated);
   const routeId = resolveAtelierPageId(pathname, boutiqueSlug);
   const [optimisticId, setOptimisticId] = useState<AtelierPageId | null>(null);
   const iconsOnly = mode === "icons";
@@ -163,6 +167,7 @@ export function TrBoutiqueAtelierPageMorph({
         const active = page.id === activeId;
         const showLabel = !iconsOnly && active;
         const Icon = page.icon;
+        const label = page.id === "account" ? accountLabel : page.label;
         const badge =
           page.id === "favorites" && favCount > 0
             ? favCount
@@ -180,7 +185,7 @@ export function TrBoutiqueAtelierPageMorph({
               kind={page.kind}
               onNavigate={() => onSelect(page)}
               aria-label={
-                badge > 0 ? `${page.label} (${badge})` : page.label
+                badge > 0 ? `${label} (${badge})` : label
               }
               className={`relative inline-flex h-9 items-center justify-center text-neutral-900 transition-[min-width,padding,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:opacity-70 md:h-11 ${
                 showLabel
@@ -198,7 +203,7 @@ export function TrBoutiqueAtelierPageMorph({
                     transition={{ duration: 0.22, ease: EASE }}
                     className="whitespace-nowrap font-serif text-[13px] tracking-[0.1em] uppercase sm:text-[14px] md:text-[15px]"
                   >
-                    {page.label}
+                    {label}
                   </motion.span>
                 ) : (
                   <motion.span

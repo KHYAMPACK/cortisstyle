@@ -8,6 +8,18 @@ import { createPortal } from "react-dom";
 import { BrandLogo } from "@/components/BrandLogo";
 import { AuthTermsNotice } from "@/components/legal/AuthTermsNotice";
 import { useAuth } from "@/context/AuthContext";
+import {
+  classifyAuthError,
+  localizeAuthError,
+} from "@/lib/auth/authErrorMessage";
+import {
+  normalizeCustomerPhone,
+  parseCustomerProfileFields,
+} from "@/lib/auth/customerProfileFields";
+import {
+  SIGNUP_DISCOVERY_SOURCES,
+  type SignupDiscoverySourceId,
+} from "@/lib/auth/signupDiscoverySources";
 import type { EmailAccountOrigin } from "@/lib/authTypes";
 
 const spring = { type: "spring" as const, stiffness: 100, damping: 20 };
@@ -21,6 +33,12 @@ const fieldTransition = {
 
 const monoInputClass =
   "w-full border border-jet-black bg-white px-4 py-4 text-center font-mono text-[11px] tracking-[0.12em] text-neutral-900 outline-none transition-colors placeholder:text-neutral-400 focus:border-jet-black disabled:opacity-60";
+
+function fieldInputClass(hasError: boolean): string {
+  return hasError
+    ? `${monoInputClass} border-red-600 focus:border-red-600`
+    : monoInputClass;
+}
 
 const primaryButtonClass =
   "mt-6 w-full border border-jet-black bg-jet-black px-5 py-4 text-center font-mono text-[10px] tracking-[0.32em] text-white uppercase transition-opacity hover:opacity-90 disabled:opacity-60";
@@ -36,7 +54,9 @@ type AuthPhase =
   | "login"
   | "register-email"
   | "otp"
+  | "welcome-profile"
   | "set-password"
+  | "how-found"
   | "complete-signup"
   | "forgot-password"
   | "forgot-password-sent";
@@ -83,6 +103,27 @@ function ResetAnchor({
   );
 }
 
+function AuthInlineError({
+  message,
+  id = "auth-form-error",
+}: {
+  message: string | null;
+  id?: string;
+}) {
+  if (!message) return null;
+  return (
+    <motion.p
+      id={id}
+      role="alert"
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="mt-3 text-center text-[12px] leading-relaxed text-red-700"
+    >
+      {message}
+    </motion.p>
+  );
+}
+
 export function AuthPopup({
   isOpen,
   onClose,
@@ -99,19 +140,27 @@ export function AuthPopup({
     signInWithPassword,
     verifySignUpOtp,
     setAccountPassword,
+    saveSignupDiscovery,
     requestPasswordReset,
     needsPasswordSetup,
-    signOut,
     isAuthenticating,
     authError,
     clearAuthError,
   } = useAuth();
 
   const [email, setEmail] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [otpToken, setOtpToken] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [profileFieldError, setProfileFieldError] = useState<"phone" | null>(
+    null,
+  );
+  const [discoverySource, setDiscoverySource] =
+    useState<SignupDiscoverySourceId | null>(null);
   const [phase, setPhase] = useState<AuthPhase>("choose");
   const [accountOrigin, setAccountOrigin] = useState<EmailAccountOrigin | null>(
     null,
@@ -142,6 +191,11 @@ export function AuthPopup({
   );
 
   const normalizedEmail = email.trim().toLowerCase();
+  const visibleAuthError = localizeAuthError(authError, isTr ? "tr" : "en");
+  const authErrorKind = classifyAuthError(authError);
+  const loginFieldsInvalid = authErrorKind === "invalid_credentials";
+  const otpFieldInvalid =
+    authErrorKind === "invalid_otp" || authErrorKind === "otp_expired";
 
   const ui = isTr
     ? {
@@ -151,7 +205,16 @@ export function AuthPopup({
         chooseRegister: "Üye ol",
         emailLabel: "E-posta adresi",
         emailPlaceholder: "E-posta adresiniz...",
+        firstNameLabel: "Ad",
+        firstNamePlaceholder: "Adınız...",
+        lastNameLabel: "Soyad",
+        lastNamePlaceholder: "Soyadınız...",
+        phoneLabel: "Telefon",
+        phonePlaceholder: "05XX XXX XX XX",
+        phoneRequired: "Telefon girdiyseniz geçerli bir numara yazın.",
+        skipProfile: "Şimdilik geç",
         continue: "Devam et",
+        completeSignup: "Üyeliği tamamla",
         checking: "Kontrol ediliyor...",
         passwordLabel: "Şifre",
         passwordPlaceholder: "Şifreniz...",
@@ -189,7 +252,16 @@ export function AuthPopup({
         chooseRegister: "Create account",
         emailLabel: "Email address",
         emailPlaceholder: "Enter your email...",
+        firstNameLabel: "First name",
+        firstNamePlaceholder: "First name...",
+        lastNameLabel: "Last name",
+        lastNamePlaceholder: "Last name...",
+        phoneLabel: "Mobile number",
+        phonePlaceholder: "Mobile number...",
+        phoneRequired: "If you add a number, use a valid mobile.",
+        skipProfile: "Skip for now",
         continue: "Continue",
+        completeSignup: "Complete registration",
         checking: "Checking...",
         passwordLabel: "Password",
         passwordPlaceholder: "Enter your password...",
@@ -227,10 +299,20 @@ export function AuthPopup({
     setOtpToken("");
     setNewPassword("");
     setConfirmPassword("");
+    setProfileFieldError(null);
+  };
+
+  const resetRegisterProfileFields = () => {
+    setFirstName("");
+    setLastName("");
+    setPhone("");
+    setDiscoverySource(null);
+    setProfileFieldError(null);
   };
 
   const goToChoose = () => {
     resetSensitiveFields();
+    resetRegisterProfileFields();
     setAccountOrigin(null);
     setRegisterReadyNotice(false);
     setExistingAccountHint(false);
@@ -264,6 +346,12 @@ export function AuthPopup({
     router.push(successHref);
   };
 
+  const finishSignup = async () => {
+    await onAuthSuccess?.({ isNewAccount: true });
+    onClose();
+    router.push(successHref);
+  };
+
   useEffect(() => {
     setIsMounted(true);
   }, []);
@@ -271,6 +359,7 @@ export function AuthPopup({
   useEffect(() => {
     if (!isOpen) {
       setEmail("");
+      resetRegisterProfileFields();
       resetSensitiveFields();
       setAccountOrigin(null);
       setRegisterReadyNotice(false);
@@ -287,10 +376,18 @@ export function AuthPopup({
 
     if (needsPasswordSetup && user?.email) {
       setEmail(user.email);
-      resetSensitiveFields();
       setRegisterReadyNotice(false);
       setExistingAccountHint(false);
-      setPhase("set-password");
+      setPhase((current) => {
+        if (
+          current === "welcome-profile" ||
+          current === "set-password" ||
+          current === "how-found"
+        ) {
+          return current;
+        }
+        return isBoutiqueAuth ? "welcome-profile" : "set-password";
+      });
     }
 
     const previousOverflow = document.body.style.overflow;
@@ -323,6 +420,7 @@ export function AuthPopup({
     clearAuthError();
     setAccountOrigin(null);
     setExistingAccountHint(false);
+    setProfileFieldError(null);
 
     try {
       const status = await resolveEmailAuthRoute(
@@ -362,10 +460,33 @@ export function AuthPopup({
 
     try {
       await verifySignUpOtp(normalizedEmail, otpToken.trim());
-      setPhase("set-password");
+      setPhase(isBoutiqueAuth ? "welcome-profile" : "set-password");
     } catch {
       // AuthContext error
     }
+  };
+
+  const goToPasswordSetup = () => {
+    setProfileFieldError(null);
+    setPhase("set-password");
+  };
+
+  const handleWelcomeProfileSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setProfileFieldError(null);
+    const parsed = parseCustomerProfileFields({ firstName, lastName, phone });
+    if (parsed && "error" in parsed) {
+      setProfileFieldError("phone");
+      return;
+    }
+    goToPasswordSetup();
+  };
+
+  const handleWelcomeProfileSkip = () => {
+    setFirstName("");
+    setLastName("");
+    setPhone("");
+    goToPasswordSetup();
   };
 
   const handlePasswordSetupSubmit = async (
@@ -377,21 +498,36 @@ export function AuthPopup({
     if (newPassword !== confirmPassword) return;
 
     try {
-      await setAccountPassword(newPassword);
-      // Attribute registration while session still exists, then force login.
-      await onAuthSuccess?.({ isNewAccount: true });
-      await signOut();
-      setPassword("");
-      setOtpToken("");
-      setNewPassword("");
-      setConfirmPassword("");
-      setAccountOrigin(null);
-      setExistingAccountHint(false);
-      setRegisterReadyNotice(true);
-      setPhase("login");
+      const parsed = isBoutiqueAuth
+        ? parseCustomerProfileFields({ firstName, lastName, phone })
+        : null;
+      const profile =
+        parsed && !("error" in parsed) ? parsed : undefined;
+
+      await setAccountPassword(newPassword, profile);
+      if (isBoutiqueAuth) {
+        setPhase("how-found");
+        return;
+      }
+      await finishSignup();
     } catch {
       // AuthContext error
     }
+  };
+
+  const handleHowFoundSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!discoverySource) return;
+    try {
+      await saveSignupDiscovery(discoverySource, boutiqueSlug);
+      await finishSignup();
+    } catch {
+      await finishSignup();
+    }
+  };
+
+  const handleHowFoundSkip = async () => {
+    await finishSignup();
   };
 
   const handleResendOtp = async () => {
@@ -447,7 +583,9 @@ export function AuthPopup({
         login: accountOrigin ? "Hesabınız bulundu" : "Giriş yap",
         "register-email": "Üye ol",
         otp: "Doğrulama",
+        "welcome-profile": "Sizi tanıyalım",
         "set-password": "Şifrenizi belirleyin",
+        "how-found": "Bizi nereden duydunuz?",
         "complete-signup": "Profilinizi tamamlayın",
         "forgot-password": "Şifre sıfırlama",
         "forgot-password-sent": "E-postanızı kontrol edin",
@@ -457,7 +595,9 @@ export function AuthPopup({
         login: accountOrigin ? "Account found" : "Sign in",
         "register-email": "Create account",
         otp: "Verify email",
+        "welcome-profile": "Nice to meet you",
         "set-password": "Set your password",
+        "how-found": "Where did you find us?",
         "complete-signup": "Finish your profile",
         "forgot-password": "Reset password",
         "forgot-password-sent": "Check your inbox",
@@ -470,12 +610,16 @@ export function AuthPopup({
           ? `${normalizedEmail || "Hesabınız"} için şifrenizi girin.`
           : "E-posta ve şifrenizle giriş yapın.",
         "register-email": isBoutiqueAuth
-          ? "E-posta ile üyelik başlatın. Bu hesap platformdaki diğer mağazalarda da geçerlidir."
+          ? "E-posta ile üyelik başlatın. Bu hesap diğer mağazalarda da geçerlidir."
           : "Üyelik için e-posta adresinizi girin.",
         otp: `${normalizedEmail} adresine gönderilen 6 haneli kodu girin.`,
+        "welcome-profile":
+          "Sizi biraz daha yakından tanımak isteriz. Ad ve telefon zorunlu değil — isterseniz sonra da ekleyebilirsiniz.",
         "set-password": isBoutiqueAuth
-          ? "Kalıcı bir şifre oluşturun. Bu şifre diğer mağazalarda da geçerlidir. Sonra giriş yapmanız istenecek."
-          : "Kalıcı bir şifre oluşturun. Ardından giriş yapmanız istenecek.",
+          ? "Kalıcı bir şifre oluşturun. Bu şifre diğer mağazalarda da geçerlidir."
+          : "Kalıcı bir şifre oluşturun.",
+        "how-found":
+          "Zorunlu değil — Instagram, internet, yapay zeka veya tavsiye.",
         "complete-signup":
           "E-postanız doğrulanmış ancak şifre eksik. Şifre belirleme bağlantısı gönderebiliriz.",
         "forgot-password": isBoutiqueAuth
@@ -488,10 +632,16 @@ export function AuthPopup({
         login: crossBoutiqueNotice
           ? `Enter your password for ${normalizedEmail || "your account"}.`
           : "Sign in with your email and password.",
-        "register-email": "Enter your email to start registration.",
+        "register-email": isBoutiqueAuth
+          ? "Enter your email to start. This account works across stores."
+          : "Enter your email to start registration.",
         otp: `Enter the 6-digit code sent to ${normalizedEmail}.`,
+        "welcome-profile":
+          "We would like to get to know you. Name and phone are optional — you can add them later.",
         "set-password":
-          "Create a permanent password. You will sign in afterward.",
+          "Create a permanent password. It works across stores.",
+        "how-found":
+          "Optional — Instagram, internet, AI, or word of mouth.",
         "complete-signup":
           "Your email is verified but a password is missing. We can send a setup link.",
         "forgot-password": "We will email you a secure reset link.",
@@ -632,10 +782,17 @@ export function AuthPopup({
                       autoComplete="username"
                       spellCheck={false}
                       value={email}
-                      onChange={(event) => setEmail(event.target.value)}
+                      onChange={(event) => {
+                        setEmail(event.target.value);
+                        if (authError) clearAuthError();
+                      }}
                       disabled={isAuthenticating}
-                      className={monoInputClass}
+                      className={fieldInputClass(loginFieldsInvalid)}
                       placeholder={ui.emailPlaceholder}
+                      aria-invalid={loginFieldsInvalid}
+                      aria-describedby={
+                        loginFieldsInvalid ? "auth-form-error" : undefined
+                      }
                     />
                     <label className="sr-only" htmlFor="auth-login-password">
                       {ui.passwordLabel}
@@ -647,11 +804,20 @@ export function AuthPopup({
                       minLength={6}
                       autoComplete="current-password"
                       value={password}
-                      onChange={(event) => setPassword(event.target.value)}
+                      onChange={(event) => {
+                        setPassword(event.target.value);
+                        if (authError) clearAuthError();
+                      }}
                       disabled={isAuthenticating}
-                      className={monoInputClass}
+                      className={fieldInputClass(loginFieldsInvalid)}
                       placeholder={ui.passwordPlaceholder}
+                      aria-invalid={loginFieldsInvalid}
+                      aria-describedby={
+                        loginFieldsInvalid ? "auth-form-error" : undefined
+                      }
                     />
+
+                    <AuthInlineError message={visibleAuthError} />
 
                     <button
                       type="submit"
@@ -720,6 +886,7 @@ export function AuthPopup({
                     >
                       {isAuthenticating ? ui.checking : ui.continue}
                     </button>
+                    <AuthInlineError message={visibleAuthError} />
                     {termsNotice}
 
                     <button
@@ -764,15 +931,26 @@ export function AuthPopup({
                       maxLength={6}
                       required
                       value={otpToken}
-                      onChange={(event) =>
+                      onChange={(event) => {
                         setOtpToken(
                           event.target.value.replace(/\D/g, "").slice(0, 6),
-                        )
-                      }
+                        );
+                        if (authError) clearAuthError();
+                      }}
                       disabled={isAuthenticating}
-                      className="w-full border border-jet-black bg-white px-4 py-5 text-center font-mono text-[clamp(1.1rem,5vw,1.45rem)] tracking-[0.55em] text-neutral-900 outline-none transition-colors placeholder:text-neutral-400 placeholder:tracking-[0.22em] focus:border-jet-black disabled:opacity-60"
+                      className={`w-full border bg-white px-4 py-5 text-center font-mono text-[clamp(1.1rem,5vw,1.45rem)] tracking-[0.55em] text-neutral-900 outline-none transition-colors placeholder:text-neutral-400 placeholder:tracking-[0.22em] disabled:opacity-60 ${
+                        otpFieldInvalid
+                          ? "border-red-600 focus:border-red-600"
+                          : "border-jet-black focus:border-jet-black"
+                      }`}
                       placeholder={ui.otpPlaceholder}
+                      aria-invalid={otpFieldInvalid}
+                      aria-describedby={
+                        otpFieldInvalid ? "auth-form-error" : undefined
+                      }
                     />
+
+                    <AuthInlineError message={visibleAuthError} />
 
                     <button
                       type="submit"
@@ -801,6 +979,81 @@ export function AuthPopup({
                         setPhase("register-email");
                       }}
                     />
+                  </motion.form>
+                ) : null}
+
+                {phase === "welcome-profile" ? (
+                  <motion.form
+                    key="welcome-profile-phase"
+                    {...fieldTransition}
+                    onSubmit={handleWelcomeProfileSubmit}
+                    className="mx-auto mt-8 flex w-full max-w-[420px] flex-col gap-3"
+                  >
+                    <div className="grid grid-cols-2 gap-3">
+                      <label className="sr-only" htmlFor="auth-welcome-first-name">
+                        {ui.firstNameLabel}
+                      </label>
+                      <input
+                        id="auth-welcome-first-name"
+                        type="text"
+                        autoComplete="given-name"
+                        value={firstName}
+                        onChange={(event) => setFirstName(event.target.value)}
+                        className={monoInputClass}
+                        placeholder={ui.firstNamePlaceholder}
+                      />
+                      <label className="sr-only" htmlFor="auth-welcome-last-name">
+                        {ui.lastNameLabel}
+                      </label>
+                      <input
+                        id="auth-welcome-last-name"
+                        type="text"
+                        autoComplete="family-name"
+                        value={lastName}
+                        onChange={(event) => setLastName(event.target.value)}
+                        className={monoInputClass}
+                        placeholder={ui.lastNamePlaceholder}
+                      />
+                    </div>
+                    <label className="sr-only" htmlFor="auth-welcome-phone">
+                      {ui.phoneLabel}
+                    </label>
+                    <input
+                      id="auth-welcome-phone"
+                      type="tel"
+                      autoComplete="tel"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={15}
+                      value={phone}
+                      onChange={(event) => {
+                        setPhone(normalizeCustomerPhone(event.target.value));
+                        setProfileFieldError(null);
+                      }}
+                      className={fieldInputClass(profileFieldError === "phone")}
+                      placeholder={ui.phonePlaceholder}
+                      aria-invalid={profileFieldError === "phone"}
+                    />
+                    {profileFieldError === "phone" ? (
+                      <p className="text-center text-[12px] leading-relaxed text-red-700">
+                        {ui.phoneRequired}
+                      </p>
+                    ) : null}
+
+                    <button
+                      type="submit"
+                      className={primaryButtonClass}
+                      style={primaryBtnStyle}
+                    >
+                      {ui.continue}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleWelcomeProfileSkip}
+                      className={secondaryButtonClass}
+                    >
+                      {ui.skipProfile}
+                    </button>
                   </motion.form>
                 ) : null}
 
@@ -849,6 +1102,12 @@ export function AuthPopup({
                       </p>
                     ) : null}
 
+                    <AuthInlineError
+                      message={
+                        newPassword === confirmPassword ? visibleAuthError : null
+                      }
+                    />
+
                     <button
                       type="submit"
                       disabled={
@@ -859,10 +1118,72 @@ export function AuthPopup({
                       className={primaryButtonClass}
                       style={primaryBtnStyle}
                     >
-                      {isAuthenticating ? ui.saving : ui.savePassword}
+                      {isAuthenticating
+                        ? ui.saving
+                        : isBoutiqueAuth
+                          ? ui.continue
+                          : ui.savePassword}
                     </button>
 
                     {termsNotice}
+                  </motion.form>
+                ) : null}
+
+                {phase === "how-found" ? (
+                  <motion.form
+                    key="how-found-phase"
+                    {...fieldTransition}
+                    onSubmit={handleHowFoundSubmit}
+                    className="mx-auto mt-8 flex w-full max-w-[420px] flex-col gap-3"
+                  >
+                    <div
+                      role="radiogroup"
+                      aria-label={titleByPhase["how-found"]}
+                      className="flex flex-col gap-2"
+                    >
+                      {SIGNUP_DISCOVERY_SOURCES.map((source) => {
+                        const selected = discoverySource === source.id;
+                        return (
+                          <button
+                            key={source.id}
+                            type="button"
+                            role="radio"
+                            aria-checked={selected}
+                            onClick={() => setDiscoverySource(source.id)}
+                            disabled={isAuthenticating}
+                            className={`min-h-11 w-full border px-4 py-3 text-center text-[13px] transition-opacity disabled:opacity-60 ${
+                              selected
+                                ? "border-neutral-900 text-neutral-950"
+                                : "border-black/20 text-neutral-700 hover:border-neutral-900"
+                            }`}
+                            style={
+                              selected && accent
+                                ? { borderColor: accent, color: accent }
+                                : undefined
+                            }
+                          >
+                            {isTr ? source.labelTr : source.labelEn}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={isAuthenticating || !discoverySource}
+                      className={primaryButtonClass}
+                      style={primaryBtnStyle}
+                    >
+                      {isAuthenticating ? ui.saving : ui.completeSignup}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void handleHowFoundSkip()}
+                      disabled={isAuthenticating}
+                      className={secondaryButtonClass}
+                    >
+                      {ui.skipProfile}
+                    </button>
                   </motion.form>
                 ) : null}
 
@@ -884,6 +1205,7 @@ export function AuthPopup({
                     >
                       {isAuthenticating ? ui.sending : ui.sendSetupLink}
                     </button>
+                    <AuthInlineError message={visibleAuthError} />
                     <button
                       type="button"
                       onClick={() => goToLogin({ keepEmail: true })}
@@ -924,6 +1246,7 @@ export function AuthPopup({
                     >
                       {isAuthenticating ? ui.sending : ui.sendResetLink}
                     </button>
+                    <AuthInlineError message={visibleAuthError} />
 
                     <ResetAnchor
                       label={ui.backToSignIn}
@@ -949,16 +1272,6 @@ export function AuthPopup({
                   </motion.div>
                 ) : null}
               </AnimatePresence>
-
-              {authError ? (
-                <motion.p
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="mt-4 text-center text-[11px] leading-relaxed text-red-600"
-                >
-                  {authError}
-                </motion.p>
-              ) : null}
 
               <button
                 type="button"

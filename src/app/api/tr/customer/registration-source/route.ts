@@ -1,6 +1,6 @@
 import { ensureTrCustomerProfile } from "@/lib/tr/customerProfiles";
 import { getPublicBoutiqueBySlug } from "@/lib/tr/boutiques";
-import { createClient } from "@supabase/supabase-js";
+import { getCustomerUserFromRequest } from "@/lib/tr/customerAuth";
 
 export const runtime = "nodejs";
 
@@ -15,33 +15,9 @@ type Body = {
  * Authorization: Bearer <supabase access token>
  */
 export async function POST(request: Request) {
-  const authHeader = request.headers.get("authorization") ?? "";
-  const token = authHeader.startsWith("Bearer ")
-    ? authHeader.slice("Bearer ".length).trim()
-    : "";
-
-  if (!token) {
-    return Response.json({ error: "Unauthorized." }, { status: 401 });
-  }
-
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
-  if (!url || !anon) {
-    return Response.json({ error: "Supabase not configured." }, { status: 500 });
-  }
-
-  const supabase = createClient(url, anon, {
-    global: { headers: { Authorization: `Bearer ${token}` } },
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-
-  if (userError || !user) {
-    return Response.json({ error: "Unauthorized." }, { status: 401 });
+  const auth = await getCustomerUserFromRequest(request);
+  if ("error" in auth) {
+    return Response.json({ error: auth.error }, { status: auth.status });
   }
 
   let body: Body = {};
@@ -59,7 +35,7 @@ export async function POST(request: Request) {
   }
 
   await ensureTrCustomerProfile({
-    userId: user.id,
+    userId: auth.user.id,
     boutiqueId,
     boutiqueSlug: slug,
     host: body.host?.trim().toLowerCase() || null,

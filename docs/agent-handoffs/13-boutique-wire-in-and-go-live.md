@@ -166,6 +166,9 @@ Copy for each launch. Check before announcing Instagram → site.
 ### C4. Auth & email
 
 - [ ] `/giris` OTP works (branded From name)
+- [ ] Boutique signup: email → OTP → optional name/phone → password → optional “bizi nereden duydunuz?”; session stays (no forced re-login)
+- [ ] `patch_tr_customer_profile_fields.sql` applied (`profiles.first_name`, `last_name`, `phone`)
+- [ ] `patch_tr_customer_signup_discovery.sql` applied (`profiles.signup_discovery_source`, `signup_discovery_boutique_slug`)
 - [ ] Password reset: new email → boutique-branded reset page (not CS logo) → returns to boutique `/giris`
 - [ ] Supabase redirect allow-list includes boutique domain(s)
 - [ ] Spot-check spam: Gmail/Outlook; Resend domain DKIM/SPF/DMARC green on `cortisstyle.com`

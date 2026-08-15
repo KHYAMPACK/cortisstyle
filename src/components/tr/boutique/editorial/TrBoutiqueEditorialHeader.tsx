@@ -33,11 +33,15 @@ import {
   listTrCategoryRoots,
   resolveTrCategoryDisplayLabel,
 } from "@/lib/tr/categories";
+import { DEMO_SHOPPER_SHIPPED_ORDER_ID } from "@/lib/tr/commerce/demoShopperOrders";
 import {
   trBoutiqueAuthPath,
+  trBoutiqueOrderTrackingPath,
   trBoutiquePath,
   trBoutiqueProductsPath,
 } from "@/lib/tr/paths";
+import { useAuth } from "@/context/AuthContext";
+import { getTrAccountChromeLabel } from "@/lib/tr/userDisplayName";
 import type { TrBoutiquePublic } from "@/types/tr-marketplace";
 
 interface TrBoutiqueEditorialHeaderProps {
@@ -291,6 +295,7 @@ export function TrBoutiqueEditorialHeader({
 }: TrBoutiqueEditorialHeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const { user, isAuthenticated } = useAuth();
   const commerce = useTrBoutiqueCommerceScope();
   const favorites = useTrScopedFavorites();
   const navPending = useTrBoutiqueNavPendingOptional();
@@ -309,6 +314,7 @@ export function TrBoutiqueEditorialHeader({
   const hideCategoryNav =
     atelier && /\/(giris|sepet|favoriler)(\/|$)/.test(pathname);
   const brandTitle = resolveBoutiqueBrandLabel(boutique.slug, boutique.name);
+  const accountLabel = getTrAccountChromeLabel(user, isAuthenticated);
   const openMegaItem =
     atelier && megaId
       ? (content.nav.find((item) => item.id === megaId) ?? null)
@@ -431,7 +437,7 @@ export function TrBoutiqueEditorialHeader({
         href={trBoutiqueAuthPath(boutique.slug)}
         kind="account"
         className={iconBtn}
-        aria-label="Giriş / Hesap"
+        aria-label={accountLabel}
       >
         <User className="h-5 w-5" strokeWidth={1.5} />
       </TrBoutiquePendingLink>
@@ -629,18 +635,18 @@ export function TrBoutiqueEditorialHeader({
                         onNavigate={() => setMenuOpen(false)}
                         className="block py-3 text-[12px] tracking-[0.14em] text-neutral-600 uppercase"
                       >
-                        Giriş / Hesap
+                        {isAuthenticated ? accountLabel : "Giriş / Hesap"}
                       </TrBoutiquePendingLink>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setMenuOpen(false);
-                          commerce.openPanel("tracking");
-                        }}
-                        className="block w-full py-3 text-left text-[12px] tracking-[0.14em] text-neutral-600 uppercase"
+                      <TrBoutiquePendingLink
+                        href={trBoutiqueOrderTrackingPath(
+                          boutique.slug,
+                          DEMO_SHOPPER_SHIPPED_ORDER_ID,
+                        )}
+                        onNavigate={() => setMenuOpen(false)}
+                        className="block py-3 text-[12px] tracking-[0.14em] text-neutral-600 uppercase"
                       >
                         Kargo takip
-                      </button>
+                      </TrBoutiquePendingLink>
                       <button
                         type="button"
                         onClick={() => {

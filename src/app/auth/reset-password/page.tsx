@@ -5,6 +5,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { BrandLogo } from "@/components/BrandLogo";
 import { useAuth } from "@/context/AuthContext";
+import { localizeAuthError } from "@/lib/auth/authErrorMessage";
 import { DEFAULT_AUTH_NEXT_PATH } from "@/lib/authRedirect";
 import {
   resolveBoutiqueBrandLabel,
@@ -271,8 +272,11 @@ export default function ResetPasswordPage() {
               ) : null}
 
               {authError ? (
-                <p className="text-center text-[11px] text-red-600">
-                  {authError}
+                <p className="text-center text-[12px] leading-relaxed text-red-700">
+                  {localizeAuthError(
+                    authError,
+                    boutiqueFlow ? "tr" : "en",
+                  )}
                 </p>
               ) : null}
 

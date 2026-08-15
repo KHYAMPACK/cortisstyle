@@ -17,7 +17,13 @@ import {
   type ResolveEmailAuthOptions,
 } from "@/lib/authTypes";
 import { getPasswordResetRedirectUrl } from "@/lib/authRedirect";
-import { ensureUserProfile } from "@/lib/auth/ensureUserProfile";
+import {
+  normalizeAccountProfilePatch,
+  parseCustomerProfileFields,
+  type CustomerProfileFields,
+} from "@/lib/auth/customerProfileFields";
+import { ensureUserProfile, type UserProfileContact } from "@/lib/auth/ensureUserProfile";
+import type { SignupDiscoverySourceId } from "@/lib/auth/signupDiscoverySources";
 import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabaseClient";
 import { mapSupabaseUser, type AuthUser } from "@/types/user";
 
@@ -42,7 +48,15 @@ interface AuthContextValue {
   ) => Promise<void>;
   signInWithPassword: (email: string, password: string) => Promise<void>;
   verifySignUpOtp: (email: string, token: string) => Promise<void>;
-  setAccountPassword: (password: string) => Promise<void>;
+  setAccountPassword: (
+    password: string,
+    profile?: CustomerProfileFields,
+  ) => Promise<void>;
+  updateAccountProfile: (contact: UserProfileContact) => Promise<void>;
+  saveSignupDiscovery: (
+    source: SignupDiscoverySourceId,
+    boutiqueSlug?: string | null,
+  ) => Promise<void>;
   requestPasswordReset: (
     email: string,
     options?: ResolveEmailAuthOptions,
@@ -55,8 +69,34 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+function contactFromMetadata(
+  metadata: Record<string, unknown> | undefined,
+): {
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+} {
+  const firstName =
+    typeof metadata?.first_name === "string" ? metadata.first_name.trim() : "";
+  const lastName =
+    typeof metadata?.last_name === "string" ? metadata.last_name.trim() : "";
+  const phone =
+    typeof metadata?.phone === "string" ? metadata.phone.trim() : "";
+  return {
+    ...(firstName ? { firstName } : {}),
+    ...(lastName ? { lastName } : {}),
+    ...(phone ? { phone } : {}),
+  };
+}
+
 async function syncProfile(user: User) {
-  await ensureUserProfile(user.id, user.email);
+  await ensureUserProfile(
+    user.id,
+    user.email,
+    contactFromMetadata(
+      user.user_metadata as Record<string, unknown> | undefined,
+    ),
+  );
 }
 
 function isAlreadyRegisteredAuthError(message: string, code?: string): boolean {
@@ -383,36 +423,127 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const setAccountPassword = useCallback(async (password: string) => {
+  const setAccountPassword = useCallback(
+    async (password: string, profile?: CustomerProfileFields) => {
+      if (!isSupabaseConfigured()) {
+        setAuthError("Supabase is not configured.");
+        return;
+      }
+
+      setIsAuthenticating(true);
+      setAuthError(null);
+
+      try {
+        const parsed = profile ? parseCustomerProfileFields(profile) : null;
+        if (parsed && "error" in parsed) {
+          throw new Error("Geçerli bir telefon numarası girin.");
+        }
+
+        const contactMeta =
+          parsed && !("error" in parsed)
+            ? {
+                ...(parsed.firstName ? { first_name: parsed.firstName } : {}),
+                ...(parsed.lastName ? { last_name: parsed.lastName } : {}),
+                ...(parsed.phone ? { phone: parsed.phone } : {}),
+              }
+            : {};
+
+        const supabase = getSupabaseClient();
+        const { data, error } = await supabase.auth.updateUser({
+          password,
+          data: {
+            password_set: true,
+            ...contactMeta,
+          },
+        });
+
+        if (error) throw error;
+
+        if (data.user) {
+          await syncProfile(data.user);
+        }
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Unable to save password.";
+        setAuthError(message);
+        throw error;
+      } finally {
+        setIsAuthenticating(false);
+      }
+    },
+    [],
+  );
+
+  const updateAccountProfile = useCallback(async (contact: UserProfileContact) => {
     if (!isSupabaseConfigured()) {
-      setAuthError("Supabase is not configured.");
-      return;
+      throw new Error("Supabase is not configured.");
     }
 
-    setIsAuthenticating(true);
-    setAuthError(null);
+    const patch = normalizeAccountProfilePatch(contact);
+    if ("error" in patch) {
+      throw new Error("Geçerli bir telefon numarası girin.");
+    }
 
-    try {
-      const supabase = getSupabaseClient();
-      const { data, error } = await supabase.auth.updateUser({
-        password,
-        data: { password_set: true },
-      });
+    const meta: Record<string, string> = {};
+    if (patch.firstName !== undefined) {
+      meta.first_name = patch.firstName ?? "";
+    }
+    if (patch.lastName !== undefined) {
+      meta.last_name = patch.lastName ?? "";
+    }
+    if (patch.phone !== undefined) {
+      meta.phone = patch.phone ?? "";
+    }
 
-      if (error) throw error;
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase.auth.updateUser({ data: meta });
+    if (error) throw error;
 
-      if (data.user) {
-        await syncProfile(data.user);
-      }
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Unable to save password.";
-      setAuthError(message);
-      throw error;
-    } finally {
-      setIsAuthenticating(false);
+    const nextUser = data.user;
+    if (nextUser) {
+      await ensureUserProfile(nextUser.id, nextUser.email, patch);
+      setSession((prev) => (prev ? { ...prev, user: nextUser } : prev));
     }
   }, []);
+
+  const saveSignupDiscovery = useCallback(
+    async (source: SignupDiscoverySourceId, boutiqueSlug?: string | null) => {
+      if (!isSupabaseConfigured()) return;
+
+      setIsAuthenticating(true);
+      try {
+        const supabase = getSupabaseClient();
+        const { data, error } = await supabase.auth.updateUser({
+          data: {
+            signup_discovery_source: source,
+            signup_discovery_boutique_slug:
+              boutiqueSlug?.trim().toLowerCase() ?? "",
+          },
+        });
+        if (error) {
+          console.error("Signup discovery metadata failed:", error.message);
+          return;
+        }
+
+        const nextUser = data.user;
+        if (!nextUser) return;
+
+        try {
+          await ensureUserProfile(nextUser.id, nextUser.email, {
+            signupDiscoverySource: source,
+            signupDiscoveryBoutiqueSlug: boutiqueSlug ?? null,
+          });
+        } catch (persistError) {
+          console.error("Signup discovery profile failed:", persistError);
+        }
+
+        setSession((prev) => (prev ? { ...prev, user: nextUser } : prev));
+      } finally {
+        setIsAuthenticating(false);
+      }
+    },
+    [],
+  );
 
   const requestPasswordReset = useCallback(
     async (email: string, options?: ResolveEmailAuthOptions) => {
@@ -509,6 +640,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signInWithPassword,
       verifySignUpOtp,
       setAccountPassword,
+      updateAccountProfile,
+      saveSignupDiscovery,
       requestPasswordReset,
       needsPasswordSetup,
       signOut,
@@ -528,6 +661,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signInWithPassword,
       verifySignUpOtp,
       setAccountPassword,
+      updateAccountProfile,
+      saveSignupDiscovery,
       requestPasswordReset,
       needsPasswordSetup,
       signOut,

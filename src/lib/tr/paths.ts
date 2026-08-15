@@ -148,6 +148,24 @@ export function trBoutiqueFavoritesPath(boutiqueSlug: string): string {
   return `/tr/${encodeURIComponent(boutiqueSlug)}/favoriler`;
 }
 
+export function trBoutiqueOrdersPath(boutiqueSlug: string): string {
+  return `/tr/${encodeURIComponent(boutiqueSlug)}/siparisler`;
+}
+
+export function trBoutiqueOrderDetailPath(
+  boutiqueSlug: string,
+  orderId: string,
+): string {
+  return `/tr/${encodeURIComponent(boutiqueSlug)}/siparisler/${encodeURIComponent(orderId)}`;
+}
+
+export function trBoutiqueOrderTrackingPath(
+  boutiqueSlug: string,
+  orderId: string,
+): string {
+  return `${trBoutiqueOrderDetailPath(boutiqueSlug, orderId)}/takip`;
+}
+
 export function trComingSoonPath(): string {
   return "/tr/yakinda";
 }

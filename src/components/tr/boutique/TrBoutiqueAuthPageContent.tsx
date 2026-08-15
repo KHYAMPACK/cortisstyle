@@ -20,6 +20,7 @@ import {
   useTrScopedFavorites,
 } from "@/components/tr/boutique/TrBoutiqueCommerceScope";
 import { TrBoutiqueEditorialProductCard } from "@/components/tr/boutique/editorial/TrBoutiqueEditorialProductCard";
+import { TrBoutiquePersonalInfo } from "@/components/tr/boutique/TrBoutiquePersonalInfo";
 import { useTrBoutiqueProductsOptional } from "@/components/tr/boutique/TrBoutiqueProductsContext";
 import { useAuth } from "@/context/AuthContext";
 import { resolveBoutiqueBrandLabel, resolveBoutiqueLogoUrl, resolveBoutiqueThemeAccent } from "@/lib/tr/boutiqueBrand";
@@ -29,11 +30,14 @@ import {
   trBoutiqueCartPath,
   trBoutiqueFavoritesPath,
   trBoutiqueLegalPath,
+  trBoutiqueOrderTrackingPath,
+  trBoutiqueOrdersPath,
   trBoutiquePath,
   trBoutiqueProductsPath,
 } from "@/lib/tr/paths";
 import { pickFavoriteProducts } from "@/lib/tr/recommendations";
 import { getTrUserFirstName } from "@/lib/tr/userDisplayName";
+import { DEMO_SHOPPER_SHIPPED_ORDER_ID } from "@/lib/tr/commerce/demoShopperOrders";
 import { trPanelEase } from "@/components/tr/panel/TrPanelMotion";
 import type { TrBoutiquePublic } from "@/types/tr-marketplace";
 
@@ -195,12 +199,9 @@ export function TrBoutiqueAuthPageContent({
           transition={{ duration: 0.35, ease: trPanelEase, delay: 0.05 }}
           className="mt-8 space-y-10"
         >
-          <div className="border border-black/8 bg-neutral-50 px-4 py-4 text-center">
-            <p className="text-[10px] tracking-[0.2em] text-neutral-500 uppercase">
-              Oturum
-            </p>
-            <p className="mt-1 text-[13px] text-neutral-900">{user?.email}</p>
-          </div>
+          {user ? (
+            <TrBoutiquePersonalInfo user={user} accent={accent} />
+          ) : null}
 
           <section aria-label="Hızlı işlemler">
             <p className="mb-3 text-[10px] tracking-[0.22em] text-neutral-500 uppercase">
@@ -222,27 +223,24 @@ export function TrBoutiqueAuthPageContent({
                     : ""}
                 </span>
               </Link>
-              <button
-                type="button"
-                onClick={() => commerce.openPanel("tracking")}
+              <Link
+                href={trBoutiqueOrderTrackingPath(
+                  boutique.slug,
+                  DEMO_SHOPPER_SHIPPED_ORDER_ID,
+                )}
                 className={ACTION}
               >
                 <Truck className="h-4 w-4 shrink-0" strokeWidth={1.5} />
                 <span className="text-[12px] tracking-[0.12em] uppercase">
                   Kargo takip
                 </span>
-              </button>
-              <button
-                type="button"
-                disabled
-                className={`${ACTION} cursor-not-allowed opacity-55`}
-                title="Yakında"
-              >
+              </Link>
+              <Link href={trBoutiqueOrdersPath(boutique.slug)} className={ACTION}>
                 <Package className="h-4 w-4 shrink-0" strokeWidth={1.5} />
                 <span className="text-[12px] tracking-[0.12em] uppercase">
-                  Siparişler · yakında
+                  Siparişler
                 </span>
-              </button>
+              </Link>
             </div>
           </section>
 
@@ -441,7 +439,6 @@ export function TrBoutiqueAuthPageContent({
         onAuthSuccess={async (meta) => {
           if (meta?.isNewAccount) {
             await recordRegistrationSource(boutique.slug);
-            return;
           }
           setAuthOpen(false);
         }}

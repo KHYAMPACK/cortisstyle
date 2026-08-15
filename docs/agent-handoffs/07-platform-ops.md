@@ -10,6 +10,7 @@
 - Motion: keep transitions intentional (`.cursor/rules/smooth-transitions.mdc`)
 - Money in TR: integer **kuruş**
 - SQL: incremental `supabase/patch_*.sql` — no automated migrator; document when adding patches
+- Shopper contact on `profiles`: `supabase/patch_tr_customer_profile_fields.sql` (`first_name`, `last_name`, `phone`). Optional at boutique signup after OTP (“sizi tanıyalım”); editable later from boutique Hesabım (`TrBoutiquePersonalInfo` — name + phone; email is display-only). Phone is format-checked only if provided, not SMS-OTP. Optional “bizi nereden duydunuz?” after password (`instagram` / `internet` / `ai` / `word_of_mouth`) — `supabase/patch_tr_customer_signup_discovery.sql`. One platform profile across boutiques.
 - Offline invoices: apply `supabase/patch_tr_invoices.sql` (buyer tax on orders + `tr_invoices`; GİB later)
 - Drop dormant intl tables (once): `supabase/patch_drop_international_tables.sql` — keeps `profiles` + all `tr_*`
 - Boutique public view: `supabase/patch_tr_boutiques_public_view.sql`
