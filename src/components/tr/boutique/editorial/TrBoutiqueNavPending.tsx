@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
   useTransition,
+  type CSSProperties,
   type MouseEvent,
   type ReactNode,
 } from "react";
@@ -161,6 +162,7 @@ export function TrBoutiquePendingMain({ children }: MainProps) {
 interface TrBoutiquePendingLinkProps {
   href: string;
   className?: string;
+  style?: CSSProperties;
   children: ReactNode;
   prefetch?: boolean;
   "aria-label"?: string;
@@ -172,6 +174,7 @@ interface TrBoutiquePendingLinkProps {
 export function TrBoutiquePendingLink({
   href,
   className,
+  style,
   children,
   prefetch = true,
   "aria-label": ariaLabel,
@@ -209,6 +212,7 @@ export function TrBoutiquePendingLink({
       prefetch={prefetch}
       onClick={handleClick}
       className={className}
+      style={style}
       aria-label={ariaLabel}
       aria-busy={pending?.isPending || undefined}
     >
