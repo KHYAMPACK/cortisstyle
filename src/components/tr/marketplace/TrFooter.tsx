@@ -1,47 +1,49 @@
 import Link from "next/link";
+import { TrSoftNavLink } from "@/components/tr/TrSoftNavLink";
+import { CADDE_CTA, CADDE_DISPLAY, CADDE_KICKER, caddeBracket } from "@/lib/tr/marketplace/caddeUi";
 import { siteLegal } from "@/lib/siteLegal";
 import { trComingSoonPath, trHomePath } from "@/lib/tr/paths";
+import { CADDE_TRANSITION_WORD } from "@/lib/platform/caddeTransition";
 
-const linkClass =
-  "text-meta transition-colors hover:text-brand-primary underline-offset-2 hover:underline";
+const linkClass = `${CADDE_CTA} text-jet-black transition-colors hover:text-cadde-red`;
 
 export function TrFooter() {
   return (
-    <footer className="border-t border-blueprint-border bg-ice-floor px-5 py-8 md:px-10">
-      <div className="mx-auto flex max-w-4xl flex-col items-center gap-4 text-center">
-        <p className="text-[9px] tracking-[0.35em] text-brand-primary uppercase">
-          © 2026 {siteLegal.siteName} Türkiye — Tüm hakları saklıdır
+    <footer className="border-t border-black/10 bg-ice-floor px-5 py-12 md:px-10 md:py-16">
+      <div className="mx-auto flex max-w-4xl flex-col items-center gap-6 text-center">
+        <p className={`${CADDE_DISPLAY} text-[2rem] md:text-[2.6rem]`}>
+          {CADDE_TRANSITION_WORD}
+        </p>
+        <p className={CADDE_KICKER}>
+          © 2026 {siteLegal.siteName} Türkiye
         </p>
 
         <nav
           aria-label="Türkiye pazarı"
-          className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[10px] tracking-[0.22em] uppercase"
+          className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2"
         >
-          <Link href={trHomePath()} className={linkClass}>
-            Ana Sayfa
-          </Link>
-          <span className="text-neutral-300" aria-hidden>
-            ·
-          </span>
-          <Link href={trComingSoonPath()} className={linkClass}>
-            Hukuki Metinler
-          </Link>
-          <span className="text-neutral-300" aria-hidden>
-            ·
-          </span>
+          <TrSoftNavLink href={trHomePath()} className={linkClass}>
+            {caddeBracket("Ana sayfa")}
+          </TrSoftNavLink>
+          <TrSoftNavLink href={trComingSoonPath()} className={linkClass}>
+            {caddeBracket("Hukuki")}
+          </TrSoftNavLink>
           <Link href="/contact" className={linkClass}>
-            İletişim
+            {caddeBracket("İletişim")}
           </Link>
         </nav>
 
-        <p className="max-w-xl text-[11px] leading-relaxed text-meta">
+        <p className="max-w-xl font-cadde-nav text-[12px] leading-relaxed tracking-[0.04em] text-neutral-500">
           Butik caddesinden seçilmiş kombinler ve parçalar. Farklı satıcılardan
           tek sepet — online ödeme yakında.
         </p>
 
-        <p className="text-[11px] text-meta">
+        <p className="font-cadde-nav text-[11px] tracking-[0.06em] text-neutral-500">
           İletişim:{" "}
-          <a href={`mailto:${siteLegal.contactEmail}`} className={linkClass}>
+          <a
+            href={`mailto:${siteLegal.contactEmail}`}
+            className="text-jet-black underline-offset-2 transition-colors hover:text-cadde-red hover:underline"
+          >
             {siteLegal.contactEmail}
           </a>
         </p>

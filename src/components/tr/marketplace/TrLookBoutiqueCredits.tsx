@@ -35,7 +35,9 @@ export function TrLookBoutiqueCredits({
 
   return (
     <div className="mt-3 flex items-center justify-between gap-3">
-      <p className="text-meta text-[9px] tracking-[0.22em] uppercase">Butik</p>
+      <p className="font-cadde-nav text-[9px] font-semibold tracking-[0.22em] text-neutral-500 uppercase">
+        Butik
+      </p>
       <div className="flex items-center gap-2">
         {shown.map((boutique) => {
           const logo = boutique.logoUrl ? (
@@ -52,7 +54,7 @@ export function TrLookBoutiqueCredits({
               }`}
             />
           ) : (
-            <span className="font-serif text-sm text-neutral-700">
+            <span className="font-cadde-nav text-sm text-neutral-700">
               {boutique.name.trim().charAt(0) || "B"}
             </span>
           );
@@ -64,7 +66,7 @@ export function TrLookBoutiqueCredits({
               onClick={stopCard}
               title={boutique.name}
               aria-label={`${boutique.name} butiğine git`}
-              className="relative flex h-8 w-8 items-center justify-center overflow-hidden border border-blueprint-border bg-ice-floor transition-opacity hover:opacity-80"
+              className="relative flex h-8 w-8 items-center justify-center overflow-hidden border border-black/10 bg-ice-floor transition-opacity hover:opacity-80"
             >
               {logo}
             </Link>
@@ -73,7 +75,7 @@ export function TrLookBoutiqueCredits({
         {Array.from({ length: placeholderCount }, (_, index) => (
           <div
             key={`ph-${index}`}
-            className="relative flex h-8 w-8 items-center justify-center overflow-hidden border border-blueprint-border bg-ice-floor"
+            className="relative flex h-8 w-8 items-center justify-center overflow-hidden border border-black/10 bg-ice-floor"
             aria-hidden
           >
             <BrandLogo variant="onLight" className="h-5 w-auto opacity-50" />

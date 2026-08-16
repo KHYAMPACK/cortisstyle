@@ -71,7 +71,7 @@ When an agent is asked to **create a site for a boutique**, pick one of these **
 - **What we like (study this):**
   - Typography — bold condensed display vs small clean UI sans
   - Model poses — full-figure, centered, garment-forward
-  - How text and model work as one composition
+- Cadde `/tr` campaign hero (`CaddeSplitHero`) uses this split language — two poses, not four.
 
 ## Adding sites
 

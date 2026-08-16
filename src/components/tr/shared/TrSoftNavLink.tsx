@@ -7,6 +7,8 @@ import {
   type MouseEvent,
   type ReactNode,
 } from "react";
+import { useCaddePageTransition } from "@/components/tr/marketplace/CaddePageTransition";
+import { shouldPlayCaddePageTransition, caddePathnameFromHref } from "@/lib/platform/caddeTransition";
 import { markTrCanGoBack, writeTrScroll } from "@/lib/tr/scrollMemory";
 
 interface TrSoftNavLinkProps {
@@ -14,6 +16,7 @@ interface TrSoftNavLinkProps {
   className?: string;
   children: ReactNode;
   prefetch?: boolean;
+  role?: string;
   "aria-label"?: string;
   /** Called when navigation is accepted (e.g. close a drawer). */
   onNavigate?: () => void;
@@ -25,12 +28,14 @@ export function TrSoftNavLink({
   className,
   children,
   prefetch = true,
+  role,
   "aria-label": ariaLabel,
   onNavigate,
 }: TrSoftNavLinkProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
+  const caddeTransition = useCaddePageTransition();
 
   const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
     if (
@@ -44,8 +49,11 @@ export function TrSoftNavLink({
       return;
     }
 
-    // Hash targets: let the browser / Link handle scroll.
-    if (href.includes("#")) {
+    const destPath = caddePathnameFromHref(href);
+    const here = pathname.replace(/\/$/, "") || "/";
+
+    // Same-page hash: let the browser / Link handle scroll.
+    if (href.includes("#") && destPath === here) {
       writeTrScroll(pathname, window.scrollY);
       markTrCanGoBack();
       onNavigate?.();
@@ -56,6 +64,13 @@ export function TrSoftNavLink({
     writeTrScroll(pathname, window.scrollY);
     markTrCanGoBack();
     onNavigate?.();
+    if (
+      caddeTransition &&
+      shouldPlayCaddePageTransition(pathname, href)
+    ) {
+      caddeTransition.go(href);
+      return;
+    }
     startTransition(() => {
       router.push(href);
     });
@@ -67,6 +82,7 @@ export function TrSoftNavLink({
       prefetch={prefetch}
       onClick={handleClick}
       className={className}
+      role={role}
       style={isPending ? { opacity: 0.65 } : undefined}
       aria-busy={isPending || undefined}
       aria-label={ariaLabel}

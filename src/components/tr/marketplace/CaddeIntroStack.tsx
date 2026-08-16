@@ -1,10 +1,10 @@
 "use client";
 
-import Image from "next/image";
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import { useReducedMotion } from "framer-motion";
 import {
   CADDE_INTRO_FRAMES,
+  CADDE_INTRO_HOLD_MS,
   CADDE_INTRO_LETTER_OUT_DURATION_S,
   CADDE_INTRO_LETTER_OUT_STAGGER_S,
   CADDE_INTRO_LETTER_STAGGER_S,
@@ -34,6 +34,65 @@ function photoOut(frame: IntroFrame): string {
   return photoFrom(frame);
 }
 
+const COUNT_MAX = 100;
+
+function pad3(value: number): string {
+  return String(Math.max(0, Math.min(COUNT_MAX, Math.round(value)))).padStart(
+    3,
+    "0",
+  );
+}
+
+function startProgressCount(
+  el: HTMLElement,
+  durationMs: number,
+  onComplete?: () => void,
+): () => void {
+  let raf = 0;
+  const start = performance.now();
+
+  const tick = (now: number) => {
+    const t = Math.min(1, (now - start) / durationMs);
+    const eased = 1 - (1 - t) * (1 - t);
+    el.textContent = pad3(1 + (COUNT_MAX - 1) * eased);
+    if (t < 1) {
+      raf = requestAnimationFrame(tick);
+      return;
+    }
+    onComplete?.();
+  };
+
+  raf = requestAnimationFrame(tick);
+  return () => cancelAnimationFrame(raf);
+}
+
+function playCountClose(el: HTMLElement) {
+  const raw =
+    (el.textContent ?? pad3(COUNT_MAX)).replace(/\s/g, "") || pad3(COUNT_MAX);
+  el.replaceChildren();
+  el.style.overflow = "hidden";
+
+  Array.from(raw).forEach((digit, index) => {
+    const span = document.createElement("span");
+    span.textContent = digit;
+    span.className = "inline-block";
+    span.style.willChange = "transform, opacity";
+    el.appendChild(span);
+    span.animate(
+      [
+        { transform: "translate3d(0, 0, 0)", opacity: 1 },
+        { transform: "translate3d(0, -110%, 0)", opacity: 0 },
+      ],
+      {
+        duration: 220,
+        delay: index * 36,
+        fill: "forwards",
+        easing: OUT_EASE,
+      },
+    );
+  });
+}
+
 function freezeThenAnimate(
   el: HTMLElement,
   fromFallback: Keyframe,
@@ -42,7 +101,6 @@ function freezeThenAnimate(
   durationMs: number,
   easing: string,
 ) {
-  const computed = getComputedStyle(el);
   for (const animation of el.getAnimations()) {
     try {
       animation.commitStyles();
@@ -96,15 +154,22 @@ function playEntrance(root: HTMLElement) {
         { transform: "translate3d(0, 0, 0)", opacity: 1 },
       ],
       {
-        duration: 380,
+        duration: 280,
         delay:
-          (CADDE_INTRO_LETTER_START_S +
-            index * CADDE_INTRO_LETTER_STAGGER_S) *
+          (CADDE_INTRO_LETTER_START_S + index * CADDE_INTRO_LETTER_STAGGER_S) *
           1000,
         fill: "forwards",
         easing: IN_EASE,
       },
     );
+  });
+
+  const count = root.querySelector<HTMLElement>("[data-cadde-count]");
+  count?.animate([{ opacity: 0 }, { opacity: 1 }], {
+    duration: 320,
+    delay: CADDE_INTRO_PHOTO_IN_DELAY_S * 1000,
+    fill: "forwards",
+    easing: IN_EASE,
   });
 }
 
@@ -141,12 +206,36 @@ function playReverse(root: HTMLElement) {
 export function CaddeIntroStack({ exiting = false }: { exiting?: boolean }) {
   const reduceMotion = useReducedMotion();
   const rootRef = useRef<HTMLDivElement>(null);
-  const didEnter = useRef(false);
+  const countRef = useRef<HTMLParagraphElement>(null);
+  const stopCountRef = useRef<(() => void) | null>(null);
+  const countClosedRef = useRef(false);
 
-  useEffect(() => {
+  const setCount = (value: number) => {
+    if (countClosedRef.current) return;
+    if (countRef.current) countRef.current.textContent = pad3(value);
+  };
+
+  const stopCount = () => {
+    stopCountRef.current?.();
+    stopCountRef.current = null;
+  };
+
+  const closeCount = () => {
+    if (countClosedRef.current) return;
+    countClosedRef.current = true;
+    const el = countRef.current;
+    if (!el) return;
+    if (reduceMotion) {
+      el.style.opacity = "0";
+      return;
+    }
+    playCountClose(el);
+  };
+
+  useLayoutEffect(() => {
     const root = rootRef.current;
-    if (!root || didEnter.current) return;
-    didEnter.current = true;
+    if (!root) return;
+    countClosedRef.current = false;
 
     if (reduceMotion) {
       root.querySelectorAll<HTMLElement>("[data-cadde-photo]").forEach((el, i) => {
@@ -159,16 +248,36 @@ export function CaddeIntroStack({ exiting = false }: { exiting?: boolean }) {
         el.style.transform = "translate3d(0, 0, 0)";
         el.style.opacity = "1";
       });
+      const count = root.querySelector<HTMLElement>("[data-cadde-count]");
+      if (count) count.style.opacity = "1";
+      setCount(COUNT_MAX);
       return;
     }
 
     playEntrance(root);
+    if (countRef.current) {
+      stopCountRef.current = startProgressCount(
+        countRef.current,
+        CADDE_INTRO_HOLD_MS,
+        closeCount,
+      );
+    }
+
+    return () => {
+      stopCount();
+    };
   }, [reduceMotion]);
 
   useEffect(() => {
     if (!exiting) return;
     const root = rootRef.current;
     if (!root) return;
+
+    stopCount();
+    if (!countClosedRef.current) {
+      setCount(COUNT_MAX);
+      closeCount();
+    }
 
     if (reduceMotion) {
       root.querySelectorAll<HTMLElement>("[data-cadde-photo]").forEach((el, i) => {
@@ -197,27 +306,27 @@ export function CaddeIntroStack({ exiting = false }: { exiting?: boolean }) {
           className="pointer-events-none absolute top-1/2 left-1/2 z-0 -translate-x-1/2 -translate-y-1/2"
           aria-hidden
         >
-          <div className="relative h-[min(68vw,460px)] w-[min(50vw,340px)] sm:h-[500px] sm:w-[360px]">
+          <div className="relative h-[min(42vw,220px)] w-[min(31vw,160px)]">
             {CADDE_INTRO_FRAMES.map((frame, index) => (
               <div
                 key={frame.src}
                 data-cadde-photo=""
-                className="absolute inset-0 overflow-hidden bg-black shadow-[0_22px_50px_rgba(0,0,0,0.55)] ring-1 ring-white/20"
+                className="absolute inset-0 overflow-hidden bg-black opacity-0 shadow-[0_22px_50px_rgba(0,0,0,0.55)] ring-1 ring-white/20"
                 style={{
                   zIndex: index + 1,
-                  opacity: 0,
-                  transform: photoFrom(frame),
                   willChange: "transform, opacity",
                   backfaceVisibility: "hidden",
                 }}
               >
-                <Image
+                <img
                   src={frame.src}
                   alt=""
-                  fill
-                  sizes="(max-width: 640px) 50vw, 360px"
-                  priority={index < 4}
-                  className="object-cover"
+                  width={800}
+                  height={1067}
+                  decoding="async"
+                  fetchPriority={index < 3 ? "high" : "low"}
+                  draggable={false}
+                  className="absolute inset-0 h-full w-full object-cover"
                 />
               </div>
             ))}
@@ -226,19 +335,15 @@ export function CaddeIntroStack({ exiting = false }: { exiting?: boolean }) {
 
         <p
           aria-label="Cortisstyle"
-          className="font-cadde-display pointer-events-none relative z-20 flex flex-col items-center text-center text-[clamp(3.15rem,16vw,9.75rem)] leading-[0.72] font-bold tracking-[-0.055em] text-[#F3EDE4] uppercase mix-blend-difference"
+          className="font-cadde-display pointer-events-none relative z-20 flex flex-col items-center gap-[0.14em] text-center text-[clamp(3.15rem,16vw,9.75rem)] leading-none font-normal tracking-[0.02em] text-[#F3EDE4] uppercase mix-blend-difference md:gap-0 md:leading-[0.9]"
         >
           <span className="block">
             {Array.from(CADDE_INTRO_WORD.top).map((letter, index) => (
               <span
                 key={`top-${index}`}
                 data-cadde-letter=""
-                className="inline-block"
-                style={{
-                  opacity: 0,
-                  transform: "translate3d(0, 0.55em, 0)",
-                  willChange: "transform, opacity",
-                }}
+                className="inline-block opacity-0"
+                style={{ willChange: "transform, opacity" }}
               >
                 {letter}
               </span>
@@ -249,17 +354,22 @@ export function CaddeIntroStack({ exiting = false }: { exiting?: boolean }) {
               <span
                 key={`bottom-${index}`}
                 data-cadde-letter=""
-                className="inline-block"
-                style={{
-                  opacity: 0,
-                  transform: "translate3d(0, 0.55em, 0)",
-                  willChange: "transform, opacity",
-                }}
+                className="inline-block opacity-0"
+                style={{ willChange: "transform, opacity" }}
               >
                 {letter}
               </span>
             ))}
           </span>
+        </p>
+
+        <p
+          ref={countRef}
+          data-cadde-count=""
+          aria-hidden
+          className="font-cadde-display pointer-events-none absolute right-0 bottom-0 z-30 translate-y-[1.2em] overflow-hidden text-[clamp(1.05rem,3.1vw,1.7rem)] leading-none font-normal tracking-[0.06em] text-[#E8E4DC] tabular-nums opacity-0"
+        >
+          001
         </p>
       </div>
     </div>

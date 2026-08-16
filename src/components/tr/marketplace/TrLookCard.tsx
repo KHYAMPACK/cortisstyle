@@ -6,6 +6,7 @@ import { TrDemoGarmentVisual } from "@/components/tr/demo/TrDemoGarmentVisual";
 import { TrLookBoutiqueCredits } from "@/components/tr/TrLookBoutiqueCredits";
 import { TrSoftNavLink } from "@/components/tr/TrSoftNavLink";
 import { isTrDemoIconSrc } from "@/lib/tr/demoIcons";
+import { CADDE_DISPLAY, CADDE_LABEL, caddeBracket } from "@/lib/tr/marketplace/caddeUi";
 import { trLookPath } from "@/lib/tr/paths";
 import type { TrLookWithProducts } from "@/types/tr-look";
 import { trPanelEase } from "@/components/tr/panel/TrPanelMotion";
@@ -22,7 +23,7 @@ export function TrLookCard({ look, index, linked = true }: TrLookCardProps) {
   const demoCover = isTrDemoIconSrc(look.coverImage);
 
   const cover = (
-    <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100">
+    <div className="relative aspect-[3/4] overflow-hidden bg-ice-floor">
       {demoCover ? (
         <TrDemoGarmentVisual
           src={look.coverImage}
@@ -39,10 +40,8 @@ export function TrLookCard({ look, index, linked = true }: TrLookCardProps) {
           className="object-cover transition-all duration-700 ease-out group-hover:scale-[1.02] group-hover:brightness-[0.72]"
         />
       ) : (
-        <div className="flex h-full items-center justify-center bg-blueprint-surface px-6">
-          <span className="font-serif text-2xl text-neutral-600">
-            {look.title}
-          </span>
+        <div className="flex h-full items-center justify-center bg-neutral-100 px-6">
+          <span className={`${CADDE_DISPLAY} text-2xl`}>{look.title}</span>
         </div>
       )}
 
@@ -51,8 +50,8 @@ export function TrLookCard({ look, index, linked = true }: TrLookCardProps) {
         aria-hidden
       />
       <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-500 group-hover:opacity-100">
-        <span className="font-serif text-[11px] tracking-[0.45em] text-white uppercase drop-shadow">
-          Look’a bak
+        <span className={`${CADDE_LABEL} text-white drop-shadow`}>
+          {caddeBracket("Bak")}
         </span>
       </div>
     </div>
@@ -60,11 +59,11 @@ export function TrLookCard({ look, index, linked = true }: TrLookCardProps) {
 
   const titleBlock = (
     <div className="space-y-2">
-      <h3 className="font-serif text-xl tracking-[-0.02em] text-neutral-950 md:text-2xl">
+      <h3 className={`${CADDE_DISPLAY} text-[1.35rem] md:text-[1.65rem]`}>
         {look.title}
       </h3>
       {look.subtitle ? (
-        <p className="text-[12px] leading-relaxed text-neutral-600">
+        <p className="font-cadde-nav text-[12px] leading-relaxed tracking-[0.04em] text-neutral-500">
           {look.subtitle}
         </p>
       ) : null}
@@ -84,13 +83,13 @@ export function TrLookCard({ look, index, linked = true }: TrLookCardProps) {
 
   return (
     <motion.article
-      className="group surface-canvas-paper block w-full overflow-hidden border border-blueprint-border text-left"
+      className="group block w-full overflow-hidden border border-black/10 bg-white text-left"
       {...motionProps}
     >
       {linked ? (
         <TrSoftNavLink
           href={trLookPath(look.slug)}
-          className="block outline-none focus-visible:ring-2 focus-visible:ring-blueprint-accent focus-visible:ring-offset-2"
+          className="block outline-none focus-visible:ring-2 focus-visible:ring-jet-black focus-visible:ring-offset-2"
           aria-label={`${look.title} look’una bak`}
         >
           {cover}

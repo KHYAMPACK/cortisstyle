@@ -50,7 +50,7 @@ function CartCheckbox({
       onClick={() => onChange(!checked)}
       className={`flex h-5 w-5 shrink-0 items-center justify-center border transition-colors ${
         checked
-          ? "border-brand-primary bg-brand-primary text-white"
+          ? "border-jet-black bg-jet-black text-white"
           : "border-neutral-300 bg-white text-transparent"
       }`}
     >
@@ -170,7 +170,7 @@ function CartLineRow({
                 −
               </button>
               <span
-                className="min-w-[1.75rem] bg-brand-primary/10 px-2 py-1.5 text-center font-medium text-brand-primary"
+                className="min-w-[1.75rem] bg-black/5 px-2 py-1.5 text-center font-medium text-jet-black"
                 aria-label="Adet 1"
               >
                 1
@@ -184,7 +184,7 @@ function CartLineRow({
             </span>
           </div>
 
-          <p className="text-[15px] font-semibold tracking-tight text-brand-primary sm:text-base">
+          <p className="font-cadde-nav text-[15px] font-semibold tracking-tight text-jet-black sm:text-base">
             {formatTryFromKurus(item.priceKurus)}
           </p>
         </div>
@@ -368,7 +368,7 @@ export function TrCartPageContent() {
                 ? ` · ${selectedCount}/${count} seçili`
                 : ""}
             </p>
-            <p className="mt-1 text-[17px] font-semibold tracking-tight text-brand-primary">
+            <p className="mt-1 font-cadde-nav text-[17px] font-semibold tracking-tight text-jet-black">
               {formatTryFromKurus(selectedTotal)}
             </p>
             <p className="mt-0.5 text-[9px] tracking-[0.12em] text-neutral-400">
@@ -378,9 +378,9 @@ export function TrCartPageContent() {
           {selectedCount > 0 ? (
             <TrSoftNavLink
               href={trCheckoutPath()}
-              className="inline-flex min-w-[12rem] items-center justify-center bg-brand-primary px-8 py-3.5 text-[11px] tracking-[0.22em] text-white uppercase transition-colors hover:bg-brand-primary-hover"
+              className="font-cadde-nav inline-flex min-w-[12rem] items-center justify-center bg-jet-black px-8 py-3.5 text-[11px] font-semibold tracking-[0.28em] text-white uppercase transition-opacity hover:opacity-85"
             >
-              Sepeti onayla ({selectedCount})
+              [ Sepeti onayla ] ({selectedCount})
             </TrSoftNavLink>
           ) : (
             <button

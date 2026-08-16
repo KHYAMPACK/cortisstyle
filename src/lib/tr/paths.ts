@@ -92,6 +92,11 @@ export function trLookPath(slug: string): string {
   return `/tr/kombin/${encodeURIComponent(slug)}`;
 }
 
+/** Cadde lookbook — all outfits in editorial rhythm. */
+export function trKombinlerPath(): string {
+  return "/tr/kombinler";
+}
+
 /** Canonical boutique PDP when slug is known; legacy `/tr/shop/id` fallback otherwise. */
 export function trProductPath(
   productId: string,

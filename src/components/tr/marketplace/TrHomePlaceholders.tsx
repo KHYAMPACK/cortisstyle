@@ -2,7 +2,7 @@ import { BrandLogo } from "@/components/BrandLogo";
 import { TrLookBoutiqueCredits } from "@/components/tr/TrLookBoutiqueCredits";
 
 /** Ghost look covers when the home look rail has no published looks. */
-export const TR_HOME_PLACEHOLDER_LOOKS = 3;
+export const TR_HOME_PLACEHOLDER_LOOKS = 6;
 
 /** Ghost product tiles under each placeholder look (enough to scroll). */
 export const TR_HOME_PLACEHOLDER_PIECES_PER_LOOK = 6;
@@ -35,7 +35,7 @@ export function TrPlaceholderProductCard({ index }: { index: number }) {
 export function TrPlaceholderLookCard({ index }: { index: number }) {
   return (
     <div
-      className="surface-canvas-paper block w-full overflow-hidden border border-blueprint-border"
+      className="block w-full overflow-hidden border border-black/10 bg-white"
       aria-hidden={index > 0}
       {...(index === 0
         ? { role: "status", "aria-label": "Kombinler yakında" }
@@ -47,7 +47,7 @@ export function TrPlaceholderLookCard({ index }: { index: number }) {
           className="h-12 w-auto opacity-35 md:h-14"
         />
       </div>
-      <div className="border-t border-blueprint-border px-3 py-3 md:px-4 md:py-4">
+      <div className="border-t border-black/10 px-3 py-3 md:px-4 md:py-4">
         <div className="h-2.5 w-32 bg-neutral-200/90" />
         <div className="mt-2 h-2 w-20 bg-neutral-100" />
         <TrLookBoutiqueCredits boutiques={[]} placeholderCount={2} />

@@ -1,11 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import type { KeyboardEvent } from "react";
 import { TrDemoGarmentVisual } from "@/components/tr/demo/TrDemoGarmentVisual";
 import { TrFavoriteButton } from "@/components/tr/TrFavoriteButton";
 import { TrQuickAddToCartButton } from "@/components/tr/TrQuickAddToCartButton";
+import { TrSoftNavLink } from "@/components/tr/TrSoftNavLink";
 import { getTrCategoryLabel } from "@/lib/tr/categories";
 import { isTrDemoIconSrc } from "@/lib/tr/demoIcons";
 import {
@@ -117,14 +117,26 @@ export function TrProductCard({
           </>
         ) : (
           <div className="flex h-full items-center justify-center bg-neutral-100 px-4 text-center">
-            <span className="font-serif text-lg text-neutral-700">
+            <span
+              className={`text-lg text-neutral-700 ${
+                centered
+                  ? "font-cadde-display uppercase tracking-[0.02em]"
+                  : "font-serif"
+              }`}
+            >
               {product.title}
             </span>
           </div>
         )}
 
         {isSold ? (
-          <span className="absolute top-2 left-2 bg-white px-1.5 py-1 text-[9px] tracking-[0.16em] text-neutral-900 uppercase">
+          <span
+            className={`absolute top-2 left-2 bg-white px-1.5 py-1 text-[9px] tracking-[0.16em] uppercase ${
+              centered
+                ? "font-cadde-nav font-semibold text-cadde-red"
+                : "text-neutral-900"
+            }`}
+          >
             Satıldı
           </span>
         ) : null}
@@ -143,15 +155,23 @@ export function TrProductCard({
         }`}
       >
         {showSeller ? (
-          <p className="text-[10px] font-semibold tracking-[0.08em] text-neutral-900 uppercase">
+          <p
+            className={`text-[10px] font-semibold uppercase ${
+              centered
+                ? "font-cadde-nav tracking-[0.16em] text-neutral-500"
+                : "tracking-[0.08em] text-neutral-900"
+            }`}
+          >
             {resolvedBoutiqueName}
           </p>
         ) : null}
 
         <h3
-          className={`line-clamp-2 font-serif text-[11px] leading-snug tracking-[0.1em] text-neutral-800 uppercase md:text-xs ${
-            showSeller ? "mt-1" : ""
-          }`}
+          className={`line-clamp-2 text-[11px] leading-snug uppercase md:text-xs ${
+            centered
+              ? "font-cadde-nav tracking-[0.14em] text-jet-black"
+              : "font-serif tracking-[0.1em] text-neutral-800"
+          } ${showSeller ? "mt-1" : ""}`}
         >
           {product.title}
         </h3>
@@ -167,7 +187,13 @@ export function TrProductCard({
             centered ? "justify-center" : ""
           }`}
         >
-          <span className="text-[12px] font-medium tracking-[0.04em] text-brand-primary">
+          <span
+            className={`text-[12px] font-medium tracking-[0.04em] ${
+              centered
+                ? "font-cadde-nav text-jet-black"
+                : "text-brand-primary"
+            }`}
+          >
             {formatTryFromKurus(product.priceKurus)}
           </span>
           <TrProductColorDots colors={colors} />
@@ -196,7 +222,11 @@ export function TrProductCard({
         tabIndex={0}
         onClick={() => onSelect(quickView)}
         onKeyDown={handleKeyDown}
-        className="group relative block cursor-pointer bg-white outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2"
+        className={`group relative block cursor-pointer bg-white outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
+          centered
+            ? "focus-visible:ring-jet-black"
+            : "focus-visible:ring-brand-primary"
+        }`}
         aria-label={`${product.title} — hızlı bak`}
       >
         {body}
@@ -205,15 +235,19 @@ export function TrProductCard({
   }
 
   return (
-    <Link
+    <TrSoftNavLink
       href={
         variant === "marketplace"
           ? trClothPath(product.id)
           : trProductPath(product.id, slug)
       }
-      className="group relative block bg-white outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2"
+      className={`group relative block bg-white outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
+        variant === "marketplace"
+          ? "focus-visible:ring-jet-black"
+          : "focus-visible:ring-brand-primary"
+      }`}
     >
       {body}
-    </Link>
+    </TrSoftNavLink>
   );
 }

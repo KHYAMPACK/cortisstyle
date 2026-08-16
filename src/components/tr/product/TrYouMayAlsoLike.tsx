@@ -27,10 +27,10 @@ export function TrYouMayAlsoLike({
   return (
     <section
       aria-label="Bunları da beğenebilirsiniz"
-      className={`border-t border-blueprint-border ${className}`}
+      className={`border-t border-black/10 ${className}`}
     >
-      <p className="px-5 pt-10 pb-5 text-[10px] tracking-[0.28em] text-neutral-500 uppercase md:px-10">
-        Bunları da beğenebilirsiniz
+      <p className="px-5 pt-10 pb-5 font-cadde-nav text-[10px] font-semibold tracking-[0.28em] text-cadde-red uppercase md:px-10">
+        02. Önerilen
       </p>
 
       {looks.length > 0 ? (

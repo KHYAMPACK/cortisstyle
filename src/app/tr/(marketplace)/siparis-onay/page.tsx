@@ -15,6 +15,8 @@ export default async function TrOrderConfirmationPage({
   return (
     <div>
       <TrSectionHeader
+        tone="cadde"
+        index="01"
         kicker="Sipariş"
         title={demo ? "Demo sipariş alındı" : "Sipariş onayı"}
         description={
@@ -22,6 +24,7 @@ export default async function TrOrderConfirmationPage({
             ? "Gerçek ödeme alınmadı — vitrin demosu tamamlandı."
             : "Başarılı ödeme sonrası sipariş özeti burada görünecek."
         }
+        clearChrome
       />
 
       <div className="px-5 py-10 md:px-10">
@@ -33,9 +36,9 @@ export default async function TrOrderConfirmationPage({
         ) : null}
         <Link
           href={trHomePath()}
-          className="btn-primary inline-flex items-center justify-center px-6 py-4 text-[11px] tracking-[0.2em]"
+          className="font-cadde-nav inline-flex items-center justify-center bg-jet-black px-6 py-4 text-[11px] font-semibold tracking-[0.28em] text-white uppercase transition-opacity hover:opacity-85"
         >
-          Ana sayfaya dön
+          [ Ana sayfaya dön ]
         </Link>
       </div>
     </div>

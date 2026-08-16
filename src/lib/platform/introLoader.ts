@@ -80,3 +80,36 @@ export function hasCaddeIntroPlayed(): boolean {
 export function markCaddeIntroPlayed(): void {
   caddeIntroPlayed = true;
 }
+
+/** Fired when the Cadde intro overlay is gone (or was skipped) so the hero can rip. */
+export const CADDE_HERO_READY_EVENT = "cadde-hero-ready";
+
+export function emitCaddeHeroReady(): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(CADDE_HERO_READY_EVENT));
+}
+
+let caddeHeroRipPlayed = false;
+
+export function hasCaddeHeroRipPlayed(): boolean {
+  return caddeHeroRipPlayed;
+}
+
+export function markCaddeHeroRipPlayed(): void {
+  caddeHeroRipPlayed = true;
+}
+
+/** Fired when the Cadde hero fold has finished (chrome + type can appear). */
+export const CADDE_HERO_RIP_DONE_EVENT = "cadde-hero-rip-done";
+
+let caddeHeroRipSettled = false;
+
+export function hasCaddeHeroRipSettled(): boolean {
+  return caddeHeroRipSettled;
+}
+
+export function markCaddeHeroRipSettled(): void {
+  caddeHeroRipSettled = true;
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(CADDE_HERO_RIP_DONE_EVENT));
+}

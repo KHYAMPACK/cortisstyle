@@ -9,8 +9,10 @@ import { TrSectionHeader } from "@/components/tr/TrSectionHeader";
 function ProductsHeader() {
   return (
     <TrSectionHeader
-      kicker="Ürünler"
-      title="Tüm parçalar"
+      tone="cadde"
+      index="01"
+      kicker="Katalog"
+      title="Parçalar"
       description="Kategori ve arama ile Cadde’deki ürünleri keşfedin."
       align="center"
       clearChrome
@@ -32,12 +34,12 @@ function TrProductsPageBody() {
 
   if (error && !hasCache) {
     return (
-      <div className="border-b border-blueprint-border px-5 py-8 md:px-10">
+      <div className="border-b border-black/10 px-5 py-8 md:px-10">
         <p className="text-[13px] text-neutral-600">{error}</p>
         <button
           type="button"
           onClick={() => refresh()}
-          className="mt-4 border border-brand-primary bg-brand-primary px-5 py-2.5 text-[10px] tracking-[0.18em] text-white uppercase transition-colors hover:border-brand-primary-hover hover:bg-brand-primary-hover"
+          className="mt-4 border border-jet-black bg-jet-black px-5 py-2.5 font-cadde-nav text-[10px] tracking-[0.18em] text-white uppercase transition-opacity hover:opacity-80"
         >
           Yeniden dene
         </button>
@@ -49,7 +51,7 @@ function TrProductsPageBody() {
     <>
       {error && hasCache ? (
         <p
-          className="border-b border-blueprint-border px-5 py-2 font-mono text-[10px] tracking-[0.14em] text-meta md:px-10"
+          className="border-b border-black/10 px-5 py-2 font-cadde-nav text-[10px] tracking-[0.18em] text-neutral-500 uppercase md:px-10"
           role="status"
         >
           {error}
@@ -57,7 +59,7 @@ function TrProductsPageBody() {
       ) : null}
       {status === "refreshing" && hasCache ? (
         <p
-          className="border-b border-blueprint-border px-5 py-2 font-mono text-[10px] tracking-[0.14em] text-meta md:px-10"
+          className="border-b border-black/10 px-5 py-2 font-cadde-nav text-[10px] tracking-[0.18em] text-neutral-500 uppercase md:px-10"
           role="status"
         >
           Güncelleniyor…

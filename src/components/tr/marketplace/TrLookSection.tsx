@@ -2,19 +2,17 @@
 
 import {
   TR_HOME_PLACEHOLDER_LOOKS,
-  TR_HOME_PLACEHOLDER_PIECES_PER_LOOK,
   TrPlaceholderLookCard,
-  TrPlaceholderProductCard,
 } from "@/components/tr/TrHomePlaceholders";
-import {
-  TR_LOOK_COVER_FRAME,
-  TR_LOOK_COVER_PAD,
-  TR_LOOK_PIECE_ROW,
-  TR_LOOK_PIECE_TILE,
-  TrLookPieceStack,
-} from "@/components/tr/TrLookPieceStack";
+import { TrLookMosaic } from "@/components/tr/marketplace/TrLookMosaic";
 import { TrSectionHeader } from "@/components/tr/TrSectionHeader";
-import { TR_LOOKS_SECTION_ID } from "@/lib/tr/looks";
+import { TrSoftNavLink } from "@/components/tr/TrSoftNavLink";
+import {
+  TR_HOME_LOOK_TEASER_COUNT,
+  TR_LOOKS_SECTION_ID,
+} from "@/lib/tr/looks";
+import { CADDE_CTA, caddeBracket } from "@/lib/tr/marketplace/caddeUi";
+import { trKombinlerPath } from "@/lib/tr/paths";
 import type { TrLookWithProducts } from "@/types/tr-look";
 
 interface TrLookSectionProps {
@@ -23,30 +21,9 @@ interface TrLookSectionProps {
   cartEnabled?: boolean;
 }
 
-function TrLookPieceStackPlaceholder({ index }: { index: number }) {
-  return (
-    <article className="border-b border-blueprint-border" aria-hidden={index > 0}>
-      <div className={TR_LOOK_COVER_PAD}>
-        <div className={TR_LOOK_COVER_FRAME}>
-          <TrPlaceholderLookCard index={index} />
-        </div>
-      </div>
-      <div className={TR_LOOK_PIECE_ROW}>
-        {Array.from(
-          { length: TR_HOME_PLACEHOLDER_PIECES_PER_LOOK },
-          (_, pieceIndex) => (
-            <div key={pieceIndex} className={TR_LOOK_PIECE_TILE}>
-              <TrPlaceholderProductCard index={pieceIndex} />
-            </div>
-          ),
-        )}
-      </div>
-    </article>
-  );
-}
-
 export function TrLookSection({ looks }: TrLookSectionProps) {
-  const showPlaceholders = looks.length === 0;
+  const teasers = looks.slice(0, TR_HOME_LOOK_TEASER_COUNT);
+  const showPlaceholders = teasers.length === 0;
 
   return (
     <section
@@ -54,15 +31,34 @@ export function TrLookSection({ looks }: TrLookSectionProps) {
       className="scroll-mt-20"
       aria-label="Kombinler"
     >
-      <TrSectionHeader title="Kombinler" kicker="Editoryal" />
+      <TrSectionHeader
+        tone="cadde"
+        index="01"
+        kicker="Editoryal"
+        title="Kombinler"
+      />
 
-      {showPlaceholders
-        ? Array.from({ length: TR_HOME_PLACEHOLDER_LOOKS }, (_, index) => (
-            <TrLookPieceStackPlaceholder key={index} index={index} />
-          ))
-        : looks.map((look, index) => (
-            <TrLookPieceStack key={look.id} look={look} index={index} />
+      {showPlaceholders ? (
+        <div
+          className="grid grid-cols-2 gap-3 px-5 py-8 lg:grid-cols-3 lg:gap-5 lg:px-8 lg:py-12 xl:px-14"
+          aria-hidden
+        >
+          {Array.from({ length: TR_HOME_PLACEHOLDER_LOOKS }, (_, index) => (
+            <TrPlaceholderLookCard key={index} index={index} />
           ))}
+        </div>
+      ) : (
+        <TrLookMosaic looks={teasers} />
+      )}
+
+      <div className="flex justify-center px-5 py-10 md:py-14">
+        <TrSoftNavLink
+          href={trKombinlerPath()}
+          className={`${CADDE_CTA} text-jet-black transition-colors hover:text-cadde-red`}
+        >
+          {caddeBracket("Tüm kombinleri gör")}
+        </TrSoftNavLink>
+      </div>
     </section>
   );
 }

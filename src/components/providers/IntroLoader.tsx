@@ -3,23 +3,26 @@
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { BrandLogo } from "@/components/BrandLogo";
 import { CaddeIntroStack } from "@/components/tr/marketplace/CaddeIntroStack";
 import { resolveBoutiqueIntroBrand } from "@/lib/tr/boutiqueBrand";
 import { resolveBoutiqueSlugFromHost } from "@/lib/tr/customDomain";
 import {
+  emitCaddeHeroReady,
   hasCaddeIntroPlayed,
   markCaddeIntroPlayed,
   shouldShowCaddeIntroLoader,
 } from "@/lib/introLoader";
-import { caddeIntroReverseMs } from "@/lib/platform/caddeIntro";
+import {
+  CADDE_INTRO_HOLD_MS,
+  CADDE_INTRO_REDUCED_MOTION_MS,
+  CADDE_INTRO_SLIDE_MS,
+  caddeIntroReverseMs,
+} from "@/lib/platform/caddeIntro";
 
 const MIN_DISPLAY_MS = 2000;
-const CADDE_MIN_DISPLAY_MS = 4000;
-const CADDE_REDUCED_MOTION_MS = 1400;
-const CADDE_SLIDE_MS = 850;
 const MAX_LOAD_WAIT_MS = 5000;
 const EXIT_DURATION_MS = 800;
 
@@ -41,14 +44,6 @@ const exitPanel = {
   transition: { duration: EXIT_DURATION_MS / 1000, ease: [0.22, 1, 0.36, 1] as const },
 };
 
-const caddeExitPanel = {
-  y: "-100%",
-  transition: {
-    duration: CADDE_SLIDE_MS / 1000,
-    ease: [0.87, 0, 0.13, 1] as const,
-  },
-};
-
 type IntroPhase = "visible" | "reversing" | "exiting" | "done";
 
 interface IntroLoaderProps {
@@ -65,8 +60,12 @@ export function IntroLoader({
   boutiqueSlug = null,
 }: IntroLoaderProps) {
   const pathname = usePathname();
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const stackWrapRef = useRef<HTMLDivElement>(null);
+  const caddeSlideDoneRef = useRef(false);
   const [isMounted, setIsMounted] = useState(false);
   const [phase, setPhase] = useState<IntroPhase>("visible");
+  const [caddeLift, setCaddeLift] = useState(false);
   const [resolvedSlug, setResolvedSlug] = useState<string | null>(() => {
     if (boutiqueSlug?.trim()) return boutiqueSlug.trim();
     if (typeof window !== "undefined") {
@@ -112,7 +111,9 @@ export function IntroLoader({
       const reduceMotion = window.matchMedia(
         "(prefers-reduced-motion: reduce)",
       ).matches;
-      const wait = reduceMotion ? CADDE_REDUCED_MOTION_MS : CADDE_MIN_DISPLAY_MS;
+      const wait = reduceMotion
+        ? CADDE_INTRO_REDUCED_MOTION_MS
+        : CADDE_INTRO_HOLD_MS;
       const exitTimer = setTimeout(() => {
         setPhase("reversing");
       }, wait);
@@ -177,25 +178,68 @@ export function IntroLoader({
     return () => clearTimeout(timer);
   }, [forceActive, phase]);
 
+  const finishCaddeSlide = () => {
+    if (caddeSlideDoneRef.current) return;
+    caddeSlideDoneRef.current = true;
+    setPhase("done");
+    markCaddeIntroPlayed();
+    emitCaddeHeroReady();
+    document.documentElement.classList.remove(...INTRO_LOCK_CLASSES);
+    document.body.style.overflow = "";
+  };
+
   useEffect(() => {
     if (forceActive || phase !== "exiting") return;
-
-    if (isCaddeIntro) {
-      document.documentElement.classList.remove(
-        "intro-loading",
-        "intro-loading-cadde",
-      );
-    }
+    if (isCaddeIntro) return;
 
     const timer = setTimeout(() => {
       setPhase("done");
-      if (isCaddeIntro) markCaddeIntroPlayed();
       document.documentElement.classList.remove(...INTRO_LOCK_CLASSES);
       document.body.style.overflow = "";
-    }, isCaddeIntro ? CADDE_SLIDE_MS : EXIT_DURATION_MS);
+    }, EXIT_DURATION_MS);
 
     return () => clearTimeout(timer);
   }, [forceActive, isCaddeIntro, phase]);
+
+  useLayoutEffect(() => {
+    if (forceActive || !isCaddeIntro || phase !== "exiting") return;
+
+    if (stackWrapRef.current) {
+      stackWrapRef.current.style.visibility = "hidden";
+    }
+
+    document.documentElement.classList.remove(
+      "intro-loading",
+      "intro-loading-cadde",
+    );
+    document.body.style.overflow = "hidden";
+  }, [forceActive, isCaddeIntro, phase]);
+
+  useEffect(() => {
+    if (forceActive || !isCaddeIntro || phase !== "exiting") return;
+
+    let inner = 0;
+    const outer = window.requestAnimationFrame(() => {
+      inner = window.requestAnimationFrame(() => {
+        setCaddeLift(true);
+      });
+    });
+
+    return () => {
+      window.cancelAnimationFrame(outer);
+      window.cancelAnimationFrame(inner);
+    };
+  }, [forceActive, isCaddeIntro, phase]);
+
+  useEffect(() => {
+    if (forceActive || !isCaddeIntro || !caddeLift) return;
+
+    const fallback = window.setTimeout(
+      finishCaddeSlide,
+      CADDE_INTRO_SLIDE_MS + 120,
+    );
+    return () => window.clearTimeout(fallback);
+  }, [caddeLift, forceActive, isCaddeIntro]);
 
   useEffect(() => {
     if (!forceActive || !isMounted) return;
@@ -232,22 +276,60 @@ export function IntroLoader({
       ? "bg-black"
       : "bg-[#0D0D0D]";
 
+  const overlayLabel =
+    statusLabel ??
+    (introBrand ? `Loading ${introBrand.label}` : "Loading Cortisstyle");
+
+  if (isCaddeIntro) {
+    return createPortal(
+      <div
+        ref={overlayRef}
+        role="status"
+        aria-live="polite"
+        aria-label={overlayLabel}
+        onTransitionEnd={(event) => {
+          if (event.target !== event.currentTarget) return;
+          if (event.propertyName !== "transform") return;
+          finishCaddeSlide();
+        }}
+        data-intro-overlay=""
+        className={`fixed inset-0 z-[9999] h-dvh w-screen overflow-hidden bg-black ${
+          phase === "exiting" || phase === "reversing"
+            ? "pointer-events-none"
+            : "pointer-events-auto"
+        }`}
+        style={{
+          transform: caddeLift
+            ? "translate3d(0, -110%, 0)"
+            : "translate3d(0, 0, 0)",
+          transition: caddeLift
+            ? `transform ${CADDE_INTRO_SLIDE_MS}ms cubic-bezier(0.87, 0, 0.13, 1)`
+            : "none",
+          willChange: "transform",
+          backfaceVisibility: "hidden",
+        }}
+      >
+        <div ref={stackWrapRef} className="h-full w-full">
+          <CaddeIntroStack
+            exiting={phase === "reversing" || phase === "exiting"}
+          />
+        </div>
+      </div>,
+      document.body,
+    );
+  }
+
   return createPortal(
     <AnimatePresence mode="wait">
       <motion.div
         key="intro-loader"
         role="status"
         aria-live="polite"
-        aria-label={
-          statusLabel ??
-          (introBrand ? `Loading ${introBrand.label}` : "Loading Cortisstyle")
-        }
+        aria-label={overlayLabel}
         initial={{ opacity: 1, y: 0 }}
         animate={
           !forceActive && phase === "exiting"
-            ? isCaddeIntro
-              ? caddeExitPanel
-              : exitPanel
+            ? exitPanel
             : { opacity: 1, y: 0 }
         }
         className={`fixed inset-0 z-[9999] flex h-screen w-screen flex-col items-center justify-center overflow-hidden ${overlayBg} ${
@@ -256,41 +338,37 @@ export function IntroLoader({
             : "pointer-events-auto"
         }`}
       >
-        {isCaddeIntro ? (
-          <CaddeIntroStack exiting={phase === "reversing" || phase === "exiting"} />
-        ) : (
-          <motion.div
-            {...entrance}
-            className="flex flex-col items-center gap-6 px-6"
-          >
-            {introBrand ? (
-              <Image
-                src={introBrand.logoUrl}
-                alt={introBrand.label}
-                width={320}
-                height={128}
-                priority
-                unoptimized
-                className="h-[min(42vw,11rem)] w-auto object-contain md:h-[min(28vw,12rem)]"
-              />
-            ) : (
-              <BrandLogo
-                variant="onDark"
-                priority
-                className="h-[min(52vw,14rem)] w-auto md:h-[min(36vw,16rem)]"
-              />
-            )}
-            {statusLabel ? (
-              <p
-                className={`font-mono text-[10px] tracking-[0.42em] uppercase sm:text-[11px] ${
-                  isBoutique ? "text-neutral-500" : "text-white/75"
-                }`}
-              >
-                [ {statusLabel} ]
-              </p>
-            ) : null}
-          </motion.div>
-        )}
+        <motion.div
+          {...entrance}
+          className="flex flex-col items-center gap-6 px-6"
+        >
+          {introBrand ? (
+            <Image
+              src={introBrand.logoUrl}
+              alt={introBrand.label}
+              width={320}
+              height={128}
+              priority
+              unoptimized
+              className="h-[min(42vw,11rem)] w-auto object-contain md:h-[min(28vw,12rem)]"
+            />
+          ) : (
+            <BrandLogo
+              variant="onDark"
+              priority
+              className="h-[min(52vw,14rem)] w-auto md:h-[min(36vw,16rem)]"
+            />
+          )}
+          {statusLabel ? (
+            <p
+              className={`font-mono text-[10px] tracking-[0.42em] uppercase sm:text-[11px] ${
+                isBoutique ? "text-neutral-500" : "text-white/75"
+              }`}
+            >
+              [ {statusLabel} ]
+            </p>
+          ) : null}
+        </motion.div>
       </motion.div>
     </AnimatePresence>,
     document.body,

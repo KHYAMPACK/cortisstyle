@@ -14,10 +14,10 @@ export function TrZaraBagIcon({
       aria-hidden
     >
       {/* Open lid */}
-      <span className="mx-[1.5px] h-[3.5px] border border-b-0 border-jet-black" />
+      <span className="mx-[1.5px] h-[3.5px] border border-b-0 border-current" />
       {/* Body */}
-      <span className="relative flex flex-1 items-center justify-center border border-jet-black">
-        <span className="text-[7px] leading-none font-medium tracking-tight text-jet-black">
+      <span className="relative flex flex-1 items-center justify-center border border-current">
+        <span className="text-[7px] leading-none font-medium tracking-tight text-current">
           {label}
         </span>
       </span>

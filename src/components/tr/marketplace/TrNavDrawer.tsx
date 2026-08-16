@@ -3,17 +3,16 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect } from "react";
 import { TrSoftNavLink } from "@/components/tr/TrSoftNavLink";
-import { TR_LOOKS_SECTION_ID } from "@/lib/tr/looks";
 import {
   trBoutiquesPath,
   trFavoritesPath,
-  trHomePath,
+  trKombinlerPath,
   trProductsPath,
 } from "@/lib/tr/paths";
 
 const NAV_ITEMS = [
   {
-    href: `${trHomePath()}#${TR_LOOKS_SECTION_ID}`,
+    href: trKombinlerPath(),
     label: "Kombinler",
   },
   { href: trProductsPath(), label: "Ürünler" },
@@ -72,7 +71,7 @@ export function TrNavDrawer({ open, onClose }: TrNavDrawerProps) {
                   <TrSoftNavLink
                     href={item.href}
                     onNavigate={onClose}
-                    className="block border-b border-blueprint-border py-5 font-serif text-2xl tracking-[-0.02em] text-neutral-950 uppercase transition-colors hover:text-brand-primary md:text-3xl"
+                    className="font-cadde-display block border-b border-black/10 py-5 text-3xl tracking-[0.02em] text-jet-black uppercase transition-colors hover:text-cadde-red md:text-5xl"
                   >
                     {item.label}
                   </TrSoftNavLink>

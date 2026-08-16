@@ -58,7 +58,7 @@ export function TrSearchPage() {
       <div className="flex shrink-0 items-center justify-start px-5 pt-20 pb-4 md:px-16 md:pt-24">
         <TrSoftNavLink
           href={trHomePath()}
-          className="ml-12 text-meta text-[10px] tracking-[0.22em] uppercase transition-colors hover:text-brand-primary md:ml-14"
+          className="ml-12 font-cadde-nav text-[10px] font-semibold tracking-[0.22em] text-neutral-500 uppercase transition-colors hover:text-cadde-red md:ml-14"
         >
           Kapat
         </TrSoftNavLink>
@@ -67,7 +67,7 @@ export function TrSearchPage() {
       <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-5 pt-6 pb-16 md:px-10 md:pt-12">
         <label className="block">
           <span className="sr-only">Ne arıyorsunuz?</span>
-          <p className="text-center text-[11px] tracking-[0.28em] text-neutral-400 uppercase md:text-[12px]">
+          <p className="text-center font-cadde-nav text-[11px] tracking-[0.28em] text-neutral-400 uppercase md:text-[12px]">
             Ne arıyorsunuz?
           </p>
           <input
@@ -78,7 +78,7 @@ export function TrSearchPage() {
             autoComplete="off"
             autoCorrect="off"
             spellCheck={false}
-            className="mt-4 w-full border-0 border-b border-neutral-300 bg-transparent py-3 text-center font-serif text-2xl tracking-[-0.02em] text-neutral-950 outline-none focus:border-brand-primary md:text-3xl"
+            className="mt-4 w-full border-0 border-b border-black/15 bg-transparent py-3 text-center font-cadde-display text-2xl uppercase tracking-[0.04em] text-jet-black outline-none focus:border-cadde-red md:text-4xl"
           />
         </label>
 
@@ -89,7 +89,7 @@ export function TrSearchPage() {
           transition={trPanelFadeTransition}
           className="mt-14"
         >
-          <p className="text-meta text-[10px] tracking-[0.22em] uppercase">
+          <p className="font-cadde-nav text-[10px] tracking-[0.22em] text-neutral-500 uppercase">
             {showingSuggestions
               ? "İlginizi çekebilir"
               : filtered.length > 0

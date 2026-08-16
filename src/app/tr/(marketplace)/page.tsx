@@ -1,57 +1,43 @@
+import { CaddePlusReveal } from "@/components/tr/marketplace/CaddePlusReveal";
 import { TrHomeHero } from "@/components/tr/TrHomeHero";
 import { TrLookSection } from "@/components/tr/TrLookSection";
-import { TrSectionHeader } from "@/components/tr/TrSectionHeader";
-import { TrSoftNavLink } from "@/components/tr/TrSoftNavLink";
+import { loadCaddeHeroPoses } from "@/lib/tr/marketplace/caddeHero";
+import { CADDE_STATUS } from "@/lib/tr/marketplace/caddeUi";
 import { safeListPublishedTrLooks, TR_LOOKS_SECTION_ID } from "@/lib/tr/looks";
 import { isTrMarketplaceCartEnabled } from "@/lib/tr/platform";
-import { trProductsPath } from "@/lib/tr/paths";
 
 export default async function TrMarketplaceHomePage() {
   const [looks, cartEnabled] = await Promise.all([
     safeListPublishedTrLooks(),
     isTrMarketplaceCartEnabled(),
   ]);
+  const heroPoses = loadCaddeHeroPoses();
 
   return (
     <div>
-      <TrHomeHero
-        nextSectionId={TR_LOOKS_SECTION_ID}
-        nextSectionLabel="Kombinler"
-      />
+      <div className="sticky top-0 z-0">
+        <TrHomeHero
+          poses={heroPoses}
+          nextSectionId={TR_LOOKS_SECTION_ID}
+          nextSectionLabel="Kombinler"
+        />
+      </div>
 
-      {cartEnabled ? (
-        <p
-          className="border-b border-blueprint-border border-l-2 border-l-brand-primary px-5 py-3 font-mono text-[10px] tracking-[0.14em] text-meta md:px-10"
-          role="status"
-        >
-          Demo alışveriş açık — ikon ürünleri sepete ekleyip ödeme akışını
-          deneyebilirsiniz.
-        </p>
-      ) : (
-        <p
-          className="border-b border-blueprint-border border-l-2 border-l-brand-primary px-5 py-3 font-mono text-[10px] tracking-[0.14em] text-meta md:px-10"
-          role="status"
-        >
-          Online ödeme yakında — şimdilik kombin ve ürün keşfi açık.
-        </p>
-      )}
+      <div className="relative z-10 min-h-dvh bg-ice-floor shadow-[0_-18px_50px_rgba(0,0,0,0.14)]">
+        {cartEnabled ? (
+          <p className={CADDE_STATUS} role="status">
+            Demo alışveriş açık — ikon ürünleri sepete ekleyip ödeme akışını
+            deneyebilirsiniz.
+          </p>
+        ) : (
+          <p className={CADDE_STATUS} role="status">
+            Online ödeme yakında — şimdilik kombin ve ürün keşfi açık.
+          </p>
+        )}
 
-      <TrLookSection looks={looks} cartEnabled={cartEnabled} />
-
-      <section aria-label="Parçalar">
-        <TrSectionHeader
-          kicker="Parçalar"
-          title="Tüm ürünler"
-          description="Kombinlerin dışındaki kataloğu kategori ve arama ile gezin."
-        >
-          <TrSoftNavLink
-            href={trProductsPath()}
-            className="inline-flex border border-jet-black bg-white px-6 py-3.5 text-[11px] tracking-[0.2em] text-neutral-900 uppercase transition-colors hover:border-brand-primary hover:bg-brand-primary hover:text-white"
-          >
-            Ürünlere git →
-          </TrSoftNavLink>
-        </TrSectionHeader>
-      </section>
+        <TrLookSection looks={looks} cartEnabled={cartEnabled} />
+        <CaddePlusReveal />
+      </div>
     </div>
   );
 }

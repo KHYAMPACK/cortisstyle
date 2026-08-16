@@ -65,7 +65,7 @@ export function TrBoutiquesDirectory({
 
   return (
     <div>
-      <div className="border-b border-blueprint-border px-5 py-5 md:px-10">
+      <div className="border-b border-black/10 px-5 py-5 md:px-10">
         <form
           onSubmit={handleSearchSubmit}
           className="flex flex-col gap-4 md:flex-row md:items-center"
@@ -82,12 +82,12 @@ export function TrBoutiquesDirectory({
               onChange={(event) => setQ(event.target.value)}
               onBlur={() => syncUrl(q)}
               placeholder="Butik adı ara…"
-              className="w-full border border-blueprint-border bg-white py-3 pr-4 pl-10 text-[13px] text-neutral-900 outline-none transition-colors placeholder:text-neutral-400 focus:border-neutral-900"
+              className="w-full border border-black/15 bg-white py-3 pr-4 pl-10 font-cadde-nav text-[13px] tracking-[0.06em] text-jet-black outline-none transition-colors placeholder:text-neutral-400 focus:border-jet-black"
             />
           </label>
           <button
             type="submit"
-            className="shrink-0 border border-brand-primary bg-brand-primary px-6 py-3 text-[10px] tracking-[0.22em] text-white uppercase transition-colors hover:border-brand-primary-hover hover:bg-brand-primary-hover"
+            className="shrink-0 border border-jet-black bg-jet-black px-6 py-3 font-cadde-nav text-[10px] tracking-[0.22em] text-white uppercase transition-opacity hover:opacity-80"
           >
             Ara
           </button>
@@ -101,7 +101,7 @@ export function TrBoutiquesDirectory({
         transition={trPanelFadeTransition}
         className="px-5 py-10 md:px-10"
       >
-        <p className="text-meta mb-6 text-[10px] tracking-[0.18em] uppercase">
+        <p className="mb-6 font-cadde-nav text-[10px] tracking-[0.22em] text-neutral-500 uppercase">
           {filtered.length} butik
         </p>
 

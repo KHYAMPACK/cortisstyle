@@ -144,7 +144,7 @@ export function TrClothPage({ product, relatedProducts }: TrClothPageProps) {
               />
             ) : (
               <div className="flex h-full items-center justify-center px-6">
-                <span className="font-serif text-xl text-neutral-600">
+                <span className="font-cadde-display text-xl uppercase tracking-[0.02em] text-neutral-600">
                   {product.title}
                 </span>
               </div>
@@ -194,13 +194,13 @@ export function TrClothPage({ product, relatedProducts }: TrClothPageProps) {
             className="text-meta text-[10px] tracking-[0.22em] uppercase transition-opacity hover:opacity-60"
           />
 
-          <p className="mt-6 text-[9px] tracking-[0.5em] text-brand-primary uppercase">
-            Parça
+          <p className="mt-6 font-cadde-nav text-[10px] font-semibold tracking-[0.32em] text-cadde-red uppercase">
+            01. Parça
           </p>
-          <h1 className="mt-3 font-serif text-3xl tracking-[-0.03em] text-neutral-950 md:text-4xl">
+          <h1 className="mt-3 font-cadde-display text-3xl uppercase leading-[0.86] tracking-[0.02em] text-jet-black md:text-5xl">
             {product.title}
           </h1>
-          <p className="mt-4 font-serif text-2xl tracking-[-0.02em] text-brand-primary">
+          <p className="mt-4 font-cadde-nav text-2xl tracking-[0.04em] text-jet-black">
             {formatTryFromKurus(product.priceKurus)}
           </p>
 
@@ -242,7 +242,7 @@ export function TrClothPage({ product, relatedProducts }: TrClothPageProps) {
               <dd>
                 <TrSoftNavLink
                   href={trBoutiquePath(product.boutique.slug)}
-                  className="underline underline-offset-2 hover:text-brand-primary"
+                  className="underline underline-offset-2 hover:text-cadde-red"
                 >
                   {product.boutique.name}
                 </TrSoftNavLink>
@@ -288,9 +288,9 @@ export function TrClothPage({ product, relatedProducts }: TrClothPageProps) {
               product.boutique.slug,
               product.id,
             )}
-            className="mt-3 inline-flex w-full items-center justify-center border border-jet-black bg-transparent px-6 py-4 text-[11px] tracking-[0.22em] text-jet-black uppercase transition-opacity hover:opacity-70"
+            className="font-cadde-nav mt-3 inline-flex w-full items-center justify-center border border-jet-black bg-transparent px-6 py-4 text-[11px] font-semibold tracking-[0.28em] text-jet-black uppercase transition-colors hover:border-cadde-red hover:text-cadde-red"
           >
-            Butikte bu ürün hakkında bilgi
+            [ Butikte bak ]
           </TrSoftNavLink>
         </div>
       </div>

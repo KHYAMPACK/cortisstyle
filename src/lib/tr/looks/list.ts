@@ -1,11 +1,23 @@
 import { TR_LOOK_DEFINITIONS } from "@/data/tr/looks/looks";
 import { withLookbookPieceImages } from "@/lib/tr/lookbookImages";
-import { getProductCoverImage } from "@/lib/tr/paths";
+import { getProductCoverImage, trKombinlerPath } from "@/lib/tr/paths";
 import { listPublicAvailableProducts } from "@/lib/tr/products";
 import type { TrLookDefinition, TrLookWithProducts } from "@/types/tr-look";
 import type { TrProductWithBoutique } from "@/types/tr-marketplace";
 
 export const TR_LOOKS_SECTION_ID = "kombinler";
+
+/** First mosaic teaser count on Cadde home. */
+export const TR_HOME_LOOK_TEASER_COUNT = 6;
+
+/** Lookbook section anchor — home mosaic / strips jump to `/tr/kombinler#…`. */
+export function caddeLookAnchorId(slug: string): string {
+  return `kombin-${slug}`;
+}
+
+export function trKombinlerLookHref(slug: string): string {
+  return `${trKombinlerPath()}#${caddeLookAnchorId(slug)}`;
+}
 
 function uniqueBoutiqueCount(products: TrProductWithBoutique[]): number {
   return new Set(products.map((p) => p.boutique.id)).size;

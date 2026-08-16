@@ -30,6 +30,7 @@ const RESERVED_BOUTIQUE_SLUGS = new Set([
   "favoriler",
   "butikler",
   "kombin",
+  "kombinler",
   "parca",
   "sepet",
   "odeme",

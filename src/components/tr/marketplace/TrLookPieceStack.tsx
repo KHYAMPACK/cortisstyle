@@ -3,6 +3,8 @@
 import { motion, useReducedMotion } from "framer-motion";
 import { TrProductCard } from "@/components/tr/TrProductCard";
 import { TrLookCard } from "@/components/tr/TrLookCard";
+import { TrLookSplit } from "@/components/tr/marketplace/TrLookSplit";
+import { caddeLookAnchorId } from "@/lib/tr/looks";
 import { trPanelFadeTransition } from "@/components/tr/panel/TrPanelMotion";
 import type { TrLookWithProducts } from "@/types/tr-look";
 
@@ -16,7 +18,7 @@ export const TR_LOOK_PIECE_TILE =
   "w-[38vw] max-w-[180px] min-w-[140px] shrink-0 snap-start bg-white sm:w-[160px] md:w-[180px]";
 
 export const TR_LOOK_PIECE_ROW =
-  "flex justify-center gap-px overflow-x-auto border-t border-black/5 bg-black/5 snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden";
+  "flex justify-center gap-px overflow-x-auto border-t border-black/10 bg-black/[0.04] snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden";
 
 interface TrLookPieceStackProps {
   look: TrLookWithProducts;
@@ -28,39 +30,44 @@ export function TrLookPieceStack({ look, index }: TrLookPieceStackProps) {
 
   return (
     <motion.article
-      className="border-b border-blueprint-border"
+      id={caddeLookAnchorId(look.slug)}
+      className="scroll-mt-0 border-b border-black/10"
       initial={reduceMotion ? false : { opacity: 0, y: 12 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.2 }}
+      viewport={{ once: true, amount: 0.15 }}
       transition={{
         ...trPanelFadeTransition,
         delay: reduceMotion ? 0 : index * 0.06,
       }}
     >
-      <div className={TR_LOOK_COVER_PAD}>
-        <div className={TR_LOOK_COVER_FRAME}>
-          <TrLookCard look={look} index={index} />
+      <div className="lg:hidden">
+        <div className={TR_LOOK_COVER_PAD}>
+          <div className={TR_LOOK_COVER_FRAME}>
+            <TrLookCard look={look} index={index} />
+          </div>
         </div>
+
+        {look.products.length > 0 ? (
+          <div
+            className={TR_LOOK_PIECE_ROW}
+            aria-label={`${look.title} parçaları`}
+          >
+            {look.products.map((product, productIndex) => (
+              <div key={product.id} className={TR_LOOK_PIECE_TILE}>
+                <TrProductCard
+                  product={product}
+                  showBoutique
+                  variant="marketplace"
+                  showQuickAdd
+                  priority={index === 0 && productIndex < 2}
+                />
+              </div>
+            ))}
+          </div>
+        ) : null}
       </div>
 
-      {look.products.length > 0 ? (
-        <div
-          className={TR_LOOK_PIECE_ROW}
-          aria-label={`${look.title} parçaları`}
-        >
-          {look.products.map((product, productIndex) => (
-            <div key={product.id} className={TR_LOOK_PIECE_TILE}>
-              <TrProductCard
-                product={product}
-                showBoutique
-                variant="marketplace"
-                showQuickAdd
-                priority={index === 0 && productIndex < 2}
-              />
-            </div>
-          ))}
-        </div>
-      ) : null}
+      <TrLookSplit look={look} index={index} />
     </motion.article>
   );
 }

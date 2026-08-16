@@ -1,3 +1,4 @@
+import { CaddePageTransition } from "@/components/tr/marketplace/CaddePageTransition";
 import { TrAddedToCartSheet } from "@/components/tr/TrAddedToCartSheet";
 import { TrFooter } from "@/components/tr/TrFooter";
 import { TrHeader } from "@/components/tr/TrHeader";
@@ -37,8 +38,10 @@ export function TrMarketplaceChrome({
   );
 
   return (
-    <TrMarketplaceShell chrome={<TrHeader />} footer={<TrFooter />}>
-      {body}
-    </TrMarketplaceShell>
+    <CaddePageTransition>
+      <TrMarketplaceShell chrome={<TrHeader />} footer={<TrFooter />}>
+        {body}
+      </TrMarketplaceShell>
+    </CaddePageTransition>
   );
 }

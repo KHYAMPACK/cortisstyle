@@ -53,6 +53,9 @@ export {
   safeGetPublishedTrLookBySlug,
   safeListPublishedTrLooks,
   TR_LOOKS_SECTION_ID,
+  TR_HOME_LOOK_TEASER_COUNT,
+  caddeLookAnchorId,
+  trKombinlerLookHref,
 } from "@/lib/tr/looks";
 export type {
   TrLookDefinition,
@@ -72,6 +75,7 @@ export {
   trFavoritesPath,
   trHomePath,
   trLookPath,
+  trKombinlerPath,
   TR_PDP_FROM_CADDE,
   TR_PIECES_SECTION_ID,
   trOrderConfirmationPath,

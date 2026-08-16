@@ -145,18 +145,18 @@ export function TrLookPage({
     alreadyInCart || addFeedback === "added" ? (
       <TrSoftNavLink
         href={trCartPath()}
-        className="inline-flex w-full items-center justify-center bg-jet-black px-6 py-4 text-[11px] tracking-[0.22em] text-white uppercase transition-opacity hover:opacity-85"
+        className="font-cadde-nav inline-flex w-full items-center justify-center bg-jet-black px-6 py-4 text-[11px] font-semibold tracking-[0.28em] text-white uppercase transition-opacity hover:opacity-85"
       >
-        Sepete git
+        [ Sepete git ]
       </TrSoftNavLink>
     ) : (
       <button
         type="button"
         onClick={handleAddOutfit}
         disabled={availableProducts.length === 0}
-        className="inline-flex w-full items-center justify-center bg-jet-black px-6 py-4 text-[11px] tracking-[0.22em] text-white uppercase transition-opacity hover:opacity-85 disabled:opacity-40"
+        className="font-cadde-nav inline-flex w-full items-center justify-center bg-jet-black px-6 py-4 text-[11px] font-semibold tracking-[0.28em] text-white uppercase transition-opacity hover:opacity-85 disabled:opacity-40"
       >
-        Kombini sepete ekle
+        [ Kombini sepete ekle ]
       </button>
     );
 
@@ -182,7 +182,7 @@ export function TrLookPage({
             />
           ) : (
             <div className="flex h-full items-center justify-center px-6">
-              <span className="font-serif text-2xl text-neutral-600">
+              <span className="font-cadde-display text-2xl uppercase tracking-[0.02em] text-neutral-600">
                 {look.title}
               </span>
             </div>
@@ -195,21 +195,21 @@ export function TrLookPage({
             className="text-meta self-start text-[10px] tracking-[0.22em] uppercase transition-opacity hover:opacity-60"
           />
 
-          <p className="mt-6 text-[9px] tracking-[0.5em] text-brand-primary uppercase">
-            Kombin
+          <p className="mt-6 font-cadde-nav text-[10px] font-semibold tracking-[0.32em] text-cadde-red uppercase">
+            01. Kombin
           </p>
-          <h1 className="mt-3 font-serif text-3xl tracking-[-0.03em] text-neutral-950 md:text-4xl">
+          <h1 className="mt-3 font-cadde-display text-3xl uppercase leading-[0.86] tracking-[0.02em] text-jet-black md:text-5xl">
             {look.title}
           </h1>
           {look.subtitle ? (
-            <p className="mt-3 text-[13px] leading-relaxed text-neutral-600">
+            <p className="mt-3 font-cadde-nav text-[13px] leading-relaxed tracking-[0.04em] text-neutral-500">
               {look.subtitle}
             </p>
           ) : null}
 
           <TrLookBoutiqueCredits boutiques={boutiques} />
 
-          <ul className="mt-8 divide-y divide-blueprint-border border-y border-blueprint-border">
+          <ul className="mt-8 divide-y divide-black/10 border-y border-black/10">
             {look.products.map((product) => {
               const cover = getProductCoverImageFor("marketplace", product);
               const cutout =
@@ -248,10 +248,10 @@ export function TrLookPage({
                       ) : null}
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block text-[11px] tracking-[0.14em] text-neutral-900 uppercase">
+                      <span className="block font-cadde-nav text-[11px] tracking-[0.14em] text-jet-black uppercase">
                         {product.title}
                       </span>
-                      <span className="mt-1 block text-[11px] text-brand-primary">
+                      <span className="mt-1 block font-cadde-nav text-[11px] text-jet-black">
                         {formatTryFromKurus(product.priceKurus)}
                       </span>
                       <span className="text-meta mt-1 block text-[9px] tracking-[0.18em] uppercase">
