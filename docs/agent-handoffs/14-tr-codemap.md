@@ -27,7 +27,7 @@ src/
 │   ├── brand/                   → BrandLogo
 │   ├── legal/                   → CookieNotice, LegalPageShell, AuthTermsNotice
 │   └── tr/
-│       ├── marketplace/         → Cadde chrome, looks, search, directory
+│       ├── marketplace/         → Cadde chrome, looks, search, directory, CaddeIntroStack
 │       ├── commerce/            → cart, checkout, WhatsApp, size gate
 │       ├── product/             → cards, gallery, pickers, favorites
 │       ├── boutique/            → tenant storefront UI (editorial/, pdp/)

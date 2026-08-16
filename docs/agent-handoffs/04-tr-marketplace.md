@@ -11,6 +11,7 @@
 - Public catalog reads via `src/lib/tr/publicData.ts` / mappers
 - Demo catalog fallback when live inventory is empty (`isTrDemoCatalogActive` in `platform.ts`)
 - Geo entry from main site into `/tr`
+- Cadde home `/tr` has a photo-stack intro (`CaddeIntroStack` via `IntroLoader`). Boutique custom-domain intro stays the logo mask. Do **not** run the Cadde stack on `/tr/[slug]`, `/tr/panel`, or white-label hosts.
 
 ## What we will do / direction
 
@@ -30,6 +31,7 @@
 | Platform flags | `src/lib/tr/platform.ts` |
 | Types | `src/types/tr-marketplace.ts`, `tr-look.ts`, `tr-cart.ts` |
 | Concept | `docs/turkey-marketplace-concept.md` |
+| Cadde intro | `CaddeIntroStack`, `lib/platform/caddeIntro.ts`, gated in `lib/platform/introLoader.ts` |
 
 ## Agent rules of thumb
 

@@ -7,7 +7,7 @@ import { AppShell } from "@/components/AppShell";
 import { AuthRedirectBridge } from "@/components/AuthRedirectBridge";
 import { CookieNotice } from "@/components/legal/CookieNotice";
 import { IntroLoader } from "@/components/IntroLoader";
-import { clearIntroLoadingLock, shouldShowIntroLoader } from "@/lib/introLoader";
+import { clearIntroLoadingLock, shouldMountIntroLoader } from "@/lib/introLoader";
 import { useBoutiqueHostSlug } from "@/lib/tr/boutiqueStorefrontContext";
 
 export function Providers({
@@ -19,7 +19,10 @@ export function Providers({
 }) {
   const pathname = usePathname();
   const resolvedBoutiqueSlug = useBoutiqueHostSlug(boutiqueSlug);
-  const showIntroLoader = shouldShowIntroLoader(pathname);
+  const showIntroLoader = shouldMountIntroLoader(
+    pathname,
+    resolvedBoutiqueSlug,
+  );
 
   useEffect(() => {
     if (showIntroLoader) return;
