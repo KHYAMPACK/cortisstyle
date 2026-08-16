@@ -79,6 +79,7 @@ Boutique owners generate Instagram-ready **İçerik** packs from catalog product
 
 ## What we will do / direction
 
+- **Image formats (later):** boutique originals + on-model (background photos) → WebP/JPEG; packshot cutouts stay PNG for Cadde + on-model input. Plan: [15-boutique-storefront-image-formats.md](./15-boutique-storefront-image-formats.md).
 - Boutique-facing credit wallet / ₺ packages + overage (metering table already exists)
 - Fill boutique house model `referenceImageUrls` in `registry.ts` after in-shop shoots (manual; no owner UI)
 - Studio Ayla/Deniz are platform defaults — regenerate with `npm run tr:generate-studio-models` if needed

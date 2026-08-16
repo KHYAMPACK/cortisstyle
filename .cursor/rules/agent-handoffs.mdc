@@ -19,6 +19,7 @@ Before non-trivial work, read `docs/agent-handoffs/00-overview.md` and `docs/age
 | `/tr` Cadde, looks, platform cart | `04-tr-marketplace.md` |
 | Checkout, orders, WhatsApp, iyzico | `05-commerce-rails.md` |
 | AI catalog, campaigns, growth | `06-sell-enablement.md` |
+| Boutique JPEG/WebP vs Cadde PNG (later) | `15-boutique-storefront-image-formats.md` |
 | Env, Supabase, auth | `07-platform-ops.md` |
 | Pervin health / holes | `08-boutique-audit-pervin.md` |
 | Clone next boutique (system) | `09-boutique-clone-playbook.md` |
