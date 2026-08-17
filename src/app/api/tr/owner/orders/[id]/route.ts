@@ -8,6 +8,7 @@ import {
   updateOrderFulfillmentStatusAdmin,
   updateOrderPaymentStatusAdmin,
 } from "@/lib/tr/orders";
+import { autoFulfillPaidShipment } from "@/lib/tr/shipping/ownerShipment";
 import type {
   TrFulfillmentStatus,
   TrPaymentStatus,
@@ -138,6 +139,10 @@ export async function PATCH(request: Request, context: RouteContext) {
           invoiceError,
         );
       }
+      await autoFulfillPaidShipment(
+        { id: boutique.id, slug: boutique.slug },
+        id,
+      );
     }
     if (hasFulfillment) {
       await updateOrderFulfillmentStatusAdmin(

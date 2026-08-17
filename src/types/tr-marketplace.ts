@@ -318,6 +318,9 @@ export interface CreateTrOrderInput {
   discountKurus?: number;
   /** When true (default for live checkout), decrement stock after insert. */
   decrementInventory?: boolean;
+  /** Customer-paid shipping (kuruş). Server-quoted; never trust the client. */
+  shippingFeeKurus?: number;
+  shippingProvider?: TrOrder["shipment"]["provider"];
   items: Array<{
     productId: string;
     boutiqueId: string;

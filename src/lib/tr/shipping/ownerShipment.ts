@@ -14,13 +14,16 @@ import {
   type BasitKargoOrderPayload,
 } from "@/lib/tr/shipping/providers/basitKargo";
 import { getShippingProviderId } from "@/lib/tr/shipping/registry";
-import type { TrShippingRate } from "@/lib/tr/shipping/types";
+import {
+  CHECKOUT_SHIPPING_HANDLER,
+  type TrShippingRate,
+} from "@/lib/tr/shipping/types";
 import {
   getOrderByIdAdmin,
   updateOrderShipmentAdmin,
 } from "@/lib/tr/orders";
 import { trBoutiqueOrderTrackingPath } from "@/lib/tr/paths";
-import type { TrBoutique, TrOrderWithItems } from "@/types/tr-marketplace";
+import type { TrOrderWithItems } from "@/types/tr-marketplace";
 
 export function orderMayCreateShipment(order: TrOrderWithItems): boolean {
   if (order.fulfillmentStatus === "cancelled") return false;
@@ -64,6 +67,7 @@ async function persistPayload(
   return updateOrderShipmentAdmin(order.id, {
     ...patch,
     traces: mappedTraces.length > 0 ? mappedTraces : order.shipment.traces,
+    feeKurus: order.shipment.feeKurus ?? patch.feeKurus,
     fulfillmentStatus: fulfillmentFromProviderStatus(
       order.fulfillmentStatus,
       payload.status,
@@ -72,7 +76,7 @@ async function persistPayload(
 }
 
 export async function createBoutiqueShipment(
-  boutique: TrBoutique,
+  boutique: { id: string; slug: string },
   orderId: string,
 ) {
   const provider = getShippingProviderId(boutique.slug);
@@ -108,7 +112,7 @@ export async function createBoutiqueShipment(
 }
 
 export async function listBoutiqueShipmentRates(
-  boutique: TrBoutique,
+  boutique: { id: string; slug: string },
   orderId: string,
 ): Promise<{ order: TrOrderWithItems; rates: TrShippingRate[] }> {
   const order = await requireOwnedOrder(boutique, orderId);
@@ -126,7 +130,7 @@ export async function listBoutiqueShipmentRates(
 }
 
 export async function buyBoutiqueShipmentLabel(
-  boutique: TrBoutique,
+  boutique: { id: string; slug: string },
   orderId: string,
   handlerCode: string,
 ) {
@@ -143,12 +147,16 @@ export async function buyBoutiqueShipmentLabel(
   if (order.shipment.barcode) {
     return { order };
   }
+  const handler = handlerCode.trim().toUpperCase();
+  if (handler !== CHECKOUT_SHIPPING_HANDLER) {
+    throw new Error("Kargo firması müşteri ödemesine göre otomatik seçilir.");
+  }
 
   const token = requireBasitKargoToken(boutique.slug);
   const bought = await basitKargoBuyBarcode(
     token,
     order.shipment.externalId,
-    handlerCode.trim(),
+    CHECKOUT_SHIPPING_HANDLER,
   );
   await persistPayload(order, bought);
   const fresh = await getOrderByIdAdmin(order.id);
@@ -157,7 +165,7 @@ export async function buyBoutiqueShipmentLabel(
 }
 
 export async function cancelBoutiqueShipmentBarcode(
-  boutique: TrBoutique,
+  boutique: { id: string; slug: string },
   orderId: string,
 ) {
   const order = await requireOwnedOrder(boutique, orderId);
@@ -178,7 +186,6 @@ export async function cancelBoutiqueShipmentBarcode(
     carrierCode: null,
     carrierName: null,
     status: "NEW",
-    feeKurus: null,
     fulfillmentStatus:
       order.fulfillmentStatus === "cancelled"
         ? "cancelled"
@@ -190,7 +197,7 @@ export async function cancelBoutiqueShipmentBarcode(
 }
 
 export async function getBoutiqueShipmentLabelSvg(
-  boutique: TrBoutique,
+  boutique: { id: string; slug: string },
   orderId: string,
 ): Promise<string> {
   const order = await requireOwnedOrder(boutique, orderId);
@@ -239,8 +246,33 @@ export async function refreshBasitKargoOrder(
   }
 }
 
+export async function autoFulfillPaidShipment(
+  boutique: { id: string; slug: string },
+  orderId: string,
+): Promise<TrOrderWithItems | null> {
+  if (getShippingProviderId(boutique.slug) !== "basitkargo") {
+    return null;
+  }
+
+  try {
+    const created = await createBoutiqueShipment(boutique, orderId);
+    if (created.order.shipment.barcode) {
+      return created.order;
+    }
+    const bought = await buyBoutiqueShipmentLabel(
+      boutique,
+      orderId,
+      CHECKOUT_SHIPPING_HANDLER,
+    );
+    return bought.order;
+  } catch (error) {
+    console.error("[shipping] auto-fulfill failed:", error);
+    return null;
+  }
+}
+
 async function requireOwnedOrder(
-  boutique: TrBoutique,
+  boutique: { id: string; slug: string },
   orderId: string,
 ): Promise<TrOrderWithItems> {
   const order = await getOrderByIdAdmin(orderId);

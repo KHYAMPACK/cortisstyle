@@ -8,6 +8,7 @@ import {
   BasitKargoError,
 } from "@/lib/tr/shipping/providers/basitKargo";
 import {
+  autoFulfillPaidShipment,
   buyBoutiqueShipmentLabel,
   cancelBoutiqueShipmentBarcode,
   createBoutiqueShipment,
@@ -125,6 +126,19 @@ export async function POST(request: Request, context: RouteContext) {
       return Response.json({
         order: result.order,
         trackingPath: shopperTrackingPath(boutique.slug, result.order.id),
+      });
+    }
+    if (action === "fulfill") {
+      const order = await autoFulfillPaidShipment(boutique, id);
+      if (!order) {
+        return Response.json(
+          { error: "Etiket üretilemedi. Bakiyeyi veya adresi kontrol edin." },
+          { status: 502 },
+        );
+      }
+      return Response.json({
+        order,
+        trackingPath: shopperTrackingPath(boutique.slug, order.id),
       });
     }
     if (action === "cancel") {

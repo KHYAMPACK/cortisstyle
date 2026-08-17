@@ -16,6 +16,8 @@
 - Customer profiles for storefront (`tr_customer_profiles` registration-source; `profiles.first_name` / `last_name` / `phone` from boutique signup + Hesabım edit — `patch_tr_customer_profile_fields.sql`; optional signup discovery — `patch_tr_customer_signup_discovery.sql`)
 - **Demo shopper orders / tracking** (UI only, not `tr_orders`): `src/lib/tr/commerce/demoShopperOrders.ts` → `/siparisler`, `/siparisler/[id]`, `/siparisler/[id]/takip`. Live takip for UUID orders uses the boutique shipping provider (Lila = Basit Kargo).
 - **Per-boutique shipping** (`src/lib/tr/shipping/`): registry by slug. **Lila** = Basit Kargo (her token/balance). **Pervin / clones** = manual stub. Cortisstyle is not the carrier. SQL `supabase/patch_tr_order_shipments.sql`. Webhook `POST /api/tr/shipping/basitkargo/webhook` (Bearer `TR_SHIPPING_BASITKARGO_WEBHOOK_SECRET`).
+- **Locked TR address** (`src/lib/tr/geo/turkeyAddress.ts`, `src/data/tr/turkey-cities-districts.json`): checkout il/ilçe are selects; checkout POST rejects free-text junk. Street stays typed (min length).
+- **Buyer pays kargo (Lila):** server quotes cheapest pack (`POST /api/tr/shipping/quote` + re-quote on checkout). Client cannot set the fee. After **paid / sandbox**, auto-buy Basit `ECONOMIC` barcode; owner only prints. Quote drift stays on Lila’s Basit balance.
 - Admin seed/ops with `TR_ADMIN_SECRET` (`adminAuth.ts`)
 
 ## What we will do / direction
@@ -34,6 +36,7 @@
 | WhatsApp | `src/lib/tr/whatsapp.ts`, `TrWhatsAppOrderButton` |
 | Discounts | `src/lib/tr/discountCodes.ts` |
 | Shipping | `src/lib/tr/shipping/` (registry + Basit Kargo for Lila) |
+| Address zones | `src/lib/tr/geo/turkeyAddress.ts` |
 | Schema | `patch_tr_marketplace.sql`, `patch_tr_order_fulfillment.sql`, `patch_tr_order_shipments.sql`, `patch_tr_discount_codes.sql` |
 | Legal ops | `docs/pre-vergi-levhasi-checklist.md`, partnership draft |
 

@@ -263,3 +263,34 @@ export function feeKurusFromPayload(
   if (fee == null) return null;
   return tlToKurus(fee);
 }
+
+/** Pre-order quote (does not create a Basit shipment or debit balance). */
+export async function basitKargoQuotePackageFees(
+  token: string,
+): Promise<TrShippingRate[]> {
+  const rows = await bkJson<Array<Record<string, unknown>>>(
+    token,
+    "/handlers/fee/packages",
+    {
+      method: "POST",
+      body: JSON.stringify([DEFAULT_APPAREL_PACKAGE]),
+    },
+  );
+  if (!Array.isArray(rows)) return [];
+  return rows
+    .map((row) => ({
+      handlerCode: String(row.handlerCode ?? ""),
+      handlerName: String(row.handler ?? row.handlerCode ?? "Kargo"),
+      feeKurus: tlToKurus(row.price ?? row.fee),
+      durationDays:
+        typeof row.duration === "number" ? row.duration : null,
+      pickupAddress: null,
+    }))
+    .filter(
+      (row) =>
+        row.handlerCode &&
+        !row.handlerCode.toUpperCase().startsWith("SELF_") &&
+        row.feeKurus > 0,
+    )
+    .sort((a, b) => a.feeKurus - b.feeKurus);
+}

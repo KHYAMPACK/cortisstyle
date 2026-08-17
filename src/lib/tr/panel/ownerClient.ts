@@ -575,6 +575,17 @@ export async function updateOwnerOrderPaymentPaid(
   return data.order;
 }
 
+export async function fulfillOwnerShipment(boutiqueId: string, orderId: string) {
+  const response = await ownerFetch(
+    `/api/tr/owner/orders/${encodeURIComponent(orderId)}/shipment`,
+    {
+      method: "POST",
+      body: JSON.stringify({ boutiqueId, action: "fulfill" }),
+    },
+  );
+  return parseShipmentResponse(response, "Etiket üretilemedi.");
+}
+
 export async function createOwnerShipment(boutiqueId: string, orderId: string) {
   const response = await ownerFetch(
     `/api/tr/owner/orders/${encodeURIComponent(orderId)}/shipment`,

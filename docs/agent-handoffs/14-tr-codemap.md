@@ -69,6 +69,7 @@ src/
 | Boutique catalog queries | `lib/tr/catalog/` |
 | Owner auth / panel APIs helpers | `lib/tr/panel/` |
 | Boutique shipping (Lila BK, others stub) | `lib/tr/shipping/` |
+| TR il/ilçe allowlist | `lib/tr/geo/turkeyAddress.ts`, `data/tr/turkey-cities-districts.json` |
 | PhotoRoom cutout | **`lib/tr/ai/photoroomRemoveBg.ts`** (never delete with “studio”) |
 | Auth helpers | `lib/auth/` |
 | Supabase clients | `lib/supabase/` (browser · `supabaseAdmin` · **`supabaseServer` anon-first public catalog**) |

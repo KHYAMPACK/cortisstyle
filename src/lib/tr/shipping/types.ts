@@ -32,3 +32,6 @@ export const DEFAULT_APPAREL_PACKAGE = {
   depth: 5,
   weight: 1,
 } as const;
+
+/** Checkout and auto-label: cheapest Basit option. Never accept client handler codes. */
+export const CHECKOUT_SHIPPING_HANDLER = "ECONOMIC" as const;

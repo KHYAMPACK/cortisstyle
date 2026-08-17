@@ -11,6 +11,7 @@ import {
   normalizeBuyerTaxId,
   validateCheckoutInvoiceFields,
 } from "@/lib/tr/invoiceFields";
+import { validateTurkeyShippingAddress } from "@/lib/tr/geo/turkeyAddress";
 import {
   clientIpFromRequest,
   consumeRateLimit,
@@ -18,6 +19,9 @@ import {
 } from "@/lib/tr/rateLimit";
 import { CHECKOUT_RATE_LIMITS } from "@/lib/tr/rateLimitPolicies";
 import { isValidNotifyEmail } from "@/lib/supabaseAdmin";
+import { autoFulfillPaidShipment } from "@/lib/tr/shipping/ownerShipment";
+import { quoteCheckoutShippingFee } from "@/lib/tr/shipping/quoteShipping";
+import { boutiqueHasLiveShipping } from "@/lib/tr/shipping/registry";
 import type { CreateTrOrderInput, TrInvoiceType } from "@/types/tr-marketplace";
 
 export const runtime = "nodejs";
@@ -52,14 +56,19 @@ function validateCustomerFields(body: CheckoutBody): string | null {
     return "Geçerli bir telefon numarası girin.";
   }
   const addr = body.shippingAddress;
-  if (
-    !addr?.line1?.trim() ||
-    !addr.district?.trim() ||
-    !addr.city?.trim() ||
-    !addr.postalCode?.trim()
-  ) {
+  if (!addr) {
     return "Teslimat adresini tamamlayın.";
   }
+  const validated = validateTurkeyShippingAddress(addr);
+  if (!validated.ok) return validated.error;
+  body.shippingAddress = {
+    line1: validated.address.line1,
+    line2: validated.address.line2,
+    city: validated.address.city,
+    district: validated.address.district,
+    postalCode: validated.address.postalCode,
+    country: "TR",
+  };
   return null;
 }
 
@@ -147,6 +156,20 @@ export async function POST(request: Request) {
     const invoiceType: TrInvoiceType =
       body.invoiceType === "corporate" ? "corporate" : "individual";
 
+    let shippingFeeKurus = 0;
+    let shippingProvider: CreateTrOrderInput["shippingProvider"] = null;
+    if (boutiqueSlug && boutiqueHasLiveShipping(boutiqueSlug)) {
+      const quote = await quoteCheckoutShippingFee(boutiqueSlug);
+      if (!quote) {
+        return Response.json(
+          { error: "Kargo ücreti alınamadı. Adresi kontrol edip tekrar deneyin." },
+          { status: 502 },
+        );
+      }
+      shippingFeeKurus = quote.feeKurus;
+      shippingProvider = "basitkargo";
+    }
+
     const order = await createOrderAdmin({
       customerEmail: body.customerEmail,
       customerName: body.customerName,
@@ -166,6 +189,8 @@ export async function POST(request: Request) {
       })),
       discountCode: checkout.discountCode,
       discountKurus: checkout.discountKurus,
+      shippingFeeKurus,
+      shippingProvider,
       isSandbox: sandbox,
       decrementInventory: true,
     });
@@ -179,6 +204,18 @@ export async function POST(request: Request) {
     }
 
     const confirmToken = createOrderConfirmToken(order.id);
+
+    if (
+      sandbox &&
+      boutiqueSlug &&
+      expectedBoutiqueId &&
+      boutiqueHasLiveShipping(boutiqueSlug)
+    ) {
+      await autoFulfillPaidShipment(
+        { id: expectedBoutiqueId, slug: boutiqueSlug },
+        order.id,
+      );
+    }
 
     return Response.json({
       ok: true,

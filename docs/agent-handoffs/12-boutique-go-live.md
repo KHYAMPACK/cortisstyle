@@ -53,7 +53,7 @@ When iyzico ships: capture → set `payment_status: paid` (inventory already res
 ## Smoke before launch
 
 1. Cart + beden → checkout → **pending** order in panel + nav badge
-2. Owner marks paid → ciro updates; cancel restores stock
+2. Owner marks paid → kargo etiketi (Lila) / ciro updates; cancel restores stock
 3. Confirm URL without token fails; with token shows “Ödeme bekleniyor”
 4. Coupon applies; auth OTP rate-limits
 5. Custom domain `/giris`, `/sepet`, `/odeme`

@@ -4,6 +4,7 @@ export {
   type TrShippingProviderId,
 } from "@/lib/tr/shipping/registry";
 export {
+  CHECKOUT_SHIPPING_HANDLER,
   DEFAULT_APPAREL_PACKAGE,
   EMPTY_ORDER_SHIPMENT,
   type TrOrderShipment,

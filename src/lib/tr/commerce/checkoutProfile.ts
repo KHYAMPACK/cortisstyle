@@ -1,4 +1,8 @@
 import type { TrCheckoutFormData } from "@/types/tr-cart";
+import {
+  canonicalTurkeyCity,
+  canonicalTurkeyDistrict,
+} from "@/lib/tr/geo/turkeyAddress";
 
 const storageKey = (scope: string) =>
   `cortis-tr-checkout-profile:${scope.trim().toLowerCase() || "marketplace"}`;
@@ -28,14 +32,18 @@ export function loadSavedCheckoutProfile(
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<TrCheckoutFormData>;
     if (!parsed || typeof parsed !== "object") return null;
+    const city = canonicalTurkeyCity(String(parsed.city ?? "")) ?? "";
+    const district = city
+      ? (canonicalTurkeyDistrict(city, String(parsed.district ?? "")) ?? "")
+      : "";
     return {
       customerName: String(parsed.customerName ?? ""),
       customerEmail: String(parsed.customerEmail ?? ""),
       customerPhone: String(parsed.customerPhone ?? ""),
       line1: String(parsed.line1 ?? ""),
       line2: String(parsed.line2 ?? ""),
-      district: String(parsed.district ?? ""),
-      city: String(parsed.city ?? ""),
+      district,
+      city,
       postalCode: String(parsed.postalCode ?? ""),
       country: String(parsed.country ?? "TR") || "TR",
       invoiceType:

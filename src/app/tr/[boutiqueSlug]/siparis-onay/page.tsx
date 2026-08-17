@@ -144,6 +144,13 @@ export default async function BoutiqueOrderConfirmationPage({
             </div>
           ) : null}
 
+          {order.shipment.feeKurus != null && order.shipment.feeKurus > 0 ? (
+            <div className="flex justify-between text-[13px] text-neutral-600">
+              <span>Kargo</span>
+              <span>{formatTryFromKurus(order.shipment.feeKurus)}</span>
+            </div>
+          ) : null}
+
           <div className="flex items-center justify-between border-t border-black/5 pt-4">
             <span className="text-[10px] tracking-[0.16em] text-neutral-500 uppercase">
               Toplam

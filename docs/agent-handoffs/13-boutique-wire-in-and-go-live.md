@@ -184,7 +184,7 @@ Copy for each launch. Check before announcing Instagram → site.
 - [ ] Mark-paid creates **Faturalar** draft; owner can mark issued offline + external no
 - [ ] Coupon (if any) applies server-side
 - [ ] No demo fatura / fake kargo etiket / fake takip / no fake GİB claims
-- [ ] **Lila only:** `supabase/patch_tr_order_shipments.sql` + `TR_SHIPPING_BASITKARGO_TOKENS` / webhook secret; other boutiques stay manual kargo
+- [ ] **Lila only:** `supabase/patch_tr_order_shipments.sql` + `TR_SHIPPING_BASITKARGO_TOKENS` / webhook secret; checkout quotes kargo, auto barcode after paid; other boutiques stay manual kargo
 
 ### C6. Domain & paths
 

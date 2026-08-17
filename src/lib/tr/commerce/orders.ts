@@ -68,8 +68,9 @@ export async function createOrderAdmin(
     0,
     Math.min(subtotalKurus, Math.floor(input.discountKurus ?? 0)),
   );
-  const totalKurus = Math.max(0, subtotalKurus - discountKurus);
   const discountCode = input.discountCode?.trim().toUpperCase() || null;
+  const shippingFeeKurus = Math.max(0, Math.floor(input.shippingFeeKurus ?? 0));
+  const totalKurus = Math.max(0, subtotalKurus - discountKurus + shippingFeeKurus);
 
   const isSandbox = input.isSandbox ?? false;
   const paymentStatus: TrPaymentStatus = isSandbox ? "sandbox" : "pending";
@@ -116,6 +117,12 @@ export async function createOrderAdmin(
         payment_status: paymentStatus,
         fulfillment_status: "created",
         is_sandbox: isSandbox,
+        ...(shippingFeeKurus > 0
+          ? { shipping_fee_kurus: shippingFeeKurus }
+          : {}),
+        ...(input.shippingProvider
+          ? { shipping_provider: input.shippingProvider }
+          : {}),
         ...(input.createdAt ? { created_at: input.createdAt } : {}),
       })
       .select("*")

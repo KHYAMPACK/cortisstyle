@@ -199,7 +199,11 @@ function readOrderShipment(row: Record<string, unknown>): TrOrderShipment {
     typeof row.shipping_external_id === "string"
       ? row.shipping_external_id
       : null;
-  if (!provider && !externalId) return { ...EMPTY_ORDER_SHIPMENT };
+  const feeKurus =
+    typeof row.shipping_fee_kurus === "number" ? row.shipping_fee_kurus : null;
+  if (!provider && !externalId && feeKurus == null) {
+    return { ...EMPTY_ORDER_SHIPMENT };
+  }
   return {
     provider,
     externalId,
@@ -220,8 +224,7 @@ function readOrderShipment(row: Record<string, unknown>): TrOrderShipment {
     status:
       typeof row.shipping_status === "string" ? row.shipping_status : null,
     traces: readShippingTraces(row.shipping_traces),
-    feeKurus:
-      typeof row.shipping_fee_kurus === "number" ? row.shipping_fee_kurus : null,
+    feeKurus,
   };
 }
 

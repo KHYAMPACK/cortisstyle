@@ -8,6 +8,10 @@ import {
   cartHasDemoItems,
 } from "@/components/tr/TrSandboxBanner";
 import { TrIyzicoCheckoutBadge } from "@/components/tr/TrIyzicoPaymentBadges";
+import {
+  TrTurkeyAddressFields,
+  turkeyAddressClientError,
+} from "@/components/tr/commerce/TrTurkeyAddressFields";
 import { useAuth } from "@/context/AuthContext";
 import {
   loadSavedCheckoutProfile,
@@ -18,6 +22,7 @@ import {
   loadBoutiqueCheckoutSelection,
 } from "@/lib/tr/checkoutSelection";
 import { isTrCheckoutEnabled } from "@/lib/tr/platform";
+import { boutiqueHasLiveShipping } from "@/lib/tr/shipping/registry";
 import {
   trBoutiqueCartPath,
   trBoutiqueLegalPath,
@@ -147,6 +152,11 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
   const [saveProfile, setSaveProfile] = useState(true);
   const [profileReady, setProfileReady] = useState(false);
   const [discountCode, setDiscountCode] = useState("");
+  const [shippingFeeKurus, setShippingFeeKurus] = useState<number | null>(null);
+  const [shippingQuoteError, setShippingQuoteError] = useState<string | null>(
+    null,
+  );
+  const [quoting, setQuoting] = useState(false);
 
   const profileScope = boutiqueSlug?.trim() || "marketplace";
   const authEmail = user?.email?.trim() || "";
@@ -187,8 +197,65 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
   const totalKurus = cartTotalKurus(items);
   const demoCart = cartHasDemoItems(items);
   const boutiqueCheckout = Boolean(boutiqueSlug);
+  const liveShipping = Boolean(
+    boutiqueSlug && boutiqueHasLiveShipping(boutiqueSlug) && !demoCart,
+  );
+  const payableKurus =
+    totalKurus + (liveShipping && shippingFeeKurus != null ? shippingFeeKurus : 0);
   const canSubmit =
     demoCart || boutiqueCheckout || isTrCheckoutEnabled();
+
+  useEffect(() => {
+    if (!liveShipping || !form.city || !form.district) {
+      setShippingFeeKurus(null);
+      setShippingQuoteError(null);
+      setQuoting(false);
+      return;
+    }
+    let cancelled = false;
+    setQuoting(true);
+    setShippingQuoteError(null);
+    const timer = window.setTimeout(() => {
+      void (async () => {
+        try {
+          const response = await fetch("/api/tr/shipping/quote", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              boutiqueSlug,
+              city: form.city,
+              district: form.district,
+            }),
+          });
+          const data = (await response.json()) as {
+            feeKurus?: number;
+            error?: string;
+          };
+          if (cancelled) return;
+          if (!response.ok) {
+            throw new Error(data.error ?? "Kargo ücreti alınamadı.");
+          }
+          setShippingFeeKurus(
+            typeof data.feeKurus === "number" ? data.feeKurus : 0,
+          );
+        } catch (quoteError) {
+          if (cancelled) return;
+          setShippingFeeKurus(null);
+          setShippingQuoteError(
+            quoteError instanceof Error
+              ? quoteError.message
+              : "Kargo ücreti alınamadı.",
+          );
+        } finally {
+          if (!cancelled) setQuoting(false);
+        }
+      })();
+    }, 250);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [liveShipping, boutiqueSlug, form.city, form.district]);
 
   if (!hydrated || !profileReady) {
     return (
@@ -248,13 +315,17 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
       }
     }
     if (step === "address") {
-      if (
-        !form.line1.trim() ||
-        !form.district.trim() ||
-        !form.city.trim() ||
-        !form.postalCode.trim()
-      ) {
-        setError("Adres alanlarını tamamlayın.");
+      const addressError = turkeyAddressClientError(form);
+      if (addressError) {
+        setError(addressError);
+        return false;
+      }
+      if (liveShipping && shippingQuoteError) {
+        setError(shippingQuoteError);
+        return false;
+      }
+      if (liveShipping && (quoting || shippingFeeKurus == null)) {
+        setError("Kargo ücreti hesaplanıyor, biraz bekleyin.");
         return false;
       }
       if (form.invoiceType === "corporate") {
@@ -295,18 +366,16 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
       setError("Sözleşmeleri onaylamanız gerekir.");
       return;
     }
-    if (
-      !form.customerPhone.trim() ||
-      !form.customerName.trim() ||
-      !form.customerEmail.trim() ||
-      !form.line1.trim() ||
-      !form.district.trim() ||
-      !form.city.trim() ||
-      !form.postalCode.trim()
-    ) {
-      setError("Eksik bilgi var — önceki adımları kontrol edin.");
-      return;
-    }
+      const addressError = turkeyAddressClientError(form);
+      if (
+        !form.customerPhone.trim() ||
+        !form.customerName.trim() ||
+        !form.customerEmail.trim() ||
+        addressError
+      ) {
+        setError(addressError ?? "Eksik bilgi var — önceki adımları kontrol edin.");
+        return;
+      }
 
     setSubmitting(true);
     setError(null);
@@ -530,62 +599,33 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
               <h2 className="font-serif text-xl tracking-tight text-neutral-950">
                 Teslimat adresi
               </h2>
-              <label className="block">
-                <span className={labelClassName}>Adres</span>
-                <input
-                  required
-                  value={form.line1}
-                  onChange={(event) => updateField("line1", event.target.value)}
-                  className={`${inputClassName} mt-2`}
-                  autoComplete="address-line1"
-                  autoFocus
-                />
-              </label>
-              <label className="block">
-                <span className={labelClassName}>Adres devamı (isteğe bağlı)</span>
-                <input
-                  value={form.line2}
-                  onChange={(event) => updateField("line2", event.target.value)}
-                  className={`${inputClassName} mt-2`}
-                  autoComplete="address-line2"
-                />
-              </label>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="block">
-                  <span className={labelClassName}>İlçe</span>
-                  <input
-                    required
-                    value={form.district}
-                    onChange={(event) =>
-                      updateField("district", event.target.value)
-                    }
-                    className={`${inputClassName} mt-2`}
-                  />
-                </label>
-                <label className="block">
-                  <span className={labelClassName}>İl</span>
-                  <input
-                    required
-                    value={form.city}
-                    onChange={(event) =>
-                      updateField("city", event.target.value)
-                    }
-                    className={`${inputClassName} mt-2`}
-                  />
-                </label>
-              </div>
-              <label className="block sm:max-w-xs">
-                <span className={labelClassName}>Posta kodu</span>
-                <input
-                  required
-                  value={form.postalCode}
-                  onChange={(event) =>
-                    updateField("postalCode", event.target.value)
-                  }
-                  className={`${inputClassName} mt-2`}
-                  autoComplete="postal-code"
-                />
-              </label>
+              <TrTurkeyAddressFields
+                city={form.city}
+                district={form.district}
+                line1={form.line1}
+                line2={form.line2}
+                postalCode={form.postalCode}
+                autoFocusStreet
+                onChange={(patch) =>
+                  setForm((current) => ({ ...current, ...patch }))
+                }
+              />
+              {liveShipping ? (
+                <p className="text-[13px] text-neutral-600">
+                  {quoting ? (
+                    <span className="inline-flex items-center gap-2">
+                      <span className="h-2 w-8 animate-pulse bg-neutral-200" />
+                      Kargo ücreti hesaplanıyor…
+                    </span>
+                  ) : shippingFeeKurus != null ? (
+                    <>Kargo: {formatTryFromKurus(shippingFeeKurus)}</>
+                  ) : shippingQuoteError ? (
+                    shippingQuoteError
+                  ) : (
+                    "İl ve ilçe seçince kargo ücreti görünür."
+                  )}
+                </p>
+              ) : null}
 
               <div className="space-y-4 border-t border-black/10 pt-5">
                 <h3 className="font-serif text-lg tracking-tight text-neutral-950">
@@ -940,13 +980,33 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
               </div>
             ))}
           </div>
-          <div className="mt-5 border-t border-black/5 pt-4">
+          <div className="mt-5 border-t border-black/5 pt-4 space-y-2">
+            {liveShipping ? (
+              <>
+                <div className="flex items-center justify-between text-[13px]">
+                  <span className="text-neutral-500">Ürünler</span>
+                  <span>{formatTryFromKurus(totalKurus)}</span>
+                </div>
+                <div className="flex items-center justify-between text-[13px]">
+                  <span className="text-neutral-500">Kargo</span>
+                  <span>
+                    {quoting ? (
+                      <span className="inline-block h-3 w-12 animate-pulse bg-neutral-200" />
+                    ) : shippingFeeKurus != null ? (
+                      formatTryFromKurus(shippingFeeKurus)
+                    ) : (
+                      "—"
+                    )}
+                  </span>
+                </div>
+              </>
+            ) : null}
             <div className="flex items-center justify-between">
               <span className="text-[10px] tracking-[0.16em] text-neutral-500 uppercase">
                 Toplam
               </span>
               <span className="font-serif text-xl text-brand-primary">
-                {formatTryFromKurus(totalKurus)}
+                {formatTryFromKurus(payableKurus)}
               </span>
             </div>
           </div>
