@@ -183,6 +183,23 @@ export async function basitKargoCreateOrder(
   });
 }
 
+export async function basitKargoUpdateOrder(
+  token: string,
+  order: TrOrderWithItems,
+): Promise<BasitKargoOrderPayload> {
+  const externalId = order.shipment.externalId;
+  if (!externalId) {
+    throw new BasitKargoError("Güncellenecek kargo kaydı yok.", 400);
+  }
+  return bkJson<BasitKargoOrderPayload>(token, "/v2/order", {
+    method: "PUT",
+    body: JSON.stringify({
+      id: externalId,
+      ...mapOrderToBasitKargoBody(order),
+    }),
+  });
+}
+
 export async function basitKargoListFees(
   token: string,
   bkOrderId: string,

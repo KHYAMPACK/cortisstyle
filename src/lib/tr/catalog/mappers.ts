@@ -225,6 +225,13 @@ function readOrderShipment(row: Record<string, unknown>): TrOrderShipment {
       typeof row.shipping_status === "string" ? row.shipping_status : null,
     traces: readShippingTraces(row.shipping_traces),
     feeKurus,
+    block:
+      row.shipping_block === "address_rejected" ? "address_rejected" : null,
+    addressRetryUsed: Boolean(row.shipping_address_retry_used),
+    lastError:
+      typeof row.shipping_last_error === "string"
+        ? row.shipping_last_error
+        : null,
   };
 }
 

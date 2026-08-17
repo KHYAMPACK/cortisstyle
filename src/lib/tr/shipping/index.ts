@@ -4,9 +4,12 @@ export {
   type TrShippingProviderId,
 } from "@/lib/tr/shipping/registry";
 export {
+  AUTO_BUY_FEE_CAP_KURUS,
   CHECKOUT_SHIPPING_HANDLER,
   DEFAULT_APPAREL_PACKAGE,
   EMPTY_ORDER_SHIPMENT,
+  FLAT_SHIPPING_FEE_KURUS,
+  SHIPPING_BLOCK_ADDRESS_REJECTED,
   type TrOrderShipment,
   type TrShippingRate,
   type TrShippingTrace,

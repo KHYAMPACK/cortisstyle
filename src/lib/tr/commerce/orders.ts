@@ -435,7 +435,11 @@ export type TrOrderShipmentPatch = {
   status?: string | null;
   traces?: TrOrder["shipment"]["traces"];
   feeKurus?: number | null;
+  block?: TrOrder["shipment"]["block"];
+  addressRetryUsed?: boolean;
+  lastError?: string | null;
   fulfillmentStatus?: TrFulfillmentStatus;
+  shippingAddress?: TrOrder["shippingAddress"];
 };
 
 export async function getOrderByShippingExternalIdAdmin(
@@ -484,6 +488,14 @@ export async function updateOrderShipmentAdmin(
   if (patch.status !== undefined) row.shipping_status = patch.status;
   if (patch.traces !== undefined) row.shipping_traces = patch.traces;
   if (patch.feeKurus !== undefined) row.shipping_fee_kurus = patch.feeKurus;
+  if (patch.block !== undefined) row.shipping_block = patch.block;
+  if (patch.addressRetryUsed !== undefined) {
+    row.shipping_address_retry_used = patch.addressRetryUsed;
+  }
+  if (patch.lastError !== undefined) row.shipping_last_error = patch.lastError;
+  if (patch.shippingAddress !== undefined) {
+    row.shipping_address = shippingAddressToJson(patch.shippingAddress);
+  }
   if (patch.fulfillmentStatus !== undefined) {
     row.fulfillment_status = patch.fulfillmentStatus;
   }

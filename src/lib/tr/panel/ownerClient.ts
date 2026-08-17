@@ -586,6 +586,32 @@ export async function fulfillOwnerShipment(boutiqueId: string, orderId: string) 
   return parseShipmentResponse(response, "Etiket üretilemedi.");
 }
 
+export async function retryOwnerShipmentAddress(
+  boutiqueId: string,
+  orderId: string,
+  shippingAddress: {
+    line1: string;
+    line2?: string;
+    city: string;
+    district: string;
+    postalCode: string;
+    country: string;
+  },
+) {
+  const response = await ownerFetch(
+    `/api/tr/owner/orders/${encodeURIComponent(orderId)}/shipment`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        boutiqueId,
+        action: "retry-address",
+        shippingAddress,
+      }),
+    },
+  );
+  return parseShipmentResponse(response, "Adres kaydedilemedi.");
+}
+
 export async function createOwnerShipment(boutiqueId: string, orderId: string) {
   const response = await ownerFetch(
     `/api/tr/owner/orders/${encodeURIComponent(orderId)}/shipment`,
@@ -609,21 +635,6 @@ export async function fetchOwnerShipmentRates(
     },
   );
   return parseShipmentResponse(response, "Kargo fiyatları alınamadı.");
-}
-
-export async function buyOwnerShipmentLabel(
-  boutiqueId: string,
-  orderId: string,
-  handlerCode: string,
-) {
-  const response = await ownerFetch(
-    `/api/tr/owner/orders/${encodeURIComponent(orderId)}/shipment`,
-    {
-      method: "POST",
-      body: JSON.stringify({ boutiqueId, action: "buy", handlerCode }),
-    },
-  );
-  return parseShipmentResponse(response, "Kargo kodu üretilemedi.");
 }
 
 export async function cancelOwnerShipmentBarcode(

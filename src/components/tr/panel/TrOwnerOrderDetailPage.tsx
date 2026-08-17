@@ -282,6 +282,10 @@ function OrderDetail({
             <p className="text-[19px] font-semibold text-neutral-900">
               Teslimat adresi
             </p>
+            <p className={`mt-2 ${panelHintClass}`}>
+              Müşterinin girdiği adres. Normalde yalnızca görüntülenir;
+              kargo firmaları reddederse düzenleme Kargo bölümünden açılır.
+            </p>
             <div className="mt-4 space-y-1 text-[17px] leading-relaxed text-neutral-800">
               <p>{order.shippingAddress.line1}</p>
               {order.shippingAddress.line2 ? (

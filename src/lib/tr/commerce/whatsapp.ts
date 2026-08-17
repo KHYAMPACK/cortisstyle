@@ -5,11 +5,22 @@ export function normalizeWhatsAppPhone(phone: string): string {
 }
 
 export function buildWhatsAppOrderUrl(phone: string, message: string): string {
-  const digits = normalizeWhatsAppPhone(phone);
+  const digits = whatsappDigitsTr(phone);
   if (!digits) return "https://wa.me/";
 
   const params = new URLSearchParams({ text: message });
   return `https://wa.me/${digits}?${params.toString()}`;
+}
+
+/** TR mobile → 90xxxxxxxxxx for wa.me */
+export function whatsappDigitsTr(phone: string): string {
+  const digits = normalizeWhatsAppPhone(phone);
+  if (digits.startsWith("90") && digits.length >= 12) return digits;
+  if (digits.startsWith("0") && digits.length === 11) {
+    return `90${digits.slice(1)}`;
+  }
+  if (digits.length === 10) return `90${digits}`;
+  return digits;
 }
 
 export function buildSizeRestockNotifyMessage(product: {
@@ -48,6 +59,29 @@ export function buildProductOrderMessage(product: {
   ]
     .filter(Boolean)
     .join("\n");
+}
+
+export function buildAddressCorrectionWhatsAppMessage(order: {
+  customerName: string;
+  shippingAddress: {
+    line1: string;
+    line2?: string | null;
+    district: string;
+    city: string;
+    postalCode: string;
+  };
+}): string {
+  const addr = order.shippingAddress;
+  const street = [addr.line1, addr.line2].filter(Boolean).join(" ");
+  return [
+    `Merhaba ${order.customerName},`,
+    "",
+    "Siparişinizin kargo adresi kargo firmaları tarafından kabul edilmedi.",
+    "Mahalle, sokak, bina ve daire numarasını net yazıp bu mesaja yanıtlar mısınız?",
+    "",
+    `Kayıtlı adres: ${street}`,
+    `${addr.district} / ${addr.city} ${addr.postalCode}`,
+  ].join("\n");
 }
 
 export function instagramProfileUrl(handle: string): string {

@@ -33,6 +33,10 @@ export type TrOrderShipment = {
   status: string | null;
   traces: TrShippingTrace[];
   feeKurus: number | null;
+  /** address_rejected = all eligible carriers refused this address. */
+  block: "address_rejected" | null;
+  addressRetryUsed: boolean;
+  lastError: string | null;
 };
 
 /** Common garment categories for outfit builder filtering (free text in DB). */

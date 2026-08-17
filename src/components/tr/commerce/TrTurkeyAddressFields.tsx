@@ -22,6 +22,8 @@ export function TrTurkeyAddressFields({
   postalCode,
   onChange,
   autoFocusStreet,
+  fieldClassName = inputClassName,
+  labelClassName: labelClass = labelClassName,
 }: {
   city: string;
   district: string;
@@ -36,6 +38,8 @@ export function TrTurkeyAddressFields({
     postalCode?: string;
   }) => void;
   autoFocusStreet?: boolean;
+  fieldClassName?: string;
+  labelClassName?: string;
 }) {
   const districts = city ? listTurkeyDistricts(city) : [];
 
@@ -43,14 +47,14 @@ export function TrTurkeyAddressFields({
     <div className="space-y-5">
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="block">
-          <span className={labelClassName}>İl</span>
+          <span className={labelClass}>İl</span>
           <select
             required
             value={city}
             onChange={(event) =>
               onChange({ city: event.target.value, district: "" })
             }
-            className={`${inputClassName} mt-2`}
+            className={`${fieldClassName} mt-2`}
             autoComplete="address-level1"
           >
             <option value="">Seçin</option>
@@ -62,13 +66,13 @@ export function TrTurkeyAddressFields({
           </select>
         </label>
         <label className="block">
-          <span className={labelClassName}>İlçe</span>
+          <span className={labelClass}>İlçe</span>
           <select
             required
             value={district}
             disabled={!city}
             onChange={(event) => onChange({ district: event.target.value })}
-            className={`${inputClassName} mt-2 disabled:bg-neutral-50`}
+            className={`${fieldClassName} mt-2 disabled:bg-neutral-50`}
             autoComplete="address-level2"
           >
             <option value="">{city ? "Seçin" : "Önce il seçin"}</option>
@@ -81,28 +85,28 @@ export function TrTurkeyAddressFields({
         </label>
       </div>
       <label className="block">
-        <span className={labelClassName}>Mahalle, sokak, bina no</span>
+        <span className={labelClass}>Mahalle, sokak, bina no</span>
         <input
           required
           value={line1}
           onChange={(event) => onChange({ line1: event.target.value })}
-          className={`${inputClassName} mt-2`}
+          className={`${fieldClassName} mt-2`}
           autoComplete="address-line1"
           autoFocus={autoFocusStreet}
           placeholder="Örn. Gülistan Mah. 12. Sok. No:4 Daire:2"
         />
       </label>
       <label className="block">
-        <span className={labelClassName}>Adres devamı (isteğe bağlı)</span>
+        <span className={labelClass}>Adres devamı (isteğe bağlı)</span>
         <input
           value={line2}
           onChange={(event) => onChange({ line2: event.target.value })}
-          className={`${inputClassName} mt-2`}
+          className={`${fieldClassName} mt-2`}
           autoComplete="address-line2"
         />
       </label>
       <label className="block sm:max-w-xs">
-        <span className={labelClassName}>Posta kodu</span>
+        <span className={labelClass}>Posta kodu</span>
         <input
           required
           value={postalCode}
@@ -111,7 +115,7 @@ export function TrTurkeyAddressFields({
               postalCode: event.target.value.replace(/\D/g, "").slice(0, 5),
             })
           }
-          className={`${inputClassName} mt-2`}
+          className={`${fieldClassName} mt-2`}
           autoComplete="postal-code"
           inputMode="numeric"
           placeholder="20100"

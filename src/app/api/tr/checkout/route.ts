@@ -159,7 +159,7 @@ export async function POST(request: Request) {
     let shippingFeeKurus = 0;
     let shippingProvider: CreateTrOrderInput["shippingProvider"] = null;
     if (boutiqueSlug && boutiqueHasLiveShipping(boutiqueSlug)) {
-      const quote = await quoteCheckoutShippingFee(boutiqueSlug);
+      const quote = quoteCheckoutShippingFee(boutiqueSlug);
       if (!quote) {
         return Response.json(
           { error: "Kargo ücreti alınamadı. Adresi kontrol edip tekrar deneyin." },

@@ -8,6 +8,7 @@ import {
   basitKargoGetLabelSvg,
   basitKargoGetOrder,
   basitKargoListFees,
+  basitKargoUpdateOrder,
   feeKurusFromPayload,
   getBasitKargoTokenForSlug,
   mapBasitKargoTraces,
@@ -15,7 +16,8 @@ import {
 } from "@/lib/tr/shipping/providers/basitKargo";
 import { getShippingProviderId } from "@/lib/tr/shipping/registry";
 import {
-  CHECKOUT_SHIPPING_HANDLER,
+  SHIPPING_BLOCK_ADDRESS_REJECTED,
+  isEligibleAutoBuyRate,
   type TrShippingRate,
 } from "@/lib/tr/shipping/types";
 import {
@@ -23,10 +25,11 @@ import {
   updateOrderShipmentAdmin,
 } from "@/lib/tr/orders";
 import { trBoutiqueOrderTrackingPath } from "@/lib/tr/paths";
-import type { TrOrderWithItems } from "@/types/tr-marketplace";
+import type { TrOrderWithItems, TrShippingAddress } from "@/types/tr-marketplace";
 
 export function orderMayCreateShipment(order: TrOrderWithItems): boolean {
   if (order.fulfillmentStatus === "cancelled") return false;
+  if (order.paymentStatus === "refunded") return false;
   return (
     order.paymentStatus === "paid" ||
     order.paymentStatus === "sandbox" ||
@@ -68,6 +71,8 @@ async function persistPayload(
     ...patch,
     traces: mappedTraces.length > 0 ? mappedTraces : order.shipment.traces,
     feeKurus: order.shipment.feeKurus ?? patch.feeKurus,
+    block: payload.barcode ? null : order.shipment.block,
+    lastError: payload.barcode ? null : order.shipment.lastError,
     fulfillmentStatus: fulfillmentFromProviderStatus(
       order.fulfillmentStatus,
       payload.status,
@@ -127,41 +132,6 @@ export async function listBoutiqueShipmentRates(
     order.shipment.externalId,
   );
   return { order, rates };
-}
-
-export async function buyBoutiqueShipmentLabel(
-  boutique: { id: string; slug: string },
-  orderId: string,
-  handlerCode: string,
-) {
-  const order = await requireOwnedOrder(boutique, orderId);
-  if (getShippingProviderId(boutique.slug) !== "basitkargo") {
-    throw new Error("Bu butik için kargo entegrasyonu yok.");
-  }
-  if (!orderMayCreateShipment(order)) {
-    throw new Error("Ödeme onaylanmadan etiket alınamaz.");
-  }
-  if (!order.shipment.externalId) {
-    throw new Error("Önce kargo kaydı oluşturun.");
-  }
-  if (order.shipment.barcode) {
-    return { order };
-  }
-  const handler = handlerCode.trim().toUpperCase();
-  if (handler !== CHECKOUT_SHIPPING_HANDLER) {
-    throw new Error("Kargo firması müşteri ödemesine göre otomatik seçilir.");
-  }
-
-  const token = requireBasitKargoToken(boutique.slug);
-  const bought = await basitKargoBuyBarcode(
-    token,
-    order.shipment.externalId,
-    CHECKOUT_SHIPPING_HANDLER,
-  );
-  await persistPayload(order, bought);
-  const fresh = await getOrderByIdAdmin(order.id);
-  if (!fresh) throw new Error("Sipariş bulunamadı.");
-  return { order: fresh };
 }
 
 export async function cancelBoutiqueShipmentBarcode(
@@ -254,21 +224,179 @@ export async function autoFulfillPaidShipment(
     return null;
   }
 
-  try {
-    const created = await createBoutiqueShipment(boutique, orderId);
-    if (created.order.shipment.barcode) {
-      return created.order;
+  return withOrderLock(orderId, async () => {
+    try {
+      return await runCarrierWaterfall(boutique, orderId, {
+        allowWhenAddressRejected: false,
+      });
+    } catch (error) {
+      console.error("[shipping] auto-fulfill failed:", error);
+      return null;
     }
-    const bought = await buyBoutiqueShipmentLabel(
-      boutique,
-      orderId,
-      CHECKOUT_SHIPPING_HANDLER,
-    );
-    return bought.order;
-  } catch (error) {
-    console.error("[shipping] auto-fulfill failed:", error);
+  }).catch((error) => {
+    console.error("[shipping] auto-fulfill lock:", error);
     return null;
+  });
+}
+
+/**
+ * Case 2 only: address was rejected by every eligible carrier.
+ * Owner edits after WhatsApp, then we waterfall once more.
+ */
+export async function retryShipmentAfterAddressEdit(
+  boutique: { id: string; slug: string },
+  orderId: string,
+  nextAddress: TrShippingAddress,
+): Promise<TrOrderWithItems> {
+  if (getShippingProviderId(boutique.slug) !== "basitkargo") {
+    throw new Error("Bu butik için kargo entegrasyonu yok.");
   }
+
+  const locked = await withOrderLock(orderId, async () => {
+    const order = await requireOwnedOrder(boutique, orderId);
+    if (!orderMayCreateShipment(order)) {
+      throw new Error("Bu siparişte kargo üretilemez.");
+    }
+    if (order.shipment.barcode) {
+      throw new Error("Etiket oluşmuş; adres değiştirilemez.");
+    }
+    if (order.shipment.block !== SHIPPING_BLOCK_ADDRESS_REJECTED) {
+      throw new Error("Adres yalnızca tüm kargo firmaları reddedince değiştirilir.");
+    }
+    if (order.shipment.addressRetryUsed) {
+      throw new Error("Adres denemesi kullanıldı. Siparişi iade edin.");
+    }
+
+    await updateOrderShipmentAdmin(order.id, {
+      shippingAddress: nextAddress,
+      lastError: null,
+    });
+
+    const withAddress = await getOrderByIdAdmin(order.id);
+    if (!withAddress) throw new Error("Sipariş bulunamadı.");
+
+    if (withAddress.shipment.externalId) {
+      const token = requireBasitKargoToken(boutique.slug);
+      try {
+        const updated = await basitKargoUpdateOrder(token, withAddress);
+        await persistPayload(withAddress, updated);
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Adres kargoya işlenemedi.";
+        await updateOrderShipmentAdmin(order.id, { lastError: message });
+        throw new Error(message);
+      }
+    }
+
+    await updateOrderShipmentAdmin(order.id, { addressRetryUsed: true });
+
+    const result = await runCarrierWaterfall(boutique, orderId, {
+      allowWhenAddressRejected: true,
+    });
+    if (!result) throw new Error("Etiket üretilemedi.");
+    return result;
+  });
+
+  if (!locked) throw new Error("Etiket üretilemedi.");
+  return locked;
+}
+
+const inflightByOrder = new Map<string, Promise<TrOrderWithItems | null>>();
+
+async function withOrderLock<T>(
+  orderId: string,
+  fn: () => Promise<T>,
+): Promise<T> {
+  const existing = inflightByOrder.get(orderId);
+  if (existing) {
+    await existing;
+    throw new Error("Kargo işlemi zaten sürüyor.");
+  }
+  const pending = fn();
+  inflightByOrder.set(
+    orderId,
+    pending.then(
+      (value) => (value as TrOrderWithItems | null) ?? null,
+      () => null,
+    ),
+  );
+  try {
+    return await pending;
+  } finally {
+    inflightByOrder.delete(orderId);
+  }
+}
+
+async function runCarrierWaterfall(
+  boutique: { id: string; slug: string },
+  orderId: string,
+  options: { allowWhenAddressRejected: boolean },
+): Promise<TrOrderWithItems | null> {
+  const created = await createBoutiqueShipment(boutique, orderId);
+  let order = created.order;
+  if (order.shipment.barcode) return order;
+  if (
+    order.shipment.block === SHIPPING_BLOCK_ADDRESS_REJECTED &&
+    !options.allowWhenAddressRejected
+  ) {
+    return order;
+  }
+
+  const token = requireBasitKargoToken(boutique.slug);
+  const externalId = order.shipment.externalId;
+  if (!externalId) {
+    throw new Error("Kargo kaydı oluşturulamadı.");
+  }
+
+  const rates = (created.rates.length > 0
+    ? created.rates
+    : await basitKargoListFees(token, externalId)
+  )
+    .filter((rate) => isEligibleAutoBuyRate(rate))
+    .sort((a, b) => a.feeKurus - b.feeKurus);
+
+  if (rates.length === 0) {
+    await markAddressRejected(
+      order.id,
+      "Uygun kargo firması yok (Yurtiçi ve 140 TL üstü denemez).",
+    );
+    return (await getOrderByIdAdmin(order.id)) ?? order;
+  }
+
+  let lastError = "Hiçbir kargo firması bu adresi kabul etmedi.";
+  for (const rate of rates) {
+    const latest = await getOrderByIdAdmin(order.id);
+    if (latest?.shipment.barcode) return latest;
+    try {
+      const bought = await basitKargoBuyBarcode(token, externalId, rate.handlerCode);
+      if (bought.barcode) {
+        await persistPayload(latest ?? order, bought);
+        await updateOrderShipmentAdmin(order.id, {
+          block: null,
+          lastError: null,
+        });
+        return (await getOrderByIdAdmin(order.id)) ?? order;
+      }
+    } catch (error) {
+      lastError =
+        error instanceof Error ? error.message : lastError;
+      console.warn(
+        "[shipping] carrier refused",
+        rate.handlerCode,
+        lastError,
+      );
+    }
+  }
+
+  await markAddressRejected(order.id, lastError);
+  return (await getOrderByIdAdmin(order.id)) ?? order;
+}
+
+async function markAddressRejected(orderId: string, lastError: string) {
+  await updateOrderShipmentAdmin(orderId, {
+    block: SHIPPING_BLOCK_ADDRESS_REJECTED,
+    lastError: lastError.slice(0, 400),
+  });
 }
 
 async function requireOwnedOrder(

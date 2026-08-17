@@ -9,12 +9,13 @@ import {
 } from "@/lib/tr/shipping/providers/basitKargo";
 import {
   autoFulfillPaidShipment,
-  buyBoutiqueShipmentLabel,
   cancelBoutiqueShipmentBarcode,
   createBoutiqueShipment,
   listBoutiqueShipmentRates,
+  retryShipmentAfterAddressEdit,
   shopperTrackingPath,
 } from "@/lib/tr/shipping/ownerShipment";
+import { validateTurkeyShippingAddress } from "@/lib/tr/geo/turkeyAddress";
 
 export const runtime = "nodejs";
 
@@ -30,14 +31,16 @@ function jsonError(error: unknown, fallback: string, status = 500) {
   const code =
     message.includes("bulunamadı") ? 404
     : message.includes("entegrasyonu yok") ? 409
-    : message.includes("onaylanmadan") || message.includes("kargo kodu yok") || message.includes("kayıt oluşturun") ? 400
+    : message.includes("onaylanmadan") || message.includes("kargo kodu yok") || message.includes("kayıt oluşturun")
+      || message.includes("değiştirilemez") || message.includes("değiştirilir") || message.includes("iade edin")
+      || message.includes("zaten sürüyor") ? 409
     : status;
   return Response.json({ error: message }, { status: code });
 }
 
 /**
  * GET /api/tr/owner/orders/[id]/shipment?boutiqueId=
- * POST { boutiqueId, action: create | rates | buy | cancel, handlerCode? }
+ * POST { boutiqueId, action: create | rates | fulfill | retry-address | cancel }
  */
 export async function GET(request: Request, context: RouteContext) {
   const authResult = await requireTrOwner(request);
@@ -99,8 +102,6 @@ export async function POST(request: Request, context: RouteContext) {
   }
 
   const action = typeof body.action === "string" ? body.action.trim() : "";
-  const handlerCode =
-    typeof body.handlerCode === "string" ? body.handlerCode.trim() : "";
 
   try {
     if (action === "create") {
@@ -116,19 +117,53 @@ export async function POST(request: Request, context: RouteContext) {
       return Response.json({ order: result.order, rates: result.rates });
     }
     if (action === "buy") {
-      if (!handlerCode) {
-        return Response.json(
-          { error: "Kargo firması (handlerCode) gerekli." },
-          { status: 400 },
-        );
+      return Response.json(
+        { error: "Kargo firması otomatik seçilir." },
+        { status: 400 },
+      );
+    }
+    if (action === "retry-address") {
+      const rawAddress = body.shippingAddress;
+      if (!rawAddress || typeof rawAddress !== "object") {
+        return Response.json({ error: "Adres zorunlu." }, { status: 400 });
       }
-      const result = await buyBoutiqueShipmentLabel(boutique, id, handlerCode);
+      const record = rawAddress as Record<string, unknown>;
+      const validated = validateTurkeyShippingAddress({
+        line1: typeof record.line1 === "string" ? record.line1 : "",
+        line2: typeof record.line2 === "string" ? record.line2 : undefined,
+        city: typeof record.city === "string" ? record.city : "",
+        district: typeof record.district === "string" ? record.district : "",
+        postalCode:
+          typeof record.postalCode === "string" ? record.postalCode : "",
+        country: "TR",
+      });
+      if (!validated.ok) {
+        return Response.json({ error: validated.error }, { status: 400 });
+      }
+      const order = await retryShipmentAfterAddressEdit(boutique, id, {
+        line1: validated.address.line1,
+        line2: validated.address.line2,
+        city: validated.address.city,
+        district: validated.address.district,
+        postalCode: validated.address.postalCode,
+        country: "TR",
+      });
       return Response.json({
-        order: result.order,
-        trackingPath: shopperTrackingPath(boutique.slug, result.order.id),
+        order,
+        trackingPath: shopperTrackingPath(boutique.slug, order.id),
       });
     }
     if (action === "fulfill") {
+      const current = await getOrderByIdAdmin(id);
+      if (current?.shipment.block === "address_rejected") {
+        return Response.json(
+          {
+            error:
+              "Adres kargo firmalarınca reddedildi. Müşteriyle WhatsApp’tan konuşup adresi güncelleyin.",
+          },
+          { status: 409 },
+        );
+      }
       const order = await autoFulfillPaidShipment(boutique, id);
       if (!order) {
         return Response.json(

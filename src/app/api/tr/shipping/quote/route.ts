@@ -15,7 +15,7 @@ export const runtime = "nodejs";
 
 /**
  * POST /api/tr/shipping/quote
- * { boutiqueSlug, city, district } — fee is server-quoted; city/district must be on the TR list.
+ * { boutiqueSlug, city, district } — fee is the server flat rate; city/district must be on the TR list.
  */
 export async function POST(request: Request) {
   const ip = clientIpFromRequest(request);
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const quote = await quoteCheckoutShippingFee(boutiqueSlug);
+    const quote = quoteCheckoutShippingFee(boutiqueSlug);
     if (!quote) {
       return Response.json({ feeKurus: 0, live: false });
     }

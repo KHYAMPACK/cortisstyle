@@ -23,6 +23,7 @@ import {
 } from "@/lib/tr/checkoutSelection";
 import { isTrCheckoutEnabled } from "@/lib/tr/platform";
 import { boutiqueHasLiveShipping } from "@/lib/tr/shipping/registry";
+import { FLAT_SHIPPING_FEE_KURUS } from "@/lib/tr/shipping/types";
 import {
   trBoutiqueCartPath,
   trBoutiqueLegalPath,
@@ -152,11 +153,6 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
   const [saveProfile, setSaveProfile] = useState(true);
   const [profileReady, setProfileReady] = useState(false);
   const [discountCode, setDiscountCode] = useState("");
-  const [shippingFeeKurus, setShippingFeeKurus] = useState<number | null>(null);
-  const [shippingQuoteError, setShippingQuoteError] = useState<string | null>(
-    null,
-  );
-  const [quoting, setQuoting] = useState(false);
 
   const profileScope = boutiqueSlug?.trim() || "marketplace";
   const authEmail = user?.email?.trim() || "";
@@ -200,62 +196,10 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
   const liveShipping = Boolean(
     boutiqueSlug && boutiqueHasLiveShipping(boutiqueSlug) && !demoCart,
   );
-  const payableKurus =
-    totalKurus + (liveShipping && shippingFeeKurus != null ? shippingFeeKurus : 0);
+  const shippingFeeKurus = liveShipping ? FLAT_SHIPPING_FEE_KURUS : 0;
+  const payableKurus = totalKurus + shippingFeeKurus;
   const canSubmit =
     demoCart || boutiqueCheckout || isTrCheckoutEnabled();
-
-  useEffect(() => {
-    if (!liveShipping || !form.city || !form.district) {
-      setShippingFeeKurus(null);
-      setShippingQuoteError(null);
-      setQuoting(false);
-      return;
-    }
-    let cancelled = false;
-    setQuoting(true);
-    setShippingQuoteError(null);
-    const timer = window.setTimeout(() => {
-      void (async () => {
-        try {
-          const response = await fetch("/api/tr/shipping/quote", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              boutiqueSlug,
-              city: form.city,
-              district: form.district,
-            }),
-          });
-          const data = (await response.json()) as {
-            feeKurus?: number;
-            error?: string;
-          };
-          if (cancelled) return;
-          if (!response.ok) {
-            throw new Error(data.error ?? "Kargo ücreti alınamadı.");
-          }
-          setShippingFeeKurus(
-            typeof data.feeKurus === "number" ? data.feeKurus : 0,
-          );
-        } catch (quoteError) {
-          if (cancelled) return;
-          setShippingFeeKurus(null);
-          setShippingQuoteError(
-            quoteError instanceof Error
-              ? quoteError.message
-              : "Kargo ücreti alınamadı.",
-          );
-        } finally {
-          if (!cancelled) setQuoting(false);
-        }
-      })();
-    }, 250);
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timer);
-    };
-  }, [liveShipping, boutiqueSlug, form.city, form.district]);
 
   if (!hydrated || !profileReady) {
     return (
@@ -318,14 +262,6 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
       const addressError = turkeyAddressClientError(form);
       if (addressError) {
         setError(addressError);
-        return false;
-      }
-      if (liveShipping && shippingQuoteError) {
-        setError(shippingQuoteError);
-        return false;
-      }
-      if (liveShipping && (quoting || shippingFeeKurus == null)) {
-        setError("Kargo ücreti hesaplanıyor, biraz bekleyin.");
         return false;
       }
       if (form.invoiceType === "corporate") {
@@ -612,18 +548,7 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
               />
               {liveShipping ? (
                 <p className="text-[13px] text-neutral-600">
-                  {quoting ? (
-                    <span className="inline-flex items-center gap-2">
-                      <span className="h-2 w-8 animate-pulse bg-neutral-200" />
-                      Kargo ücreti hesaplanıyor…
-                    </span>
-                  ) : shippingFeeKurus != null ? (
-                    <>Kargo: {formatTryFromKurus(shippingFeeKurus)}</>
-                  ) : shippingQuoteError ? (
-                    shippingQuoteError
-                  ) : (
-                    "İl ve ilçe seçince kargo ücreti görünür."
-                  )}
+                  Kargo: {formatTryFromKurus(shippingFeeKurus)} (sabit)
                 </p>
               ) : null}
 
@@ -989,15 +914,7 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
                 </div>
                 <div className="flex items-center justify-between text-[13px]">
                   <span className="text-neutral-500">Kargo</span>
-                  <span>
-                    {quoting ? (
-                      <span className="inline-block h-3 w-12 animate-pulse bg-neutral-200" />
-                    ) : shippingFeeKurus != null ? (
-                      formatTryFromKurus(shippingFeeKurus)
-                    ) : (
-                      "—"
-                    )}
-                  </span>
+                  <span>{formatTryFromKurus(shippingFeeKurus)}</span>
                 </div>
               </>
             ) : null}
