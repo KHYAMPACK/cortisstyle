@@ -5,19 +5,27 @@ import {
   basitKargoBuyBarcode,
   basitKargoCancelBarcode,
   basitKargoCreateOrder,
+  basitKargoDeleteOrder,
+  basitKargoGetBalanceTl,
   basitKargoGetLabelSvg,
   basitKargoGetOrder,
   basitKargoListFees,
   basitKargoUpdateOrder,
+  classifyBasitKargoFailure,
   feeKurusFromPayload,
   getBasitKargoTokenForSlug,
+  isBenignBasitCancelError,
   mapBasitKargoTraces,
+  ownerMessageForBasitFailure,
   type BasitKargoOrderPayload,
 } from "@/lib/tr/shipping/providers/basitKargo";
 import { getShippingProviderId } from "@/lib/tr/shipping/registry";
 import {
   SHIPPING_BLOCK_ADDRESS_REJECTED,
+  SHIPPING_BLOCK_INSUFFICIENT_BALANCE,
+  SHIPPING_BLOCK_PROVIDER_ERROR,
   isEligibleAutoBuyRate,
+  type TrShippingBlock,
   type TrShippingRate,
 } from "@/lib/tr/shipping/types";
 import {
@@ -35,6 +43,16 @@ export function orderMayCreateShipment(order: TrOrderWithItems): boolean {
     order.paymentStatus === "sandbox" ||
     order.isSandbox
   );
+}
+
+/** True address reject — not a misclassified balance/auth failure. */
+export function isAddressRejectLock(shipment: {
+  block: TrOrderWithItems["shipment"]["block"];
+  lastError: string | null;
+}): boolean {
+  if (shipment.block !== SHIPPING_BLOCK_ADDRESS_REJECTED) return false;
+  const kind = classifyBasitKargoFailure(shipment.lastError ?? "", 0);
+  return kind !== "balance" && kind !== "auth" && kind !== "rate_limit";
 }
 
 function requireBasitKargoToken(slug: string): string {
@@ -166,6 +184,60 @@ export async function cancelBoutiqueShipmentBarcode(
   return { order: fresh };
 }
 
+/**
+ * Panel İptal: cancel barcode if any, then delete the Basit draft so it
+ * does not stay as “Yeni Sipariş”. Local fulfillment is updated by the caller.
+ */
+export async function cancelLiveShipmentForCancelledOrder(
+  boutique: { id: string; slug: string },
+  orderId: string,
+): Promise<void> {
+  if (getShippingProviderId(boutique.slug) !== "basitkargo") return;
+
+  const order = await requireOwnedOrder(boutique, orderId);
+  const token = getBasitKargoTokenForSlug(boutique.slug);
+  if (!token) return;
+
+  const barcode = order.shipment.barcode;
+  const externalId = order.shipment.externalId;
+  if (!barcode && !externalId) return;
+
+  if (barcode) {
+    try {
+      await basitKargoCancelBarcode(token, barcode);
+    } catch (error) {
+      if (!isBenignBasitCancelError(error)) {
+        throw error instanceof Error
+          ? error
+          : new Error("Basit Kargo kodu iptal edilemedi.");
+      }
+    }
+  }
+
+  if (externalId) {
+    try {
+      await basitKargoDeleteOrder(token, externalId);
+    } catch (error) {
+      if (!isBenignBasitCancelError(error)) {
+        const message =
+          error instanceof Error ? error.message : "Sipariş silinemedi.";
+        throw new Error(`Basit Kargo kaydı silinemedi: ${message}`);
+      }
+    }
+  }
+
+  await updateOrderShipmentAdmin(order.id, {
+    barcode: null,
+    trackingCode: null,
+    carrierCode: null,
+    carrierName: null,
+    externalId: null,
+    status: null,
+    block: null,
+    lastError: null,
+  });
+}
+
 export async function getBoutiqueShipmentLabelSvg(
   boutique: { id: string; slug: string },
   orderId: string,
@@ -231,7 +303,27 @@ export async function autoFulfillPaidShipment(
       });
     } catch (error) {
       console.error("[shipping] auto-fulfill failed:", error);
-      return null;
+      const kind =
+        error instanceof BasitKargoError
+          ? error.kind
+          : classifyBasitKargoFailure(
+              error instanceof Error ? error.message : "",
+              0,
+            );
+      const lastError = ownerMessageForBasitFailure(
+        kind,
+        error instanceof Error ? error.message : "Etiket üretilemedi.",
+      );
+      const block: TrShippingBlock =
+        kind === "balance"
+          ? SHIPPING_BLOCK_INSUFFICIENT_BALANCE
+          : SHIPPING_BLOCK_PROVIDER_ERROR;
+      try {
+        await updateOrderShipmentAdmin(orderId, { block, lastError });
+      } catch (persistError) {
+        console.error("[shipping] persist auto-fulfill error:", persistError);
+      }
+      return getOrderByIdAdmin(orderId);
     }
   }).catch((error) => {
     console.error("[shipping] auto-fulfill lock:", error);
@@ -336,7 +428,7 @@ async function runCarrierWaterfall(
   let order = created.order;
   if (order.shipment.barcode) return order;
   if (
-    order.shipment.block === SHIPPING_BLOCK_ADDRESS_REJECTED &&
+    isAddressRejectLock(order.shipment) &&
     !options.allowWhenAddressRejected
   ) {
     return order;
@@ -356,9 +448,25 @@ async function runCarrierWaterfall(
     .sort((a, b) => a.feeKurus - b.feeKurus);
 
   if (rates.length === 0) {
-    await markAddressRejected(
+    await markShippingBlock(
       order.id,
+      SHIPPING_BLOCK_PROVIDER_ERROR,
       "Uygun kargo firması yok (Yurtiçi ve 140 TL üstü denemez).",
+    );
+    return (await getOrderByIdAdmin(order.id)) ?? order;
+  }
+
+  const balanceTl = await basitKargoGetBalanceTl(token);
+  const cheapest = rates[0];
+  if (
+    balanceTl != null &&
+    cheapest &&
+    Math.round(balanceTl * 100) < cheapest.feeKurus
+  ) {
+    await markShippingBlock(
+      order.id,
+      SHIPPING_BLOCK_INSUFFICIENT_BALANCE,
+      `Basit Kargo bakiyesi yetersiz (şu an ${balanceTl} TL). En ucuz etiket ${Math.ceil(cheapest.feeKurus / 100)} TL. Bakiyeyi yükleyip Etiket hazırla’ya basın.`,
     );
     return (await getOrderByIdAdmin(order.id)) ?? order;
   }
@@ -368,7 +476,11 @@ async function runCarrierWaterfall(
     const latest = await getOrderByIdAdmin(order.id);
     if (latest?.shipment.barcode) return latest;
     try {
-      const bought = await basitKargoBuyBarcode(token, externalId, rate.handlerCode);
+      const bought = await basitKargoBuyBarcode(
+        token,
+        externalId,
+        rate.handlerCode,
+      );
       if (bought.barcode) {
         await persistPayload(latest ?? order, bought);
         await updateOrderShipmentAdmin(order.id, {
@@ -378,23 +490,57 @@ async function runCarrierWaterfall(
         return (await getOrderByIdAdmin(order.id)) ?? order;
       }
     } catch (error) {
-      lastError =
-        error instanceof Error ? error.message : lastError;
+      const kind =
+        error instanceof BasitKargoError
+          ? error.kind
+          : classifyBasitKargoFailure(
+              error instanceof Error ? error.message : "",
+              0,
+            );
+      lastError = ownerMessageForBasitFailure(
+        kind,
+        error instanceof Error ? error.message : lastError,
+      );
       console.warn(
         "[shipping] carrier refused",
         rate.handlerCode,
+        kind,
         lastError,
       );
+      if (kind === "balance") {
+        await markShippingBlock(
+          order.id,
+          SHIPPING_BLOCK_INSUFFICIENT_BALANCE,
+          lastError,
+        );
+        return (await getOrderByIdAdmin(order.id)) ?? order;
+      }
+      if (kind === "auth" || kind === "rate_limit") {
+        await markShippingBlock(
+          order.id,
+          SHIPPING_BLOCK_PROVIDER_ERROR,
+          lastError,
+        );
+        return (await getOrderByIdAdmin(order.id)) ?? order;
+      }
     }
   }
 
-  await markAddressRejected(order.id, lastError);
+  await markShippingBlock(
+    order.id,
+    SHIPPING_BLOCK_ADDRESS_REJECTED,
+    lastError,
+  );
   return (await getOrderByIdAdmin(order.id)) ?? order;
 }
 
-async function markAddressRejected(orderId: string, lastError: string) {
+async function markShippingBlock(
+  orderId: string,
+  block: TrShippingBlock,
+  lastError: string,
+) {
   await updateOrderShipmentAdmin(orderId, {
-    block: SHIPPING_BLOCK_ADDRESS_REJECTED,
+    block,
     lastError: lastError.slice(0, 400),
   });
 }

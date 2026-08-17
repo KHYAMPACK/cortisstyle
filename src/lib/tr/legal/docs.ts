@@ -128,7 +128,7 @@ export function getTrLegalDoc(
           heading: "İşlenen kişisel veriler",
           paragraphs: [
             "Kimlik ve iletişim: ad soyad, e-posta, telefon.",
-            "Teslimat / fatura: adres bilgileri; kurumsal fatura talebinde unvan, VKN/TCKN, vergi dairesi.",
+            "Teslimat / fatura: adres bilgileri; kurumsal fatura talebinde unvan, VKN, vergi dairesi.",
             "İşlem güvenliği: oturum, cihaz / log kayıtları, çerez kimlikleri (zorunlu çerezler).",
             "Sipariş ve ödeme: sipariş içeriği, tutar, ödeme durumu; kart verileri ödeme kuruluşu nezdinde işlenir (satıcı kart CVV saklamaz).",
             "Müşteri hizmetleri: WhatsApp / e-posta yazışma içeriği.",

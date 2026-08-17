@@ -33,8 +33,8 @@ export type TrOrderShipment = {
   status: string | null;
   traces: TrShippingTrace[];
   feeKurus: number | null;
-  /** address_rejected = all eligible carriers refused this address. */
-  block: "address_rejected" | null;
+  /** Why auto-buy stopped. Only address_rejected unlocks address edit. */
+  block: "address_rejected" | "insufficient_balance" | "provider_error" | null;
   addressRetryUsed: boolean;
   lastError: string | null;
 };

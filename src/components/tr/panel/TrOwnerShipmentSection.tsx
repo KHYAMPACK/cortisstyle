@@ -26,7 +26,11 @@ import {
   buildWhatsAppOrderUrl,
 } from "@/lib/tr/whatsapp";
 import { boutiqueHasLiveShipping } from "@/lib/tr/shipping/registry";
-import { SHIPPING_BLOCK_ADDRESS_REJECTED } from "@/lib/tr/shipping/types";
+import {
+  SHIPPING_BLOCK_ADDRESS_REJECTED,
+  SHIPPING_BLOCK_INSUFFICIENT_BALANCE,
+  SHIPPING_BLOCK_PROVIDER_ERROR,
+} from "@/lib/tr/shipping/types";
 import { formatTryFromKurus, type TrOrderWithItems } from "@/types/tr-marketplace";
 
 const STATUS_TR: Record<string, string> = {
@@ -78,9 +82,21 @@ export function TrOwnerShipmentSection({
   const cancelled = order.fulfillmentStatus === "cancelled";
   const shipment = order.shipment;
   const hasBarcode = Boolean(shipment.barcode);
+  const lastErrorLooksLikeBalance = (shipment.lastError ?? "")
+    .toLocaleLowerCase("tr-TR")
+    .includes("bakiye") ||
+    (shipment.lastError ?? "").toLowerCase().includes("insufficient");
   const addressRejected =
-    shipment.block === SHIPPING_BLOCK_ADDRESS_REJECTED && !hasBarcode;
+    shipment.block === SHIPPING_BLOCK_ADDRESS_REJECTED &&
+    !hasBarcode &&
+    !lastErrorLooksLikeBalance;
   const retryUsed = shipment.addressRetryUsed;
+  const insufficientBalance =
+    !hasBarcode &&
+    (shipment.block === SHIPPING_BLOCK_INSUFFICIENT_BALANCE ||
+      lastErrorLooksLikeBalance);
+  const providerError =
+    shipment.block === SHIPPING_BLOCK_PROVIDER_ERROR && !hasBarcode;
 
   const run = async (fn: () => Promise<void>) => {
     if (busy) return;
@@ -307,6 +323,29 @@ export function TrOwnerShipmentSection({
                   </motion.div>
                 ) : null}
               </AnimatePresence>
+            </div>
+          ) : insufficientBalance || providerError ? (
+            <div className="space-y-4 rounded-2xl border-2 border-amber-200 bg-amber-50 p-4">
+              <p className="text-[17px] font-semibold text-amber-950">
+                {insufficientBalance
+                  ? "Basit Kargo bakiyesi yetersiz"
+                  : "Kargo etiketi üretilemedi"}
+              </p>
+              <p className={panelHintClass}>
+                {shipment.lastError ??
+                  (insufficientBalance
+                    ? "Bakiyeyi yükleyip tekrar deneyin. Bu bir adres hatası değil."
+                    : "Adres değiştirmeyin; önce kargo hesabını kontrol edin.")}
+              </p>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={fulfill}
+                className={panelPrimaryBtnClass}
+                style={{ backgroundColor: "var(--panel-accent-deep)" }}
+              >
+                {busy ? "Hazırlanıyor…" : "Etiket hazırla"}
+              </button>
             </div>
           ) : (
             <button

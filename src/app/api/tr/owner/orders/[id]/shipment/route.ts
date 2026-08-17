@@ -11,6 +11,7 @@ import {
   autoFulfillPaidShipment,
   cancelBoutiqueShipmentBarcode,
   createBoutiqueShipment,
+  isAddressRejectLock,
   listBoutiqueShipmentRates,
   retryShipmentAfterAddressEdit,
   shopperTrackingPath,
@@ -155,7 +156,7 @@ export async function POST(request: Request, context: RouteContext) {
     }
     if (action === "fulfill") {
       const current = await getOrderByIdAdmin(id);
-      if (current?.shipment.block === "address_rejected") {
+      if (current && isAddressRejectLock(current.shipment)) {
         return Response.json(
           {
             error:
@@ -167,7 +168,7 @@ export async function POST(request: Request, context: RouteContext) {
       const order = await autoFulfillPaidShipment(boutique, id);
       if (!order) {
         return Response.json(
-          { error: "Etiket üretilemedi. Bakiyeyi veya adresi kontrol edin." },
+          { error: "Etiket üretilemedi. Basit Kargo bakiyesini kontrol edin." },
           { status: 502 },
         );
       }

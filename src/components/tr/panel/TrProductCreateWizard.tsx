@@ -261,8 +261,8 @@ export function TrProductCreateWizard({
   );
 
   useEffect(() => {
-    if (hasModelPhoto) setConfirmSkipModel(false);
-  }, [hasModelPhoto]);
+    if (hasModelPhoto || modelGenerating) setConfirmSkipModel(false);
+  }, [hasModelPhoto, modelGenerating]);
 
   const setLifestyleImagesSingle = (urls: string[]) => {
     const first = urls.find((url) => url?.trim())?.trim();
@@ -336,6 +336,9 @@ export function TrProductCreateWizard({
       }
       return;
     }
+    if (step.id === "model" && modelGenerating) {
+      return;
+    }
     if (step.id === "model" && !hasModelPhoto) {
       setConfirmSkipModel(true);
       return;
@@ -368,7 +371,10 @@ export function TrProductCreateWizard({
     setSalePriceTry(draft.salePriceTry);
     setStock(draft.stock);
     setSizeChart(draft.sizeChart);
-    setSizeStockInputs(draft.sizeStockInputs ?? {});
+    setSizeStockInputs({
+      ...emptyStockInputsForChart(draft.sizeChart, "0"),
+      ...(draft.sizeStockInputs ?? {}),
+    });
     setCategory(draft.category);
     setImages(draft.images ?? []);
     setMarketplaceImages(draft.marketplaceImages ?? []);
@@ -847,7 +853,7 @@ export function TrProductCreateWizard({
                   onSkip={() => setConfirmSkipModel(true)}
                   disabled={saving || !hasRequiredProductPhotos(images)}
                 />
-                {confirmSkipModel ? (
+                {confirmSkipModel && !modelGenerating ? (
                   <div
                     className="rounded-2xl border-2 border-amber-300 bg-amber-50 p-5"
                     role="alertdialog"
@@ -933,9 +939,15 @@ export function TrProductCreateWizard({
             className={`${primaryBtn} flex-1 disabled:opacity-60`}
             style={{ backgroundColor: "var(--panel-accent)" }}
             onClick={goNext}
-            disabled={awaitingFrontAi}
+            disabled={
+              awaitingFrontAi || (step.id === "model" && modelGenerating)
+            }
           >
-            {awaitingFrontAi ? "AI ile hazırlanıyor…" : "Devam"}
+            {awaitingFrontAi
+              ? "AI ile hazırlanıyor…"
+              : step.id === "model" && modelGenerating
+                ? "Model oluşturuluyor…"
+                : "Devam"}
           </button>
         ) : null}
         {step.id === "review" ? (

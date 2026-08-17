@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
 import {
@@ -18,11 +18,14 @@ import {
   panelErrorClass,
   panelHintClass,
   panelPageTitleClass,
+  panelPrimaryBtnClass,
+  panelSecondaryBtnClass,
   panelSectionClass,
 } from "@/components/tr/panel/panelUi";
 import {
   TrPanelFadeIn,
   TrPanelLoading,
+  trPanelFadeTransition,
 } from "@/components/tr/panel/TrPanelMotion";
 import { TrOwnerShipmentSection } from "@/components/tr/panel/TrOwnerShipmentSection";
 import {
@@ -30,6 +33,7 @@ import {
   updateOwnerOrderFulfillment,
   updateOwnerOrderPaymentPaid,
 } from "@/lib/tr/ownerClient";
+import { boutiqueHasLiveShipping } from "@/lib/tr/shipping/registry";
 import { trPanelOrdersPath, trPanelPath } from "@/lib/tr/paths";
 import {
   formatTryFromKurus,
@@ -42,7 +46,6 @@ const FULFILLMENT_OPTIONS: TrFulfillmentStatus[] = [
   "ready",
   "shipped",
   "delivered",
-  "cancelled",
 ];
 
 function OrderDetail({
@@ -58,6 +61,8 @@ function OrderDetail({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [confirmCancel, setConfirmCancel] = useState(false);
+  const [cancelNotice, setCancelNotice] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -96,6 +101,8 @@ function OrderDetail({
         fulfillmentStatus,
       );
       setOrder(updated);
+      setConfirmCancel(false);
+      if (fulfillmentStatus === "cancelled") setCancelNotice(true);
     } catch (saveError) {
       setError(
         saveError instanceof Error
@@ -125,6 +132,12 @@ function OrderDetail({
     }
   };
 
+  useEffect(() => {
+    if (!cancelNotice) return;
+    const timer = window.setTimeout(() => setCancelNotice(false), 4000);
+    return () => window.clearTimeout(timer);
+  }, [cancelNotice]);
+
   return (
     <AnimatePresence mode="wait">
       {loading ? (
@@ -136,6 +149,21 @@ function OrderDetail({
       ) : order ? (
         <TrPanelFadeIn key="od-ready" className="space-y-5">
           {error ? <p className={panelErrorClass}>{error}</p> : null}
+          <AnimatePresence>
+            {cancelNotice ? (
+              <motion.p
+                key="cancel-notice"
+                className="rounded-2xl border-2 border-emerald-200 bg-emerald-50 px-5 py-4 text-[16px] text-emerald-900"
+                role="status"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={trPanelFadeTransition}
+              >
+                Sipariş iptal edildi. Stok geri yüklendi.
+              </motion.p>
+            ) : null}
+          </AnimatePresence>
 
           <section className={panelSectionClass}>
             <p className="text-[15px] text-neutral-600">
@@ -298,6 +326,82 @@ function OrderDetail({
               <p>{order.shippingAddress.country}</p>
             </div>
           </section>
+
+          {order.fulfillmentStatus !== "cancelled" ? (
+            <section className={panelSectionClass}>
+              <p className="text-[19px] font-semibold text-neutral-900">
+                Siparişi iptal et
+              </p>
+              <p className={`mt-2 ${panelHintClass}`}>
+                Stok geri yüklenir
+                {boutiqueHasLiveShipping(boutiqueSlug)
+                  ? "; Basit Kargo kaydı da iptal edilir"
+                  : ""}
+                . Kart iadesi henüz yok.
+              </p>
+              <AnimatePresence mode="wait" initial={false}>
+                {!confirmCancel ? (
+                  <motion.button
+                    key="cancel-open"
+                    type="button"
+                    disabled={saving}
+                    onClick={() => setConfirmCancel(true)}
+                    className={`${panelSecondaryBtnClass} mt-4 w-full border-red-300 text-red-800 sm:w-auto`}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={trPanelFadeTransition}
+                  >
+                    İptal
+                  </motion.button>
+                ) : (
+                  <motion.div
+                    key="cancel-confirm"
+                    className="mt-4 space-y-4 rounded-2xl border-2 border-red-200 bg-red-50 p-5"
+                    role="alertdialog"
+                    aria-labelledby="cancel-order-title"
+                    aria-describedby="cancel-order-copy"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={trPanelFadeTransition}
+                  >
+                    <p
+                      id="cancel-order-title"
+                      className="text-[18px] font-semibold text-neutral-900"
+                    >
+                      Siparişi iptal etmek istediğinize emin misiniz?
+                    </p>
+                    <p
+                      id="cancel-order-copy"
+                      className="text-[16px] leading-relaxed text-neutral-700"
+                    >
+                      {order.customerName} siparişi iptal edilir. Bu işlem
+                      kargo kaydını da kapatır.
+                    </p>
+                    <div className="flex flex-col gap-3 sm:flex-row">
+                      <button
+                        type="button"
+                        disabled={saving}
+                        onClick={() => setConfirmCancel(false)}
+                        className={`${panelSecondaryBtnClass} flex-1`}
+                      >
+                        Vazgeç
+                      </button>
+                      <button
+                        type="button"
+                        disabled={saving}
+                        onClick={() => void setStatus("cancelled")}
+                        className={`${panelPrimaryBtnClass} flex-1 bg-red-700`}
+                      >
+                        {saving ? "İptal ediliyor…" : "Evet, iptal et"}
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </section>
+          ) : null}
         </TrPanelFadeIn>
       ) : null}
     </AnimatePresence>

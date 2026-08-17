@@ -96,8 +96,6 @@ export function validateCheckoutInvoiceFields(input: {
     if (!input.buyerTaxOffice?.trim()) {
       return "Kurumsal fatura için vergi dairesi gerekli.";
     }
-  } else if (taxId && taxId.length !== 11) {
-    return "Bireysel fatura için TCKN 11 hane olmalıdır (veya boş bırakın).";
   }
   return null;
 }

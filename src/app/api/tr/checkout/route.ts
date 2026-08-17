@@ -176,9 +176,13 @@ export async function POST(request: Request) {
       customerPhone: body.customerPhone,
       shippingAddress: body.shippingAddress,
       invoiceType,
-      buyerTaxId: normalizeBuyerTaxId(body.buyerTaxId),
-      buyerTaxOffice: body.buyerTaxOffice,
-      buyerTitle: body.buyerTitle,
+      buyerTaxId:
+        invoiceType === "corporate"
+          ? normalizeBuyerTaxId(body.buyerTaxId)
+          : null,
+      buyerTaxOffice:
+        invoiceType === "corporate" ? body.buyerTaxOffice : undefined,
+      buyerTitle: invoiceType === "corporate" ? body.buyerTitle : undefined,
       items: checkout.lines.map((line) => ({
         productId: line.productId,
         boutiqueId: line.boutiqueId,

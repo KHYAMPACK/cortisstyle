@@ -25,16 +25,28 @@ export type TrSizeChartTable = {
 export const LETTER_SIZE_CHART: TrSizeChartTable = {
   id: "letter",
   title: "Beden Tablosu",
-  columns: ["XS", "S", "M", "L", "XL"],
+  columns: ["XS", "S", "M", "L", "XL", "2XL", "3XL"],
   unit: "cm",
   howToMeasure:
     "Göğüs, bel ve basen ölçülerini vücut üzerinden, mezura yatay ve sıkı olmadan alın.",
   tolerance: "Ölçülerde ± 2 cm fark tolerans dahilindedir.",
   rows: [
-    { id: "eu", label: "EU", values: ["34", "36", "38", "40", "42"] },
-    { id: "bust", label: "Göğüs", values: ["82", "86", "90", "96", "102"] },
-    { id: "waist", label: "Bel", values: ["64", "68", "72", "78", "84"] },
-    { id: "hip", label: "Basen", values: ["88", "92", "96", "102", "108"] },
+    { id: "eu", label: "EU", values: ["34", "36", "38", "40", "42", "44", "46"] },
+    {
+      id: "bust",
+      label: "Göğüs",
+      values: ["82", "86", "90", "96", "102", "108", "114"],
+    },
+    {
+      id: "waist",
+      label: "Bel",
+      values: ["64", "68", "72", "78", "84", "90", "96"],
+    },
+    {
+      id: "hip",
+      label: "Basen",
+      values: ["88", "92", "96", "102", "108", "114", "120"],
+    },
   ],
 };
 

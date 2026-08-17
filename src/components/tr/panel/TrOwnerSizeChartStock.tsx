@@ -17,7 +17,7 @@ const CHART_OPTIONS: Array<{ id: TrSizeChartId; label: string; hint: string }> =
   [
     {
       id: "letter",
-      label: "Harf (XS–XL)",
+      label: "Harf (XS–3XL)",
       hint: "Üst giyim / standart beden",
     },
     {

@@ -12,4 +12,4 @@ alter table public.tr_orders
   add column if not exists shipping_last_error text;
 
 comment on column public.tr_orders.shipping_block is
-  'address_rejected = every eligible carrier refused; owner may edit address once.';
+  'address_rejected = carriers refused the street (owner may edit once); insufficient_balance / provider_error = do not unlock address edit.';

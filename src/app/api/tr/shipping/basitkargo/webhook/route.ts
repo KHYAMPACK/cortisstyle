@@ -14,9 +14,7 @@ import { getShippingProviderId } from "@/lib/tr/shipping/registry";
 
 export const runtime = "nodejs";
 
-function bearerMatches(header: string | null, secret: string): boolean {
-  if (!header?.startsWith("Bearer ")) return false;
-  const provided = header.slice("Bearer ".length).trim();
+function secretMatches(provided: string, secret: string): boolean {
   if (!provided) return false;
   try {
     const a = Buffer.from(provided);
@@ -28,9 +26,21 @@ function bearerMatches(header: string | null, secret: string): boolean {
   }
 }
 
+function webhookAuthorized(request: Request, secret: string): boolean {
+  const header = request.headers.get("authorization");
+  if (header?.startsWith("Bearer ")) {
+    if (secretMatches(header.slice("Bearer ".length).trim(), secret)) {
+      return true;
+    }
+  }
+  const querySecret = new URL(request.url).searchParams.get("secret")?.trim() ?? "";
+  return secretMatches(querySecret, secret);
+}
+
 /**
  * POST /api/tr/shipping/basitkargo/webhook
- * Lila / Basit Kargo only. Bearer = TR_SHIPPING_BASITKARGO_WEBHOOK_SECRET.
+ * Lila / Basit Kargo only. Auth = Bearer TR_SHIPPING_BASITKARGO_WEBHOOK_SECRET
+ * or ?secret= (Basit panel URL field often has no header).
  */
 export async function POST(request: Request) {
   const secret = process.env.TR_SHIPPING_BASITKARGO_WEBHOOK_SECRET?.trim();
@@ -40,7 +50,7 @@ export async function POST(request: Request) {
       { status: 503 },
     );
   }
-  if (!bearerMatches(request.headers.get("authorization"), secret)) {
+  if (!webhookAuthorized(request, secret)) {
     return Response.json({ error: "Yetkisiz." }, { status: 401 });
   }
 

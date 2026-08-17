@@ -278,12 +278,6 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
           setError("Kurumsal fatura için vergi dairesi gerekli.");
           return false;
         }
-      } else {
-        const tckn = form.buyerTaxId.replace(/\D/g, "");
-        if (tckn && tckn.length !== 11) {
-          setError("TCKN 11 hane olmalıdır (veya boş bırakın).");
-          return false;
-        }
       }
     }
     return true;
@@ -347,9 +341,18 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
             country: form.country || "TR",
           },
           invoiceType: form.invoiceType,
-          buyerTaxId: form.buyerTaxId.replace(/\D/g, "") || undefined,
-          buyerTaxOffice: form.buyerTaxOffice.trim() || undefined,
-          buyerTitle: form.buyerTitle.trim() || undefined,
+          buyerTaxId:
+            form.invoiceType === "corporate"
+              ? form.buyerTaxId.replace(/\D/g, "") || undefined
+              : undefined,
+          buyerTaxOffice:
+            form.invoiceType === "corporate"
+              ? form.buyerTaxOffice.trim() || undefined
+              : undefined,
+          buyerTitle:
+            form.invoiceType === "corporate"
+              ? form.buyerTitle.trim() || undefined
+              : undefined,
           items: items.map((item) => ({
             productId: item.productId,
             boutiqueId: item.boutiqueId,
@@ -557,8 +560,8 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
                   Fatura bilgileri
                 </h3>
                 <p className="text-[12px] text-neutral-600">
-                  Varsayılan bireysel faturadır. Kurumsal için VKN ve unvan
-                  gerekir.
+                  Bireysel faturada teslimat adresi kullanılır; TCKN
+                  istenmez. Kurumsal için VKN ve unvan gerekir.
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <button
@@ -567,6 +570,9 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
                       setForm((current) => ({
                         ...current,
                         invoiceType: "individual",
+                        buyerTaxId: "",
+                        buyerTaxOffice: "",
+                        buyerTitle: "",
                       }))
                     }
                     className={`px-3 py-2 text-[11px] tracking-[0.14em] uppercase ${
@@ -633,21 +639,9 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
                     </label>
                   </>
                 ) : (
-                  <label className="block sm:max-w-xs">
-                    <span className={labelClassName}>
-                      TCKN (isteğe bağlı)
-                    </span>
-                    <input
-                      value={form.buyerTaxId}
-                      onChange={(event) =>
-                        updateField("buyerTaxId", event.target.value)
-                      }
-                      className={`${inputClassName} mt-2`}
-                      inputMode="numeric"
-                      autoComplete="off"
-                      placeholder="11 hane"
-                    />
-                  </label>
+                  <p className="text-[13px] text-neutral-600">
+                    Fatura adresi teslimat adresi ile aynıdır.
+                  </p>
                 )}
               </div>
 
@@ -725,8 +719,9 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
                   <dd className="text-right">
                     {form.invoiceType === "corporate"
                       ? `Kurumsal · ${form.buyerTitle || "—"}`
-                      : "Bireysel"}
-                    {form.buyerTaxId.replace(/\D/g, "")
+                      : "Bireysel · teslimat adresi"}
+                    {form.invoiceType === "corporate" &&
+                    form.buyerTaxId.replace(/\D/g, "")
                       ? ` · ${form.buyerTaxId.replace(/\D/g, "")}`
                       : ""}
                   </dd>

@@ -5,14 +5,87 @@ import type { TrOrderWithItems } from "@/types/tr-marketplace";
 
 const DEFAULT_BASE = "https://basitkargo.com/api";
 
+export type BasitKargoFailureKind =
+  | "balance"
+  | "address"
+  | "auth"
+  | "rate_limit"
+  | "unknown";
+
 export class BasitKargoError extends Error {
   readonly status: number;
+  readonly kind: BasitKargoFailureKind;
 
   constructor(message: string, status: number) {
     super(message);
     this.name = "BasitKargoError";
     this.status = status;
+    this.kind = classifyBasitKargoFailure(message, status);
   }
+}
+
+export function classifyBasitKargoFailure(
+  message: string,
+  status: number,
+): BasitKargoFailureKind {
+  if (status === 401 || status === 403) return "auth";
+  if (status === 429) return "rate_limit";
+  const text = message.toLocaleLowerCase("tr-TR");
+  if (
+    text.includes("bakiye") ||
+    text.includes("yetersiz") ||
+    text.includes("insufficient") ||
+    text.includes("balance") ||
+    text.includes("kredi yetersiz") ||
+    text.includes("not enough")
+  ) {
+    return "balance";
+  }
+  if (
+    text.includes("bölge") ||
+    text.includes("teslimat") ||
+    text.includes("adres") ||
+    text.includes("coverage") ||
+    text.includes("out of area") ||
+    text.includes("bu adrese") ||
+    text.includes("geçersiz adres")
+  ) {
+    return "address";
+  }
+  return "unknown";
+}
+
+export function ownerMessageForBasitFailure(
+  kind: BasitKargoFailureKind,
+  rawMessage: string,
+): string {
+  if (kind === "balance") {
+    return "Basit Kargo bakiyesi yetersiz. Bakiyeyi yükleyip Etiket hazırla’ya basın.";
+  }
+  if (kind === "auth") {
+    return "Basit Kargo yetkisi reddedildi. Token’ı kontrol edin.";
+  }
+  if (kind === "rate_limit") {
+    return "Basit Kargo istek limiti doldu. Biraz bekleyip tekrar deneyin.";
+  }
+  if (kind === "address") {
+    return rawMessage.slice(0, 400) || "Kargo firması bu adresi kabul etmedi.";
+  }
+  return rawMessage.slice(0, 400) || "Kargo işlemi başarısız.";
+}
+
+export function isBenignBasitCancelError(error: unknown): boolean {
+  if (!(error instanceof BasitKargoError)) return false;
+  if (error.status === 404) return true;
+  const text = error.message.toLocaleLowerCase("tr-TR");
+  return (
+    text.includes("bulunamadı") ||
+    text.includes("not found") ||
+    text.includes("kargo kodu yok") ||
+    text.includes("zaten iptal") ||
+    text.includes("already cancel") ||
+    text.includes("already deleted")
+  );
 }
 
 function parseTokenMap(): Record<string, string> {
@@ -63,16 +136,28 @@ function tlToKurus(value: unknown): number {
   return 0;
 }
 
+function collectErrorStrings(value: unknown, depth = 0): string[] {
+  if (depth > 3 || value == null) return [];
+  if (typeof value === "string" && value.trim()) return [value.trim()];
+  if (typeof value === "number" && Number.isFinite(value)) return [String(value)];
+  if (Array.isArray(value)) {
+    return value.flatMap((item) => collectErrorStrings(item, depth + 1));
+  }
+  if (typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    return ["message", "error", "detail", "title", "errors", "description"]
+      .flatMap((key) => collectErrorStrings(record[key], depth + 1));
+  }
+  return [];
+}
+
 async function parseErrorMessage(response: Response): Promise<string> {
   const text = await response.text();
   if (!text.trim()) return `Basit Kargo HTTP ${response.status}`;
   try {
-    const json = JSON.parse(text) as Record<string, unknown>;
-    const message =
-      (typeof json.message === "string" && json.message) ||
-      (typeof json.error === "string" && json.error) ||
-      (typeof json.detail === "string" && json.detail);
-    if (message) return message;
+    const json = JSON.parse(text) as unknown;
+    const parts = collectErrorStrings(json);
+    if (parts.length > 0) return parts.join(" — ").slice(0, 400);
   } catch {
     // plain text
   }
@@ -257,6 +342,50 @@ export async function basitKargoCancelBarcode(
   await bkJson(token, `/order/barcode/${encodeURIComponent(barcode)}`, {
     method: "DELETE",
   });
+}
+
+/** NEW drafts have no barcode; public docs omit this, panel “sil” uses it. */
+export async function basitKargoDeleteOrder(
+  token: string,
+  bkOrderId: string,
+): Promise<void> {
+  const paths = [
+    `/v2/order/${encodeURIComponent(bkOrderId)}`,
+    `/order/${encodeURIComponent(bkOrderId)}`,
+  ];
+  let last: BasitKargoError | null = null;
+  for (const path of paths) {
+    const response = await bkFetch(token, path, { method: "DELETE" });
+    if (response.ok || response.status === 204 || response.status === 404) {
+      return;
+    }
+    last = new BasitKargoError(await parseErrorMessage(response), response.status);
+    if (response.status === 400 || response.status === 405) continue;
+    throw last;
+  }
+  if (last) throw last;
+}
+
+/** Account prepaid balance in TL. Null if the endpoint is unavailable. */
+export async function basitKargoGetBalanceTl(
+  token: string,
+): Promise<number | null> {
+  try {
+    const value = await bkJson<unknown>(token, "/firm/balance");
+    if (typeof value === "number" && Number.isFinite(value)) return value;
+    if (typeof value === "string" && value.trim()) {
+      const parsed = Number(value.replace(",", "."));
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+    if (value && typeof value === "object") {
+      const record = value as Record<string, unknown>;
+      const raw = record.balance ?? record.amount ?? record.credit;
+      if (typeof raw === "number" && Number.isFinite(raw)) return raw;
+    }
+    return null;
+  } catch {
+    return null;
+  }
 }
 
 export async function basitKargoGetLabelSvg(

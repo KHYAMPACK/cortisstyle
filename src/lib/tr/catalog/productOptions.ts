@@ -1,6 +1,14 @@
 import type { TrProduct, TrProductColor } from "@/types/tr-marketplace";
 
-export const DEFAULT_LETTER_SIZES = ["XS", "S", "M", "L", "XL"] as const;
+export const DEFAULT_LETTER_SIZES = [
+  "XS",
+  "S",
+  "M",
+  "L",
+  "XL",
+  "2XL",
+  "3XL",
+] as const;
 
 /** Numeric / jean-style chart (even waist-style labels). */
 export const DEFAULT_NUMERIC_SIZES = [
@@ -24,7 +32,9 @@ const LETTER_SORT_ORDER = [
   "M",
   "L",
   "XL",
+  "2XL",
   "XXL",
+  "3XL",
   "XXXL",
 ] as const;
 
@@ -65,7 +75,7 @@ export function detectSizeChart(sizes: string[]): TrSizeChartId {
   return "letter";
 }
 
-/** Stable storefront / panel order: XS→XL, then numeric ascending. */
+/** Stable storefront / panel order: XS→3XL, then numeric ascending. */
 export function sortProductSizes(sizes: string[]): string[] {
   return [...sizes].sort((left, right) => {
     const a = left.trim();

@@ -8,7 +8,7 @@ import {
   updateOrderFulfillmentStatusAdmin,
   updateOrderPaymentStatusAdmin,
 } from "@/lib/tr/orders";
-import { autoFulfillPaidShipment } from "@/lib/tr/shipping/ownerShipment";
+import { autoFulfillPaidShipment, cancelLiveShipmentForCancelledOrder } from "@/lib/tr/shipping/ownerShipment";
 import type {
   TrFulfillmentStatus,
   TrPaymentStatus,
@@ -145,6 +145,15 @@ export async function PATCH(request: Request, context: RouteContext) {
       );
     }
     if (hasFulfillment) {
+      if (
+        fulfillmentStatus === "cancelled" &&
+        existing.fulfillmentStatus !== "cancelled"
+      ) {
+        await cancelLiveShipmentForCancelledOrder(
+          { id: boutique.id, slug: boutique.slug },
+          id,
+        );
+      }
       await updateOrderFulfillmentStatusAdmin(
         id,
         fulfillmentStatus as TrFulfillmentStatus,

@@ -10,7 +10,10 @@ export {
   EMPTY_ORDER_SHIPMENT,
   FLAT_SHIPPING_FEE_KURUS,
   SHIPPING_BLOCK_ADDRESS_REJECTED,
+  SHIPPING_BLOCK_INSUFFICIENT_BALANCE,
+  SHIPPING_BLOCK_PROVIDER_ERROR,
   type TrOrderShipment,
+  type TrShippingBlock,
   type TrShippingRate,
   type TrShippingTrace,
 } from "@/lib/tr/shipping/types";

@@ -14,6 +14,9 @@ import { sanitizeProductFeatures } from "@/lib/tr/catalog/productFeatures";
 import { readSizeStocks } from "@/lib/tr/sizeStocks";
 import {
   EMPTY_ORDER_SHIPMENT,
+  SHIPPING_BLOCK_ADDRESS_REJECTED,
+  SHIPPING_BLOCK_INSUFFICIENT_BALANCE,
+  SHIPPING_BLOCK_PROVIDER_ERROR,
   type TrOrderShipment,
   type TrShippingTrace,
 } from "@/lib/tr/shipping/types";
@@ -178,6 +181,17 @@ function readShippingProvider(value: unknown): TrShippingProviderId | null {
   return value === "basitkargo" ? "basitkargo" : null;
 }
 
+function readShippingBlock(value: unknown): TrOrderShipment["block"] {
+  if (
+    value === SHIPPING_BLOCK_ADDRESS_REJECTED ||
+    value === SHIPPING_BLOCK_INSUFFICIENT_BALANCE ||
+    value === SHIPPING_BLOCK_PROVIDER_ERROR
+  ) {
+    return value;
+  }
+  return null;
+}
+
 function readShippingTraces(value: unknown): TrShippingTrace[] {
   if (!Array.isArray(value)) return [];
   return value
@@ -227,8 +241,7 @@ function readOrderShipment(row: Record<string, unknown>): TrOrderShipment {
       typeof row.shipping_status === "string" ? row.shipping_status : null,
     traces: readShippingTraces(row.shipping_traces),
     feeKurus,
-    block:
-      row.shipping_block === "address_rejected" ? "address_rejected" : null,
+    block: readShippingBlock(row.shipping_block),
     addressRetryUsed: Boolean(row.shipping_address_retry_used),
     lastError:
       typeof row.shipping_last_error === "string"

@@ -94,13 +94,17 @@ export async function createOrderAdmin(
 
   try {
     const invoiceType =
-    input.invoiceType === "corporate" ? "corporate" : "individual";
-  const buyerTaxId =
-    input.buyerTaxId?.replace(/\D/g, "").trim() || null;
-  const buyerTaxOffice = input.buyerTaxOffice?.trim() || null;
-  const buyerTitle = input.buyerTitle?.trim() || null;
+      input.invoiceType === "corporate" ? "corporate" : "individual";
+    const buyerTaxId =
+      invoiceType === "corporate"
+        ? input.buyerTaxId?.replace(/\D/g, "").trim() || null
+        : null;
+    const buyerTaxOffice =
+      invoiceType === "corporate" ? input.buyerTaxOffice?.trim() || null : null;
+    const buyerTitle =
+      invoiceType === "corporate" ? input.buyerTitle?.trim() || null : null;
 
-  const orderInsert = await supabase
+    const orderInsert = await supabase
       .from("tr_orders")
       .insert({
         customer_email: input.customerEmail.trim().toLowerCase(),

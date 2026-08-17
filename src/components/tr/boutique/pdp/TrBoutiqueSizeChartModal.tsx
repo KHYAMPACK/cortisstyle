@@ -84,7 +84,7 @@ export function TrBoutiqueSizeChartModal({
               </p>
 
               <div className="-mx-1 mt-4 overflow-x-auto">
-                <table className="w-full min-w-[36rem] border-collapse text-left text-[12px] md:text-[13px]">
+                <table className="w-full min-w-[44rem] border-collapse text-left text-[12px] md:text-[13px]">
                   <thead>
                     <tr className="border-b border-neutral-200">
                       <th className="sticky left-0 bg-white py-2.5 pr-3 font-medium text-neutral-500">

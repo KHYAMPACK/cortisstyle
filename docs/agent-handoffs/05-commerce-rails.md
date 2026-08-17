@@ -19,6 +19,8 @@
 - **Locked TR address** (`src/lib/tr/geo/turkeyAddress.ts`, `src/data/tr/turkey-cities-districts.json`): checkout il/ilçe are selects; checkout POST rejects free-text junk. Street stays typed (min length).
 - **Buyer pays kargo (Lila):** flat **120 TL** (`FLAT_SHIPPING_FEE_KURUS`). Client cannot set the fee. After **paid / sandbox**, auto-waterfall cheapest eligible Basit handlers up to **140 TL** (20 TL buffer); skip Yurtiçi / `SELF_*` / meta `ECONOMIC`/`FAST`. Owner prints only. PDP also shows **3500 TL üzeri kargo ücretsiz** (`FREE_SHIPPING_THRESHOLD_KURUS`) — copy only until checkout quotes the threshold.
 - **Address is view-only** in the panel unless **every eligible carrier rejects** (`shipping_block = address_rejected`). Then owner WhatsApps the customer, edits once, and we retry the waterfall once (`shipping_address_retry_used`). Second failure → iade (İptal; no iyzico refund yet). SQL `supabase/patch_tr_order_shipping_block.sql`.
+- **Insufficient Basit balance** is `shipping_block = insufficient_balance` — not an address reject. Owner tops up and retries **Etiket hazırla**.
+- **Panel İptal** cancels a Basit barcode if present, then deletes the Basit draft (`DELETE /v2/order/{id}`) so it does not stay as Yeni Sipariş. If Basit cancel/delete fails, local İptal does not complete.
 - **Shipping leaks to keep closed:** never auto-buy over 140 TL; no address edit after barcode / unless `address_rejected` / if retry already used; no public address-edit URL; one in-flight lock per order; don’t fulfill cancelled or refunded; same TR il/ilçe validation on edit; PUT Basit `NEW` order before retry; client cannot set `shippingFeeKurus` or `handlerCode`.
 - Admin seed/ops with `TR_ADMIN_SECRET` (`adminAuth.ts`)
 

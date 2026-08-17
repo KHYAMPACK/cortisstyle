@@ -49,6 +49,14 @@ export const FREE_SHIPPING_THRESHOLD_KURUS = 350_000;
 export const AUTO_BUY_FEE_CAP_KURUS = FLAT_SHIPPING_FEE_KURUS + 2_000;
 
 export const SHIPPING_BLOCK_ADDRESS_REJECTED = "address_rejected" as const;
+export const SHIPPING_BLOCK_INSUFFICIENT_BALANCE =
+  "insufficient_balance" as const;
+export const SHIPPING_BLOCK_PROVIDER_ERROR = "provider_error" as const;
+
+export type TrShippingBlock =
+  | typeof SHIPPING_BLOCK_ADDRESS_REJECTED
+  | typeof SHIPPING_BLOCK_INSUFFICIENT_BALANCE
+  | typeof SHIPPING_BLOCK_PROVIDER_ERROR;
 
 /** Checkout meta-code; waterfall uses real handler codes from the fee list. */
 export const CHECKOUT_SHIPPING_HANDLER = "ECONOMIC" as const;
