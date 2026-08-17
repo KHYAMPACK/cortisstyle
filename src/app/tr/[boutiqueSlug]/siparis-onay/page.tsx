@@ -6,7 +6,7 @@ import { resolveBoutiqueBrandLabel } from "@/lib/tr/boutiqueBrand";
 import { resolveBoutiqueHomeLayout } from "@/lib/tr/boutiqueHome";
 import { verifyOrderConfirmToken } from "@/lib/tr/orderConfirmToken";
 import { getOrderByIdAdmin } from "@/lib/tr/orders";
-import { trBoutiquePath } from "@/lib/tr/paths";
+import { trBoutiqueOrderTrackingPath, trBoutiquePath } from "@/lib/tr/paths";
 import { safeGetPublicBoutique } from "@/lib/tr/publicData";
 import { formatTryFromKurus } from "@/types/tr-marketplace";
 
@@ -155,7 +155,19 @@ export default async function BoutiqueOrderConfirmationPage({
         </div>
       ) : null}
 
-      <div className="mt-10 text-center">
+      <div className="mt-10 text-center space-y-3">
+        {orderBelongs && order?.shipment.externalId && query.token ? (
+          <p>
+            <Link
+              href={trBoutiqueOrderTrackingPath(boutique.slug, order.id, {
+                token: query.token,
+              })}
+              className="text-[13px] underline underline-offset-2"
+            >
+              Kargo takip
+            </Link>
+          </p>
+        ) : null}
         <Link
           href={trBoutiquePath(boutique.slug)}
           className="btn-primary inline-flex items-center justify-center px-6 py-4 text-[11px] tracking-[0.2em]"

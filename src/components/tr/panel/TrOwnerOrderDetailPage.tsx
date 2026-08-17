@@ -24,6 +24,7 @@ import {
   TrPanelFadeIn,
   TrPanelLoading,
 } from "@/components/tr/panel/TrPanelMotion";
+import { TrOwnerShipmentSection } from "@/components/tr/panel/TrOwnerShipmentSection";
 import {
   fetchOwnerOrder,
   updateOwnerOrderFulfillment,
@@ -46,9 +47,11 @@ const FULFILLMENT_OPTIONS: TrFulfillmentStatus[] = [
 
 function OrderDetail({
   boutiqueId,
+  boutiqueSlug,
   orderId,
 }: {
   boutiqueId: string;
+  boutiqueSlug: string;
   orderId: string;
 }) {
   const [order, setOrder] = useState<TrOrderWithItems | null>(null);
@@ -197,13 +200,12 @@ function OrderDetail({
             ) : null}
           </section>
 
-          <section className={panelSectionClass}>
-            <p className="text-[19px] font-semibold text-neutral-900">Kargo</p>
-            <p className={`mt-2 ${panelHintClass}`}>
-              Kargo taşıyıcı entegrasyonu yakında. Şimdilik kendi kargo
-              panelinizden gönderi oluşturun.
-            </p>
-          </section>
+          <TrOwnerShipmentSection
+            boutiqueId={boutiqueId}
+            boutiqueSlug={boutiqueSlug}
+            order={order}
+            onOrder={setOrder}
+          />
 
           <section className={panelSectionClass}>
             <p className="text-[19px] font-semibold text-neutral-900">
@@ -317,6 +319,7 @@ export function TrOwnerOrderDetailPage({ orderId }: { orderId: string }) {
           </div>
           <OrderDetail
             boutiqueId={activeBoutique.id}
+            boutiqueSlug={activeBoutique.slug}
             orderId={orderId}
           />
         </div>

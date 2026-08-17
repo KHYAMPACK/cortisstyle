@@ -6,33 +6,45 @@ import {
   panelHintClass,
   panelSectionClass,
 } from "@/components/tr/panel/panelUi";
+import { boutiqueHasLiveShipping } from "@/lib/tr/shipping/registry";
 
 const STORAGE_KEY = "tr-panel-orders-process-open";
 
-const STEPS: Array<{ title: string; body: string }> = [
-  {
-    title: "1. Sipariş düşer",
-    body: "Müşteri checkout tamamlayınca sipariş bu listede görünür. Kart (iyzico) açılana kadar durum “Ödeme bekleniyor” olabilir — tahsilatı onaylayınca “Ödendi” işaretleyin.",
-  },
-  {
-    title: "2. Paketleyin",
-    body: "Ödeme onayından sonra ürünleri kontrol edip paketleyin. Faturalar sayfasında taslak oluşur — GİB gelene kadar faturayı kendi sürecinizle kesin ve numarayı yazın.",
-  },
-  {
-    title: "3. Kargoya verin",
-    body: "Kargo firmanız bağlanınca etiket buradan basılacak. Şimdilik kendi kargo panelinizden gönderi oluşturun.",
-  },
-  {
-    title: "4. Durumu güncelleyin",
-    body: "Gönderiyi oluşturduktan sonra siparişi “Kargoda”, teslimde “Teslim” yapın. İptalde stok otomatik geri gelir.",
-  },
-];
+function steps(shippingLive: boolean): Array<{ title: string; body: string }> {
+  return [
+    {
+      title: "1. Sipariş düşer",
+      body: "Müşteri checkout tamamlayınca sipariş bu listede görünür. Kart (iyzico) açılana kadar durum “Ödeme bekleniyor” olabilir — tahsilatı onaylayınca “Ödendi” işaretleyin.",
+    },
+    {
+      title: "2. Paketleyin",
+      body: "Ödeme onayından sonra ürünleri kontrol edip paketleyin. Faturalar sayfasında taslak oluşur — GİB gelene kadar faturayı kendi sürecinizle kesin ve numarayı yazın.",
+    },
+    {
+      title: "3. Kargoya verin",
+      body: shippingLive
+        ? "Sipariş detayında “Kargo oluştur” → firma seçin → etiket yazdırın. Durum Basit Kargo’dan otomatik gelir."
+        : "Kendi kargo panelinizden gönderi oluşturun. Kargo API’si bu butikte henüz yok.",
+    },
+    {
+      title: "4. Durumu güncelleyin",
+      body: shippingLive
+        ? "Kargo kodu üretince durum kendiliğinden “Kargoda / Teslim” olur. İptalde stok geri gelir."
+        : "Gönderiyi oluşturduktan sonra siparişi “Kargoda”, teslimde “Teslim” yapın. İptalde stok otomatik geri gelir.",
+    },
+  ];
+}
 
 /**
  * Collapsible “how orders work” primer for boutique owners.
  */
-export function TrOwnerOrderProcessGuide() {
+export function TrOwnerOrderProcessGuide({
+  boutiqueSlug,
+}: {
+  boutiqueSlug: string;
+}) {
   const [open, setOpen] = useState(true);
+  const shippingLive = boutiqueHasLiveShipping(boutiqueSlug);
 
   useEffect(() => {
     try {
@@ -84,7 +96,7 @@ export function TrOwnerOrderProcessGuide() {
             className="overflow-hidden"
           >
             <ol className="mt-5 space-y-4 border-t border-[color:var(--panel-accent-border)] pt-5">
-              {STEPS.map((step) => (
+              {steps(shippingLive).map((step) => (
                 <li key={step.title}>
                   <p className="text-[17px] font-semibold text-[color:var(--panel-accent-deep)]">
                     {step.title}

@@ -43,8 +43,8 @@ export function TrBoutiqueYouMayAlsoLike({
         className={
           atelier
             ? compact
-              ? "mb-5 text-[11px] tracking-[0.2em] text-neutral-500 uppercase"
-              : "px-4 pt-10 pb-5 text-[11px] tracking-[0.2em] text-neutral-500 uppercase md:px-8"
+              ? "mb-5 font-serif text-[1.35rem] font-light tracking-[-0.01em] text-neutral-950"
+              : "px-4 pt-12 pb-6 font-serif text-[1.5rem] font-light tracking-[-0.01em] text-neutral-950 md:px-8 md:text-[1.75rem]"
             : compact
               ? "mb-4 font-mono text-[9px] tracking-[0.28em] text-neutral-500 uppercase"
               : "px-5 pt-10 pb-5 text-[10px] tracking-[0.28em] text-neutral-500 uppercase md:px-10"

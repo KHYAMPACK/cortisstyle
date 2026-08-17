@@ -417,3 +417,83 @@ export async function updateOrderPaymentStatusAdmin(
 
   return order;
 }
+
+export type TrOrderShipmentPatch = {
+  provider?: TrOrder["shipment"]["provider"];
+  externalId?: string | null;
+  barcode?: string | null;
+  carrierCode?: string | null;
+  carrierName?: string | null;
+  trackingCode?: string | null;
+  status?: string | null;
+  traces?: TrOrder["shipment"]["traces"];
+  feeKurus?: number | null;
+  fulfillmentStatus?: TrFulfillmentStatus;
+};
+
+export async function getOrderByShippingExternalIdAdmin(
+  externalId: string,
+): Promise<TrOrderWithItems | null> {
+  const supabase = getServiceSupabase();
+  if (!supabase) {
+    throw new Error("Supabase service role is not configured.");
+  }
+
+  const { data, error } = await supabase
+    .from("tr_orders")
+    .select("id")
+    .eq("shipping_external_id", externalId)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data?.id) return null;
+  return getOrderByIdAdmin(data.id as string);
+}
+
+export async function updateOrderShipmentAdmin(
+  orderId: string,
+  patch: TrOrderShipmentPatch,
+): Promise<TrOrder> {
+  const supabase = getServiceSupabase();
+  if (!supabase) {
+    throw new Error("Supabase service role is not configured.");
+  }
+
+  const row: Record<string, unknown> = {};
+  if (patch.provider !== undefined) row.shipping_provider = patch.provider;
+  if (patch.externalId !== undefined) {
+    row.shipping_external_id = patch.externalId;
+  }
+  if (patch.barcode !== undefined) row.shipping_barcode = patch.barcode;
+  if (patch.carrierCode !== undefined) {
+    row.shipping_carrier_code = patch.carrierCode;
+  }
+  if (patch.carrierName !== undefined) {
+    row.shipping_carrier_name = patch.carrierName;
+  }
+  if (patch.trackingCode !== undefined) {
+    row.shipping_tracking_code = patch.trackingCode;
+  }
+  if (patch.status !== undefined) row.shipping_status = patch.status;
+  if (patch.traces !== undefined) row.shipping_traces = patch.traces;
+  if (patch.feeKurus !== undefined) row.shipping_fee_kurus = patch.feeKurus;
+  if (patch.fulfillmentStatus !== undefined) {
+    row.fulfillment_status = patch.fulfillmentStatus;
+  }
+
+  if (Object.keys(row).length === 0) {
+    const existing = await getOrderByIdAdmin(orderId);
+    if (!existing) throw new Error("Sipariş bulunamadı.");
+    return existing;
+  }
+
+  const { data, error } = await supabase
+    .from("tr_orders")
+    .update(row)
+    .eq("id", orderId)
+    .select("*")
+    .single();
+
+  if (error) throw error;
+  return mapOrderRow(data as Record<string, unknown>);
+}

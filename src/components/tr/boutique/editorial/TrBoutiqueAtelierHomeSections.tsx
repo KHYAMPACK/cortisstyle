@@ -82,7 +82,7 @@ function TileMedia({
         fill
         unoptimized
         sizes="(max-width: 768px) 70vw, 22vw"
-        className="object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+        className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
       />
     );
   }
@@ -228,11 +228,11 @@ export function TrBoutiqueAtelierHomeSections({
         aria-label="Kategorilere göre alışveriş"
         className="px-4 pt-12 pb-4 md:px-8 md:pt-16 md:pb-6"
       >
-        <h2 className="font-serif text-[1.65rem] tracking-[-0.02em] text-neutral-950 md:text-[2rem]">
+        <h2 className="font-serif text-[1.75rem] font-light tracking-[-0.01em] text-neutral-950 md:text-[2.15rem]">
           {content.shopByCategoryTitle?.trim() || "Kategorilere göz atın"}
         </h2>
         <div className="mt-6 max-w-full min-w-0 md:mt-8">
-          <div className="-mx-4 flex gap-2 overflow-x-auto overscroll-x-contain px-4 pb-2 md:mx-0 md:grid md:grid-cols-4 md:gap-3 md:overflow-visible md:px-0 lg:grid-cols-5">
+          <div className="-mx-4 flex gap-2.5 overflow-x-auto overscroll-x-contain px-4 pb-2 md:mx-0 md:grid md:grid-cols-4 md:gap-3 md:overflow-visible md:px-0 lg:grid-cols-5">
           {shopItems.map((item, index) => (
             <Link
               key={`${item.categoryId}-${item.label}`}
@@ -244,8 +244,8 @@ export function TrBoutiqueAtelierHomeSections({
                 label={item.label}
                 tone={index}
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" />
-              <p className="absolute bottom-3 left-3 text-[13px] font-medium tracking-[0.04em] text-white md:bottom-4 md:left-4 md:text-[14px]">
+              <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent transition-opacity duration-500 group-hover:from-black/50" />
+              <p className="absolute bottom-3 left-3 text-[11px] font-medium tracking-[0.16em] text-white uppercase md:bottom-4 md:left-4 md:text-[12px]">
                 {item.label}
               </p>
             </Link>
@@ -255,7 +255,7 @@ export function TrBoutiqueAtelierHomeSections({
       </motion.section>
 
       {/* Product catalog — under categories */}
-      <motion.div {...fadeUp} className="bg-white">
+      <motion.div {...fadeUp} className="bg-[#FAFAF8]">
         <TrBoutiqueEditorialCatalog
           products={products}
           boutiqueSlug={slug}
@@ -269,7 +269,7 @@ export function TrBoutiqueAtelierHomeSections({
         aria-label="Trendler"
         className="px-4 py-12 md:px-8 md:py-16"
       >
-        <h2 className="text-center font-serif text-[1.75rem] tracking-[-0.02em] text-neutral-950 md:text-[2.25rem]">
+        <h2 className="text-center font-serif text-[1.85rem] font-light tracking-[-0.01em] text-neutral-950 md:text-[2.35rem]">
           {trendsTitle}
         </h2>
         <div className="mx-auto mt-8 grid max-w-6xl gap-3 sm:mt-10 sm:gap-4 md:grid-cols-2">
@@ -284,12 +284,12 @@ export function TrBoutiqueAtelierHomeSections({
                 label={item.title}
                 tone={index + 1}
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/8 to-transparent transition-opacity duration-500 group-hover:from-black/58" />
               <div className="absolute bottom-4 left-4 right-4 text-white md:bottom-6 md:left-6">
-                <p className="font-serif text-[1.35rem] leading-tight md:text-[1.75rem]">
+                <p className="font-serif text-[1.4rem] leading-tight font-light md:text-[1.85rem]">
                   {item.title}
                 </p>
-                <span className="mt-2 inline-block border-b border-white pb-0.5 text-[13px] tracking-[0.02em] md:text-[14px]">
+                <span className="mt-2.5 inline-block border-b border-white/80 pb-0.5 text-[12px] tracking-[0.14em] uppercase md:text-[13px]">
                   {item.cta}
                 </span>
               </div>
@@ -304,16 +304,16 @@ export function TrBoutiqueAtelierHomeSections({
         aria-label="Kampanya"
         className="grid md:grid-cols-2"
       >
-        <div className="flex flex-col items-start justify-center bg-[#F3EEE6] px-6 py-14 md:px-12 md:py-20 lg:px-16">
-          <p className="text-[11px] tracking-[0.22em] text-neutral-600 uppercase">
+        <div className="flex flex-col items-start justify-center bg-[#F4EEF3] px-6 py-14 md:px-12 md:py-20 lg:px-16">
+          <p className="text-[11px] tracking-[0.24em] text-neutral-500 uppercase">
             {mid.eyebrow}
           </p>
-          <h2 className="mt-4 max-w-md font-serif text-[1.85rem] leading-[1.15] tracking-[-0.02em] text-neutral-950 md:text-[2.35rem]">
+          <h2 className="mt-4 max-w-md font-serif text-[1.95rem] leading-[1.12] font-light tracking-[-0.01em] text-neutral-950 md:text-[2.45rem]">
             {mid.title}
           </h2>
           <Link
             href={categoryHref(slug, mid.target?.trim() || "all")}
-            className="mt-8 inline-flex min-h-12 items-center justify-center rounded-xl bg-[#9B7EBD] px-8 text-[12px] font-bold tracking-[0.14em] text-white uppercase shadow-sm transition-opacity hover:opacity-90"
+            className="atelier-cta atelier-cta-primary mt-8 w-auto min-w-[12rem] px-10"
           >
             {mid.cta}
           </Link>
@@ -335,10 +335,10 @@ export function TrBoutiqueAtelierHomeSections({
       >
         <div className="grid md:grid-cols-2">
           <div className="flex flex-col justify-center bg-[#FAFAF8] px-6 py-14 md:px-12 md:py-20 lg:px-16">
-            <p className="text-[11px] tracking-[0.22em] text-neutral-600 uppercase">
+            <p className="text-[11px] tracking-[0.24em] text-neutral-500 uppercase">
               {join.eyebrow}
             </p>
-            <h2 className="mt-4 font-serif text-[1.85rem] tracking-[-0.02em] text-neutral-950 md:text-[2.25rem]">
+            <h2 className="mt-4 font-serif text-[1.95rem] font-light tracking-[-0.01em] text-neutral-950 md:text-[2.35rem]">
               {join.title}
             </h2>
             <p className="mt-4 max-w-md text-[14px] leading-relaxed text-neutral-600">
@@ -347,14 +347,14 @@ export function TrBoutiqueAtelierHomeSections({
             <div className="mt-8 grid w-full max-w-sm grid-cols-2 gap-2.5 sm:max-w-md sm:gap-3">
               <Link
                 href={authHref}
-                className="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#9B7EBD] px-3 py-3 text-center text-[10px] font-bold tracking-[0.14em] text-white uppercase shadow-sm transition-opacity hover:opacity-90 sm:min-h-14 sm:text-[12px]"
+                className="atelier-cta atelier-cta-primary"
               >
                 {join.primaryCta}
               </Link>
               {join.secondaryCta ? (
                 <Link
                   href={productsHref}
-                  className="inline-flex min-h-12 items-center justify-center rounded-xl border border-[#9B7EBD]/35 bg-white px-3 py-3 text-center text-[10px] font-bold tracking-[0.14em] text-[#5A4A78] uppercase shadow-sm transition-colors hover:border-[#9B7EBD] hover:bg-[#9B7EBD] hover:text-white sm:min-h-14 sm:text-[12px]"
+                  className="atelier-cta atelier-cta-ghost"
                 >
                   {join.secondaryCta}
                 </Link>
@@ -382,11 +382,13 @@ export function TrBoutiqueAtelierHomeSections({
               className="absolute inset-0 bg-gradient-to-t from-[#5A4A78]/45 via-transparent to-transparent"
               aria-hidden
             />
-            <div className="absolute right-6 bottom-6 flex h-28 w-28 items-center justify-center rounded-full border border-white/55 bg-white/15 text-center text-white backdrop-blur-sm md:right-8 md:bottom-8 md:h-32 md:w-32">
-              <span className="font-serif text-[15px] leading-tight tracking-[0.06em]">
+            <div className="absolute right-6 bottom-6 flex h-28 w-28 items-center justify-center rounded-full border border-white/40 bg-white/10 text-center text-white backdrop-blur-[2px] md:right-8 md:bottom-8 md:h-32 md:w-32">
+              <span className="font-serif text-[16px] leading-tight font-light tracking-[0.08em] italic">
                 Lila
                 <br />
-                Club
+                <span className="not-italic text-[10px] tracking-[0.28em] uppercase">
+                  Club
+                </span>
               </span>
             </div>
           </div>
@@ -418,7 +420,7 @@ export function TrBoutiqueAtelierHomeSections({
       <motion.section
         {...fadeUp}
         aria-label="Alışveriş bilgileri"
-        className="border-y border-black/5 bg-[#F3EEE6] px-5 py-10 md:px-8 md:py-12"
+        className="border-y border-black/[0.06] bg-[#F4EEF3] px-5 py-12 md:px-8 md:py-14"
       >
         <ul className="mx-auto grid max-w-6xl gap-8 md:grid-cols-3 md:gap-10">
           {infoItems.map((item) => {
@@ -430,7 +432,7 @@ export function TrBoutiqueAtelierHomeSections({
                   strokeWidth={1.5}
                   aria-hidden
                 />
-                <p className="mt-4 text-[14px] font-semibold tracking-[-0.01em] text-neutral-950 md:text-[15px]">
+                <p className="mt-4 font-serif text-[1.2rem] font-light tracking-[-0.01em] text-neutral-950 md:text-[1.3rem]">
                   {item.title}
                 </p>
                 <p className="mt-2 text-[13px] leading-relaxed text-neutral-600 md:text-[14px]">

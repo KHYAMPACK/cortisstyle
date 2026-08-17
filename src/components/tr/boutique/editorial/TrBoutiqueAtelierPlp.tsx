@@ -638,7 +638,7 @@ export function TrBoutiqueAtelierPlp({
                 role="dialog"
                 aria-modal="true"
                 aria-label="Filtrele ve sırala"
-                className="absolute inset-x-3 top-[10%] bottom-[10%] flex flex-col bg-white shadow-xl sm:inset-x-8"
+                className="absolute inset-x-3 top-[10%] bottom-[10%] flex flex-col bg-[#FAFAF8] shadow-[0_24px_60px_rgba(42,36,48,0.18)] sm:inset-x-8"
                 initial={{ opacity: 0, y: 28, scale: 0.97 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 16, scale: 0.98 }}
@@ -866,7 +866,7 @@ export function TrBoutiqueAtelierPlp({
           <span className="text-neutral-800">{title}</span>
         </nav>
 
-        <h1 className="mt-3 font-serif text-[1.85rem] leading-tight tracking-[-0.02em] text-neutral-950 sm:mt-4 sm:text-[2.35rem] md:text-[2.75rem]">
+        <h1 className="mt-3 font-serif text-[1.95rem] leading-tight font-light tracking-[-0.01em] text-neutral-950 sm:mt-4 sm:text-[2.45rem] md:text-[2.85rem]">
           {title}
         </h1>
 
@@ -888,7 +888,7 @@ export function TrBoutiqueAtelierPlp({
               value={searchDraft}
               onChange={(event) => setSearchDraft(event.target.value)}
               placeholder="Ürün ara…"
-              className="w-full border border-neutral-300 bg-white py-3 pr-3 pl-10 text-[14px] outline-none focus:border-neutral-900"
+              className="w-full border border-neutral-200/90 bg-[#FAFAF8] py-3 pr-3 pl-10 text-[14px] outline-none transition-colors placeholder:text-neutral-400 focus:border-neutral-900 focus:bg-white"
             />
           </label>
           <button
@@ -914,10 +914,10 @@ export function TrBoutiqueAtelierPlp({
                 role="listitem"
                 onClick={() => selectChip(chip)}
                 aria-current={active ? "true" : undefined}
-                className={`flex shrink-0 items-center gap-2.5 border px-2.5 py-2 text-left transition-colors ${
+                className={`flex shrink-0 items-center gap-2.5 border px-2 py-1.5 text-left transition-colors ${
                   active
-                    ? "border-neutral-900 bg-white"
-                    : "border-neutral-200 bg-white hover:border-neutral-400"
+                    ? "border-neutral-900 bg-[#FAFAF8]"
+                    : "border-neutral-200/80 bg-white hover:border-neutral-400"
                 }`}
               >
                 <span className="relative h-10 w-10 overflow-hidden bg-neutral-100">

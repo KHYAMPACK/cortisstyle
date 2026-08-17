@@ -256,6 +256,13 @@ html.intro-loading-cadde body::before {
   }
 
   /* Cecilie-structure calm skin (Lila atelier) — presentation only */
+  [data-editorial-skin="atelier"] {
+    --atelier-paper: #fafaf8;
+    --atelier-cream: #f4eef3;
+    --atelier-ink: #2a2430;
+    --atelier-muted: #7a7184;
+  }
+
   [data-editorial-skin="atelier"] .editorial-promo-cta {
     animation: none;
   }
@@ -263,6 +270,77 @@ html.intro-loading-cadde body::before {
   [data-editorial-skin="atelier"] .editorial-sale-badge,
   [data-editorial-skin="atelier"] .editorial-sale-text {
     animation: none;
+  }
+
+  [data-editorial-skin="atelier"] .editorial-sale-badge {
+    background-color: var(--boutique-accent, #9b7ebd);
+    letter-spacing: 0.12em;
+    font-weight: 500;
+  }
+
+  [data-editorial-skin="atelier"] .atelier-cta {
+    display: inline-flex;
+    min-height: 3rem;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    padding: 0.8rem 1.35rem;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    transition:
+      background-color 0.3s ease,
+      color 0.3s ease,
+      border-color 0.3s ease,
+      opacity 0.3s ease;
+  }
+
+  @media (min-width: 640px) {
+    [data-editorial-skin="atelier"] .atelier-cta {
+      min-height: 3.25rem;
+      font-size: 12px;
+    }
+  }
+
+  [data-editorial-skin="atelier"] .atelier-cta-primary {
+    background: var(--boutique-accent, #9b7ebd);
+    color: #fff;
+  }
+
+  [data-editorial-skin="atelier"] .atelier-cta-primary:hover {
+    background: color-mix(in srgb, var(--boutique-accent, #9b7ebd) 84%, black);
+  }
+
+  [data-editorial-skin="atelier"] .atelier-cta-ghost {
+    border: 1px solid color-mix(in srgb, var(--boutique-accent, #9b7ebd) 42%, transparent);
+    background: #fff;
+    color: #5a4a78;
+  }
+
+  [data-editorial-skin="atelier"] .atelier-cta-ghost:hover {
+    border-color: var(--boutique-accent, #9b7ebd);
+    background: var(--boutique-accent, #9b7ebd);
+    color: #fff;
+  }
+
+  [data-editorial-skin="atelier"] .atelier-cta-on-photo {
+    border: 1px solid rgba(255, 255, 255, 0.72);
+    background: rgba(255, 255, 255, 0.92);
+    color: #5a4a78;
+  }
+
+  [data-editorial-skin="atelier"] .atelier-cta-on-photo:hover {
+    border-color: transparent;
+    background: var(--boutique-accent, #9b7ebd);
+    color: #fff;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-editorial-skin="atelier"] .atelier-cta {
+      transition: none;
+    }
   }
 
   /* Boutique route skeletons */

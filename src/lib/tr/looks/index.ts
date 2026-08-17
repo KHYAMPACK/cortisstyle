@@ -14,6 +14,10 @@ export {
   trKombinlerLookHref,
 } from "@/lib/tr/looks/list";
 export {
+  caddeHashScrollBehavior,
+  scrollToCaddeLookAnchor,
+} from "@/lib/tr/looks/scrollToLook";
+export {
   buildTrDemoLooks,
   isTrDemoBoutiqueSlug,
   isTrDemoProduct,

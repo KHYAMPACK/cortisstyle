@@ -54,6 +54,8 @@ Branded reset (`/api/tr/customer/auth/send-password-reset`) uses `admin.generate
 | `TR_CHECKOUT_ENABLED` / `NEXT_PUBLIC_TR_CHECKOUT_ENABLED` | Cadde checkout gating (`next.config` mirrors private → public) |
 | `TR_CHECKOUT_SANDBOX` / `NEXT_PUBLIC_TR_CHECKOUT_SANDBOX` | Staging sandbox orders (default off → pending) |
 | `TR_IYZICO_ENABLED` / `NEXT_PUBLIC_TR_IYZICO_ENABLED` | Hide “kart yakında” banner — only when card capture is live |
+| `TR_SHIPPING_BASITKARGO_TOKENS` | Lila Basit Kargo JSON `{"lilabutik":"…"}` (registry-gated) |
+| `TR_SHIPPING_BASITKARGO_WEBHOOK_SECRET` | Bearer on `POST /api/tr/shipping/basitkargo/webhook` |
 | `TR_ORDER_CONFIRM_SECRET` | HMAC for sipariş-onay links (required in production) |
 | `TR_VAPID_PUBLIC_KEY` / `TR_VAPID_PRIVATE_KEY` / `TR_VAPID_SUBJECT` | Owner panel Web Push (`next.config` mirrors public key → `NEXT_PUBLIC_TR_VAPID_PUBLIC_KEY`) |
 | `TR_ADMIN_SECRET` | Admin APIs |

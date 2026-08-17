@@ -199,7 +199,16 @@ function BrandHeroLineArt() {
 }
 
 /** Matches logo-slide CTAs — lilac primary / soft secondary. */
-function heroCtaClassName(primary: boolean): string {
+function heroCtaClassName(
+  primary: boolean,
+  tone: "classic" | "brand" | "photo" = "classic",
+): string {
+  if (tone !== "classic") {
+    if (primary) return "atelier-cta atelier-cta-primary";
+    return tone === "brand"
+      ? "atelier-cta atelier-cta-ghost"
+      : "atelier-cta atelier-cta-on-photo";
+  }
   const base =
     "inline-flex min-h-12 w-full items-center justify-center rounded-xl px-3 py-3 text-center text-[10px] font-bold tracking-[0.14em] uppercase shadow-sm sm:min-h-14 sm:text-[12px]";
   if (primary) {
@@ -419,14 +428,22 @@ export function TrBoutiqueEditorialHeroCarousel({
             photoAlignMode ? (
               <>
                 <div
-                  className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/25 to-transparent md:hidden"
+                  className={`absolute inset-0 bg-gradient-to-t to-transparent md:hidden ${
+                    campaignPreferred
+                      ? "from-black/45 via-black/15"
+                      : "from-black/60 via-black/25"
+                  }`}
                   aria-hidden
                 />
                 <div
                   className={`absolute inset-0 hidden md:block ${
                     contentAlign === "left"
-                      ? "bg-gradient-to-r from-black/55 via-black/25 to-transparent"
-                      : "bg-gradient-to-l from-black/55 via-black/25 to-transparent"
+                      ? campaignPreferred
+                        ? "bg-gradient-to-r from-black/42 via-black/14 to-transparent"
+                        : "bg-gradient-to-r from-black/55 via-black/25 to-transparent"
+                      : campaignPreferred
+                        ? "bg-gradient-to-l from-black/42 via-black/14 to-transparent"
+                        : "bg-gradient-to-l from-black/55 via-black/25 to-transparent"
                   }`}
                   aria-hidden
                 />
@@ -478,6 +495,7 @@ export function TrBoutiqueEditorialHeroCarousel({
           index={index}
           slides={slides}
           onGoTo={goTo}
+          editorial={campaignPreferred}
         />
       )}
     </section>
@@ -619,10 +637,10 @@ function BrandHeroSlide({
           </div>
 
           <div className="mt-8 grid w-full min-w-0 max-w-sm grid-cols-2 gap-2.5 sm:mt-10 sm:max-w-md sm:gap-3">
-            <Link href={shopHref} className={heroCtaClassName(true)}>
+            <Link href={shopHref} className={heroCtaClassName(true, "brand")}>
               Alışverişe başla
             </Link>
-            <Link href={saleHref} className={heroCtaClassName(false)}>
+            <Link href={saleHref} className={heroCtaClassName(false, "brand")}>
               İndirimdekiler
             </Link>
           </div>
@@ -732,7 +750,7 @@ function CampaignHeroSlide({
                 href={promotionHref(boutiqueSlug, action.target, {
                   indirim: action.indirim,
                 })}
-                className={heroCtaClassName(actionIndex === 0)}
+                className={heroCtaClassName(actionIndex === 0, "photo")}
               >
                 {action.label}
               </Link>
@@ -772,6 +790,7 @@ function ClassicHeroSlide({
   index,
   slides,
   onGoTo,
+  editorial = false,
 }: {
   boutiqueSlug: string;
   brandTitle: string;
@@ -781,12 +800,14 @@ function ClassicHeroSlide({
   index: number;
   slides: EditorialHeroPromotion[];
   onGoTo: (next: number) => void;
+  editorial?: boolean;
 }) {
   const align = promo.contentAlign ?? "center";
   const sideAligned = align === "left" || align === "right";
   const actions = resolveCampaignActions(promo).slice(0, 3);
   const subText = resolveCampaignSubText(promo);
   const title = resolveCampaignName(promo);
+  const ctaTone = editorial ? "photo" : "classic";
 
   if (sideAligned) {
     return (
@@ -807,7 +828,13 @@ function ClassicHeroSlide({
             <p className="text-[11px] tracking-[0.22em] text-white/85 uppercase sm:text-[12px]">
               {subText}
             </p>
-            <h2 className="mt-4 text-[clamp(1.85rem,5vw,3.5rem)] leading-[1.05] font-semibold tracking-[-0.02em] text-white uppercase drop-shadow-[0_2px_18px_rgba(0,0,0,0.35)]">
+            <h2
+              className={
+                editorial
+                  ? "mt-4 font-serif text-[clamp(1.85rem,5vw,3.35rem)] leading-[1.08] font-light tracking-[0.01em] text-white drop-shadow-[0_2px_18px_rgba(0,0,0,0.35)]"
+                  : "mt-4 text-[clamp(1.85rem,5vw,3.5rem)] leading-[1.05] font-semibold tracking-[-0.02em] text-white uppercase drop-shadow-[0_2px_18px_rgba(0,0,0,0.35)]"
+              }
+            >
               {title}
             </h2>
             <div
@@ -819,7 +846,7 @@ function ClassicHeroSlide({
                   href={promotionHref(boutiqueSlug, action.target, {
                     indirim: action.indirim,
                   })}
-                  className={heroCtaClassName(actionIndex === 0)}
+                  className={heroCtaClassName(actionIndex === 0, ctaTone)}
                 >
                   {action.label}
                 </Link>
@@ -875,7 +902,7 @@ function ClassicHeroSlide({
             </p>
             <Link
               href={promotionHref(boutiqueSlug, promo.target)}
-              className={`${heroCtaClassName(true)} mt-6 max-w-xs`}
+              className={`${heroCtaClassName(true, ctaTone)} mt-6 max-w-xs`}
             >
               {promo.cta}
             </Link>

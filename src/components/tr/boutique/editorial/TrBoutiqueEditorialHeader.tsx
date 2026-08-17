@@ -486,7 +486,7 @@ export function TrBoutiqueEditorialHeader({
         />
       ) : null}
       {atelier ? (
-        <span className="font-serif text-[15px] tracking-[0.06em] text-neutral-950 sm:text-[17px] md:text-[1.65rem] lg:text-[1.9rem]">
+        <span className="font-serif text-[15px] font-light tracking-[0.08em] text-neutral-950 sm:text-[17px] md:text-[1.65rem] lg:text-[1.9rem]">
           {brandTitle}
         </span>
       ) : !logoUrl ? (
@@ -507,7 +507,13 @@ export function TrBoutiqueEditorialHeader({
               className="absolute inset-0 bg-black/20 md:bg-black/20"
               onClick={() => setMenuOpen(false)}
             />
-            <div className="absolute inset-y-0 left-0 flex w-full flex-col bg-white md:w-1/2 md:max-w-xl md:shadow-xl">
+            <div
+              className={`absolute inset-y-0 left-0 flex w-full flex-col md:w-1/2 md:max-w-xl ${
+                atelier
+                  ? "bg-[#FAFAF8] md:shadow-[0_18px_50px_rgba(42,36,48,0.12)]"
+                  : "bg-white md:shadow-xl"
+              }`}
+            >
               <div className="flex h-14 shrink-0 items-center justify-between border-b border-black/5 px-4 md:h-16">
                 {atelier && mobileDrillItem ? (
                   <button
@@ -553,7 +559,7 @@ export function TrBoutiqueEditorialHeader({
                             onClick={() => navigateTo(link.href)}
                             className="flex w-full items-center justify-between gap-3 py-5 text-left transition-opacity hover:opacity-70"
                           >
-                            <span className="text-[22px] leading-none font-semibold tracking-[-0.02em] text-neutral-950 uppercase md:text-[28px]">
+                            <span className="text-[20px] leading-none font-light tracking-[0.04em] text-neutral-950 uppercase md:text-[26px]">
                               {link.label}
                             </span>
                           </button>
@@ -574,8 +580,8 @@ export function TrBoutiqueEditorialHeader({
                           sizes="(max-width: 768px) 100vw, 480px"
                           className="object-cover"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
-                        <span className="absolute inset-x-0 bottom-0 px-4 pb-4 text-[15px] tracking-[0.04em] text-white">
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/5 to-transparent" />
+                        <span className="absolute inset-x-0 bottom-0 px-4 pb-4 text-[13px] tracking-[0.12em] text-white uppercase">
                           {mobileDrillFeatured.label}
                         </span>
                       </button>
@@ -602,7 +608,11 @@ export function TrBoutiqueEditorialHeader({
                               className="flex w-full items-center justify-between gap-3 py-5 text-left transition-opacity hover:opacity-70"
                             >
                               <span
-                                className="block text-[28px] leading-none font-semibold tracking-[-0.02em] uppercase md:text-[34px]"
+                                className={
+                                  atelier
+                                    ? "block text-[26px] leading-none font-light tracking-[0.04em] uppercase md:text-[32px]"
+                                    : "block text-[28px] leading-none font-semibold tracking-[-0.02em] uppercase md:text-[34px]"
+                                }
                                 style={
                                   item.accent === "sale"
                                     ? {
@@ -676,8 +686,10 @@ export function TrBoutiqueEditorialHeader({
 
   return (
     <header
-      className={`sticky top-0 z-50 bg-white/95 backdrop-blur-md ${
-        atelier ? "border-b border-black/[0.04]" : "border-b border-black/5"
+      className={`sticky top-0 z-50 backdrop-blur-md ${
+        atelier
+          ? "border-b border-black/[0.05] bg-[#FAFAF8]/90"
+          : "border-b border-black/5 bg-white/95"
       }`}
     >
       {atelier ? (
@@ -788,11 +800,11 @@ export function TrBoutiqueEditorialHeader({
                     }}
                     aria-expanded={atelier ? isOpen : undefined}
                     aria-haspopup={atelier ? "true" : undefined}
-                    className={`uppercase transition-opacity hover:opacity-60 ${
+                    className={`uppercase ${
                       atelier
-                        ? "text-[11px] tracking-[0.2em] text-neutral-700 lg:text-[12px]"
-                        : "text-[11px] tracking-[0.16em] lg:text-[12px]"
-                    } ${isOpen ? "opacity-100" : ""}`}
+                        ? "relative text-[11px] tracking-[0.22em] text-neutral-700 after:absolute after:inset-x-0 after:-bottom-1 after:h-px after:origin-left after:scale-x-0 after:bg-current after:transition-transform after:duration-300 after:ease-[cubic-bezier(0.22,1,0.36,1)] hover:after:scale-x-100 lg:text-[12px]"
+                        : "text-[11px] tracking-[0.16em] transition-opacity hover:opacity-60 lg:text-[12px]"
+                    } ${atelier && isOpen ? "after:scale-x-100" : ""}`}
                     style={
                       item.accent === "sale"
                         ? {
@@ -817,7 +829,7 @@ export function TrBoutiqueEditorialHeader({
               key={openMegaItem.id}
               role="region"
               aria-label={`${navItemDisplayLabel(openMegaItem)} menü`}
-              className="absolute inset-x-0 top-full z-40 border-b border-black/[0.06] bg-white shadow-[0_18px_40px_rgba(0,0,0,0.08)]"
+              className="absolute inset-x-0 top-full z-40 border-b border-black/[0.06] bg-[#FAFAF8] shadow-[0_24px_48px_rgba(42,36,48,0.08)]"
               onMouseEnter={clearMegaClose}
               initial={{ opacity: 0, y: -6 }}
               animate={{ opacity: 1, y: 0 }}
@@ -826,7 +838,7 @@ export function TrBoutiqueEditorialHeader({
             >
               <div className="mx-auto grid max-w-7xl gap-8 px-4 py-8 sm:px-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] md:gap-10 md:px-8 md:py-10 lg:grid-cols-[minmax(12rem,0.85fr)_minmax(0,1.4fr)]">
                 <div>
-                  <p className="text-[12px] font-semibold tracking-[0.08em] text-neutral-950 uppercase">
+                  <p className="text-[11px] font-medium tracking-[0.18em] text-neutral-950 uppercase">
                     {navItemDisplayLabel(openMegaItem)}
                   </p>
                   <ul className="mt-4 space-y-2.5">
@@ -835,7 +847,7 @@ export function TrBoutiqueEditorialHeader({
                         <button
                           type="button"
                           onClick={() => navigateTo(link.href)}
-                          className="text-left text-[13px] text-neutral-700 transition-colors hover:text-neutral-950"
+                          className="text-left text-[13px] tracking-[0.02em] text-neutral-600 transition-colors hover:text-neutral-950"
                         >
                           {link.label}
                         </button>
@@ -864,8 +876,8 @@ export function TrBoutiqueEditorialHeader({
                       ) : (
                         <div className="absolute inset-0 bg-[#E8DFD4]" />
                       )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
-                      <span className="absolute inset-x-0 bottom-0 px-3 pb-3 text-[12px] tracking-[0.04em] text-white sm:px-4 sm:pb-4 sm:text-[13px]">
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/5 to-transparent" />
+                      <span className="absolute inset-x-0 bottom-0 px-3 pb-3 text-[11px] tracking-[0.14em] text-white uppercase sm:px-4 sm:pb-4 sm:text-[12px]">
                         {tile.label}
                       </span>
                     </button>

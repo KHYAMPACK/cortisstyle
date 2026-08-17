@@ -9,6 +9,10 @@ import {
 } from "react";
 import { useCaddePageTransition } from "@/components/tr/marketplace/CaddePageTransition";
 import { shouldPlayCaddePageTransition, caddePathnameFromHref } from "@/lib/platform/caddeTransition";
+import {
+  caddeHashScrollBehavior,
+  scrollToCaddeLookAnchor,
+} from "@/lib/tr/looks/scrollToLook";
 import { markTrCanGoBack, writeTrScroll } from "@/lib/tr/scrollMemory";
 
 interface TrSoftNavLinkProps {
@@ -52,11 +56,16 @@ export function TrSoftNavLink({
     const destPath = caddePathnameFromHref(href);
     const here = pathname.replace(/\/$/, "") || "/";
 
-    // Same-page hash: let the browser / Link handle scroll.
     if (href.includes("#") && destPath === here) {
+      event.preventDefault();
       writeTrScroll(pathname, window.scrollY);
       markTrCanGoBack();
       onNavigate?.();
+      const id = href.split("#")[1] ?? "";
+      if (id) {
+        window.history.pushState(null, "", href);
+        scrollToCaddeLookAnchor(id, caddeHashScrollBehavior());
+      }
       return;
     }
 
@@ -72,7 +81,7 @@ export function TrSoftNavLink({
       return;
     }
     startTransition(() => {
-      router.push(href);
+      router.push(href, href.includes("#") ? { scroll: false } : undefined);
     });
   };
 

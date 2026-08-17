@@ -167,8 +167,14 @@ export function trBoutiqueOrderDetailPath(
 export function trBoutiqueOrderTrackingPath(
   boutiqueSlug: string,
   orderId: string,
+  query?: { token?: string; posta?: string },
 ): string {
-  return `${trBoutiqueOrderDetailPath(boutiqueSlug, orderId)}/takip`;
+  const base = `${trBoutiqueOrderDetailPath(boutiqueSlug, orderId)}/takip`;
+  const search = new URLSearchParams();
+  if (query?.token?.trim()) search.set("token", query.token.trim());
+  if (query?.posta?.trim()) search.set("posta", query.posta.trim());
+  const qs = search.toString();
+  return qs ? `${base}?${qs}` : base;
 }
 
 export function trComingSoonPath(): string {

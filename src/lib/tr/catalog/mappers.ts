@@ -8,8 +8,14 @@ import type {
   TrProduct,
   TrProductColor,
   TrShippingAddress,
+  TrShippingProviderId,
 } from "@/types/tr-marketplace";
 import { readSizeStocks } from "@/lib/tr/sizeStocks";
+import {
+  EMPTY_ORDER_SHIPMENT,
+  type TrOrderShipment,
+  type TrShippingTrace,
+} from "@/lib/tr/shipping/types";
 
 function readInvoiceType(value: unknown): TrInvoiceType {
   return value === "corporate" ? "corporate" : "individual";
@@ -166,6 +172,59 @@ export function mapProductRow(row: Record<string, unknown>): TrProduct {
   };
 }
 
+function readShippingProvider(value: unknown): TrShippingProviderId | null {
+  return value === "basitkargo" ? "basitkargo" : null;
+}
+
+function readShippingTraces(value: unknown): TrShippingTrace[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((raw) => {
+      if (!raw || typeof raw !== "object") return null;
+      const row = raw as Record<string, unknown>;
+      const status = typeof row.status === "string" ? row.status.trim() : "";
+      if (!status) return null;
+      return {
+        status,
+        time: typeof row.time === "string" ? row.time : "",
+        location: typeof row.location === "string" ? row.location : null,
+      } satisfies TrShippingTrace;
+    })
+    .filter((row): row is TrShippingTrace => row !== null);
+}
+
+function readOrderShipment(row: Record<string, unknown>): TrOrderShipment {
+  const provider = readShippingProvider(row.shipping_provider);
+  const externalId =
+    typeof row.shipping_external_id === "string"
+      ? row.shipping_external_id
+      : null;
+  if (!provider && !externalId) return { ...EMPTY_ORDER_SHIPMENT };
+  return {
+    provider,
+    externalId,
+    barcode:
+      typeof row.shipping_barcode === "string" ? row.shipping_barcode : null,
+    carrierCode:
+      typeof row.shipping_carrier_code === "string"
+        ? row.shipping_carrier_code
+        : null,
+    carrierName:
+      typeof row.shipping_carrier_name === "string"
+        ? row.shipping_carrier_name
+        : null,
+    trackingCode:
+      typeof row.shipping_tracking_code === "string"
+        ? row.shipping_tracking_code
+        : null,
+    status:
+      typeof row.shipping_status === "string" ? row.shipping_status : null,
+    traces: readShippingTraces(row.shipping_traces),
+    feeKurus:
+      typeof row.shipping_fee_kurus === "number" ? row.shipping_fee_kurus : null,
+  };
+}
+
 function readFulfillmentStatus(
   value: unknown,
 ): TrOrder["fulfillmentStatus"] {
@@ -204,6 +263,7 @@ export function mapOrderRow(row: Record<string, unknown>): TrOrder {
     isSandbox: Boolean(row.is_sandbox),
     iyzicoPaymentId: (row.iyzico_payment_id as string | null) ?? null,
     iyzicoConversationId: (row.iyzico_conversation_id as string | null) ?? null,
+    shipment: readOrderShipment(row),
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   };

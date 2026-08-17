@@ -45,7 +45,7 @@ When iyzico ships: capture → set `payment_status: paid` (inventory already res
 4. Legal pages from shared templates (`src/lib/tr/legal/docs.ts` / [tr-boutique-legal-templates.md](../tr-boutique-legal-templates.md)); lawyer review recommended
 5. Fill `legalName` / tax / MERSIS on boutique
 6. iyzico application + wire → then `TR_IYZICO_ENABLED=true`
-7. Carrier API + tracking
+7. Carrier: **per-boutique** — Lila = Basit Kargo (`patch_tr_order_shipments.sql` + env); Pervin still manual
 8. e-Fatura / GİB API (offline Faturalar scaffold is enough for soft-live)
 9. Backfill `size_stocks` for sized SKUs
 10. Set boutique `shippingNote` (announcement bar no longer invents free shipping)

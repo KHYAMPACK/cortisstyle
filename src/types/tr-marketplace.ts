@@ -14,6 +14,27 @@ export type TrInvoiceType = "individual" | "corporate";
 /** Offline registry until GİB; no fake auto-issue. */
 export type TrInvoiceStatus = "draft" | "issued_offline" | "void";
 
+/** Per-boutique carrier adapter. Null on the order = shipped outside the app. */
+export type TrShippingProviderId = "basitkargo";
+
+export type TrShippingTrace = {
+  status: string;
+  time: string;
+  location: string | null;
+};
+
+export type TrOrderShipment = {
+  provider: TrShippingProviderId | null;
+  externalId: string | null;
+  barcode: string | null;
+  carrierCode: string | null;
+  carrierName: string | null;
+  trackingCode: string | null;
+  status: string | null;
+  traces: TrShippingTrace[];
+  feeKurus: number | null;
+};
+
 /** Common garment categories for outfit builder filtering (free text in DB). */
 export type TrGarmentCategory =
   | "top"
@@ -140,6 +161,7 @@ export interface TrOrder {
   isSandbox: boolean;
   iyzicoPaymentId: string | null;
   iyzicoConversationId: string | null;
+  shipment: TrOrderShipment;
   createdAt: string;
   updatedAt: string;
 }

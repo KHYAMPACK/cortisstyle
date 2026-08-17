@@ -18,6 +18,14 @@ import {
   TrLookQuad,
   TrLookTrio,
 } from "@/components/tr/marketplace/TrLookMosaic";
+import {
+  CADDE_PAGE_TRANSITION_DONE_EVENT,
+  isCaddePageTransitionBusy,
+} from "@/lib/platform/caddeTransition";
+import {
+  caddeHashScrollBehavior,
+  scrollToCaddeLookAnchor,
+} from "@/lib/tr/looks/scrollToLook";
 import type { TrLookWithProducts } from "@/types/tr-look";
 
 function pickLookStrip(
@@ -39,27 +47,36 @@ function CaddeLookHashScroll() {
     const id = window.location.hash.replace(/^#/, "");
     if (!id) return;
 
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let cancelled = false;
+    let retryTimer = 0;
     let tries = 0;
 
-    const scroll = () => {
-      const node = document.getElementById(id);
-      if (!node) return false;
-      node.scrollIntoView({
-        behavior: reduce || tries > 0 ? "auto" : "smooth",
-        block: "start",
+    const run = () => {
+      if (cancelled) return true;
+      if (scrollToCaddeLookAnchor(id, caddeHashScrollBehavior())) return true;
+      if (tries++ > 20) return true;
+      retryTimer = window.setTimeout(run, 50);
+      return false;
+    };
+
+    const start = () => {
+      if (cancelled) return;
+      run();
+    };
+
+    if (isCaddePageTransitionBusy()) {
+      window.addEventListener(CADDE_PAGE_TRANSITION_DONE_EVENT, start, {
+        once: true,
       });
-      return true;
-    };
+    } else {
+      retryTimer = window.setTimeout(start, 40);
+    }
 
-    if (scroll()) return;
-
-    const tick = () => {
-      if (scroll() || tries++ > 16) return;
-      timer = window.setTimeout(tick, 60);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(retryTimer);
+      window.removeEventListener(CADDE_PAGE_TRANSITION_DONE_EVENT, start);
     };
-    let timer = window.setTimeout(tick, 60);
-    return () => window.clearTimeout(timer);
   }, []);
 
   return null;

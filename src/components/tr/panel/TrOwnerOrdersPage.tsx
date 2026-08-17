@@ -38,7 +38,13 @@ import {
   type TrOrderWithItems,
 } from "@/types/tr-marketplace";
 
-function OrdersList({ boutiqueId }: { boutiqueId: string }) {
+function OrdersList({
+  boutiqueId,
+  boutiqueSlug,
+}: {
+  boutiqueId: string;
+  boutiqueSlug: string;
+}) {
   const [orders, setOrders] = useState<TrOrderWithItems[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -102,7 +108,7 @@ function OrdersList({ boutiqueId }: { boutiqueId: string }) {
       ) : (
         <TrPanelFadeIn key="orders-ready" className="space-y-5">
           <TrOwnerPushPromptBanner boutiqueId={boutiqueId} />
-          <TrOwnerOrderProcessGuide />
+          <TrOwnerOrderProcessGuide boutiqueSlug={boutiqueSlug} />
 
           <div className="space-y-3">
             <p className="text-[17px] font-medium text-neutral-700">
@@ -218,10 +224,13 @@ export function TrOwnerOrdersPage() {
             </Link>
             <h2 className={panelPageTitleClass}>Siparişler</h2>
             <p className="mt-2 text-[16px] leading-relaxed text-neutral-600">
-              Paketleyin ve durumları güncelleyin. Kargo entegrasyonu yakında.
+              Paketleyin ve durumları güncelleyin.
             </p>
           </div>
-          <OrdersList boutiqueId={activeBoutique.id} />
+          <OrdersList
+            boutiqueId={activeBoutique.id}
+            boutiqueSlug={activeBoutique.slug}
+          />
         </div>
       )}
     </TrOwnerPanelGate>

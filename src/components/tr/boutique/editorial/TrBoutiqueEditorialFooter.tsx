@@ -65,7 +65,7 @@ export function TrBoutiqueEditorialFooter({
                     href={instagramUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center border border-white/40 px-4 py-2 text-[11px] tracking-[0.14em] uppercase transition-colors hover:bg-white hover:text-neutral-950"
+                    className="inline-flex items-center border border-white/35 px-4 py-2.5 text-[11px] tracking-[0.18em] uppercase transition-colors hover:bg-white hover:text-neutral-950"
                   >
                     Instagram
                   </a>
@@ -75,7 +75,7 @@ export function TrBoutiqueEditorialFooter({
                     href={whatsappUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center border border-white/40 px-4 py-2 text-[11px] tracking-[0.14em] uppercase transition-colors hover:bg-white hover:text-neutral-950"
+                    className="inline-flex items-center border border-white/35 px-4 py-2.5 text-[11px] tracking-[0.18em] uppercase transition-colors hover:bg-white hover:text-neutral-950"
                   >
                     WhatsApp
                   </a>
@@ -140,7 +140,7 @@ export function TrBoutiqueEditorialFooter({
             </div>
             <Link
               href={trBoutiquePath(boutique.slug)}
-              className="font-serif text-[clamp(2.5rem,10vw,4.5rem)] leading-none tracking-[0.06em] text-white/90 uppercase"
+              className="font-serif text-[clamp(2.6rem,11vw,4.75rem)] leading-none font-light tracking-[0.04em] text-white/88"
             >
               {brandTitle}
             </Link>

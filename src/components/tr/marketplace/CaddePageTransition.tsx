@@ -20,6 +20,7 @@ import {
   CADDE_TRANSITION_HOLD_MS,
   CADDE_TRANSITION_MAX_WAIT_MS,
   CADDE_TRANSITION_WORD,
+  markCaddePageTransitionBusy,
 } from "@/lib/platform/caddeTransition";
 
 type Phase = "idle" | "covering" | "filling" | "holding" | "exiting";
@@ -71,6 +72,7 @@ export function CaddePageTransition({ children }: { children: ReactNode }) {
     pendingHref.current = null;
     pendingBack.current = false;
     busy.current = false;
+    markCaddePageTransitionBusy(false);
     setPhase("idle");
   }, []);
 
@@ -78,10 +80,11 @@ export function CaddePageTransition({ children }: { children: ReactNode }) {
     (href: string) => {
       if (busy.current) return;
       if (reduceMotion) {
-        router.push(href);
+        router.push(href, href.includes("#") ? { scroll: false } : undefined);
         return;
       }
       busy.current = true;
+      markCaddePageTransitionBusy(true);
       pendingBack.current = false;
       pendingHref.current = href;
       fromPath.current = pathname;
@@ -96,8 +99,9 @@ export function CaddePageTransition({ children }: { children: ReactNode }) {
       router.back();
       return;
     }
-    busy.current = true;
-    pendingBack.current = true;
+      busy.current = true;
+      markCaddePageTransitionBusy(true);
+      pendingBack.current = true;
     pendingHref.current = null;
     fromPath.current = pathname;
     setPhase("covering");
@@ -117,7 +121,8 @@ export function CaddePageTransition({ children }: { children: ReactNode }) {
       if (pendingBack.current) {
         router.back();
       } else if (pendingHref.current) {
-        router.push(pendingHref.current);
+        const href = pendingHref.current;
+        router.push(href, href.includes("#") ? { scroll: false } : undefined);
       }
       setPhase("holding");
     }, CADDE_TRANSITION_FILL_MS);

@@ -573,6 +573,90 @@ export async function updateOwnerOrderPaymentPaid(
   return data.order;
 }
 
+export async function createOwnerShipment(boutiqueId: string, orderId: string) {
+  const response = await ownerFetch(
+    `/api/tr/owner/orders/${encodeURIComponent(orderId)}/shipment`,
+    {
+      method: "POST",
+      body: JSON.stringify({ boutiqueId, action: "create" }),
+    },
+  );
+  return parseShipmentResponse(response, "Kargo oluşturulamadı.");
+}
+
+export async function fetchOwnerShipmentRates(
+  boutiqueId: string,
+  orderId: string,
+) {
+  const response = await ownerFetch(
+    `/api/tr/owner/orders/${encodeURIComponent(orderId)}/shipment`,
+    {
+      method: "POST",
+      body: JSON.stringify({ boutiqueId, action: "rates" }),
+    },
+  );
+  return parseShipmentResponse(response, "Kargo fiyatları alınamadı.");
+}
+
+export async function buyOwnerShipmentLabel(
+  boutiqueId: string,
+  orderId: string,
+  handlerCode: string,
+) {
+  const response = await ownerFetch(
+    `/api/tr/owner/orders/${encodeURIComponent(orderId)}/shipment`,
+    {
+      method: "POST",
+      body: JSON.stringify({ boutiqueId, action: "buy", handlerCode }),
+    },
+  );
+  return parseShipmentResponse(response, "Kargo kodu üretilemedi.");
+}
+
+export async function cancelOwnerShipmentBarcode(
+  boutiqueId: string,
+  orderId: string,
+) {
+  const response = await ownerFetch(
+    `/api/tr/owner/orders/${encodeURIComponent(orderId)}/shipment`,
+    {
+      method: "POST",
+      body: JSON.stringify({ boutiqueId, action: "cancel" }),
+    },
+  );
+  return parseShipmentResponse(response, "Kargo kodu iptal edilemedi.");
+}
+
+export async function fetchOwnerShipmentLabel(
+  boutiqueId: string,
+  orderId: string,
+): Promise<Blob> {
+  const response = await ownerFetch(
+    `/api/tr/owner/orders/${encodeURIComponent(orderId)}/shipment/label?boutiqueId=${encodeURIComponent(boutiqueId)}`,
+  );
+  if (!response.ok) {
+    const data = (await response.json().catch(() => ({}))) as {
+      error?: string;
+    };
+    throw new Error(data.error ?? "Etiket alınamadı.");
+  }
+  return response.blob();
+}
+
+async function parseShipmentResponse(response: Response, fallback: string) {
+  const data = (await response.json()) as {
+    order?: import("@/types/tr-marketplace").TrOrderWithItems;
+    rates?: import("@/lib/tr/shipping/types").TrShippingRate[];
+    trackingPath?: string | null;
+    error?: string;
+  };
+  if (!response.ok) {
+    throw new Error(data.error ?? fallback);
+  }
+  if (!data.order) throw new Error(fallback);
+  return data;
+}
+
 export async function fetchOwnerCustomers(boutiqueId: string) {
   const response = await ownerFetch(
     `/api/tr/owner/customers?boutiqueId=${encodeURIComponent(boutiqueId)}`,

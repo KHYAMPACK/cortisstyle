@@ -14,7 +14,8 @@
 - Order line size + order discount columns (`patch_tr_order_items_size.sql`, `patch_tr_orders_discount.sql`)
 - Owner Web Push for new orders (`patch_tr_owner_push_subscriptions.sql`, `pushNotify.ts`, panel Ayarlar)
 - Customer profiles for storefront (`tr_customer_profiles` registration-source; `profiles.first_name` / `last_name` / `phone` from boutique signup + Hesabım edit — `patch_tr_customer_profile_fields.sql`; optional signup discovery — `patch_tr_customer_signup_discovery.sql`)
-- **Demo shopper orders / tracking** (UI only, not `tr_orders`): `src/lib/tr/commerce/demoShopperOrders.ts` → `/siparisler`, `/siparisler/[id]`, `/siparisler/[id]/takip`. Lookup (sipariş no + posta kodu) and cancel (processing only, sessionStorage) live in the same demo layer. Swap for live account orders when checkout is tied to auth.
+- **Demo shopper orders / tracking** (UI only, not `tr_orders`): `src/lib/tr/commerce/demoShopperOrders.ts` → `/siparisler`, `/siparisler/[id]`, `/siparisler/[id]/takip`. Live takip for UUID orders uses the boutique shipping provider (Lila = Basit Kargo).
+- **Per-boutique shipping** (`src/lib/tr/shipping/`): registry by slug. **Lila** = Basit Kargo (her token/balance). **Pervin / clones** = manual stub. Cortisstyle is not the carrier. SQL `supabase/patch_tr_order_shipments.sql`. Webhook `POST /api/tr/shipping/basitkargo/webhook` (Bearer `TR_SHIPPING_BASITKARGO_WEBHOOK_SECRET`).
 - Admin seed/ops with `TR_ADMIN_SECRET` (`adminAuth.ts`)
 
 ## What we will do / direction
@@ -32,7 +33,8 @@
 | Orders | `src/lib/tr/orders.ts`, `api/tr/owner/orders` |
 | WhatsApp | `src/lib/tr/whatsapp.ts`, `TrWhatsAppOrderButton` |
 | Discounts | `src/lib/tr/discountCodes.ts` |
-| Schema | `patch_tr_marketplace.sql`, `patch_tr_order_fulfillment.sql`, `patch_tr_discount_codes.sql` |
+| Shipping | `src/lib/tr/shipping/` (registry + Basit Kargo for Lila) |
+| Schema | `patch_tr_marketplace.sql`, `patch_tr_order_fulfillment.sql`, `patch_tr_order_shipments.sql`, `patch_tr_discount_codes.sql` |
 | Legal ops | `docs/pre-vergi-levhasi-checklist.md`, partnership draft |
 
 ## Agent rules of thumb

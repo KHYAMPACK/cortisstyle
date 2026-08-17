@@ -27,10 +27,14 @@ export function TrBoutiquePdpSplit({
   };
 
   const wrapperClass = branded
-    ? "mx-auto max-w-6xl px-5 py-8 md:px-8 md:py-10"
+    ? atelier
+      ? "mx-auto max-w-6xl px-5 py-10 md:px-8 md:py-14"
+      : "mx-auto max-w-6xl px-5 py-8 md:px-8 md:py-10"
     : "";
   const gridClass = branded
-    ? "grid gap-8 lg:grid-cols-2 lg:gap-12"
+    ? atelier
+      ? "grid gap-10 lg:grid-cols-2 lg:gap-16"
+      : "grid gap-8 lg:grid-cols-2 lg:gap-12"
     : "grid gap-0 lg:grid-cols-2";
   const panelClass = branded ? "" : "border-b border-blueprint-border";
 
@@ -81,7 +85,7 @@ export function TrBoutiquePdpSplit({
           ) : null}
         </div>
 
-        {atelier ? <div className="mt-10 md:mt-14">{related}</div> : null}
+        {atelier ? <div className="mt-14 md:mt-20">{related}</div> : null}
       </div>
     </div>
   );

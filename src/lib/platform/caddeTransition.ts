@@ -9,6 +9,22 @@ export const CADDE_TRANSITION_HOLD_MS = 220;
 export const CADDE_TRANSITION_EXIT_MS = 480;
 export const CADDE_TRANSITION_MAX_WAIT_MS = 2200;
 
+/** Fired when the Cadde curtain has lifted so hash scroll can play in view. */
+export const CADDE_PAGE_TRANSITION_DONE_EVENT = "cadde-page-transition-done";
+
+let caddePageTransitionBusy = false;
+
+export function isCaddePageTransitionBusy(): boolean {
+  return caddePageTransitionBusy;
+}
+
+export function markCaddePageTransitionBusy(busy: boolean): void {
+  caddePageTransitionBusy = busy;
+  if (!busy && typeof window !== "undefined") {
+    window.dispatchEvent(new Event(CADDE_PAGE_TRANSITION_DONE_EVENT));
+  }
+}
+
 const CADDE_MARKETPLACE_SEGMENTS = [
   "ara",
   "urunler",

@@ -16,7 +16,7 @@ import { TrSizeGateSheet } from "@/components/tr/TrSizeGateSheet";
 import { TrSoftNavLink } from "@/components/tr/TrSoftNavLink";
 import { getTrCategoryLabel } from "@/lib/tr/categories";
 import { isProductCartCheckoutEnabled } from "@/lib/tr/cartCheckout";
-import { EDITORIAL_SALE_RED } from "@/lib/tr/boutiqueHome";
+import { EDITORIAL_SALE_RED, isAtelierEditorialSkin } from "@/lib/tr/boutiqueHome";
 import { getProductCoverImageFor } from "@/lib/tr/productImages";
 import {
   resolveProductColors,
@@ -49,6 +49,7 @@ export function TrProductDetailPanel({
   );
   const colors = useMemo(() => resolveProductColors(product), [product]);
   const accent = resolveBoutiqueThemeAccent(product.boutique);
+  const atelier = isAtelierEditorialSkin(product.boutique.slug);
   const categoryLabel = getTrCategoryLabel(product.category);
   const isAvailable = product.status === "available";
   const checkoutEnabled = isProductCartCheckoutEnabled(product);
@@ -140,7 +141,9 @@ export function TrProductDetailPanel({
           <h1
             className={
               branded
-                ? "font-serif text-3xl tracking-tight text-neutral-950 md:text-4xl"
+                ? atelier
+                  ? "font-serif text-[1.85rem] leading-tight font-light tracking-[-0.01em] text-neutral-950 md:text-[2.35rem]"
+                  : "font-serif text-3xl tracking-tight text-neutral-950 md:text-4xl"
                 : "font-serif text-3xl leading-none tracking-[-0.03em] text-neutral-950 md:text-4xl"
             }
           >
@@ -159,8 +162,8 @@ export function TrProductDetailPanel({
               {formatTryFromKurus(compareAt)}
             </span>
             <span
-              className="text-[1.65rem] font-semibold tracking-[-0.02em] md:text-[1.85rem]"
-              style={{ color: EDITORIAL_SALE_RED }}
+              className="text-[1.65rem] font-medium tracking-[-0.02em] md:text-[1.85rem]"
+              style={{ color: atelier ? accent : EDITORIAL_SALE_RED }}
             >
               {formatTryFromKurus(product.priceKurus)}
             </span>
@@ -172,7 +175,9 @@ export function TrProductDetailPanel({
           <p
             className={
               branded
-                ? "mt-4 text-[1.65rem] font-semibold tracking-[-0.02em] text-neutral-950 md:text-[1.85rem]"
+                ? atelier
+                  ? "mt-4 text-[1.65rem] font-medium tracking-[-0.02em] text-neutral-950 md:text-[1.85rem]"
+                  : "mt-4 text-[1.65rem] font-semibold tracking-[-0.02em] text-neutral-950 md:text-[1.85rem]"
                 : "mt-4 font-serif text-2xl tracking-[-0.02em] text-brand-primary"
             }
           >

@@ -184,6 +184,7 @@ Copy for each launch. Check before announcing Instagram → site.
 - [ ] Mark-paid creates **Faturalar** draft; owner can mark issued offline + external no
 - [ ] Coupon (if any) applies server-side
 - [ ] No demo fatura / fake kargo etiket / fake takip / no fake GİB claims
+- [ ] **Lila only:** `supabase/patch_tr_order_shipments.sql` + `TR_SHIPPING_BASITKARGO_TOKENS` / webhook secret; other boutiques stay manual kargo
 
 ### C6. Domain & paths
 
@@ -210,7 +211,6 @@ Copy for each launch. Check before announcing Instagram → site.
 Do not block a boutique launch waiting for these — communicate honestly:
 
 - iyzico card capture
-- Carrier API + tracking
 - Full GİB e-Fatura / e-Arşiv API (özel entegratör) — **offline Faturalar registry exists** (`tr_invoices`, mark issued after manual cut)
 - Full SSO cookie between custom domain and `.cortisstyle.com`
 - Per-boutique sending domain (`noreply@butik.com`) — optional Resend upgrade; today all auth mail is `AUTH_EMAIL_FROM` / `noreply@cortisstyle.com` with boutique **display name**

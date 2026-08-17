@@ -201,7 +201,7 @@ export function TrBoutiqueAtelierPageMorph({
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -4 }}
                     transition={{ duration: 0.22, ease: EASE }}
-                    className="whitespace-nowrap font-serif text-[13px] tracking-[0.1em] uppercase sm:text-[14px] md:text-[15px]"
+                    className="whitespace-nowrap font-serif text-[13px] font-light tracking-[0.12em] uppercase sm:text-[14px] md:text-[15px]"
                   >
                     {label}
                   </motion.span>

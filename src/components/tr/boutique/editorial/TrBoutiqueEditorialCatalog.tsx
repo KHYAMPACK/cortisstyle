@@ -28,6 +28,7 @@ export function TrBoutiqueEditorialCatalog({
   boutiqueSlug,
   boutiqueName,
 }: TrBoutiqueEditorialCatalogProps) {
+  const atelier = isAtelierEditorialSkin(boutiqueSlug);
   const { activeCategory, selectCategory, registerCatalogElement } =
     useTrBoutiqueCatalog();
   const [sort, setSort] = useState<SortId>("default");
@@ -103,20 +104,38 @@ export function TrBoutiqueEditorialCatalog({
       aria-label="Ürün kataloğu"
       className="scroll-mt-20 border-t border-black/5 pb-16"
     >
-      <div className="px-5 pt-8 text-center md:px-8 md:pt-10">
-        <p className="text-[11px] tracking-[0.2em] text-neutral-500 uppercase">
-          Anasayfa
-          {activeCategory ? ` | ${filterLabel(activeCategory)}` : ""}
-        </p>
+      <div className="px-5 pt-10 text-center md:px-8 md:pt-12">
+        {atelier ? (
+          <>
+            <h2 className="font-serif text-[1.75rem] font-light tracking-[-0.01em] text-neutral-950 md:text-[2.15rem]">
+              Ürünler
+            </h2>
+            <div className="mt-3 flex justify-center">
+              <Link
+                href={plpHref}
+                className="text-[11px] tracking-[0.18em] text-neutral-600 uppercase underline-offset-[6px] transition-colors hover:text-neutral-950 hover:underline"
+              >
+                Tümünü gör
+              </Link>
+            </div>
+          </>
+        ) : (
+          <>
+            <p className="text-[11px] tracking-[0.2em] text-neutral-500 uppercase">
+              Anasayfa
+              {activeCategory ? ` | ${filterLabel(activeCategory)}` : ""}
+            </p>
 
-        <div className="mt-4 flex justify-center">
-          <Link
-            href={plpHref}
-            className="text-[11px] tracking-[0.14em] text-neutral-900 uppercase underline-offset-4 hover:underline"
-          >
-            Tüm ürünleri gör →
-          </Link>
-        </div>
+            <div className="mt-4 flex justify-center">
+              <Link
+                href={plpHref}
+                className="text-[11px] tracking-[0.14em] text-neutral-900 uppercase underline-offset-4 hover:underline"
+              >
+                Tüm ürünleri gör →
+              </Link>
+            </div>
+          </>
+        )}
 
         <div className="mt-6 flex flex-col items-stretch justify-between gap-3 border-y border-black/5 py-3 sm:flex-row sm:items-center">
           <div className="flex flex-wrap items-center gap-2 text-[11px] tracking-[0.1em] text-neutral-600 uppercase">
@@ -172,7 +191,7 @@ export function TrBoutiqueEditorialCatalog({
       {filtered.length > 0 ? (
         <div
           className={`mt-6 grid grid-cols-2 px-3 md:grid-cols-3 md:px-6 lg:grid-cols-4 lg:px-8 ${
-            isAtelierEditorialSkin(boutiqueSlug)
+            atelier
               ? "gap-x-3 gap-y-10 md:gap-x-6 md:gap-y-14"
               : "gap-x-2 gap-y-6 md:gap-x-4"
           }`}

@@ -128,11 +128,17 @@ export function TrBoutiqueEditorialProductCard({
         {onSale && pct > 0 && !isSold ? (
           <TrEditorialSaleBadge
             percent={pct}
-            className="pointer-events-none absolute top-2 left-2 z-10"
+            className="pointer-events-none absolute top-2.5 left-2.5 z-10"
           />
         ) : isNew && !isSold ? (
-          <span className="pointer-events-none absolute top-2 left-2 z-10 bg-neutral-500/90 px-2 py-1 text-[9px] tracking-[0.06em] text-white">
-            Yeni Ürün
+          <span
+            className={
+              atelier
+                ? "pointer-events-none absolute top-2.5 left-2.5 z-10 bg-white/85 px-2 py-1 text-[9px] tracking-[0.16em] text-neutral-800 uppercase backdrop-blur-[2px]"
+                : "pointer-events-none absolute top-2 left-2 z-10 bg-neutral-500/90 px-2 py-1 text-[9px] tracking-[0.06em] text-white"
+            }
+          >
+            Yeni
           </span>
         ) : null}
 
@@ -146,7 +152,11 @@ export function TrBoutiqueEditorialProductCard({
           product={product}
           boutiqueSlug={boutiqueSlug}
           boutiqueName={boutiqueName}
-          className="absolute top-2 right-2 z-10 h-8 w-8 bg-white/80"
+          className={
+            atelier
+              ? "absolute top-2.5 right-2.5 z-10 h-8 w-8 bg-white/70 backdrop-blur-[2px]"
+              : "absolute top-2 right-2 z-10 h-8 w-8 bg-white/80"
+          }
         />
 
         {!isSold ? (
@@ -182,7 +192,7 @@ export function TrBoutiqueEditorialProductCard({
         <h3
           className={`line-clamp-2 leading-snug text-neutral-900 ${
             atelier
-              ? "font-serif text-[14px] tracking-[0.02em] md:text-[15px]"
+              ? "font-serif text-[15px] font-light tracking-[0.01em] md:text-[16px]"
               : "text-[12px] md:text-[13px]"
           }`}
         >
@@ -196,19 +206,25 @@ export function TrBoutiqueEditorialProductCard({
                 {formatTryFromKurus(compareAt)}
               </span>
               <span
-                className={`font-semibold tracking-[-0.01em] ${
-                  atelier ? "text-[14px] md:text-[15px]" : "text-[13px]"
+                className={`tracking-[-0.01em] ${
+                  atelier
+                    ? "text-[14px] font-medium md:text-[15px]"
+                    : "text-[13px] font-semibold"
                 }`}
                 style={{ color: saleColor }}
               >
                 {formatTryFromKurus(product.priceKurus)}
               </span>
-              {pct > 0 ? <TrEditorialSaleBadge percent={pct} /> : null}
+              {!atelier && pct > 0 ? (
+                <TrEditorialSaleBadge percent={pct} />
+              ) : null}
             </>
           ) : (
             <span
-              className={`font-semibold tracking-[-0.01em] text-neutral-950 ${
-                atelier ? "text-[14px] md:text-[15px]" : "text-[13px]"
+              className={`tracking-[-0.01em] text-neutral-950 ${
+                atelier
+                  ? "text-[14px] font-medium md:text-[15px]"
+                  : "text-[13px] font-semibold"
               }`}
             >
               {formatTryFromKurus(product.priceKurus)}

@@ -29,6 +29,12 @@ SUPABASE_SMTP_PASS=
 # Order confirmation HMAC (required in production — no service-role fallback)
 TR_ORDER_CONFIRM_SECRET=
 
+# Lila Butik Basit Kargo (per-boutique; Pervin stays manual)
+# JSON map of slug → API token. Only slugs in src/lib/tr/shipping/registry.ts ship via API.
+# TR_SHIPPING_BASITKARGO_TOKENS={"lilabutik":"your-token"}
+# TR_SHIPPING_BASITKARGO_WEBHOOK_SECRET=
+# Optional: TR_SHIPPING_BASITKARGO_BASE_URL=https://basitkargo.com/api
+
 # Panel / packshot PhotoRoom cutout
 PHOTOROOM_API_KEY=
 
