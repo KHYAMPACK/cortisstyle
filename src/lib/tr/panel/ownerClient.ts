@@ -1,8 +1,10 @@
 import { getSupabaseClient } from "@/lib/supabaseClient";
 import { prepareOwnerUploadFile } from "@/lib/tr/prepareOwnerUploadFile";
+import type { TrShippingRate } from "@/lib/tr/shipping/types";
 import type {
   TrInvoice,
   TrInvoiceStatus,
+  TrOrderWithItems,
   TrProduct,
   TrProductColor,
   TrProductStatus,
@@ -643,10 +645,17 @@ export async function fetchOwnerShipmentLabel(
   return response.blob();
 }
 
-async function parseShipmentResponse(response: Response, fallback: string) {
+async function parseShipmentResponse(
+  response: Response,
+  fallback: string,
+): Promise<{
+  order: TrOrderWithItems;
+  rates?: TrShippingRate[];
+  trackingPath?: string | null;
+}> {
   const data = (await response.json()) as {
-    order?: import("@/types/tr-marketplace").TrOrderWithItems;
-    rates?: import("@/lib/tr/shipping/types").TrShippingRate[];
+    order?: TrOrderWithItems;
+    rates?: TrShippingRate[];
     trackingPath?: string | null;
     error?: string;
   };
@@ -654,7 +663,11 @@ async function parseShipmentResponse(response: Response, fallback: string) {
     throw new Error(data.error ?? fallback);
   }
   if (!data.order) throw new Error(fallback);
-  return data;
+  return {
+    order: data.order,
+    rates: data.rates,
+    trackingPath: data.trackingPath,
+  };
 }
 
 export async function fetchOwnerCustomers(boutiqueId: string) {
