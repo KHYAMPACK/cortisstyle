@@ -22,7 +22,7 @@ const CHART_OPTIONS: Array<{ id: TrSizeChartId; label: string; hint: string }> =
     },
     {
       id: "numeric",
-      label: "Numara (26–40)",
+      label: "Numara (24–40)",
       hint: "Pantolon / jean ölçüsü",
     },
     {

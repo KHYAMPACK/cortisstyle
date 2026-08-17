@@ -1,7 +1,7 @@
 import {
   fashnRunAndWait,
-  getFashnDefaultMode,
-  getFashnDefaultResolution,
+  getFashnCatalogMode,
+  getFashnCatalogResolution,
   isFashnConfigured,
   type FashnGenerationMode,
   type FashnResolution,
@@ -55,6 +55,7 @@ async function photoroomCutoutFromRemoteUrl(
 /**
  * Pipeline: FASHN packshot (PNG) → Photoroom BG remove (transparent PNG) → rehost.
  * One BG removal only — raw upload skips Photoroom.
+ * Catalog runs fast + 1k (1 FASHN credit per view). Wizard still calls once per ön/arka.
  */
 export async function generateFashnPackshot(
   params: FashnPackshotParams,
@@ -89,8 +90,8 @@ export async function generateFashnPackshot(
         prompt,
         num_images: numImages,
         aspect_ratio: params.aspectRatio ?? "2:3",
-        resolution: params.resolution ?? getFashnDefaultResolution(),
-        generation_mode: params.generationMode ?? getFashnDefaultMode(),
+        resolution: params.resolution ?? getFashnCatalogResolution(),
+        generation_mode: params.generationMode ?? getFashnCatalogMode(),
         output_format: "png",
       },
     });

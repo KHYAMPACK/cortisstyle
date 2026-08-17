@@ -1,7 +1,11 @@
 export {
+  FASHN_MIN_CREDIT_MODE,
+  FASHN_MIN_CREDIT_RESOLUTION,
   fashnRun,
   fashnRunAndWait,
   fashnStatus,
+  getFashnCatalogMode,
+  getFashnCatalogResolution,
   getFashnDefaultMode,
   getFashnDefaultResolution,
   isFashnConfigured,

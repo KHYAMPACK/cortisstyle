@@ -1,7 +1,7 @@
 import {
   fashnRunAndWait,
-  getFashnDefaultMode,
-  getFashnDefaultResolution,
+  getFashnCatalogMode,
+  getFashnCatalogResolution,
   isFashnConfigured,
   type FashnGenerationMode,
   type FashnResolution,
@@ -53,12 +53,14 @@ export async function generateFashnTryOn(
   const numImages = Math.min(4, Math.max(1, params.numImages ?? 1));
 
   try {
+    // tryon-max + fast + 1k = 1 FASHN credit (same as tryon-v1.6, better PDP quality).
+    // balanced + 1k would be 2 credits; do not use tryon-v1.6 for catalog.
     const inputs: Record<string, unknown> = {
       product_image: productImage,
       model_image: modelImage,
       num_images: numImages,
-      resolution: params.resolution ?? getFashnDefaultResolution(),
-      generation_mode: params.generationMode ?? getFashnDefaultMode(),
+      resolution: params.resolution ?? getFashnCatalogResolution(),
+      generation_mode: params.generationMode ?? getFashnCatalogMode(),
       output_format: "png",
     };
     const prompt = params.prompt?.trim();

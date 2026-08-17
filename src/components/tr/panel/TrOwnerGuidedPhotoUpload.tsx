@@ -20,7 +20,7 @@ import {
   productPhotoRoleLabel,
   TR_OWNER_PRODUCT_LIMITS,
 } from "@/lib/tr/ownerProductConstraints";
-import { uploadOwnerProductImage, requestOwnerPackshot, requestOwnerPackshotPrepare } from "@/lib/tr/ownerClient";
+import { uploadOwnerProductImage, requestOwnerPackshot, requestOwnerPackshotPrepare, type OwnerListingDraft } from "@/lib/tr/ownerClient";
 
 const primaryBtn =
   "inline-flex min-h-12 flex-1 items-center justify-center rounded-xl px-5 py-3 text-[16px] font-semibold text-white disabled:opacity-50";
@@ -135,13 +135,10 @@ export interface TrOwnerGuidedPhotoUploadProps {
   onMarketplaceImagesChange: (urls: string[]) => void;
   onError: (message: string | null) => void;
   onLightbox?: (payload: { src: string; label: string }) => void;
-  onListingDraft?: (draft: {
-    title: string;
-    description: string;
-  }) => void;
+  onListingDraft?: (draft: OwnerListingDraft) => void;
   /** Fired when front packshot+analysis finishes (draft may be null if Gemini failed). */
   onFrontAnalysisComplete?: (result: {
-    draft: { title: string; description: string } | null;
+    draft: OwnerListingDraft | null;
   }) => void;
   onFrontSlotReset?: () => void;
   /** Emit photo pipeline jobs for the wizard status rail */

@@ -6,6 +6,7 @@ import {
   getServerServiceSupabase,
 } from "@/lib/supabase/supabaseServer";
 import { mapProductRow } from "@/lib/tr/mappers";
+import { sanitizeProductFeatures } from "@/lib/tr/catalog/productFeatures";
 import type {
   CreateTrProductInput,
   TrProduct,
@@ -17,8 +18,8 @@ import type {
 const PRODUCT_COLUMNS_CORE =
   "id, boutique_id, title, description, price_kurus, compare_at_price_kurus, size, sizes, colors, condition_label, category, images, marketplace_images, lifestyle_images, catalog_background_id, status, stock, sort_order, created_at, updated_at";
 
-/** Includes size_stocks when the migration has been applied. */
-const PUBLIC_PRODUCT_COLUMNS = `${PRODUCT_COLUMNS_CORE}, size_stocks`;
+/** Includes size_stocks + features when those migrations have been applied. */
+const PUBLIC_PRODUCT_COLUMNS = `${PRODUCT_COLUMNS_CORE}, size_stocks, features`;
 
 /**
  * Anon product RLS historically referenced `tr_boutiques` after anon SELECT was
@@ -108,6 +109,7 @@ function productInsertRow(
     marketplace_images: input.marketplaceImages ?? [],
     lifestyle_images: input.lifestyleImages ?? [],
     catalog_background_id: input.catalogBackgroundId?.trim() || null,
+    features: sanitizeProductFeatures(input.features),
     status: input.status ?? "available",
     stock: input.stock ?? 1,
     size_stocks: input.sizeStocks ?? {},
@@ -131,6 +133,7 @@ export async function listPublicProductsByBoutiqueSlug(
 
 const PRODUCT_SELECT_CANDIDATES: readonly string[] = [
   PUBLIC_PRODUCT_COLUMNS,
+  `${PRODUCT_COLUMNS_CORE}, size_stocks`,
   PRODUCT_COLUMNS_CORE,
   // Minimal set if older prod DBs lack marketplace/lifestyle/catalog columns.
   "id, boutique_id, title, description, price_kurus, size, category, images, status, sort_order, created_at, updated_at",
@@ -442,6 +445,9 @@ function productUpdateRow(input: UpdateTrProductInput): Record<string, unknown> 
   if (input.catalogBackgroundId !== undefined) {
     row.catalog_background_id = input.catalogBackgroundId?.trim() || null;
   }
+  if (input.features !== undefined) {
+    row.features = sanitizeProductFeatures(input.features);
+  }
   if (input.status !== undefined) row.status = input.status;
   if (input.stock !== undefined) row.stock = input.stock;
   if (input.sizeStocks !== undefined) row.size_stocks = input.sizeStocks;
@@ -602,6 +608,7 @@ export async function duplicateProductAdmin(
     marketplaceImages: existing.marketplaceImages,
     lifestyleImages: existing.lifestyleImages,
     catalogBackgroundId: existing.catalogBackgroundId,
+    features: existing.features,
     status: "hidden",
     stock: existing.stock,
     sizeStocks: existing.sizeStocks,

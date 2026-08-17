@@ -10,6 +10,7 @@ import {
 } from "@/lib/tr/sizeStocks";
 import { parseTryToKurus } from "@/types/tr-marketplace";
 import type { TrProductColor, TrProductStatus } from "@/types/tr-marketplace";
+import { sanitizeProductFeatures } from "@/lib/tr/catalog/productFeatures";
 
 export const runtime = "nodejs";
 
@@ -210,6 +211,7 @@ export async function POST(request: Request) {
         typeof body.catalogBackgroundId === "string"
           ? body.catalogBackgroundId.trim() || null
           : null,
+      features: sanitizeProductFeatures(body.features),
       conditionLabel:
         typeof body.conditionLabel === "string" ? body.conditionLabel : null,
       status,

@@ -125,9 +125,9 @@ export async function generateMetadata({
     },
     icons: favicon
       ? {
-          icon: [{ url: favicon, type: "image/png" }],
+          icon: [{ url: favicon, type: "image/png", sizes: "96x96" }],
           shortcut: [{ url: favicon, type: "image/png" }],
-          apple: [{ url: favicon, type: "image/png" }],
+          apple: [{ url: favicon, type: "image/png", sizes: "180x180" }],
         }
       : undefined,
   };

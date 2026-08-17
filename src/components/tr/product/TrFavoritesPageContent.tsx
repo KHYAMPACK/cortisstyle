@@ -33,6 +33,7 @@ function favoriteAsProduct(item: TrFavoriteItem): TrProductWithBoutique {
     marketplaceImages: images,
     lifestyleImages: [],
     catalogBackgroundId: null,
+    features: {},
     status: "available",
     stock: 1,
     sizeStocks: {},

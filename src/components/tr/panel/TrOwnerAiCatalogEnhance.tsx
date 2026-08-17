@@ -15,6 +15,7 @@ import { listAiModelOptions } from "@/lib/tr/aiModel/registry";
 import {
   requestOwnerAiModelGenerate,
   requestOwnerPackshot,
+  type OwnerListingDraft,
 } from "@/lib/tr/ownerClient";
 import type { PipelineJobItem } from "@/lib/tr/aiCatalog/pipelineProgress";
 
@@ -39,10 +40,7 @@ export interface TrOwnerAiCatalogEnhanceProps {
   onSelectedModelIdChange: (id: string | null) => void;
   onMarketplaceImagesChange: (urls: string[]) => void;
   onLifestyleImagesChange: (urls: string[]) => void;
-  onListingDraft?: (draft: {
-    title: string;
-    description: string;
-  }) => void;
+  onListingDraft?: (draft: OwnerListingDraft) => void;
   onModelJobsChange?: (jobs: PipelineJobItem[]) => void;
   /** Skip model shot and continue (optional step). */
   onSkip?: () => void;
@@ -220,6 +218,7 @@ export function TrOwnerAiCatalogEnhance({
           onListingDraft({
             title: pack.listingDraft.title.trim(),
             description: pack.listingDraft.description?.trim() ?? "",
+            features: pack.listingDraft.features ?? {},
           });
         }
       }

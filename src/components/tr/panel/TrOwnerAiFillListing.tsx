@@ -52,6 +52,7 @@ export function TrOwnerAiFillListing({
     onApply({
       title: clampTitle(cachedDraft.title),
       description: clampDescription(cachedDraft.description ?? ""),
+      features: cachedDraft.features ?? {},
     });
   }
 
@@ -72,6 +73,7 @@ export function TrOwnerAiFillListing({
       onApply({
         title: clampTitle(remote.title),
         description: clampDescription(remote.description ?? ""),
+        features: remote.features ?? {},
       });
     } catch (error) {
       onError?.(
@@ -105,13 +107,13 @@ export function TrOwnerAiFillListing({
             className="text-[16px] font-semibold"
             style={{ color: "var(--panel-accent-deep)" }}
           >
-            AI ile ürün metni
+            AI ile ürün metni ve özellikleri
           </p>
           <p className="mt-1 text-[13px] leading-relaxed text-neutral-600">
             {awaitingDraft
               ? "Ön fotoğraftan ürün tanınıyor — biraz bekleyin."
               : hasCached
-                ? `Hazır: “${cachedDraft!.title.trim()}” — kutulara doldurur, yeniden üretmez.`
+                ? `Hazır: “${cachedDraft!.title.trim()}” — isim, açıklama ve özellikleri doldurur.`
                 : "Ön adımda taslak yoktu. İsterseniz şimdi yeniden öneri ister (birkaç sn sürebilir)."}
           </p>
         </div>

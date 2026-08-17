@@ -1,4 +1,8 @@
 import { resolveLlmProvider } from "@/lib/tr/ai/resolveLlmProvider";
+import {
+  sanitizeProductFeatures,
+  type TrProductFeatures,
+} from "@/lib/tr/catalog/productFeatures";
 import { TR_OWNER_PRODUCT_LIMITS } from "@/lib/tr/ownerProductConstraints";
 
 const GEMINI_MODELS = [
@@ -10,6 +14,7 @@ const GEMINI_MODELS = [
 export interface ProductListingDraft {
   title: string;
   description: string;
+  features: TrProductFeatures;
 }
 
 function geminiGenerateUrl(model: string): string {
@@ -49,6 +54,7 @@ export async function fetchImageAsBase64ForVision(
 export function sanitizeListingDraft(raw: {
   title?: string | null;
   description?: string | null;
+  features?: unknown;
 }): ProductListingDraft | null {
   let title = (raw.title ?? "")
     .replace(/\s+/g, " ")
@@ -66,7 +72,11 @@ export function sanitizeListingDraft(raw: {
   description = description.slice(0, TR_OWNER_PRODUCT_LIMITS.descriptionMax);
 
   // Prefer keeping a short description; allow empty if model returned only a title
-  return { title, description };
+  return {
+    title,
+    description,
+    features: sanitizeProductFeatures(raw.features),
+  };
 }
 
 const LISTING_VOICE_RULES = `Turkish product listing copy for a small boutique owner panel.
@@ -77,13 +87,21 @@ title:
 - No brand invented. No ALL CAPS. No emoji.
 
 description:
-- 1–2 short sentences in Turkish. Optional third only if needed.
-- Concrete: fabric look, cut, neckline, length, notable details from the photo.
-- Sound like a boutique WhatsApp note — plain and specific.
-- FORBIDDEN phrases / tone: "keşfedin", "zarif", "benzersiz", "mükemmel", "vazgeçilmez",
-  "şıklığınızı", "gardırobunuzun", "öne çıkarın", "rahatlıkla kombinleyin",
-  "her tarza uyum", "zamansız", "ikonik", "lüks hissiyat", exclamation spam.
-- Do not invent care instructions, sizes, or materials you cannot see.`;
+- Exactly 2 sentences in Turkish. One paragraph, no bullets.
+- Boutique lookbook voice: physical details (fabric look, cut, neckline, length) woven with silhouette and how it wears — elegant, not a WhatsApp note.
+- Tone like: "Saten dokulu fularıyla klasik tişört formunu zarafetle güncelleyen tasarım, V yaka hattıyla estetik bir silüet çiziyor." Then a second sentence on movement / occasion, still concrete.
+- Use the garment as photographed. Do not invent scarves, prints, or materials you cannot see.
+- No emoji. No ALL CAPS. No exclamation spam. No "keşfedin", "benzersiz", "mükemmel", "vazgeçilmez", "gardırobunuzun", "her tarza uyum".
+- Do not invent care instructions, sizes, or fiber percentages.
+
+features (Turkish values, omit a key if you cannot see it):
+- gender: Kadın, Erkek, or Unisex.
+- fit: short cut/fit if visible (Regular, Relaxed, Slim, Oversize, Straight…).
+- color: Turkish color name from the photo.
+- neckHem: collar and/or hem/paça detail if visible.
+- fabric: visible fabric look (e.g. "Hafif keten dokulu dokuma").
+- composition: ONLY if a care label with fiber % is readable. Never invent percentages.
+- NEVER include üretim yeri, etiket, kapama, cep, or manken ölçüsü.`;
 
 export function listingDraftSystemPrompt(input: {
   category?: string | null;
@@ -105,7 +123,15 @@ Return JSON only:
 {
   "promptExtra": "one short English sentence about packshot staging only",
   "title": "Turkish product name",
-  "description": "Turkish short description"
+  "description": "Turkish elegant two-sentence product detail",
+  "features": {
+    "gender": "",
+    "fit": "",
+    "color": "",
+    "neckHem": "",
+    "fabric": "",
+    "composition": ""
+  }
 }
 
 ${LISTING_VOICE_RULES}
@@ -124,7 +150,15 @@ Category hint: ${category}`;
 Return JSON only:
 {
   "title": "Turkish product name",
-  "description": "Turkish short description"
+  "description": "Turkish elegant two-sentence product detail",
+  "features": {
+    "gender": "",
+    "fit": "",
+    "color": "",
+    "neckHem": "",
+    "fabric": "",
+    "composition": ""
+  }
 }
 
 ${LISTING_VOICE_RULES}
@@ -249,6 +283,7 @@ export async function draftProductListingFromImage(input: {
         title: typeof parsed.title === "string" ? parsed.title : null,
         description:
           typeof parsed.description === "string" ? parsed.description : null,
+        features: parsed.features,
       });
       if (draft) return draft;
     } catch (error) {

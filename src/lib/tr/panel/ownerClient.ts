@@ -1,5 +1,6 @@
 import { getSupabaseClient } from "@/lib/supabaseClient";
 import { prepareOwnerUploadFile } from "@/lib/tr/prepareOwnerUploadFile";
+import { sanitizeProductFeatures } from "@/lib/tr/catalog/productFeatures";
 import type { TrShippingRate } from "@/lib/tr/shipping/types";
 import type {
   TrInvoice,
@@ -7,6 +8,7 @@ import type {
   TrOrderWithItems,
   TrProduct,
   TrProductColor,
+  TrProductFeatures,
   TrProductStatus,
 } from "@/types/tr-marketplace";
 
@@ -111,6 +113,7 @@ export interface TrOwnerProductPayload {
   marketplaceImages?: string[];
   lifestyleImages?: string[];
   catalogBackgroundId?: string | null;
+  features?: TrProductFeatures;
   stock?: number;
   sizeStocks?: Record<string, number>;
   conditionLabel?: string | null;
@@ -230,6 +233,20 @@ export async function uploadOwnerProductImage(
 export interface OwnerListingDraft {
   title: string;
   description: string;
+  features?: TrProductFeatures;
+}
+
+function readOwnerListingDraft(raw: unknown): OwnerListingDraft | null {
+  if (!raw || typeof raw !== "object") return null;
+  const record = raw as Record<string, unknown>;
+  const title = typeof record.title === "string" ? record.title.trim() : "";
+  if (!title) return null;
+  return {
+    title,
+    description:
+      typeof record.description === "string" ? record.description.trim() : "",
+    features: sanitizeProductFeatures(record.features),
+  };
 }
 
 export interface OwnerPackshotResult {
@@ -309,12 +326,7 @@ export async function requestOwnerPackshotPrepare(input: {
   }
   return {
     prompt: data.prompt.trim(),
-    listingDraft: data.listingDraft?.title?.trim()
-      ? {
-          title: data.listingDraft.title.trim(),
-          description: data.listingDraft.description?.trim() ?? "",
-        }
-      : null,
+    listingDraft: readOwnerListingDraft(data.listingDraft),
     usedGemini: Boolean(data.usedGemini),
   };
 }
@@ -339,7 +351,13 @@ export async function requestOwnerListingDraft(input: {
   if (!data.draft?.title?.trim()) {
     throw new Error("Ürün metni yanıtı eksik.");
   }
-  return data.draft;
+  return (
+    readOwnerListingDraft(data.draft) ?? {
+      title: data.draft.title.trim(),
+      description: data.draft.description?.trim() ?? "",
+      features: {},
+    }
+  );
 }
 
 export interface OwnerAiModelGenerateResult {

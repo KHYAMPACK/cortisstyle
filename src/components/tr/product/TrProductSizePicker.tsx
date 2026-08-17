@@ -18,6 +18,8 @@ interface TrProductSizePickerProps {
   accentColor?: string;
   /** Hide the “Beden seçin” heading (e.g. sheet already has a title). */
   hideLabel?: boolean;
+  /** Opens the size guide next to the size label. */
+  onOpenSizeChart?: () => void;
   className?: string;
 }
 
@@ -30,6 +32,7 @@ export function TrProductSizePicker({
   whatsappPhone = null,
   accentColor,
   hideLabel = false,
+  onOpenSizeChart,
   className = "",
 }: TrProductSizePickerProps) {
   if (sizes.length === 0) return null;
@@ -51,9 +54,20 @@ export function TrProductSizePicker({
   return (
     <div className={className || (hideLabel ? "mt-3" : "mt-6")}>
       {hideLabel ? null : (
-        <p className="text-[11px] font-medium tracking-[0.12em] text-neutral-800 uppercase">
-          Beden seçin
-        </p>
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-[11px] font-medium tracking-[0.12em] text-neutral-800 uppercase">
+            Beden seçin
+          </p>
+          {onOpenSizeChart ? (
+            <button
+              type="button"
+              onClick={onOpenSizeChart}
+              className="min-h-10 text-[11px] font-medium tracking-[0.08em] text-neutral-600 underline underline-offset-4 transition-colors hover:text-neutral-950"
+            >
+              Beden tablosu
+            </button>
+          ) : null}
+        </div>
       )}
       <div className={`flex flex-wrap gap-2 ${hideLabel ? "" : "mt-3"}`}>
         {sizes.map((size) => {

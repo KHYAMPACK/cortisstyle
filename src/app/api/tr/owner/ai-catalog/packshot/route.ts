@@ -1,4 +1,5 @@
 import { generateOwnerPackshot } from "@/lib/tr/aiCatalog/generatePackshot";
+import { sanitizeListingDraft } from "@/lib/tr/aiCatalog/listingDraft";
 import { getBoutiqueByIdAdmin } from "@/lib/tr/boutiques";
 import {
   requireOwnedBoutique,
@@ -18,7 +19,11 @@ type Body = {
   promptExtra?: string;
   /** Precomputed from prepare-packshot — skips Gemini in this request. */
   prompt?: string;
-  listingDraft?: { title: string; description: string } | null;
+  listingDraft?: {
+    title: string;
+    description: string;
+    features?: unknown;
+  } | null;
   numImages?: number;
 };
 
@@ -73,7 +78,13 @@ export async function POST(request: Request) {
     view: body.view,
     promptExtra: body.promptExtra,
     prompt: body.prompt,
-    listingDraft: body.listingDraft ?? null,
+    listingDraft: body.listingDraft
+      ? sanitizeListingDraft({
+          title: body.listingDraft.title,
+          description: body.listingDraft.description,
+          features: body.listingDraft.features,
+        })
+      : null,
     numImages: body.numImages,
   });
 

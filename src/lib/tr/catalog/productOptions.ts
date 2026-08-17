@@ -4,6 +4,7 @@ export const DEFAULT_LETTER_SIZES = ["XS", "S", "M", "L", "XL"] as const;
 
 /** Numeric / jean-style chart (even waist-style labels). */
 export const DEFAULT_NUMERIC_SIZES = [
+  "24",
   "26",
   "28",
   "30",

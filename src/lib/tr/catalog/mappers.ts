@@ -10,6 +10,7 @@ import type {
   TrShippingAddress,
   TrShippingProviderId,
 } from "@/types/tr-marketplace";
+import { sanitizeProductFeatures } from "@/lib/tr/catalog/productFeatures";
 import { readSizeStocks } from "@/lib/tr/sizeStocks";
 import {
   EMPTY_ORDER_SHIPMENT,
@@ -163,6 +164,7 @@ export function mapProductRow(row: Record<string, unknown>): TrProduct {
       typeof row.catalog_background_id === "string"
         ? row.catalog_background_id
         : null,
+    features: sanitizeProductFeatures(row.features),
     status: row.status as TrProduct["status"],
     stock: typeof row.stock === "number" ? row.stock : 1,
     sizeStocks: readSizeStocks(row.size_stocks),

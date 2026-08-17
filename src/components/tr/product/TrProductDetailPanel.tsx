@@ -1,6 +1,8 @@
 "use client";
 
 import { useTrScopedCart } from "@/components/tr/boutique/TrBoutiqueCommerceScope";
+import { TrBoutiquePdpInfoSections } from "@/components/tr/boutique/pdp/TrBoutiquePdpInfoSections";
+import { TrBoutiqueSizeChartModal } from "@/components/tr/boutique/pdp/TrBoutiqueSizeChartModal";
 import { TrBackButton } from "@/components/tr/TrBackButton";
 import {
   TrEditorialSaleBadge,
@@ -22,6 +24,7 @@ import {
   resolveProductColors,
   resolveProductSizes,
 } from "@/lib/tr/productOptions";
+import { resolveProductSizeChart } from "@/lib/tr/catalog/sizeCharts";
 import { isSizeInStock } from "@/lib/tr/sizeStocks";
 import { trBoutiquePath, trHomePath } from "@/lib/tr/paths";
 import { resolveBoutiqueThemeAccent } from "@/lib/tr/boutiqueBrand";
@@ -62,6 +65,11 @@ export function TrProductDetailPanel({
     colors.length === 1 ? colors[0]! : (colors[0] ?? null),
   );
   const [sizeSheetOpen, setSizeSheetOpen] = useState(false);
+  const [sizeChartOpen, setSizeChartOpen] = useState(false);
+  const sizeChart = useMemo(
+    () => resolveProductSizeChart(sizes),
+    [sizes],
+  );
 
   const openAddedSheet = useTrAddedToCartStore((state) => state.open);
 
@@ -200,6 +208,7 @@ export function TrProductDetailPanel({
           productTitle={product.title}
           whatsappPhone={product.boutique.whatsappPhone}
           accentColor={accent}
+          onOpenSizeChart={sizeChart ? () => setSizeChartOpen(true) : undefined}
         />
 
         <dl
@@ -282,11 +291,11 @@ export function TrProductDetailPanel({
           >
             {!branded ? (
               <p className="text-meta text-[10px] tracking-[0.18em] uppercase">
-                Açıklama
+                Ürün Detay
               </p>
             ) : (
               <p className="text-[11px] tracking-[0.1em] text-neutral-500 uppercase">
-                Açıklama
+                Ürün Detay
               </p>
             )}
             <p className="mt-3 text-[13px] leading-relaxed text-neutral-800">
@@ -319,6 +328,8 @@ export function TrProductDetailPanel({
             className="md:hidden"
           />
         ) : null}
+
+        <TrBoutiquePdpInfoSections product={product} branded={branded} />
       </div>
 
       {checkoutEnabled && isAvailable ? (
@@ -352,6 +363,14 @@ export function TrProductDetailPanel({
         whatsappPhone={product.boutique.whatsappPhone}
         onConfirm={addWithSize}
       />
+
+      {sizeChart ? (
+        <TrBoutiqueSizeChartModal
+          open={sizeChartOpen}
+          chart={sizeChart}
+          onClose={() => setSizeChartOpen(false)}
+        />
+      ) : null}
     </>
   );
 }

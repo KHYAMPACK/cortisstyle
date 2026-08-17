@@ -8,6 +8,7 @@
 - **Custom domains** rewrite into boutique paths (`src/lib/tr/customDomain.ts` + middleware; e.g. pervinsoysal)
 - **Storefront themes** — same panel/APIs for all; **unique UI per boutique** via theme packs / editorial skins (Pervin = `classic` editorial; Lila = `atelier` skin). See [lila-butik-e-ticaret-setup.md](../lila-butik-e-ticaret-setup.md). Do not skin with `if (slug)` inside one chrome tree.
 - **Editorial** home/PDP templates via registries (`src/lib/tr/boutiqueHome/`, `boutiquePdp/`) — moving toward `storefront/themes/{id}/`
+- **PDP extras (all boutiques):** size chart modal (letter XS–XL vs numeric 24–40), AI-filled **Ürün özellikleri**, category **Yıkama talimatı** registry, **İade & Teslimat** from boutique `shippingNote` / `exchangePolicy`. Not Cadde `/tr/parca`.
 - **Owner panel** at `/tr/panel` — Ikas-like modules (products, stock, orders, customers, campaigns, content packs, reports, settings)
 - Owner APIs: `src/app/api/tr/owner/*` authenticated via boutique `owner_user_id`
 - Onboarding seeds: `scripts/seed-pervinsoysalbutik.*`, `src/data/tr/pervinsoysalbutik-seed.json`
@@ -32,7 +33,7 @@
 | URLs | `src/lib/tr/paths.ts` (`trBoutiquePath`, product paths) |
 | Domain | `src/lib/tr/customDomain.ts` |
 | Types | `src/types/tr-marketplace.ts` |
-| Schema | `supabase/patch_tr_marketplace.sql` + `patch_tr_boutique_*`, `patch_tr_product_*` |
+| Schema | `supabase/patch_tr_marketplace.sql` + `patch_tr_boutique_*`, `patch_tr_product_*` (`patch_tr_product_features.sql` for PDP specs) |
 | Platform credit (Ekiz Yazılım) | `TrPlatformCredit` + `src/lib/platform/platformCredit.ts` — all boutique footers |
 
 ## Agent rules of thumb

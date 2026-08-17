@@ -13,9 +13,11 @@ Boutique owners polish product photos in create/edit:
 3. Pick model (optional) → **1** try-on from front packshot → `lifestyleImages`
 4. Usage logged to `tr_ai_usage_events` + light owner monthly kredi summary (`GET /api/tr/owner/ai-credits`)
 
-**Ürün yükleme draft:** Wizard state autosaves to `localStorage` (`src/lib/tr/productCreateDraft.ts`) — not a DB table. Image URLs already live in `tr-assets`; restore is instant on reload. Clear on successful save. Photo **Sil** uses a 10s soft undo toast (no confirm modal).
+**Ürün yükleme draft:** Wizard state autosaves to `localStorage` (`src/lib/tr/productCreateDraft.ts`) — not a DB table. Image URLs already live in `tr-assets`; restore is instant on reload. Clear on successful save. Photo **Sil** uses a 10s soft undo toast (no confirm modal). Front-photo Gemini draft now includes **Ürün özellikleri** (`gender`, `fit`, `color`, `neckHem`, `fabric`, `composition`) — applied with “AI ile doldur”, stored on `tr_products.features` (`supabase/patch_tr_product_features.sql`). Description voice is a 2-sentence elegant boutique paragraph (new uploads only). Care copy is **not** AI: `src/lib/tr/catalog/careInstructions.ts` (İçerik ve Bakım rows). Size charts: `src/lib/tr/catalog/sizeCharts.ts`. PDP kargo copy: 120 TL / 3500 TL üzeri ücretsiz (`FLAT_SHIPPING_FEE_KURUS`, `FREE_SHIPPING_THRESHOLD_KURUS`) — threshold not yet applied at checkout.
 
-**Owner credits:** ürün packshot package (ön+arka) = **1 kredi**; model (1 front shot) = **1 kredi**; 1 kredi = **$0.25** (`src/lib/tr/aiCatalog/uploadCostHints.ts`). Panel home shows a light month usage card; credits dialog can show the same when `boutiqueId` is passed.
+**Owner credits (boutique-facing):** ürün packshot package (ön+arka) = **1 kredi**; model (1 front shot) = **1 kredi**; 1 kredi = **$0.25** (`src/lib/tr/aiCatalog/uploadCostHints.ts`). Panel home shows a light month usage card; credits dialog can show the same when `boutiqueId` is passed.
+
+**FASHN API credits (platform cost):** Catalog packshot + try-on pin **`fast` + `1k` + `num_images: 1`** (`FASHN_MIN_CREDIT_*` in `src/lib/tr/fashn/client.ts`). [tryon-max](https://docs.fashn.ai/api-reference/tryon-max) at that tier is **1 credit per output** — same as [tryon-v1.6](https://docs.fashn.ai/api-reference/tryon-v1-6), which we do **not** use (lower quality). `balanced` + `1k` would be 2 credits. Do not set `FASHN_DEFAULT_MODE` / `FASHN_DEFAULT_RESOLUTION` expecting to change ürün yükleme — catalog ignores those. Typical upload: 1 packshot front + 1 packshot back + 1 optional try-on = **3 FASHN credits**.
 
 - Try-on garment: Front → `marketplaceImages[0]` only. Local studio refs are sent as data URIs when origin is localhost (FASHN cannot fetch `localhost`).
 - Mağaza önizleme: packshot-only (no raw uploads); pending catalog/model slots while AI runs.
@@ -40,7 +42,7 @@ Boutique owners polish product photos in create/edit:
   - **Lila Butik** (`lilabutik`): house model **Lila** → `public/tr/ai-models/lilabutik-lila.jpg` (`boutique:lilabutik`) — same woman as storefront campaigns; auto-selected as default for that tenant only
   - Pervin row exists but refs empty until portrait shoot
 
-**Env (local + Vercel):** `FASHN_API_KEY`, `PHOTOROOM_API_KEY`, `GEMINI_API_KEY` (or `GOOGLE_API_KEY`). Optional: `FASHN_DEFAULT_RESOLUTION`, `FASHN_DEFAULT_MODE`, `NEXT_PUBLIC_TR_AI_STUDIO_AYLA_REF_URLS`, `NEXT_PUBLIC_TR_AI_STUDIO_DENIZ_REF_URLS` (override hosted public paths).
+**Env (local + Vercel):** `FASHN_API_KEY`, `PHOTOROOM_API_KEY`, `GEMINI_API_KEY` (or `GOOGLE_API_KEY`). Optional: `FASHN_DEFAULT_RESOLUTION`, `FASHN_DEFAULT_MODE` (ops / `model-create` only; catalog packshot/try-on is always fast+1k), `NEXT_PUBLIC_TR_AI_STUDIO_AYLA_REF_URLS`, `NEXT_PUBLIC_TR_AI_STUDIO_DENIZ_REF_URLS` (override hosted public paths).
 
 If Gemini is missing or fails, packshot still runs with the heuristic default prompt.
 

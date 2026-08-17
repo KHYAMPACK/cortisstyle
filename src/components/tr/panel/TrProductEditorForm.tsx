@@ -23,6 +23,7 @@ import {
 } from "@/components/tr/panel/TrOwnerGuidedPhotoUpload";
 import { TrProductImageLightbox } from "@/components/tr/panel/TrProductImageLightbox";
 import { TrOwnerCategoryPicker } from "@/components/tr/panel/TrOwnerCategoryPicker";
+import { TrOwnerProductFeaturesFields } from "@/components/tr/panel/TrOwnerProductFeaturesFields";
 import { TR_BOUTIQUE_CATEGORIES } from "@/lib/tr/categories";
 import {
   DEFAULT_CATALOG_BACKGROUND_ID,
@@ -64,7 +65,7 @@ import {
   panelSectionClass,
 } from "@/components/tr/panel/panelUi";
 import { formatTryFromKurus } from "@/types/tr-marketplace";
-import type { TrProduct, TrProductColor, TrProductStatus } from "@/types/tr-marketplace";
+import type { TrProduct, TrProductColor, TrProductFeatures, TrProductStatus } from "@/types/tr-marketplace";
 
 function InlineBusySpinner() {
   return (
@@ -196,6 +197,9 @@ export function TrProductEditorForm({
   const [description, setDescription] = useState(
     initialProduct?.description ?? "",
   );
+  const [features, setFeatures] = useState<TrProductFeatures>(
+    () => initialProduct?.features ?? {},
+  );
   const [category, setCategory] = useState<string | null>(
     initialProduct?.category ?? null,
   );
@@ -306,6 +310,7 @@ export function TrProductEditorForm({
       setSalePriceTry("");
     }
     setDescription(initialProduct.description ?? "");
+    setFeatures(initialProduct.features ?? {});
     setCategory(initialProduct.category);
     const chart = detectSizeChart(initialProduct.sizes);
     setSizeChart(chart);
@@ -462,6 +467,7 @@ export function TrProductEditorForm({
       boutiqueId,
       title: title.trim(),
       description: description.trim() || null,
+      features,
       priceTry: sellPrice,
       compareAtPriceTry: compareAtPriceTryValue,
       sizes: activeSizes,
@@ -493,6 +499,7 @@ export function TrProductEditorForm({
     boutiqueId,
     title,
     description,
+    features,
     priceTry,
     discountEnabled,
     salePriceTry,
@@ -743,6 +750,7 @@ export function TrProductEditorForm({
           onApply={(draft) => {
             setTitle(clampTitle(draft.title));
             setDescription(clampDescription(draft.description));
+            if (draft.features) setFeatures(draft.features);
             setListingDraft(draft);
           }}
         />
@@ -775,6 +783,15 @@ export function TrProductEditorForm({
             {description.length}/{TR_OWNER_PRODUCT_LIMITS.descriptionMax}
           </span>
         </label>
+
+        <TrOwnerProductFeaturesFields
+          value={features}
+          onChange={setFeatures}
+          disabled={saving}
+          fieldClass={fieldClass}
+          labelClass={panelLabelClass}
+          hintClass={panelHintClass}
+        />
       </section>
 
       <section

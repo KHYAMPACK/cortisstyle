@@ -8,6 +8,7 @@
 
 import type { TrSizeChartId } from "@/lib/tr/productOptions";
 import type { OwnerListingDraft } from "@/lib/tr/ownerClient";
+import type { TrProductFeatures } from "@/types/tr-marketplace";
 
 export const PRODUCT_CREATE_DRAFT_VERSION = 1 as const;
 
@@ -17,6 +18,7 @@ export interface ProductCreateDraftV1 {
   stepIndex: number;
   title: string;
   description: string;
+  features?: TrProductFeatures;
   priceTry: string;
   discountEnabled: boolean;
   salePriceTry: string;

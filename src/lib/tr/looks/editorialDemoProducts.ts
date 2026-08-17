@@ -111,6 +111,7 @@ export function buildEditorialDemoProducts(
     marketplaceImages: [],
     lifestyleImages: [],
     catalogBackgroundId: null,
+    features: {},
     status: "available" as const,
     stock: 5,
     sizeStocks: Object.fromEntries(spec.sizes.map((size) => [size, 1])),

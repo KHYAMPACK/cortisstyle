@@ -19,6 +19,7 @@ import type {
   TrProductStatus,
   UpdateTrProductInput,
 } from "@/types/tr-marketplace";
+import { sanitizeProductFeatures } from "@/lib/tr/catalog/productFeatures";
 
 export const runtime = "nodejs";
 
@@ -183,6 +184,9 @@ export async function PATCH(request: Request, context: RouteContext) {
       typeof body.catalogBackgroundId === "string"
         ? body.catalogBackgroundId.trim() || null
         : null;
+  }
+  if (body.features !== undefined) {
+    patch.features = sanitizeProductFeatures(body.features);
   }
   if (typeof body.category === "string" || body.category === null) {
     patch.category = typeof body.category === "string" ? body.category : null;

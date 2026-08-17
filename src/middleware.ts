@@ -7,6 +7,10 @@ import {
   resolveBoutiqueSlugFromHost,
   rewriteBoutiqueDomainPath,
 } from "@/lib/tr/customDomain";
+import {
+  BOUTIQUE_WELL_KNOWN_ICON_PATHS,
+  resolveHostFaviconPublicPath,
+} from "@/lib/tr/seo/hostFavicon";
 
 function isMaintenanceModeEnabled(): boolean {
   return process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true";
@@ -89,6 +93,13 @@ export function middleware(request: NextRequest) {
     request.headers.get("host") ??
     "";
   const boutiqueSlug = resolveBoutiqueSlugFromHost(host);
+  if (boutiqueSlug && BOUTIQUE_WELL_KNOWN_ICON_PATHS.has(pathname)) {
+    const iconPath = resolveHostFaviconPublicPath(boutiqueSlug);
+    const url = request.nextUrl.clone();
+    url.pathname = iconPath;
+    url.search = "";
+    return rewriteWithPathname(request, url);
+  }
   if (boutiqueSlug && !isBoutiqueDomainPassthroughPath(pathname)) {
     const rewritten = rewriteBoutiqueDomainPath(boutiqueSlug, pathname);
     if (rewritten !== pathname) {

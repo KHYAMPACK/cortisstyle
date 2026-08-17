@@ -8,6 +8,14 @@ const FASHN_API_BASE = "https://api.fashn.ai/v1";
 export type FashnGenerationMode = "fast" | "balanced" | "quality";
 export type FashnResolution = "1k" | "2k" | "4k";
 
+/**
+ * Cheapest publishable FASHN tier (tryon-max + packshot).
+ * @see https://docs.fashn.ai/api-reference/tryon-max — fast + 1k = 1 credit / output.
+ * tryon-v1.6 is also 1 credit but lower quality; catalog stays on tryon-max at the same cost.
+ */
+export const FASHN_MIN_CREDIT_RESOLUTION: FashnResolution = "1k";
+export const FASHN_MIN_CREDIT_MODE: FashnGenerationMode = "fast";
+
 export type FashnRunStatus =
   | "starting"
   | "in_queue"
@@ -35,13 +43,22 @@ export function isFashnConfigured(): boolean {
 export function getFashnDefaultResolution(): FashnResolution {
   const raw = process.env.FASHN_DEFAULT_RESOLUTION?.trim().toLowerCase();
   if (raw === "2k" || raw === "4k" || raw === "1k") return raw;
-  return "1k";
+  return FASHN_MIN_CREDIT_RESOLUTION;
 }
 
 export function getFashnDefaultMode(): FashnGenerationMode {
   const raw = process.env.FASHN_DEFAULT_MODE?.trim().toLowerCase();
   if (raw === "fast" || raw === "quality" || raw === "balanced") return raw;
-  return "balanced";
+  return FASHN_MIN_CREDIT_MODE;
+}
+
+/** Owner ürün yükleme packshot/try-on — ignore quality env bumps. */
+export function getFashnCatalogResolution(): FashnResolution {
+  return FASHN_MIN_CREDIT_RESOLUTION;
+}
+
+export function getFashnCatalogMode(): FashnGenerationMode {
+  return FASHN_MIN_CREDIT_MODE;
 }
 
 function authHeaders(): HeadersInit {

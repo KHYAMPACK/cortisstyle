@@ -82,6 +82,16 @@ export interface TrProductColor {
   hex: string;
 }
 
+/** AI/owner-filled PDP specs. Empty keys are omitted. */
+export type TrProductFeatures = {
+  gender?: string;
+  fit?: string;
+  color?: string;
+  neckHem?: string;
+  fabric?: string;
+  composition?: string;
+};
+
 /** Full boutique record — service role / admin only. */
 export interface TrBoutique extends TrBoutiquePublic {
   iban: string | null;
@@ -118,6 +128,8 @@ export interface TrProduct {
   lifestyleImages: string[];
   /** Premade catalog backdrop id (one per product). */
   catalogBackgroundId: string | null;
+  /** PDP “Ürün özellikleri” — filled by catalog AI, editable in panel. */
+  features: TrProductFeatures;
   status: TrProductStatus;
   stock: number;
   /** Per-size units. Empty when product has no sizes (then `stock` is the single count). */
@@ -280,6 +292,7 @@ export interface CreateTrProductInput {
   marketplaceImages?: string[];
   lifestyleImages?: string[];
   catalogBackgroundId?: string | null;
+  features?: TrProductFeatures;
   status?: TrProductStatus;
   stock?: number;
   sizeStocks?: Record<string, number>;
@@ -300,6 +313,7 @@ export interface UpdateTrProductInput {
   marketplaceImages?: string[];
   lifestyleImages?: string[];
   catalogBackgroundId?: string | null;
+  features?: TrProductFeatures;
   status?: TrProductStatus;
   stock?: number;
   sizeStocks?: Record<string, number>;

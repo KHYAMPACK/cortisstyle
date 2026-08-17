@@ -18,6 +18,7 @@ import {
   TrOwnerSizeChartStock,
 } from "@/components/tr/panel/TrOwnerSizeChartStock";
 import { TrOwnerCategoryPicker } from "@/components/tr/panel/TrOwnerCategoryPicker";
+import { TrOwnerProductFeaturesFields } from "@/components/tr/panel/TrOwnerProductFeaturesFields";
 import type { PipelineJobItem } from "@/lib/tr/aiCatalog/pipelineProgress";
 import {
   DEFAULT_CATALOG_BACKGROUND_ID,
@@ -51,7 +52,7 @@ import {
   sumSizeStocks,
 } from "@/lib/tr/sizeStocks";
 import { formatTryFromKurus } from "@/types/tr-marketplace";
-import type { TrProduct } from "@/types/tr-marketplace";
+import type { TrProduct, TrProductFeatures } from "@/types/tr-marketplace";
 
 const STEPS = [
   {
@@ -62,7 +63,7 @@ const STEPS = [
   {
     id: "name",
     title: "İsim",
-    hint: "Ürün adı ve kısa açıklama",
+    hint: "Ürün adı, açıklama ve özellikler",
   },
   {
     id: "price",
@@ -111,6 +112,7 @@ export function TrProductCreateWizard({
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [features, setFeatures] = useState<TrProductFeatures>({});
   const [priceTry, setPriceTry] = useState("");
   const [discountEnabled, setDiscountEnabled] = useState(false);
   const [salePriceTry, setSalePriceTry] = useState("");
@@ -168,6 +170,7 @@ export function TrProductCreateWizard({
         stepIndex,
         title,
         description,
+        features,
         priceTry,
         discountEnabled,
         salePriceTry,
@@ -191,6 +194,7 @@ export function TrProductCreateWizard({
     catalogBackgroundId,
     category,
     description,
+    features,
     discountEnabled,
     draftBanner,
     frontAnalysisDone,
@@ -358,6 +362,7 @@ export function TrProductCreateWizard({
     setStepIndex(Math.min(Math.max(0, draft.stepIndex), STEPS.length - 1));
     setTitle(draft.title);
     setDescription(draft.description);
+    setFeatures(draft.features ?? {});
     setPriceTry(draft.priceTry);
     setDiscountEnabled(draft.discountEnabled);
     setSalePriceTry(draft.salePriceTry);
@@ -449,6 +454,7 @@ export function TrProductCreateWizard({
         boutiqueId,
         title: title.trim(),
         description: description.trim() || null,
+        features,
         priceTry: sellPrice,
         compareAtPriceTry: compareAtPriceTryValue,
         sizes,
@@ -653,6 +659,7 @@ export function TrProductCreateWizard({
                   onApply={(draft) => {
                     setTitle(clampTitle(draft.title));
                     setDescription(clampDescription(draft.description));
+                    if (draft.features) setFeatures(draft.features);
                     setListingDraft(draft);
                   }}
                 />
@@ -693,6 +700,12 @@ export function TrProductCreateWizard({
                     {TR_OWNER_PRODUCT_LIMITS.descriptionMax}
                   </span>
                 </label>
+                <TrOwnerProductFeaturesFields
+                  value={features}
+                  onChange={setFeatures}
+                  disabled={saving}
+                  fieldClass={fieldClass}
+                />
               </div>
             ) : null}
 

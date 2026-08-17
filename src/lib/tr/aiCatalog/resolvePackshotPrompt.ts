@@ -111,6 +111,7 @@ Rules:
                   typeof parsed.description === "string"
                     ? parsed.description
                     : null,
+                features: parsed.features,
               });
               if (draft) {
                 listingDraft = draft;
