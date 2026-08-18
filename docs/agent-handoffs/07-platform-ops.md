@@ -25,6 +25,7 @@
 |-------|-----------|--------|
 | Shopper | Supabase Auth | `AuthContext`, cookie storage |
 | Boutique owner | JWT → boutiques where `owner_user_id` matches | `lib/tr/panel/ownerAuth.ts`, `/tr/panel` |
+| Panel staff | JWT whose **confirmed** email is in `TR_PANEL_STAFF_EMAILS` → **all** boutiques (switcher in `/tr/panel`) | `isTrPanelStaffEmail` in `ownerAuth.ts`. Does **not** replace `owner_user_id` for the real owner. |
 | TR admin | Bearer `TR_ADMIN_SECRET` (timing-safe compare) | `lib/tr/panel/adminAuth.ts`, `/api/tr/admin/*` |
 
 Middleware does **not** enforce general login — it handles maintenance, `/` → `/tr`, and custom domain rewrite (`src/middleware.ts`).
@@ -66,6 +67,7 @@ Branded reset (`/api/tr/customer/auth/send-password-reset`) uses `admin.generate
 | `TR_ORDER_CONFIRM_SECRET` | HMAC for sipariş-onay links (required in production) |
 | `TR_VAPID_PUBLIC_KEY` / `TR_VAPID_PRIVATE_KEY` / `TR_VAPID_SUBJECT` | Owner panel Web Push (`next.config` mirrors public key → `NEXT_PUBLIC_TR_VAPID_PUBLIC_KEY`) |
 | `TR_ADMIN_SECRET` | Admin APIs |
+| `TR_PANEL_STAFF_EMAILS` | Comma-separated confirmed login emails that can open every boutique in `/tr/panel` (not `NEXT_PUBLIC_`) |
 | `TR_BOUTIQUE_DOMAINS` | Host → slug JSON for Edge |
 | `MARKET_DEV_COUNTRY` | Fake geo in dev |
 | `PHOTOROOM_*`, `GEMINI_*` / `OPENAI_*` | Vision / BG removal |

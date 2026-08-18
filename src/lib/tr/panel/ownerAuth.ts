@@ -7,6 +7,30 @@ export interface TrOwnerAuthContext {
   user: User;
   accessToken: string;
   boutiques: TrBoutique[];
+  /** True when the session email is in TR_PANEL_STAFF_EMAILS (all-tenant access). */
+  isStaff: boolean;
+}
+
+function normalizeEmail(email: string | undefined | null): string {
+  return (email ?? "").trim().toLowerCase();
+}
+
+/** Platform operators who may open every boutique in /tr/panel. Server-only. */
+export function isTrPanelStaffEmail(email: string | undefined | null): boolean {
+  const needle = normalizeEmail(email);
+  if (!needle) return false;
+  const raw = process.env.TR_PANEL_STAFF_EMAILS?.trim() ?? "";
+  if (!raw) return false;
+  const allowed = raw
+    .split(/[,;\s]+/)
+    .map((entry) => normalizeEmail(entry))
+    .filter(Boolean);
+  return allowed.includes(needle);
+}
+
+function isConfirmedStaffUser(user: User): boolean {
+  if (!user.email_confirmed_at) return false;
+  return isTrPanelStaffEmail(user.email);
 }
 
 function parseBearerToken(request: Request): string | null {
@@ -27,6 +51,22 @@ export async function listBoutiquesOwnedByUser(
     .from("tr_boutiques")
     .select("*")
     .eq("owner_user_id", userId)
+    .order("name", { ascending: true });
+
+  if (error) throw error;
+
+  return (data ?? []).map((row) => mapBoutiqueRow(row as Record<string, unknown>));
+}
+
+export async function listAllBoutiques(): Promise<TrBoutique[]> {
+  const supabase = getServiceSupabase();
+  if (!supabase) {
+    throw new Error("Supabase service role is not configured.");
+  }
+
+  const { data, error } = await supabase
+    .from("tr_boutiques")
+    .select("*")
     .order("name", { ascending: true });
 
   if (error) throw error;
@@ -79,11 +119,14 @@ export async function requireTrOwner(
   }
 
   try {
-    const boutiques = await listBoutiquesOwnedByUser(user.id);
+    const isStaff = isConfirmedStaffUser(user);
+    const boutiques = isStaff
+      ? await listAllBoutiques()
+      : await listBoutiquesOwnedByUser(user.id);
 
     return {
       ok: true,
-      auth: { user, accessToken, boutiques },
+      auth: { user, accessToken, boutiques, isStaff },
     };
   } catch (listError) {
     console.error("[tr/ownerAuth] boutique list failed:", listError);

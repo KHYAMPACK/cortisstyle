@@ -27,6 +27,7 @@ When iyzico succeeds: `payment_status: paid` (inventory already reserved at crea
 |-----|-----|
 | `TR_ORDER_CONFIRM_SECRET` (or `TR_ADMIN_SECRET`) | HMAC for `/siparis-onay` links — **required in production** (no hardcoded fallback). |
 | `TR_ADMIN_SECRET` | Protect seed / admin routes |
+| `TR_PANEL_STAFF_EMAILS` | Optional. Confirmed login emails that can switch across every boutique in `/tr/panel`. |
 | `TR_BOUTIQUE_DOMAINS` | Custom domain → slug map |
 
 ## Removed / honest stubs (no fake ops)
