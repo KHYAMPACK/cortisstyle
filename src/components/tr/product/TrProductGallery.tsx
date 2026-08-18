@@ -93,7 +93,6 @@ export function TrProductGallery({ product }: TrProductGalleryProps) {
               src={image}
               alt=""
               fill
-              unoptimized
               sizes="48px"
               className={thumbCutout ? "object-contain p-1" : "object-cover"}
             />
@@ -133,7 +132,6 @@ export function TrProductGallery({ product }: TrProductGalleryProps) {
                   fill
                   priority={safeIndex === 0}
                   sizes="(max-width: 1024px) 100vw, 50vw"
-                  unoptimized
                   className={
                     activeIsCutout
                       ? "object-contain p-6 md:p-10"

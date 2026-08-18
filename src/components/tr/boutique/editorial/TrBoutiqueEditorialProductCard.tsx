@@ -35,7 +35,7 @@ export function TrBoutiqueEditorialProductCard({
   boutiqueName,
   priority = false,
 }: TrBoutiqueEditorialProductCardProps) {
-  const coverImage = getProductCoverImageFor("marketplace", product);
+  const coverImage = getProductCoverImageFor("boutique", product);
   const modelImage = getProductHoverImage(product);
   const coverIsCutout = isCatalogCutoutImage(coverImage);
   const colors = resolveProductColors(product);
@@ -96,7 +96,6 @@ export function TrBoutiqueEditorialProductCard({
               alt=""
               fill
               priority={priority}
-              unoptimized
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
               className={`${
                 coverIsCutout ? "object-contain p-3" : "object-cover"
@@ -116,7 +115,6 @@ export function TrBoutiqueEditorialProductCard({
               src={modelImage}
               alt=""
               fill
-              unoptimized
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
               className={`object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-100 ${
                 isSold ? "!opacity-60" : ""

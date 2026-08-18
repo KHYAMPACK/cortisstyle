@@ -1,60 +1,40 @@
-# 15 — Boutique storefront image formats (later)
+# 15 — Boutique storefront image formats
 
-**Status:** storage transcode is **plan only** — do not JPEG/WebP packshots in place. Panel **display** thumbs via `next/image` are live (see below). Cadde packshot cutouts stay **PNG** in storage.
+**Status:** **live.** Boutique customer-facing packshots are opaque **WebP** copies. Cadde packshot cutouts stay **PNG** in `marketplace_images`. Do not JPEG/WebP those PNGs in place.
 
-**Decision:** Boutique **customer-facing photos with a real background** should be JPEG or WebP. **Transparent packshot cutouts** stay PNG (panel pipeline + Cadde).
+**Decision:** Boutique **photos with a real background** are WebP (JPEG fallback). **Transparent packshot cutouts** stay PNG (panel pipeline, Cadde, try-on input). Background is **baked into the boutique WebP** at save time from `catalogBackgroundId`. Changing the backdrop regenerates **only** the WebP.
 
-There is no separate “publish to storefront” upload. Panel and storefront point at the **same storage URLs**. Format is chosen **when the file is written**.
+There is no separate “publish to storefront” upload. Format is chosen **when the file is written**.
 
 ## What exists today
 
-Owner upload (`POST /api/tr/owner/upload` + guided wizard):
+| Kind | Column / path | What it is | Format |
+|------|----------------|------------|--------|
+| Original | `tr_products.images` → `tr-assets/…/original/` | Phone / hanger / room shot | **WebP** on upload (long edge ≤ 2400). Client JPEG-compresses files &gt; 1MB first (`prepareOwnerUploadFile`). |
+| Marketplace | `marketplace_images` → `…/marketplace/` | FASHN packshot → Photoroom **transparent** cutout | **PNG** |
+| Storefront | `storefront_images` → `…/storefront/` | Same garment, flattened onto catalog background | **WebP** q80, long edge ≤ 1600 |
+| Lifestyle | `lifestyle_images` → `…/lifestyle/` | On-model / try-on | **WebP** on rehost |
 
-| Kind | Column / path | What it is | Format today |
-|------|----------------|------------|----------------|
-| Original | `tr_products.images` → `tr-assets/…/original/` | Phone / hanger / room shot (has background) | As uploaded (PNG unless file &gt; ~3.5MB → JPEG in `prepareOwnerUploadFile`) |
-| Marketplace | `marketplace_images` → `…/marketplace/` | FASHN packshot → Photoroom **transparent** cutout | **PNG** (`output_format: "png"`, `contentType: "image/png"`) |
-| Lifestyle | `lifestyle_images` → `…/lifestyle/` | On-model / try-on (person + background) | Whatever FASHN returns (often PNG) via `rehostRemoteImageToTrAssets` |
+Schema: `supabase/patch_tr_product_storefront_images.sql`. Apply on prod; code omits the column if missing and boutique falls back to PNG.
 
-Packshot code: `src/lib/tr/fashn/packshot.ts` (keep alpha — do not flatten to the opaque normalize canvas).  
-On-model: `src/lib/tr/aiModel/generate.ts` → rehost `kind: "lifestyle"`.  
-Storefront gallery: `getStorefrontGalleryImages` prefers cutouts + lifestyle.
+Packshot: `src/lib/tr/fashn/packshot.ts` keeps alpha PNG. Flatten: `src/lib/tr/assets/flattenCutoutToStorefront.ts` on product create/update when marketplace URLs or `catalogBackgroundId` change (or storefront copies are missing). Same `fileId` upsert so a backdrop change overwrites the WebP.
 
-Photoroom **intermediate** must stay PNG (or WebP **with alpha**). JPEG cannot hold transparency.
+Storefront gallery: `getStorefrontGalleryImages` prefers `storefrontImages[i]`, then PNG, then extra originals, then lifestyle. Cadde `/tr/parca` uses `getMarketplaceGalleryImages` (PNG + lifestyle). Google Merchant uses boutique storefront covers.
 
-### Panel display (done — not a storage rewrite)
+Photoroom **intermediate** stays PNG. JPEG cannot hold transparency.
 
-Owner-panel **list/chrome thumbs** use `next/image` (optimizer WebP/AVIF at ~80–96px). Drop `unoptimized` on product list, stock, order thumbs, success cover, packing cells. Keep `unoptimized` on editor / wizard / lightbox / store preview so the owner sees the exact file.
+### Panel display
 
-Do **not** convert stored marketplace packshot PNGs. The optimizer serves a derived thumb; `tr-assets` packshots stay PNG.
+Owner-panel **list/stock thumbs** use `getPanelProductCover` (storefront WebP when present) via `next/image` (~80–96px). Wizard / store-preview thumbs also go through the optimizer; keep `unoptimized` on the product **lightbox** so the owner can inspect the exact PNG.
 
-Panel chrome logos prefer SVG via `panelBoutiqueLogoSrc` (`src/lib/tr/panel/panelLogo.ts`) — e.g. `public/tr/boutiques/pervinsoysalbutik/logo.svg`. SVG skips the Next optimizer (`TrPanelBoutiqueLogo`). Storefront `logoUrl` overrides can stay PNG.
-
-## Target (when implementing storage writes)
-
-| File | Keep PNG? | Store as | Why |
-|------|-----------|----------|-----|
-| Packshot cutout (`marketplace`) | **Yes** | PNG | Alpha. Input to on-model. Cadde catalog. |
-| Photoroom temp buffer | **Yes** | PNG | Alpha only. |
-| Original owner photo | No | WebP (~80) or JPEG (~85), long edge ≤ 2400px | Background photo; boutique storefront |
-| On-model / lifestyle | No | WebP or JPEG, same caps | Background photo; boutique PDP / hover |
-
-Prefer **WebP** for new boutique writes (smaller than JPEG, same look). JPEG is fine if WebP encode is awkward in a given path.
-
-**Do not** JPEG the marketplace PNG “for the boutique site.” The boutique gallery **reuses that PNG** for packshot slots. Converting it drops alpha and breaks later on-model + Cadde.
-
-## Implementation sketch (later)
-
-1. **Originals** — after `prepareOwnerUploadFile` (or in the upload route), transcode `kind: "original"` to WebP/JPEG. Leave `removeBackground` / packshot path on PNG.
-2. **Lifestyle rehost** — in `rehostRemoteImageToTrAssets` (or the try-on caller), when `kind === "lifestyle"`, sharp-encode WebP/JPEG before `uploadTrProductAsset`. Do not transcode `kind: "marketplace"`.
-3. **Do not change** `generateFashnPackshot` PNG upload or Photoroom `format: png`.
-4. **Existing products** — optional backfill script; not required for the first PR. New uploads only is enough.
-5. **Panel thumbs** — already via `next/image` WebP; do not JPEG packshots “for the panel.” If the optimizer path fails (private URLs), a derived `panel-thumb.webp` (~320px) could be generated as a **new** file, not a replacement.
+Panel chrome logos prefer SVG via `panelBoutiqueLogoSrc` (`src/lib/tr/panel/panelLogo.ts`).
 
 ## What not to do
 
-- Do not flatten packshots onto the opaque 2:3 canvas for Cadde (that path is already avoided in packshot.ts).
-- Do not convert marketplace PNGs at PDP render time (CPU + cache mess).
+- Do not flatten packshots onto the opaque 2:3 canvas for **Cadde** (already avoided in `packshot.ts`).
+- Do not convert marketplace PNGs at PDP render time.
+- Do not JPEG marketplace PNGs “for the boutique site” — write a **sibling** storefront WebP instead.
+- Existing products get storefront WebP on the **next save** that includes photos or catalog background (no bulk backfill script).
 - Do not change Cadde intro assets here — those are separate JPEGs under `public/images/tr/intro/`.
 
 ## Related

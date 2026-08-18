@@ -18,6 +18,9 @@ export type TrAiModelJobStatus =
 
 export type TrAiModelGender = "woman" | "man";
 
+/** Lila house-model lighting. Owners pick this; pose stays random. */
+export type TrLilaPhotographyStyle = "blinds" | "flash";
+
 /**
  * Boutique "house model" — typically the owner, captured once in-shop.
  * Reference images stay private to generation; not public storefront assets.
@@ -71,6 +74,11 @@ export interface TrAiModelGenerateRequest {
    */
   modelId?: string;
   /**
+   * Lila house model only: blinds (default) or flash.
+   * Ignored for studio models. Pose is still random within the style.
+   */
+  photographyStyle?: TrLilaPhotographyStyle;
+  /**
    * Optional try-on styling prompt. Providers default to NATURAL_TRYON_PROMPT
    * (product-first Zara lookbook) when omitted.
    */
@@ -85,6 +93,8 @@ export interface TrAiModelGenerateResult {
   providerId: TrAiModelProviderId;
   /** Public or storage URL when succeeded. */
   imageUrl?: string;
+  /** Lila style runs return two unique plates; studio stays one. */
+  imageUrls?: string[];
   jobId?: string;
   creditsUsed?: number | null;
   error?: string;

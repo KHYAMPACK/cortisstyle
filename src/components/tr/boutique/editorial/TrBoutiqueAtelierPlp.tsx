@@ -926,7 +926,6 @@ export function TrBoutiqueAtelierPlp({
                       src={chip.image}
                       alt=""
                       fill
-                      unoptimized
                       sizes="40px"
                       className="object-cover"
                     />

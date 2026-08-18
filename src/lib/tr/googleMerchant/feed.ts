@@ -4,7 +4,7 @@
  */
 
 import { resolveBoutiqueBrandLabel } from "@/lib/tr/boutiqueBrand";
-import { getProductCoverImageFor } from "@/lib/tr/productImages";
+import { getProductCoverImageFor, getStorefrontGalleryImages } from "@/lib/tr/productImages";
 import { trBoutiquePath } from "@/lib/tr/paths";
 import {
   absoluteUrl,
@@ -147,11 +147,7 @@ export function buildGoogleMerchantFeedItems(input: {
       compareAt > product.priceKurus &&
       product.priceKurus > 0;
 
-    const additionalImageLinks = (
-      product.marketplaceImages.length > 0
-        ? product.marketplaceImages
-        : product.images
-    )
+    const additionalImageLinks = getStorefrontGalleryImages(product)
       .map((src) => absolutizeAssetUrl(src, assetOrigin))
       .filter((src) => src && src !== imageLink)
       .slice(0, 10);

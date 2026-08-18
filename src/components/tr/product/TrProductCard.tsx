@@ -93,7 +93,6 @@ export function TrProductCard({
               fill
               priority={priority}
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-              unoptimized
               className={`${
                 catalogCutout ? "object-contain p-5 md:p-7" : "object-cover"
               } transition-opacity duration-500 ${
@@ -107,7 +106,6 @@ export function TrProductCard({
                 src={hoverImage}
                 alt=""
                 fill
-                unoptimized
                 sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                 className={`object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-100 ${
                   isSold ? "!opacity-60" : ""

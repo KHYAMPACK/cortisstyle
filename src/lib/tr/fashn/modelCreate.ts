@@ -16,6 +16,9 @@ export interface FashnModelCreateParams {
   numImages?: number;
   imageReferenceUrl?: string;
   faceReferenceUrl?: string;
+  /** How face_reference drives pose/expression. Default is FASHN match_reference. */
+  faceReferenceMode?: "match_base" | "match_reference";
+  seed?: number;
 }
 
 export interface FashnModelCreateResult {
@@ -27,8 +30,9 @@ export interface FashnModelCreateResult {
 }
 
 /**
- * FASHN model-create — generate a fashion model photo from a text prompt.
- * Used for one-time platform studio refs (ops), not owner panel.
+ * FASHN model-create — NOT used in the live catalog.
+ * FASHN is packshot + try-on only. House/studio plates are one-time Cursor
+ * image gens copied into public/tr/ai-models/.
  */
 export async function generateFashnModelCreate(
   params: FashnModelCreateParams,
@@ -66,7 +70,13 @@ export async function generateFashnModelCreate(
     const imageRef = params.imageReferenceUrl?.trim();
     if (imageRef) inputs.image_reference = imageRef;
     const faceRef = params.faceReferenceUrl?.trim();
-    if (faceRef) inputs.face_reference = faceRef;
+    if (faceRef) {
+      inputs.face_reference = faceRef;
+      if (params.faceReferenceMode) {
+        inputs.face_reference_mode = params.faceReferenceMode;
+      }
+    }
+    if (typeof params.seed === "number") inputs.seed = params.seed;
 
     const run = await fashnRunAndWait({
       modelName: "model-create",

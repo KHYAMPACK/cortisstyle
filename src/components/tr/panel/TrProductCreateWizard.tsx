@@ -26,6 +26,14 @@ import {
 } from "@/components/tr/panel/panelUi";
 import type { PipelineJobItem } from "@/lib/tr/aiCatalog/pipelineProgress";
 import {
+  describeModelPackageShots,
+} from "@/lib/tr/aiCatalog/uploadCostHints";
+import {
+  LILA_DEFAULT_PHOTOGRAPHY_STYLE,
+  parseLilaPhotographyStyle,
+  type TrLilaPhotographyStyle,
+} from "@/lib/tr/aiModel/registry";
+import {
   DEFAULT_CATALOG_BACKGROUND_ID,
   getCatalogBackground,
 } from "@/lib/tr/catalogBackgrounds/registry";
@@ -83,7 +91,7 @@ const STEPS = [
   {
     id: "model",
     title: "Model",
-    hint: "Ürün başına 1 model fotoğrafı (1 kredi)",
+    hint: "Model fotoğrafı (isteğe bağlı)",
   },
   {
     id: "review",
@@ -130,6 +138,8 @@ export function TrProductCreateWizard({
     DEFAULT_CATALOG_BACKGROUND_ID,
   );
   const [selectedModelId, setSelectedModelId] = useState<string | null>(null);
+  const [photographyStyle, setPhotographyStyle] =
+    useState<TrLilaPhotographyStyle>(LILA_DEFAULT_PHOTOGRAPHY_STYLE);
   const [photoJobs, setPhotoJobs] = useState<PipelineJobItem[]>([]);
   const [modelJobs, setModelJobs] = useState<PipelineJobItem[]>([]);
   const [lightbox, setLightbox] = useState<{
@@ -182,6 +192,7 @@ export function TrProductCreateWizard({
         frontDraftFailed,
         catalogBackgroundId,
         selectedModelId,
+        photographyStyle,
       });
     }, 400);
     return () => window.clearTimeout(handle);
@@ -202,6 +213,7 @@ export function TrProductCreateWizard({
     priceTry,
     salePriceTry,
     selectedModelId,
+    photographyStyle,
     sizeChart,
     sizeStockInputs,
     stepIndex,
@@ -233,6 +245,22 @@ export function TrProductCreateWizard({
     });
   };
 
+  useEffect(() => {
+    if (sizeChart === "none") return;
+    setSizeStockInputs((current) => {
+      const defaults = emptyStockInputsForChart(sizeChart, "0");
+      let changed = false;
+      const next = { ...current };
+      for (const [size, fill] of Object.entries(defaults)) {
+        if (next[size] === undefined) {
+          next[size] = fill;
+          changed = true;
+        }
+      }
+      return changed ? next : current;
+    });
+  }, [sizeChart]);
+
   const progress = ((stepIndex + 1) / STEPS.length) * 100;
 
   const photoStepPhotosReady = useMemo(
@@ -261,8 +289,7 @@ export function TrProductCreateWizard({
   }, [hasModelPhoto, modelGenerating]);
 
   const setLifestyleImagesSingle = (urls: string[]) => {
-    const first = urls.find((url) => url?.trim())?.trim();
-    setLifestyleImages(first ? [first] : []);
+    setLifestyleImages(urls.map((url) => url.trim()).filter(Boolean));
   };
 
   const canContinue = useMemo(() => {
@@ -382,6 +409,7 @@ export function TrProductCreateWizard({
       draft.catalogBackgroundId || DEFAULT_CATALOG_BACKGROUND_ID,
     );
     setSelectedModelId(draft.selectedModelId);
+    setPhotographyStyle(parseLilaPhotographyStyle(draft.photographyStyle));
     setDraftBanner(null);
   };
 
@@ -838,6 +866,8 @@ export function TrProductCreateWizard({
                   lifestyleImages={lifestyleImages}
                   selectedModelId={selectedModelId}
                   onSelectedModelIdChange={setSelectedModelId}
+                  photographyStyle={photographyStyle}
+                  onPhotographyStyleChange={setPhotographyStyle}
                   onMarketplaceImagesChange={setMarketplaceImages}
                   onLifestyleImagesChange={setLifestyleImagesSingle}
                   onListingDraft={setListingDraft}
@@ -904,7 +934,9 @@ export function TrProductCreateWizard({
                   catalogBackgroundId={catalogBackgroundId}
                   sizes={chartSizes}
                   modelShotsPending={modelGenerating}
-                  pendingModelShotCount={1}
+                  pendingModelShotCount={describeModelPackageShots(
+                    selectedModelId,
+                  )}
                 />
                 <p className="rounded-xl bg-[color:var(--panel-accent-soft)] px-4 py-3 text-[16px] text-neutral-800">
                   Kaydettiğinizde ürün satışta görünür.

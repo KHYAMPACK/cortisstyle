@@ -9,6 +9,7 @@
 import type { TrSizeChartId } from "@/lib/tr/productOptions";
 import type { OwnerListingDraft } from "@/lib/tr/ownerClient";
 import type { TrProductFeatures } from "@/types/tr-marketplace";
+import type { TrLilaPhotographyStyle } from "@/lib/tr/aiModel/types";
 
 export const PRODUCT_CREATE_DRAFT_VERSION = 1 as const;
 
@@ -34,6 +35,7 @@ export interface ProductCreateDraftV1 {
   frontDraftFailed: boolean;
   catalogBackgroundId: string;
   selectedModelId: string | null;
+  photographyStyle?: TrLilaPhotographyStyle;
 }
 
 function storageKey(boutiqueId: string): string {

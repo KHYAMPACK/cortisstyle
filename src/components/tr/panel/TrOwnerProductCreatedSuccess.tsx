@@ -10,7 +10,7 @@ import {
   panelSectionClass,
 } from "@/components/tr/panel/panelUi";
 import { trPanelFadeTransition } from "@/components/tr/panel/TrPanelMotion";
-import { getProductCoverImageFor } from "@/lib/tr/productImages";
+import { getPanelProductCover } from "@/lib/tr/productImages";
 import {
   trBoutiquePath,
   trBoutiqueProductPath,
@@ -33,11 +33,7 @@ export function TrOwnerProductCreatedSuccess({
   boutiqueName: string;
   onAddAnother?: () => void;
 }) {
-  const cover =
-    getProductCoverImageFor("marketplace", product) ??
-    getProductCoverImageFor("boutique", product) ??
-    product.images[0] ??
-    null;
+  const cover = getPanelProductCover(product);
   const storeUrl = trBoutiquePath(boutiqueSlug);
   const productUrl = trBoutiqueProductPath(boutiqueSlug, product.id);
 

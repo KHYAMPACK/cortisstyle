@@ -207,7 +207,6 @@ export function TrOwnerStorePreview({
                   src={active.src}
                   alt={title || "Ürün"}
                   fill
-                  unoptimized
                   className={
                     active.kind === "catalog"
                       ? "object-contain p-6"
@@ -318,7 +317,6 @@ export function TrOwnerStorePreview({
                         src={entry.src}
                         alt=""
                         fill
-                        unoptimized
                         className={
                           entry.kind === "catalog"
                             ? "object-contain p-1"

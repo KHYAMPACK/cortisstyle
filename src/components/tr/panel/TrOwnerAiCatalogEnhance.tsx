@@ -8,13 +8,18 @@ import {
 } from "@/components/tr/panel/panelUi";
 import {
   describeModelPackageCredits,
-  TR_AI_CATALOG_CREDITS,
+  describeModelPackageShots,
 } from "@/lib/tr/aiCatalog/uploadCostHints";
 import {
   TrOwnerCreditsCostLine,
   TrOwnerCreditsMoreInfoLink,
 } from "@/components/tr/panel/TrOwnerCreditsInfo";
-import { listAiModelOptions } from "@/lib/tr/aiModel/registry";
+import {
+  isLilaHouseModelId,
+  LILA_DEFAULT_PHOTOGRAPHY_STYLE,
+  listAiModelOptions,
+  type TrLilaPhotographyStyle,
+} from "@/lib/tr/aiModel/registry";
 import {
   requestOwnerAiModelGenerate,
   requestOwnerPackshot,
@@ -38,6 +43,8 @@ export interface TrOwnerAiCatalogEnhanceProps {
   lifestyleImages: string[];
   selectedModelId: string | null;
   onSelectedModelIdChange: (id: string | null) => void;
+  photographyStyle?: TrLilaPhotographyStyle;
+  onPhotographyStyleChange?: (style: TrLilaPhotographyStyle) => void;
   onMarketplaceImagesChange: (urls: string[]) => void;
   onLifestyleImagesChange: (urls: string[]) => void;
   onListingDraft?: (draft: OwnerListingDraft) => void;
@@ -54,9 +61,8 @@ type EnhancePhase =
   | "done"
   | "error";
 
-function firstLifestyleUrl(urls: string[]): string | null {
-  const url = urls.find((entry) => entry?.trim())?.trim();
-  return url || null;
+function lifestylePreviewUrls(urls: string[]): string[] {
+  return urls.map((url) => url.trim()).filter(Boolean);
 }
 
 function ModelBusySpinner({
@@ -91,6 +97,8 @@ export function TrOwnerAiCatalogEnhance({
   lifestyleImages,
   selectedModelId,
   onSelectedModelIdChange,
+  photographyStyle = LILA_DEFAULT_PHOTOGRAPHY_STYLE,
+  onPhotographyStyleChange,
   onMarketplaceImagesChange,
   onLifestyleImagesChange,
   onListingDraft,
@@ -112,8 +120,11 @@ export function TrOwnerAiCatalogEnhance({
     [boutiqueSlug],
   );
   const selectedReady = options.find((o) => o.id === selectedModelId)?.ready;
-  const existingModelUrl = firstLifestyleUrl(lifestyleImages);
-  const hasModelPhoto = Boolean(existingModelUrl);
+  const previewUrls = lifestylePreviewUrls(lifestyleImages);
+  const hasModelPhoto = previewUrls.length > 0;
+  const shotCount = describeModelPackageShots(selectedModelId);
+  const modelCredits = describeModelPackageCredits(selectedModelId);
+  const lilaSelected = isLilaHouseModelId(selectedModelId);
 
   const slotSources = useMemo(() => {
     const slots: Array<{ index: number; source: string }> = [];
@@ -235,8 +246,12 @@ export function TrOwnerAiCatalogEnhance({
       pushProgress(
         72,
         mode === "replace"
-          ? "Model fotoğrafı yenileniyor…"
-          : "Model fotoğrafı oluşturuluyor…",
+          ? shotCount > 1
+            ? "Model fotoğrafları yenileniyor…"
+            : "Model fotoğrafı yenileniyor…"
+          : shotCount > 1
+            ? "Model fotoğrafları oluşturuluyor…"
+            : "Model fotoğrafı oluşturuluyor…",
         "Model çekimi",
       );
       const result = await requestOwnerAiModelGenerate({
@@ -246,21 +261,24 @@ export function TrOwnerAiCatalogEnhance({
         title,
         category,
         modelId: selectedModelId,
+        photographyStyle: lilaSelected ? photographyStyle : undefined,
         pose: "standing-front",
       });
-      if (result.status !== "succeeded" || !result.imageUrl?.trim()) {
+      const produced = lifestylePreviewUrls(
+        result.imageUrls?.length ? result.imageUrls : result.imageUrl ? [result.imageUrl] : [],
+      );
+      if (result.status !== "succeeded" || produced.length === 0) {
         throw new Error(result.error ?? "Model görseli üretilemedi.");
       }
 
       setProgressPct(100);
       setProgressTarget(100);
-      // One model photo per product — replace, never append.
-      onLifestyleImagesChange([result.imageUrl.trim()]);
+      onLifestyleImagesChange(produced);
       setPhase("done");
       setProgressLabel(
         mode === "replace"
-          ? `Model fotoğrafı yenilendi (${TR_AI_CATALOG_CREDITS.modelPackage} kredi).`
-          : `Model fotoğrafı hazır (${TR_AI_CATALOG_CREDITS.modelPackage} kredi).`,
+          ? `Model fotoğrafı yenilendi (${modelCredits} kredi).`
+          : `Model fotoğrafı hazır (${modelCredits} kredi).`,
       );
       setRunMode(null);
       onModelJobsChange?.([]);
@@ -307,7 +325,9 @@ export function TrOwnerAiCatalogEnhance({
           Model fotoğrafı
         </p>
         <p className="mt-1 text-[14px] text-neutral-600">
-          Ürün başına 1 model karesi (ön).
+          {lilaSelected
+            ? "Seçilen ışık stilinden 2 farklı kare."
+            : "Ürün başına 1 model karesi (ön)."}
           {onSkip ? " İsterseniz bu adımı atlayabilirsiniz." : ""}
         </p>
       </div>
@@ -316,64 +336,70 @@ export function TrOwnerAiCatalogEnhance({
         boutiqueSlug={boutiqueSlug}
         value={selectedModelId}
         onChange={onSelectedModelIdChange}
+        photographyStyle={photographyStyle}
+        onPhotographyStyleChange={onPhotographyStyleChange}
         disabled={disabled || busy || (hasModelPhoto && !confirmRegen)}
       />
 
-      {existingModelUrl ? (
-        <div className="sm:max-w-xs">
-          <div className="relative aspect-[2/3] overflow-hidden rounded-xl bg-white">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={existingModelUrl}
-              alt=""
-              className={`h-full w-full object-cover transition-[filter,opacity,transform] duration-500 ease-out ${
-                busy
-                  ? "scale-[1.03] opacity-45 blur-[2px]"
-                  : "scale-100 opacity-100 blur-0"
-              }`}
-            />
-            <AnimatePresence>
-              {busy ? (
-                <motion.div
-                  key="model-busy-overlay"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.25, ease }}
-                  className="absolute inset-0 flex flex-col items-center justify-end bg-gradient-to-t from-black/70 via-black/35 to-black/10 p-4"
-                  aria-live="polite"
-                  aria-busy="true"
-                >
-                  <div className="mb-auto mt-10 flex flex-col items-center gap-3 text-center">
-                    <ModelBusySpinner className="h-8 w-8" />
-                    <p className="text-[13px] font-semibold tracking-[0.04em] text-white uppercase">
-                      {runMode === "replace" ? "Yenileniyor" : "Hazırlanıyor"}
-                    </p>
-                  </div>
-                  <div className="w-full space-y-2">
-                    <div className="flex items-end justify-between gap-2">
-                      <p className="min-w-0 text-[12px] leading-snug text-white/90">
-                        {progressLabel || "İşleniyor…"}
+      {previewUrls.length > 0 ? (
+        <div className={shotCount > 1 ? "grid grid-cols-2 gap-3" : "sm:max-w-xs"}>
+          {previewUrls.map((url) => (
+            <div key={url} className="relative aspect-[2/3] overflow-hidden rounded-xl bg-white">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={url}
+                alt=""
+                className={`h-full w-full object-cover transition-[filter,opacity,transform] duration-500 ease-out ${
+                  busy
+                    ? "scale-[1.03] opacity-45 blur-[2px]"
+                    : "scale-100 opacity-100 blur-0"
+                }`}
+              />
+              <AnimatePresence>
+                {busy ? (
+                  <motion.div
+                    key={`model-busy-${url}`}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.25, ease }}
+                    className="absolute inset-0 flex flex-col items-center justify-end bg-gradient-to-t from-black/70 via-black/35 to-black/10 p-4"
+                    aria-live="polite"
+                    aria-busy="true"
+                  >
+                    <div className="mb-auto mt-10 flex flex-col items-center gap-3 text-center">
+                      <ModelBusySpinner className="h-8 w-8" />
+                      <p className="text-[13px] font-semibold tracking-[0.04em] text-white uppercase">
+                        {runMode === "replace" ? "Yenileniyor" : "Hazırlanıyor"}
                       </p>
-                      <span className="shrink-0 text-[12px] font-semibold tabular-nums text-white">
-                        {roundedPct}%
-                      </span>
                     </div>
-                    <div className="h-1.5 overflow-hidden rounded-full bg-white/25">
-                      <motion.div
-                        className="h-full rounded-full bg-white"
-                        animate={{ width: `${progressPct}%` }}
-                        transition={{ duration: 0.35, ease }}
-                      />
+                    <div className="w-full space-y-2">
+                      <div className="flex items-end justify-between gap-2">
+                        <p className="min-w-0 text-[12px] leading-snug text-white/90">
+                          {progressLabel || "İşleniyor…"}
+                        </p>
+                        <span className="shrink-0 text-[12px] font-semibold tabular-nums text-white">
+                          {roundedPct}%
+                        </span>
+                      </div>
+                      <div className="h-1.5 overflow-hidden rounded-full bg-white/25">
+                        <motion.div
+                          className="h-full rounded-full bg-white"
+                          animate={{ width: `${progressPct}%` }}
+                          transition={{ duration: 0.35, ease }}
+                        />
+                      </div>
                     </div>
-                  </div>
-                </motion.div>
-              ) : null}
-            </AnimatePresence>
-          </div>
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
+            </div>
+          ))}
           {!busy ? (
-            <p className="mt-2 text-[13px] font-medium text-emerald-800">
-              Model fotoğrafı hazır — ürün başına yalnızca 1 adet.
+            <p className={`text-[13px] font-medium text-emerald-800 ${shotCount > 1 ? "col-span-2" : ""}`}>
+              {previewUrls.length > 1
+                ? `${previewUrls.length} model karesi hazır.`
+                : "Model fotoğrafı hazır — ürün başına 1 adet."}
             </p>
           ) : null}
         </div>
@@ -384,44 +410,51 @@ export function TrOwnerAiCatalogEnhance({
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, ease }}
-          className="sm:max-w-xs"
+          className={shotCount > 1 ? "grid grid-cols-2 gap-3" : "sm:max-w-xs"}
           aria-live="polite"
           aria-busy="true"
         >
-          <div className="relative aspect-[2/3] overflow-hidden rounded-xl bg-[color:var(--panel-accent-soft)]">
-            <motion.div
-              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/35 to-transparent"
-              animate={{ x: ["-100%", "100%"] }}
-              transition={{
-                duration: 1.4,
-                repeat: Infinity,
-                ease: "linear",
-              }}
-            />
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-4 text-center">
-              <ModelBusySpinner className="h-8 w-8" tone="accent" />
-              <p className="text-[13px] font-semibold text-neutral-800">
-                Model oluşturuluyor
-              </p>
-              <p className="text-[12px] text-neutral-600">
-                {progressLabel || "Hazırlanıyor…"}
-              </p>
-            </div>
-            <div className="absolute inset-x-0 bottom-0 space-y-1.5 p-4">
-              <div className="flex justify-between text-[11px] font-semibold tabular-nums text-neutral-700">
-                <span>İlerleme</span>
-                <span>{roundedPct}%</span>
+          {Array.from({ length: shotCount }, (_, index) => (
+            <div
+              key={`pending-${index}`}
+              className="relative aspect-[2/3] overflow-hidden rounded-xl bg-[color:var(--panel-accent-soft)]"
+            >
+              <motion.div
+                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/35 to-transparent"
+                animate={{ x: ["-100%", "100%"] }}
+                transition={{
+                  duration: 1.4,
+                  repeat: Infinity,
+                  ease: "linear",
+                }}
+              />
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-4 text-center">
+                <ModelBusySpinner className="h-8 w-8" tone="accent" />
+                <p className="text-[13px] font-semibold text-neutral-800">
+                  {shotCount > 1
+                    ? `Kare ${index + 1}/${shotCount}`
+                    : "Model oluşturuluyor"}
+                </p>
+                <p className="text-[12px] text-neutral-600">
+                  {progressLabel || "Hazırlanıyor…"}
+                </p>
               </div>
-              <div className="h-1.5 overflow-hidden rounded-full bg-white/70">
-                <motion.div
-                  className="h-full rounded-full"
-                  style={{ background: "var(--panel-accent)" }}
-                  animate={{ width: `${progressPct}%` }}
-                  transition={{ duration: 0.35, ease }}
-                />
+              <div className="absolute inset-x-0 bottom-0 space-y-1.5 p-4">
+                <div className="flex justify-between text-[11px] font-semibold tabular-nums text-neutral-700">
+                  <span>İlerleme</span>
+                  <span>{roundedPct}%</span>
+                </div>
+                <div className="h-1.5 overflow-hidden rounded-full bg-white/70">
+                  <motion.div
+                    className="h-full rounded-full"
+                    style={{ background: "var(--panel-accent)" }}
+                    animate={{ width: `${progressPct}%` }}
+                    transition={{ duration: 0.35, ease }}
+                  />
+                </div>
               </div>
             </div>
-          </div>
+          ))}
         </motion.div>
       ) : null}
 
@@ -480,8 +513,8 @@ export function TrOwnerAiCatalogEnhance({
             id="regen-model-body"
             className="mt-1.5 text-[13px] leading-relaxed text-neutral-600"
           >
-            Mevcut görsel değişir; ikinci fotoğraf eklenmez. Bu işlem{" "}
-            {TR_AI_CATALOG_CREDITS.modelPackage} kredi kullanır.
+            Mevcut görseller değişir; aynı kareler tekrar eklenmez. Bu işlem{" "}
+            {modelCredits} kredi kullanır.
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <button
@@ -567,7 +600,7 @@ export function TrOwnerAiCatalogEnhance({
       {(!hasModelPhoto && !busy) || (confirmRegen && !busy) ? (
         <>
           <TrOwnerCreditsCostLine
-            credits={describeModelPackageCredits()}
+            credits={modelCredits}
             prefix="Bu işlem"
             boutiqueId={boutiqueId}
           />

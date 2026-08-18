@@ -20,8 +20,8 @@ import { isTrDemoIconSrc } from "@/lib/tr/demoIcons";
 import { isTrDemoProduct } from "@/lib/tr/looks/demoCatalog";
 import { isTrCheckoutEnabled } from "@/lib/tr/platform";
 import {
+  getMarketplaceGalleryImages,
   getProductCoverImageFor,
-  getStorefrontGalleryImages,
   isCatalogCutoutImage,
 } from "@/lib/tr/productImages";
 import {
@@ -41,7 +41,7 @@ interface TrClothPageProps {
 }
 
 export function TrClothPage({ product, relatedProducts }: TrClothPageProps) {
-  const images = getStorefrontGalleryImages(product);
+  const images = getMarketplaceGalleryImages(product);
   const cover = images[0] ?? null;
   const demoIcon = isTrDemoIconSrc(cover);
   const cutout = !demoIcon && isCatalogCutoutImage(cover);
@@ -149,7 +149,6 @@ export function TrClothPage({ product, relatedProducts }: TrClothPageProps) {
                 src={displayImage}
                 alt=""
                 fill
-                unoptimized
                 priority
                 sizes="(max-width: 768px) 100vw, 50vw"
                 className={
@@ -188,7 +187,6 @@ export function TrClothPage({ product, relatedProducts }: TrClothPageProps) {
                     src={src}
                     alt=""
                     fill
-                    unoptimized
                     sizes="48px"
                     className={
                       isCatalogCutoutImage(src)

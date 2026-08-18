@@ -16,6 +16,9 @@ import type {
 } from "@/types/tr-marketplace";
 
 const PRODUCT_COLUMNS_CORE =
+  "id, boutique_id, title, description, price_kurus, compare_at_price_kurus, size, sizes, colors, condition_label, category, images, marketplace_images, storefront_images, lifestyle_images, catalog_background_id, status, stock, sort_order, created_at, updated_at";
+
+const PRODUCT_COLUMNS_CORE_PRE_STOREFRONT =
   "id, boutique_id, title, description, price_kurus, compare_at_price_kurus, size, sizes, colors, condition_label, category, images, marketplace_images, lifestyle_images, catalog_background_id, status, stock, sort_order, created_at, updated_at";
 
 /** Includes size_stocks + features when those migrations have been applied. */
@@ -107,6 +110,7 @@ function productInsertRow(
     category: input.category?.trim() ?? null,
     images: input.images ?? [],
     marketplace_images: input.marketplaceImages ?? [],
+    storefront_images: input.storefrontImages ?? [],
     lifestyle_images: input.lifestyleImages ?? [],
     catalog_background_id: input.catalogBackgroundId?.trim() || null,
     features: sanitizeProductFeatures(input.features),
@@ -135,6 +139,9 @@ const PRODUCT_SELECT_CANDIDATES: readonly string[] = [
   PUBLIC_PRODUCT_COLUMNS,
   `${PRODUCT_COLUMNS_CORE}, size_stocks`,
   PRODUCT_COLUMNS_CORE,
+  `${PRODUCT_COLUMNS_CORE_PRE_STOREFRONT}, size_stocks, features`,
+  `${PRODUCT_COLUMNS_CORE_PRE_STOREFRONT}, size_stocks`,
+  PRODUCT_COLUMNS_CORE_PRE_STOREFRONT,
   // Minimal set if older prod DBs lack marketplace/lifestyle/catalog columns.
   "id, boutique_id, title, description, price_kurus, size, category, images, status, sort_order, created_at, updated_at",
 ];
@@ -338,6 +345,9 @@ export async function listProductsByBoutiqueIdAdmin(
 }
 
 const PANEL_LIST_COLUMNS =
+  "id, boutique_id, title, price_kurus, compare_at_price_kurus, sizes, category, images, marketplace_images, storefront_images, status, stock, size_stocks, sort_order, created_at, updated_at";
+
+const PANEL_LIST_COLUMNS_LEGACY =
   "id, boutique_id, title, price_kurus, compare_at_price_kurus, sizes, category, images, marketplace_images, status, stock, size_stocks, sort_order, created_at, updated_at";
 
 function firstUrl(value: unknown): string[] {
@@ -358,13 +368,28 @@ export async function listOwnerProductsLiteAdmin(
     throw new Error("Supabase service role is not configured.");
   }
 
-  const { data, error } = await supabase
+  const withStorefront = await supabase
     .from("tr_products")
     .select(PANEL_LIST_COLUMNS)
     .eq("boutique_id", boutiqueId)
     .order("sort_order", { ascending: true });
 
-  if (error) throw error;
+  let data: unknown[] | null = withStorefront.data ?? null;
+  if (withStorefront.error) {
+    if (
+      !isMissingColumnError(withStorefront.error, "storefront_images") &&
+      missingColumnFromError(withStorefront.error) !== "storefront_images"
+    ) {
+      throw withStorefront.error;
+    }
+    const legacy = await supabase
+      .from("tr_products")
+      .select(PANEL_LIST_COLUMNS_LEGACY)
+      .eq("boutique_id", boutiqueId)
+      .order("sort_order", { ascending: true });
+    if (legacy.error) throw legacy.error;
+    data = legacy.data ?? [];
+  }
 
   return (data ?? []).map((row) => {
     const record = row as Record<string, unknown>;
@@ -372,6 +397,7 @@ export async function listOwnerProductsLiteAdmin(
       ...record,
       images: firstUrl(record.images),
       marketplace_images: firstUrl(record.marketplace_images),
+      storefront_images: firstUrl(record.storefront_images),
       lifestyle_images: [],
       description: null,
       colors: [],
@@ -502,6 +528,9 @@ function productUpdateRow(input: UpdateTrProductInput): Record<string, unknown> 
   if (input.images !== undefined) row.images = input.images;
   if (input.marketplaceImages !== undefined) {
     row.marketplace_images = input.marketplaceImages;
+  }
+  if (input.storefrontImages !== undefined) {
+    row.storefront_images = input.storefrontImages;
   }
   if (input.lifestyleImages !== undefined) {
     row.lifestyle_images = input.lifestyleImages;
@@ -670,6 +699,7 @@ export async function duplicateProductAdmin(
     category: existing.category,
     images: existing.images,
     marketplaceImages: existing.marketplaceImages,
+    storefrontImages: existing.storefrontImages,
     lifestyleImages: existing.lifestyleImages,
     catalogBackgroundId: existing.catalogBackgroundId,
     features: existing.features,

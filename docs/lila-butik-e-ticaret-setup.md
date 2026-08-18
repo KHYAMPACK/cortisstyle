@@ -107,14 +107,15 @@ Owners will eventually edit these in panel; seed JSON mirrors the pack.
 
 ## Storefront imagery
 
-- PDP gallery uses marketplace cutouts; raw front/back hanger uploads stay owner-only when cutouts exist (`getStorefrontGalleryImages`)
+- PDP gallery uses flattened storefront WebP (fallback: marketplace cutouts); raw front/back hanger uploads stay owner-only when cutouts exist (`getStorefrontGalleryImages`)
 
 ## AI house model (Lila only)
 
-- Registry: `BOUTIQUE_AI_MODELS.lilabutik` in `src/lib/tr/aiModel/registry.ts`
-- Ref plate: `public/tr/ai-models/lilabutik-lila.jpg` — same woman as category/hero campaigns
-- Panel picker id: `boutique:lilabutik` (default for Lila; Ayla/Deniz still available)
-- Do **not** reuse this ref for other boutiques
+- Registry: `BOUTIQUE_AI_MODELS.lilabutik` / `LILABUTIK_LILA_TRYON_REFS` in `src/lib/tr/aiModel/registry.ts`
+- Try-on plates (Cursor gens, full-body): `public/tr/ai-models/lilabutik-lila-{blinds,flash}-{front,three-quarter,hands-behind}.jpg`
+- Panel: pick Lila, then **Panjur** (default) or **Flaş**. Pipeline produces **1** try-on from a random pose among that style’s three plates (1 FASHN credit).
+- Panel picker id: `boutique:lilabutik` (default for Lila; Ayla/Deniz still available, 1 shot). Owners do not pick the pose.
+- Do **not** reuse this ref for other boutiques. Do **not** regenerate via FASHN `model-create`.
 
 ## Domain & Search Console
 

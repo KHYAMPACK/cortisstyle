@@ -28,7 +28,7 @@ const JOBS = [
   },
   {
     label: "Lila",
-    modelPath: path.join(ROOT, "public/tr/ai-models/lilabutik-lila.jpg"),
+    modelPath: path.join(ROOT, "public/tr/ai-models/lilabutik-lila-flash-front.jpg"),
     outName: "pose-02-lila.jpg",
     prompt: `${ROOM} Medium-long fashion campaign shot, mid-thigh up. Elegant editorial pose: chin slightly turned, arms relaxed slightly away from the torso, garment-forward, looking toward camera, poised and still.`,
   },

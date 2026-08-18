@@ -5,7 +5,7 @@ export { TR_ASSETS_BUCKET, isTrMarketplaceAssetUrl } from "@/lib/tr/trAssetUrls"
 
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 
-export type TrAssetKind = "original" | "marketplace" | "lifestyle";
+export type TrAssetKind = "original" | "marketplace" | "lifestyle" | "storefront";
 
 function sanitizeSegment(value: string): string {
   return value.replace(/[^a-zA-Z0-9._-]/g, "-").slice(0, 120);
@@ -22,9 +22,11 @@ export function buildTrAssetPath(
   boutiqueId: string,
   contentType: string,
   kind: TrAssetKind = "original",
+  fileId?: string,
 ): string {
   const extension = extensionFromContentType(contentType);
-  const fileName = `${crypto.randomUUID()}.${extension}`;
+  const name = sanitizeSegment(fileId?.trim() || crypto.randomUUID());
+  const fileName = `${name}.${extension}`;
   return `${sanitizeSegment(userId)}/${sanitizeSegment(boutiqueId)}/${kind}/${fileName}`;
 }
 
@@ -43,6 +45,9 @@ export async function uploadTrProductAsset(params: {
   bytes: Buffer;
   contentType: string;
   kind?: TrAssetKind;
+  /** Stable id so storefront WebP can overwrite when catalog background changes. */
+  fileId?: string;
+  upsert?: boolean;
 }): Promise<{ url: string; path: string }> {
   const admin = getServiceSupabase();
 
@@ -62,13 +67,14 @@ export async function uploadTrProductAsset(params: {
     params.boutiqueId,
     params.contentType,
     kind,
+    params.fileId,
   );
 
   const { error } = await admin.storage
     .from(TR_ASSETS_BUCKET)
     .upload(path, params.bytes, {
       contentType: params.contentType,
-      upsert: false,
+      upsert: params.upsert ?? false,
     });
 
   if (error) {

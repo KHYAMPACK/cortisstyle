@@ -1,10 +1,15 @@
 import {
+  encodeOpaqueWebp,
+  ORIGINAL_MAX_EDGE_PX,
+} from "@/lib/tr/assets/encodeOpaqueImage";
+import {
   uploadTrProductAsset,
   type TrAssetKind,
 } from "@/lib/tr/trAssetStorage";
 
 /**
  * Download a remote image (e.g. FASHN CDN, expires ~3 days) and store in tr-assets.
+ * Lifestyle shots are opaque photos — encode WebP. Marketplace cutouts stay PNG.
  */
 export async function rehostRemoteImageToTrAssets(params: {
   imageUrl: string;
@@ -21,13 +26,17 @@ export async function rehostRemoteImageToTrAssets(params: {
 
   const contentType =
     response.headers.get("content-type")?.split(";")[0]?.trim() || "image/png";
-  const buffer = Buffer.from(await response.arrayBuffer());
+  const raw = Buffer.from(await response.arrayBuffer());
+  const encoded =
+    params.kind === "lifestyle"
+      ? await encodeOpaqueWebp(raw, ORIGINAL_MAX_EDGE_PX)
+      : { bytes: raw, contentType };
 
   return uploadTrProductAsset({
     userId: params.userId,
     boutiqueId: params.boutiqueId,
-    bytes: buffer,
-    contentType,
+    bytes: encoded.bytes,
+    contentType: encoded.contentType,
     kind: params.kind,
   });
 }

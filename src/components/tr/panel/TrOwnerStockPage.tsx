@@ -33,7 +33,7 @@ import {
 } from "@/components/tr/panel/TrPanelMotion";
 import { runOwnerPatches } from "@/lib/tr/ownerBulk";
 import { listCategoriesForProducts } from "@/lib/tr/categories";
-import { getProductCoverImageFor } from "@/lib/tr/productImages";
+import { getPanelProductCover } from "@/lib/tr/productImages";
 import { fetchOwnerProducts, peekOwnerProducts, updateOwnerProduct } from "@/lib/tr/ownerClient";
 import { PanelSelectCheckbox } from "@/components/tr/panel/PanelSelectCheckbox";
 import { usePanelRowSelection } from "@/hooks/usePanelRowSelection";
@@ -42,7 +42,7 @@ import {
   trPanelPath,
   trPanelProductsPath,
 } from "@/lib/tr/paths";
-import { sortProductSizes } from "@/lib/tr/productOptions";
+import { sizesForStockBoard, sortProductSizes } from "@/lib/tr/productOptions";
 import { sumSizeStocks } from "@/lib/tr/sizeStocks";
 import type { TrProduct } from "@/types/tr-marketplace";
 
@@ -51,11 +51,9 @@ const LOW_STOCK = 2;
 type StockFilter = "all" | "low" | "out" | "available";
 
 function productTotal(product: TrProduct): number {
-  if (product.sizes.length > 0) {
-    return sortProductSizes(product.sizes).reduce(
-      (sum, size) => sum + sizeQty(product, size),
-      0,
-    );
+  const sizes = sizesForStockBoard(product.sizes);
+  if (sizes.length > 0) {
+    return sizes.reduce((sum, size) => sum + sizeQty(product, size), 0);
   }
   return product.stock;
 }
@@ -188,11 +186,11 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
     return list;
   }, [products, search, stockFilter, categoryFilter]);
 
-  /** Shared size columns so S/M/L line up across rows. */
+  /** Shared size columns: chart defaults (incl. 2XL/3XL) plus extras on products. */
   const sizeColumns = useMemo(() => {
     const set = new Set<string>();
     for (const product of products) {
-      for (const size of product.sizes) set.add(size);
+      for (const size of sizesForStockBoard(product.sizes)) set.add(size);
     }
     return sortProductSizes([...set]);
   }, [products]);
@@ -264,21 +262,36 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
 
   const setSizeStock = (product: TrProduct, size: string, next: number) => {
     if (next < 0) return;
-    const sizes = sortProductSizes(product.sizes);
+    const boardSizes = sizesForStockBoard(product.sizes);
     const nextStocks: Record<string, number> = {};
-    for (const entry of sizes) {
+    for (const entry of boardSizes) {
       nextStocks[entry] = entry === size ? next : sizeQty(product, entry);
     }
+    if (!boardSizes.includes(size)) {
+      nextStocks[size] = next;
+    }
+    const persistedSizes = sortProductSizes(
+      Object.keys(nextStocks).filter(
+        (entry) =>
+          product.sizes.includes(entry) || (nextStocks[entry] ?? 0) > 0,
+      ),
+    );
+    const persistedStocks: Record<string, number> = {};
+    for (const entry of persistedSizes) {
+      persistedStocks[entry] = nextStocks[entry] ?? 0;
+    }
+    const stock = sumSizeStocks(persistedStocks);
     patchStock(
       product,
       {
         ...product,
-        sizeStocks: nextStocks,
-        stock: sumSizeStocks(nextStocks),
+        sizes: persistedSizes,
+        sizeStocks: persistedStocks,
+        stock,
       },
       {
-        sizeStocks: nextStocks,
-        stock: sumSizeStocks(nextStocks),
+        sizeStocks: persistedStocks,
+        stock,
       },
     );
   };
@@ -446,11 +459,11 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
                 <TrPanelStagger className="space-y-3">
                   {visible.map((product) => {
                     const cover =
-                      getProductCoverImageFor("marketplace", product) ??
+                      getPanelProductCover(product) ??
                       product.images[0] ??
                       null;
-                    const sizes = sortProductSizes(product.sizes);
-                    const hasSizes = sizes.length > 0;
+                    const sizes = sizesForStockBoard(product.sizes);
+                    const hasSizes = product.sizes.length > 0;
                     const total = hasSizes
                       ? sizes.reduce(
                           (sum, size) => sum + sizeQty(product, size),
@@ -618,11 +631,11 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
                   >
                     {visible.map((product) => {
                       const cover =
-                        getProductCoverImageFor("marketplace", product) ??
+                        getPanelProductCover(product) ??
                         product.images[0] ??
                         null;
-                      const sizes = sortProductSizes(product.sizes);
-                      const hasSizes = sizes.length > 0;
+                      const sizes = sizesForStockBoard(product.sizes);
+                      const hasSizes = product.sizes.length > 0;
                       const sizeSet = new Set(sizes);
                       const total = hasSizes
                         ? sizes.reduce(

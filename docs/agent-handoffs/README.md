@@ -12,7 +12,7 @@ Start here when picking up this repo. Read **[00-overview.md](./00-overview.md)*
 | [04-tr-marketplace.md](./04-tr-marketplace.md) | **Phase 2** — multi-tenant pazaryeri | `/tr` Cadde, looks, platform cart |
 | [05-commerce-rails.md](./05-commerce-rails.md) | Shared by 1+2 | Checkout, orders, WhatsApp interim, payments |
 | [06-sell-enablement.md](./06-sell-enablement.md) | **Phase 3** — help them sell | AI catalog, campaigns, content |
-| [15-boutique-storefront-image-formats.md](./15-boutique-storefront-image-formats.md) | Phase 1+3 **later** | Boutique JPEG/WebP vs Cadde PNG cutouts |
+| [15-boutique-storefront-image-formats.md](./15-boutique-storefront-image-formats.md) | Phase 1+3 | Boutique WebP vs Cadde PNG cutouts |
 | [07-platform-ops.md](./07-platform-ops.md) | Cross-cutting | Env, Supabase patches, auth, security notes |
 | [08-boutique-audit-pervin.md](./08-boutique-audit-pervin.md) | Phase 1 health check | Pervin Soysal Butik |
 | [09-boutique-clone-playbook.md](./09-boutique-clone-playbook.md) | Phase 1 onboarding | Copy the **system** for the next boutique |

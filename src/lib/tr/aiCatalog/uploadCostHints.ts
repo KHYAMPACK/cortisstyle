@@ -120,9 +120,14 @@ export function describePhotoSlotCost(slotIndex: number): {
   };
 }
 
-/** Credits for the single front model package. */
-export function describeModelPackageCredits(): number {
+/** Credits for the model package (1 shot / 1 credit, including Lila). */
+export function describeModelPackageCredits(_modelId?: string | null): number {
   return TR_AI_CATALOG_CREDITS.modelPackage;
+}
+
+/** How many lifestyle shots this model run produces. */
+export function describeModelPackageShots(_modelId?: string | null): number {
+  return TR_AI_CATALOG_CREDITS.modelPackageShots;
 }
 
 /** @deprecated Use describeModelPackageCredits */

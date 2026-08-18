@@ -40,7 +40,7 @@ import {
   TR_BOUTIQUE_CATEGORIES,
 } from "@/lib/tr/categories";
 import { runOwnerPatches } from "@/lib/tr/ownerBulk";
-import { getProductCoverImageFor } from "@/lib/tr/productImages";
+import { getPanelProductCover } from "@/lib/tr/productImages";
 import {
   deleteOwnerProduct,
   fetchOwnerProducts,
@@ -440,7 +440,7 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
                 <TrPanelStagger className="space-y-3">
                   {visible.map((product, index) => {
                     const cover =
-                      getProductCoverImageFor("marketplace", product) ??
+                      getPanelProductCover(product) ??
                       product.images[0] ??
                       null;
                     const statusLabel =
@@ -548,7 +548,7 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
                 >
                   {visible.map((product, index) => {
                     const cover =
-                      getProductCoverImageFor("marketplace", product) ??
+                      getPanelProductCover(product) ??
                       product.images[0] ??
                       null;
                     const busy = savingIds.has(product.id) || bulkBusy;

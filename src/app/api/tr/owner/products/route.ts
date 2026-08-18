@@ -3,6 +3,7 @@ import {
   requireTrOwner,
 } from "@/lib/tr/ownerAuth";
 import { createProductAdmin, listOwnerProductsLiteAdmin } from "@/lib/tr/products";
+import { buildStorefrontImageUrls } from "@/lib/tr/assets/storefrontImages";
 import {
   readSizeStocks,
   sizeStocksForSizes,
@@ -13,6 +14,7 @@ import type { TrProductColor, TrProductStatus } from "@/types/tr-marketplace";
 import { sanitizeProductFeatures } from "@/lib/tr/catalog/productFeatures";
 
 export const runtime = "nodejs";
+export const maxDuration = 120;
 
 function readColors(value: unknown): TrProductColor[] | undefined {
   if (value === undefined) return undefined;
@@ -194,6 +196,20 @@ export async function POST(request: Request) {
   }
 
   try {
+    const marketplaceImages = readStringArray(body.marketplaceImages) ?? [];
+    const catalogBackgroundId =
+      typeof body.catalogBackgroundId === "string"
+        ? body.catalogBackgroundId.trim() || null
+        : null;
+    const storefrontImages = marketplaceImages.some((url) => Boolean(url.trim()))
+      ? await buildStorefrontImageUrls({
+          marketplaceUrls: marketplaceImages,
+          backgroundId: catalogBackgroundId,
+          userId: authResult.auth.user.id,
+          boutiqueId: boutique.id,
+        })
+      : [];
+
     const product = await createProductAdmin({
       boutiqueId: boutique.id,
       title,
@@ -205,12 +221,10 @@ export async function POST(request: Request) {
       colors: readColors(body.colors) ?? [],
       category: typeof body.category === "string" ? body.category : null,
       images: readStringArray(body.images) ?? [],
-      marketplaceImages: readStringArray(body.marketplaceImages) ?? [],
+      marketplaceImages,
+      storefrontImages,
       lifestyleImages: readStringArray(body.lifestyleImages) ?? [],
-      catalogBackgroundId:
-        typeof body.catalogBackgroundId === "string"
-          ? body.catalogBackgroundId.trim() || null
-          : null,
+      catalogBackgroundId,
       features: sanitizeProductFeatures(body.features),
       conditionLabel:
         typeof body.conditionLabel === "string" ? body.conditionLabel : null,

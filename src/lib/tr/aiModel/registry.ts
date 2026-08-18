@@ -17,9 +17,10 @@ import type {
   TrAiModelIdentity,
   TrAiModelOption,
   TrAiModelPose,
+  TrLilaPhotographyStyle,
 } from "@/lib/tr/aiModel/types";
 
-export type { TrAiModelGender };
+export type { TrAiModelGender, TrLilaPhotographyStyle };
 
 function parseEnvUrlList(envKey: string): string[] {
   // Server: TR_AI_STUDIO_* · Client picker: NEXT_PUBLIC_TR_AI_STUDIO_* (FASHN needs public URLs anyway)
@@ -59,6 +60,78 @@ function hasRefs(urls: string[]): boolean {
   return urls.some((url) => Boolean(url?.trim()));
 }
 
+export const LILA_HOUSE_MODEL_ID = "boutique:lilabutik";
+export const LILA_DEFAULT_PHOTOGRAPHY_STYLE: TrLilaPhotographyStyle = "blinds";
+export const LILA_TRYON_SHOTS_PER_STYLE = 1;
+
+export const LILA_PHOTOGRAPHY_STYLE_LABELS: Record<
+  TrLilaPhotographyStyle,
+  string
+> = {
+  blinds: "Panjur",
+  flash: "Flaş",
+};
+
+export const LILABUTIK_LILA_TRYON_REFS_BY_STYLE: Record<
+  TrLilaPhotographyStyle,
+  readonly string[]
+> = {
+  blinds: [
+    "/tr/ai-models/lilabutik-lila-blinds-front.jpg",
+    "/tr/ai-models/lilabutik-lila-blinds-three-quarter.jpg",
+    "/tr/ai-models/lilabutik-lila-blinds-hands-behind.jpg",
+  ],
+  flash: [
+    "/tr/ai-models/lilabutik-lila-flash-front.jpg",
+    "/tr/ai-models/lilabutik-lila-flash-three-quarter.jpg",
+    "/tr/ai-models/lilabutik-lila-flash-hands-behind.jpg",
+  ],
+};
+
+/** Full-body Lila plates: blinds + flash × front / three-quarter / hands-behind. */
+export const LILABUTIK_LILA_TRYON_REFS = [
+  ...LILABUTIK_LILA_TRYON_REFS_BY_STYLE.blinds,
+  ...LILABUTIK_LILA_TRYON_REFS_BY_STYLE.flash,
+] as const;
+
+export function isLilaHouseModelId(modelId: string | null | undefined): boolean {
+  return modelId?.trim() === LILA_HOUSE_MODEL_ID;
+}
+
+export function parseLilaPhotographyStyle(
+  raw: unknown,
+): TrLilaPhotographyStyle {
+  return raw === "flash" ? "flash" : LILA_DEFAULT_PHOTOGRAPHY_STYLE;
+}
+
+export function lilaTryOnShotCount(modelId: string | null | undefined): number {
+  return isLilaHouseModelId(modelId) ? LILA_TRYON_SHOTS_PER_STYLE : 1;
+}
+
+/** Owners pick the person (and Lila lighting), not the pose. */
+export function pickRandomModelReferenceUrl(urls: string[]): string | null {
+  const picked = pickDistinctModelReferenceUrls(urls, 1);
+  return picked[0] ?? null;
+}
+
+/** Shuffle then take unique URLs — never repeats the same plate. */
+export function pickDistinctModelReferenceUrls(
+  urls: string[],
+  count: number,
+): string[] {
+  const cleaned = [
+    ...new Set(urls.map((url) => url.trim()).filter(Boolean)),
+  ];
+  if (cleaned.length === 0 || count <= 0) return [];
+  for (let i = cleaned.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const current = cleaned[i]!;
+    cleaned[i] = cleaned[j]!;
+    cleaned[j] = current;
+  }
+  return cleaned.slice(0, Math.min(count, cleaned.length));
+}
+
 /**
  * In-code model registry. Later: load from boutique editorial_content / DB.
  * Populate referenceImageUrls after in-shop portrait shoot (manual only).
@@ -68,11 +141,11 @@ const BOUTIQUE_AI_MODELS: Record<string, TrAiModelIdentity> = {
     boutiqueSlug: "lilabutik",
     displayName: "Lila",
     gender: "woman",
-    referenceImageUrls: ["/tr/ai-models/lilabutik-lila.jpg"],
+    referenceImageUrls: [...LILABUTIK_LILA_TRYON_REFS],
     faceReferenceUrls: [],
     defaultPose: "standing-front",
     notes:
-      "House model for Lila Butik only — same woman as storefront campaign photos. Used for on-model AI try-on.",
+      "House model for Lila Butik only. Owners pick blinds (default) or flash; try-on picks one random pose from that style’s three plates.",
   },
   pervinsoysalbutik: {
     boutiqueSlug: "pervinsoysalbutik",
@@ -143,7 +216,11 @@ function boutiqueOption(identity: TrAiModelIdentity): TrAiModelOption {
   return {
     id: `boutique:${identity.boutiqueSlug}`,
     label: identity.displayName,
-    hint: ready ? "Butik modeli" : "Referans fotoğrafı bekleniyor",
+    hint: ready
+      ? identity.boutiqueSlug === "lilabutik"
+        ? "Butik modeli · stil seçin, poz rastgele"
+        : "Butik modeli · poz rastgele"
+      : "Referans fotoğrafı bekleniyor",
     gender: identity.gender,
     ready,
     kind: "boutique",

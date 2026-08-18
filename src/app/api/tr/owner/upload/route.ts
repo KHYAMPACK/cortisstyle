@@ -1,4 +1,8 @@
 import {
+  encodeOpaqueWebp,
+  ORIGINAL_MAX_EDGE_PX,
+} from "@/lib/tr/assets/encodeOpaqueImage";
+import {
   requireOwnedBoutique,
   requireTrOwner,
 } from "@/lib/tr/ownerAuth";
@@ -72,12 +76,16 @@ export async function POST(request: Request) {
       : String(removeBackgroundRaw).trim().toLowerCase() !== "false";
 
   try {
-    const bytes = Buffer.from(await file.arrayBuffer());
+    const rawBytes = Buffer.from(await file.arrayBuffer());
+    const originalEncoded = await encodeOpaqueWebp(
+      rawBytes,
+      ORIGINAL_MAX_EDGE_PX,
+    );
     const original = await uploadTrProductAsset({
       userId: authResult.auth.user.id,
       boutiqueId: boutique.id,
-      bytes,
-      contentType,
+      bytes: originalEncoded.bytes,
+      contentType: originalEncoded.contentType,
       kind: "original",
     });
 
@@ -97,7 +105,7 @@ export async function POST(request: Request) {
     } else {
       try {
         const cutout = await removeGarmentBackground({
-          bytes,
+          bytes: rawBytes,
           filename: file.name || "product.jpg",
           mimeType: contentType,
         });

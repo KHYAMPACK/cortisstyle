@@ -54,6 +54,10 @@ import {
   sumSizeStocks,
 } from "@/lib/tr/sizeStocks";
 import {
+  LILA_DEFAULT_PHOTOGRAPHY_STYLE,
+  type TrLilaPhotographyStyle,
+} from "@/lib/tr/aiModel/registry";
+import {
   panelAddChipClass,
   panelChipClass,
   panelDangerBtnClass,
@@ -237,6 +241,8 @@ export function TrProductEditorForm({
     initialProduct?.catalogBackgroundId ?? DEFAULT_CATALOG_BACKGROUND_ID,
   );
   const [selectedModelId, setSelectedModelId] = useState<string | null>(null);
+  const [photographyStyle, setPhotographyStyle] =
+    useState<TrLilaPhotographyStyle>(LILA_DEFAULT_PHOTOGRAPHY_STYLE);
   const [lightbox, setLightbox] = useState<{
     src: string;
     label: string;
@@ -288,6 +294,22 @@ export function TrProductEditorForm({
       return nextInputs;
     });
   };
+
+  useEffect(() => {
+    if (sizeChart === "none") return;
+    setSizeStockInputs((current) => {
+      const defaults = emptyStockInputsForChart(sizeChart, "0");
+      let changed = false;
+      const next = { ...current };
+      for (const [size, fill] of Object.entries(defaults)) {
+        if (next[size] === undefined) {
+          next[size] = fill;
+          changed = true;
+        }
+      }
+      return changed ? next : current;
+    });
+  }, [sizeChart]);
 
   useEffect(() => {
     if (!initialProduct) return;
@@ -700,11 +722,10 @@ export function TrProductEditorForm({
               lifestyleImages={lifestyleImages}
               selectedModelId={selectedModelId}
               onSelectedModelIdChange={setSelectedModelId}
+              photographyStyle={photographyStyle}
+              onPhotographyStyleChange={setPhotographyStyle}
               onMarketplaceImagesChange={setMarketplaceImages}
-              onLifestyleImagesChange={(urls) => {
-                const first = urls.find((url) => url?.trim())?.trim();
-                setLifestyleImages(first ? [first] : []);
-              }}
+              onLifestyleImagesChange={setLifestyleImages}
               onListingDraft={setListingDraft}
               disabled={uploading || saving}
             />

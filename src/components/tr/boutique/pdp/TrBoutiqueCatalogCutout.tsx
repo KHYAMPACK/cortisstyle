@@ -59,7 +59,6 @@ export function TrBoutiqueCatalogCutout({
           alt=""
           fill
           sizes="260px"
-          unoptimized
           className="object-contain p-6"
         />
       </div>

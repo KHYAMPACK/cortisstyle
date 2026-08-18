@@ -735,7 +735,6 @@ export function TrOwnerGuidedPhotoUpload({
                 src={previewSrc}
                 alt={roleLabel}
                 fill
-                unoptimized
                 className={catalogUrl ? "object-contain p-2" : "object-cover"}
                 sizes="160px"
               />
@@ -773,7 +772,6 @@ export function TrOwnerGuidedPhotoUpload({
                   src={previewSrc}
                   alt={roleLabel}
                   fill
-                  unoptimized
                   className="object-cover"
                   sizes="160px"
                 />

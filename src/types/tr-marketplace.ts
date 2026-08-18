@@ -124,6 +124,8 @@ export interface TrProduct {
   images: string[];
   /** Marketplace / catalog cutouts (BG removed + normalized). */
   marketplaceImages: string[];
+  /** Boutique display copies of packshots (opaque WebP on catalog background). */
+  storefrontImages: string[];
   /** AI on-model / lifestyle shots (content packs + PDP). */
   lifestyleImages: string[];
   /** Premade catalog backdrop id (one per product). */
@@ -290,6 +292,7 @@ export interface CreateTrProductInput {
   category?: string | null;
   images?: string[];
   marketplaceImages?: string[];
+  storefrontImages?: string[];
   lifestyleImages?: string[];
   catalogBackgroundId?: string | null;
   features?: TrProductFeatures;
@@ -311,6 +314,7 @@ export interface UpdateTrProductInput {
   category?: string | null;
   images?: string[];
   marketplaceImages?: string[];
+  storefrontImages?: string[];
   lifestyleImages?: string[];
   catalogBackgroundId?: string | null;
   features?: TrProductFeatures;

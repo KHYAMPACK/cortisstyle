@@ -1,5 +1,5 @@
 /** Soft cap before hitting Next/Vercel request body limits (~4.5–10MB). */
-const COMPRESS_IF_LARGER_THAN_BYTES = 3.5 * 1024 * 1024;
+const COMPRESS_IF_LARGER_THAN_BYTES = 1 * 1024 * 1024;
 const MAX_EDGE_PX = 2400;
 const JPEG_QUALITY = 0.85;
 

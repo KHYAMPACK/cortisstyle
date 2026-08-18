@@ -39,10 +39,12 @@ export {
 export {
   getBoutiqueProductImages,
   getMarketplaceProductImages,
+  getMarketplaceGalleryImages,
   getStorefrontGalleryImages,
   getProductCoverImageFor,
   getProductHoverImage,
   getProductSecondaryImage,
+  getPanelProductCover,
   hasRealMarketplaceImagery,
   isCatalogCutoutImage,
 } from "@/lib/tr/productImages";

@@ -109,6 +109,7 @@ export function buildEditorialDemoProducts(
     category: spec.category,
     images: [],
     marketplaceImages: [],
+    storefrontImages: [],
     lifestyleImages: [],
     catalogBackgroundId: null,
     features: {},

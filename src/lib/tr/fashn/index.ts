@@ -15,5 +15,5 @@ export {
   generateFashnPackshot,
 } from "@/lib/tr/fashn/packshot";
 export { generateFashnTryOn } from "@/lib/tr/fashn/tryon";
-export { generateFashnModelCreate } from "@/lib/tr/fashn/modelCreate";
+// model-create is not part of the live catalog — do not re-export for product code.
 export { rehostRemoteImageToTrAssets } from "@/lib/tr/fashn/rehost";

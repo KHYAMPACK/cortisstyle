@@ -119,6 +119,8 @@ const fashnProvider: TrAiModelProvider = {
       meta: {
         modelId: request.modelId ?? null,
         pose: request.pose ?? null,
+        photographyStyle: request.photographyStyle ?? null,
+        modelReferenceUrl: modelImageUrl,
       },
     });
 

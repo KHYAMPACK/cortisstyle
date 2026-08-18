@@ -16,7 +16,7 @@
 - Boutique public view: `supabase/patch_tr_boutiques_public_view.sql`
 - Boutique 404 diagnose SQL: `supabase/fix_tr_boutiques_public_visibility.sql`
 - Products public RLS (empty storefront catalog): `supabase/patch_tr_products_public_read_via_view.sql`
-- Product PDP specs JSON: `supabase/patch_tr_product_features.sql` (`tr_products.features`)
+- Product storefront WebP copies: `supabase/patch_tr_product_storefront_images.sql` (`tr_products.storefront_images`)
 - Boutique health (admin): `GET /api/tr/admin/boutique-health` — Bearer `TR_ADMIN_SECRET`
 
 ## Auth matrix
@@ -53,8 +53,8 @@ Branded reset (`/api/tr/customer/auth/send-password-reset`) uses `admin.generate
 | `NEXT_PUBLIC_SITE_URL` | Origins / auth redirects |
 | `TR_ORDER_CONFIRM_SECRET` | Order confirmation HMAC (required in production) |
 | `PHOTOROOM_API_KEY` | Panel / packshot background removal |
-| `FASHN_API_KEY` | Packshot + try-on + studio `model-create` |
-| `FASHN_DEFAULT_RESOLUTION` / `FASHN_DEFAULT_MODE` | Ops / studio refs only (default `1k` / `fast`). Catalog upload is pinned to fast+1k (1 FASHN credit / output) |
+| `FASHN_API_KEY` | Packshot + try-on only (not model-create) |
+| `FASHN_DEFAULT_RESOLUTION` / `FASHN_DEFAULT_MODE` | Unused by catalog (pinned fast+1k). Do not use for model plates. |
 | `TR_CHECKOUT_ENABLED` / `NEXT_PUBLIC_TR_CHECKOUT_ENABLED` | Cadde checkout gating (`next.config` mirrors private → public) |
 | `TR_CHECKOUT_SANDBOX` / `NEXT_PUBLIC_TR_CHECKOUT_SANDBOX` | Staging sandbox orders (default off → pending) |
 | `TR_IYZICO_ENABLED` / `NEXT_PUBLIC_TR_IYZICO_ENABLED` | Global “kart yakında” hide — keep false until a live test charge; Lila banner also hides via payment registry |

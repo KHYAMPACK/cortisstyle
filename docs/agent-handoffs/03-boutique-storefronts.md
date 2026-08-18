@@ -20,7 +20,7 @@
 - Strengthen editorial templates without turning into generic card grids
 - Keep boutique-local cart separate from marketplace platform cart
 - Grow owner panel into real day-to-day ops (fulfillment, discounts, catalog quality)
-- **Later:** store boutique storefront photos (backgrounds) as WebP/JPEG; keep packshot cutouts PNG — [15-boutique-storefront-image-formats.md](./15-boutique-storefront-image-formats.md)
+- Boutique storefront photos are **WebP** (flattened packshot copies in `storefront_images`); packshot cutouts stay PNG for Cadde + try-on — [15-boutique-storefront-image-formats.md](./15-boutique-storefront-image-formats.md)
 
 ## Key paths
 

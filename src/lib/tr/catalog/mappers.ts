@@ -162,6 +162,7 @@ export function mapProductRow(row: Record<string, unknown>): TrProduct {
     category: (row.category as string | null) ?? null,
     images: readStringArray(row.images),
     marketplaceImages: readStringArray(row.marketplace_images),
+    storefrontImages: readStringArray(row.storefront_images),
     lifestyleImages: readStringArray(row.lifestyle_images),
     catalogBackgroundId:
       typeof row.catalog_background_id === "string"

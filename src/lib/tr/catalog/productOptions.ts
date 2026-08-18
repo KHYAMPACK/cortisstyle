@@ -55,6 +55,18 @@ export function sizesForChart(chart: TrSizeChartId): string[] {
   return [];
 }
 
+/**
+ * Sizes shown on the stock board: chart defaults (XS–3XL / 24–40) plus any
+ * extra labels already on the product. Empty sizes → no size columns.
+ */
+export function sizesForStockBoard(sizes: string[]): string[] {
+  const cleaned = sizes.map((size) => size.trim()).filter(Boolean);
+  if (cleaned.length === 0) return [];
+  const chart = detectSizeChart(cleaned);
+  if (chart === "none") return sortProductSizes(cleaned);
+  return sortProductSizes([...new Set([...sizesForChart(chart), ...cleaned])]);
+}
+
 export function detectSizeChart(sizes: string[]): TrSizeChartId {
   const cleaned = sizes.map((size) => size.trim()).filter(Boolean);
   if (cleaned.length === 0) return "none";

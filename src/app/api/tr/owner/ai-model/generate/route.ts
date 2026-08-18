@@ -6,7 +6,7 @@ import {
 import { getBoutiqueByIdAdmin } from "@/lib/tr/boutiques";
 
 export const runtime = "nodejs";
-export const maxDuration = 180;
+export const maxDuration = 300;
 
 type Body = {
   boutiqueId: string;
@@ -23,6 +23,8 @@ type Body = {
     | "waist-up";
   /** `boutique:{slug}` or `studio:ayla` / `studio:deniz` */
   modelId?: string;
+  /** Lila only: blinds (default) or flash */
+  photographyStyle?: "blinds" | "flash";
   prompt?: string;
 };
 
@@ -72,6 +74,7 @@ export async function POST(request: Request) {
     boutiqueId,
     userId: authResult.auth.user.id,
     modelId: body.modelId?.trim() || undefined,
+    photographyStyle: body.photographyStyle,
     prompt: body.prompt?.trim() || undefined,
     garment: {
       productId: body.productId,

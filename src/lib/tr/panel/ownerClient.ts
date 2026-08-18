@@ -419,6 +419,7 @@ export interface OwnerAiModelGenerateResult {
   status: string;
   providerId?: string;
   imageUrl?: string;
+  imageUrls?: string[];
   jobId?: string;
   creditsUsed?: number | null;
   error?: string;
@@ -439,6 +440,7 @@ export async function requestOwnerAiModelGenerate(input: {
     | "full-body"
     | "waist-up";
   modelId?: string;
+  photographyStyle?: "blinds" | "flash";
   prompt?: string;
 }): Promise<OwnerAiModelGenerateResult> {
   const response = await ownerFetch("/api/tr/owner/ai-model/generate", {
