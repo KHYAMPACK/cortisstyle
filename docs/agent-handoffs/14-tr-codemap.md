@@ -14,6 +14,7 @@
 src/
 ├── app/
 │   ├── page.tsx                 → redirect /tr
+│   ├── sitemap.ts, robots.ts    → host-aware; boutique domains passthrough (customDomain.ts)
 │   ├── auth/                    → callback, reset-password
 │   ├── privacy/, terms/         → platform legal
 │   ├── api/auth/, api/tr/       → auth check + TR APIs

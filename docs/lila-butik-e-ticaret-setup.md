@@ -123,8 +123,8 @@ Owners will eventually edit these in panel; seed JSON mirrors the pack.
 | Custom domain | `lilaboutiquedenizli.com` (+ `www`) in `src/lib/tr/customDomain.ts` / `TR_BOUTIQUE_DOMAINS` |
 | Google site verification | Root layout `metadata.verification.google` in `src/app/layout.tsx` → meta `google-site-verification` |
 | Current token | `lUtcENaTLXt-I3qvbtU_N3haAJ9CNXZ0QL7I1hZdGm8` |
-| `robots.txt` | Host-aware `src/app/robots.ts` — allows public storefront; blocks panel/cart/checkout/auth/api; points `Sitemap:` at same host |
-| `sitemap.xml` | Host-aware `src/app/sitemap.ts` — on Lila domain: `/`, `/urunler`, `/urun/{id}`, `/yasal/*`; on platform: marketing + `/tr/{slug}/…` for verified boutiques |
+| `robots.txt` | Host-aware `src/app/robots.ts` — **passthrough on every custom domain** (`BOUTIQUE_DOMAIN_ORIGIN_PASSTHROUGH_PATHS`). Allows storefront; blocks panel/cart/checkout/auth/api; `Sitemap:` at same host |
+| `sitemap.xml` | Host-aware `src/app/sitemap.ts` — same passthrough. On boutique domain: `/`, `/urunler`, `/urun/{id}`, `/yasal/*`; on platform: marketing + `/tr/{slug}/…` for verified boutiques. **Do not** add a Lila-only sitemap route. |
 | SEO helpers | `src/lib/tr/seo/storefrontSeo.ts` |
 | Google Merchant Center | Ops checklist in [13-boutique-wire-in-and-go-live.md](./agent-handoffs/13-boutique-wire-in-and-go-live.md) § C2 |
 | Merchant product feed | `https://lilaboutiquedenizli.com/feeds/google-merchant.xml` (also `/tr/lilabutik/feeds/google-merchant.xml`) — lib `src/lib/tr/googleMerchant/feed.ts` |
@@ -141,7 +141,7 @@ Owners will eventually edit these in panel; seed JSON mirrors the pack.
 1. Deploy so verification meta + `/robots.txt` + `/sitemap.xml` are live on `https://lilaboutiquedenizli.com` (and www if used).
 2. Add property for the boutique domain (Domain or URL-prefix).
 3. Confirm HTML tag verification.
-4. **Sitemaps** → submit `https://lilaboutiquedenizli.com/sitemap.xml` (or www matching the property).
+4. **Sitemaps** → submit `https://www.lilaboutiquedenizli.com/sitemap.xml` (apex 308s to www; match the property).
 5. Spot-check Coverage / Page indexing after crawl.
 
 Verify in Search Console **after deploy** (token must be live on the custom domain HTML). One root meta covers all hosts on this Next app; rotate/replace the token in `layout.tsx` if Google issues a new one.

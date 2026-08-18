@@ -100,6 +100,8 @@ export function middleware(request: NextRequest) {
     url.search = "";
     return rewriteWithPathname(request, url);
   }
+  // Origin SEO (/sitemap.xml, /robots.txt, /.well-known) must passthrough —
+  // see BOUTIQUE_DOMAIN_ORIGIN_PASSTHROUGH_PATHS. Do not nest under /tr/{slug}.
   if (boutiqueSlug && !isBoutiqueDomainPassthroughPath(pathname)) {
     const rewritten = rewriteBoutiqueDomainPath(boutiqueSlug, pathname);
     if (rewritten !== pathname) {

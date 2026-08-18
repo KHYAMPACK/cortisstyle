@@ -4,6 +4,8 @@ import {
   SEO_DISALLOW_PATHS,
 } from "@/lib/tr/seo/storefrontSeo";
 
+/** Host-aware robots.txt. Custom domains must passthrough `/robots.txt` (see customDomain.ts). */
+
 export default async function robots(): Promise<MetadataRoute.Robots> {
   const ctx = await resolveSeoHostContext();
 

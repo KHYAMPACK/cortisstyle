@@ -5,7 +5,7 @@
 ## What we do today
 
 - Per-tenant storefront at `/tr/[boutiqueSlug]` (home, PLP, PDP, local cart, checkout, legal, login)
-- **Custom domains** rewrite into boutique paths (`src/lib/tr/customDomain.ts` + middleware; e.g. pervinsoysal)
+- **Custom domains** rewrite storefront paths into `/tr/{slug}/…` (`src/lib/tr/customDomain.ts` + middleware). **Origin crawler files** (`/sitemap.xml`, `/robots.txt`, `/.well-known/`, …) **passthrough** so Search Console works on every boutique host — do not add a per-tenant sitemap route. Cadde (`/tr`, other slugs) is not served on a white-label host.
 - **Storefront themes** — same panel/APIs for all; **unique UI per boutique** via theme packs / editorial skins (Pervin = `classic` editorial; Lila = `atelier` skin). See [lila-butik-e-ticaret-setup.md](../lila-butik-e-ticaret-setup.md). Do not skin with `if (slug)` inside one chrome tree.
 - **Editorial** home/PDP templates via registries (`src/lib/tr/boutiqueHome/`, `boutiquePdp/`) — moving toward `storefront/themes/{id}/`
 - **PDP extras (all boutiques):** size chart modal (letter XS–3XL vs numeric 24–40), AI-filled **Ürün özellikleri**, category **Yıkama talimatı** registry, **İade & Teslimat** from boutique `shippingNote` / `exchangePolicy`. Not Cadde `/tr/parca`.
@@ -31,7 +31,7 @@
 | Data | `src/lib/tr/boutiques.ts`, `products.ts`, `storefront.ts`, `publicData.ts` |
 | Auth | `src/lib/tr/ownerAuth.ts`, `ownerClient.ts` |
 | URLs | `src/lib/tr/paths.ts` (`trBoutiquePath`, product paths) |
-| Domain | `src/lib/tr/customDomain.ts` |
+| Domain | `src/lib/tr/customDomain.ts` (`BOUTIQUE_DOMAIN_ORIGIN_PASSTHROUGH_PATHS` — sitemap/robots for all custom domains) |
 | Types | `src/types/tr-marketplace.ts` |
 | Schema | `supabase/patch_tr_marketplace.sql` + `patch_tr_boutique_*`, `patch_tr_product_*` (`patch_tr_product_features.sql` for PDP specs) |
 | Platform credit (Ekiz Yazılım) | `TrPlatformCredit` + `src/lib/platform/platformCredit.ts` — all boutique footers |
@@ -39,6 +39,7 @@
 ## Agent rules of thumb
 
 - Tenant boundary is `boutique_id` / slug — never leak another boutique’s products in owner APIs.
+- New origin file for Google/Apple (sitemap, ads.txt, `/.well-known/…`)? Add it once to `BOUTIQUE_DOMAIN_ORIGIN_PASSTHROUGH_PATHS` (or `/.well-known/` prefix). Do **not** add `xml` to the static-asset regex — Merchant `/feeds/*.xml` must still rewrite.
 - Prefer extending **boutiqueHome / boutiquePdp registries** over forking a new layout per client.
 - Boutique cart: `src/store/trBoutiqueLocalCartStore.ts` (not the Cadde platform cart).
 - Demo/editorial content (`demo-maya`, `editorialDemo*`) is placeholder — don’t treat as production inventory.

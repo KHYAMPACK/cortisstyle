@@ -1,0 +1,25 @@
+---
+description: Custom-domain rewrite — origin SEO files are global, not per boutique
+globs: src/lib/tr/customDomain.ts,src/middleware.ts,src/app/sitemap.ts,src/app/robots.ts,src/app/icon.tsx,src/app/apple-icon.tsx
+alwaysApply: false
+---
+
+# Boutique custom domains (all tenants)
+
+One Next app serves every boutique host. Middleware rewrites storefront paths into `/tr/{slug}/…`. That rewrite is **shared** — do not add a per-boutique `sitemap.ts` / `robots.ts`.
+
+## Origin files stay at the hostname
+
+Crawlers request these on the custom domain (`https://www.{boutique}/sitemap.xml`). They must **passthrough** (see `BOUTIQUE_DOMAIN_ORIGIN_PASSTHROUGH_PATHS` + `/.well-known/` in `src/lib/tr/customDomain.ts`):
+
+- `/sitemap.xml`, `/robots.txt` — host-aware via `src/app/sitemap.ts` + `src/app/robots.ts`
+- `/ads.txt`, `/app-ads.txt`, Next `/icon` + `/apple-icon`
+- Do **not** add `xml`/`txt` to the static-asset regex — `/feeds/google-merchant.xml` must still rewrite to `/tr/{slug}/feeds/…`
+
+Favicons (`/favicon.ico`, `/icon.png`, `/apple-icon.png`) are rewritten to the boutique file in middleware, not nested under `/tr/{slug}/sitemap.xml`.
+
+## Do not
+
+- Nest `/sitemap.xml` or `/robots.txt` under `/tr/{slug}/` (that 404s Search Console)
+- Leave Cadde (`/tr`, `/tr/kombinler`, other slugs) live on a white-label host — rewrite those to the boutique home
+- Copy this list into a new boutique’s seed/checklist as a one-off fix

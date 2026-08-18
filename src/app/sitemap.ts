@@ -10,6 +10,8 @@ import {
   resolveSeoHostContext,
 } from "@/lib/tr/seo/storefrontSeo";
 
+/** Host-aware sitemap. Custom domains must passthrough `/sitemap.xml` (see customDomain.ts). */
+
 async function boutiqueSitemapEntries(input: {
   boutiqueSlug: string;
   origin: string;

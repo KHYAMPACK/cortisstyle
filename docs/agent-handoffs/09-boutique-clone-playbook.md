@@ -18,7 +18,8 @@
 ┌─────────────────────────────────────────────────────────────┐
 │  Custom domain (optional)                                   │
 │  TR_BOUTIQUE_DOMAINS / customDomain.ts → rewrite to         │
-│  /tr/{slug}/…                                               │
+│  /tr/{slug}/…  (origin sitemap/robots passthrough — all     │
+│  hosts; do not add a per-boutique sitemap route)            │
 └───────────────────────────┬─────────────────────────────────┘
                             ▼
 ┌─────────────────────────────────────────────────────────────┐

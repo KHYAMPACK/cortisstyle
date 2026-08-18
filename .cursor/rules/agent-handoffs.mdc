@@ -16,6 +16,7 @@ Before non-trivial work, read `docs/agent-handoffs/00-overview.md` and `docs/age
 | International lookbook (archived) | `01-international-lookbook.md` → `cortisstyle-international` |
 | Lookbook Studio (archived) | `02-lookbook-studio.md` → archive; **rmbg stays** at `src/lib/tr/ai/photoroomRemoveBg.ts` |
 | `/tr/[slug]`, `/tr/panel`, custom domains | `03-boutique-storefronts.md` |
+| Custom-domain sitemap/robots (all tenants) | `03` + `.cursor/rules/boutique-custom-domain.mdc` · `src/lib/tr/customDomain.ts` |
 | `/tr` Cadde, looks, platform cart | `04-tr-marketplace.md` |
 | Checkout, orders, WhatsApp, iyzico | `05-commerce-rails.md` |
 | AI catalog, campaigns, growth | `06-sell-enablement.md` |
@@ -32,6 +33,6 @@ Before non-trivial work, read `docs/agent-handoffs/00-overview.md` and `docs/age
 
 **Structural changes:** update the matching handoff (or focused ops doc) — see `.cursor/rules/document-structural-changes.mdc`. Do not leave architecture only in chat.
 
-Quick anchors: TR URLs `src/lib/tr/paths.ts` · types `src/types/tr-marketplace.ts` · edge `src/middleware.ts` · principles `.cursor/rules/implementation-principles.mdc`.
+Quick anchors: TR URLs `src/lib/tr/paths.ts` · types `src/types/tr-marketplace.ts` · edge `src/middleware.ts` · custom-domain origin SEO (sitemap/robots passthrough, all boutiques) `src/lib/tr/customDomain.ts` · principles `.cursor/rules/implementation-principles.mdc`.
 
 Next.js 16 differs from training data — check `node_modules/next/dist/docs/` (`AGENTS.md`).

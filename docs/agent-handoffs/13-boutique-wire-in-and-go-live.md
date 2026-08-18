@@ -89,7 +89,7 @@ Site URL stays the platform (`https://www.cortisstyle.com`), not the boutique do
 ### 5. DNS / hosting
 
 1. Boutique domain → same app host as Cortisstyle.
-2. Confirm middleware passthrough for `/auth/*` and `/api/*`.
+2. Middleware passthrough is **global** (every boutique host): `/auth/*`, `/api/*`, `/sitemap.xml`, `/robots.txt`, `/.well-known/*` — `BOUTIQUE_DOMAIN_ORIGIN_PASSTHROUGH_PATHS` in `src/lib/tr/customDomain.ts`. Do not add a per-boutique sitemap file.
 3. Know gap: custom-domain session cookie ≠ `.cortisstyle.com` SSO until fixed.
 
 ---
@@ -138,9 +138,9 @@ Copy for each launch. Check before announcing Instagram → site.
 - [ ] Meta description set
 - [ ] Favicon readable on dark browser chrome
 - [ ] Google Search Console: HTML meta via `src/app/layout.tsx` → `metadata.verification.google` (Lila token documented in [lila-butik-e-ticaret-setup.md](../lila-butik-e-ticaret-setup.md)); verify after deploy on custom domain
-- [ ] **robots.txt** live on boutique domain (`/robots.txt`) — allows storefront; disallows panel/cart/checkout/auth/api; `Sitemap:` points at same host (`src/app/robots.ts`)
-- [ ] **sitemap.xml** live on boutique domain (`/sitemap.xml`) — home, `/urunler`, product PDPs, `/yasal/*` with customer-facing paths (`src/app/sitemap.ts` + `src/lib/tr/seo/storefrontSeo.ts`)
-- [ ] Search Console → **Sitemaps** → submit `https://{boutique-domain}/sitemap.xml` (match www vs apex property)
+- [ ] **robots.txt** live on boutique domain (`/robots.txt`) — allows storefront; disallows panel/cart/checkout/auth/api; `Sitemap:` points at same host (`src/app/robots.ts`). Served because custom-domain rewrite **passthroughs** origin files (all tenants).
+- [ ] **sitemap.xml** live on boutique domain (`/sitemap.xml`) — home, `/urunler`, product PDPs, `/yasal/*` with customer-facing paths (`src/app/sitemap.ts` + `src/lib/tr/seo/storefrontSeo.ts`). Same host-aware route for every boutique — no per-slug sitemap.
+- [ ] Search Console → **Sitemaps** → submit `https://www.{boutique-domain}/sitemap.xml` if apex 308s to www (Lila does). Match the property host.
 - [ ] Spot-check indexed URLs use boutique domain (not only `/tr/{slug}` on cortisstyle.com)
 - [ ] **Google Merchant Center** setup for the boutique domain:
   - [ ] Create / claim Merchant Center account (business info + country TR)
