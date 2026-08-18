@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { TrBackButton } from "@/components/tr/TrBackButton";
 import { TrDemoGarmentVisual } from "@/components/tr/demo/TrDemoGarmentVisual";
@@ -13,6 +14,7 @@ import { TrPurchaseActions } from "@/components/tr/TrPurchaseActions";
 import { TrSizeGateSheet } from "@/components/tr/TrSizeGateSheet";
 import { TrSoftNavLink } from "@/components/tr/TrSoftNavLink";
 import { TrYouMayAlsoLike } from "@/components/tr/TrYouMayAlsoLike";
+import { beginBuyNowCheckout, type TrPurchaseIntent } from "@/lib/tr/buyNow";
 import { getTrCategoryLabel } from "@/lib/tr/categories";
 import { isTrDemoIconSrc } from "@/lib/tr/demoIcons";
 import { isTrDemoProduct } from "@/lib/tr/looks/demoCatalog";
@@ -61,6 +63,8 @@ export function TrClothPage({ product, relatedProducts }: TrClothPageProps) {
   );
   const [activeImage, setActiveImage] = useState(0);
   const [sizeSheetOpen, setSizeSheetOpen] = useState(false);
+  const [sizeGateIntent, setSizeGateIntent] = useState<TrPurchaseIntent>("add");
+  const router = useRouter();
 
   const addItem = useTrCartStore((state) => state.addItem);
   const openAddedSheet = useTrAddedToCartStore((state) => state.open);
@@ -90,11 +94,16 @@ export function TrClothPage({ product, relatedProducts }: TrClothPageProps) {
     whatsappPhone: product.boutique.whatsappPhone,
   } as const;
 
+  const openSizeGate = (intent: TrPurchaseIntent = "add") => {
+    setSizeGateIntent(intent);
+    setSizeSheetOpen(true);
+  };
+
   const addWithSize = (size: string) => {
     setSelectedSize(size);
     setSizeSheetOpen(false);
     if (!isSizeInStock(product.sizeStocks, size)) return;
-    addItem({
+    const line = {
       productId: product.id,
       boutiqueId: product.boutiqueId,
       boutiqueName: product.boutique.name,
@@ -103,7 +112,12 @@ export function TrClothPage({ product, relatedProducts }: TrClothPageProps) {
       priceKurus: product.priceKurus,
       image: getProductCoverImageFor("marketplace", product),
       size,
-    });
+    };
+    addItem(line);
+    if (sizeGateIntent === "buyNow") {
+      router.push(beginBuyNowCheckout(line));
+      return;
+    }
     openAddedSheet({
       productId: product.id,
       title: product.title,
@@ -264,7 +278,7 @@ export function TrClothPage({ product, relatedProducts }: TrClothPageProps) {
             canOrder={canOrder}
             selectionRequired={selectionRequired}
             sizeOutOfStock={sizeOutOfStock}
-            onRequestSelection={() => setSizeSheetOpen(true)}
+            onRequestSelection={openSizeGate}
             className="hidden md:block"
           />
 
@@ -277,7 +291,7 @@ export function TrClothPage({ product, relatedProducts }: TrClothPageProps) {
               canOrder={canOrder}
               selectionRequired={selectionRequired}
               sizeOutOfStock={sizeOutOfStock}
-              onRequestSelection={() => setSizeSheetOpen(true)}
+              onRequestSelection={openSizeGate}
               hideActions
               className="md:hidden"
             />
@@ -303,7 +317,7 @@ export function TrClothPage({ product, relatedProducts }: TrClothPageProps) {
             {...purchaseProps}
             disabled={false}
             selectionRequired={selectionRequired}
-            onRequestSelection={() => setSizeSheetOpen(true)}
+            onRequestSelection={openSizeGate}
           />
         </TrMobileBuyBar>
       ) : null}
@@ -316,6 +330,7 @@ export function TrClothPage({ product, relatedProducts }: TrClothPageProps) {
         sizeStocks={product.sizeStocks}
         productTitle={product.title}
         whatsappPhone={product.boutique.whatsappPhone}
+        confirmLabel={sizeGateIntent === "buyNow" ? "Hemen al" : "Sepete ekle"}
         onConfirm={addWithSize}
       />
     </div>

@@ -8,7 +8,7 @@ interface TrMobileBuyBarProps {
 }
 
 /**
- * Fixed bottom purchase bar — mobile only. Keeps Sepete ekle / Siparişi tamamla
+ * Fixed bottom purchase bar — mobile only. Keeps Sepete ekle / Hemen al
  * always reachable while scrolling PDP content.
  */
 export function TrMobileBuyBar({ children, className = "" }: TrMobileBuyBarProps) {

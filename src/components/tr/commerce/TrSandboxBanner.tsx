@@ -5,11 +5,14 @@ import {
   isTrIyzicoCaptureEnabled,
 } from "@/lib/tr/checkoutMode";
 import { isTrDemoProductId } from "@/lib/tr/looks/demoCatalog";
+import { boutiqueOffersIyzicoCheckout } from "@/lib/tr/payments/registry";
 
 interface TrSandboxBannerProps {
   className?: string;
   /** Force demo-SKU copy (e.g. demo PDP). */
   demo?: boolean;
+  /** Hide “kart yakında” when this boutique has live iyzico Checkout Form. */
+  boutiqueSlug?: string | null;
 }
 
 /**
@@ -19,9 +22,12 @@ interface TrSandboxBannerProps {
 export function TrSandboxBanner({
   className = "",
   demo = false,
+  boutiqueSlug = null,
 }: TrSandboxBannerProps) {
   const sandbox = isTrCheckoutSandboxMode();
-  const cardPayLive = isTrIyzicoCaptureEnabled() && !sandbox;
+  const boutiqueCardLive = boutiqueOffersIyzicoCheckout(boutiqueSlug);
+  const cardPayLive =
+    !sandbox && (isTrIyzicoCaptureEnabled() || boutiqueCardLive);
 
   if (!demo && cardPayLive) {
     return null;

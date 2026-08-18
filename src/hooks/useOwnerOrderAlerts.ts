@@ -1,22 +1,28 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { fetchOwnerOrders } from "@/lib/tr/ownerClient";
+import { fetchOwnerOrders, peekOwnerOrders } from "@/lib/tr/ownerClient";
 import {
   getOrdersSeenAt,
   hasUnseenOrders,
   isActionableOwnerOrder,
   ORDERS_SEEN_EVENT,
 } from "@/lib/tr/orderNotifications";
+import { boutiqueOffersIyzicoCheckout } from "@/lib/tr/payments/registry";
 import type { TrOrderWithItems } from "@/types/tr-marketplace";
 
 /**
  * Boutique orders for home “yeni siparişler” + Siparişler nav badge.
  */
-export function useOwnerOrderAlerts(boutiqueId: string | null | undefined) {
-  const [orders, setOrders] = useState<TrOrderWithItems[]>([]);
-  const [loading, setLoading] = useState(Boolean(boutiqueId));
+export function useOwnerOrderAlerts(
+  boutiqueId: string | null | undefined,
+  boutiqueSlug?: string | null,
+) {
+  const cached = boutiqueId ? peekOwnerOrders(boutiqueId) : undefined;
+  const [orders, setOrders] = useState<TrOrderWithItems[]>(cached ?? []);
+  const [loading, setLoading] = useState(Boolean(boutiqueId) && !cached);
   const [hasNewOrders, setHasNewOrders] = useState(false);
+  const cardCheckout = boutiqueOffersIyzicoCheckout(boutiqueSlug);
 
   useEffect(() => {
     if (!boutiqueId) {
@@ -28,14 +34,14 @@ export function useOwnerOrderAlerts(boutiqueId: string | null | undefined) {
 
     const id = boutiqueId;
     let cancelled = false;
-    let latest: TrOrderWithItems[] = [];
+    let latest: TrOrderWithItems[] = peekOwnerOrders(id) ?? [];
+    const listedOpts = { cardCheckout };
 
     const syncBadge = (list: TrOrderWithItems[]) => {
-      setHasNewOrders(hasUnseenOrders(list, getOrdersSeenAt(id)));
+      setHasNewOrders(hasUnseenOrders(list, getOrdersSeenAt(id), listedOpts));
     };
 
     async function load() {
-      setLoading(true);
       try {
         const list = await fetchOwnerOrders(id);
         if (cancelled) return;
@@ -69,9 +75,11 @@ export function useOwnerOrderAlerts(boutiqueId: string | null | undefined) {
       window.removeEventListener("focus", onFocus);
       window.removeEventListener(ORDERS_SEEN_EVENT, onSeen);
     };
-  }, [boutiqueId]);
+  }, [boutiqueId, cardCheckout]);
 
-  const recentOrders = orders.filter(isActionableOwnerOrder).slice(0, 8);
+  const recentOrders = orders
+    .filter((order) => isActionableOwnerOrder(order, { cardCheckout }))
+    .slice(0, 8);
 
   return { orders, recentOrders, hasNewOrders, loading };
 }

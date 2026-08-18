@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useMemo, useState } from "react";
+import { motion } from "framer-motion";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { TrPanelBulkBar } from "@/components/tr/panel/TrPanelBulkBar";
 import {
   TrPanelDataTable,
@@ -23,17 +23,18 @@ import {
   panelEmptyClass,
   panelErrorClass,
   panelPageTitleClass,
+  panelStepperBtnClass,
 } from "@/components/tr/panel/panelUi";
 import {
   TrPanelFadeIn,
-  TrPanelLoading,
+  TrPanelListSkeleton,
   TrPanelStagger,
   trPanelStaggerItem,
 } from "@/components/tr/panel/TrPanelMotion";
 import { runOwnerPatches } from "@/lib/tr/ownerBulk";
 import { listCategoriesForProducts } from "@/lib/tr/categories";
 import { getProductCoverImageFor } from "@/lib/tr/productImages";
-import { fetchOwnerProducts, updateOwnerProduct } from "@/lib/tr/ownerClient";
+import { fetchOwnerProducts, peekOwnerProducts, updateOwnerProduct } from "@/lib/tr/ownerClient";
 import { PanelSelectCheckbox } from "@/components/tr/panel/PanelSelectCheckbox";
 import { usePanelRowSelection } from "@/hooks/usePanelRowSelection";
 import {
@@ -83,7 +84,7 @@ function StockStepper({
         type="button"
         disabled={disabled || value <= 0}
         onClick={onDecrease}
-        className="flex h-12 w-12 items-center justify-center rounded-xl border-2 border-[color:var(--panel-accent-border)] bg-white text-[24px] font-semibold text-neutral-900 disabled:opacity-40"
+        className={panelStepperBtnClass}
         aria-label={`${label} azalt`}
       >
         −
@@ -95,7 +96,7 @@ function StockStepper({
         type="button"
         disabled={disabled}
         onClick={onIncrease}
-        className="flex h-12 w-12 items-center justify-center rounded-xl border-2 border-[color:var(--panel-accent-border)] bg-white text-[24px] font-semibold text-neutral-900 disabled:opacity-40"
+        className={panelStepperBtnClass}
         aria-label={`${label} artır`}
       >
         +
@@ -105,8 +106,9 @@ function StockStepper({
 }
 
 function StockBoard({ boutiqueId }: { boutiqueId: string }) {
-  const [products, setProducts] = useState<TrProduct[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cached = peekOwnerProducts(boutiqueId);
+  const [products, setProducts] = useState<TrProduct[]>(cached?.products ?? []);
+  const [loading, setLoading] = useState(!cached);
   const [error, setError] = useState<string | null>(null);
   const [savingIds, setSavingIds] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
@@ -114,11 +116,18 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
   const [search, setSearch] = useState("");
   const [stockFilter, setStockFilter] = useState<StockFilter>("all");
   const [categoryFilter, setCategoryFilter] = useState<string | "all">("all");
+  const saveTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+  const revertById = useRef(new Map<string, TrProduct>());
+
+  useEffect(() => {
+    return () => {
+      for (const timer of saveTimers.current.values()) clearTimeout(timer);
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
     async function load() {
-      setLoading(true);
       setError(null);
       try {
         const result = await fetchOwnerProducts(boutiqueId);
@@ -206,30 +215,51 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
     );
   };
 
-  const patchStock = async (
+  const patchStock = (
     product: TrProduct,
+    next: TrProduct,
     patch: { stock?: number; sizeStocks?: Record<string, number> },
   ) => {
-    markSaving(product.id, true);
-    setError(null);
-    try {
-      const updated = await updateOwnerProduct(product.id, {
-        stock: patch.stock,
-        sizeStocks: patch.sizeStocks,
-      });
-      applyLocal(updated);
-    } catch (saveError) {
-      setError(
-        saveError instanceof Error ? saveError.message : "Stok güncellenemedi.",
-      );
-    } finally {
-      markSaving(product.id, false);
+    applyLocal(next);
+    if (!revertById.current.has(product.id)) {
+      revertById.current.set(product.id, product);
     }
+    const existing = saveTimers.current.get(product.id);
+    if (existing) clearTimeout(existing);
+    saveTimers.current.set(
+      product.id,
+      setTimeout(() => {
+        saveTimers.current.delete(product.id);
+        markSaving(product.id, true);
+        setError(null);
+        void updateOwnerProduct(product.id, {
+          stock: patch.stock,
+          sizeStocks: patch.sizeStocks,
+        })
+          .then((updated) => {
+            applyLocal(updated);
+            revertById.current.delete(product.id);
+          })
+          .catch((saveError: unknown) => {
+            const original = revertById.current.get(product.id);
+            if (original) applyLocal(original);
+            revertById.current.delete(product.id);
+            setError(
+              saveError instanceof Error
+                ? saveError.message
+                : "Stok güncellenemedi.",
+            );
+          })
+          .finally(() => {
+            markSaving(product.id, false);
+          });
+      }, 300),
+    );
   };
 
   const setTotalStock = (product: TrProduct, next: number) => {
     if (next < 0) return;
-    void patchStock(product, { stock: next });
+    patchStock(product, { ...product, stock: next }, { stock: next });
   };
 
   const setSizeStock = (product: TrProduct, size: string, next: number) => {
@@ -239,10 +269,18 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
     for (const entry of sizes) {
       nextStocks[entry] = entry === size ? next : sizeQty(product, entry);
     }
-    void patchStock(product, {
-      sizeStocks: nextStocks,
-      stock: sumSizeStocks(nextStocks),
-    });
+    patchStock(
+      product,
+      {
+        ...product,
+        sizeStocks: nextStocks,
+        stock: sumSizeStocks(nextStocks),
+      },
+      {
+        sizeStocks: nextStocks,
+        stock: sumSizeStocks(nextStocks),
+      },
+    );
   };
 
   const runBulkQty = async (mode: "set" | "add" | "sub") => {
@@ -305,9 +343,9 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
   }).length;
 
   return (
-    <AnimatePresence mode="wait">
-      {loading ? (
-        <TrPanelLoading key="stock-loading" label="Stok yükleniyor…" />
+    <>
+      {loading && products.length === 0 ? (
+        <TrPanelListSkeleton rows={6} label="Stok yükleniyor" />
       ) : error && products.length === 0 ? (
         <TrPanelFadeIn key="stock-error">
           <p className={panelErrorClass}>{error}</p>
@@ -354,11 +392,7 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
                     type="button"
                     onClick={() => setStockFilter(entry.id)}
                     className={`${panelChipClass(stockFilter === entry.id)} lg:min-h-0 lg:rounded-lg lg:px-3 lg:py-1.5 lg:text-[13px]`}
-                    style={
-                      stockFilter === entry.id
-                        ? { backgroundColor: "var(--panel-accent)" }
-                        : undefined
-                    }
+
                   >
                     {entry.label}
                   </button>
@@ -370,11 +404,7 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
                     type="button"
                     onClick={() => setCategoryFilter("all")}
                     className={`${panelChipClass(categoryFilter === "all")} lg:min-h-0 lg:rounded-lg lg:px-3 lg:py-1.5 lg:text-[13px]`}
-                    style={
-                      categoryFilter === "all"
-                        ? { backgroundColor: "var(--panel-accent)" }
-                        : undefined
-                    }
+
                   >
                     Tüm kategoriler
                   </button>
@@ -384,11 +414,7 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
                       type="button"
                       onClick={() => setCategoryFilter(entry.id)}
                       className={`${panelChipClass(categoryFilter === entry.id)} lg:min-h-0 lg:rounded-lg lg:px-3 lg:py-1.5 lg:text-[13px]`}
-                      style={
-                        categoryFilter === entry.id
-                          ? { backgroundColor: "var(--panel-accent)" }
-                          : undefined
-                      }
+
                     >
                       {entry.label}
                     </button>
@@ -435,7 +461,7 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
                       product.status === "available" && total <= LOW_STOCK;
                     const outOfStock =
                       product.status === "available" && total === 0;
-                    const busy = savingIds.has(product.id);
+                    const busy = bulkBusy;
 
                     return (
                       <motion.div
@@ -457,7 +483,6 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
                                 src={cover}
                                 alt=""
                                 fill
-                                unoptimized
                                 className="object-contain p-2"
                                 sizes="64px"
                               />
@@ -605,8 +630,7 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
                             0,
                           )
                         : product.stock;
-                      const busy =
-                        savingIds.has(product.id) || bulkBusy;
+                      const busy = bulkBusy;
                       const low =
                         product.status === "available" && total <= LOW_STOCK;
 
@@ -632,7 +656,6 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
                                     src={cover}
                                     alt=""
                                     fill
-                                    unoptimized
                                     className="object-contain p-0.5"
                                     sizes="32px"
                                   />
@@ -806,7 +829,6 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
                         type="button"
                         disabled={bulkBusy}
                         className={panelDesktopBtnClass}
-                        style={{ backgroundColor: "var(--panel-accent)" }}
                         onClick={() => void runBulkQty("set")}
                         title="Seçili ürünlerin stokunu bu miktara ayarla"
                       >
@@ -838,7 +860,7 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
           )}
         </TrPanelFadeIn>
       )}
-    </AnimatePresence>
+    </>
   );
 }
 
@@ -852,7 +874,7 @@ export function TrOwnerStockPage() {
               href={trPanelPath()}
               className={`${panelBackLinkClass} lg:hidden`}
             >
-              ← Ana sayfa
+              ← Giriş
             </Link>
             <h2 className={panelPageTitleClass}>Stok</h2>
             <p className="mt-2 text-[16px] leading-relaxed text-neutral-600 lg:text-[14px]">

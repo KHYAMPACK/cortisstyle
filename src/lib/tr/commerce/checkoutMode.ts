@@ -10,8 +10,9 @@ export function isTrCheckoutSandboxMode(): boolean {
 }
 
 /**
- * True only when iyzico (or equivalent) card capture is actually live.
- * Do not infer this from TR_CHECKOUT_ENABLED — that only means checkout accepts orders.
+ * True only when the global iyzico flag is on (Cadde / all tenants).
+ * Lila card capture is registry-gated via `boutiqueOffersIyzicoCheckout`
+ * even when this stays false — flip the flag after a live test charge.
  */
 export function isTrIyzicoCaptureEnabled(): boolean {
   return (

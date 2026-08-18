@@ -19,10 +19,20 @@ import {
 } from "@/lib/tr/rateLimit";
 import { CHECKOUT_RATE_LIMITS } from "@/lib/tr/rateLimitPolicies";
 import { isValidNotifyEmail } from "@/lib/supabaseAdmin";
+import {
+  boutiqueOffersIyzicoCheckout,
+  getIyzicoCredentials,
+} from "@/lib/tr/payments/registry";
+import { abandonUnpaidIyzicoOrder } from "@/lib/tr/payments/abandonUnpaid";
+import { startIyzicoCheckoutForm } from "@/lib/tr/payments/startCheckoutForm";
 import { autoFulfillPaidShipment } from "@/lib/tr/shipping/ownerShipment";
 import { quoteCheckoutShippingFee } from "@/lib/tr/shipping/quoteShipping";
 import { boutiqueHasLiveShipping } from "@/lib/tr/shipping/registry";
-import type { CreateTrOrderInput, TrInvoiceType } from "@/types/tr-marketplace";
+import type {
+  CreateTrOrderInput,
+  TrBoutiquePublic,
+  TrInvoiceType,
+} from "@/types/tr-marketplace";
 
 export const runtime = "nodejs";
 
@@ -120,6 +130,7 @@ export async function POST(request: Request) {
 
   const boutiqueSlug = body.boutiqueSlug?.trim().toLowerCase() || null;
   let expectedBoutiqueId: string | null = null;
+  let boutique: TrBoutiquePublic | null = null;
 
   if (boutiqueSlug) {
     const boutiqueLimit = consumeRateLimit({
@@ -128,7 +139,7 @@ export async function POST(request: Request) {
     });
     if (!boutiqueLimit.ok) return rateLimitResponse(boutiqueLimit.retryAfterSec);
 
-    const boutique = await getPublicBoutiqueBySlug(boutiqueSlug);
+    boutique = await getPublicBoutiqueBySlug(boutiqueSlug);
     if (!boutique) {
       return Response.json({ error: "Butik bulunamadı." }, { status: 404 });
     }
@@ -152,6 +163,16 @@ export async function POST(request: Request) {
     const { checkout } = resolved;
 
     const sandbox = isTrCheckoutSandboxMode();
+    const wantsIyzico =
+      Boolean(boutiqueSlug) &&
+      !sandbox &&
+      boutiqueOffersIyzicoCheckout(boutiqueSlug);
+    if (wantsIyzico && !getIyzicoCredentials(boutiqueSlug!)) {
+      return Response.json(
+        { error: "Kart ödemesi şu an alınamıyor. Biraz sonra tekrar deneyin." },
+        { status: 503 },
+      );
+    }
 
     const invoiceType: TrInvoiceType =
       body.invoiceType === "corporate" ? "corporate" : "individual";
@@ -197,14 +218,16 @@ export async function POST(request: Request) {
       shippingProvider,
       isSandbox: sandbox,
       decrementInventory: true,
+      notifyOwners: !wantsIyzico,
     });
 
-    // Increment after order create so a failed order does not burn the coupon.
-    // Usage limit was already checked in resolveCheckoutFromCatalog.
-    try {
-      await recordDiscountUsageIfNeeded(checkout.discountRow);
-    } catch (couponError) {
-      console.error("[tr/checkout] coupon usage increment failed:", couponError);
+    // Card capture: burn the coupon only after iyzico SUCCESS.
+    if (!wantsIyzico) {
+      try {
+        await recordDiscountUsageIfNeeded(checkout.discountRow);
+      } catch (couponError) {
+        console.error("[tr/checkout] coupon usage increment failed:", couponError);
+      }
     }
 
     const confirmToken = createOrderConfirmToken(order.id);
@@ -221,6 +244,26 @@ export async function POST(request: Request) {
       );
     }
 
+    let paymentPageUrl: string | null = null;
+    if (wantsIyzico && boutique) {
+      try {
+        const started = await startIyzicoCheckoutForm({
+          boutiqueSlug: boutique.slug,
+          boutiqueCustomDomain: boutique.customDomain,
+          order,
+          buyerIp: ip,
+        });
+        paymentPageUrl = started.paymentPageUrl;
+      } catch (iyzicoError) {
+        console.error("[tr/checkout] iyzico initialize failed:", iyzicoError);
+        try {
+          await abandonUnpaidIyzicoOrder(order);
+        } catch (abandonError) {
+          console.error("[tr/checkout] abandon after init fail:", abandonError);
+        }
+      }
+    }
+
     return Response.json({
       ok: true,
       orderId: order.id,
@@ -228,6 +271,7 @@ export async function POST(request: Request) {
       sandbox,
       totalKurus: order.totalKurus,
       discountKurus: order.discountKurus,
+      paymentPageUrl,
     });
   } catch (error) {
     console.error("TR checkout failed:", error);

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
 import {
@@ -13,11 +13,11 @@ import {
 } from "@/components/tr/panel/panelUi";
 import {
   TrPanelFadeIn,
-  TrPanelLoading,
+  TrPanelListSkeleton,
   TrPanelStagger,
   trPanelStaggerItem,
 } from "@/components/tr/panel/TrPanelMotion";
-import { fetchOwnerCustomers } from "@/lib/tr/ownerClient";
+import { fetchOwnerCustomers, peekOwnerCustomers } from "@/lib/tr/ownerClient";
 import { trPanelCustomerPath, trPanelPath } from "@/lib/tr/paths";
 import {
   formatTryFromKurus,
@@ -25,15 +25,15 @@ import {
 } from "@/types/tr-marketplace";
 
 function CustomersList({ boutiqueId }: { boutiqueId: string }) {
-  const [customers, setCustomers] = useState<TrOwnerCustomer[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cached = peekOwnerCustomers(boutiqueId);
+  const [customers, setCustomers] = useState<TrOwnerCustomer[]>(cached ?? []);
+  const [loading, setLoading] = useState(!cached);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
 
   useEffect(() => {
     let cancelled = false;
     async function load() {
-      setLoading(true);
       setError(null);
       try {
         const result = await fetchOwnerCustomers(boutiqueId);
@@ -72,15 +72,15 @@ function CustomersList({ boutiqueId }: { boutiqueId: string }) {
   }, [customers, query]);
 
   return (
-    <AnimatePresence mode="wait">
-      {loading ? (
-        <TrPanelLoading key="c-loading" label="Müşteriler yükleniyor…" />
+    <>
+      {loading && customers.length === 0 ? (
+        <TrPanelListSkeleton rows={5} label="Müşteriler yükleniyor" />
       ) : error ? (
-        <TrPanelFadeIn key="c-error">
+        <TrPanelFadeIn>
           <p className={panelErrorClass}>{error}</p>
         </TrPanelFadeIn>
       ) : (
-        <TrPanelFadeIn key="c-ready" className="space-y-5">
+        <TrPanelFadeIn className="space-y-5">
           <div className="space-y-3">
             <p className="text-[17px] font-medium text-neutral-700">
               {query.trim()
@@ -120,9 +120,6 @@ function CustomersList({ boutiqueId }: { boutiqueId: string }) {
                         {customer.email}
                         {customer.phone ? ` · ${customer.phone}` : ""}
                       </p>
-                      <p className="text-[15px] font-medium text-[color:var(--panel-accent-deep)]">
-                        Detayı aç →
-                      </p>
                     </div>
                     <div className="text-right">
                       <p className="text-[22px] font-semibold tabular-nums text-neutral-950">
@@ -139,7 +136,7 @@ function CustomersList({ boutiqueId }: { boutiqueId: string }) {
           )}
         </TrPanelFadeIn>
       )}
-    </AnimatePresence>
+    </>
   );
 }
 
@@ -150,7 +147,7 @@ export function TrOwnerCustomersPage() {
         <div className="space-y-5">
           <div>
             <Link href={trPanelPath()} className={panelBackLinkClass}>
-              ← Ana sayfa
+              ← Giriş
             </Link>
             <h2 className={panelPageTitleClass}>Müşteriler</h2>
             <p className={`mt-2 ${panelHintClass}`}>

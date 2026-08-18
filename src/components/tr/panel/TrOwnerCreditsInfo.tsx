@@ -10,6 +10,7 @@ import {
   TR_AI_CATALOG_CREDITS,
   TR_AI_CREDITS_INFO_LINES,
 } from "@/lib/tr/aiCatalog/uploadCostHints";
+import { panelPrimaryBtnClass } from "@/components/tr/panel/panelUi";
 import {
   fetchOwnerAiCredits,
   type TrOwnerAiCreditUsage,
@@ -112,7 +113,7 @@ export function TrOwnerCreditsUsageCard({
 
   return (
     <div
-      className={`rounded-2xl border border-[color:var(--panel-accent-border)] bg-white px-5 py-4 shadow-sm ${className}`}
+      className={`rounded-xl border border-neutral-200/80 bg-white px-5 py-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)] ${className}`}
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
@@ -296,8 +297,7 @@ export function TrOwnerCreditsTrigger({
                     </ul>
                     <button
                       type="button"
-                      className="mt-5 inline-flex min-h-11 w-full items-center justify-center rounded-xl px-4 py-3 text-[15px] font-semibold text-white"
-                      style={{ background: "var(--panel-accent)" }}
+                      className={`${panelPrimaryBtnClass} mt-5 min-h-11 w-full px-4 py-3 text-[15px]`}
                       onClick={() => setOpen(false)}
                     >
                       Anladım

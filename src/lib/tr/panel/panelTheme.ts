@@ -42,19 +42,31 @@ export function normalizePanelAccent(hex: string | null | undefined): string {
   return parsed ? toHex(parsed.r, parsed.g, parsed.b) : DEFAULT_ACCENT;
 }
 
+/** Ikas-like ops chrome — independent of boutique accent. */
+export const PANEL_SHELL = "#1C1C1E";
+export const PANEL_CANVAS = "#F2F3F5";
+
 export function panelAccentCssVars(hex: string | null | undefined): {
   "--panel-accent": string;
+  "--panel-accent-hover": string;
+  "--panel-accent-active": string;
   "--panel-accent-soft": string;
   "--panel-accent-softer": string;
   "--panel-accent-deep": string;
   "--panel-accent-border": string;
+  "--panel-shell": string;
+  "--panel-canvas": string;
 } {
   const accent = normalizePanelAccent(hex);
   return {
     "--panel-accent": accent,
+    "--panel-accent-hover": mix(accent, { r: 0, g: 0, b: 0 }, 0.12),
+    "--panel-accent-active": mix(accent, { r: 0, g: 0, b: 0 }, 0.22),
     "--panel-accent-soft": mix(accent, { r: 255, g: 255, b: 255 }, 0.82),
     "--panel-accent-softer": mix(accent, { r: 255, g: 255, b: 255 }, 0.92),
     "--panel-accent-deep": mix(accent, { r: 0, g: 0, b: 0 }, 0.28),
-    "--panel-accent-border": mix(accent, { r: 255, g: 255, b: 255 }, 0.55),
+    "--panel-accent-border": "#E5E7EB",
+    "--panel-shell": PANEL_SHELL,
+    "--panel-canvas": PANEL_CANVAS,
   };
 }

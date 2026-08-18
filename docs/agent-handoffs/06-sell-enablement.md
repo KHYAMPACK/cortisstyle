@@ -60,7 +60,7 @@ Boutique owners generate Instagram-ready **İçerik** packs from catalog product
 | Concern | Path |
 |---------|------|
 | Lib | `src/lib/tr/contentPacks/` |
-| Panel | `/tr/panel/icerik`, `TrOwnerContentPage`, `TrOwnerContentPackPage` |
+| Panel | `/tr/panel/icerik` (`TrOwnerContentPage`, `TrOwnerContentPackPage`) — **not** in primary sidebar nav (`TR_PANEL_NAV`). Route stays; coming-soon until pack UI ships. |
 | API | `GET/POST /api/tr/owner/content-packs`, `GET …/content-packs/[id]` |
 | Schema | `supabase/patch_tr_content_packs.sql` (`tr_content_packs`, `tr_products.lifestyle_images`) |
 
@@ -93,7 +93,7 @@ Boutique owners generate Instagram-ready **İçerik** packs from catalog product
 
 - Prefer **registries** for models/backgrounds/aspects (implementation principles).
 - Don’t build a generic ads manager unless the task asks — extend content packs and catalog quality first.
-- **Kampanyalar** = discounts; **İçerik** = social sell packs. Keep them separate.
+- **Kampanyalar** = discounts (in primary nav); **İçerik** = social sell packs (route `/tr/panel/icerik` exists, **not** in `TR_PANEL_NAV`). Keep them separate.
 - Demo AI registry entries may have empty asset URLs — wire assets via config, don’t fake production.
 - Content pack deep links use `utm_source=instagram&utm_medium=content_pack` (see `buildContentPackDeepLink`).
 - Growth copy/ops live in `docs/`; product code should stay modular and measurable.

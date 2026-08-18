@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { TrPanelBulkBar } from "@/components/tr/panel/TrPanelBulkBar";
 import {
@@ -13,6 +13,7 @@ import {
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
 import {
   panelDesktopBtnClass,
+  panelDesktopDangerBtnClass,
   panelDesktopInputClass,
   panelDesktopSearchClass,
   panelDesktopSecondaryBtnClass,
@@ -29,7 +30,7 @@ import {
 } from "@/components/tr/panel/panelUi";
 import {
   TrPanelFadeIn,
-  TrPanelLoading,
+  TrPanelListSkeleton,
   TrPanelStagger,
   trPanelStaggerItem,
 } from "@/components/tr/panel/TrPanelMotion";
@@ -43,6 +44,7 @@ import { getProductCoverImageFor } from "@/lib/tr/productImages";
 import {
   deleteOwnerProduct,
   fetchOwnerProducts,
+  peekOwnerProducts,
   updateOwnerProduct,
 } from "@/lib/tr/ownerClient";
 import { PanelSelectCheckbox } from "@/components/tr/panel/PanelSelectCheckbox";
@@ -91,8 +93,9 @@ function formatUpdated(iso: string): string {
 }
 
 function ProductList({ boutiqueId }: { boutiqueId: string }) {
-  const [products, setProducts] = useState<TrProduct[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cached = peekOwnerProducts(boutiqueId);
+  const [products, setProducts] = useState<TrProduct[]>(cached?.products ?? []);
+  const [loading, setLoading] = useState(!cached);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string | "all">("all");
@@ -122,7 +125,6 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
     let cancelled = false;
 
     async function load() {
-      setLoading(true);
       setError(null);
       try {
         const result = await fetchOwnerProducts(boutiqueId);
@@ -331,11 +333,6 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
             type="button"
             onClick={() => setStatusFilter("all")}
             className={`${panelChipClass(statusFilter === "all")} lg:min-h-0 lg:rounded-lg lg:px-3 lg:py-1.5 lg:text-[13px]`}
-            style={
-              statusFilter === "all"
-                ? { backgroundColor: "var(--panel-accent)" }
-                : undefined
-            }
           >
             Tümü
           </button>
@@ -345,11 +342,6 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
               type="button"
               onClick={() => setStatusFilter(status)}
               className={`${panelChipClass(statusFilter === status)} lg:min-h-0 lg:rounded-lg lg:px-3 lg:py-1.5 lg:text-[13px]`}
-              style={
-                statusFilter === status
-                  ? { backgroundColor: "var(--panel-accent)" }
-                  : undefined
-              }
             >
               {STATUS_LABEL[status]}
             </button>
@@ -363,11 +355,6 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
             type="button"
             onClick={() => setCategoryFilter("all")}
             className={`${panelChipClass(categoryFilter === "all")} lg:min-h-0 lg:rounded-lg lg:px-3 lg:py-1.5 lg:text-[13px]`}
-            style={
-              categoryFilter === "all"
-                ? { backgroundColor: "var(--panel-accent)" }
-                : undefined
-            }
           >
             Tümü
           </button>
@@ -377,11 +364,6 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
               type="button"
               onClick={() => setCategoryFilter(entry.id)}
               className={`${panelChipClass(categoryFilter === entry.id)} lg:min-h-0 lg:rounded-lg lg:px-3 lg:py-1.5 lg:text-[13px]`}
-              style={
-                categoryFilter === entry.id
-                  ? { backgroundColor: "var(--panel-accent)" }
-                  : undefined
-              }
             >
               {entry.label}
             </button>
@@ -391,11 +373,6 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
               type="button"
               onClick={() => setCategoryFilter("uncategorized")}
               className={`${panelChipClass(categoryFilter === "uncategorized")} lg:min-h-0 lg:rounded-lg lg:px-3 lg:py-1.5 lg:text-[13px]`}
-              style={
-                categoryFilter === "uncategorized"
-                  ? { backgroundColor: "var(--panel-accent)" }
-                  : undefined
-              }
             >
               Kategorisiz
             </button>
@@ -406,9 +383,9 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
   );
 
   return (
-    <AnimatePresence mode="wait">
-      {loading ? (
-        <TrPanelLoading key="products-loading" label="Ürünler yükleniyor…" />
+    <>
+      {loading && products.length === 0 ? (
+        <TrPanelListSkeleton rows={6} label="Ürünler yükleniyor" />
       ) : error && products.length === 0 ? (
         <TrPanelFadeIn key="products-error">
           <p className={panelErrorClass}>{error}</p>
@@ -433,7 +410,6 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
             <Link
               href={trPanelNewProductPath()}
               className={`${panelPrimaryBtnClass} lg:h-9 lg:min-h-0 lg:rounded-lg lg:px-4 lg:py-0 lg:text-[13px]`}
-              style={{ backgroundColor: "var(--panel-accent)" }}
             >
               + Yeni ürün ekle
             </Link>
@@ -462,7 +438,7 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
               {/* Mobile cards */}
               <div className="lg:hidden">
                 <TrPanelStagger className="space-y-3">
-                  {visible.map((product) => {
+                  {visible.map((product, index) => {
                     const cover =
                       getProductCoverImageFor("marketplace", product) ??
                       product.images[0] ??
@@ -491,7 +467,7 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
                                 src={cover}
                                 alt=""
                                 fill
-                                unoptimized
+                                priority={index < 4}
                                 className="object-contain p-2"
                                 sizes="96px"
                               />
@@ -570,7 +546,7 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
                   ]}
                   footer={`${visible.length} ürün · Shift aralık · Ctrl+A tümü`}
                 >
-                  {visible.map((product) => {
+                  {visible.map((product, index) => {
                     const cover =
                       getProductCoverImageFor("marketplace", product) ??
                       product.images[0] ??
@@ -604,7 +580,7 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
                                   src={cover}
                                   alt=""
                                   fill
-                                  unoptimized
+                                  priority={index < 4}
                                   className="object-contain p-0.5"
                                   sizes="32px"
                                 />
@@ -808,7 +784,6 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
                     type="button"
                     disabled={bulkBusy}
                     className={panelDesktopBtnClass}
-                    style={{ backgroundColor: "var(--panel-accent)" }}
                     onClick={() => void runBulk({ status: "hidden" })}
                   >
                     Gizle
@@ -830,7 +805,7 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
                       <button
                         type="button"
                         disabled={bulkBusy}
-                        className={`${panelDesktopBtnClass} bg-red-700`}
+                        className={panelDesktopDangerBtnClass}
                         onClick={() => void runBulkDelete()}
                       >
                         Evet, sil
@@ -851,7 +826,7 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
           )}
         </TrPanelFadeIn>
       )}
-    </AnimatePresence>
+    </>
   );
 }
 
@@ -865,7 +840,7 @@ export function TrOwnerProductListPage() {
               href={trPanelPath()}
               className={`${panelBackLinkClass} lg:hidden`}
             >
-              ← Ana sayfa
+              ← Giriş
             </Link>
             <h2 className={panelPageTitleClass}>Ürünler</h2>
           </div>

@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { TrIyzicoResumePay } from "@/components/tr/commerce/TrIyzicoResumePay";
 import { resolveBoutiqueBrandLabel } from "@/lib/tr/boutiqueBrand";
 import { resolveBoutiqueHomeLayout } from "@/lib/tr/boutiqueHome";
 import { verifyOrderConfirmToken } from "@/lib/tr/orderConfirmToken";
 import { getOrderByIdAdmin } from "@/lib/tr/orders";
+import { boutiqueOffersIyzicoCheckout } from "@/lib/tr/payments/registry";
 import { trBoutiqueOrderTrackingPath, trBoutiquePath } from "@/lib/tr/paths";
 import { safeGetPublicBoutique } from "@/lib/tr/publicData";
 import { formatTryFromKurus } from "@/types/tr-marketplace";
@@ -17,6 +19,7 @@ interface BoutiqueOrderConfirmationPageProps {
     order?: string;
     sandbox?: string;
     token?: string;
+    unpaid?: string;
   }>;
 }
 
@@ -48,10 +51,12 @@ export default async function BoutiqueOrderConfirmationPage({
   }
 
   const demo = query.demo === "1";
+  const unpaid = query.unpaid === "1";
   const orderId = query.order?.trim() || null;
   const tokenOk =
     orderId && verifyOrderConfirmToken(orderId, query.token ?? null);
   const brandTitle = resolveBoutiqueBrandLabel(boutique.slug, boutique.name);
+  const iyzicoCheckout = boutiqueOffersIyzicoCheckout(boutique.slug);
 
   const order =
     !demo && orderId && tokenOk
@@ -69,14 +74,27 @@ export default async function BoutiqueOrderConfirmationPage({
           Sipariş
         </p>
         <h1 className="mt-3 font-serif text-3xl tracking-tight text-neutral-950 md:text-4xl">
-          {demo || orderBelongs ? "Siparişiniz alındı" : "Sipariş onayı"}
+          {demo ||
+          (orderBelongs &&
+            order &&
+            (order.isSandbox ||
+              order.paymentStatus === "paid" ||
+              order.paymentStatus === "sandbox"))
+            ? "Siparişiniz alındı"
+            : orderBelongs &&
+                order?.paymentStatus === "pending" &&
+                !order.isSandbox
+              ? "Ödeme bekleniyor"
+              : "Sipariş onayı"}
         </h1>
         <p className="mt-4 text-[14px] leading-relaxed text-neutral-600">
           {demo
             ? `Teşekkürler — ${brandTitle} vitrininde demo sipariş tamamlandı. Gerçek ödeme alınmadı.`
             : orderBelongs && order
               ? order.paymentStatus === "pending" && !order.isSandbox
-                ? `Teşekkürler ${order.customerName.split(" ")[0] ?? ""} — ${brandTitle} siparişiniz kaydedildi. Kart ödemesi yakında; ödeme onayı sonrası kargoya çıkar.`
+                ? unpaid || iyzicoCheckout
+                  ? `Kart ödemesi alınmadı. ${brandTitle} siparişiniz bekliyor — ödemeyi tamamlayınca kargoya çıkar.`
+                  : `Teşekkürler ${order.customerName.split(" ")[0] ?? ""} — ${brandTitle} siparişiniz kaydedildi. Kart ödemesi yakında; ödeme onayı sonrası kargoya çıkar.`
                 : `Teşekkürler ${order.customerName.split(" ")[0] ?? ""} — ${brandTitle} siparişiniz kaydedildi.`
               : orderId
                 ? "Bu sipariş bulunamadı veya bağlantı geçersiz."
@@ -162,7 +180,20 @@ export default async function BoutiqueOrderConfirmationPage({
         </div>
       ) : null}
 
-      <div className="mt-10 text-center space-y-3">
+      <div className="mt-10 text-center space-y-4">
+        {orderBelongs &&
+        order &&
+        iyzicoCheckout &&
+        !order.isSandbox &&
+        (order.paymentStatus === "pending" ||
+          order.paymentStatus === "failed") &&
+        query.token ? (
+          <TrIyzicoResumePay
+            boutiqueSlug={boutique.slug}
+            orderId={order.id}
+            confirmToken={query.token}
+          />
+        ) : null}
         {orderBelongs && order?.shipment.externalId && query.token ? (
           <p>
             <Link
@@ -177,7 +208,15 @@ export default async function BoutiqueOrderConfirmationPage({
         ) : null}
         <Link
           href={trBoutiquePath(boutique.slug)}
-          className="btn-primary inline-flex items-center justify-center px-6 py-4 text-[11px] tracking-[0.2em]"
+          className={
+            orderBelongs &&
+            order &&
+            iyzicoCheckout &&
+            !order.isSandbox &&
+            order.paymentStatus === "pending"
+              ? "inline-flex min-h-12 items-center justify-center px-6 py-3.5 text-[13px] underline underline-offset-2"
+              : "btn-primary inline-flex items-center justify-center px-6 py-4 text-[11px] tracking-[0.2em]"
+          }
         >
           Ana sayfaya dön
         </Link>

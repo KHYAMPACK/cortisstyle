@@ -9,6 +9,7 @@ import {
   updateOrderPaymentStatusAdmin,
 } from "@/lib/tr/orders";
 import { autoFulfillPaidShipment, cancelLiveShipmentForCancelledOrder } from "@/lib/tr/shipping/ownerShipment";
+import { boutiqueOffersIyzicoCheckout } from "@/lib/tr/payments/registry";
 import type {
   TrFulfillmentStatus,
   TrPaymentStatus,
@@ -53,6 +54,14 @@ export async function GET(request: Request, context: RouteContext) {
 
   const order = await getOrderByIdAdmin(id);
   if (!order || !order.items.some((item) => item.boutiqueId === boutique.id)) {
+    return Response.json({ error: "Sipariş bulunamadı." }, { status: 404 });
+  }
+
+  if (
+    boutiqueOffersIyzicoCheckout(boutique.slug) &&
+    !order.isSandbox &&
+    (order.paymentStatus === "pending" || order.paymentStatus === "failed")
+  ) {
     return Response.json({ error: "Sipariş bulunamadı." }, { status: 404 });
   }
 
@@ -109,17 +118,33 @@ export async function PATCH(request: Request, context: RouteContext) {
     return Response.json({ error: "Sipariş bulunamadı." }, { status: 404 });
   }
 
+  const cardCheckout = boutiqueOffersIyzicoCheckout(boutique.slug);
+  if (
+    cardCheckout &&
+    !existing.isSandbox &&
+    (existing.paymentStatus === "pending" ||
+      existing.paymentStatus === "failed")
+  ) {
+    return Response.json({ error: "Sipariş bulunamadı." }, { status: 404 });
+  }
+
   const fulfillmentStatus = body.fulfillmentStatus;
   const paymentStatus = body.paymentStatus;
 
   const hasFulfillment =
     typeof fulfillmentStatus === "string" &&
     FULFILLMENT.includes(fulfillmentStatus as TrFulfillmentStatus);
-  // Manual mark-paid until iyzico capture is wired (havale / WhatsApp confirm).
   const hasPayment =
     paymentStatus === "paid" &&
     (existing.paymentStatus === "pending" ||
       existing.paymentStatus === "failed");
+
+  if (hasPayment && cardCheckout) {
+    return Response.json(
+      { error: "Kart ödemesi iyzico ile alınır." },
+      { status: 409 },
+    );
+  }
 
   if (!hasFulfillment && !hasPayment) {
     return Response.json(

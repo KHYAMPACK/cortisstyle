@@ -1,5 +1,6 @@
 "use client";
 
+import { panelChipClass } from "@/components/tr/panel/panelUi";
 import {
   listTrCategoriesGrouped,
   type TrCategoryDefinition,
@@ -26,11 +27,7 @@ export function TrOwnerCategoryPicker({
   const extraItems = extras.filter((entry) => !knownIds.has(entry.id));
 
   const chipClass = (active: boolean) =>
-    `rounded-full px-4 py-3 text-[16px] font-semibold disabled:opacity-50 ${
-      active
-        ? "text-white"
-        : "bg-white text-neutral-800 ring-1 ring-[color:var(--panel-accent-border)]"
-    }`;
+    panelChipClass(active);
 
   return (
     <div className="space-y-4">
@@ -51,11 +48,6 @@ export function TrOwnerCategoryPicker({
                     onChange(active ? null : entry.id)
                   }
                   className={chipClass(active)}
-                  style={
-                    active
-                      ? { backgroundColor: "var(--panel-accent)" }
-                      : undefined
-                  }
                 >
                   {entry.label}
                 </button>
@@ -80,11 +72,6 @@ export function TrOwnerCategoryPicker({
                   disabled={disabled}
                   onClick={() => onChange(active ? null : entry.id)}
                   className={chipClass(active)}
-                  style={
-                    active
-                      ? { backgroundColor: "var(--panel-accent)" }
-                      : undefined
-                  }
                 >
                   {entry.label}
                 </button>

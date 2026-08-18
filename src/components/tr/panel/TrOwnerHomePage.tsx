@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { TrOrderItemThumbs } from "@/components/tr/panel/TrOrderItemThumbs";
 import { TrOwnerCreditsUsageCard } from "@/components/tr/panel/TrOwnerCreditsInfo";
@@ -18,73 +18,57 @@ import {
 } from "@/components/tr/panel/panelUi";
 import {
   TrPanelFadeIn,
-  TrPanelLoading,
+  TrPanelListSkeleton,
+  TrPanelMetricSkeleton,
   TrPanelStagger,
   trPanelStaggerItem,
 } from "@/components/tr/panel/TrPanelMotion";
+import {
+  TrPanelRangeTabs,
+  type TrPanelSummaryRange,
+} from "@/components/tr/panel/TrPanelRangeTabs";
 import { useOwnerOrderAlerts } from "@/hooks/useOwnerOrderAlerts";
 import {
   fetchOwnerSummary,
+  peekOwnerSummary,
   type TrOwnerSummaryResponse,
 } from "@/lib/tr/ownerClient";
 import {
-  trBoutiquePath,
+  trPanelNewProductPath,
   trPanelOrderPath,
   trPanelOrdersPath,
+  trPanelProductsPath,
 } from "@/lib/tr/paths";
 import { formatTryFromKurus } from "@/types/tr-marketplace";
 
-function greetingForHour(hour: number): string {
-  if (hour < 12) return "Günaydın";
-  if (hour < 18) return "İyi günler";
-  return "İyi akşamlar";
-}
-
-function todayLabel(): string {
-  return new Intl.DateTimeFormat("tr-TR", {
-    timeZone: "Europe/Istanbul",
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-  }).format(new Date());
-}
-
-function MetricCard({
-  value,
+function KpiCell({
   label,
-  hint,
+  value,
 }: {
-  value: string;
   label: string;
-  hint?: string;
+  value: string;
 }) {
   return (
-    <motion.div
-      variants={trPanelStaggerItem}
-      className="rounded-2xl border border-[color:var(--panel-accent-border)] bg-gradient-to-br from-[color:var(--panel-accent-soft)] to-white px-5 py-6 shadow-sm"
-    >
-      <p
-        className="text-[2.5rem] leading-none font-semibold tracking-tight tabular-nums"
-        style={{ color: "var(--panel-accent-deep)" }}
-      >
+    <div className="min-w-[140px] flex-1 px-4 py-3 sm:px-5 sm:py-4">
+      <p className="text-[12px] font-medium text-neutral-500">{label}</p>
+      <p className="mt-1 text-[1.35rem] font-semibold tracking-tight tabular-nums text-neutral-900 sm:text-[1.5rem]">
         {value}
       </p>
-      <p className="mt-3 text-[16px] leading-snug font-medium text-neutral-700">
-        {label}
-      </p>
-      {hint ? <p className={`mt-2 ${panelHintClass}`}>{hint}</p> : null}
-    </motion.div>
+    </div>
   );
 }
 
-function resolveTodayMetrics(summary: TrOwnerSummaryResponse) {
-  const liveOrders = summary.today?.orderCount ?? 0;
-  const liveRevenue = summary.today?.revenueKurus ?? 0;
-
+function resolvePeriod(summary: TrOwnerSummaryResponse) {
+  const orderCount = summary.period?.orderCount ?? summary.today?.orderCount ?? 0;
+  const revenueKurus =
+    summary.period?.revenueKurus ?? summary.today?.revenueKurus ?? 0;
   return {
-    orderCount: liveOrders,
-    revenueKurus: liveRevenue,
-    isEmpty: liveOrders === 0 && liveRevenue === 0,
+    orderCount,
+    revenueKurus,
+    pendingFulfillment: summary.period?.pendingFulfillment ?? 0,
+    topProducts: summary.period?.topProducts ?? [],
+    lowStock: summary.inventory?.lowStock ?? 0,
+    isEmpty: orderCount === 0 && revenueKurus === 0,
   };
 }
 
@@ -97,22 +81,24 @@ function HomeDashboard({
   boutiqueName: string;
   boutiqueSlug: string;
 }) {
-  const [summary, setSummary] = useState<TrOwnerSummaryResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [range, setRange] = useState<TrPanelSummaryRange>("today");
+  const cached = peekOwnerSummary(boutiqueId, range);
+  const [summary, setSummary] = useState<TrOwnerSummaryResponse | null>(
+    cached ?? null,
+  );
+  const [loading, setLoading] = useState(!cached);
   const [error, setError] = useState<string | null>(null);
-  const {
-    recentOrders,
-    loading: ordersLoading,
-  } = useOwnerOrderAlerts(boutiqueId);
+  const { recentOrders, loading: ordersLoading } = useOwnerOrderAlerts(
+    boutiqueId,
+    boutiqueSlug,
+  );
 
   useEffect(() => {
     let cancelled = false;
-
     async function load() {
-      setLoading(true);
       setError(null);
       try {
-        const result = await fetchOwnerSummary(boutiqueId);
+        const result = await fetchOwnerSummary(boutiqueId, range);
         if (!cancelled) setSummary(result);
       } catch (loadError) {
         if (!cancelled) {
@@ -126,166 +112,177 @@ function HomeDashboard({
         if (!cancelled) setLoading(false);
       }
     }
-
     void load();
     return () => {
       cancelled = true;
     };
-  }, [boutiqueId]);
+  }, [boutiqueId, range]);
 
-  const hour = Number(
-    new Intl.DateTimeFormat("en-GB", {
-      timeZone: "Europe/Istanbul",
-      hour: "numeric",
-      hour12: false,
-    }).format(new Date()),
-  );
+  const period = summary ? resolvePeriod(summary) : null;
 
   return (
-    <div className="space-y-8">
-      <TrPanelFadeIn>
-        <section className="rounded-2xl border border-[color:var(--panel-accent-border)] bg-white px-5 py-6 shadow-sm sm:px-6">
-          <h2
-            className="text-[2rem] font-semibold tracking-tight sm:text-[2.35rem]"
-            style={{ color: "var(--panel-accent-deep)" }}
-          >
-            {greetingForHour(hour)}
-          </h2>
-          <p className="mt-2 text-[17px] leading-relaxed text-neutral-700">
-            {boutiqueName} · {todayLabel()}
-          </p>
-          <p className="mt-1 text-[15px] text-neutral-500">Günlük özet</p>
-          <Link
-            href={trBoutiquePath(boutiqueSlug)}
-            className="mt-4 inline-flex min-h-12 items-center rounded-xl px-5 py-3 text-[16px] font-semibold text-white"
-            style={{ backgroundColor: "var(--panel-accent)" }}
-          >
-            Mağazayı görüntüle
-          </Link>
-        </section>
-      </TrPanelFadeIn>
+    <div className="space-y-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-[1.25rem] font-semibold text-neutral-900">
+            Genel özet
+          </h1>
+          <p className={`mt-0.5 ${panelHintClass}`}>{boutiqueName}</p>
+        </div>
+        <TrPanelRangeTabs value={range} onChange={setRange} />
+      </div>
 
-      <TrPanelFadeIn>
-        <TrOwnerCreditsUsageCard boutiqueId={boutiqueId} />
-      </TrPanelFadeIn>
+      <div className="flex flex-wrap gap-2">
+        <Link
+          href={trPanelOrdersPath()}
+          className="rounded-lg bg-white px-3 py-2 text-[13px] font-medium text-neutral-700 ring-1 ring-neutral-200 hover:bg-neutral-50"
+        >
+          Siparişler
+        </Link>
+        <Link
+          href={trPanelProductsPath()}
+          className="rounded-lg bg-white px-3 py-2 text-[13px] font-medium text-neutral-700 ring-1 ring-neutral-200 hover:bg-neutral-50"
+        >
+          Ürünler
+        </Link>
+        <Link
+          href={trPanelNewProductPath()}
+          className="rounded-lg bg-white px-3 py-2 text-[13px] font-medium text-neutral-700 ring-1 ring-neutral-200 hover:bg-neutral-50"
+        >
+          + Yeni ürün
+        </Link>
+      </div>
 
-      <AnimatePresence mode="wait">
-        {loading ? (
-          <TrPanelLoading key="summary-loading" label="Özet yükleniyor…" />
-        ) : error ? (
-          <TrPanelFadeIn key="summary-error">
-            <p className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-[16px] text-red-800">
-              {error}
+      {loading && !summary ? (
+        <TrPanelMetricSkeleton count={4} />
+      ) : error && !summary ? (
+        <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[14px] text-red-800">
+          {error}
+        </p>
+      ) : period ? (
+        <section className="overflow-hidden rounded-xl border border-neutral-200/80 bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+          <div className="flex divide-x divide-neutral-100 overflow-x-auto">
+            <KpiCell
+              label="Ciro"
+              value={formatTryFromKurus(period.revenueKurus)}
+            />
+            <KpiCell label="Sipariş" value={String(period.orderCount)} />
+            <KpiCell
+              label="Bekleyen kargo"
+              value={String(period.pendingFulfillment)}
+            />
+            <KpiCell
+              label="Düşük stok"
+              value={String(period.lowStock)}
+            />
+          </div>
+          {period.isEmpty ? (
+            <p className="border-t border-neutral-100 px-5 py-3 text-[13px] text-neutral-500">
+              Bu dönemde henüz sipariş yok.
             </p>
-          </TrPanelFadeIn>
-        ) : summary ? (
-          <TrPanelFadeIn key="summary-ready" className="space-y-8">
-            {(() => {
-              const today = resolveTodayMetrics(summary);
-              return (
-                <>
-                  {today.isEmpty ? (
-                    <p className="rounded-2xl border border-[color:var(--panel-accent-border)] bg-[color:var(--panel-accent-soft)] px-5 py-3 text-[15px] text-neutral-800">
-                      Bugün henüz sipariş yok — sayılar gerçek veriden gelir.
-                    </p>
-                  ) : null}
-                  <TrPanelStagger className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <MetricCard
-                      value={formatTryFromKurus(today.revenueKurus)}
-                      label="Günlük ciro"
-                      hint="Tahsil edilen (ödendi) ciro"
-                    />
-                    <MetricCard
-                      value={String(today.orderCount)}
-                      label="Yeni sipariş"
-                      hint="Bugün gelen sipariş sayısı"
-                    />
-                  </TrPanelStagger>
-                </>
-              );
-            })()}
+          ) : null}
+        </section>
+      ) : null}
 
-            <section className="space-y-4">
-              <div className="flex flex-wrap items-end justify-between gap-3">
-                <div>
-                  <p
-                    className="text-[18px] font-semibold"
-                    style={{ color: "var(--panel-accent-deep)" }}
-                  >
-                    Yeni siparişler
-                  </p>
-                  <p className={`mt-1 ${panelHintClass}`}>
-                    Son gelen siparişler — detay için dokunun.
-                  </p>
-                </div>
-                <Link
-                  href={trPanelOrdersPath()}
-                  className="text-[16px] font-semibold text-[color:var(--panel-accent-deep)]"
-                >
-                  Tümünü gör →
-                </Link>
-              </div>
-
-              {ordersLoading ? (
-                <TrPanelLoading label="Siparişler yükleniyor…" />
-              ) : recentOrders.length === 0 ? (
-                <p className={panelEmptyClass}>
-                  Henüz yeni sipariş yok. Müşteri alışveriş yapınca burada
-                  görünür.
-                </p>
-              ) : (
-                <TrPanelStagger className="space-y-3">
-                  {recentOrders.map((order) => {
-                    const itemCount = order.items.reduce(
-                      (sum, item) => sum + item.quantity,
-                      0,
-                    );
-                    return (
-                      <motion.div
-                        key={order.id}
-                        variants={trPanelStaggerItem}
-                      >
-                        <div className={`${panelSectionClass}`}>
-                          <div className="flex flex-wrap items-start justify-between gap-3">
-                            <div className="min-w-0 flex-1 space-y-2">
-                              <p className="text-[18px] font-semibold text-neutral-900">
-                                {order.customerName}
-                              </p>
-                              <p className="text-[15px] text-neutral-600">
-                                {formatOrderDateShort(order.createdAt)} ·{" "}
-                                {itemCount} ürün
-                              </p>
-                              <TrOrderItemThumbs
-                                items={order.items}
-                                size="sm"
-                                max={3}
-                              />
-                              <span
-                                className={`inline-block rounded-lg px-2.5 py-1 text-[14px] font-semibold ${FULFILLMENT_TONE[order.fulfillmentStatus]}`}
-                              >
-                                {FULFILLMENT_LABEL[order.fulfillmentStatus]}
-                              </span>
-                              <Link
-                                href={trPanelOrderPath(order.id)}
-                                className="inline-block text-[15px] font-medium text-[color:var(--panel-accent-deep)]"
-                              >
-                                Detayı aç →
-                              </Link>
-                            </div>
-                            <p className="shrink-0 text-[20px] font-semibold tabular-nums text-neutral-950">
-                              {formatTryFromKurus(order.totalKurus)}
-                            </p>
-                          </div>
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+        <section className={panelSectionClass}>
+          <div className="flex items-end justify-between gap-3">
+            <div>
+              <h2 className="text-[14px] font-semibold text-neutral-900">
+                Yeni siparişler
+              </h2>
+              <p className={`mt-0.5 ${panelHintClass}`}>Detay için dokunun.</p>
+            </div>
+            <Link
+              href={trPanelOrdersPath()}
+              className="text-[13px] font-medium text-[color:var(--panel-accent-deep)] hover:underline"
+            >
+              Tümü
+            </Link>
+          </div>
+          {ordersLoading && recentOrders.length === 0 ? (
+            <TrPanelListSkeleton rows={3} label="Siparişler yükleniyor" />
+          ) : recentOrders.length === 0 ? (
+            <p className={panelEmptyClass}>Henüz yeni sipariş yok.</p>
+          ) : (
+            <TrPanelStagger className="space-y-2">
+              {recentOrders.map((order) => {
+                const itemCount = order.items.reduce(
+                  (sum, item) => sum + item.quantity,
+                  0,
+                );
+                return (
+                  <motion.div key={order.id} variants={trPanelStaggerItem}>
+                    <Link
+                      href={trPanelOrderPath(order.id)}
+                      className="block rounded-lg px-2 py-2.5 transition-colors hover:bg-neutral-50"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1 space-y-1.5">
+                          <p className="truncate text-[14px] font-semibold text-neutral-900">
+                            {order.customerName}
+                          </p>
+                          <p className="text-[12px] text-neutral-500">
+                            {formatOrderDateShort(order.createdAt)} · {itemCount}{" "}
+                            ürün
+                          </p>
+                          <TrOrderItemThumbs
+                            items={order.items}
+                            size="sm"
+                            max={3}
+                          />
+                          <span
+                            className={`inline-block rounded-md px-2 py-0.5 text-[12px] font-semibold ${FULFILLMENT_TONE[order.fulfillmentStatus]}`}
+                          >
+                            {FULFILLMENT_LABEL[order.fulfillmentStatus]}
+                          </span>
                         </div>
-                      </motion.div>
-                    );
-                  })}
-                </TrPanelStagger>
-              )}
-            </section>
-          </TrPanelFadeIn>
-        ) : null}
-      </AnimatePresence>
+                        <p className="shrink-0 text-[14px] font-semibold tabular-nums text-neutral-950">
+                          {formatTryFromKurus(order.totalKurus)}
+                        </p>
+                      </div>
+                    </Link>
+                  </motion.div>
+                );
+              })}
+            </TrPanelStagger>
+          )}
+        </section>
+
+        <div className="space-y-4">
+          <section className={panelSectionClass}>
+            <h2 className="text-[14px] font-semibold text-neutral-900">
+              En çok satanlar
+            </h2>
+            {!period || period.topProducts.length === 0 ? (
+              <p className="text-[13px] text-neutral-500">
+                Bu dönemde satış yok.
+              </p>
+            ) : (
+              <ul className="divide-y divide-neutral-100">
+                {period.topProducts.map((product) => (
+                  <li
+                    key={product.title}
+                    className="flex items-center justify-between gap-3 py-3 text-[13px]"
+                  >
+                    <span className="min-w-0 truncate">
+                      {product.title}
+                      <span className="text-neutral-400">
+                        {" "}
+                        · {product.quantity} adet
+                      </span>
+                    </span>
+                    <span className="shrink-0 font-semibold tabular-nums">
+                      {formatTryFromKurus(product.revenueKurus)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+          <TrOwnerCreditsUsageCard boutiqueId={boutiqueId} />
+        </div>
+      </div>
     </div>
   );
 }

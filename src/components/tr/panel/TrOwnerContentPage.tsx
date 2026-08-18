@@ -34,7 +34,7 @@ export function TrOwnerContentPage() {
               href={trPanelPath()}
               className="inline-block text-[11px] tracking-[0.1em] text-neutral-500 uppercase"
             >
-              ← Ana sayfa
+              ← Giriş
             </Link>
             <h2 className="mt-2 font-serif text-2xl tracking-tight text-neutral-950">
               İçerik

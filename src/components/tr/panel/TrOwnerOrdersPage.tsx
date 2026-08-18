@@ -1,19 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
-import { TrOrderItemThumbs } from "@/components/tr/panel/TrOrderItemThumbs";
+import { TrOwnerOrderListCard } from "@/components/tr/panel/TrOwnerOrderListCard";
 import { TrOwnerOrderProcessGuide } from "@/components/tr/panel/TrOwnerOrderProcessGuide";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
 import { TrOwnerPushPromptBanner } from "@/components/tr/panel/TrOwnerPushPromptBanner";
 import {
   FULFILLMENT_FILTERS,
-  FULFILLMENT_HINT,
   FULFILLMENT_LABEL,
-  FULFILLMENT_TONE,
-  PAYMENT_LABEL,
-  formatOrderDateShort,
 } from "@/components/tr/panel/orderFulfillmentUi";
 import {
   panelBackLinkClass,
@@ -25,15 +21,17 @@ import {
 } from "@/components/tr/panel/panelUi";
 import {
   TrPanelFadeIn,
-  TrPanelLoading,
+  TrPanelListSkeleton,
   TrPanelStagger,
   trPanelStaggerItem,
 } from "@/components/tr/panel/TrPanelMotion";
-import { fetchOwnerOrders } from "@/lib/tr/ownerClient";
-import { markOrdersSeen } from "@/lib/tr/orderNotifications";
-import { trPanelOrderPath, trPanelPath } from "@/lib/tr/paths";
 import {
-  formatTryFromKurus,
+  fetchOwnerOrders,
+  peekOwnerOrders,
+} from "@/lib/tr/ownerClient";
+import { markOrdersSeen } from "@/lib/tr/orderNotifications";
+import { trPanelPath } from "@/lib/tr/paths";
+import {
   type TrFulfillmentStatus,
   type TrOrderWithItems,
 } from "@/types/tr-marketplace";
@@ -45,8 +43,9 @@ function OrdersList({
   boutiqueId: string;
   boutiqueSlug: string;
 }) {
-  const [orders, setOrders] = useState<TrOrderWithItems[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cached = peekOwnerOrders(boutiqueId);
+  const [orders, setOrders] = useState<TrOrderWithItems[]>(cached ?? []);
+  const [loading, setLoading] = useState(!cached);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | TrFulfillmentStatus>("all");
 
@@ -57,7 +56,6 @@ function OrdersList({
   useEffect(() => {
     let cancelled = false;
     async function load() {
-      setLoading(true);
       setError(null);
       try {
         const result = await fetchOwnerOrders(boutiqueId);
@@ -98,13 +96,11 @@ function OrdersList({
   );
 
   return (
-    <AnimatePresence mode="wait">
-      {loading ? (
-        <TrPanelLoading key="orders-loading" label="Siparişler yükleniyor…" />
-      ) : error ? (
-        <TrPanelFadeIn key="orders-error">
-          <p className={panelErrorClass}>{error}</p>
-        </TrPanelFadeIn>
+    <>
+      {loading && orders.length === 0 ? (
+        <TrPanelListSkeleton rows={5} label="Siparişler yükleniyor" />
+      ) : error && orders.length === 0 ? (
+        <p className={panelErrorClass}>{error}</p>
       ) : (
         <TrPanelFadeIn key="orders-ready" className="space-y-5">
           <TrOwnerPushPromptBanner boutiqueId={boutiqueId} />
@@ -119,8 +115,8 @@ function OrdersList({
                   : `${orders.length} sipariş`}
             </p>
             <p className={panelHintClass}>
-              Filtreyle sadece ilgilenmeniz gerekenleri gösterin. Bir satıra
-              dokunarak detayı açın.
+              Paketleyin ve sonraki adımı buradan ilerletin. Adres düzeltme
+              veya iptal için detaya girin.
             </p>
             <div className="flex flex-wrap gap-2">
               {FULFILLMENT_FILTERS.map((key) => (
@@ -129,11 +125,6 @@ function OrdersList({
                   type="button"
                   onClick={() => setFilter(key)}
                   className={panelChipClass(filter === key)}
-                  style={
-                    filter === key
-                      ? { backgroundColor: "var(--panel-accent)" }
-                      : undefined
-                  }
                 >
                   {key === "all" ? "Tümü" : FULFILLMENT_LABEL[key]}
                 </button>
@@ -149,67 +140,27 @@ function OrdersList({
             </p>
           ) : (
             <TrPanelStagger className="space-y-3">
-              {visible.map((order) => {
-                const itemCount = order.items.reduce(
-                  (sum, item) => sum + item.quantity,
-                  0,
-                );
-                const paymentKey =
-                  order.isSandbox || order.paymentStatus === "sandbox"
-                    ? "sandbox"
-                    : order.paymentStatus;
-
-                return (
-                  <motion.div key={order.id} variants={trPanelStaggerItem}>
-                    <div className="rounded-2xl border border-[color:var(--panel-accent-border)] bg-white p-4 shadow-sm sm:p-5">
-                      <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div className="min-w-0 flex-1 space-y-3">
-                          <p className="text-[19px] font-semibold text-neutral-900 sm:text-[20px]">
-                            {order.customerName}
-                          </p>
-                          <p className="text-[15px] text-neutral-600">
-                            {formatOrderDateShort(order.createdAt)} ·{" "}
-                            {itemCount} ürün
-                          </p>
-                          <div>
-                            <p className="mb-2 text-[14px] font-medium text-neutral-600">
-                              Paketlenecek ürünler
-                            </p>
-                            <TrOrderItemThumbs items={order.items} size="md" />
-                          </div>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span
-                              className={`rounded-lg px-2.5 py-1 text-[14px] font-semibold ${FULFILLMENT_TONE[order.fulfillmentStatus]}`}
-                            >
-                              {FULFILLMENT_LABEL[order.fulfillmentStatus]}
-                            </span>
-                            <span className="rounded-lg bg-neutral-100 px-2.5 py-1 text-[14px] font-medium text-neutral-700">
-                              {PAYMENT_LABEL[paymentKey]}
-                            </span>
-                          </div>
-                          <p className="text-[15px] leading-relaxed text-neutral-600">
-                            {FULFILLMENT_HINT[order.fulfillmentStatus]}
-                          </p>
-                          <Link
-                            href={trPanelOrderPath(order.id)}
-                            className="inline-block text-[15px] font-medium text-[color:var(--panel-accent-deep)]"
-                          >
-                            Detayı aç →
-                          </Link>
-                        </div>
-                        <p className="shrink-0 text-[22px] font-semibold tabular-nums text-neutral-950">
-                          {formatTryFromKurus(order.totalKurus)}
-                        </p>
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
+              {visible.map((order) => (
+                <motion.div key={order.id} variants={trPanelStaggerItem}>
+                  <TrOwnerOrderListCard
+                    boutiqueId={boutiqueId}
+                    boutiqueSlug={boutiqueSlug}
+                    order={order}
+                    onUpdated={(updated) =>
+                      setOrders((current) =>
+                        current.map((item) =>
+                          item.id === updated.id ? updated : item,
+                        ),
+                      )
+                    }
+                  />
+                </motion.div>
+              ))}
             </TrPanelStagger>
           )}
         </TrPanelFadeIn>
       )}
-    </AnimatePresence>
+    </>
   );
 }
 
@@ -220,11 +171,12 @@ export function TrOwnerOrdersPage() {
         <div className="space-y-5">
           <div>
             <Link href={trPanelPath()} className={panelBackLinkClass}>
-              ← Ana sayfa
+              ← Giriş
             </Link>
             <h2 className={panelPageTitleClass}>Siparişler</h2>
             <p className="mt-2 text-[16px] leading-relaxed text-neutral-600">
-              Paketleyin ve durumları güncelleyin.
+              Çoğu siparişi listeden paketleyip ilerletin; detay istisnalar
+              içindir.
             </p>
           </div>
           <OrdersList

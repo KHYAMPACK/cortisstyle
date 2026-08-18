@@ -23,6 +23,7 @@ import {
 } from "@/lib/tr/checkoutSelection";
 import { isTrCheckoutEnabled } from "@/lib/tr/platform";
 import { boutiqueHasLiveShipping } from "@/lib/tr/shipping/registry";
+import { boutiqueOffersIyzicoCheckout } from "@/lib/tr/payments/registry";
 import { FLAT_SHIPPING_FEE_KURUS } from "@/lib/tr/shipping/types";
 import {
   trBoutiqueCartPath,
@@ -213,7 +214,7 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
   if (items.length === 0) {
     return (
       <div className="space-y-6 px-5 py-10 md:px-10">
-        <TrSandboxBanner demo={demoCart} />
+        <TrSandboxBanner demo={demoCart} boutiqueSlug={boutiqueSlug} />
         <p className="max-w-xl text-[12px] leading-relaxed text-neutral-600">
           Ödeme için önce sepetinize ürün ekleyin.
         </p>
@@ -372,6 +373,7 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
         orderId?: string;
         confirmToken?: string;
         sandbox?: boolean;
+        paymentPageUrl?: string | null;
         error?: string;
       };
 
@@ -380,6 +382,10 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
       }
 
       clearCheckedOut();
+      if (data.paymentPageUrl) {
+        window.location.assign(data.paymentPageUrl);
+        return;
+      }
       const confirm = trOrderConfirmationPath(
         boutiqueSlug ? { boutique: boutiqueSlug } : undefined,
       );
@@ -409,6 +415,7 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
       <TrSandboxBanner
         className="mb-8"
         demo={demoCart}
+        boutiqueSlug={boutiqueSlug}
       />
 
       <div className="grid gap-10 lg:grid-cols-[1fr_360px] lg:items-start">
@@ -845,10 +852,14 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
                     className="btn-primary inline-flex min-w-[12rem] items-center justify-center px-6 py-3.5 text-[11px] tracking-[0.18em] disabled:opacity-60"
                   >
                     {submitting
-                      ? "Tamamlanıyor…"
+                      ? boutiqueOffersIyzicoCheckout(boutiqueSlug)
+                        ? "Yönlendiriliyor…"
+                        : "Tamamlanıyor…"
                       : demoCart && !boutiqueCheckout
                         ? "Demo siparişi tamamla"
-                        : "Siparişi tamamla"}
+                        : boutiqueOffersIyzicoCheckout(boutiqueSlug)
+                          ? "Kart ile öde"
+                          : "Siparişi tamamla"}
                   </button>
                 ) : (
                   <button

@@ -1,6 +1,6 @@
 import { listOrdersByBoutiqueIdAdmin } from "@/lib/tr/orders";
 import { isTrCheckoutEnabled } from "@/lib/tr/platform";
-import { listProductsByBoutiqueIdAdmin } from "@/lib/tr/products";
+import { listOwnerProductInventoryAdmin } from "@/lib/tr/products";
 
 export type TrOwnerSummaryRange = "today" | "7d" | "30d" | "all";
 
@@ -61,10 +61,11 @@ function isActiveOrder(order: {
   paymentStatus: string;
 }): boolean {
   if (order.fulfillmentStatus === "cancelled") return false;
+  if (order.paymentStatus === "pending" || order.paymentStatus === "failed") {
+    return false;
+  }
   return (
-    order.paymentStatus === "paid" ||
-    order.paymentStatus === "pending" ||
-    order.paymentStatus === "sandbox"
+    order.paymentStatus === "paid" || order.paymentStatus === "sandbox"
   );
 }
 
@@ -102,7 +103,7 @@ export async function getOwnerBoutiqueSummary(
   boutiqueId: string,
   range: TrOwnerSummaryRange = "today",
 ): Promise<TrOwnerSummary> {
-  const products = await listProductsByBoutiqueIdAdmin(boutiqueId);
+  const products = await listOwnerProductInventoryAdmin(boutiqueId);
   const inventory = {
     available: products.filter((p) => p.status === "available").length,
     sold: products.filter((p) => p.status === "sold").length,

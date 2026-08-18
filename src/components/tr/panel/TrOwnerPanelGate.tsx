@@ -5,10 +5,14 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState, type CSSProperties } from "react";
 import { AuthPopup } from "@/components/AuthPopup";
 import { TrPanelDesktopSidebar } from "@/components/tr/panel/TrPanelDesktopSidebar";
-import { TrPanelMobileChrome } from "@/components/tr/panel/TrPanelMobileChrome";
 import {
-  TrPanelLoading,
+  TrPanelMobileChrome,
+  TrPanelMobileTabBar,
+} from "@/components/tr/panel/TrPanelMobileChrome";
+import {
+  TrPanelListSkeleton,
   TrPanelPageTransition,
+  TrPanelSidebarSkeleton,
 } from "@/components/tr/panel/TrPanelMotion";
 import { useOwnerOrderAlerts } from "@/hooks/useOwnerOrderAlerts";
 import { useAuth } from "@/context/AuthContext";
@@ -94,22 +98,27 @@ export function TrOwnerPanelGate({ children }: TrOwnerPanelGateProps) {
 
   const { hasNewOrders } = useOwnerOrderAlerts(
     isAuthenticated && activeBoutique ? activeBoutique.id : null,
+    activeBoutique?.slug,
   );
 
   const accentStyle = panelAccentCssVars(
     activeBoutique?.themeAccent,
   ) as CSSProperties;
 
+  const booting = isInitializing || loading;
   const showDesktopSidebar =
     isAuthenticated &&
     Boolean(activeBoutique) &&
-    !loading &&
-    !isInitializing &&
+    !booting &&
     !error &&
     boutiques.length > 0;
+  const showSidebarSkeleton = isAuthenticated && booting;
 
   return (
-    <div style={accentStyle} className="lg:flex lg:min-h-dvh">
+    <div
+      style={accentStyle}
+      className="lg:flex lg:min-h-dvh"
+    >
       <AuthPopup
         isOpen={showAuth && !isAuthenticated}
         onClose={() => setShowAuth(false)}
@@ -135,23 +144,36 @@ export function TrOwnerPanelGate({ children }: TrOwnerPanelGateProps) {
             />
           </div>
         </div>
+      ) : showSidebarSkeleton ? (
+        <div className="hidden lg:block">
+          <div className="sticky top-0">
+            <TrPanelSidebarSkeleton />
+          </div>
+        </div>
       ) : null}
 
       <div
-        className={`min-w-0 flex-1 px-4 py-5 sm:px-6 md:px-8 md:py-8 ${
-          showDesktopSidebar || isInitializing || loading
-            ? "lg:px-8 lg:py-8"
-            : "mx-auto max-w-5xl lg:mx-auto lg:max-w-5xl"
+        className={`flex min-w-0 flex-1 flex-col ${
+          showDesktopSidebar || booting ? "" : "mx-auto w-full max-w-5xl"
         }`}
       >
-        <div
-          className={
-            showDesktopSidebar || isInitializing || loading
-              ? "mx-auto max-w-[1400px]"
-              : undefined
-          }
-        >
-          <div className="lg:hidden">
+        <div className="lg:hidden">
+          <TrPanelMobileChrome
+            boutiques={boutiques}
+            activeBoutique={activeBoutique}
+            setActiveBoutiqueId={setActiveBoutiqueId}
+            hasNewOrders={hasNewOrders}
+            isAuthenticated={isAuthenticated}
+            onSignOut={() => void signOut()}
+            onSignIn={() => setShowAuth(true)}
+          />
+        </div>
+
+        {/* Desktop chrome only when ready but no sidebar (auth / empty boutique) — not while booting */}
+        {!showDesktopSidebar &&
+        !booting &&
+        (!isAuthenticated || boutiques.length === 0 || error) ? (
+          <div className="hidden lg:block">
             <TrPanelMobileChrome
               boutiques={boutiques}
               activeBoutique={activeBoutique}
@@ -162,42 +184,34 @@ export function TrOwnerPanelGate({ children }: TrOwnerPanelGateProps) {
               onSignIn={() => setShowAuth(true)}
             />
           </div>
+        ) : null}
 
-          {/* Desktop chrome only when ready but no sidebar (auth / empty boutique) — not while booting */}
-          {!showDesktopSidebar &&
-          !isInitializing &&
-          !loading &&
-          (!isAuthenticated || boutiques.length === 0 || error) ? (
-            <div className="mb-6 hidden lg:block">
-              <TrPanelMobileChrome
-                boutiques={boutiques}
-                activeBoutique={activeBoutique}
-                setActiveBoutiqueId={setActiveBoutiqueId}
-                hasNewOrders={hasNewOrders}
-                isAuthenticated={isAuthenticated}
-                onSignOut={() => void signOut()}
-                onSignIn={() => setShowAuth(true)}
-              />
-            </div>
-          ) : null}
+        <div
+          className={`min-w-0 flex-1 px-4 py-4 sm:px-5 lg:px-6 lg:py-5 ${
+            isAuthenticated && activeBoutique
+              ? "pb-[calc(5.5rem+env(safe-area-inset-bottom))] lg:pb-5"
+              : "pb-5"
+          }`}
+        >
 
-          <AnimatePresence mode="wait">
-            {isInitializing || loading ? (
-              <TrPanelLoading key="panel-boot" label="Yükleniyor…" />
+          <AnimatePresence>
+            {booting ? (
+              <TrPanelPageTransition key="panel-boot">
+                <TrPanelListSkeleton rows={4} label="Yükleniyor" />
+              </TrPanelPageTransition>
             ) : !isAuthenticated ? (
               <TrPanelPageTransition
                 key="auth-required"
                 pathname="auth-required"
               >
-                <div className="space-y-5 rounded-2xl border border-[color:var(--panel-accent-border)] bg-white px-6 py-10 shadow-sm">
-                  <p className="text-[18px] leading-relaxed text-neutral-800">
+                <div className="space-y-4 rounded-xl border border-neutral-200/80 bg-white px-5 py-8 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+                  <p className="text-[15px] leading-relaxed text-neutral-700">
                     Panele girmek için oturum açın.
                   </p>
                   <button
                     type="button"
                     onClick={() => setShowAuth(true)}
-                    className="inline-flex min-h-14 items-center rounded-xl px-8 py-4 text-[17px] font-semibold text-white"
-                    style={{ backgroundColor: "var(--panel-accent)" }}
+                    className="inline-flex min-h-11 items-center rounded-lg bg-[color:var(--panel-accent)] px-5 py-2.5 text-[15px] font-semibold text-white hover:bg-[color:var(--panel-accent-hover)]"
                   >
                     Giriş / Kayıt
                   </button>
@@ -211,8 +225,8 @@ export function TrOwnerPanelGate({ children }: TrOwnerPanelGateProps) {
               </TrPanelPageTransition>
             ) : boutiques.length === 0 ? (
               <TrPanelPageTransition key="no-boutique" pathname="no-boutique">
-                <div className="rounded-2xl border border-[color:var(--panel-accent-border)] bg-white px-6 py-10 shadow-sm">
-                  <p className="text-[18px] leading-relaxed text-neutral-800">
+                <div className="rounded-xl border border-neutral-200/80 bg-white px-5 py-8 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+                  <p className="text-[15px] leading-relaxed text-neutral-700">
                     Hesabınız henüz bir butiğe bağlanmadı. Destek ekibi
                     hesabınızı butiğinize bağladıktan sonra ürün
                     ekleyebilirsiniz.
@@ -230,6 +244,12 @@ export function TrOwnerPanelGate({ children }: TrOwnerPanelGateProps) {
             ) : null}
           </AnimatePresence>
         </div>
+        {isAuthenticated && activeBoutique ? (
+          <TrPanelMobileTabBar
+            boutiqueId={activeBoutique.id}
+            hasNewOrders={hasNewOrders}
+          />
+        ) : null}
       </div>
     </div>
   );

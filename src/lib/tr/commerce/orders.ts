@@ -21,7 +21,6 @@ import type {
 const CUSTOMER_ORDER_STATUSES: TrPaymentStatus[] = [
   "paid",
   "sandbox",
-  "pending",
 ];
 const SPEND_STATUSES: TrPaymentStatus[] = ["paid", "sandbox"];
 
@@ -185,7 +184,7 @@ export async function createOrderAdmin(
 
   // Await push so serverless (Vercel) does not freeze before FCM/Mozilla gets the message.
   // Fire-and-forget here often means the alert only appears after the owner opens the app.
-  if (boutiqueIds.length > 0) {
+  if (input.notifyOwners !== false && boutiqueIds.length > 0) {
     const { notifyBoutiqueOwnersOfNewOrderSafe } = await import(
       "@/lib/tr/pushNotify"
     );
@@ -331,7 +330,8 @@ export async function updateOrderFulfillmentStatusAdmin(
   if (error) throw error;
 
   // Restore inventory once when transitioning into cancelled.
-  if (willCancel && !wasCancelled) {
+  // Failed iyzico holds already restored stock — don't double-add.
+  if (willCancel && !wasCancelled && existing.paymentStatus !== "failed") {
     try {
       const { restoreInventoryForOrderLines } = await import(
         "@/lib/tr/inventory"
@@ -408,13 +408,17 @@ export async function updateOrderPaymentStatusAdmin(
     throw new Error("Supabase service role is not configured.");
   }
 
+  const patch: Record<string, unknown> = {
+    payment_status: paymentStatus,
+  };
+  if (iyzico?.paymentId) patch.iyzico_payment_id = iyzico.paymentId;
+  if (iyzico?.conversationId) {
+    patch.iyzico_conversation_id = iyzico.conversationId;
+  }
+
   const { data, error } = await supabase
     .from("tr_orders")
-    .update({
-      payment_status: paymentStatus,
-      iyzico_payment_id: iyzico?.paymentId ?? null,
-      iyzico_conversation_id: iyzico?.conversationId ?? null,
-    })
+    .update(patch)
     .eq("id", orderId)
     .select("*")
     .single();
@@ -427,6 +431,52 @@ export async function updateOrderPaymentStatusAdmin(
   // Do not wholesale mark products sold here — multi-size stock may remain.
 
   return order;
+}
+
+/** CAS: only pending/failed → paid, so a second iyzico callback is a no-op. */
+export async function markOrderPaidIfAwaitingPaymentAdmin(
+  orderId: string,
+  iyzico: { paymentId: string; conversationId: string },
+): Promise<TrOrder | null> {
+  const supabase = getServiceSupabase();
+  if (!supabase) {
+    throw new Error("Supabase service role is not configured.");
+  }
+
+  const { data, error } = await supabase
+    .from("tr_orders")
+    .update({
+      payment_status: "paid",
+      iyzico_payment_id: iyzico.paymentId,
+      iyzico_conversation_id: iyzico.conversationId,
+    })
+    .eq("id", orderId)
+    .in("payment_status", ["pending", "failed"])
+    .select("*")
+    .maybeSingle();
+
+  if (error) throw error;
+  return data ? mapOrderRow(data as Record<string, unknown>) : null;
+}
+
+export async function markOrderFailedIfPendingAdmin(
+  orderId: string,
+): Promise<TrOrder | null> {
+  const supabase = getServiceSupabase();
+  if (!supabase) {
+    throw new Error("Supabase service role is not configured.");
+  }
+
+  const { data, error } = await supabase
+    .from("tr_orders")
+    .update({ payment_status: "failed" })
+    .eq("id", orderId)
+    .eq("payment_status", "pending")
+    .select("*")
+    .maybeSingle();
+
+  if (error) throw error;
+  return data ? mapOrderRow(data as Record<string, unknown>) : null;
 }
 
 export type TrOrderShipmentPatch = {

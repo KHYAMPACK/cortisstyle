@@ -4,6 +4,9 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { TrOwnerAiModelPicker } from "@/components/tr/panel/TrOwnerAiModelPicker";
 import {
+  panelPrimaryBtnClass,
+} from "@/components/tr/panel/panelUi";
+import {
   describeModelPackageCredits,
   TR_AI_CATALOG_CREDITS,
 } from "@/lib/tr/aiCatalog/uploadCostHints";
@@ -18,9 +21,6 @@ import {
   type OwnerListingDraft,
 } from "@/lib/tr/ownerClient";
 import type { PipelineJobItem } from "@/lib/tr/aiCatalog/pipelineProgress";
-
-const primaryBtn =
-  "inline-flex min-h-12 w-full items-center justify-center rounded-xl px-5 py-3 text-[16px] font-semibold text-white disabled:opacity-50";
 
 const quietLinkBtn =
   "w-full text-left text-[13px] font-medium text-neutral-500 underline-offset-2 hover:text-neutral-700 hover:underline disabled:opacity-50";
@@ -428,8 +428,7 @@ export function TrOwnerAiCatalogEnhance({
       {!hasModelPhoto && !busy ? (
         <button
           type="button"
-          className={primaryBtn}
-          style={{ background: "var(--panel-accent)" }}
+          className={panelPrimaryBtnClass}
           disabled={!canGenerate}
           onClick={() => void runEnhance("create")}
         >
@@ -487,8 +486,7 @@ export function TrOwnerAiCatalogEnhance({
           <div className="mt-3 flex flex-wrap gap-2">
             <button
               type="button"
-              className="inline-flex min-h-10 items-center justify-center rounded-lg px-4 text-[14px] font-semibold text-white disabled:opacity-50"
-              style={{ background: "var(--panel-accent)" }}
+              className={`${panelPrimaryBtnClass} min-h-10 px-4 py-2 text-[14px]`}
               disabled={!canGenerate}
               onClick={() => void runEnhance("replace")}
             >

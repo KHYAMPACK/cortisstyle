@@ -2,7 +2,9 @@ import {
   requireOwnedBoutique,
   requireTrOwner,
 } from "@/lib/tr/ownerAuth";
+import { isOwnerListedOrder } from "@/lib/tr/orderNotifications";
 import { listOrdersByBoutiqueIdAdmin } from "@/lib/tr/orders";
+import { boutiqueOffersIyzicoCheckout } from "@/lib/tr/payments/registry";
 
 export const runtime = "nodejs";
 
@@ -28,7 +30,10 @@ export async function GET(request: Request) {
   }
 
   try {
-    const orders = await listOrdersByBoutiqueIdAdmin(boutique.id);
+    const cardCheckout = boutiqueOffersIyzicoCheckout(boutique.slug);
+    const orders = (await listOrdersByBoutiqueIdAdmin(boutique.id)).filter(
+      (order) => isOwnerListedOrder(order, { cardCheckout }),
+    );
     return Response.json({
       boutique: {
         id: boutique.id,

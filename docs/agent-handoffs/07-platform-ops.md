@@ -56,7 +56,11 @@ Branded reset (`/api/tr/customer/auth/send-password-reset`) uses `admin.generate
 | `FASHN_DEFAULT_RESOLUTION` / `FASHN_DEFAULT_MODE` | Ops / studio refs only (default `1k` / `fast`). Catalog upload is pinned to fast+1k (1 FASHN credit / output) |
 | `TR_CHECKOUT_ENABLED` / `NEXT_PUBLIC_TR_CHECKOUT_ENABLED` | Cadde checkout gating (`next.config` mirrors private → public) |
 | `TR_CHECKOUT_SANDBOX` / `NEXT_PUBLIC_TR_CHECKOUT_SANDBOX` | Staging sandbox orders (default off → pending) |
-| `TR_IYZICO_ENABLED` / `NEXT_PUBLIC_TR_IYZICO_ENABLED` | Hide “kart yakında” banner — only when card capture is live |
+| `TR_IYZICO_ENABLED` / `NEXT_PUBLIC_TR_IYZICO_ENABLED` | Global “kart yakında” hide — keep false until a live test charge; Lila banner also hides via payment registry |
+| `TR_LILABUTIK_IYZICO_API_KEY` | Lila iyzico apiKey (Vercel production too — not only `.env.local`) |
+| `TR_LILABUTIK_IYZICO_SECURITY_KEY` | Lila iyzico secretKey |
+| `TR_LILABUTIK_IYZICO_BASE_URL` | Optional. Default live `https://api.iyzipay.com`. Sandbox: `https://sandbox-api.iyzipay.com` |
+| `TR_IYZICO_CALLBACK_ORIGIN` | Optional HTTPS origin override (tunnel). Else Lila custom domain |
 | `TR_SHIPPING_BASITKARGO_TOKENS` | Lila Basit Kargo JSON `{"lilabutik":"…"}` (registry-gated) |
 | `TR_SHIPPING_BASITKARGO_WEBHOOK_SECRET` | Shared secret for `POST /api/tr/shipping/basitkargo/webhook` (Bearer **or** `?secret=`). Set the same value in Basit panel → Ayarlar → Webhook. |
 | `TR_ORDER_CONFIRM_SECRET` | HMAC for sipariş-onay links (required in production) |

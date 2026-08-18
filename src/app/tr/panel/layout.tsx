@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { TrPanelSwBridge } from "@/components/tr/panel/TrPanelSwBridge";
+import { PANEL_CANVAS } from "@/lib/tr/panel/panelTheme";
 
 export const metadata: Metadata = {
   title: {
@@ -20,7 +21,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#FFFFFF",
+  themeColor: "#1C1C1E",
 };
 
 export default function TrPanelLayout({
@@ -30,9 +31,9 @@ export default function TrPanelLayout({
 }>) {
   return (
     <div
-      className="tr-owner-panel min-h-dvh text-neutral-900 antialiased"
+      className="tr-owner-panel min-h-dvh bg-[#F2F3F5] text-neutral-900 antialiased"
       style={{
-        backgroundColor: "var(--panel-accent-softer, #FFF5F8)",
+        backgroundColor: PANEL_CANVAS,
       }}
     >
       <TrPanelSwBridge />

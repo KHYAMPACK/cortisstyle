@@ -23,7 +23,7 @@ export function TrOwnerComingSoonPage({
             href={trPanelPath()}
             className="inline-block text-[11px] tracking-[0.1em] text-neutral-500 uppercase"
           >
-            ← Ana sayfa
+            ← Giriş
           </Link>
           <h2 className="font-serif text-2xl tracking-tight text-neutral-950">
             {title}

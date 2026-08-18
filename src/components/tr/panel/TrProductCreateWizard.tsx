@@ -19,6 +19,11 @@ import {
 } from "@/components/tr/panel/TrOwnerSizeChartStock";
 import { TrOwnerCategoryPicker } from "@/components/tr/panel/TrOwnerCategoryPicker";
 import { TrOwnerProductFeaturesFields } from "@/components/tr/panel/TrOwnerProductFeaturesFields";
+import {
+  panelFieldClass,
+  panelPrimaryBtnClass,
+  panelSecondaryBtnClass,
+} from "@/components/tr/panel/panelUi";
 import type { PipelineJobItem } from "@/lib/tr/aiCatalog/pipelineProgress";
 import {
   DEFAULT_CATALOG_BACKGROUND_ID,
@@ -86,15 +91,6 @@ const STEPS = [
     hint: "Kontrol edin ve kaydedin",
   },
 ] as const;
-
-const fieldClass =
-  "w-full rounded-xl border-2 border-[color:var(--panel-accent-border)] bg-white px-4 py-4 text-[18px] outline-none focus:border-[color:var(--panel-accent)]";
-
-const primaryBtn =
-  "inline-flex min-h-14 items-center justify-center rounded-xl px-6 py-4 text-[18px] font-semibold text-white disabled:opacity-50";
-
-const secondaryBtn =
-  "inline-flex min-h-14 items-center justify-center rounded-xl border-2 border-[color:var(--panel-accent-border)] bg-white px-6 py-4 text-[18px] font-semibold text-neutral-800";
 
 interface TrProductCreateWizardProps {
   boutiqueId: string;
@@ -530,15 +526,14 @@ export function TrProductCreateWizard({
               <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                 <button
                   type="button"
-                  className={`${secondaryBtn} flex-1`}
+                  className={`${panelSecondaryBtnClass} flex-1`}
                   onClick={discardDraft}
                 >
                   Yeni başla
                 </button>
                 <button
                   type="button"
-                  className={`${primaryBtn} flex-1`}
-                  style={{ backgroundColor: "var(--panel-accent)" }}
+                  className={`${panelPrimaryBtnClass} flex-1`}
                   onClick={restoreDraft}
                 >
                   Devam et
@@ -678,7 +673,7 @@ export function TrProductCreateWizard({
                     onChange={(event) =>
                       setTitle(clampTitle(event.target.value))
                     }
-                    className={fieldClass}
+                    className={panelFieldClass}
                     placeholder="Örn. Siyah Bluz"
                     maxLength={TR_OWNER_PRODUCT_LIMITS.titleMax}
                     autoFocus
@@ -697,7 +692,7 @@ export function TrProductCreateWizard({
                     onChange={(event) =>
                       setDescription(clampDescription(event.target.value))
                     }
-                    className={`${fieldClass} min-h-28`}
+                    className={`${panelFieldClass} min-h-28`}
                     placeholder="Kumaş, kesim, kullanım…"
                     maxLength={TR_OWNER_PRODUCT_LIMITS.descriptionMax}
                   />
@@ -710,7 +705,7 @@ export function TrProductCreateWizard({
                   value={features}
                   onChange={setFeatures}
                   disabled={saving}
-                  fieldClass={fieldClass}
+                  fieldClass={panelFieldClass}
                 />
               </div>
             ) : null}
@@ -726,7 +721,7 @@ export function TrProductCreateWizard({
                     onChange={(event) =>
                       setPriceTry(sanitizeTryPriceInput(event.target.value))
                     }
-                    className={fieldClass}
+                    className={panelFieldClass}
                     inputMode="decimal"
                     placeholder="890"
                     autoFocus
@@ -758,13 +753,10 @@ export function TrProductCreateWizard({
                 >
                   <span
                     className={`relative h-8 w-14 shrink-0 rounded-full transition-colors ${
-                      discountEnabled ? "" : "bg-neutral-300"
-                    }`}
-                    style={
                       discountEnabled
-                        ? { backgroundColor: "var(--panel-accent)" }
-                        : undefined
-                    }
+                        ? "bg-[color:var(--panel-accent)]"
+                        : "bg-neutral-300"
+                    }`}
                   >
                     <span
                       className={`absolute top-1 left-1 h-6 w-6 rounded-full bg-white shadow transition-transform ${
@@ -794,7 +786,7 @@ export function TrProductCreateWizard({
                           sanitizeTryPriceInput(event.target.value),
                         )
                       }
-                      className={fieldClass}
+                      className={panelFieldClass}
                       inputMode="decimal"
                       placeholder="690"
                     />
@@ -876,15 +868,14 @@ export function TrProductCreateWizard({
                     <div className="mt-5 flex flex-col gap-3 sm:flex-row">
                       <button
                         type="button"
-                        className={`${primaryBtn} flex-1`}
-                        style={{ backgroundColor: "var(--panel-accent)" }}
+                        className={`${panelPrimaryBtnClass} flex-1`}
                         onClick={() => setConfirmSkipModel(false)}
                       >
                         Model fotoğrafı oluştur
                       </button>
                       <button
                         type="button"
-                        className={`${secondaryBtn} flex-1`}
+                        className={`${panelSecondaryBtnClass} flex-1`}
                         onClick={proceedWithoutModel}
                       >
                         Yine de devam
@@ -929,15 +920,14 @@ export function TrProductCreateWizard({
 
       <div className="flex flex-wrap gap-3">
         {stepIndex > 0 ? (
-          <button type="button" className={secondaryBtn} onClick={goBack}>
+          <button type="button" className={panelSecondaryBtnClass} onClick={goBack}>
             Geri
           </button>
         ) : null}
         {showContinueButton ? (
           <button
             type="button"
-            className={`${primaryBtn} flex-1 disabled:opacity-60`}
-            style={{ backgroundColor: "var(--panel-accent)" }}
+            className={`${panelPrimaryBtnClass} flex-1 disabled:opacity-60`}
             onClick={goNext}
             disabled={
               awaitingFrontAi || (step.id === "model" && modelGenerating)
@@ -953,8 +943,7 @@ export function TrProductCreateWizard({
         {step.id === "review" ? (
           <button
             type="button"
-            className={`${primaryBtn} flex-1`}
-            style={{ backgroundColor: "var(--panel-accent)" }}
+            className={`${panelPrimaryBtnClass} flex-1`}
             onClick={() => void save()}
             disabled={saving || uploading || modelGenerating}
           >

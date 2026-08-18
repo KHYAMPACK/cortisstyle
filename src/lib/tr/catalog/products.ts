@@ -337,6 +337,70 @@ export async function listProductsByBoutiqueIdAdmin(
   return (data ?? []).map((row) => mapProductRow(row as Record<string, unknown>));
 }
 
+const PANEL_LIST_COLUMNS =
+  "id, boutique_id, title, price_kurus, compare_at_price_kurus, sizes, category, images, marketplace_images, status, stock, size_stocks, sort_order, created_at, updated_at";
+
+function firstUrl(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const url = value.find(
+    (entry): entry is string =>
+      typeof entry === "string" && Boolean(entry.trim()),
+  );
+  return url ? [url.trim()] : [];
+}
+
+/** Panel list/stock/campaigns — one cover URL per gallery, no description/features. */
+export async function listOwnerProductsLiteAdmin(
+  boutiqueId: string,
+): Promise<TrProduct[]> {
+  const supabase = getServiceSupabase();
+  if (!supabase) {
+    throw new Error("Supabase service role is not configured.");
+  }
+
+  const { data, error } = await supabase
+    .from("tr_products")
+    .select(PANEL_LIST_COLUMNS)
+    .eq("boutique_id", boutiqueId)
+    .order("sort_order", { ascending: true });
+
+  if (error) throw error;
+
+  return (data ?? []).map((row) => {
+    const record = row as Record<string, unknown>;
+    return mapProductRow({
+      ...record,
+      images: firstUrl(record.images),
+      marketplace_images: firstUrl(record.marketplace_images),
+      lifestyle_images: [],
+      description: null,
+      colors: [],
+      features: {},
+    });
+  });
+}
+
+export async function listOwnerProductInventoryAdmin(boutiqueId: string): Promise<
+  Array<{ status: TrProductStatus; stock: number }>
+> {
+  const supabase = getServiceSupabase();
+  if (!supabase) {
+    throw new Error("Supabase service role is not configured.");
+  }
+
+  const { data, error } = await supabase
+    .from("tr_products")
+    .select("status, stock")
+    .eq("boutique_id", boutiqueId);
+
+  if (error) throw error;
+
+  return (data ?? []).map((row) => ({
+    status: row.status as TrProductStatus,
+    stock: typeof row.stock === "number" ? row.stock : 0,
+  }));
+}
+
 export async function createProductAdmin(
   input: CreateTrProductInput,
 ): Promise<TrProduct> {

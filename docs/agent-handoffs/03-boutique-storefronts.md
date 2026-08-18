@@ -9,7 +9,7 @@
 - **Storefront themes** — same panel/APIs for all; **unique UI per boutique** via theme packs / editorial skins (Pervin = `classic` editorial; Lila = `atelier` skin). See [lila-butik-e-ticaret-setup.md](../lila-butik-e-ticaret-setup.md). Do not skin with `if (slug)` inside one chrome tree.
 - **Editorial** home/PDP templates via registries (`src/lib/tr/boutiqueHome/`, `boutiquePdp/`) — moving toward `storefront/themes/{id}/`
 - **PDP extras (all boutiques):** size chart modal (letter XS–3XL vs numeric 24–40), AI-filled **Ürün özellikleri**, category **Yıkama talimatı** registry, **İade & Teslimat** from boutique `shippingNote` / `exchangePolicy`. Not Cadde `/tr/parca`.
-- **Owner panel** at `/tr/panel` — Ikas-like modules (products, stock, orders, customers, campaigns, content packs, reports, settings)
+- **Owner panel** at `/tr/panel` — primary nav: Ana Sayfa · Siparişler · Ürünler · Stok · Müşteriler · Kampanyalar · Raporlar · Ayarlar · Faturalar (`src/lib/tr/panel/panelNav.ts`). **Yeni ürün** is a list/home CTA (`/tr/panel/urun/yeni`), not a sidebar item. **İçerik** (`/tr/panel/icerik`) stays a URL-only route until pack UI ships.
 - Owner APIs: `src/app/api/tr/owner/*` authenticated via boutique `owner_user_id`
 - Onboarding seeds: `scripts/seed-pervinsoysalbutik.*`, `src/data/tr/pervinsoysalbutik-seed.json`
 - Brand fields: WhatsApp/IG, theme, commission, option presets, stock, compare-at pricing
@@ -40,6 +40,7 @@
 
 - Tenant boundary is `boutique_id` / slug — never leak another boutique’s products in owner APIs.
 - New origin file for Google/Apple (sitemap, ads.txt, `/.well-known/…`)? Add it once to `BOUTIQUE_DOMAIN_ORIGIN_PASSTHROUGH_PATHS` (or `/.well-known/` prefix). Do **not** add `xml` to the static-asset regex — Merchant `/feeds/*.xml` must still rewrite.
+- Do not add **Yeni ürün** or **İçerik** back to `TR_PANEL_NAV`. Keep Yeni ürün as the Ürünler/home CTA; keep İçerik as a route until pack UI ships.
 - Prefer extending **boutiqueHome / boutiquePdp registries** over forking a new layout per client.
 - Boutique cart: `src/store/trBoutiqueLocalCartStore.ts` (not the Cadde platform cart).
 - Demo/editorial content (`demo-maya`, `editorialDemo*`) is placeholder — don’t treat as production inventory.

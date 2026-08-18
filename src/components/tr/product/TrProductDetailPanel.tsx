@@ -19,6 +19,7 @@ import { TrSoftNavLink } from "@/components/tr/TrSoftNavLink";
 import { getTrCategoryLabel } from "@/lib/tr/categories";
 import { isProductCartCheckoutEnabled } from "@/lib/tr/cartCheckout";
 import { EDITORIAL_SALE_RED, isAtelierEditorialSkin } from "@/lib/tr/boutiqueHome";
+import { beginBuyNowCheckout, type TrPurchaseIntent } from "@/lib/tr/buyNow";
 import { getProductCoverImageFor } from "@/lib/tr/productImages";
 import {
   resolveProductColors,
@@ -31,6 +32,7 @@ import { resolveBoutiqueThemeAccent } from "@/lib/tr/boutiqueBrand";
 import { useTrAddedToCartStore } from "@/store/trAddedToCartStore";
 import { formatTryFromKurus } from "@/types/tr-marketplace";
 import type { TrProductWithBoutique } from "@/types/tr-marketplace";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
 interface TrProductDetailPanelProps {
@@ -57,6 +59,7 @@ export function TrProductDetailPanel({
   const isAvailable = product.status === "available";
   const checkoutEnabled = isProductCartCheckoutEnabled(product);
   const cart = useTrScopedCart();
+  const router = useRouter();
 
   const [selectedSize, setSelectedSize] = useState<string | null>(
     inStockSizes.length === 1 ? inStockSizes[0]! : null,
@@ -65,6 +68,7 @@ export function TrProductDetailPanel({
     colors.length === 1 ? colors[0]! : (colors[0] ?? null),
   );
   const [sizeSheetOpen, setSizeSheetOpen] = useState(false);
+  const [sizeGateIntent, setSizeGateIntent] = useState<TrPurchaseIntent>("add");
   const [sizeChartOpen, setSizeChartOpen] = useState(false);
   const sizeChart = useMemo(
     () => resolveProductSizeChart(sizes),
@@ -100,6 +104,11 @@ export function TrProductDetailPanel({
     ? discountPercentFromPrices(product.priceKurus, compareAt)
     : 0;
 
+  const openSizeGate = (intent: TrPurchaseIntent = "add") => {
+    setSizeGateIntent(intent);
+    setSizeSheetOpen(true);
+  };
+
   const addWithSize = (size: string) => {
     if (!isSizeInStock(product.sizeStocks, size)) {
       setSelectedSize(size);
@@ -109,7 +118,7 @@ export function TrProductDetailPanel({
     setSelectedSize(size);
     setSizeSheetOpen(false);
     const image = getProductCoverImageFor("marketplace", product);
-    cart.addItem({
+    const line = {
       productId: product.id,
       boutiqueId: product.boutiqueId,
       boutiqueName: product.boutique.name,
@@ -118,7 +127,12 @@ export function TrProductDetailPanel({
       priceKurus: product.priceKurus,
       image,
       size,
-    });
+    };
+    cart.addItem(line);
+    if (sizeGateIntent === "buyNow") {
+      router.push(beginBuyNowCheckout(line));
+      return;
+    }
     openAddedSheet({
       productId: product.id,
       title: product.title,
@@ -311,7 +325,7 @@ export function TrProductDetailPanel({
           canOrder={canOrder}
           selectionRequired={selectionRequired}
           sizeOutOfStock={sizeOutOfStock}
-          onRequestSelection={() => setSizeSheetOpen(true)}
+          onRequestSelection={openSizeGate}
           className="hidden md:block"
         />
 
@@ -323,7 +337,7 @@ export function TrProductDetailPanel({
             canOrder={canOrder}
             selectionRequired={selectionRequired}
             sizeOutOfStock={sizeOutOfStock}
-            onRequestSelection={() => setSizeSheetOpen(true)}
+            onRequestSelection={openSizeGate}
             hideActions
             className="md:hidden"
           />
@@ -346,7 +360,7 @@ export function TrProductDetailPanel({
             color={selectedColor?.name ?? null}
             status={product.status}
             selectionRequired={selectionRequired}
-            onRequestSelection={() => setSizeSheetOpen(true)}
+            onRequestSelection={openSizeGate}
             sizeOutOfStock={sizeOutOfStock}
             whatsappPhone={product.boutique.whatsappPhone}
           />
@@ -361,6 +375,7 @@ export function TrProductDetailPanel({
         sizeStocks={product.sizeStocks}
         productTitle={product.title}
         whatsappPhone={product.boutique.whatsappPhone}
+        confirmLabel={sizeGateIntent === "buyNow" ? "Hemen al" : "Sepete ekle"}
         onConfirm={addWithSize}
       />
 

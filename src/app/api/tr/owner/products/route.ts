@@ -2,7 +2,7 @@ import {
   requireOwnedBoutique,
   requireTrOwner,
 } from "@/lib/tr/ownerAuth";
-import { createProductAdmin, listProductsByBoutiqueIdAdmin } from "@/lib/tr/products";
+import { createProductAdmin, listOwnerProductsLiteAdmin } from "@/lib/tr/products";
 import {
   readSizeStocks,
   sizeStocksForSizes,
@@ -53,7 +53,7 @@ export async function GET(request: Request) {
     }
 
     const boutique = authResult.auth.boutiques[0];
-    const products = await listProductsByBoutiqueIdAdmin(boutique.id);
+    const products = await listOwnerProductsLiteAdmin(boutique.id);
     return Response.json({
       boutiques: authResult.auth.boutiques.map((entry) => ({
         id: entry.id,
@@ -73,7 +73,7 @@ export async function GET(request: Request) {
     );
   }
 
-  const products = await listProductsByBoutiqueIdAdmin(boutique.id);
+  const products = await listOwnerProductsLiteAdmin(boutique.id);
   return Response.json({
     boutiques: authResult.auth.boutiques.map((entry) => ({
       id: entry.id,

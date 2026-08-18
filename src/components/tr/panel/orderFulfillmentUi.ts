@@ -46,6 +46,23 @@ export const FULFILLMENT_FILTERS: Array<"all" | TrFulfillmentStatus> = [
   "cancelled",
 ];
 
+/** Happy-path next status from the list card. */
+export const FULFILLMENT_NEXT: Partial<
+  Record<TrFulfillmentStatus, TrFulfillmentStatus>
+> = {
+  created: "ready",
+  ready: "shipped",
+  shipped: "delivered",
+};
+
+export const FULFILLMENT_NEXT_LABEL: Partial<
+  Record<TrFulfillmentStatus, string>
+> = {
+  created: "Kargoya hazır",
+  ready: "Kargoda",
+  shipped: "Teslim edildi",
+};
+
 export function formatOrderDateShort(iso: string): string {
   return new Intl.DateTimeFormat("tr-TR", {
     timeZone: "Europe/Istanbul",

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { TrCheckoutPageContent } from "@/components/tr/TrCheckoutPageContent";
 import { resolveBoutiqueHomeLayout } from "@/lib/tr/boutiqueHome";
+import { boutiqueOffersIyzicoCheckout } from "@/lib/tr/payments/registry";
 import { safeGetPublicBoutique } from "@/lib/tr/publicData";
 
 interface BoutiqueCheckoutPageProps {
@@ -44,7 +45,10 @@ export default async function BoutiqueCheckoutPage({
           Siparişi tamamla
         </h1>
         <p className="mt-3 text-[14px] text-neutral-600">
-          Teslimat bilgilerinizi girin. Kart ödemesi henüz aktif değil.
+          Teslimat bilgilerinizi girin
+          {boutiqueOffersIyzicoCheckout(boutique.slug)
+            ? " ve kart ile ödeyin."
+            : "."}
         </p>
       </header>
       <TrCheckoutPageContent boutiqueSlug={boutique.slug} />

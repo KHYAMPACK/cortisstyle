@@ -1,12 +1,13 @@
 "use client";
 
-import Image from "next/image";
+import { Menu, Store, X } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
+import { TrPanelBoutiqueLogo } from "@/components/tr/panel/TrPanelBoutiqueLogo";
+import { TrPanelNavLinks } from "@/components/tr/panel/TrPanelNavLinks";
 import type { TrOwnerBoutiqueSummary } from "@/lib/tr/ownerClient";
-import { isTrPanelNavActive, TR_PANEL_NAV } from "@/lib/tr/panelNav";
-import { trBoutiquePath, trPanelOrdersPath, trPanelPath } from "@/lib/tr/paths";
+import { panelBoutiqueLogoSrc } from "@/lib/tr/panel/panelLogo";
+import { trBoutiquePath, trPanelPath } from "@/lib/tr/paths";
 
 interface TrPanelMobileChromeProps {
   boutiques: TrOwnerBoutiqueSummary[];
@@ -27,59 +28,96 @@ export function TrPanelMobileChrome({
   onSignOut,
   onSignIn,
 }: TrPanelMobileChromeProps) {
-  const pathname = usePathname();
-  const navRef = useRef<HTMLElement | null>(null);
+  const [open, setOpen] = useState(false);
+  const logoSrc = activeBoutique ? panelBoutiqueLogoSrc(activeBoutique) : null;
 
   useEffect(() => {
-    const el = navRef.current;
-    if (!el) return;
-
-    const onWheel = (event: WheelEvent) => {
-      if (el.scrollWidth <= el.clientWidth) return;
-      if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
-      el.scrollLeft += event.deltaY;
-      event.preventDefault();
+    if (!open) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
     };
-
-    el.addEventListener("wheel", onWheel, { passive: false });
-    return () => el.removeEventListener("wheel", onWheel);
-  }, [isAuthenticated, activeBoutique?.id]);
+    document.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [open]);
 
   return (
-    <header className="mb-6 overflow-hidden rounded-2xl border border-[color:var(--panel-accent-border)] bg-white shadow-sm">
-      <div
-        className="px-5 py-4 text-white sm:px-6"
-        style={{
-          background: `linear-gradient(90deg, var(--panel-accent-deep), var(--panel-accent))`,
-        }}
-      >
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="min-w-0">
-            <Link
-              href={trPanelPath()}
-              className="text-[15px] font-semibold tracking-wide"
-            >
-              Butik Paneli
-            </Link>
-            {activeBoutique ? (
-              <div className="mt-2 flex flex-wrap items-center gap-3">
-                {activeBoutique.logoUrl ? (
-                  <Image
-                    src={activeBoutique.logoUrl}
-                    alt=""
-                    width={48}
-                    height={48}
-                    className="h-12 w-12 rounded-full bg-white/95 object-contain p-1"
-                    unoptimized
+    <>
+      <header className="sticky top-0 z-30 flex min-h-14 items-center gap-3 bg-[color:var(--panel-shell,#1C1C1E)] px-3 text-white">
+        {isAuthenticated && activeBoutique ? (
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            className="flex h-11 w-11 items-center justify-center rounded-lg text-white/80 hover:bg-white/10"
+            aria-label="Menüyü aç"
+          >
+            <Menu className="h-5 w-5" strokeWidth={1.75} />
+          </button>
+        ) : null}
+        <Link href={trPanelPath()} className="min-w-0 flex-1">
+          <p className="text-[10px] font-semibold tracking-[0.14em] text-white/45 uppercase">
+            Butik
+          </p>
+          <p className="truncate text-[14px] font-semibold">
+            {activeBoutique?.name ?? "Yönetim"}
+          </p>
+        </Link>
+        {activeBoutique ? (
+          <Link
+            href={trBoutiquePath(activeBoutique.slug)}
+            className="flex h-11 w-11 items-center justify-center rounded-lg text-white/80 hover:bg-white/10"
+            aria-label="Mağazayı aç"
+          >
+            <Store className="h-5 w-5" strokeWidth={1.75} />
+          </Link>
+        ) : null}
+        {isAuthenticated ? (
+          <button
+            type="button"
+            onClick={onSignOut}
+            className="hidden min-h-11 rounded-lg px-3 text-[13px] font-medium text-white/70 sm:inline-flex sm:items-center"
+          >
+            Çıkış
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={onSignIn}
+            className="inline-flex min-h-11 items-center rounded-lg bg-white px-3 text-[13px] font-semibold text-neutral-900"
+          >
+            Giriş
+          </button>
+        )}
+      </header>
+
+      {open && activeBoutique ? (
+        <div className="fixed inset-0 z-40 lg:hidden">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/50"
+            aria-label="Menüyü kapat"
+            onClick={() => setOpen(false)}
+          />
+          <div className="absolute inset-y-0 left-0 flex w-[min(100%,280px)] flex-col bg-[color:var(--panel-shell,#1C1C1E)] text-white shadow-xl">
+            <div className="flex items-center justify-between px-4 py-3">
+              <div className="flex min-w-0 items-center gap-2.5">
+                {logoSrc ? (
+                  <TrPanelBoutiqueLogo
+                    src={logoSrc}
+                    size={36}
+                    className="h-9 w-9 rounded-full bg-white object-contain p-0.5"
                   />
                 ) : (
-                  <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20 text-lg font-semibold">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[color:var(--panel-accent)] text-[13px] font-semibold">
                     {activeBoutique.name.slice(0, 1)}
                   </span>
                 )}
                 {boutiques.length > 1 ? (
                   <select
-                    className="max-w-full rounded-xl border-0 bg-white px-4 py-3 text-[17px] font-medium text-neutral-900"
+                    className="max-w-[160px] rounded-md border-0 bg-white/10 px-2 py-2 text-[14px] font-medium text-white"
                     value={activeBoutique.id}
                     onChange={(event) =>
                       setActiveBoutiqueId(event.target.value)
@@ -92,91 +130,59 @@ export function TrPanelMobileChrome({
                     ))}
                   </select>
                 ) : (
-                  <p className="truncate text-[20px] font-semibold leading-tight">
+                  <p className="truncate text-[14px] font-semibold">
                     {activeBoutique.name}
                   </p>
                 )}
               </div>
-            ) : (
-              <h1 className="mt-1 text-[22px] font-semibold">Yönetim</h1>
-            )}
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            {activeBoutique ? (
-              <Link
-                href={trBoutiquePath(activeBoutique.slug)}
-                className="inline-flex min-h-12 items-center rounded-xl bg-white px-5 py-3 text-[16px] font-semibold shadow-sm"
-                style={{ color: "var(--panel-accent)" }}
-              >
-                Mağazayı aç
-              </Link>
-            ) : null}
-            {isAuthenticated ? (
               <button
                 type="button"
-                onClick={onSignOut}
-                className="inline-flex min-h-12 items-center rounded-xl border-2 border-white/70 bg-transparent px-5 py-3 text-[16px] font-semibold text-white"
+                onClick={() => setOpen(false)}
+                className="flex h-11 w-11 items-center justify-center rounded-lg text-white/80"
+                aria-label="Kapat"
+              >
+                <X className="h-5 w-5" strokeWidth={1.75} />
+              </button>
+            </div>
+            <TrPanelNavLinks
+              boutiqueId={activeBoutique.id}
+              hasNewOrders={hasNewOrders}
+              onNavigate={() => setOpen(false)}
+              variant="dark"
+            />
+            <div className="border-t border-white/10 p-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  onSignOut();
+                }}
+                className="flex min-h-11 w-full items-center rounded-lg px-3 text-[14px] font-medium text-white/60"
               >
                 Çıkış
               </button>
-            ) : (
-              <button
-                type="button"
-                onClick={onSignIn}
-                className="inline-flex min-h-12 items-center rounded-xl bg-white px-5 py-3 text-[16px] font-semibold"
-                style={{ color: "var(--panel-accent)" }}
-              >
-                Giriş yap
-              </button>
-            )}
+            </div>
           </div>
         </div>
-      </div>
-
-      {isAuthenticated && activeBoutique ? (
-        <nav
-          ref={navRef}
-          aria-label="Panel menüsü"
-          className="flex gap-2 overflow-x-auto overscroll-x-contain p-3 pb-2 [scrollbar-gutter:stable] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-2.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--panel-accent-border)] [&::-webkit-scrollbar-track]:bg-transparent"
-          style={{ backgroundColor: "var(--panel-accent-softer)" }}
-        >
-          {TR_PANEL_NAV.map((item) => {
-            const active = isTrPanelNavActive(pathname, item);
-            const showOrderDot =
-              item.href === trPanelOrdersPath() && hasNewOrders;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`relative shrink-0 rounded-full px-4 py-3 text-[15px] font-semibold transition-colors ${
-                  active
-                    ? "text-white shadow-sm"
-                    : "bg-white text-neutral-700 ring-1 ring-[color:var(--panel-accent-border)] hover:bg-[color:var(--panel-accent-soft)]"
-                }`}
-                style={
-                  active
-                    ? { backgroundColor: "var(--panel-accent)" }
-                    : undefined
-                }
-                aria-label={
-                  showOrderDot
-                    ? `${item.label} — yeni sipariş var`
-                    : item.label
-                }
-              >
-                {item.label}
-                {showOrderDot ? (
-                  <span
-                    className="absolute top-1.5 right-1.5 h-2.5 w-2.5 rounded-full bg-rose-500 ring-2 ring-white"
-                    aria-hidden
-                  />
-                ) : null}
-              </Link>
-            );
-          })}
-        </nav>
       ) : null}
-    </header>
+    </>
+  );
+}
+
+export function TrPanelMobileTabBar({
+  boutiqueId,
+  hasNewOrders,
+}: {
+  boutiqueId: string;
+  hasNewOrders: boolean;
+}) {
+  return (
+    <div className="fixed right-0 bottom-0 left-0 z-30 pb-[env(safe-area-inset-bottom)] lg:hidden">
+      <TrPanelNavLinks
+        boutiqueId={boutiqueId}
+        hasNewOrders={hasNewOrders}
+        variant="bottom"
+      />
+    </div>
   );
 }

@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import {
+  panelPrimaryBtnClass,
+} from "@/components/tr/panel/panelUi";
+import {
   requestOwnerListingDraft,
   type OwnerListingDraft,
 } from "@/lib/tr/ownerClient";
@@ -119,8 +122,7 @@ export function TrOwnerAiFillListing({
         </div>
         <button
           type="button"
-          className="inline-flex min-h-12 shrink-0 items-center justify-center rounded-xl px-5 py-3 text-[15px] font-semibold text-white disabled:opacity-50"
-          style={{ background: "var(--panel-accent)" }}
+          className={`${panelPrimaryBtnClass} min-h-12 shrink-0 px-5 py-3 text-[15px]`}
           disabled={!canRun}
           onClick={handleFill}
         >

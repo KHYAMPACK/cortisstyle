@@ -339,6 +339,8 @@ export interface CreateTrOrderInput {
   /** Customer-paid shipping (kuruş). Server-quoted; never trust the client. */
   shippingFeeKurus?: number;
   shippingProvider?: TrOrder["shipment"]["provider"];
+  /** Default true. Card-capture holds skip push until iyzico SUCCESS. */
+  notifyOwners?: boolean;
   items: Array<{
     productId: string;
     boutiqueId: string;

@@ -34,7 +34,6 @@ export function TrOrderItemThumbs({
               src={item.imageUrl}
               alt={item.title}
               fill
-              unoptimized
               className="object-contain p-1"
               sizes="96px"
             />

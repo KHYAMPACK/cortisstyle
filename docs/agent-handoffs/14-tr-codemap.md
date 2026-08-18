@@ -52,6 +52,7 @@ src/
 │       ├── assets/              → upload/storage helpers
 │       ├── notify/              → push + order notifications
 │       ├── shipping/            → per-boutique carriers (Lila Basit Kargo)
+│       ├── payments/            → per-boutique iyzico (Lila Checkout Form)
 │       └── legal/, seo/, …      → boutique legal + SEO
 ├── store/                       → Zustand TR carts/favorites
 ├── types/                       → tr-marketplace, tr-cart, tr-look, user (AuthUser)
@@ -71,6 +72,7 @@ src/
 | Boutique PDP size charts / care / features | `lib/tr/catalog/sizeCharts.ts`, `careInstructions.ts`, `productFeatures.ts`, `pdpReturns.ts` |
 | Owner auth / panel APIs helpers | `lib/tr/panel/` |
 | Boutique shipping (Lila BK, others stub) | `lib/tr/shipping/` (flat 120 TL + 140 TL auto-buy cap; gated address retry) |
+| Boutique card pay (Lila iyzico) | `lib/tr/payments/` (`TR_LILABUTIK_IYZICO_*`; callback `/api/tr/checkout/iyzico/callback`) |
 | TR il/ilçe allowlist | `lib/tr/geo/turkeyAddress.ts`, `data/tr/turkey-cities-districts.json` |
 | PhotoRoom cutout | **`lib/tr/ai/photoroomRemoveBg.ts`** (never delete with “studio”) |
 | Auth helpers | `lib/auth/` |

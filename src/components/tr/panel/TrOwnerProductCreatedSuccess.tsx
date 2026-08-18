@@ -75,7 +75,6 @@ export function TrOwnerProductCreatedSuccess({
                 src={cover}
                 alt={product.title}
                 fill
-                unoptimized
                 className="object-contain p-3"
                 sizes="128px"
               />
@@ -111,7 +110,6 @@ export function TrOwnerProductCreatedSuccess({
             target="_blank"
             rel="noopener noreferrer"
             className={panelPrimaryBtnClass}
-            style={{ backgroundColor: "var(--panel-accent)" }}
           >
             Mağazada ürünü gör
           </Link>

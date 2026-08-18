@@ -7,6 +7,7 @@ import {
   panelSecondaryBtnClass,
   panelSectionClass,
 } from "@/components/tr/panel/panelUi";
+import { TrPanelBusySpinner } from "@/components/tr/panel/TrPanelMotion";
 import { getSupabaseClient } from "@/lib/supabaseClient";
 import {
   disableOwnerPush,
@@ -142,9 +143,16 @@ export function TrOwnerPushNotificationsCard({
             type="button"
             disabled={busy || loading}
             onClick={() => void disable()}
-            className={panelSecondaryBtnClass}
+            className={`${panelSecondaryBtnClass} gap-3`}
           >
-            {busy ? "…" : "Bildirimleri kapat"}
+            {busy ? (
+              <>
+                <TrPanelBusySpinner />
+                Kapatılıyor…
+              </>
+            ) : (
+              "Bildirimleri kapat"
+            )}
           </button>
         ) : (
           <button
@@ -157,10 +165,16 @@ export function TrOwnerPushNotificationsCard({
               status === "denied"
             }
             onClick={() => void enable()}
-            className={panelPrimaryBtnClass}
-            style={{ backgroundColor: "var(--panel-accent)" }}
+            className={`${panelPrimaryBtnClass} gap-3`}
           >
-            {busy ? "…" : "Bildirimleri aç"}
+            {busy ? (
+              <>
+                <TrPanelBusySpinner />
+                Açılıyor…
+              </>
+            ) : (
+              "Bildirimleri aç"
+            )}
           </button>
         )}
       </div>

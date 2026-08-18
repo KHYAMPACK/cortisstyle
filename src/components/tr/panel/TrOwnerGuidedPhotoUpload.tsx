@@ -20,13 +20,11 @@ import {
   productPhotoRoleLabel,
   TR_OWNER_PRODUCT_LIMITS,
 } from "@/lib/tr/ownerProductConstraints";
+import {
+  panelPrimaryBtnClass,
+  panelSecondaryBtnClass,
+} from "@/components/tr/panel/panelUi";
 import { uploadOwnerProductImage, requestOwnerPackshot, requestOwnerPackshotPrepare, type OwnerListingDraft } from "@/lib/tr/ownerClient";
-
-const primaryBtn =
-  "inline-flex min-h-12 flex-1 items-center justify-center rounded-xl px-5 py-3 text-[16px] font-semibold text-white disabled:opacity-50";
-
-const secondaryBtn =
-  "inline-flex min-h-12 flex-1 items-center justify-center rounded-xl border-2 border-[color:var(--panel-accent-border)] bg-white px-5 py-3 text-[16px] font-semibold text-neutral-800 disabled:opacity-50";
 
 type UploadStage = "idle" | "cutout" | "analyze" | "packshot";
 
@@ -867,15 +865,14 @@ export function TrOwnerGuidedPhotoUpload({
               <div className="mt-5 flex gap-3">
                 <button
                   type="button"
-                  className={secondaryBtn}
+                  className={panelSecondaryBtnClass}
                   onClick={clearPending}
                 >
                   Vazgeç
                 </button>
                 <button
                   type="button"
-                  className={primaryBtn}
-                  style={{ background: "var(--panel-accent)" }}
+                  className={panelPrimaryBtnClass}
                   onClick={() => void confirmPending()}
                 >
                   Onayla — katalog görseli oluştur

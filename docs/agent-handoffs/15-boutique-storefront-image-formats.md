@@ -1,6 +1,6 @@
 # 15 — Boutique storefront image formats (later)
 
-**Status:** plan only — do not implement until asked. Cadde packshot cutouts stay **PNG**.
+**Status:** storage transcode is **plan only** — do not JPEG/WebP packshots in place. Panel **display** thumbs via `next/image` are live (see below). Cadde packshot cutouts stay **PNG** in storage.
 
 **Decision:** Boutique **customer-facing photos with a real background** should be JPEG or WebP. **Transparent packshot cutouts** stay PNG (panel pipeline + Cadde).
 
@@ -22,7 +22,15 @@ Storefront gallery: `getStorefrontGalleryImages` prefers cutouts + lifestyle.
 
 Photoroom **intermediate** must stay PNG (or WebP **with alpha**). JPEG cannot hold transparency.
 
-## Target (when implementing)
+### Panel display (done — not a storage rewrite)
+
+Owner-panel **list/chrome thumbs** use `next/image` (optimizer WebP/AVIF at ~80–96px). Drop `unoptimized` on product list, stock, order thumbs, success cover, packing cells. Keep `unoptimized` on editor / wizard / lightbox / store preview so the owner sees the exact file.
+
+Do **not** convert stored marketplace packshot PNGs. The optimizer serves a derived thumb; `tr-assets` packshots stay PNG.
+
+Panel chrome logos prefer SVG via `panelBoutiqueLogoSrc` (`src/lib/tr/panel/panelLogo.ts`) — e.g. `public/tr/boutiques/pervinsoysalbutik/logo.svg`. SVG skips the Next optimizer (`TrPanelBoutiqueLogo`). Storefront `logoUrl` overrides can stay PNG.
+
+## Target (when implementing storage writes)
 
 | File | Keep PNG? | Store as | Why |
 |------|-----------|----------|-----|
@@ -41,7 +49,7 @@ Prefer **WebP** for new boutique writes (smaller than JPEG, same look). JPEG is 
 2. **Lifestyle rehost** — in `rehostRemoteImageToTrAssets` (or the try-on caller), when `kind === "lifestyle"`, sharp-encode WebP/JPEG before `uploadTrProductAsset`. Do not transcode `kind: "marketplace"`.
 3. **Do not change** `generateFashnPackshot` PNG upload or Photoroom `format: png`.
 4. **Existing products** — optional backfill script; not required for the first PR. New uploads only is enough.
-5. **Panel previews** — same URLs; JPEG/WebP originals will still preview. Packshot thumbs stay PNG.
+5. **Panel thumbs** — already via `next/image` WebP; do not JPEG packshots “for the panel.” If the optimizer path fails (private URLs), a derived `panel-thumb.webp` (~320px) could be generated as a **new** file, not a replacement.
 
 ## What not to do
 

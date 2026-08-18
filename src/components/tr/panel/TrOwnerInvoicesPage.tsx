@@ -13,7 +13,7 @@ import {
 } from "@/components/tr/panel/panelUi";
 import {
   TrPanelFadeIn,
-  TrPanelLoading,
+  TrPanelListSkeleton,
 } from "@/components/tr/panel/TrPanelMotion";
 import {
   fetchOwnerInvoices,
@@ -103,8 +103,8 @@ function InvoicesList({ boutiqueId }: { boutiqueId: string }) {
     }
   };
 
-  if (loading) {
-    return <TrPanelLoading label="Faturalar yükleniyor…" />;
+  if (loading && invoices.length === 0) {
+    return <TrPanelListSkeleton rows={4} label="Faturalar yükleniyor" />;
   }
 
   return (
@@ -225,7 +225,7 @@ export function TrOwnerInvoicesPage() {
         <div className="space-y-4">
           <div>
             <Link href={trPanelPath()} className={panelBackLinkClass}>
-              ← Ana sayfa
+              ← Giriş
             </Link>
             <h2 className={panelPageTitleClass}>Faturalar</h2>
           </div>

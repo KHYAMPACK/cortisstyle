@@ -113,14 +113,9 @@ export function TrOwnerSizeChartStock({
                 onClick={() => onChartChange(option.id)}
                 className={`rounded-xl px-4 py-4 text-left text-[16px] font-semibold transition-colors ${
                   active
-                    ? "text-white"
-                    : "bg-white text-neutral-800 ring-1 ring-[color:var(--panel-accent-border)]"
+                    ? "bg-[color:var(--panel-accent)] text-white hover:bg-[color:var(--panel-accent-hover)]"
+                    : "bg-white text-neutral-800 ring-1 ring-[color:var(--panel-accent-border)] hover:bg-[color:var(--panel-accent-soft)]"
                 }`}
-                style={
-                  active
-                    ? { backgroundColor: "var(--panel-accent)" }
-                    : undefined
-                }
               >
                 <span className="block">{option.label}</span>
                 <span
@@ -222,7 +217,6 @@ export function TrOwnerSizeChartStock({
                   <button
                     type="button"
                     className={panelPrimaryBtnClass}
-                    style={{ backgroundColor: "var(--panel-accent)" }}
                     onClick={commitSize}
                   >
                     Ekle

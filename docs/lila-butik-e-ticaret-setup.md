@@ -184,6 +184,7 @@ Lila seller snapshot (fill Ayarlar / re-seed to sync DB):
 9. **iyzico website criteria**
    - [ ] Hakkımızda `/yasal/kunye` · Gizlilik · Mesafeli Satış · Teslimat ve İade in footer
    - [ ] Footer payment band (Visa / MC / iyzico) + checkout “iyzico ile öde” badge
+   - [ ] iyzico Alıcı Koruması overlay (`TrIyzicoBuyerProtection` · Lila token in `src/lib/tr/payments/registry.ts`)
    - [ ] HTTPS on custom domain
 10. **Ekiz Yazılım** footer watermark (`TrPlatformCredit`) live on storefront — shared for every boutique
 11. Full pre-live list: [13-boutique-wire-in-and-go-live.md](./agent-handoffs/13-boutique-wire-in-and-go-live.md)

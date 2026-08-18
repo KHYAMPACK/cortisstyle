@@ -16,9 +16,9 @@ interface TrProductPurchasePanelProps {
   selectedSize?: string | null;
   selectedColor?: string | null;
   canOrder?: boolean;
-  /** When true, Sepete ekle stays enabled and asks for size via sheet. */
+  /** When true, Sepete ekle / Hemen al stays enabled and asks for size via sheet. */
   selectionRequired?: boolean;
-  onRequestSelection?: () => void;
+  onRequestSelection?: (intent?: "add" | "buyNow") => void;
   /** Selected beden has no stock — CTA becomes gelince haber et. */
   sizeOutOfStock?: boolean;
   /** Hide primary purchase CTAs (e.g. moved to mobile sticky bar). */
@@ -77,7 +77,7 @@ export function TrProductPurchasePanel({
   if (checkoutEnabled) {
     return (
       <div className={`mt-8 space-y-4 ${className}`}>
-        <TrSandboxBanner demo={isTrDemoProduct(product)} />
+        <TrSandboxBanner demo={isTrDemoProduct(product)} boutiqueSlug={product.boutique.slug} />
 
         {actions}
 

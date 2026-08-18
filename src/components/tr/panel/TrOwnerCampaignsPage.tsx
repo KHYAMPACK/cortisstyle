@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { useEffect, useState, type FormEvent } from "react";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
 import {
@@ -18,7 +18,7 @@ import {
 } from "@/components/tr/panel/panelUi";
 import {
   TrPanelFadeIn,
-  TrPanelLoading,
+  TrPanelListSkeleton,
   TrPanelStagger,
   trPanelStaggerItem,
 } from "@/components/tr/panel/TrPanelMotion";
@@ -26,6 +26,7 @@ import {
   createOwnerDiscountCode,
   fetchOwnerDiscountCodes,
   fetchOwnerProducts,
+  peekOwnerProducts,
   setOwnerDiscountCodeActive,
   updateOwnerProduct,
 } from "@/lib/tr/ownerClient";
@@ -37,9 +38,10 @@ import {
 } from "@/types/tr-marketplace";
 
 function CampaignsBoard({ boutiqueId }: { boutiqueId: string }) {
-  const [products, setProducts] = useState<TrProduct[]>([]);
+  const cached = peekOwnerProducts(boutiqueId);
+  const [products, setProducts] = useState<TrProduct[]>(cached?.products ?? []);
   const [codes, setCodes] = useState<TrDiscountCode[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!cached);
   const [error, setError] = useState<string | null>(null);
   const [code, setCode] = useState("");
   const [percentOff, setPercentOff] = useState("10");
@@ -48,7 +50,6 @@ function CampaignsBoard({ boutiqueId }: { boutiqueId: string }) {
   useEffect(() => {
     let cancelled = false;
     async function load() {
-      setLoading(true);
       setError(null);
       try {
         const [productResult, codeResult] = await Promise.all([
@@ -96,17 +97,7 @@ function CampaignsBoard({ boutiqueId }: { boutiqueId: string }) {
     setError(null);
     try {
       await updateOwnerProduct(product.id, {
-        title: product.title,
-        description: product.description,
-        priceTry: product.priceKurus / 100,
         compareAtPriceTry: null,
-        sizes: product.sizes,
-        colors: product.colors,
-        category: product.category,
-        images: product.images,
-        marketplaceImages: product.marketplaceImages,
-        stock: product.stock,
-        status: product.status,
       });
       await reload();
     } catch (saveError) {
@@ -144,11 +135,11 @@ function CampaignsBoard({ boutiqueId }: { boutiqueId: string }) {
   };
 
   return (
-    <AnimatePresence mode="wait">
-      {loading ? (
-        <TrPanelLoading key="camp-loading" label="Kampanyalar yükleniyor…" />
+    <>
+      {loading && products.length === 0 && codes.length === 0 ? (
+        <TrPanelListSkeleton rows={4} label="Kampanyalar yükleniyor" />
       ) : (
-        <TrPanelFadeIn key="camp-ready" className="space-y-6">
+        <TrPanelFadeIn className="space-y-6">
           {error ? <p className={panelErrorClass}>{error}</p> : null}
 
           <section className="space-y-3">
@@ -238,7 +229,6 @@ function CampaignsBoard({ boutiqueId }: { boutiqueId: string }) {
                 type="submit"
                 disabled={saving}
                 className={`${panelPrimaryBtnClass} mt-4 w-full sm:mt-0 sm:w-auto`}
-                style={{ backgroundColor: "var(--panel-accent)" }}
               >
                 Kupon ekle
               </button>
@@ -299,7 +289,7 @@ function CampaignsBoard({ boutiqueId }: { boutiqueId: string }) {
           </section>
         </TrPanelFadeIn>
       )}
-    </AnimatePresence>
+    </>
   );
 }
 
@@ -310,9 +300,9 @@ export function TrOwnerCampaignsPage() {
         <div className="space-y-5">
           <div>
             <Link href={trPanelPath()} className={panelBackLinkClass}>
-              ← Ana sayfa
+              ← Giriş
             </Link>
-            <h2 className={panelPageTitleClass}>Kampanyalar</h2>
+            <h2 className={panelPageTitleClass}>İndirimler</h2>
           </div>
           <CampaignsBoard boutiqueId={activeBoutique.id} />
         </div>

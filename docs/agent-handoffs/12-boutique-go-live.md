@@ -10,15 +10,16 @@
 |-----|--------|
 | `TR_CHECKOUT_SANDBOX` unset/`false` | Orders are **`pending`** (real records, stock reserved). Banner: kart ödemesi yakında. |
 | `TR_CHECKOUT_SANDBOX=true` | Staging only — `sandbox` payment_status, deneme banner. |
-| `TR_IYZICO_ENABLED=true` (+ sandbox off) | Banner hidden — set **only** when card capture is actually wired. |
+| `TR_IYZICO_ENABLED=true` (+ sandbox off) | Global banner hidden. Lila hides the banner from the payment registry even while this stays false. |
+| `TR_LILABUTIK_IYZICO_API_KEY` + `TR_LILABUTIK_IYZICO_SECURITY_KEY` | Lila Checkout Form (also set on Vercel production). Live API needs HTTPS callback — not `localhost`. |
 | `TR_CHECKOUT_ENABLED` | Checkout/API gating for Cadde; **does not** mean card pay is live. |
 
 **Do not** leave `TR_CHECKOUT_SANDBOX=true` on production.  
-**Do not** set `TR_IYZICO_ENABLED=true` until iyzico capture lands.
+**Do not** set `TR_IYZICO_ENABLED=true` until a real Lila test charge succeeds.
 
-Until then: owner can **“Ödendi olarak işaretle”** on pending orders (havale / WhatsApp).
+Until other boutiques have keys: owner can **“Ödendi olarak işaretle”** on pending orders (havale / WhatsApp).
 
-When iyzico ships: capture → set `payment_status: paid` (inventory already reserved at create).
+When iyzico succeeds: `payment_status: paid` (inventory already reserved at create) → invoice draft + Basit auto-label.
 
 ## Required secrets (production)
 
@@ -44,7 +45,7 @@ When iyzico ships: capture → set `payment_status: paid` (inventory already res
 3. Delete sample/sandbox seed orders from prod DB
 4. Legal pages from shared templates (`src/lib/tr/legal/docs.ts` / [tr-boutique-legal-templates.md](../tr-boutique-legal-templates.md)); lawyer review recommended
 5. Fill `legalName` / tax / MERSIS on boutique
-6. iyzico application + wire → then `TR_IYZICO_ENABLED=true`
+6. iyzico: Lila keys on Vercel + test charge → then `TR_IYZICO_ENABLED=true`
 7. Carrier: **per-boutique** — Lila = Basit Kargo (`patch_tr_order_shipments.sql` + env); Pervin still manual
 8. e-Fatura / GİB API (offline Faturalar scaffold is enough for soft-live)
 9. Backfill `size_stocks` for sized SKUs

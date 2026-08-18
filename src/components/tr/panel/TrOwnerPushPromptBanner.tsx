@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { panelHintClass, panelPrimaryBtnClass } from "@/components/tr/panel/panelUi";
+import { panelHintClass, panelPrimaryBtnClass, panelSecondaryBtnClass } from "@/components/tr/panel/panelUi";
+import { TrPanelBusySpinner } from "@/components/tr/panel/TrPanelMotion";
 import { getSupabaseClient } from "@/lib/supabaseClient";
 import {
   enableOwnerPush,
@@ -89,15 +90,21 @@ export function TrOwnerPushPromptBanner({ boutiqueId }: { boutiqueId: string }) 
           type="button"
           disabled={busy}
           onClick={() => void enable()}
-          className={panelPrimaryBtnClass}
-          style={{ backgroundColor: "var(--panel-accent)" }}
+          className={`${panelPrimaryBtnClass} gap-3`}
         >
-          {busy ? "…" : "Bildirimleri aç"}
+          {busy ? (
+            <>
+              <TrPanelBusySpinner />
+              Açılıyor…
+            </>
+          ) : (
+            "Bildirimleri aç"
+          )}
         </button>
         <button
           type="button"
           onClick={dismiss}
-          className="inline-flex min-h-14 items-center justify-center rounded-xl px-5 py-3 text-[16px] font-semibold text-neutral-700"
+          className={`${panelSecondaryBtnClass} min-h-14 px-5 py-3 text-[16px]`}
         >
           Şimdi değil
         </button>

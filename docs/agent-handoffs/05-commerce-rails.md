@@ -7,7 +7,7 @@
 - Checkout API + client helpers (`src/app/api/tr/checkout`, `src/lib/tr/cartCheckout.ts`, `checkoutProfile.ts`, `checkoutValidate.ts`, `checkoutSelection.ts`)
 - Server reprice / ownership / stock / size / coupon apply on boutique checkout
 - Orders + line items (`src/lib/tr/orders.ts`, `inventory.ts`, owner orders API)
-- **Payment modes:** `TR_CHECKOUT_SANDBOX` → sandbox orders; default → **pending** (stock reserved). Card capture when `TR_IYZICO_ENABLED` (not yet). Owner can mark pending → paid until then.
+- **Payment modes:** `TR_CHECKOUT_SANDBOX` → sandbox orders; default → **pending** hold (stock reserved). **Lila** iyzico Checkout Form: owner panel / push / ciro only after **SUCCESS**. Cancel/fail restores stock and never lists as a sipariş. Cadde / other boutiques still show pending until their keys exist.
 - **Gated Cadde checkout:** `TR_CHECKOUT_ENABLED` — marketplace gating; does **not** equal iyzico live.
 - Discount codes (`discountCodes.ts`, `patch_tr_discount_codes.sql`, panel kampanyalar + checkout)
 - Fulfillment fields (`patch_tr_order_fulfillment.sql`)
@@ -26,7 +26,7 @@
 
 ## What we will do / direction
 
-- **iyzico** card checkout (sandbox → live) — primary payment path in vision docs
+- **iyzico** marketplace split / refunds / Cadde capture — Lila is one merchant Checkout Form only
 - Multi-boutique cart → split shipments; weekly boutique payouts first, pazaryeri split later
 - Enforce mesafeli satış / ön bilgilendirme / iade UX as legal launch blockers
 - Turn off WhatsApp interim once card pay + vergi/ETBİS are ready
@@ -40,13 +40,14 @@
 | WhatsApp | `src/lib/tr/whatsapp.ts`, `TrWhatsAppOrderButton` |
 | Discounts | `src/lib/tr/discountCodes.ts` |
 | Shipping | `src/lib/tr/shipping/` (registry + Basit Kargo for Lila) |
+| Payments | `src/lib/tr/payments/` (Lila iyzico Checkout Form; callback `/api/tr/checkout/iyzico/callback`) |
 | Address zones | `src/lib/tr/geo/turkeyAddress.ts` |
 | Schema | `patch_tr_marketplace.sql`, `patch_tr_order_fulfillment.sql`, `patch_tr_order_shipments.sql`, `patch_tr_order_shipping_block.sql`, `patch_tr_discount_codes.sql` |
 | Legal ops | `docs/pre-vergi-levhasi-checklist.md`, partnership draft |
 
 ## Agent rules of thumb
 
-- Never assume card pay is live — check `TR_IYZICO_ENABLED` / `isTrIyzicoCaptureEnabled()`. Pending orders are real until capture.
+- Lila iyzico is **per-boutique env keys** + `boutiqueOffersIyzicoCheckout('lilabutik')`. Do not copy keys into git. Do not set `TR_IYZICO_ENABLED=true` until a live test charge succeeds (banner already hides for Lila via the registry).
 - Owner mutations often use **service role** after owner auth — don’t expose service key client-side.
 - Keep marketplace and boutique cart stores from writing into each other’s checkout blindly.
 - Tax/legal checklists are ops docs; don’t invent compliance copy without reading existing legal pages/`src/lib/tr/legal/`.

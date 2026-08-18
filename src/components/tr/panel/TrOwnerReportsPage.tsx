@@ -1,30 +1,29 @@
 "use client";
 
 import Link from "next/link";
-import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
 import {
+  panelBackLinkClass,
+  panelHintClass,
+  panelPageTitleClass,
+  panelSectionClass,
+} from "@/components/tr/panel/panelUi";
+import {
   TrPanelFadeIn,
-  TrPanelLoading,
-  TrPanelStagger,
-  trPanelStaggerItem,
+  TrPanelMetricSkeleton,
 } from "@/components/tr/panel/TrPanelMotion";
 import {
+  TrPanelRangeTabs,
+  type TrPanelSummaryRange,
+} from "@/components/tr/panel/TrPanelRangeTabs";
+import {
   fetchOwnerSummary,
+  peekOwnerSummary,
   type TrOwnerSummaryResponse,
 } from "@/lib/tr/ownerClient";
 import { trPanelPath } from "@/lib/tr/paths";
 import { formatTryFromKurus } from "@/types/tr-marketplace";
-
-type Range = "today" | "7d" | "30d" | "all";
-
-const RANGE_LABEL: Record<Range, string> = {
-  today: "Bugün",
-  "7d": "7 gün",
-  "30d": "30 gün",
-  all: "Tümü",
-};
 
 function resolvePeriod(summary: TrOwnerSummaryResponse) {
   const liveOrders = summary.period?.orderCount ?? summary.today?.orderCount ?? 0;
@@ -41,15 +40,17 @@ function resolvePeriod(summary: TrOwnerSummaryResponse) {
 }
 
 function ReportsBoard({ boutiqueId }: { boutiqueId: string }) {
-  const [range, setRange] = useState<Range>("7d");
-  const [summary, setSummary] = useState<TrOwnerSummaryResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [range, setRange] = useState<TrPanelSummaryRange>("7d");
+  const cached = peekOwnerSummary(boutiqueId, "7d");
+  const [summary, setSummary] = useState<TrOwnerSummaryResponse | null>(
+    cached ?? null,
+  );
+  const [loading, setLoading] = useState(!cached);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     async function load() {
-      setLoading(true);
       setError(null);
       try {
         const result = await fetchOwnerSummary(boutiqueId, range);
@@ -72,123 +73,82 @@ function ReportsBoard({ boutiqueId }: { boutiqueId: string }) {
     };
   }, [boutiqueId, range]);
 
+  const period = summary ? resolvePeriod(summary) : null;
+
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-2">
-        {(Object.keys(RANGE_LABEL) as Range[]).map((key) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setRange(key)}
-            className={`rounded-full px-4 py-3 text-[15px] font-semibold ${
-              range === key
-                ? "text-white"
-                : "bg-white text-neutral-700 ring-1 ring-[color:var(--panel-accent-border)]"
-            }`}
-            style={
-              range === key
-                ? { backgroundColor: "var(--panel-accent)" }
-                : undefined
-            }
-          >
-            {RANGE_LABEL[key]}
-          </button>
-        ))}
-      </div>
+      <TrPanelRangeTabs value={range} onChange={setRange} />
 
-      <AnimatePresence mode="wait">
-        {loading ? (
-          <TrPanelLoading key="r-loading" label="Rapor hazırlanıyor…" />
-        ) : error ? (
-          <TrPanelFadeIn key="r-error">
-            <p className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-[16px] text-red-800">
-              {error}
+      {loading && !summary ? (
+        <TrPanelMetricSkeleton count={3} />
+      ) : error && !summary ? (
+        <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[14px] text-red-800">
+          {error}
+        </p>
+      ) : period ? (
+        <TrPanelFadeIn className="space-y-4">
+          {period.isEmpty ? (
+            <p className="rounded-xl bg-white px-4 py-3 text-[13px] text-neutral-500 ring-1 ring-neutral-200/80">
+              Bu dönemde henüz sipariş yok.
             </p>
-          </TrPanelFadeIn>
-        ) : summary ? (
-          <TrPanelFadeIn key="r-ready" className="space-y-6">
-            {(() => {
-              const period = resolvePeriod(summary);
-              return (
-                <>
-                  {period.isEmpty ? (
-                    <p className="rounded-2xl border border-[color:var(--panel-accent-border)] bg-[color:var(--panel-accent-soft)] px-5 py-3 text-[15px] text-neutral-800">
-                      Bu dönemde henüz sipariş yok — raporlar gerçek
-                      satışlardan oluşur.
-                    </p>
-                  ) : null}
-                  <TrPanelStagger className="grid gap-4 sm:grid-cols-3">
-                    <motion.div
-                      variants={trPanelStaggerItem}
-                      className="rounded-2xl border border-[color:var(--panel-accent-border)] bg-white px-5 py-6 shadow-sm"
-                    >
-                      <p
-                        className="text-[2.25rem] font-semibold tabular-nums"
-                        style={{ color: "var(--panel-accent-deep)" }}
-                      >
-                        {formatTryFromKurus(period.revenueKurus)}
-                      </p>
-                      <p className="mt-2 text-[16px] text-neutral-600">Ciro</p>
-                    </motion.div>
-                    <motion.div
-                      variants={trPanelStaggerItem}
-                      className="rounded-2xl border border-[color:var(--panel-accent-border)] bg-white px-5 py-6 shadow-sm"
-                    >
-                      <p
-                        className="text-[2.25rem] font-semibold tabular-nums"
-                        style={{ color: "var(--panel-accent-deep)" }}
-                      >
-                        {period.orderCount}
-                      </p>
-                      <p className="mt-2 text-[16px] text-neutral-600">
-                        Sipariş
-                      </p>
-                    </motion.div>
-                    <motion.div
-                      variants={trPanelStaggerItem}
-                      className="rounded-2xl border border-[color:var(--panel-accent-border)] bg-white px-5 py-6 shadow-sm"
-                    >
-                      <p
-                        className="text-[2.25rem] font-semibold tabular-nums"
-                        style={{ color: "var(--panel-accent-deep)" }}
-                      >
-                        {period.pendingFulfillment}
-                      </p>
-                      <p className="mt-2 text-[16px] text-neutral-600">
-                        Bekleyen kargo
-                      </p>
-                    </motion.div>
-                  </TrPanelStagger>
+          ) : null}
+          <section className="overflow-hidden rounded-xl border border-neutral-200/80 bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+            <div className="flex divide-x divide-neutral-100 overflow-x-auto">
+              <div className="min-w-[140px] flex-1 px-5 py-4">
+                <p className="text-[12px] font-medium text-neutral-500">Ciro</p>
+                <p className="mt-1 text-[1.5rem] font-semibold tabular-nums text-neutral-900">
+                  {formatTryFromKurus(period.revenueKurus)}
+                </p>
+              </div>
+              <div className="min-w-[140px] flex-1 px-5 py-4">
+                <p className="text-[12px] font-medium text-neutral-500">
+                  Sipariş
+                </p>
+                <p className="mt-1 text-[1.5rem] font-semibold tabular-nums text-neutral-900">
+                  {period.orderCount}
+                </p>
+              </div>
+              <div className="min-w-[140px] flex-1 px-5 py-4">
+                <p className="text-[12px] font-medium text-neutral-500">
+                  Bekleyen kargo
+                </p>
+                <p className="mt-1 text-[1.5rem] font-semibold tabular-nums text-neutral-900">
+                  {period.pendingFulfillment}
+                </p>
+              </div>
+            </div>
+          </section>
 
-                  <div className="overflow-hidden rounded-2xl border border-[color:var(--panel-accent-border)] bg-white shadow-sm">
-                    <p className="border-b border-[color:var(--panel-accent-border)] px-5 py-4 text-[16px] font-semibold text-neutral-800">
-                      En çok satanlar
-                    </p>
-                    <ul className="divide-y divide-[color:var(--panel-accent-border)]">
-                      {period.topProducts.map((product) => (
-                        <li
-                          key={product.title}
-                          className="flex items-center justify-between gap-3 px-5 py-4 text-[16px]"
-                        >
-                          <span>
-                            {product.title}{" "}
-                            <span className="text-neutral-500">
-                              ×{product.quantity}
-                            </span>
-                          </span>
-                          <span className="font-semibold tabular-nums">
-                            {formatTryFromKurus(product.revenueKurus)}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </>
-              );
-            })()}
-          </TrPanelFadeIn>
-        ) : null}
-      </AnimatePresence>
+          <section className={panelSectionClass}>
+            <h3 className="text-[14px] font-semibold text-neutral-900">
+              En çok satanlar
+            </h3>
+            {period.topProducts.length === 0 ? (
+              <p className="text-[13px] text-neutral-500">Satış yok.</p>
+            ) : (
+              <ul className="divide-y divide-neutral-100">
+                {period.topProducts.map((product) => (
+                  <li
+                    key={product.title}
+                    className="flex items-center justify-between gap-3 py-3 text-[13px]"
+                  >
+                    <span className="min-w-0 truncate">
+                      {product.title}
+                      <span className="text-neutral-400">
+                        {" "}
+                        · {product.quantity} adet
+                      </span>
+                    </span>
+                    <span className="shrink-0 font-semibold tabular-nums">
+                      {formatTryFromKurus(product.revenueKurus)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </TrPanelFadeIn>
+      ) : null}
     </div>
   );
 }
@@ -199,20 +159,11 @@ export function TrOwnerReportsPage() {
       {({ activeBoutique }) => (
         <div className="space-y-4">
           <div>
-            <Link
-              href={trPanelPath()}
-              className="inline-block text-[16px] font-medium"
-              style={{ color: "var(--panel-accent)" }}
-            >
-              ← Ana sayfa
+            <Link href={trPanelPath()} className={panelBackLinkClass}>
+              ← Giriş
             </Link>
-            <h2
-              className="mt-2 text-[1.75rem] font-semibold tracking-tight"
-              style={{ color: "var(--panel-accent-deep)" }}
-            >
-              Raporlar
-            </h2>
-            <p className="mt-1 text-[16px] text-neutral-600">
+            <h2 className={panelPageTitleClass}>Raporlar</h2>
+            <p className={`mt-1 ${panelHintClass}`}>
               Ciro, sipariş ve ürün performansı.
             </p>
           </div>

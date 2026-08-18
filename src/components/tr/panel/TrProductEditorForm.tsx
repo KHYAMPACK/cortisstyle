@@ -56,6 +56,7 @@ import {
 import {
   panelAddChipClass,
   panelChipClass,
+  panelDangerBtnClass,
   panelErrorClass,
   panelFieldClass,
   panelHintClass,
@@ -64,18 +65,12 @@ import {
   panelSecondaryBtnClass,
   panelSectionClass,
 } from "@/components/tr/panel/panelUi";
+import { TrPanelBusySpinner } from "@/components/tr/panel/TrPanelMotion";
 import { formatTryFromKurus } from "@/types/tr-marketplace";
 import type { TrProduct, TrProductColor, TrProductFeatures, TrProductStatus } from "@/types/tr-marketplace";
 
 function InlineBusySpinner() {
-  return (
-    <motion.span
-      aria-hidden
-      className="inline-block h-4 w-4 shrink-0 border-2 border-current border-t-transparent"
-      animate={{ rotate: 360 }}
-      transition={{ duration: 0.9, repeat: Infinity, ease: "linear" }}
-    />
-  );
+  return <TrPanelBusySpinner />;
 }
 
 function OptionToggle({
@@ -635,11 +630,6 @@ export function TrProductEditorForm({
                 key={option.id}
                 type="button"
                 className={chipClass(status === option.id)}
-                style={
-                  status === option.id
-                    ? { backgroundColor: "var(--panel-accent)" }
-                    : undefined
-                }
                 onClick={() => setStatus(option.id)}
               >
                 {option.label}
@@ -661,11 +651,6 @@ export function TrProductEditorForm({
                   setEditStepIndex(index);
                 }}
                 className={panelChipClass(index === editStepIndex)}
-                style={
-                  index === editStepIndex
-                    ? { backgroundColor: "var(--panel-accent)" }
-                    : undefined
-                }
               >
                 {step.title}
               </button>
@@ -833,13 +818,10 @@ export function TrProductEditorForm({
         >
           <span
             className={`relative h-8 w-14 shrink-0 rounded-full transition-colors ${
-              discountEnabled ? "" : "bg-neutral-300"
-            }`}
-            style={
               discountEnabled
-                ? { backgroundColor: "var(--panel-accent)" }
-                : undefined
-            }
+                ? "bg-[color:var(--panel-accent)]"
+                : "bg-neutral-300"
+            }`}
           >
             <span
               className={`absolute top-1 left-1 h-6 w-6 rounded-full bg-white shadow transition-transform ${
@@ -919,7 +901,6 @@ export function TrProductEditorForm({
               <button
                 type="button"
                 className={panelPrimaryBtnClass}
-                style={{ backgroundColor: "var(--panel-accent)" }}
                 onClick={commitCategory}
               >
                 Ekle
@@ -1086,7 +1067,6 @@ export function TrProductEditorForm({
                     <button
                       type="button"
                       className={panelPrimaryBtnClass}
-                      style={{ backgroundColor: "var(--panel-accent)" }}
                       onClick={commitColor}
                     >
                       Ekle
@@ -1148,7 +1128,7 @@ export function TrProductEditorForm({
                   <button
                     type="button"
                     disabled={deleting}
-                    className={`${panelPrimaryBtnClass} bg-red-700`}
+                    className={panelDangerBtnClass}
                     onClick={() => {
                       void (async () => {
                         setDeleting(true);
@@ -1233,7 +1213,6 @@ export function TrProductEditorForm({
           type="submit"
           disabled={saving || uploading || deleting}
           className={`${panelPrimaryBtnClass} w-full gap-3`}
-          style={{ backgroundColor: "var(--panel-accent)" }}
         >
           {saving ? (
             <>

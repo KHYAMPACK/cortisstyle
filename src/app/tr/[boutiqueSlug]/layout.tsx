@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { TrBoutiqueBrandedShell } from "@/components/tr/boutique/TrBoutiqueBrandedShell";
 import { TrBoutiqueEditorialShell } from "@/components/tr/boutique/editorial/TrBoutiqueEditorialShell";
+import { TrIyzicoBuyerProtection } from "@/components/tr/commerce/TrIyzicoBuyerProtection";
 import { TrMarketplaceChrome } from "@/components/tr/TrMarketplaceChrome";
 import {
   hasBoutiqueBrand,
@@ -155,23 +156,22 @@ export default async function BoutiqueLayout({
   );
   const theme = resolveStorefrontTheme(boutiqueSlug, boutique.homeLayout);
 
+  let shell: React.ReactNode;
+
   if (theme === "editorial" || homeLayout === "editorial") {
     const storefront = await safeGetBoutiqueStorefront(boutiqueSlug);
     const products = withEditorialDemoProducts(
       boutique,
       storefront?.products ?? [],
     );
-    return (
+    shell = (
       <TrBoutiqueEditorialShell boutique={boutique} products={products}>
         {children}
       </TrBoutiqueEditorialShell>
     );
-  }
-
-  if (hasBoutiqueBrand(boutique)) {
+  } else if (hasBoutiqueBrand(boutique)) {
     const storefront = await safeGetBoutiqueStorefront(boutiqueSlug);
-
-    return (
+    shell = (
       <TrBoutiqueBrandedShell
         boutique={boutique}
         products={storefront?.products ?? []}
@@ -179,7 +179,14 @@ export default async function BoutiqueLayout({
         {children}
       </TrBoutiqueBrandedShell>
     );
+  } else {
+    shell = <TrMarketplaceChrome>{children}</TrMarketplaceChrome>;
   }
 
-  return <TrMarketplaceChrome>{children}</TrMarketplaceChrome>;
+  return (
+    <>
+      <TrIyzicoBuyerProtection boutiqueSlug={boutique.slug} />
+      {shell}
+    </>
+  );
 }

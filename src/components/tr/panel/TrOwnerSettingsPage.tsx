@@ -6,8 +6,18 @@ import { useEffect, useState, type FormEvent } from "react";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
 import { TrOwnerPushNotificationsCard } from "@/components/tr/panel/TrOwnerPushNotificationsCard";
 import {
+  panelBackLinkClass,
+  panelFieldClass,
+  panelHintClass,
+  panelLabelClass,
+  panelPageTitleClass,
+  panelPrimaryBtnClass,
+  panelSectionClass,
+} from "@/components/tr/panel/panelUi";
+import {
+  TrPanelBusySpinner,
   TrPanelFadeIn,
-  TrPanelLoading,
+  TrPanelListSkeleton,
   trPanelFadeTransition,
 } from "@/components/tr/panel/TrPanelMotion";
 import {
@@ -107,21 +117,18 @@ function SettingsForm({ boutiqueId }: { boutiqueId: string }) {
   };
 
   if (loading) {
-    return <TrPanelLoading label="Ayarlar yükleniyor…" />;
+    return <TrPanelListSkeleton rows={6} label="Ayarlar yükleniyor" />;
   }
-
-  const fieldClass =
-    "w-full border border-black/15 bg-white px-3 py-3 text-[14px] outline-none focus:border-black/40";
 
   return (
     <TrPanelFadeIn>
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <p className="text-[13px] text-neutral-600">
+      <form onSubmit={handleSubmit} className={`${panelSectionClass} space-y-6`}>
+        <p className={panelHintClass}>
           {settings?.name} — mağaza iletişim ve politika alanları.
         </p>
 
         {settings?.slug ? (
-          <div className="space-y-2 border border-black/10 bg-neutral-50 px-4 py-3 text-[13px] text-neutral-700">
+          <div className={`${panelHintClass} rounded-xl border border-[color:var(--panel-accent-border)] bg-[color:var(--panel-accent-softer)] px-4 py-3`}>
             <p>
               Vitrin:{" "}
               <Link
@@ -140,55 +147,55 @@ function SettingsForm({ boutiqueId }: { boutiqueId: string }) {
         ) : null}
 
         <label className="block space-y-2">
-          <span className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
+          <span className={panelLabelClass}>
             Açıklama
           </span>
           <textarea
             value={description}
             onChange={(event) => setDescription(event.target.value)}
             rows={3}
-            className={fieldClass}
+            className={panelFieldClass}
           />
         </label>
 
         <label className="block space-y-2">
-          <span className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
+          <span className={panelLabelClass}>
             Logo URL
           </span>
           <input
             value={logoUrl}
             onChange={(event) => setLogoUrl(event.target.value)}
-            className={fieldClass}
+            className={panelFieldClass}
             placeholder="/tr/boutiques/.../logo.svg"
           />
         </label>
 
         <label className="block space-y-2">
-          <span className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
+          <span className={panelLabelClass}>
             WhatsApp (ülke kodu ile)
           </span>
           <input
             value={whatsappPhone}
             onChange={(event) => setWhatsappPhone(event.target.value)}
-            className={fieldClass}
+            className={panelFieldClass}
             placeholder="90543..."
           />
         </label>
 
         <label className="block space-y-2">
-          <span className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
+          <span className={panelLabelClass}>
             Instagram
           </span>
           <input
             value={instagramHandle}
             onChange={(event) => setInstagramHandle(event.target.value)}
-            className={fieldClass}
+            className={panelFieldClass}
             placeholder="pervinsoysalbutik"
           />
         </label>
 
         <label className="block space-y-2">
-          <span className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
+          <span className={panelLabelClass}>
             Tema rengi (accent)
           </span>
           <div className="flex gap-3">
@@ -202,49 +209,49 @@ function SettingsForm({ boutiqueId }: { boutiqueId: string }) {
             <input
               value={themeAccent}
               onChange={(event) => setThemeAccent(event.target.value)}
-              className={fieldClass}
+              className={panelFieldClass}
               placeholder="#C2185B"
             />
           </div>
         </label>
 
         <label className="block space-y-2">
-          <span className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
+          <span className={panelLabelClass}>
             Kargo notu
           </span>
           <input
             value={shippingNote}
             onChange={(event) => setShippingNote(event.target.value)}
-            className={fieldClass}
+            className={panelFieldClass}
           />
         </label>
 
         <label className="block space-y-2">
-          <span className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
+          <span className={panelLabelClass}>
             Değişim / iade
           </span>
           <input
             value={exchangePolicy}
             onChange={(event) => setExchangePolicy(event.target.value)}
-            className={fieldClass}
+            className={panelFieldClass}
           />
         </label>
 
         <label className="block space-y-2">
-          <span className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
+          <span className={panelLabelClass}>
             Adres
           </span>
           <textarea
             value={physicalAddress}
             onChange={(event) => setPhysicalAddress(event.target.value)}
             rows={2}
-            className={fieldClass}
+            className={panelFieldClass}
           />
         </label>
 
         <div className="space-y-4 border border-black/10 bg-neutral-50 px-4 py-4">
           <div>
-            <p className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
+            <p className={panelLabelClass}>
               Satıcı / fatura bilgileri
             </p>
             <p className="mt-1 text-[12px] text-neutral-600">
@@ -254,36 +261,36 @@ function SettingsForm({ boutiqueId }: { boutiqueId: string }) {
             </p>
           </div>
           <label className="block space-y-2">
-            <span className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
+            <span className={panelLabelClass}>
               Ticari unvan / satıcı adı
             </span>
             <input
               value={legalName}
               onChange={(event) => setLegalName(event.target.value)}
-              className={fieldClass}
+              className={panelFieldClass}
               placeholder="Şahıs: Ad Soyad (vergi levhası)"
             />
           </label>
           <label className="block space-y-2">
-            <span className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
+            <span className={panelLabelClass}>
               Vergi no
             </span>
             <input
               value={vergiNo}
               onChange={(event) => setVergiNo(event.target.value)}
-              className={fieldClass}
+              className={panelFieldClass}
               inputMode="numeric"
               autoComplete="off"
             />
           </label>
           <label className="block space-y-2">
-            <span className="text-[11px] tracking-[0.12em] text-neutral-700 uppercase">
+            <span className={panelLabelClass}>
               IBAN
             </span>
             <input
               value={iban}
               onChange={(event) => setIban(event.target.value)}
-              className={fieldClass}
+              className={panelFieldClass}
               placeholder="TR…"
               autoComplete="off"
             />
@@ -310,7 +317,7 @@ function SettingsForm({ boutiqueId }: { boutiqueId: string }) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
               transition={trPanelFadeTransition}
-              className="border border-black/10 bg-neutral-50 px-4 py-3 text-[13px] text-neutral-700"
+              className="rounded-xl border border-[color:var(--panel-accent-border)] bg-[color:var(--panel-accent-softer)] px-4 py-3 text-[15px] text-neutral-700"
             >
               Kaydedildi. Mağaza sayfasında güncellenir.
             </motion.p>
@@ -320,16 +327,11 @@ function SettingsForm({ boutiqueId }: { boutiqueId: string }) {
         <button
           type="submit"
           disabled={saving}
-          className="btn-primary inline-flex w-full items-center justify-center gap-2 px-6 py-4 text-[11px] tracking-[0.16em] disabled:opacity-50"
+          className={`${panelPrimaryBtnClass} w-full gap-3`}
         >
           {saving ? (
             <>
-              <motion.span
-                aria-hidden
-                className="inline-block h-3 w-3 border border-current border-t-transparent"
-                animate={{ rotate: 360 }}
-                transition={{ duration: 0.9, repeat: Infinity, ease: "linear" }}
-              />
+              <TrPanelBusySpinner />
               Kaydediliyor…
             </>
           ) : (
@@ -347,15 +349,10 @@ export function TrOwnerSettingsPage() {
       {({ activeBoutique }) => (
         <div className="space-y-6">
           <div>
-            <Link
-              href={trPanelPath()}
-              className="inline-block text-[16px] font-medium text-[color:var(--panel-accent-deep)]"
-            >
-              ← Ana sayfa
+            <Link href={trPanelPath()} className={panelBackLinkClass}>
+              ← Giriş
             </Link>
-            <h2 className="mt-2 text-[1.75rem] font-semibold tracking-tight text-[color:var(--panel-accent-deep)] sm:text-[2rem]">
-              Ayarlar
-            </h2>
+            <h2 className={panelPageTitleClass}>Ayarlar</h2>
           </div>
           <TrOwnerPushNotificationsCard boutiqueId={activeBoutique.id} />
           <SettingsForm boutiqueId={activeBoutique.id} />

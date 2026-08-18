@@ -15,10 +15,10 @@ import {
 import {
   panelBackLinkClass,
   panelChipClass,
+  panelDangerBtnClass,
   panelErrorClass,
   panelHintClass,
   panelPageTitleClass,
-  panelPrimaryBtnClass,
   panelSecondaryBtnClass,
   panelSectionClass,
 } from "@/components/tr/panel/panelUi";
@@ -34,6 +34,7 @@ import {
   updateOwnerOrderPaymentPaid,
 } from "@/lib/tr/ownerClient";
 import { boutiqueHasLiveShipping } from "@/lib/tr/shipping/registry";
+import { boutiqueOffersIyzicoCheckout } from "@/lib/tr/payments/registry";
 import { trPanelOrdersPath, trPanelPath } from "@/lib/tr/paths";
 import {
   formatTryFromKurus,
@@ -210,7 +211,9 @@ function OrderDetail({
                 }
               </span>
             </div>
-            {order.paymentStatus === "pending" && !order.isSandbox ? (
+            {order.paymentStatus === "pending" &&
+            !order.isSandbox &&
+            !boutiqueOffersIyzicoCheckout(boutiqueSlug) ? (
               <div className="mt-4 space-y-2">
                 <p className={panelHintClass}>
                   Kart ödemesi henüz açık değil. Havale / WhatsApp ile tahsil
@@ -250,11 +253,6 @@ function OrderDetail({
                   disabled={saving}
                   onClick={() => void setStatus(id)}
                   className={panelChipClass(order.fulfillmentStatus === id)}
-                  style={
-                    order.fulfillmentStatus === id
-                      ? { backgroundColor: "var(--panel-accent)" }
-                      : undefined
-                  }
                 >
                   {FULFILLMENT_LABEL[id]}
                 </button>
@@ -281,7 +279,6 @@ function OrderDetail({
                         src={item.imageUrl}
                         alt={item.title}
                         fill
-                        unoptimized
                         className="object-contain p-2"
                         sizes="80px"
                       />
@@ -392,7 +389,7 @@ function OrderDetail({
                         type="button"
                         disabled={saving}
                         onClick={() => void setStatus("cancelled")}
-                        className={`${panelPrimaryBtnClass} flex-1 bg-red-700`}
+                        className={`${panelDangerBtnClass} flex-1`}
                       >
                         {saving ? "İptal ediliyor…" : "Evet, iptal et"}
                       </button>

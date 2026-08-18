@@ -23,7 +23,7 @@ function steps(shippingLive: boolean): Array<{ title: string; body: string }> {
     {
       title: "3. Kargoya verin",
       body: shippingLive
-        ? "Ödeme onayından sonra etiket otomatik üretilir. Sipariş detayından yazdırın."
+        ? "Ödeme onayından sonra etiket otomatik üretilir. Listeden yazdırın."
         : "Kendi kargo panelinizden gönderi oluşturun. Kargo API’si bu butikte henüz yok.",
     },
     {
