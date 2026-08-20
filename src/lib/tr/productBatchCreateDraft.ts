@@ -2,7 +2,7 @@
  * Client-side draft for the toplu ürün photo-first wizard.
  *
  * Separate key from the single-product wizard. v2 is the stepped session
- * (photos → listings → models → stock → preview). v1 accordion drafts are
+ * (photos → listings → models → prices → stock → preview). v1 accordion drafts are
  * ignored and not restored.
  */
 
@@ -19,6 +19,7 @@ export const BATCH_CREATE_STEPS = [
   "photos",
   "listings",
   "models",
+  "prices",
   "stock",
   "preview",
 ] as const;

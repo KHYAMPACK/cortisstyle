@@ -10,6 +10,7 @@ import {
   type ModelRowStatus,
 } from "@/components/tr/panel/TrOwnerBatchModelsStep";
 import { TrOwnerBatchPhotoStep } from "@/components/tr/panel/TrOwnerBatchPhotoStep";
+import { TrOwnerBatchPricesStep } from "@/components/tr/panel/TrOwnerBatchPricesStep";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
 import {
   emptyStockInputsForChart,
@@ -65,14 +66,18 @@ import { formatTryFromKurus, type TrProduct } from "@/types/tr-marketplace";
 
 const STEP_LABELS: Record<(typeof BATCH_CREATE_STEPS)[number], string> = {
   photos: "Fotoğraf",
-  listings: "İsim ve fiyat",
+  listings: "İsim",
   models: "Model",
+  prices: "Fiyat",
   stock: "Stok",
   preview: "Önizleme",
 };
 
 function listingRowValid(row: ProductBatchCreateRow): boolean {
-  if (!row.title.trim()) return false;
+  return row.title.trim().length > 0;
+}
+
+function priceRowValid(row: ProductBatchCreateRow): boolean {
   if (!isValidTryPrice(row.priceTry)) return false;
   if (!row.discountEnabled) return true;
   if (!isValidTryPrice(row.salePriceTry)) return false;
@@ -316,7 +321,7 @@ function BatchCreateFlow({
     }
     if (step === "listings") {
       if (!rows.every(listingRowValid)) {
-        setError("Her üründe isim ve geçerli fiyat gerekli.");
+        setError("Her üründe isim gerekli.");
         return;
       }
       setStepIndex(2);
@@ -326,6 +331,16 @@ function BatchCreateFlow({
       setStepIndex(3);
       return;
     }
+    if (step === "prices") {
+      if (!rows.every(priceRowValid)) {
+        setError(
+          "Her üründe geçerli bir fiyat girin. İndirim varsa satış fiyatı daha düşük olmalı.",
+        );
+        return;
+      }
+      setStepIndex(4);
+      return;
+    }
     if (step === "stock") {
       if (!rows.every(stockRowValid)) {
         setError(
@@ -333,7 +348,7 @@ function BatchCreateFlow({
         );
         return;
       }
-      setStepIndex(4);
+      setStepIndex(5);
     }
   };
 
@@ -367,7 +382,11 @@ function BatchCreateFlow({
       );
       return;
     }
-    if (!rows.every(listingRowValid) || !rows.every(stockRowValid)) {
+    if (
+      !rows.every(listingRowValid) ||
+      !rows.every(priceRowValid) ||
+      !rows.every(stockRowValid)
+    ) {
       setError("Eksik isim, fiyat veya stok var.");
       return;
     }
@@ -453,8 +472,8 @@ function BatchCreateFlow({
           </Link>
           <h2 className={panelPageTitleClass}>Toplu ürün ekle</h2>
           <p className={`mt-2 ${panelHintClass}`}>
-            Önce fotoğrafları çekin. Tanıma bitince isim ve fiyatı doldurun;
-            katalog görselleri arka planda hazırlanır.
+            Önce fotoğrafları çekin. Tanıma bitince isimleri doldurun; katalog
+            görselleri arka planda hazırlanır.
           </p>
         </div>
 
@@ -521,6 +540,10 @@ function BatchCreateFlow({
                   }))
                 }
               />
+            ) : null}
+
+            {step === "prices" ? (
+              <TrOwnerBatchPricesStep rows={rows} onPatchRow={patchRow} />
             ) : null}
 
             {step === "stock" ? (

@@ -18,8 +18,6 @@ import {
 import {
   clampDescription,
   clampTitle,
-  isValidTryPrice,
-  sanitizeTryPriceInput,
   TR_OWNER_PRODUCT_LIMITS,
 } from "@/lib/tr/ownerProductConstraints";
 import type { ProductBatchCreateRow } from "@/lib/tr/productBatchCreateDraft";
@@ -98,8 +96,8 @@ export function TrOwnerBatchListingsStep({
         {filling ? "Dolduruluyor…" : "Hepsini AI ile doldur"}
       </button>
       <p className={panelHintClass}>
-        İsim, açıklama, özellik ve kategori AI’dan gelir. Fiyatı her ürüne siz
-        yazarsınız.
+        İsim, açıklama, özellik ve kategori AI’dan gelir. İsterseniz elle
+        düzeltin.
       </p>
       {error ? <p className={panelErrorClass}>{error}</p> : null}
 
@@ -186,77 +184,6 @@ export function TrOwnerBatchListingsStep({
                   }
                 />
               </div>
-              <label className="block space-y-2">
-                <span className="text-[14px] font-semibold text-neutral-800">
-                  Fiyat (TL)
-                </span>
-                <input
-                  value={row.priceTry}
-                  onChange={(event) =>
-                    onPatchRow(row.clientId, {
-                      priceTry: sanitizeTryPriceInput(event.target.value),
-                    })
-                  }
-                  className={panelFieldClass}
-                  inputMode="decimal"
-                  placeholder="890"
-                />
-              </label>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={row.discountEnabled}
-                onClick={() =>
-                  onPatchRow(row.clientId, {
-                    discountEnabled: !row.discountEnabled,
-                    salePriceTry: row.discountEnabled ? "" : row.salePriceTry,
-                  })
-                }
-                className="flex w-full items-center gap-3 rounded-xl border border-neutral-200 px-3 py-3 text-left"
-              >
-                <span
-                  className={`relative h-7 w-12 shrink-0 rounded-full ${
-                    row.discountEnabled
-                      ? "bg-[color:var(--panel-accent)]"
-                      : "bg-neutral-300"
-                  }`}
-                >
-                  <span
-                    className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow ${
-                      row.discountEnabled ? "translate-x-5" : ""
-                    }`}
-                  />
-                </span>
-                <span className="text-[14px] font-medium text-neutral-800">
-                  İndirim var
-                </span>
-              </button>
-              {row.discountEnabled ? (
-                <label className="block space-y-2">
-                  <span className="text-[14px] font-semibold text-neutral-800">
-                    İndirimli fiyat (TL)
-                  </span>
-                  <input
-                    value={row.salePriceTry}
-                    onChange={(event) =>
-                      onPatchRow(row.clientId, {
-                        salePriceTry: sanitizeTryPriceInput(event.target.value),
-                      })
-                    }
-                    className={panelFieldClass}
-                    inputMode="decimal"
-                    placeholder="690"
-                  />
-                  {row.priceTry &&
-                  isValidTryPrice(row.priceTry) &&
-                  row.salePriceTry &&
-                  !isValidTryPrice(row.salePriceTry) ? (
-                    <span className="text-[13px] text-red-700">
-                      İndirimli fiyat, normal fiyattan düşük olmalı.
-                    </span>
-                  ) : null}
-                </label>
-              ) : null}
               <button
                 type="button"
                 className={panelSecondaryBtnClass}
