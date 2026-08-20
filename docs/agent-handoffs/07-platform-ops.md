@@ -16,7 +16,7 @@
 - Boutique public view: `supabase/patch_tr_boutiques_public_view.sql`
 - Boutique 404 diagnose SQL: `supabase/fix_tr_boutiques_public_visibility.sql`
 - Products public RLS (empty storefront catalog): `supabase/patch_tr_products_public_read_via_view.sql`
-- Product storefront WebP copies: `supabase/patch_tr_product_storefront_images.sql` (`tr_products.storefront_images`)
+- Leftover product `storefront_images` column (unused for display; boutique packshots are marketplace PNG): `supabase/patch_tr_product_storefront_images.sql`
 - Boutique health (admin): `GET /api/tr/admin/boutique-health` — Bearer `TR_ADMIN_SECRET`
 
 ## Auth matrix

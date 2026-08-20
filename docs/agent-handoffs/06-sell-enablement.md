@@ -82,7 +82,7 @@ Boutique owners generate Instagram-ready **İçerik** packs from catalog product
 
 ## What we will do / direction
 
-- **Image formats (live):** boutique originals + on-model + flattened packshot copies → WebP; marketplace cutouts stay PNG for Cadde + try-on. [15-boutique-storefront-image-formats.md](./15-boutique-storefront-image-formats.md). Apply `supabase/patch_tr_product_storefront_images.sql`.
+- **Image formats (live):** boutique + Cadde packshots are marketplace PNG; originals + on-model are WebP q95. Do not bake a sibling storefront WebP. [15-boutique-storefront-image-formats.md](./15-boutique-storefront-image-formats.md).
 - Boutique-facing credit wallet / ₺ packages + overage (metering table already exists)
 - Fill boutique house model `referenceImageUrls` in `registry.ts` after in-shop shoots (manual; no owner UI). Do not use FASHN `model-create`.
 - Studio Ayla/Deniz are platform defaults — regenerate as Cursor image gens into `public/tr/ai-models/`, not via FASHN

@@ -8,7 +8,6 @@ import {
   getProductByIdAdmin,
   updateProductAdmin,
 } from "@/lib/tr/products";
-import { buildStorefrontImageUrls } from "@/lib/tr/assets/storefrontImages";
 import {
   readSizeStocks,
   sizeStocksForSizes,
@@ -227,49 +226,6 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
   if (typeof body.sortOrder === "number") {
     patch.sortOrder = body.sortOrder;
-  }
-
-  if (
-    patch.marketplaceImages !== undefined ||
-    patch.catalogBackgroundId !== undefined
-  ) {
-    const existing = await getProductByIdAdmin(id);
-    if (!existing) {
-      return Response.json({ error: "Ürün bulunamadı." }, { status: 404 });
-    }
-    const marketplaceImages =
-      patch.marketplaceImages ?? existing.marketplaceImages;
-    const catalogBackgroundId =
-      patch.catalogBackgroundId !== undefined
-        ? patch.catalogBackgroundId
-        : existing.catalogBackgroundId;
-    const marketplaceChanged =
-      patch.marketplaceImages !== undefined &&
-      (patch.marketplaceImages.length !== existing.marketplaceImages.length ||
-        patch.marketplaceImages.some(
-          (url, index) =>
-            (url?.trim() || "") !==
-            (existing.marketplaceImages[index]?.trim() || ""),
-        ));
-    const backgroundChanged =
-      patch.catalogBackgroundId !== undefined &&
-      (catalogBackgroundId || null) !== (existing.catalogBackgroundId || null);
-    const storefrontReady = marketplaceImages.every(
-      (url, index) =>
-        !url.trim() || Boolean(existing.storefrontImages[index]?.trim()),
-    );
-    if (marketplaceChanged || backgroundChanged || !storefrontReady) {
-      patch.storefrontImages = marketplaceImages.some((url) =>
-        Boolean(url.trim()),
-      )
-        ? await buildStorefrontImageUrls({
-            marketplaceUrls: marketplaceImages,
-            backgroundId: catalogBackgroundId,
-            userId: authResult.auth.user.id,
-            boutiqueId: owned.boutique.id,
-          })
-        : [];
-    }
   }
 
   try {

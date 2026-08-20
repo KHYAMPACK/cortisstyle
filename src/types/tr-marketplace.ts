@@ -124,7 +124,7 @@ export interface TrProduct {
   images: string[];
   /** Marketplace / catalog cutouts (BG removed + normalized). */
   marketplaceImages: string[];
-  /** Boutique display copies of packshots (opaque WebP on catalog background). */
+  /** Leftover flattened WebP copies. Boutique display uses marketplace PNGs, not these. */
   storefrontImages: string[];
   /** AI on-model / lifestyle shots (content packs + PDP). */
   lifestyleImages: string[];

@@ -1,7 +1,10 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
-import { encodeOpaqueWebp } from "@/lib/tr/assets/encodeOpaqueImage";
+import {
+  encodeOpaqueWebp,
+  STOREFRONT_MAX_EDGE_PX,
+} from "@/lib/tr/assets/encodeOpaqueImage";
 import { getCatalogBackground } from "@/lib/tr/catalogBackgrounds/registry";
 
 const SOLID_RGB: Record<string, { r: number; g: number; b: number }> = {
@@ -84,8 +87,8 @@ async function rasterBackground(
 }
 
 /**
- * Composite a transparent (or opaque) packshot onto the product catalog
- * background and encode WebP for boutique storefront.
+ * Leftover helper: composite a packshot onto catalog background and encode WebP.
+ * Not called on product create/update — boutique display uses the PNG.
  */
 export async function flattenCutoutToStorefrontWebp(params: {
   cutout: Buffer;
@@ -100,7 +103,7 @@ export async function flattenCutoutToStorefrontWebp(params: {
   const bgId = getCatalogBackground(params.backgroundId).id;
 
   if (!hasAlpha) {
-    return encodeOpaqueWebp(png);
+    return encodeOpaqueWebp(png, STOREFRONT_MAX_EDGE_PX);
   }
 
   const background = await rasterBackground(bgId, width, height);
@@ -109,5 +112,5 @@ export async function flattenCutoutToStorefrontWebp(params: {
     .png()
     .toBuffer();
 
-  return encodeOpaqueWebp(flattened);
+  return encodeOpaqueWebp(flattened, STOREFRONT_MAX_EDGE_PX);
 }

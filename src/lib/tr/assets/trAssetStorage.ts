@@ -45,7 +45,7 @@ export async function uploadTrProductAsset(params: {
   bytes: Buffer;
   contentType: string;
   kind?: TrAssetKind;
-  /** Stable id so storefront WebP can overwrite when catalog background changes. */
+  /** Stable id so a leftover storefront file can overwrite in place. */
   fileId?: string;
   upsert?: boolean;
 }): Promise<{ url: string; path: string }> {

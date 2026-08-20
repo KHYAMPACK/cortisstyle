@@ -98,11 +98,11 @@ export function getProductCoverImageFor(
   product: CatalogImageProduct,
 ): string | null {
   if (surface === "boutique") {
-    const storefront = galleryFromSlots({
+    const gallery = galleryFromSlots({
       product,
-      preferStorefront: true,
+      preferStorefront: false,
     });
-    if (storefront.length > 0) return storefront[0] ?? null;
+    if (gallery.length > 0) return gallery[0] ?? null;
     return getBoutiqueProductImages(product)[0] ?? null;
   }
 
@@ -121,18 +121,17 @@ export function hasRealMarketplaceImagery(
 }
 
 /**
- * Boutique PDP / PLP / Merchant: prefer flattened storefront WebP, then PNG
- * cutouts, then unused extra originals, then lifestyle.
+ * Boutique PDP / PLP / Merchant: PNG packshots, then unused extra originals,
+ * then lifestyle. Do not prefer leftover storefront WebP copies.
  */
 export function getStorefrontGalleryImages(
   product: CatalogImageProduct,
 ): string[] {
-  return galleryFromSlots({ product, preferStorefront: true });
+  return galleryFromSlots({ product, preferStorefront: false });
 }
 
 /**
  * Cadde `/tr/parca` gallery: transparent packshot PNGs + lifestyle.
- * Do not use storefront WebP here (background is baked in).
  */
 export function getMarketplaceGalleryImages(
   product: CatalogImageProduct,
@@ -141,7 +140,7 @@ export function getMarketplaceGalleryImages(
 }
 
 /**
- * Panel list/stock thumbs: smallest display file (storefront WebP when present).
+ * Panel list/stock thumbs: packshot PNG when present.
  */
 export function getPanelProductCover(
   product: CatalogImageProduct,
@@ -179,8 +178,7 @@ export function getProductSecondaryImage(
 
 /**
  * True when the cover should sit contained with padding (packshot),
- * not full-bleed `object-cover`. Boutique storefront WebPs are flattened
- * cutouts — without this they look zoomed-in vs older PNG catalog shots.
+ * not full-bleed `object-cover`.
  */
 export function isCatalogCutoutImage(src: string | null | undefined): boolean {
   if (!src) return false;

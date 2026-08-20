@@ -107,7 +107,7 @@ Owners will eventually edit these in panel; seed JSON mirrors the pack.
 
 ## Storefront imagery
 
-- PDP gallery uses flattened storefront WebP (fallback: marketplace cutouts); raw front/back hanger uploads stay owner-only when cutouts exist (`getStorefrontGalleryImages`)
+- PDP gallery uses marketplace PNG packshots (same file as Cadde); leftover `storefront_images` WebP is unused; raw front/back hanger uploads stay owner-only when cutouts exist (`getStorefrontGalleryImages`)
 
 ## AI house model (Lila only)
 

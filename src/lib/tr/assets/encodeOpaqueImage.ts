@@ -1,17 +1,20 @@
 import sharp from "sharp";
 
-export const STOREFRONT_WEBP_QUALITY = 80;
-export const STOREFRONT_JPEG_QUALITY = 85;
+export const OPAQUE_WEBP_QUALITY = 95;
+/** Leftover alias — same as OPAQUE_WEBP_QUALITY. */
+export const STOREFRONT_WEBP_QUALITY = OPAQUE_WEBP_QUALITY;
+export const STOREFRONT_JPEG_QUALITY = 90;
 export const STOREFRONT_MAX_EDGE_PX = 1600;
 export const ORIGINAL_MAX_EDGE_PX = 2400;
 
 /**
- * Opaque WebP for boutique/panel display. JPEG fallback if WebP encode fails.
- * Does not preserve alpha — use PNG for marketplace cutouts.
+ * Opaque WebP for hanger originals and on-model shots.
+ * Default max edge is ORIGINAL_MAX_EDGE_PX (2400) — do not use the old
+ * 1600 storefront cap here. Marketplace cutouts stay PNG.
  */
 export async function encodeOpaqueWebp(
   input: Buffer,
-  maxEdgePx = STOREFRONT_MAX_EDGE_PX,
+  maxEdgePx = ORIGINAL_MAX_EDGE_PX,
 ): Promise<{ bytes: Buffer; contentType: "image/webp" | "image/jpeg" }> {
   const pipeline = sharp(input)
     .rotate()
@@ -24,7 +27,7 @@ export async function encodeOpaqueWebp(
 
   try {
     const bytes = await sharp(resized)
-      .webp({ quality: STOREFRONT_WEBP_QUALITY })
+      .webp({ quality: OPAQUE_WEBP_QUALITY })
       .toBuffer();
     return { bytes, contentType: "image/webp" };
   } catch {

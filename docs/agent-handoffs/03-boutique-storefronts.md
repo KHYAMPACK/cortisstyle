@@ -20,7 +20,7 @@
 - Strengthen editorial templates without turning into generic card grids
 - Keep boutique-local cart separate from marketplace platform cart
 - Grow owner panel into real day-to-day ops (fulfillment, discounts, catalog quality)
-- Boutique storefront photos are **WebP** (flattened packshot copies in `storefront_images`); packshot cutouts stay PNG for Cadde + try-on — [15-boutique-storefront-image-formats.md](./15-boutique-storefront-image-formats.md)
+- Boutique customer packshots are the marketplace **PNG** (same file as Cadde + try-on). Originals and on-model shots are WebP q95. Do not generate sibling storefront WebP — [15-boutique-storefront-image-formats.md](./15-boutique-storefront-image-formats.md)
 
 ## Key paths
 

@@ -11,8 +11,9 @@ async function fetchImageBuffer(url: string): Promise<Buffer> {
 }
 
 /**
- * Flatten each marketplace PNG onto the product catalog background and
- * upload opaque WebP copies (kind: storefront). Cadde keeps the PNG URLs.
+ * Leftover helper: flatten marketplace PNGs onto catalog background and
+ * upload opaque WebP copies (kind: storefront). Not called on save.
+ * Cadde and boutique both keep the PNG URLs.
  */
 export async function buildStorefrontImageUrls(params: {
   marketplaceUrls: string[];

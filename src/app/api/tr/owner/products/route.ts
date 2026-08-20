@@ -3,7 +3,6 @@ import {
   requireTrOwner,
 } from "@/lib/tr/ownerAuth";
 import { createProductAdmin, listOwnerProductsLiteAdmin } from "@/lib/tr/products";
-import { buildStorefrontImageUrls } from "@/lib/tr/assets/storefrontImages";
 import {
   readSizeStocks,
   sizeStocksForSizes,
@@ -201,14 +200,6 @@ export async function POST(request: Request) {
       typeof body.catalogBackgroundId === "string"
         ? body.catalogBackgroundId.trim() || null
         : null;
-    const storefrontImages = marketplaceImages.some((url) => Boolean(url.trim()))
-      ? await buildStorefrontImageUrls({
-          marketplaceUrls: marketplaceImages,
-          backgroundId: catalogBackgroundId,
-          userId: authResult.auth.user.id,
-          boutiqueId: boutique.id,
-        })
-      : [];
 
     const product = await createProductAdmin({
       boutiqueId: boutique.id,
@@ -222,7 +213,7 @@ export async function POST(request: Request) {
       category: typeof body.category === "string" ? body.category : null,
       images: readStringArray(body.images) ?? [],
       marketplaceImages,
-      storefrontImages,
+      storefrontImages: [],
       lifestyleImages: readStringArray(body.lifestyleImages) ?? [],
       catalogBackgroundId,
       features: sanitizeProductFeatures(body.features),
