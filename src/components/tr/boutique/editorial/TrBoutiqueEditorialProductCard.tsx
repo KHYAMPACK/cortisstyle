@@ -35,9 +35,9 @@ export function TrBoutiqueEditorialProductCard({
   boutiqueName,
   priority = false,
 }: TrBoutiqueEditorialProductCardProps) {
-  const coverImage = getProductCoverImageFor("boutique", product);
+  const packshotImage = getProductCoverImageFor("boutique", product);
   const modelImage = getProductHoverImage(product);
-  const coverIsCutout = isCatalogCutoutImage(coverImage);
+  const packshotIsCutout = isCatalogCutoutImage(packshotImage);
   const colors = resolveProductColors(product);
   const isSold = product.status === "sold";
   const isNew = product.conditionLabel?.toLocaleLowerCase("tr").includes("yeni");
@@ -82,7 +82,7 @@ export function TrBoutiqueEditorialProductCard({
       <div
         className={`relative overflow-hidden ${
           atelier ? "aspect-[3/4.2]" : "aspect-[3/4]"
-        } ${coverIsCutout ? "bg-[#F3F1EC]" : atelier ? "bg-[#F0EEEA]" : "bg-neutral-100"}`}
+        } ${packshotIsCutout ? "bg-[#F3F1EC]" : atelier ? "bg-[#F0EEEA]" : "bg-neutral-100"}`}
       >
         <TrBoutiquePendingLink
           href={productHref}
@@ -90,37 +90,48 @@ export function TrBoutiqueEditorialProductCard({
           className="absolute inset-0 block outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
           aria-label={product.title}
         >
-          {coverImage ? (
+          {modelImage && packshotImage ? (
+            <>
+              <Image
+                src={modelImage}
+                alt=""
+                fill
+                priority={priority}
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                className={`object-cover transition-opacity duration-500 group-hover:opacity-0 ${
+                  isSold ? "opacity-60" : ""
+                }`}
+              />
+              <Image
+                src={packshotImage}
+                alt=""
+                fill
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                className={`${
+                  packshotIsCutout ? "object-contain p-3" : "object-cover"
+                } opacity-0 transition-opacity duration-500 group-hover:opacity-100 ${
+                  isSold ? "!opacity-60" : ""
+                }`}
+              />
+            </>
+          ) : packshotImage ? (
             <Image
-              src={coverImage}
+              src={packshotImage}
               alt=""
               fill
               priority={priority}
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
               className={`${
-                coverIsCutout ? "object-contain p-3" : "object-cover"
-              } transition-opacity duration-500 ${
-                modelImage
-                  ? "opacity-100 group-hover:opacity-0"
-                  : "transition-transform duration-700 group-hover:scale-[1.02]"
-              } ${isSold ? "opacity-60" : ""}`}
+                packshotIsCutout ? "object-contain p-3" : "object-cover"
+              } transition-transform duration-700 group-hover:scale-[1.02] ${
+                isSold ? "opacity-60" : ""
+              }`}
             />
           ) : (
             <div className="flex h-full items-center justify-center px-4 text-center text-[12px] text-neutral-400">
               {product.title}
             </div>
           )}
-          {modelImage ? (
-            <Image
-              src={modelImage}
-              alt=""
-              fill
-              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-              className={`object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-100 ${
-                isSold ? "!opacity-60" : ""
-              }`}
-            />
-          ) : null}
         </TrBoutiquePendingLink>
 
         {onSale && pct > 0 && !isSold ? (

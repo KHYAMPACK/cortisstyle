@@ -155,7 +155,8 @@ export function getPanelProductCover(
 }
 
 /**
- * First lifestyle / model shot for card hover reveal (if any).
+ * First lifestyle / model shot. Boutique cards show this at rest
+ * and reveal the packshot on hover.
  */
 export function getProductHoverImage(
   product: Pick<TrProduct, "lifestyleImages">,
