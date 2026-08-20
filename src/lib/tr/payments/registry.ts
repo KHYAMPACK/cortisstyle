@@ -5,12 +5,29 @@ export type TrIyzicoCredentials = {
   baseUrl: string;
 };
 
+export type TrIyzicoBuyerProtectionPosition =
+  | "bottomLeft"
+  | "bottomRight"
+  | "topLeft"
+  | "topRight"
+  | "header";
+
 export type TrIyzicoBuyerProtection = {
   token: string;
-  position: "bottomLeft" | "bottomRight" | "topLeft" | "topRight";
+  /** Desktop / wide viewports. */
+  position: TrIyzicoBuyerProtectionPosition;
+  /**
+   * Phones. iyzico’s `header` slot is the full-width “iyzico ile öde” bar
+   * (merchant panel snippet). Corner badges are easy to miss under 380px+
+   * and get clipped by `overflow-x: clip` on body.
+   */
+  mobilePosition?: TrIyzicoBuyerProtectionPosition;
   ideaSoft: boolean;
   pwi: boolean;
 };
+
+/** Match Tailwind `md` so the header bar is phones-only. */
+export const IYZICO_BUYER_PROTECTION_HEADER_MAX_PX = 767;
 
 const DEFAULT_LIVE_BASE = "https://api.iyzipay.com";
 
@@ -29,6 +46,7 @@ const IYZICO_BUYER_PROTECTION_BY_SLUG: Record<string, TrIyzicoBuyerProtection> =
     lilabutik: {
       token: "649afd5a-7bd3-4529-8d26-3c6f6247c984",
       position: "bottomLeft",
+      mobilePosition: "header",
       ideaSoft: false,
       pwi: true,
     },

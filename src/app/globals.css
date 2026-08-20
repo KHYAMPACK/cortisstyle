@@ -388,3 +388,27 @@ html.intro-loading-cadde body::before {
     width: min(var(--hero-width-mobile, 90vw), var(--hero-width-cap, 400px));
   }
 }
+
+/*
+ * iyzico Alıcı Koruması `position: header` is position:fixed; top:0
+ * (56px ≤460px, 64px above that). Keep boutique sticky chrome below it.
+ */
+@media (max-width: 767px) {
+  html[data-iyzico-header] {
+    --iyzico-header-h: 56px;
+  }
+
+  html[data-iyzico-header] body {
+    padding-top: var(--iyzico-header-h);
+  }
+
+  html[data-iyzico-header] header.sticky {
+    top: var(--iyzico-header-h);
+  }
+}
+
+@media (min-width: 461px) and (max-width: 767px) {
+  html[data-iyzico-header] {
+    --iyzico-header-h: 64px;
+  }
+}
