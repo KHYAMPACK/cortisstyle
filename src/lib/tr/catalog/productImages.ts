@@ -1,6 +1,9 @@
 import { isLookbookPieceImage } from "@/data/tr/lookbookPieceImages";
 import { TR_OWNER_PRODUCT_LIMITS } from "@/lib/tr/ownerProductConstraints";
-import { isTrMarketplaceAssetUrl } from "@/lib/tr/trAssetUrls";
+import {
+  isTrMarketplaceAssetUrl,
+  isTrStorefrontAssetUrl,
+} from "@/lib/tr/trAssetUrls";
 import type { TrProduct } from "@/types/tr-marketplace";
 
 export type TrProductImageSurface = "boutique" | "marketplace";
@@ -173,12 +176,17 @@ export function getProductSecondaryImage(
   return secondary;
 }
 
-/** True when the cover should render as a contained cutout (not full-bleed cover). */
+/**
+ * True when the cover should sit contained with padding (packshot),
+ * not full-bleed `object-cover`. Boutique storefront WebPs are flattened
+ * cutouts — without this they look zoomed-in vs older PNG catalog shots.
+ */
 export function isCatalogCutoutImage(src: string | null | undefined): boolean {
   if (!src) return false;
   return (
     isLookbookPieceImage(src) ||
     isTrMarketplaceAssetUrl(src) ||
+    isTrStorefrontAssetUrl(src) ||
     src.startsWith("/images/tr/hero/")
   );
 }
