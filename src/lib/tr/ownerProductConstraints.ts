@@ -4,6 +4,8 @@ export const TR_OWNER_PRODUCT_LIMITS = {
   titleMax: 80,
   descriptionMax: 800,
   maxImages: 8,
+  /** Max unsaved product cards in a toplu yükleme session. */
+  maxBatchCreateRows: 8,
   /** Front + back get BG removal; extras stay original. */
   cutoutPhotoSlots: 2,
   priceMinTry: 1,

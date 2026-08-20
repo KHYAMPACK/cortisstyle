@@ -3,6 +3,10 @@ import {
   sanitizeProductFeatures,
   type TrProductFeatures,
 } from "@/lib/tr/catalog/productFeatures";
+import {
+  listAssignableTrCategories,
+  parseAiCategoryId,
+} from "@/lib/tr/catalog/categories";
 import { TR_OWNER_PRODUCT_LIMITS } from "@/lib/tr/ownerProductConstraints";
 
 const GEMINI_MODELS = [
@@ -15,6 +19,7 @@ export interface ProductListingDraft {
   title: string;
   description: string;
   features: TrProductFeatures;
+  category?: string | null;
 }
 
 function geminiGenerateUrl(model: string): string {
@@ -55,6 +60,7 @@ export function sanitizeListingDraft(raw: {
   title?: string | null;
   description?: string | null;
   features?: unknown;
+  category?: unknown;
 }): ProductListingDraft | null {
   let title = (raw.title ?? "")
     .replace(/\s+/g, " ")
@@ -76,8 +82,13 @@ export function sanitizeListingDraft(raw: {
     title,
     description,
     features: sanitizeProductFeatures(raw.features),
+    category: parseAiCategoryId(raw.category),
   };
 }
+
+const ASSIGNABLE_CATEGORY_HINT = listAssignableTrCategories()
+  .map((entry) => `${entry.id} (${entry.label})`)
+  .join(", ");
 
 const LISTING_VOICE_RULES = `Turkish product listing copy for a small boutique owner panel.
 
@@ -101,7 +112,11 @@ features (Turkish values, omit a key if you cannot see it):
 - neckHem: collar and/or hem/paça detail if visible.
 - fabric: visible fabric look (e.g. "Hafif keten dokulu dokuma").
 - composition: ONLY if a care label with fiber % is readable. Never invent percentages.
-- NEVER include üretim yeri, etiket, kapama, cep, or manken ölçüsü.`;
+- NEVER include üretim yeri, etiket, kapama, cep, or manken ölçüsü.
+
+category:
+- One shop leaf id from: ${ASSIGNABLE_CATEGORY_HINT}
+- You may return the Turkish label instead (e.g. "Bluz"). Never return a parent group (üst giyim, alt giyim) except Elbise.`;
 
 export function listingDraftSystemPrompt(input: {
   category?: string | null;
@@ -131,7 +146,8 @@ Return JSON only:
     "neckHem": "",
     "fabric": "",
     "composition": ""
-  }
+  },
+  "category": "bluz"
 }
 
 ${LISTING_VOICE_RULES}
@@ -158,7 +174,8 @@ Return JSON only:
     "neckHem": "",
     "fabric": "",
     "composition": ""
-  }
+  },
+  "category": "bluz"
 }
 
 ${LISTING_VOICE_RULES}
@@ -284,6 +301,7 @@ export async function draftProductListingFromImage(input: {
         description:
           typeof parsed.description === "string" ? parsed.description : null,
         features: parsed.features,
+        category: parsed.category,
       });
       if (draft) return draft;
     } catch (error) {

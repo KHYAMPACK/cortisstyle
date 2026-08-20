@@ -27,6 +27,7 @@ import {
   panelHintClass,
   panelPageTitleClass,
   panelPrimaryBtnClass,
+  panelSecondaryBtnClass,
 } from "@/components/tr/panel/panelUi";
 import {
   TrPanelFadeIn,
@@ -50,6 +51,7 @@ import {
 import { PanelSelectCheckbox } from "@/components/tr/panel/PanelSelectCheckbox";
 import { usePanelRowSelection } from "@/hooks/usePanelRowSelection";
 import {
+  trPanelBatchNewProductsPath,
   trPanelEditProductPath,
   trPanelNewProductPath,
   trPanelPath,
@@ -407,12 +409,20 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
                 ? `${products.length} ürün`
                 : `${visible.length} / ${products.length} ürün`}
             </p>
-            <Link
-              href={trPanelNewProductPath()}
-              className={`${panelPrimaryBtnClass} lg:h-9 lg:min-h-0 lg:rounded-lg lg:px-4 lg:py-0 lg:text-[13px]`}
-            >
-              + Yeni ürün ekle
-            </Link>
+            <div className="flex flex-wrap items-center gap-2">
+              <Link
+                href={trPanelNewProductPath()}
+                className={`${panelPrimaryBtnClass} lg:h-9 lg:min-h-0 lg:rounded-lg lg:px-4 lg:py-0 lg:text-[13px]`}
+              >
+                + Yeni ürün ekle
+              </Link>
+              <Link
+                href={trPanelBatchNewProductsPath()}
+                className={`${panelSecondaryBtnClass} lg:h-9 lg:min-h-0 lg:rounded-lg lg:px-4 lg:py-0 lg:text-[13px]`}
+              >
+                Toplu ekle
+              </Link>
+            </div>
           </div>
 
           {products.length > 0 ? filters : null}

@@ -20,6 +20,7 @@ import {
   listAiModelOptions,
   type TrLilaPhotographyStyle,
 } from "@/lib/tr/aiModel/registry";
+import { useScheduleAiJob } from "@/components/tr/panel/TrOwnerAiJobQueue";
 import {
   requestOwnerAiModelGenerate,
   requestOwnerPackshot,
@@ -106,6 +107,7 @@ export function TrOwnerAiCatalogEnhance({
   onSkip,
   disabled = false,
 }: TrOwnerAiCatalogEnhanceProps) {
+  const scheduleAiJob = useScheduleAiJob();
   const [phase, setPhase] = useState<EnhancePhase>("idle");
   const [progressLabel, setProgressLabel] = useState("");
   const [progressPct, setProgressPct] = useState(0);
@@ -207,16 +209,22 @@ export function TrOwnerAiCatalogEnhance({
           continue;
         }
         const detail = `Katalog görseli ${i + 1}/${slotSources.length}…`;
-        pushProgress(22 + i * 14, detail);
-        const pack = await requestOwnerPackshot({
-          boutiqueId,
-          sourceImageUrl: slot.source,
-          productId: productId ?? undefined,
-          title,
-          category,
-          view: slot.index === 1 ? "back" : "front",
-          numImages: 1,
-        });
+        pushProgress(18 + i * 14, "Sırada…");
+        const pack = await scheduleAiJob(
+          () =>
+            requestOwnerPackshot({
+              boutiqueId,
+              sourceImageUrl: slot.source,
+              productId: productId ?? undefined,
+              title,
+              category,
+              view: slot.index === 1 ? "back" : "front",
+              numImages: 1,
+            }),
+          {
+            onStart: () => pushProgress(22 + i * 14, detail),
+          },
+        );
         if (pack.status !== "succeeded" || !pack.imageUrls[0]) {
           throw new Error(pack.error ?? "Katalog görseli üretilemedi.");
         }
@@ -243,27 +251,32 @@ export function TrOwnerAiCatalogEnhance({
         );
       }
 
-      pushProgress(
-        72,
+      const tryOnDetail =
         mode === "replace"
           ? shotCount > 1
             ? "Model fotoğrafları yenileniyor…"
             : "Model fotoğrafı yenileniyor…"
           : shotCount > 1
             ? "Model fotoğrafları oluşturuluyor…"
-            : "Model fotoğrafı oluşturuluyor…",
-        "Model çekimi",
+            : "Model fotoğrafı oluşturuluyor…";
+      pushProgress(68, "Sırada…", "Model çekimi");
+      const result = await scheduleAiJob(
+        () =>
+          requestOwnerAiModelGenerate({
+            boutiqueId,
+            cutoutImageUrl: frontGarment,
+            productId: productId ?? undefined,
+            title,
+            category,
+            modelId: selectedModelId,
+            photographyStyle: lilaSelected ? photographyStyle : undefined,
+            pose: "standing-front",
+          }),
+        {
+          onStart: () =>
+            pushProgress(72, tryOnDetail, "Model çekimi"),
+        },
       );
-      const result = await requestOwnerAiModelGenerate({
-        boutiqueId,
-        cutoutImageUrl: frontGarment,
-        productId: productId ?? undefined,
-        title,
-        category,
-        modelId: selectedModelId,
-        photographyStyle: lilaSelected ? photographyStyle : undefined,
-        pose: "standing-front",
-      });
       const produced = lifestylePreviewUrls(
         result.imageUrls?.length ? result.imageUrls : result.imageUrl ? [result.imageUrl] : [],
       );

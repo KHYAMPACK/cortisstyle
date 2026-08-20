@@ -757,6 +757,7 @@ export function TrProductEditorForm({
             setTitle(clampTitle(draft.title));
             setDescription(clampDescription(draft.description));
             if (draft.features) setFeatures(draft.features);
+            if (draft.category) setCategory(draft.category);
             setListingDraft(draft);
           }}
         />

@@ -34,6 +34,7 @@ import {
   type TrOwnerSummaryResponse,
 } from "@/lib/tr/ownerClient";
 import {
+  trPanelBatchNewProductsPath,
   trPanelNewProductPath,
   trPanelOrderPath,
   trPanelOrdersPath,
@@ -150,6 +151,12 @@ function HomeDashboard({
           className="rounded-lg bg-white px-3 py-2 text-[13px] font-medium text-neutral-700 ring-1 ring-neutral-200 hover:bg-neutral-50"
         >
           + Yeni ürün
+        </Link>
+        <Link
+          href={trPanelBatchNewProductsPath()}
+          className="rounded-lg bg-white px-3 py-2 text-[13px] font-medium text-neutral-700 ring-1 ring-neutral-200 hover:bg-neutral-50"
+        >
+          Toplu ekle
         </Link>
       </div>
 

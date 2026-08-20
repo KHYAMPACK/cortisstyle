@@ -112,6 +112,7 @@ Rules:
                     ? parsed.description
                     : null,
                 features: parsed.features,
+                category: parsed.category,
               });
               if (draft) {
                 listingDraft = draft;

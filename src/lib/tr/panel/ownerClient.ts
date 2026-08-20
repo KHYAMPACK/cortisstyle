@@ -1,6 +1,7 @@
 import { getSupabaseClient } from "@/lib/supabaseClient";
 import { prepareOwnerUploadFile } from "@/lib/tr/prepareOwnerUploadFile";
 import { sanitizeProductFeatures } from "@/lib/tr/catalog/productFeatures";
+import { parseAiCategoryId } from "@/lib/tr/catalog/categories";
 import {
   cachedOwnerFetch,
   invalidateOwnerCache,
@@ -289,6 +290,7 @@ export interface OwnerListingDraft {
   title: string;
   description: string;
   features?: TrProductFeatures;
+  category?: string | null;
 }
 
 function readOwnerListingDraft(raw: unknown): OwnerListingDraft | null {
@@ -301,6 +303,7 @@ function readOwnerListingDraft(raw: unknown): OwnerListingDraft | null {
     description:
       typeof record.description === "string" ? record.description.trim() : "",
     features: sanitizeProductFeatures(record.features),
+    category: parseAiCategoryId(record.category),
   };
 }
 

@@ -23,6 +23,7 @@ type Body = {
     title: string;
     description: string;
     features?: unknown;
+    category?: string | null;
   } | null;
   numImages?: number;
 };
@@ -83,6 +84,7 @@ export async function POST(request: Request) {
           title: body.listingDraft.title,
           description: body.listingDraft.description,
           features: body.listingDraft.features,
+          category: body.listingDraft.category,
         })
       : null,
     numImages: body.numImages,

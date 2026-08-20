@@ -299,6 +299,26 @@ export function listAssignableTrCategories(): TrCategoryDefinition[] {
   return TR_BOUTIQUE_CATEGORIES.filter(isShopLeaf);
 }
 
+/**
+ * Map a Gemini / owner-typed category (id or Turkish label) to a shop leaf.
+ * Parents like "üst giyim" are rejected; variants canonicalize (kaşe mont → mont).
+ */
+export function parseAiCategoryId(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  const text = raw.trim();
+  if (!text) return null;
+
+  const lower = text.toLocaleLowerCase("tr");
+  const byId = BY_ID.get(text) ?? BY_ID.get(lower);
+  const byLabel = TR_BOUTIQUE_CATEGORIES.find(
+    (entry) => entry.label.toLocaleLowerCase("tr") === lower,
+  );
+  const resolved = canonicalizeTrCategoryId(byId?.id ?? byLabel?.id ?? null);
+  if (!resolved) return null;
+  const assignable = new Set(listAssignableTrCategories().map((entry) => entry.id));
+  return assignable.has(resolved) ? resolved : null;
+}
+
 export interface TrCategoryGroup {
   parent: TrCategoryDefinition | null;
   /** Section label for panel UI */

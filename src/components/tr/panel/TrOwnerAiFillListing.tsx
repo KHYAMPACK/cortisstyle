@@ -56,6 +56,7 @@ export function TrOwnerAiFillListing({
       title: clampTitle(cachedDraft.title),
       description: clampDescription(cachedDraft.description ?? ""),
       features: cachedDraft.features ?? {},
+      category: cachedDraft.category ?? null,
     });
   }
 
@@ -77,6 +78,7 @@ export function TrOwnerAiFillListing({
         title: clampTitle(remote.title),
         description: clampDescription(remote.description ?? ""),
         features: remote.features ?? {},
+        category: remote.category ?? null,
       });
     } catch (error) {
       onError?.(

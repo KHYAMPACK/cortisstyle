@@ -24,9 +24,10 @@ import {
   panelPrimaryBtnClass,
   panelSecondaryBtnClass,
 } from "@/components/tr/panel/panelUi";
+import { useScheduleAiJob } from "@/components/tr/panel/TrOwnerAiJobQueue";
 import { uploadOwnerProductImage, requestOwnerPackshot, requestOwnerPackshotPrepare, type OwnerListingDraft } from "@/lib/tr/ownerClient";
 
-type UploadStage = "idle" | "cutout" | "analyze" | "packshot";
+type UploadStage = "idle" | "cutout" | "analyze" | "queued" | "packshot";
 
 interface PendingPreview {
   file: File;
@@ -44,6 +45,7 @@ interface ActiveSlotJob {
 
 function uploadStageLabel(stage: UploadStage): string {
   if (stage === "analyze") return "Ürün tanınıyor…";
+  if (stage === "queued") return "Sırada…";
   if (stage === "packshot") return "Katalog görseli hazırlanıyor…";
   if (stage === "cutout") return "Fotoğraf işleniyor…";
   return "";
@@ -51,6 +53,7 @@ function uploadStageLabel(stage: UploadStage): string {
 
 function uploadStageTarget(stage: UploadStage): number {
   if (stage === "analyze") return 42;
+  if (stage === "queued") return 16;
   if (stage === "packshot") return 88;
   if (stage === "cutout") return 22;
   return 0;
@@ -164,6 +167,8 @@ export function TrOwnerGuidedPhotoUpload({
   onPhotoJobsChange,
   disabled = false,
 }: TrOwnerGuidedPhotoUploadProps) {
+  const scheduleAiJob = useScheduleAiJob();
+  const scheduleAiJobRef = useRef(scheduleAiJob);
   const inputId = useId();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pending, setPending] = useState<PendingPreview | null>(null);
@@ -181,13 +186,22 @@ export function TrOwnerGuidedPhotoUpload({
     marketplace: string;
   } | null>(null);
   const onFrontSlotResetRef = useRef(onFrontSlotReset);
+  const onPhotoJobsChangeRef = useRef(onPhotoJobsChange);
   const jobsRef = useRef(jobs);
   const imagesRef = useRef(images);
   const marketplaceRef = useRef(marketplaceImages);
 
   useEffect(() => {
+    scheduleAiJobRef.current = scheduleAiJob;
+  }, [scheduleAiJob]);
+
+  useEffect(() => {
     onFrontSlotResetRef.current = onFrontSlotReset;
   }, [onFrontSlotReset]);
+
+  useEffect(() => {
+    onPhotoJobsChangeRef.current = onPhotoJobsChange;
+  }, [onPhotoJobsChange]);
 
   useEffect(() => {
     jobsRef.current = jobs;
@@ -234,7 +248,8 @@ export function TrOwnerGuidedPhotoUpload({
   }, [anyJobRunning, onUploadingChange]);
 
   useEffect(() => {
-    if (!onPhotoJobsChange) return;
+    const notify = onPhotoJobsChangeRef.current;
+    if (!notify) return;
     const items: PipelineJobItem[] = Object.values(jobs).map((job) => ({
       id: `photo-${job.slotIndex}`,
       kind: pipelineJobKindForSlot(job.slotIndex),
@@ -243,8 +258,8 @@ export function TrOwnerGuidedPhotoUpload({
       progressPct: job.progressPct,
       detail: uploadStageLabel(job.stage),
     }));
-    onPhotoJobsChange(items);
-  }, [jobs, onPhotoJobsChange]);
+    notify(items);
+  }, [jobs]);
 
   useEffect(() => {
     return () => {
@@ -266,7 +281,7 @@ export function TrOwnerGuidedPhotoUpload({
           const job = next[Number(key)]!;
           const target = uploadStageTarget(job.stage);
           if (job.progressPct >= target) continue;
-        const step = job.stage === "packshot" ? 0.45 : job.stage === "analyze" ? 0.9 : 1.3;
+        const step = job.stage === "packshot" ? 0.45 : job.stage === "analyze" ? 0.9 : job.stage === "queued" ? 0.2 : 1.3;
           next[Number(key)] = {
             ...job,
             progressPct: Math.min(target, job.progressPct + step),
@@ -425,23 +440,42 @@ export function TrOwnerGuidedPhotoUpload({
             ...current,
             [slotIndex]: {
               ...job,
-              stage: "packshot",
+              stage: "queued",
               progressPct: Math.max(job.progressPct, 48),
             },
           };
         });
 
-        const pack = await requestOwnerPackshot({
-          boutiqueId,
-          sourceImageUrl,
-          productId: productId ?? undefined,
-          title,
-          category,
-          view,
-          numImages: 1,
-          prompt: preparedPrompt,
-          listingDraft: preparedDraft,
-        });
+        const pack = await scheduleAiJobRef.current(
+          () =>
+            requestOwnerPackshot({
+              boutiqueId,
+              sourceImageUrl,
+              productId: productId ?? undefined,
+              title,
+              category,
+              view,
+              numImages: 1,
+              prompt: preparedPrompt,
+              listingDraft: preparedDraft,
+            }),
+          {
+            onStart: () => {
+              setJobs((current) => {
+                const job = current[slotIndex];
+                if (!job) return current;
+                return {
+                  ...current,
+                  [slotIndex]: {
+                    ...job,
+                    stage: "packshot",
+                    progressPct: Math.max(job.progressPct, 52),
+                  },
+                };
+              });
+            },
+          },
+        );
         if (pack.status === "succeeded" && pack.imageUrls[0]?.trim()) {
           marketplaceUrl = pack.imageUrls[0].trim();
         } else {

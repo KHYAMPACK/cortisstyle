@@ -198,6 +198,10 @@ export function trPanelNewProductPath(): string {
   return "/tr/panel/urun/yeni";
 }
 
+export function trPanelBatchNewProductsPath(): string {
+  return "/tr/panel/urun/toplu";
+}
+
 export function trPanelEditProductPath(productId: string): string {
   return `/tr/panel/urun/${encodeURIComponent(productId)}`;
 }
