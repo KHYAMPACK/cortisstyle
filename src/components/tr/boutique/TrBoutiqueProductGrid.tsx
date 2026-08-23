@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { TrProductCard } from "@/components/tr/TrProductCard";
 import { useTrBoutiqueCatalog } from "@/components/tr/boutique/TrBoutiqueCatalogContext";
+import { groupProductsForHomeCategoryRows } from "@/lib/tr/catalog/homeCategoryRows";
 import { getTrCategoryLabel, isTrCategoryMatch } from "@/lib/tr/categories";
 import type { TrProduct } from "@/types/tr-marketplace";
 
@@ -32,6 +33,12 @@ export function TrBoutiqueProductGrid({
       isTrCategoryMatch(product.category, activeCategory),
     );
   }, [activeCategory, products]);
+
+  const categoryRows = useMemo(
+    () => groupProductsForHomeCategoryRows(filteredProducts),
+    [filteredProducts],
+  );
+  const splitByCategory = !activeCategory && categoryRows.length > 1;
 
   if (products.length === 0) {
     return (
@@ -63,17 +70,38 @@ export function TrBoutiqueProductGrid({
       </div>
 
       {filteredProducts.length > 0 ? (
-        <div className="grid grid-cols-2 gap-x-[2px] gap-y-0 bg-white md:grid-cols-3 lg:grid-cols-4">
-          {filteredProducts.map((product, index) => (
-            <TrProductCard
-              key={product.id}
-              product={product}
-              boutiqueSlug={boutiqueSlug}
-              boutiqueName={boutiqueName}
-              priority={index < 4}
-            />
-          ))}
-        </div>
+        splitByCategory ? (
+          <div className="flex flex-col bg-white">
+            {categoryRows.map((group, groupIndex) => (
+              <div
+                key={group.categoryId}
+                className="grid grid-cols-2 gap-x-[2px] gap-y-0 md:grid-cols-3 lg:grid-cols-4"
+              >
+                {group.products.map((product, index) => (
+                  <TrProductCard
+                    key={product.id}
+                    product={product}
+                    boutiqueSlug={boutiqueSlug}
+                    boutiqueName={boutiqueName}
+                    priority={groupIndex === 0 && index < 4}
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-x-[2px] gap-y-0 bg-white md:grid-cols-3 lg:grid-cols-4">
+            {filteredProducts.map((product, index) => (
+              <TrProductCard
+                key={product.id}
+                product={product}
+                boutiqueSlug={boutiqueSlug}
+                boutiqueName={boutiqueName}
+                priority={index < 4}
+              />
+            ))}
+          </div>
+        )
       ) : (
         <p className="px-5 text-[13px] text-neutral-600 md:px-8">
           Bu kategoride ürün bulunamadı.

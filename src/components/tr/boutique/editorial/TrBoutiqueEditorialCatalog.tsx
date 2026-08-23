@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { TrBoutiqueEditorialProductCard } from "@/components/tr/boutique/editorial/TrBoutiqueEditorialProductCard";
 import { useTrBoutiqueCatalog } from "@/components/tr/boutique/TrBoutiqueCatalogContext";
 import { isAtelierEditorialSkin } from "@/lib/tr/boutiqueHome";
+import { groupProductsForHomeCategoryRows } from "@/lib/tr/catalog/homeCategoryRows";
 import { getTrCategoryLabel, isTrCategoryMatch } from "@/lib/tr/categories";
 import { trBoutiqueProductsPath } from "@/lib/tr/paths";
 import type { TrProduct } from "@/types/tr-marketplace";
@@ -87,6 +88,12 @@ export function TrBoutiqueEditorialCatalog({
 
     return sorted;
   }, [activeCategory, products, searchQuery, sort]);
+
+  const categoryRows = useMemo(
+    () => groupProductsForHomeCategoryRows(filtered),
+    [filtered],
+  );
+  const splitByCategory = !activeCategory && categoryRows.length > 1;
 
   const plpHref = trBoutiqueProductsPath(boutiqueSlug, {
     ...(activeCategory === "sale" ? { indirim: true } : {}),
@@ -189,22 +196,52 @@ export function TrBoutiqueEditorialCatalog({
       </div>
 
       {filtered.length > 0 ? (
-        <div
-          className={`mt-6 grid grid-cols-2 px-3 md:grid-cols-3 md:px-6 lg:grid-cols-4 lg:px-8 ${
-            atelier
-              ? "gap-x-3 gap-y-10 md:gap-x-6 md:gap-y-14"
-              : "gap-x-2 gap-y-6 md:gap-x-4"
-          }`}
-        >          {filtered.map((product, index) => (
-            <TrBoutiqueEditorialProductCard
-              key={product.id}
-              product={product}
-              boutiqueSlug={boutiqueSlug}
-              boutiqueName={boutiqueName}
-              priority={index < 4}
-            />
-          ))}
-        </div>
+        splitByCategory ? (
+          <div
+            className={`mt-6 flex flex-col px-3 md:px-6 lg:px-8 ${
+              atelier ? "gap-y-10 md:gap-y-14" : "gap-y-6"
+            }`}
+          >
+            {categoryRows.map((group, groupIndex) => (
+              <div
+                key={group.categoryId}
+                className={`grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 ${
+                  atelier
+                    ? "gap-x-3 gap-y-10 md:gap-x-6 md:gap-y-14"
+                    : "gap-x-2 gap-y-6 md:gap-x-4"
+                }`}
+              >
+                {group.products.map((product, index) => (
+                  <TrBoutiqueEditorialProductCard
+                    key={product.id}
+                    product={product}
+                    boutiqueSlug={boutiqueSlug}
+                    boutiqueName={boutiqueName}
+                    priority={groupIndex === 0 && index < 4}
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div
+            className={`mt-6 grid grid-cols-2 px-3 md:grid-cols-3 md:px-6 lg:grid-cols-4 lg:px-8 ${
+              atelier
+                ? "gap-x-3 gap-y-10 md:gap-x-6 md:gap-y-14"
+                : "gap-x-2 gap-y-6 md:gap-x-4"
+            }`}
+          >
+            {filtered.map((product, index) => (
+              <TrBoutiqueEditorialProductCard
+                key={product.id}
+                product={product}
+                boutiqueSlug={boutiqueSlug}
+                boutiqueName={boutiqueName}
+                priority={index < 4}
+              />
+            ))}
+          </div>
+        )
       ) : (
         <p className="mt-10 px-5 text-center text-[13px] text-neutral-600 md:px-8">
           Bu filtrede ürün bulunamadı.
