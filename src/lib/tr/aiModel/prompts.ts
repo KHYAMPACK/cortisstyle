@@ -29,8 +29,13 @@ export const STUDIO_AYLA_MODEL_CREATE_PROMPT =
 export const STUDIO_DENIZ_MODEL_CREATE_PROMPT =
   "Full-body fashion e-commerce photo, Zara catalog style. Young man, slender athletic build, natural grooming, short neat hair, relaxed neutral expression. Standing in a very simple room: plain light off-white wall, clean matte floor, soft natural side light, subtle realistic shadow — not an infinite void. Simple fitted black crewneck tee and dark tailored trousers. Calm elegant standing pose facing camera, arms relaxed at his sides or lightly behind his back, no hands in pockets. Photoreal skin texture, natural fabric folds, sharp product detail, quiet luxury, not CGI, not airbrushed, not beauty campaign.";
 
+/** Prompt notes if regenerating Selin in Cursor (not FASHN). */
+export const STUDIO_SELIN_MODEL_CREATE_PROMPT =
+  "Full-body fashion e-commerce photo, Zara catalog style. Young woman, slender elegant build, fair complexion, long straight dark brown hair parted in the middle, calm poised closed-mouth expression looking at camera. Standing square to the camera in a bright minimalist studio corner: plain white walls, light grey wood plank floor, even soft studio light. Simple fitted black short-sleeve crew-neck t-shirt tucked into high-waisted dark wide-leg trousers. No jewelry, no evening gown. Arms relaxed at her sides, no hand on hip, no extraordinary pose. Photoreal skin texture, natural fabric folds, sharp product detail, quiet luxury, not CGI, not airbrushed, not beauty campaign.";
+
 export const STUDIO_MODEL_CREATE_ASPECT_RATIO = "3:4";
 
 /** Public path filenames under /tr/ai-models/ */
 export const STUDIO_AYLA_PUBLIC_PATH = "/tr/ai-models/studio-ayla.jpg";
 export const STUDIO_DENIZ_PUBLIC_PATH = "/tr/ai-models/studio-deniz.jpg";
+export const STUDIO_SELIN_PUBLIC_PATH = "/tr/ai-models/studio-selin.jpg";

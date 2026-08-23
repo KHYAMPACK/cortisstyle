@@ -2,7 +2,7 @@
  * Studio / house model plates are one-time Cursor image gens.
  * FASHN is packshot + try-on only — do not call model-create.
  *
- * Existing files: public/tr/ai-models/studio-ayla.jpg, studio-deniz.jpg,
+ * Existing files: public/tr/ai-models/studio-ayla.jpg, studio-selin.jpg, studio-deniz.jpg,
  * lilabutik-lila-*.jpg (see LILABUTIK_LILA_TRYON_REFS).
  */
 console.error(

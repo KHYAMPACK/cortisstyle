@@ -129,7 +129,7 @@ Copy for each launch. Check before announcing Instagram → site.
   - [ ] Gizlilik → `/yasal/gizlilik`
   - [ ] Mesafeli Satış → `/yasal/mesafeli-satis`
   - [ ] Visa + Mastercard + **iyzico ile öde** logos in footer (`TrIyzicoFooterPaymentBand`) and checkout (`TrIyzicoCheckoutBadge`) — assets in `public/tr/payments/iyzico/`
-  - [ ] iyzico Alıcı Koruması overlay (`TrIyzicoBuyerProtection`) — token in `src/lib/tr/payments/registry.ts`, loads on boutique storefront only
+  - [ ] iyzico Alıcı Koruması overlay (`TrIyzicoBuyerProtection`) — token in `src/lib/tr/payments/registry.ts`, homepage only (hidden on PDP / PLP / cart)
 - [ ] **Ekiz Yazılım** platform watermark in boutique footer (`TrPlatformCredit` · asset `public/brand/ekiz-yazilim-watermark.png` · config `src/lib/platform/platformCredit.ts`) — Cortisstyle is the product; company credit is Ekiz Yazılım on **all** boutiques (shared component, not per-tenant)
 
 ### C2. Brand & SEO

@@ -1,19 +1,55 @@
+"use client";
+
 import Script from "next/script";
+import { usePathname } from "next/navigation";
+import { useLayoutEffect } from "react";
 import {
   getIyzicoBuyerProtection,
   IYZICO_BUYER_PROTECTION_HEADER_MAX_PX,
 } from "@/lib/tr/payments/registry";
+import { isBoutiqueHomePath } from "@/lib/tr/paths";
 
 const BUYER_PROTECTION_SRC =
   "https://static.iyzipay.com/buyer-protection/buyer-protection.js";
 
-/** iyzico Alıcı Koruması overlay — merchant website criteria. */
+function syncIyzicoHomeChrome(onHome: boolean) {
+  const mobile = window.matchMedia(
+    `(max-width: ${IYZICO_BUYER_PROTECTION_HEADER_MAX_PX}px)`,
+  ).matches;
+  document.documentElement.toggleAttribute("data-iyzico-home", onHome);
+  document.documentElement.toggleAttribute(
+    "data-iyzico-header",
+    onHome && mobile,
+  );
+}
+
+/** iyzico Alıcı Koruması overlay — boutique homepage only. */
 export function TrIyzicoBuyerProtection({
   boutiqueSlug,
 }: {
   boutiqueSlug: string;
 }) {
+  const pathname = usePathname();
   const config = getIyzicoBuyerProtection(boutiqueSlug);
+  const onHome = Boolean(config) && isBoutiqueHomePath(pathname, boutiqueSlug);
+
+  useLayoutEffect(() => {
+    if (!config) return;
+
+    const apply = () => syncIyzicoHomeChrome(onHome);
+    apply();
+
+    const mq = window.matchMedia(
+      `(max-width: ${IYZICO_BUYER_PROTECTION_HEADER_MAX_PX}px)`,
+    );
+    mq.addEventListener("change", apply);
+    return () => {
+      mq.removeEventListener("change", apply);
+      document.documentElement.removeAttribute("data-iyzico-home");
+      document.documentElement.removeAttribute("data-iyzico-header");
+    };
+  }, [config, onHome]);
+
   if (!config) return null;
 
   const bootstrap = {
@@ -39,9 +75,6 @@ export function TrIyzicoBuyerProtection({
     ideaSoft: c.ideaSoft,
     pwi: c.pwi
   };
-  if (position === "header") {
-    document.documentElement.setAttribute("data-iyzico-header", "");
-  }
 })();
 `}
       </Script>

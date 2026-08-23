@@ -18,8 +18,9 @@ export type TrIyzicoBuyerProtection = {
   position: TrIyzicoBuyerProtectionPosition;
   /**
    * Phones. iyzico’s `header` slot is the full-width “iyzico ile öde” bar
-   * (merchant panel snippet). Corner badges are easy to miss under 380px+
-   * and get clipped by `overflow-x: clip` on body.
+   * (merchant panel snippet). Shown on the boutique homepage only.
+   * Corner badges are easy to miss under 380px+ and get clipped by
+   * `overflow-x: clip` on body.
    */
   mobilePosition?: TrIyzicoBuyerProtectionPosition;
   ideaSoft: boolean;

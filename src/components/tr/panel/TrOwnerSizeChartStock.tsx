@@ -3,7 +3,10 @@
 import { useState } from "react";
 import type { TrSizeChartId } from "@/lib/tr/productOptions";
 import { sizesForChart, sortProductSizes } from "@/lib/tr/productOptions";
-import { sanitizeStockInput } from "@/lib/tr/ownerProductConstraints";
+import {
+  sanitizeStockInput,
+  TR_OWNER_PRODUCT_LIMITS,
+} from "@/lib/tr/ownerProductConstraints";
 import {
   panelAddChipClass,
   panelFieldClass,
@@ -11,6 +14,7 @@ import {
   panelLabelClass,
   panelPrimaryBtnClass,
   panelSecondaryBtnClass,
+  panelStepperBtnClass,
 } from "@/components/tr/panel/panelUi";
 
 const CHART_OPTIONS: Array<{ id: TrSizeChartId; label: string; hint: string }> =
@@ -44,6 +48,63 @@ interface TrOwnerSizeChartStockProps {
   allowCustomSizes?: boolean;
   /** @deprecated Both surfaces use the large accessible UI. */
   variant?: "wizard" | "editor";
+}
+
+function parsedStockQty(raw: string): number {
+  const n = Number.parseInt(raw, 10);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function bumpStock(raw: string, delta: 1 | -1): string {
+  const next = parsedStockQty(raw) + delta;
+  return String(
+    Math.min(
+      TR_OWNER_PRODUCT_LIMITS.stockMax,
+      Math.max(TR_OWNER_PRODUCT_LIMITS.stockMin, next),
+    ),
+  );
+}
+
+function StockQtyField({
+  value,
+  onChange,
+  label,
+}: {
+  value: string;
+  onChange: (next: string) => void;
+  label: string;
+}) {
+  const qty = parsedStockQty(value);
+  return (
+    <div className="flex min-w-0 flex-1 items-center gap-2">
+      <button
+        type="button"
+        disabled={qty <= TR_OWNER_PRODUCT_LIMITS.stockMin}
+        onClick={() => onChange(bumpStock(value, -1))}
+        className={panelStepperBtnClass}
+        aria-label={`${label} azalt`}
+      >
+        −
+      </button>
+      <input
+        value={value}
+        onChange={(event) => onChange(sanitizeStockInput(event.target.value))}
+        className={`${panelFieldClass} min-w-0 flex-1 text-center tabular-nums`}
+        inputMode="numeric"
+        maxLength={4}
+        aria-label={label}
+      />
+      <button
+        type="button"
+        disabled={qty >= TR_OWNER_PRODUCT_LIMITS.stockMax}
+        onClick={() => onChange(bumpStock(value, 1))}
+        className={panelStepperBtnClass}
+        aria-label={`${label} artır`}
+      >
+        +
+      </button>
+    </div>
+  );
 }
 
 function displaySizesForChart(
@@ -100,8 +161,9 @@ export function TrOwnerSizeChartStock({
       <div className="space-y-3">
         <p className={panelLabelClass}>Beden tablosu</p>
         <p className={panelHintClass}>
-          Harf veya numara seçin — her beden için stok yazın. 0 = stokta yok
-          (ürün sayfasında “gelince haber ver” görünür).
+          Harf veya numara seçin — her beden için stok yazın veya + / − ile
+          ayarlayın. 0 = stokta yok (ürün sayfasında “gelince haber ver”
+          görünür).
         </p>
         <div className="grid gap-3 sm:grid-cols-3">
           {CHART_OPTIONS.map((option) => {
@@ -133,19 +195,14 @@ export function TrOwnerSizeChartStock({
 
       {chart === "none" ? (
         onStockChange ? (
-          <label className="block space-y-2">
-            <span className={panelLabelClass}>Stok adedi</span>
-            <input
+          <div className="space-y-2">
+            <p className={panelLabelClass}>Stok adedi</p>
+            <StockQtyField
               value={stock}
-              onChange={(event) =>
-                onStockChange(sanitizeStockInput(event.target.value))
-              }
-              className={panelFieldClass}
-              inputMode="numeric"
-              maxLength={4}
-              required
+              onChange={onStockChange}
+              label="Stok adedi"
             />
-          </label>
+          </div>
         ) : null
       ) : (
         <div className="space-y-3">
@@ -154,38 +211,33 @@ export function TrOwnerSizeChartStock({
             {chartSizes.map((size) => {
               const isCustom = !sizesForChart(chart).includes(size);
               return (
-                <label
+                <div
                   key={size}
                   className="flex items-center gap-3 rounded-xl border-2 border-[color:var(--panel-accent-border)] bg-white px-4 py-3"
                 >
                   <span className="w-16 shrink-0 text-[18px] font-semibold text-neutral-900">
                     {size}
                   </span>
-                  <input
+                  <StockQtyField
                     value={stockInputs[size] ?? ""}
-                    onChange={(event) => {
-                      const value = sanitizeStockInput(event.target.value);
+                    onChange={(next) =>
                       onStockInputsChange({
                         ...stockInputs,
-                        [size]: value,
-                      });
-                    }}
-                    className={panelFieldClass}
-                    inputMode="numeric"
-                    maxLength={4}
-                    placeholder="0"
-                    aria-label={`${size} stok`}
+                        [size]: next,
+                      })
+                    }
+                    label={`${size} stok`}
                   />
                   {allowCustomSizes && isCustom ? (
                     <button
                       type="button"
-                      className="shrink-0 text-[15px] font-semibold text-red-700"
+                      className="min-h-11 shrink-0 text-[15px] font-semibold text-red-700"
                       onClick={() => removeSize(size)}
                     >
                       Kaldır
                     </button>
                   ) : null}
-                </label>
+                </div>
               );
             })}
           </div>

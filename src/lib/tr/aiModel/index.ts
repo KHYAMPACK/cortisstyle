@@ -4,7 +4,7 @@
  * Pipeline:
  * 1. Owner uploads flat-lay → Photoroom cutout (marketplaceImages)
  * 2. Optional FASHN packshot polish → marketplaceImages
- * 3. Model identity from registry (boutique house or studio:ayla/deniz).
+ * 3. Model identity from registry (boutique house or studio:ayla/selin/deniz).
  *    Lila: owner picks blinds/flash; one random pose from that style’s three plates.
  *    Studio: one random plate.
  * 4. FASHN tryon-max only — not model-create
@@ -51,6 +51,7 @@ export {
   tryOnPromptForPose,
   STUDIO_AYLA_MODEL_CREATE_PROMPT,
   STUDIO_DENIZ_MODEL_CREATE_PROMPT,
+  STUDIO_SELIN_MODEL_CREATE_PROMPT,
 } from "@/lib/tr/aiModel/prompts";
 
 export { generateBoutiqueAiModelImage } from "@/lib/tr/aiModel/generate";

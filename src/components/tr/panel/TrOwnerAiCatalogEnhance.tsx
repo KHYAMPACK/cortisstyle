@@ -1,10 +1,13 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { TrOwnerAiModelPicker } from "@/components/tr/panel/TrOwnerAiModelPicker";
+import { trPanelEase } from "@/components/tr/panel/TrPanelMotion";
 import {
   panelPrimaryBtnClass,
+  panelSecondaryBtnClass,
 } from "@/components/tr/panel/panelUi";
 import {
   describeModelPackageCredits,
@@ -15,15 +18,18 @@ import {
   TrOwnerCreditsMoreInfoLink,
 } from "@/components/tr/panel/TrOwnerCreditsInfo";
 import {
+  getAiModelOptionById,
   isLilaHouseModelId,
   LILA_DEFAULT_PHOTOGRAPHY_STYLE,
   listAiModelOptions,
   type TrLilaPhotographyStyle,
 } from "@/lib/tr/aiModel/registry";
 import { useScheduleAiJob } from "@/components/tr/panel/TrOwnerAiJobQueue";
+import { useRegisterLeaveBusy } from "@/components/tr/panel/TrOwnerLeaveGuard";
 import {
   requestOwnerAiModelGenerate,
   requestOwnerPackshot,
+  updateOwnerProduct,
   type OwnerListingDraft,
 } from "@/lib/tr/ownerClient";
 import type { PipelineJobItem } from "@/lib/tr/aiCatalog/pipelineProgress";
@@ -31,7 +37,7 @@ import type { PipelineJobItem } from "@/lib/tr/aiCatalog/pipelineProgress";
 const quietLinkBtn =
   "w-full text-left text-[13px] font-medium text-neutral-500 underline-offset-2 hover:text-neutral-700 hover:underline disabled:opacity-50";
 
-const ease = [0.22, 1, 0.36, 1] as const;
+const ease = trPanelEase;
 
 export interface TrOwnerAiCatalogEnhanceProps {
   boutiqueId: string;
@@ -114,8 +120,16 @@ export function TrOwnerAiCatalogEnhance({
   const [progressTarget, setProgressTarget] = useState(0);
   const [runMode, setRunMode] = useState<"create" | "replace" | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [confirmRegen, setConfirmRegen] = useState(false);
+  const [regenOpen, setRegenOpen] = useState(false);
+  const [regenDraftModelId, setRegenDraftModelId] = useState<string | null>(
+    null,
+  );
+  const [regenDraftStyle, setRegenDraftStyle] =
+    useState<TrLilaPhotographyStyle>(photographyStyle);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [portalReady, setPortalReady] = useState(false);
+  const regenTitleId = useId();
+  const regenBodyId = useId();
 
   const options = useMemo(
     () => listAiModelOptions(boutiqueSlug),
@@ -127,6 +141,13 @@ export function TrOwnerAiCatalogEnhance({
   const shotCount = describeModelPackageShots(selectedModelId);
   const modelCredits = describeModelPackageCredits(selectedModelId);
   const lilaSelected = isLilaHouseModelId(selectedModelId);
+  const currentModel = selectedModelId
+    ? getAiModelOptionById(selectedModelId, boutiqueSlug)
+    : null;
+  const regenDraftReady = options.find(
+    (o) => o.id === regenDraftModelId,
+  )?.ready;
+  const regenDraftCredits = describeModelPackageCredits(regenDraftModelId);
 
   const slotSources = useMemo(() => {
     const slots: Array<{ index: number; source: string }> = [];
@@ -139,6 +160,20 @@ export function TrOwnerAiCatalogEnhance({
   }, [images, marketplaceImages]);
 
   const busy = phase === "packshot" || phase === "tryon";
+  useRegisterLeaveBusy("ai-catalog-enhance", busy);
+
+  useEffect(() => {
+    setPortalReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!regenOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setRegenOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [regenOpen]);
 
   useEffect(() => {
     if (!busy || progressPct >= progressTarget) return;
@@ -179,12 +214,33 @@ export function TrOwnerAiCatalogEnhance({
     Boolean(selectedModelId) &&
     Boolean(selectedReady);
 
-  async function runEnhance(mode: "create" | "replace") {
-    if (!canGenerate || !selectedModelId) return;
+  function openRegenSheet() {
+    setConfirmDelete(false);
+    setRegenDraftModelId(selectedModelId);
+    setRegenDraftStyle(photographyStyle);
+    setRegenOpen(true);
+  }
+
+  async function runEnhance(
+    mode: "create" | "replace",
+    override?: {
+      modelId: string;
+      photographyStyle?: TrLilaPhotographyStyle;
+    },
+  ) {
+    const modelId = override?.modelId ?? selectedModelId;
+    const style = override?.photographyStyle ?? photographyStyle;
+    const modelReady = options.find((o) => o.id === modelId)?.ready;
+    if (disabled || busy || slotSources.length < 2 || !modelId || !modelReady) {
+      return;
+    }
     if (mode === "create" && hasModelPhoto) return;
     if (mode === "replace" && !hasModelPhoto) return;
 
-    setConfirmRegen(false);
+    if (modelId !== selectedModelId) onSelectedModelIdChange(modelId);
+    if (style !== photographyStyle) onPhotographyStyleChange?.(style);
+
+    setRegenOpen(false);
     setConfirmDelete(false);
     setError(null);
     setRunMode(mode);
@@ -268,8 +324,8 @@ export function TrOwnerAiCatalogEnhance({
             productId: productId ?? undefined,
             title,
             category,
-            modelId: selectedModelId,
-            photographyStyle: lilaSelected ? photographyStyle : undefined,
+            modelId,
+            photographyStyle: isLilaHouseModelId(modelId) ? style : undefined,
             pose: "standing-front",
           }),
         {
@@ -289,9 +345,13 @@ export function TrOwnerAiCatalogEnhance({
       onLifestyleImagesChange(produced);
       setPhase("done");
       setProgressLabel(
-        mode === "replace"
-          ? `Model fotoğrafı yenilendi (${modelCredits} kredi).`
-          : `Model fotoğrafı hazır (${modelCredits} kredi).`,
+        productId
+          ? mode === "replace"
+            ? `Model fotoğrafı yenilendi ve kaydedildi (${modelCredits} kredi).`
+            : `Model fotoğrafı kaydedildi (${modelCredits} kredi).`
+          : mode === "replace"
+            ? `Model fotoğrafı yenilendi (${modelCredits} kredi).`
+            : `Model fotoğrafı hazır (${modelCredits} kredi).`,
       );
       setRunMode(null);
       onModelJobsChange?.([]);
@@ -315,9 +375,9 @@ export function TrOwnerAiCatalogEnhance({
     }
   }
 
-  function deleteModelPhoto() {
+  async function deleteModelPhoto() {
     setConfirmDelete(false);
-    setConfirmRegen(false);
+    setRegenOpen(false);
     onLifestyleImagesChange([]);
     setPhase("idle");
     setProgressLabel("");
@@ -325,6 +385,16 @@ export function TrOwnerAiCatalogEnhance({
     setProgressTarget(0);
     setRunMode(null);
     setError(null);
+    if (!productId) return;
+    try {
+      await updateOwnerProduct(productId, { lifestyleImages: [] });
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Model fotoğrafı silinemedi.",
+      );
+    }
   }
 
   if (images.length === 0) return null;
@@ -345,14 +415,35 @@ export function TrOwnerAiCatalogEnhance({
         </p>
       </div>
 
-      <TrOwnerAiModelPicker
-        boutiqueSlug={boutiqueSlug}
-        value={selectedModelId}
-        onChange={onSelectedModelIdChange}
-        photographyStyle={photographyStyle}
-        onPhotographyStyleChange={onPhotographyStyleChange}
-        disabled={disabled || busy || (hasModelPhoto && !confirmRegen)}
-      />
+      {!hasModelPhoto ? (
+        <TrOwnerAiModelPicker
+          boutiqueSlug={boutiqueSlug}
+          value={selectedModelId}
+          onChange={onSelectedModelIdChange}
+          photographyStyle={photographyStyle}
+          onPhotographyStyleChange={onPhotographyStyleChange}
+          disabled={disabled || busy}
+        />
+      ) : !busy && currentModel ? (
+        <div className="flex items-center gap-3 rounded-2xl border border-[color:var(--panel-accent-border)] bg-white px-3 py-3">
+          {currentModel.referenceImageUrls[0] ? (
+            <span className="relative h-14 w-10 shrink-0 overflow-hidden rounded-lg bg-neutral-100">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={currentModel.referenceImageUrls[0]}
+                alt=""
+                className="h-full w-full object-cover object-top"
+              />
+            </span>
+          ) : null}
+          <div className="min-w-0">
+            <p className="text-[15px] font-semibold text-neutral-900">
+              {currentModel.label}
+            </p>
+            <p className="text-[13px] text-neutral-600">Kullanılan model</p>
+          </div>
+        </div>
+      ) : null}
 
       {previewUrls.length > 0 ? (
         <div className={shotCount > 1 ? "grid grid-cols-2 gap-3" : "sm:max-w-xs"}>
@@ -482,80 +573,24 @@ export function TrOwnerAiCatalogEnhance({
         </button>
       ) : null}
 
-      {hasModelPhoto && !busy && !confirmRegen && !confirmDelete ? (
+      {hasModelPhoto && !busy && !confirmDelete ? (
         <div className="space-y-2 border-t border-black/5 pt-3">
           <button
             type="button"
-            className={quietLinkBtn}
+            className={`${panelSecondaryBtnClass} w-full`}
             disabled={disabled}
-            onClick={() => {
-              setConfirmDelete(false);
-              setConfirmRegen(true);
-            }}
+            onClick={openRegenSheet}
           >
-            Yeniden oluştur…
+            Yeniden oluştur
           </button>
           <button
             type="button"
             className={quietLinkBtn}
             disabled={disabled}
-            onClick={() => {
-              setConfirmRegen(false);
-              setConfirmDelete(true);
-            }}
+            onClick={() => setConfirmDelete(true)}
           >
             Model fotoğrafını sil…
           </button>
-        </div>
-      ) : null}
-
-      {confirmRegen && !busy ? (
-        <div
-          className="rounded-xl border border-neutral-200 bg-white p-4"
-          role="alertdialog"
-          aria-labelledby="regen-model-title"
-          aria-describedby="regen-model-body"
-        >
-          <p
-            id="regen-model-title"
-            className="text-[15px] font-semibold text-neutral-900"
-          >
-            Model fotoğrafı yenilensin mi?
-          </p>
-          <p
-            id="regen-model-body"
-            className="mt-1.5 text-[13px] leading-relaxed text-neutral-600"
-          >
-            Mevcut görseller değişir; aynı kareler tekrar eklenmez. Bu işlem{" "}
-            {modelCredits} kredi kullanır.
-          </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <button
-              type="button"
-              className={`${panelPrimaryBtnClass} min-h-10 px-4 py-2 text-[14px]`}
-              disabled={!canGenerate}
-              onClick={() => void runEnhance("replace")}
-            >
-              Evet, yenile
-            </button>
-            <button
-              type="button"
-              className="inline-flex min-h-10 items-center justify-center rounded-lg border border-neutral-200 bg-white px-4 text-[14px] font-semibold text-neutral-700 disabled:opacity-50"
-              disabled={disabled || busy}
-              onClick={() => setConfirmRegen(false)}
-            >
-              Vazgeç
-            </button>
-          </div>
-          {!selectedModelId ? (
-            <p className="mt-2 text-[12px] text-neutral-600">
-              Önce bir model seçin.
-            </p>
-          ) : !selectedReady ? (
-            <p className="mt-2 text-[12px] text-amber-800">
-              Bu modelin referans fotoğrafları henüz eklenmedi.
-            </p>
-          ) : null}
         </div>
       ) : null}
 
@@ -610,7 +645,7 @@ export function TrOwnerAiCatalogEnhance({
         </button>
       ) : null}
 
-      {(!hasModelPhoto && !busy) || (confirmRegen && !busy) ? (
+      {!hasModelPhoto && !busy ? (
         <>
           <TrOwnerCreditsCostLine
             credits={modelCredits}
@@ -637,6 +672,123 @@ export function TrOwnerAiCatalogEnhance({
       {error ? (
         <p className="text-[14px] font-medium text-red-700">{error}</p>
       ) : null}
+
+      {portalReady
+        ? createPortal(
+            <AnimatePresence>
+              {regenOpen && !busy ? (
+                <motion.div
+                  className="fixed inset-0 z-[80] flex items-end justify-center bg-black/45 sm:items-center sm:p-4"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  onClick={() => setRegenOpen(false)}
+                >
+                  <motion.div
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby={regenTitleId}
+                    aria-describedby={regenBodyId}
+                    className="grid w-full max-w-xl grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden rounded-t-3xl border border-[color:var(--panel-accent-border)] bg-white shadow-xl max-h-[calc(100dvh-0.75rem)] sm:rounded-2xl"
+                    initial={{ opacity: 0, y: 24 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 16 }}
+                    transition={{ duration: 0.28, ease }}
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <div className="space-y-3 border-b border-neutral-100 px-5 py-4">
+                      <div>
+                        <p
+                          id={regenTitleId}
+                          className="text-[18px] font-semibold text-neutral-900"
+                        >
+                          Model fotoğrafını yenile
+                        </p>
+                        <p
+                          id={regenBodyId}
+                          className="mt-1 text-[14px] leading-relaxed text-neutral-600"
+                        >
+                          Yeni bir model seçin. Mevcut kare değişir.
+                        </p>
+                      </div>
+                      {previewUrls[0] ? (
+                        <div className="flex items-center gap-3 rounded-xl bg-neutral-50 px-3 py-2">
+                          <span className="relative h-12 w-9 shrink-0 overflow-hidden rounded-md bg-neutral-100">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={previewUrls[0]}
+                              alt=""
+                              className="h-full w-full object-cover"
+                            />
+                          </span>
+                          <p className="text-[13px] text-neutral-600">
+                            Şu anki kare değişecek.
+                          </p>
+                        </div>
+                      ) : null}
+                    </div>
+
+                    <div className="overflow-y-auto px-5 py-4">
+                      <TrOwnerAiModelPicker
+                        boutiqueSlug={boutiqueSlug}
+                        value={regenDraftModelId}
+                        onChange={setRegenDraftModelId}
+                        photographyStyle={regenDraftStyle}
+                        onPhotographyStyleChange={setRegenDraftStyle}
+                        variant="sheet"
+                        allowDeselect={false}
+                      />
+                      {!regenDraftModelId ? (
+                        <p className="mt-3 text-[13px] text-neutral-600">
+                          Önce bir model seçin.
+                        </p>
+                      ) : !regenDraftReady ? (
+                        <p className="mt-3 text-[13px] text-amber-800">
+                          Bu modelin referans fotoğrafları henüz eklenmedi.
+                        </p>
+                      ) : null}
+                    </div>
+
+                    <div className="space-y-2 border-t border-neutral-100 bg-white px-5 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
+                      <button
+                        type="button"
+                        className={`${panelPrimaryBtnClass} w-full`}
+                        disabled={
+                          disabled ||
+                          !regenDraftModelId ||
+                          !regenDraftReady ||
+                          slotSources.length < 2
+                        }
+                        onClick={() => {
+                          if (!regenDraftModelId) return;
+                          void runEnhance("replace", {
+                            modelId: regenDraftModelId,
+                            photographyStyle: regenDraftStyle,
+                          });
+                        }}
+                      >
+                        Model fotoğrafı oluştur
+                      </button>
+                      <p className="text-center text-[13px] text-neutral-500">
+                        {regenDraftCredits} kredi
+                      </p>
+                      <button
+                        type="button"
+                        className={`${panelSecondaryBtnClass} w-full`}
+                        disabled={disabled}
+                        onClick={() => setRegenOpen(false)}
+                      >
+                        Vazgeç
+                      </button>
+                    </div>
+                  </motion.div>
+                </motion.div>
+              ) : null}
+            </AnimatePresence>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }

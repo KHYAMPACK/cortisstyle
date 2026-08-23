@@ -1,7 +1,7 @@
 /**
  * Boutique / studio AI model registry.
  *
- * - Platform defaults: `studio:ayla` (woman) + `studio:deniz` (man)
+ * - Platform defaults: `studio:ayla` + `studio:selin` (women) + `studio:deniz` (man)
  * - Boutique extras: add a row in `BOUTIQUE_AI_MODELS` (no owner upload UI)
  *
  * Ref URLs: env comma-lists override; else public/tr/ai-models paths.
@@ -11,6 +11,7 @@
 import {
   STUDIO_AYLA_PUBLIC_PATH,
   STUDIO_DENIZ_PUBLIC_PATH,
+  STUDIO_SELIN_PUBLIC_PATH,
 } from "@/lib/tr/aiModel/prompts";
 import type {
   TrAiModelGender,
@@ -176,6 +177,15 @@ const STUDIO_MODELS: StudioModelDef[] = [
     gender: "woman",
     envKey: "TR_AI_STUDIO_AYLA_REF_URLS",
     publicPathFallback: STUDIO_AYLA_PUBLIC_PATH,
+    defaultPose: "standing-front",
+  },
+  {
+    id: "studio:selin",
+    label: "Selin",
+    hint: "Kadın · stüdyo",
+    gender: "woman",
+    envKey: "TR_AI_STUDIO_SELIN_REF_URLS",
+    publicPathFallback: STUDIO_SELIN_PUBLIC_PATH,
     defaultPose: "standing-front",
   },
   {

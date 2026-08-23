@@ -70,3 +70,20 @@ export function panelAccentCssVars(hex: string | null | undefined): {
     "--panel-canvas": PANEL_CANVAS,
   };
 }
+
+/** Write accent vars on :root so portaled panel UI (sheets, credits) can inherit. */
+export function syncPanelAccentVarsToDocument(
+  hex: string | null | undefined,
+): () => void {
+  if (typeof document === "undefined") return () => {};
+  const vars = panelAccentCssVars(hex);
+  const root = document.documentElement.style;
+  for (const [key, value] of Object.entries(vars)) {
+    root.setProperty(key, value);
+  }
+  return () => {
+    for (const key of Object.keys(vars)) {
+      root.removeProperty(key);
+    }
+  };
+}

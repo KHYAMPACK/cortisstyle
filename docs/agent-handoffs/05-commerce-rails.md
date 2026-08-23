@@ -47,7 +47,8 @@
 
 ## Agent rules of thumb
 
-- Lila iyzico is **per-boutique env keys** + `boutiqueOffersIyzicoCheckout('lilabutik')`. Do not copy keys into git. Do not set `TR_IYZICO_ENABLED=true` until a live test charge succeeds (banner already hides for Lila via the registry).
+- Lila iyzico is **per-boutique env keys** + `boutiqueOffersIyzicoCheckout('lilabutik')`. Do not copy keys into git. Do not set `TR_IYZICO_ENABLED=true` until a live test charge succeeds (sandbox “kart yakında” banner already hides for Lila via the registry).
+- Lila Alıcı Koruması overlay (`TrIyzicoBuyerProtection`) is **homepage only** — do not show the “iyzico ile öde” bar on PDP / PLP / cart. Footer payment logos stay on every storefront page.
 - Owner mutations often use **service role** after owner auth — don’t expose service key client-side.
 - Keep marketplace and boutique cart stores from writing into each other’s checkout blindly.
 - Tax/legal checklists are ops docs; don’t invent compliance copy without reading existing legal pages/`src/lib/tr/legal/`.

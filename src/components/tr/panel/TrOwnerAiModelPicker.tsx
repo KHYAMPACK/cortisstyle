@@ -18,9 +18,44 @@ interface TrOwnerAiModelPickerProps {
   photographyStyle?: TrLilaPhotographyStyle;
   onPhotographyStyleChange?: (style: TrLilaPhotographyStyle) => void;
   disabled?: boolean;
+  /** Sheet / regen: skip the page heading, keep a 2-col grid. */
+  variant?: "default" | "sheet";
+  /** When false, tapping the active model keeps it selected. */
+  allowDeselect?: boolean;
 }
 
 const LILA_STYLES: TrLilaPhotographyStyle[] = ["blinds", "flash"];
+
+function pickerCardClass(active: boolean): string {
+  return [
+    "relative flex min-h-14 cursor-pointer gap-3 rounded-2xl border-2 px-3 py-3 text-left",
+    "transition-[border-color,background-color,box-shadow,transform] duration-150",
+    "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--panel-accent-deep)]",
+    "disabled:opacity-50",
+    active
+      ? "border-[color:var(--panel-accent)] bg-[color:var(--panel-accent-softer)] shadow-[0_0_0_3px_color-mix(in_srgb,var(--panel-accent)_30%,transparent)]"
+      : "border-neutral-200 bg-white hover:border-neutral-400 hover:bg-neutral-50 hover:shadow-sm",
+  ].join(" ");
+}
+
+function PickerSelectedMark() {
+  return (
+    <span
+      className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full bg-[color:var(--panel-accent)] text-white shadow-sm"
+      aria-hidden
+    >
+      <svg viewBox="0 0 16 16" className="h-3 w-3" fill="none">
+        <path
+          d="M3.5 8.2 6.4 11 12.5 4.8"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </span>
+  );
+}
 
 export function TrOwnerAiModelPicker({
   boutiqueSlug,
@@ -29,6 +64,8 @@ export function TrOwnerAiModelPicker({
   photographyStyle = LILA_DEFAULT_PHOTOGRAPHY_STYLE,
   onPhotographyStyleChange,
   disabled = false,
+  variant = "default",
+  allowDeselect = true,
 }: TrOwnerAiModelPickerProps) {
   const options = listAiModelOptions(boutiqueSlug).filter((o) => o.ready);
   const showLilaStyles = isLilaHouseModelId(value);
@@ -39,24 +76,34 @@ export function TrOwnerAiModelPicker({
     if (defaultId) onChange(defaultId);
   }, [boutiqueSlug, value, onChange]);
 
+  const sheet = variant === "sheet";
+
   return (
     <div className="space-y-3">
-      <div>
-        <p className="text-[17px] font-semibold text-neutral-800">
-          Model seçimi
-        </p>
-        <p className="mt-1 text-[14px] text-neutral-600">
-          {showLilaStyles
-            ? "Kimin üzerinde gösterileceği. Işık stilini siz seçersiniz; poz rastgele."
-            : "Kimin üzerinde gösterileceği. Poz otomatik seçilir."}
-        </p>
-      </div>
+      {sheet ? null : (
+        <div>
+          <p className="text-[17px] font-semibold text-neutral-800">
+            Model seçimi
+          </p>
+          <p className="mt-1 text-[14px] text-neutral-600">
+            {showLilaStyles
+              ? "Kimin üzerinde gösterileceği. Işık stilini siz seçersiniz; poz rastgele."
+              : "Kimin üzerinde gösterileceği. Poz otomatik seçilir."}
+          </p>
+        </div>
+      )}
       {options.length === 0 ? (
         <p className="text-[14px] text-amber-800">
           Hazır model yok. Stüdyo referansları henüz yüklenmedi.
         </p>
       ) : (
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+        <div
+          className={
+            sheet
+              ? "grid grid-cols-1 gap-2 sm:grid-cols-2"
+              : "grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4"
+          }
+        >
           {options.map((option) => {
             const active = value === option.id;
             const thumb = option.referenceImageUrls[0];
@@ -71,16 +118,22 @@ export function TrOwnerAiModelPicker({
                 key={option.id}
                 type="button"
                 disabled={disabled}
-                onClick={() => onChange(active ? null : option.id)}
-                className={`flex min-h-14 gap-3 rounded-2xl border-2 px-3 py-3 text-left transition-all ${
-                  active
-                    ? "border-[color:var(--panel-accent)] bg-[color:var(--panel-accent-softer)]"
-                    : "border-[color:var(--panel-accent-border)] bg-white"
-                } disabled:opacity-50`}
+                onClick={() => {
+                  if (active && !allowDeselect) return;
+                  onChange(active ? null : option.id);
+                }}
+                className={pickerCardClass(active)}
                 aria-pressed={active}
               >
+                {active ? <PickerSelectedMark /> : null}
                 {thumb ? (
-                  <span className="relative h-16 w-12 shrink-0 overflow-hidden rounded-lg bg-neutral-100">
+                  <span
+                    className={`relative h-16 w-12 shrink-0 overflow-hidden rounded-lg bg-neutral-100 ring-2 ${
+                      active
+                        ? "ring-[color:var(--panel-accent)]"
+                        : "ring-transparent"
+                    }`}
+                  >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={thumb}
@@ -89,7 +142,7 @@ export function TrOwnerAiModelPicker({
                     />
                   </span>
                 ) : null}
-                <span className="min-w-0 flex-1">
+                <span className="min-w-0 flex-1 pr-5">
                   <span className="block text-[16px] font-semibold text-neutral-900">
                     {option.label}
                     {genderHint ? (
@@ -98,11 +151,19 @@ export function TrOwnerAiModelPicker({
                       </span>
                     ) : null}
                   </span>
-                  <span className="mt-0.5 block text-[13px] text-neutral-600">
-                    {option.hint}
-                  </span>
-                  <span className="mt-2 inline-block rounded-lg bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-900">
-                    Hazır
+                  {sheet ? null : (
+                    <span className="mt-0.5 block text-[13px] text-neutral-600">
+                      {option.hint}
+                    </span>
+                  )}
+                  <span
+                    className={`mt-2 inline-block rounded-lg px-2 py-0.5 text-[11px] font-semibold ${
+                      active
+                        ? "bg-[color:var(--panel-accent)] text-white"
+                        : "bg-emerald-100 text-emerald-900"
+                    }`}
+                  >
+                    {active ? "Seçili" : "Hazır"}
                   </span>
                 </span>
               </button>
@@ -129,15 +190,18 @@ export function TrOwnerAiModelPicker({
                   type="button"
                   disabled={disabled}
                   onClick={() => onPhotographyStyleChange?.(style)}
-                  className={`flex min-h-14 items-center gap-3 rounded-2xl border-2 px-3 py-3 text-left transition-all ${
-                    active
-                      ? "border-[color:var(--panel-accent)] bg-[color:var(--panel-accent-softer)]"
-                      : "border-[color:var(--panel-accent-border)] bg-white"
-                  } disabled:opacity-50`}
+                  className={`${pickerCardClass(active)} items-center`}
                   aria-pressed={active}
                 >
+                  {active ? <PickerSelectedMark /> : null}
                   {thumb ? (
-                    <span className="relative h-14 w-10 shrink-0 overflow-hidden rounded-lg bg-neutral-100">
+                    <span
+                      className={`relative h-14 w-10 shrink-0 overflow-hidden rounded-lg bg-neutral-100 ring-2 ${
+                        active
+                          ? "ring-[color:var(--panel-accent)]"
+                          : "ring-transparent"
+                      }`}
+                    >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={thumb}
@@ -146,7 +210,7 @@ export function TrOwnerAiModelPicker({
                       />
                     </span>
                   ) : null}
-                  <span className="text-[15px] font-semibold text-neutral-900">
+                  <span className="pr-5 text-[15px] font-semibold text-neutral-900">
                     {LILA_PHOTOGRAPHY_STYLE_LABELS[style]}
                   </span>
                 </button>

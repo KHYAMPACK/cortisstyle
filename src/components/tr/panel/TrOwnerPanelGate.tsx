@@ -4,6 +4,10 @@ import { AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type CSSProperties } from "react";
 import { AuthPopup } from "@/components/AuthPopup";
+import {
+  TrOwnerLeaveGuardProvider,
+  useRequestBusyLeave,
+} from "@/components/tr/panel/TrOwnerLeaveGuard";
 import { TrPanelDesktopSidebar } from "@/components/tr/panel/TrPanelDesktopSidebar";
 import {
   TrPanelMobileChrome,
@@ -20,7 +24,10 @@ import {
   fetchOwnerBoutiques,
   type TrOwnerBoutiqueSummary,
 } from "@/lib/tr/ownerClient";
-import { panelAccentCssVars } from "@/lib/tr/panelTheme";
+import {
+  panelAccentCssVars,
+  syncPanelAccentVarsToDocument,
+} from "@/lib/tr/panelTheme";
 import { trPanelPath } from "@/lib/tr/paths";
 
 interface TrOwnerPanelGateProps {
@@ -34,7 +41,16 @@ interface TrOwnerPanelGateProps {
 const STORAGE_KEY = "tr-panel-boutique-id";
 
 export function TrOwnerPanelGate({ children }: TrOwnerPanelGateProps) {
+  return (
+    <TrOwnerLeaveGuardProvider>
+      <TrOwnerPanelGateBody>{children}</TrOwnerPanelGateBody>
+    </TrOwnerLeaveGuardProvider>
+  );
+}
+
+function TrOwnerPanelGateBody({ children }: TrOwnerPanelGateProps) {
   const pathname = usePathname();
+  const requestLeave = useRequestBusyLeave();
   const { isAuthenticated, isInitializing, signOut } = useAuth();
   const [showAuth, setShowAuth] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -105,6 +121,18 @@ export function TrOwnerPanelGate({ children }: TrOwnerPanelGateProps) {
     activeBoutique?.themeAccent,
   ) as CSSProperties;
 
+  useEffect(() => {
+    return syncPanelAccentVarsToDocument(activeBoutique?.themeAccent);
+  }, [activeBoutique?.themeAccent]);
+
+  const signOutGuarded = () => {
+    if (requestLeave) {
+      requestLeave({ kind: "action", run: () => void signOut() });
+      return;
+    }
+    void signOut();
+  };
+
   const booting = isInitializing || loading;
   const showDesktopSidebar =
     isAuthenticated &&
@@ -140,7 +168,7 @@ export function TrOwnerPanelGate({ children }: TrOwnerPanelGateProps) {
               activeBoutique={activeBoutique}
               setActiveBoutiqueId={setActiveBoutiqueId}
               hasNewOrders={hasNewOrders}
-              onSignOut={() => void signOut()}
+              onSignOut={signOutGuarded}
             />
           </div>
         </div>
@@ -164,7 +192,7 @@ export function TrOwnerPanelGate({ children }: TrOwnerPanelGateProps) {
             setActiveBoutiqueId={setActiveBoutiqueId}
             hasNewOrders={hasNewOrders}
             isAuthenticated={isAuthenticated}
-            onSignOut={() => void signOut()}
+            onSignOut={signOutGuarded}
             onSignIn={() => setShowAuth(true)}
           />
         </div>
@@ -180,7 +208,7 @@ export function TrOwnerPanelGate({ children }: TrOwnerPanelGateProps) {
               setActiveBoutiqueId={setActiveBoutiqueId}
               hasNewOrders={hasNewOrders}
               isAuthenticated={isAuthenticated}
-              onSignOut={() => void signOut()}
+              onSignOut={signOutGuarded}
               onSignIn={() => setShowAuth(true)}
             />
           </div>

@@ -390,6 +390,18 @@ html.intro-loading-cadde body::before {
 }
 
 /*
+ * iyzico injects #iyzi-root on every boutique page. Show the overlay
+ * only on the homepage (`data-iyzico-home` from TrIyzicoBuyerProtection).
+ */
+#iyzi-root {
+  display: none;
+}
+
+html[data-iyzico-home] #iyzi-root {
+  display: block;
+}
+
+/*
  * iyzico Alıcı Koruması `position: header` is position:fixed; top:0
  * (56px ≤460px, 64px above that). Keep boutique sticky chrome below it.
  */

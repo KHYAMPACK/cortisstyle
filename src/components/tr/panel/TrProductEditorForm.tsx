@@ -9,6 +9,7 @@ import {
   type FormEvent,
 } from "react";
 import { TrCatalogBackgroundPicker } from "@/components/tr/panel/TrCatalogBackgroundPicker";
+import { useRegisterLeaveBusy } from "@/components/tr/panel/TrOwnerLeaveGuard";
 import { TrOwnerAiCatalogEnhance } from "@/components/tr/panel/TrOwnerAiCatalogEnhance";
 import { TrOwnerAiFillListing } from "@/components/tr/panel/TrOwnerAiFillListing";
 import {
@@ -253,6 +254,7 @@ export function TrProductEditorForm({
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  useRegisterLeaveBusy("product-editor", uploading || saving || deleting);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [autoSaveState, setAutoSaveState] = useState<

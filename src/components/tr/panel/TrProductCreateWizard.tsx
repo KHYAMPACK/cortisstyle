@@ -11,6 +11,7 @@ import {
   TrOwnerGuidedPhotoUpload,
 } from "@/components/tr/panel/TrOwnerGuidedPhotoUpload";
 import { TrOwnerStorePreview } from "@/components/tr/panel/TrOwnerStorePreview";
+import { useRegisterLeaveBusy } from "@/components/tr/panel/TrOwnerLeaveGuard";
 import { TrOwnerWizardPipelineStatus } from "@/components/tr/panel/TrOwnerWizardPipelineStatus";
 import { TrProductImageLightbox } from "@/components/tr/panel/TrProductImageLightbox";
 import {
@@ -225,6 +226,11 @@ export function TrProductCreateWizard({
 
   const catalogBackground = getCatalogBackground(catalogBackgroundId);
   const modelGenerating = modelJobs.some((j) => j.status === "running");
+  const photoBusy = photoJobs.some((job) => job.status === "running");
+  useRegisterLeaveBusy(
+    "product-create",
+    uploading || photoBusy || modelGenerating || saving,
+  );
   const pipelineJobs = useMemo(
     () => [...photoJobs, ...modelJobs],
     [photoJobs, modelJobs],

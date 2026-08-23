@@ -1,9 +1,11 @@
 import { generateBoutiqueAiModelImage } from "@/lib/tr/aiModel";
+import { getBoutiqueByIdAdmin } from "@/lib/tr/boutiques";
+import { updateProductAdmin } from "@/lib/tr/products";
 import {
   requireOwnedBoutique,
+  requireOwnedProductBoutique,
   requireTrOwner,
 } from "@/lib/tr/ownerAuth";
-import { getBoutiqueByIdAdmin } from "@/lib/tr/boutiques";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -21,7 +23,7 @@ type Body = {
     | "standing-three-quarter"
     | "full-body"
     | "waist-up";
-  /** `boutique:{slug}` or `studio:ayla` / `studio:deniz` */
+  /** `boutique:{slug}` or `studio:ayla` / `studio:selin` / `studio:deniz` */
   modelId?: string;
   /** Lila only: blinds (default) or flash */
   photographyStyle?: "blinds" | "flash";
@@ -85,6 +87,48 @@ export async function POST(request: Request) {
     },
     pose: body.pose,
   });
+
+  const produced = (
+    result.imageUrls?.length
+      ? result.imageUrls
+      : result.imageUrl
+        ? [result.imageUrl]
+        : []
+  )
+    .map((url) => url.trim())
+    .filter(Boolean);
+  const productId = body.productId?.trim();
+
+  if (result.status === "succeeded" && productId && produced.length > 0) {
+    const ownedProduct = await requireOwnedProductBoutique(
+      authResult.auth,
+      productId,
+    );
+    if (!ownedProduct || ownedProduct.productBoutiqueId !== boutiqueId) {
+      return Response.json(
+        { error: "Ürün bu butiğe ait değil." },
+        { status: 403 },
+      );
+    }
+    try {
+      await updateProductAdmin(productId, {
+        lifestyleImages: produced,
+      });
+    } catch {
+      return Response.json(
+        {
+          ok: false,
+          result: {
+            ...result,
+            status: "failed",
+            error:
+              "Model görseli üretildi ama ürüne kaydedilemedi. Tekrar deneyin.",
+          },
+        },
+        { status: 500 },
+      );
+    }
+  }
 
   return Response.json({
     ok: result.status === "succeeded",

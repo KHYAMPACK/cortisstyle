@@ -38,7 +38,7 @@ export interface TrAiModelIdentity {
   notes?: string;
 }
 
-/** Platform studio model (Ayla / Deniz) or boutique house model. */
+/** Platform studio model (Ayla / Selin / Deniz) or boutique house model. */
 export interface TrAiModelOption {
   id: string;
   label: string;
@@ -69,7 +69,7 @@ export interface TrAiModelGenerateRequest {
   /** Force a provider; otherwise env / default stub. */
   providerId?: TrAiModelProviderId;
   /**
-   * Model picker id: `boutique:{slug}` or `studio:ayla` / `studio:deniz`.
+   * Model picker id: `boutique:{slug}` or `studio:ayla` / `studio:selin` / `studio:deniz`.
    * When omitted, falls back to boutique house model for boutiqueSlug.
    */
   modelId?: string;

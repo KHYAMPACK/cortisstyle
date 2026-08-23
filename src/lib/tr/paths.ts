@@ -41,6 +41,17 @@ export function trBoutiquePath(slug: string): string {
   return `/tr/${encodeURIComponent(slug)}`;
 }
 
+/** Boutique home: `/tr/{slug}` or custom-domain `/`. */
+export function isBoutiqueHomePath(
+  pathname: string,
+  boutiqueSlug: string,
+): boolean {
+  const path = (pathname.split("?")[0] ?? pathname).replace(/\/$/, "") || "/";
+  const slug = boutiqueSlug.trim().toLowerCase();
+  if (!slug) return false;
+  return path === "/" || path === trBoutiquePath(slug);
+}
+
 /** Boutique storefront product listing (editorial PLP). */
 export function trBoutiqueProductsPath(
   boutiqueSlug: string,

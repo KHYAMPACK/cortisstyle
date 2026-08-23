@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { TrOwnerAiJobQueueProvider } from "@/components/tr/panel/TrOwnerAiJobQueue";
 import { TrOwnerBatchListingsStep } from "@/components/tr/panel/TrOwnerBatchListingsStep";
+import { useRegisterLeaveBusy } from "@/components/tr/panel/TrOwnerLeaveGuard";
 import {
   TrOwnerBatchModelsStep,
   type ModelRowStatus,
@@ -422,6 +423,7 @@ function BatchCreateFlow({
 
   const step = BATCH_CREATE_STEPS[stepIndex] ?? "photos";
   const packing = jobsRunning(photoJobsById, modelStatusById);
+  useRegisterLeaveBusy("batch-create", packing || saving);
 
   return (
     <TrPanelFadeIn>

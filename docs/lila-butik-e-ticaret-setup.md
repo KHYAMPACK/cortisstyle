@@ -114,7 +114,7 @@ Owners will eventually edit these in panel; seed JSON mirrors the pack.
 - Registry: `BOUTIQUE_AI_MODELS.lilabutik` / `LILABUTIK_LILA_TRYON_REFS` in `src/lib/tr/aiModel/registry.ts`
 - Try-on plates (Cursor gens, full-body): `public/tr/ai-models/lilabutik-lila-{blinds,flash}-{front,three-quarter,hands-behind}.jpg`
 - Panel: pick Lila, then **Panjur** (default) or **Flaş**. Pipeline produces **1** try-on from a random pose among that style’s three plates (1 FASHN credit).
-- Panel picker id: `boutique:lilabutik` (default for Lila; Ayla/Deniz still available, 1 shot). Owners do not pick the pose.
+- Panel picker id: `boutique:lilabutik` (default for Lila; Ayla/Selin/Deniz still available, 1 shot). Owners do not pick the pose.
 - Do **not** reuse this ref for other boutiques. Do **not** regenerate via FASHN `model-create`.
 
 ## Domain & Search Console
@@ -185,7 +185,7 @@ Lila seller snapshot (fill Ayarlar / re-seed to sync DB):
 9. **iyzico website criteria**
    - [ ] Hakkımızda `/yasal/kunye` · Gizlilik · Mesafeli Satış · Teslimat ve İade in footer
    - [ ] Footer payment band (Visa / MC / iyzico) + checkout “iyzico ile öde” badge
-   - [ ] iyzico Alıcı Koruması overlay (`TrIyzicoBuyerProtection` · Lila token in `src/lib/tr/payments/registry.ts`)
+   - [ ] iyzico Alıcı Koruması overlay (`TrIyzicoBuyerProtection` · Lila token in `src/lib/tr/payments/registry.ts` · homepage only)
    - [ ] HTTPS on custom domain
 10. **Ekiz Yazılım** footer watermark (`TrPlatformCredit`) live on storefront — shared for every boutique
 11. Full pre-live list: [13-boutique-wire-in-and-go-live.md](./agent-handoffs/13-boutique-wire-in-and-go-live.md)
