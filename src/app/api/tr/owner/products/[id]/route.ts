@@ -8,6 +8,7 @@ import {
   getProductByIdAdmin,
   updateProductAdmin,
 } from "@/lib/tr/products";
+import { sortProductSizes } from "@/lib/tr/productOptions";
 import {
   readSizeStocks,
   sizeStocksForSizes,
@@ -214,11 +215,19 @@ export async function PATCH(request: Request, context: RouteContext) {
     patch.stock = parsed;
   }
   if (body.sizeStocks !== undefined) {
-    const sizes =
+    const incoming = readSizeStocks(body.sizeStocks);
+    const existingSizes =
       patch.sizes ??
       (await getProductByIdAdmin(id))?.sizes ??
       [];
-    const sizeStocks = sizeStocksForSizes(sizes, readSizeStocks(body.sizeStocks));
+    // New keys (e.g. expanded 42–52) must land on `sizes`, not only size_stocks.
+    const sizes =
+      patch.sizes ??
+      sortProductSizes([
+        ...new Set([...existingSizes, ...Object.keys(incoming)]),
+      ]);
+    const sizeStocks = sizeStocksForSizes(sizes, incoming);
+    patch.sizes = sizes;
     patch.sizeStocks = sizeStocks;
     if (sizes.length > 0) {
       patch.stock = sumSizeStocks(sizeStocks);

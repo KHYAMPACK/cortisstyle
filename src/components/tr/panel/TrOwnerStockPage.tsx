@@ -275,7 +275,11 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
   const patchStock = (
     product: TrProduct,
     next: TrProduct,
-    patch: { stock?: number; sizeStocks?: Record<string, number> },
+    patch: {
+      stock?: number;
+      sizes?: string[];
+      sizeStocks?: Record<string, number>;
+    },
   ) => {
     applyLocal(next);
     if (!revertById.current.has(product.id)) {
@@ -291,6 +295,7 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
         setError(null);
         void updateOwnerProduct(product.id, {
           stock: patch.stock,
+          sizes: patch.sizes,
           sizeStocks: patch.sizeStocks,
         })
           .then((updated) => {
@@ -344,6 +349,7 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
         stock,
       },
       {
+        sizes: persistedSizes,
         sizeStocks: persistedStocks,
         stock,
       },
@@ -369,6 +375,7 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
         stock,
       },
       {
+        sizes: nextSizes,
         sizeStocks: nextStocks,
         stock,
       },
