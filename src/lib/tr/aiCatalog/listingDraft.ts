@@ -154,7 +154,8 @@ ${LISTING_VOICE_RULES}
 
 promptExtra rules:
 - English, under 180 characters.
-- Staging only (ghost mannequin / framing). Do not change the product design.
+- Staging only. ALWAYS ghost mannequin (invisible form, clothing only). Do not change the product design.
+- Source photos may show a hanger or mannequin — do not copy that. Never write on-hanger, hanger, visible mannequin, dress form, flat-lay, or floating.
 - Match the garment as photographed (cut, length, silhouette). Do not invent missing parts.
 - Respect garment view: ${view}
 

@@ -14,7 +14,27 @@ import { uploadTrProductAsset } from "@/lib/tr/trAssetStorage";
 
 /** Staging for packshot — final marketplace asset is Photoroom transparent PNG. */
 export const DEFAULT_PACKSHOT_PROMPT =
-  "ghost mannequin, pressed, symmetric, even studio lighting. Preserve the garment exactly as photographed: fabric, color, details, cut, and length. Do not invent missing parts or change the silhouette.";
+  "ghost mannequin packshot. Invisible ghost-mannequin form, clothing only, hollow neck and sleeve openings. No hanger, no hook, no visible mannequin, no dress form, no person. Pressed, symmetric, even studio lighting. Preserve the garment exactly as photographed: fabric, color, details, cut, and length. Do not invent missing parts or change the silhouette.";
+
+/** Always last so FASHN does not copy hanger / visible-mannequin from the source. */
+export const PACKSHOT_PRESENTATION_LOCK =
+  "Presentation: ghost mannequin packshot only. Clothing only — no hanger, no visible mannequin.";
+
+const CONFLICTING_PACKSHOT_PRESENTATION =
+  /\b(on[- ]hanger|on a hanger|on the hanger|clothes hangers?|hanger hook|visible mannequin|dress forms?|flat[- ]lay(?: packshot)?|floating garment|on a (?:visible )?mannequin|on mannequin)\b/gi;
+
+export function stripConflictingPackshotPresentation(text: string): string {
+  return text.replace(CONFLICTING_PACKSHOT_PRESENTATION, " ").replace(/\s+/g, " ").trim();
+}
+
+export function finalizePackshotPrompt(prompt?: string | null): string {
+  const stripped = stripConflictingPackshotPresentation(
+    prompt?.trim() || DEFAULT_PACKSHOT_PROMPT,
+  );
+  const base = stripped || DEFAULT_PACKSHOT_PROMPT;
+  if (base.includes(PACKSHOT_PRESENTATION_LOCK)) return base;
+  return `${base} ${PACKSHOT_PRESENTATION_LOCK}`;
+}
 
 export interface FashnPackshotParams {
   productImageUrl: string;
@@ -80,7 +100,7 @@ export async function generateFashnPackshot(
   }
 
   const numImages = Math.min(4, Math.max(1, params.numImages ?? 1));
-  const prompt = params.prompt?.trim() || DEFAULT_PACKSHOT_PROMPT;
+  const prompt = finalizePackshotPrompt(params.prompt);
 
   try {
     const run = await fashnRunAndWait({

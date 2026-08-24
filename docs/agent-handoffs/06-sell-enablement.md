@@ -27,7 +27,7 @@ Boutique owners polish product photos in create/edit:
 | Concern | Path |
 |---------|------|
 | FASHN client | `src/lib/tr/fashn/` (`packshot`, `tryon` only — not model-create) |
-| Packshot prompt (heuristic + Gemini) | `src/lib/tr/aiCatalog/` (`resolvePackshotPrompt`, `packshotPrompt`) |
+| Packshot prompt (heuristic + Gemini) | `src/lib/tr/aiCatalog/` (`resolvePackshotPrompt`, `packshotPrompt`) — always **ghost mannequin** (clothing only; never hanger / visible mannequin) |
 | Try-on / model registry | `src/lib/tr/aiModel/` (`registry`, `prompts`, `providers`) |
 | Usage log | `src/lib/tr/aiUsage.ts`, `supabase/patch_tr_ai_usage.sql`, `GET /api/tr/owner/ai-credits` |
 | APIs | `POST /api/tr/owner/ai-catalog/packshot`, `POST /api/tr/owner/ai-model/generate` |

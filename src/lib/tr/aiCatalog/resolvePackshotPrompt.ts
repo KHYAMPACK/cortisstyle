@@ -73,6 +73,8 @@ Return JSON only:
 Rules:
 - CRITICAL: This photo is the BACK of the garment. Reinforce rear/back view. Never convert to front.
 - Staging only. Do not change product design. Under 180 characters.
+- ALWAYS ghost mannequin presentation (invisible form, clothing only). Source may show a hanger or mannequin — do not copy that.
+- Never write on-hanger, hanger, visible mannequin, dress form, flat-lay, or floating.
 - Match the garment as photographed (cut, length, silhouette). Do not invent missing parts.
 - Known view line: "${PACKSHOT_VIEW_PROMPT.back}"
 - Base style: "${DEFAULT_PACKSHOT_PROMPT}"
