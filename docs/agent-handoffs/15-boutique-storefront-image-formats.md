@@ -17,7 +17,7 @@ There is no separate “publish to storefront” upload. Format is chosen **when
 
 Schema: `supabase/patch_tr_product_storefront_images.sql` still applies so the leftover column exists. Code omits the column if missing.
 
-Packshot: `src/lib/tr/fashn/packshot.ts` keeps alpha PNG. Flatten helpers (`src/lib/tr/assets/flattenCutoutToStorefront.ts`, `buildStorefrontImageUrls`) are **not** called on product create/update. Boutique gallery: `getStorefrontGalleryImages` / `getProductCoverImageFor("boutique")` use `preferStorefront: false` so the PNG wins. Cadde `/tr/parca` uses `getMarketplaceGalleryImages` (PNG + lifestyle). Google Merchant uses boutique cover (PNG).
+Packshot: `src/lib/tr/fashn/packshot.ts` keeps alpha PNG. Flatten helpers (`src/lib/tr/assets/flattenCutoutToStorefront.ts`, `buildStorefrontImageUrls`) are **not** called on product create/update. Boutique gallery: `getStorefrontGalleryImages` uses `shopperFacingGallery` — model/try-on shots first when `lifestyleImages` exist, then packshot PNG; owner manken copies in `marketplaceImages[0..2]` stay off the shopper gallery (`orijinaller` / `images`). `getProductCoverImageFor("boutique")` is the packshot when lifestyle exists (PLP hover pair). Cadde `/tr/parca` uses `getMarketplaceGalleryImages` (same shopper order). Google Merchant uses boutique cover (PNG).
 
 Photoroom **intermediate** stays PNG. JPEG cannot hold transparency.
 

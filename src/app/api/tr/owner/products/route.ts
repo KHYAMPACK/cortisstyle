@@ -11,6 +11,10 @@ import {
 import { parseTryToKurus } from "@/types/tr-marketplace";
 import type { TrProductColor, TrProductStatus } from "@/types/tr-marketplace";
 import { sanitizeProductFeatures } from "@/lib/tr/catalog/productFeatures";
+import {
+  alignMarketplaceSlots,
+  cleanedLifestyleImages,
+} from "@/lib/tr/productImages";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -195,7 +199,11 @@ export async function POST(request: Request) {
   }
 
   try {
-    const marketplaceImages = readStringArray(body.marketplaceImages) ?? [];
+    const images = readStringArray(body.images) ?? [];
+    const marketplaceImages = alignMarketplaceSlots(
+      images,
+      readStringArray(body.marketplaceImages) ?? [],
+    );
     const catalogBackgroundId =
       typeof body.catalogBackgroundId === "string"
         ? body.catalogBackgroundId.trim() || null
@@ -211,10 +219,12 @@ export async function POST(request: Request) {
       sizes,
       colors: readColors(body.colors) ?? [],
       category: typeof body.category === "string" ? body.category : null,
-      images: readStringArray(body.images) ?? [],
+      images,
       marketplaceImages,
       storefrontImages: [],
-      lifestyleImages: readStringArray(body.lifestyleImages) ?? [],
+      lifestyleImages: cleanedLifestyleImages(
+        readStringArray(body.lifestyleImages),
+      ),
       catalogBackgroundId,
       features: sanitizeProductFeatures(body.features),
       conditionLabel:

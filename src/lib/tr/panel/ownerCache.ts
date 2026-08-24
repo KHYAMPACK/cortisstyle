@@ -2,6 +2,17 @@ const TTL_MS = 20_000;
 
 const memory = new Map<string, { at: number; data: unknown }>();
 const inflight = new Map<string, Promise<unknown>>();
+const generation = new Map<string, number>();
+
+function matchesPrefix(key: string, prefix: string): boolean {
+  return (
+    key === prefix || key.startsWith(`${prefix}:`) || key.startsWith(prefix)
+  );
+}
+
+function bumpGeneration(key: string): void {
+  generation.set(key, (generation.get(key) ?? 0) + 1);
+}
 
 export function peekOwnerCache<T>(key: string): T | undefined {
   const hit = memory.get(key);
@@ -11,8 +22,12 @@ export function peekOwnerCache<T>(key: string): T | undefined {
 
 export function invalidateOwnerCache(prefix: string): void {
   for (const key of [...memory.keys()]) {
-    if (key === prefix || key.startsWith(`${prefix}:`) || key.startsWith(prefix)) {
-      memory.delete(key);
+    if (matchesPrefix(key, prefix)) memory.delete(key);
+  }
+  for (const key of [...inflight.keys()]) {
+    if (matchesPrefix(key, prefix)) {
+      inflight.delete(key);
+      bumpGeneration(key);
     }
   }
 }
@@ -34,14 +49,17 @@ export function cachedOwnerFetch<T>(
   const pending = inflight.get(key);
   if (pending) return pending as Promise<T>;
 
+  const gen = generation.get(key) ?? 0;
   const promise = load()
     .then((data) => {
-      memory.set(key, { at: Date.now(), data });
-      inflight.delete(key);
+      if (inflight.get(key) === promise) inflight.delete(key);
+      if ((generation.get(key) ?? 0) === gen) {
+        memory.set(key, { at: Date.now(), data });
+      }
       return data;
     })
     .catch((error: unknown) => {
-      inflight.delete(key);
+      if (inflight.get(key) === promise) inflight.delete(key);
       throw error;
     });
   inflight.set(key, promise);
@@ -51,6 +69,7 @@ export function cachedOwnerFetch<T>(
 export const ownerCacheKeys = {
   boutiques: "boutiques",
   products: (boutiqueId: string) => `products:${boutiqueId}`,
+  productOriginals: (boutiqueId: string) => `product-originals:${boutiqueId}`,
   orders: (boutiqueId: string) => `orders:${boutiqueId}`,
   summary: (boutiqueId: string, range: string) =>
     `summary:${boutiqueId}:${range}`,

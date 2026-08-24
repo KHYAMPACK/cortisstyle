@@ -12,6 +12,7 @@ export {
 } from "@/lib/tr/fashn/client";
 export {
   DEFAULT_PACKSHOT_PROMPT,
+  ELBISE_PACKSHOT_PROMPT,
   generateFashnPackshot,
 } from "@/lib/tr/fashn/packshot";
 export { generateFashnTryOn } from "@/lib/tr/fashn/tryon";

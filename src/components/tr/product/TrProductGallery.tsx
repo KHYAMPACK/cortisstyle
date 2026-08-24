@@ -83,7 +83,7 @@ export function TrProductGallery({ product }: TrProductGalleryProps) {
             aria-selected={selected}
             aria-label={`Görsel ${index + 1}`}
             onClick={() => setActiveIndex(index)}
-            className={`relative h-14 w-11 shrink-0 overflow-hidden bg-[#f3f1ec] transition-opacity md:h-16 md:w-12 ${
+            className={`relative h-14 w-11 shrink-0 overflow-hidden bg-white transition-opacity md:h-16 md:w-12 ${
               selected
                 ? "opacity-100 ring-1 ring-neutral-900"
                 : "opacity-70 hover:opacity-100"
@@ -107,7 +107,7 @@ export function TrProductGallery({ product }: TrProductGalleryProps) {
       {thumbs}
 
       <div
-        className={`relative aspect-[2/3] min-w-0 flex-1 overflow-hidden bg-[#f3f1ec] ${
+        className={`relative aspect-[2/3] min-w-0 flex-1 overflow-hidden bg-white ${
           fineHover ? "cursor-zoom-in" : "cursor-pointer"
         }`}
       >

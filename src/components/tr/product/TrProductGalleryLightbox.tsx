@@ -198,7 +198,7 @@ export function TrProductGalleryLightbox({
                     aria-selected={selected}
                     aria-label={`Görsel ${imageIndex + 1}`}
                     onClick={() => onIndexChange(imageIndex)}
-                    className={`relative h-16 w-12 shrink-0 overflow-hidden bg-[#f3f1ec] ${
+                    className={`relative h-16 w-12 shrink-0 overflow-hidden bg-white ${
                       selected
                         ? "opacity-100 ring-1 ring-white"
                         : "opacity-55 hover:opacity-100"

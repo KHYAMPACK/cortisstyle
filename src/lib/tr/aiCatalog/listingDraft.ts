@@ -8,6 +8,9 @@ import {
   parseAiCategoryId,
 } from "@/lib/tr/catalog/categories";
 import { TR_OWNER_PRODUCT_LIMITS } from "@/lib/tr/ownerProductConstraints";
+import { dressGeminiEnumHint, resolveDressFeatureValue } from "@/lib/tr/catalog/dressFeatures";
+import { hasElbiseLockedConstruction } from "@/lib/tr/aiCatalog/elbiseConstructionLock";
+import { ELBISE_PACKSHOT_PROMPT } from "@/lib/tr/fashn/packshot";
 
 const GEMINI_MODELS = [
   "gemini-2.5-flash",
@@ -20,6 +23,8 @@ export interface ProductListingDraft {
   description: string;
   features: TrProductFeatures;
   category?: string | null;
+  /** Elbise: English FASHN lock for the front packshot only. */
+  promptFront?: string | null;
 }
 
 function geminiGenerateUrl(model: string): string {
@@ -61,6 +66,7 @@ export function sanitizeListingDraft(raw: {
   description?: string | null;
   features?: unknown;
   category?: unknown;
+  promptFront?: string | null;
 }): ProductListingDraft | null {
   let title = (raw.title ?? "")
     .replace(/\s+/g, " ")
@@ -77,12 +83,17 @@ export function sanitizeListingDraft(raw: {
   title = title.slice(0, TR_OWNER_PRODUCT_LIMITS.titleMax);
   description = description.slice(0, TR_OWNER_PRODUCT_LIMITS.descriptionMax);
 
-  // Prefer keeping a short description; allow empty if model returned only a title
+  const promptFront = (raw.promptFront ?? "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 600);
+
   return {
     title,
     description,
     features: sanitizeProductFeatures(raw.features),
     category: parseAiCategoryId(raw.category),
+    promptFront: promptFront || null,
   };
 }
 
@@ -191,7 +202,36 @@ export async function callGeminiJsonVision(params: {
   mimeType: string;
   data: string;
   systemText: string;
+  extraImages?: Array<{ mimeType: string; data: string; label?: string }>;
 }): Promise<Record<string, unknown> | null> {
+  const imageParts: Array<Record<string, unknown>> = [];
+  imageParts.push({
+    text: params.extraImages?.length ? "Image 1 FRONT ON MODEL" : "",
+  });
+  imageParts.push({
+    inlineData: {
+      mimeType: params.mimeType,
+      data: params.data,
+    },
+  });
+  (params.extraImages ?? []).forEach((image, index) => {
+    const label = image.label?.trim() || `Image ${index + 2}`;
+    imageParts.push({ text: label });
+    imageParts.push({
+      inlineData: {
+        mimeType: image.mimeType,
+        data: image.data,
+      },
+    });
+  });
+
+  const parts = [{ text: params.systemText }, ...imageParts.filter((part) => {
+    if ("text" in part && typeof part.text === "string" && !part.text.trim()) {
+      return false;
+    }
+    return true;
+  })];
+
   const response = await fetch(geminiGenerateUrl(params.model), {
     method: "POST",
     headers: {
@@ -201,15 +241,7 @@ export async function callGeminiJsonVision(params: {
     body: JSON.stringify({
       contents: [
         {
-          parts: [
-            { text: params.systemText },
-            {
-              inlineData: {
-                mimeType: params.mimeType,
-                data: params.data,
-              },
-            },
-          ],
+          parts,
         },
       ],
       generationConfig: {
@@ -267,6 +299,17 @@ export async function callGeminiJsonVision(params: {
 export async function draftProductListingFromImage(input: {
   sourceImageUrl: string;
   category?: string | null;
+  backImageUrl?: string | null;
+  detailImageUrl?: string | null;
+  uploadType?: string | null;
+  existingTitle?: string | null;
+  existingDescription?: string | null;
+  lockedConstruction?: {
+    neckline?: string | null;
+    sleeves?: string | null;
+    length?: string | null;
+    decollete?: string | null;
+  } | null;
 }): Promise<ProductListingDraft | null> {
   const llm = resolveLlmProvider();
   if (llm?.provider !== "gemini") return null;
@@ -277,12 +320,38 @@ export async function draftProductListingFromImage(input: {
   ]);
   if (!image) return null;
 
+  const extraImages: Array<{ mimeType: string; data: string; label: string }> =
+    [];
+  for (const extra of [
+    { url: input.backImageUrl, label: "Image 2 BACK ON MODEL" },
+    { url: input.detailImageUrl, label: "Image 3 DECOLLETE DETAIL ON MODEL" },
+  ]) {
+    if (!extra.url?.trim()) continue;
+    const fetched = await Promise.race([
+      fetchImageAsBase64ForVision(extra.url),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 15_000)),
+    ]);
+    if (fetched) extraImages.push({ ...fetched, label: extra.label });
+  }
+
+  const locked = input.lockedConstruction;
+  const rewrite = hasElbiseLockedConstruction(locked);
+  const elbise = extraImages.length > 0 || input.uploadType === "elbise";
   const models = Array.from(new Set([llm.model, ...GEMINI_MODELS]));
-  const systemText = listingDraftSystemPrompt({
-    category: input.category,
-    includePromptExtra: false,
-    viewHint: "front",
-  });
+  const systemText = rewrite
+    ? dressPackshotRewritePrompt({
+        neckline: locked!.neckline!.trim(),
+        sleeves: locked!.sleeves!.trim(),
+        length: locked!.length!.trim(),
+        decollete: locked?.decollete?.trim() || "",
+      })
+    : elbise
+      ? dressListingSystemPrompt()
+      : listingDraftSystemPrompt({
+          category: input.category,
+          includePromptExtra: false,
+          viewHint: "front",
+        });
 
   for (const model of models) {
     try {
@@ -293,18 +362,41 @@ export async function draftProductListingFromImage(input: {
           mimeType: image.mimeType,
           data: image.data,
           systemText,
+          extraImages,
         }),
         new Promise<null>((resolve) => setTimeout(() => resolve(null), 25_000)),
       ]);
       if (!parsed) continue;
       const draft = sanitizeListingDraft({
-        title: typeof parsed.title === "string" ? parsed.title : null,
+        title:
+          (typeof parsed.title === "string" ? parsed.title : null) ||
+          input.existingTitle ||
+          null,
         description:
-          typeof parsed.description === "string" ? parsed.description : null,
+          (typeof parsed.description === "string" ? parsed.description : null) ||
+          input.existingDescription ||
+          null,
         features: parsed.features,
-        category: parsed.category,
+        category: parsed.category ?? (elbise || rewrite ? "elbise" : null),
+        promptFront:
+          typeof parsed.promptFront === "string" ? parsed.promptFront : null,
       });
-      if (draft) return draft;
+      if (!draft) continue;
+      if (rewrite && locked) {
+        const neckline = resolveDressFeatureValue("neckline", locked.neckline);
+        const sleeves = resolveDressFeatureValue("sleeves", locked.sleeves);
+        const length = resolveDressFeatureValue("length", locked.length);
+        const decollete = resolveDressFeatureValue(
+          "decollete",
+          locked.decollete,
+        );
+        if (neckline) draft.features.neckline = neckline;
+        if (sleeves) draft.features.sleeves = sleeves;
+        if (length) draft.features.length = length;
+        if (decollete) draft.features.decollete = decollete;
+        else delete draft.features.decollete;
+      }
+      return draft;
     } catch (error) {
       console.warn(
         "[listing-draft] Gemini failed:",
@@ -314,4 +406,92 @@ export async function draftProductListingFromImage(input: {
   }
 
   return null;
+}
+
+function dressListingSystemPrompt(): string {
+  return `You help a Turkish boutique list a DRESS (elbise) from on-model photos.
+
+Return JSON only:
+{
+  "title": "Turkish product name",
+  "description": "Turkish elegant two-sentence product detail",
+  "features": {
+    "gender": "Kadın",
+    "color": "",
+    "neckline": "",
+    "sleeves": "",
+    "length": "",
+    "decollete": "",
+    "fabric": "",
+    "zipper": "",
+    "stretch": "",
+    "silhouette": "",
+    "composition": ""
+  },
+  "category": "elbise",
+  "promptFront": "English FASHN packshot lock, under 400 characters"
+}
+
+title:
+- Color + elbise + one concrete visible detail. Max ~40 chars. No invented brand.
+
+description:
+- Exactly 2 Turkish sentences. Use only what is photographed (neckline, sleeves, length, hem/lace, straps, fabric look).
+- Do not invent zipper, stretch %, or fiber unless visible.
+
+features — use these enum ids (omit key if not visible):
+${dressGeminiEnumHint()}
+- color: Turkish color name from the photo.
+- gender: almost always Kadın.
+- composition: ONLY if a care label with fiber % is readable. Never invent percentages.
+- Fermuar/kapama IS allowed as zipper. Omit if you cannot see a zipper.
+
+promptFront:
+- English. Staging + construction lock for ONE front ghost-mannequin packshot.
+- Base look: "${ELBISE_PACKSHOT_PROMPT}"
+- Name the exact neckline, sleeve length, and hem length from ALL photos.
+- sleeves is independent of yaka: polo/shirt dresses often have short or long sleeves; straplez is usually kolsuz. Do not assume sleeveless from yaka.
+- If sleeveless, say so via sleeves=kolsuz. If short/three-quarter/long sleeves are visible, lock that. Do not invent or remove sleeves, off-shoulder drape, or arm flaps.
+- Do not invent missing parts. Do not turn the dress into a skirt. Do not describe a back packshot or a person.
+`;
+}
+
+function dressPackshotRewritePrompt(locked: {
+  neckline: string;
+  sleeves: string;
+  length: string;
+  decollete: string;
+}): string {
+  const detay = locked.decollete
+    ? `- Decollete/detail: ${locked.decollete}`
+    : "- Decollete: none specified — do not invent cleavage or extra cutouts.";
+  return `You rewrite ONLY the English FASHN packshot prompt for this exact dress.
+
+LOCKED construction — do not contradict, do not invent a different neckline, sleeves, or length:
+- Neckline (yaka): ${locked.neckline}
+- Sleeves (kol): ${locked.sleeves}
+- Length (boy): ${locked.length}
+${detay}
+
+Return JSON only:
+{
+  "title": "short Turkish product name",
+  "description": "two Turkish sentences",
+  "promptFront": "English FASHN packshot lock, under 400 characters",
+  "category": "elbise",
+  "features": {
+    "neckline": "",
+    "sleeves": "",
+    "length": "",
+    "decollete": ""
+  }
+}
+
+promptFront:
+- Base look: "${ELBISE_PACKSHOT_PROMPT}"
+- Must match the LOCKED yaka, kol, and boy exactly.
+- Sleeves come only from the locked kol chip — do not infer sleeveless from yaka (polo can have sleeves).
+- Do not invent off-shoulder drape or arm flaps.
+- Do not describe a person or a back packshot.
+`;
 }

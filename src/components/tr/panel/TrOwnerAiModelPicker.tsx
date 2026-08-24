@@ -22,6 +22,10 @@ interface TrOwnerAiModelPickerProps {
   variant?: "default" | "sheet";
   /** When false, tapping the active model keeps it selected. */
   allowDeselect?: boolean;
+  /** Elbise try-on uses grey-studio plates — no blinds/flash picker. */
+  hidePhotographyStyle?: boolean;
+  /** When false, do not auto-pick the house model (lifestyle shots already exist). */
+  autoSelectDefault?: boolean;
 }
 
 const LILA_STYLES: TrLilaPhotographyStyle[] = ["blinds", "flash"];
@@ -66,15 +70,18 @@ export function TrOwnerAiModelPicker({
   disabled = false,
   variant = "default",
   allowDeselect = true,
+  hidePhotographyStyle = false,
+  autoSelectDefault = true,
 }: TrOwnerAiModelPickerProps) {
   const options = listAiModelOptions(boutiqueSlug).filter((o) => o.ready);
-  const showLilaStyles = isLilaHouseModelId(value);
+  const showLilaStyles =
+    isLilaHouseModelId(value) && !hidePhotographyStyle;
 
   useEffect(() => {
-    if (value) return;
+    if (value || !autoSelectDefault) return;
     const defaultId = getDefaultReadyAiModelId(boutiqueSlug);
     if (defaultId) onChange(defaultId);
-  }, [boutiqueSlug, value, onChange]);
+  }, [autoSelectDefault, boutiqueSlug, value, onChange]);
 
   const sheet = variant === "sheet";
 
@@ -88,7 +95,9 @@ export function TrOwnerAiModelPicker({
           <p className="mt-1 text-[14px] text-neutral-600">
             {showLilaStyles
               ? "Kimin üzerinde gösterileceği. Işık stilini siz seçersiniz; poz rastgele."
-              : "Kimin üzerinde gösterileceği. Poz otomatik seçilir."}
+              : hidePhotographyStyle
+                ? "Kimin üzerinde gösterileceği. Poz: üç-çeyrek ve sırt (detay varsa üçüncü kare)."
+                : "Kimin üzerinde gösterileceği. Poz otomatik seçilir."}
           </p>
         </div>
       )}

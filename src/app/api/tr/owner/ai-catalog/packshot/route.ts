@@ -1,5 +1,6 @@
 import { generateOwnerPackshot } from "@/lib/tr/aiCatalog/generatePackshot";
 import { sanitizeListingDraft } from "@/lib/tr/aiCatalog/listingDraft";
+import { isElbiseUpload } from "@/lib/tr/catalog/garmentUploadTypes";
 import { getBoutiqueByIdAdmin } from "@/lib/tr/boutiques";
 import {
   requireOwnedBoutique,
@@ -15,7 +16,7 @@ type Body = {
   productId?: string;
   title?: string;
   category?: string | null;
-  view?: "front" | "back" | "extra";
+  view?: "front" | "back" | "extra" | "detail";
   promptExtra?: string;
   /** Precomputed from prepare-packshot — skips Gemini in this request. */
   prompt?: string;
@@ -24,8 +25,11 @@ type Body = {
     description: string;
     features?: unknown;
     category?: string | null;
+    promptFront?: string | null;
   } | null;
   numImages?: number;
+  skipPhotoroom?: boolean;
+  uploadType?: string | null;
 };
 
 /**
@@ -76,7 +80,7 @@ export async function POST(request: Request) {
     sourceImageUrl,
     title: body.title,
     category: body.category,
-    view: body.view,
+    view: body.view === "detail" ? "front" : body.view,
     promptExtra: body.promptExtra,
     prompt: body.prompt,
     listingDraft: body.listingDraft
@@ -85,9 +89,12 @@ export async function POST(request: Request) {
           description: body.listingDraft.description,
           features: body.listingDraft.features,
           category: body.listingDraft.category,
+          promptFront: body.listingDraft.promptFront,
         })
       : null,
     numImages: body.numImages,
+    skipPhotoroom:
+      Boolean(body.skipPhotoroom) || isElbiseUpload(body.uploadType),
   });
 
   return Response.json({

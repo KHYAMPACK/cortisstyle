@@ -1,0 +1,183 @@
+import {
+  buildElbiseTryOnConstructionLock,
+  type ElbiseConstructionChips,
+} from "@/lib/tr/aiCatalog/elbiseConstructionLock";
+import {
+  NATURAL_TRYON_PROMPT,
+  NATURAL_TRYON_PROMPT_BACK,
+} from "@/lib/tr/aiModel/prompts";
+import { getElbiseTryOnPlates } from "@/lib/tr/aiModel/registry";
+import type {
+  TrAiModelGenerateShot,
+  TrAiModelPose,
+} from "@/lib/tr/aiModel/types";
+import {
+  dressFeatureOptionId,
+  resolveDressFeatureValue,
+} from "@/lib/tr/catalog/dressFeatures";
+
+export type { ElbiseConstructionChips };
+
+const HEM_VISIBLE =
+  "Full body: the hem must be fully visible. Do not crop at the knees or thighs. Keep closed-toe black heels on both feet — never barefoot.";
+
+const DETAIL_EXTRA =
+  "Show the locked detail clearly (decollete, lace, straps, or hem finish) without cropping the hem — keep full body so exact length remains visible.";
+
+export function hasElbiseDetay(
+  chips: ElbiseConstructionChips | null | undefined,
+): boolean {
+  const value = resolveDressFeatureValue("decollete", chips?.decollete);
+  if (!value) return false;
+  return dressFeatureOptionId("decollete", value) !== "yok";
+}
+
+export function elbiseModelShotCount(
+  chips: ElbiseConstructionChips | null | undefined,
+  modelId?: string | null,
+  detailImageUrl?: string | null,
+): 1 | 2 | 3 {
+  const detail =
+    hasElbiseDetay(chips) && Boolean(detailImageUrl?.trim());
+  if (modelId?.trim()) {
+    const plates = getElbiseTryOnPlates(modelId);
+    if (plates && !plates.back) {
+      return detail ? 2 : 1;
+    }
+  }
+  return detail ? 3 : 2;
+}
+
+/** Owner-facing label for lifestyle slot i (matches `buildElbiseTryOnShots` order). */
+export function elbiseLifestyleShotLabel(
+  index: number,
+  shotCount: number,
+  hasBackPlate = true,
+): string {
+  if (shotCount <= 1) return "Model karesi";
+  if (index === 0) return "Üç-çeyrek";
+  if (hasBackPlate) {
+    if (index === 1) return "Sırt";
+    if (index === 2) return "Detay";
+  } else if (index === 1) {
+    return "Detay";
+  }
+  return `Kare ${index + 1}`;
+}
+
+export function chipsFromProductFeatures(
+  features:
+    | {
+        neckline?: string | null;
+        length?: string | null;
+        decollete?: string | null;
+        sleeves?: string | null;
+      }
+    | null
+    | undefined,
+): ElbiseConstructionChips {
+  return {
+    neckline: features?.neckline ?? null,
+    sleeves: features?.sleeves ?? null,
+    length: features?.length ?? null,
+    decollete: features?.decollete ?? null,
+  };
+}
+
+function tryOnPrompt(
+  chips: ElbiseConstructionChips,
+  kind: "front" | "back" | "detail",
+): string {
+  const base =
+    kind === "back" ? NATURAL_TRYON_PROMPT_BACK : NATURAL_TRYON_PROMPT;
+  const lock = buildElbiseTryOnConstructionLock(chips);
+  const extra = kind === "detail" ? DETAIL_EXTRA : HEM_VISIBLE;
+  return [base, lock, extra].filter(Boolean).join(" ");
+}
+
+export interface BuildElbiseTryOnShotsInput {
+  modelId: string;
+  packshotUrl: string;
+  backMankenUrl: string;
+  detailMankenUrl?: string | null;
+  chips?: ElbiseConstructionChips | null;
+}
+
+export interface BuildElbiseTryOnShotsResult {
+  shots: TrAiModelGenerateShot[];
+  error?: string;
+}
+
+function shot(
+  pose: TrAiModelPose,
+  cutoutImageUrl: string,
+  modelReferenceUrl: string,
+  prompt: string,
+): TrAiModelGenerateShot {
+  return { pose, cutoutImageUrl, modelReferenceUrl, prompt };
+}
+
+/**
+ * Elbise lifestyle shots: 2 (3/4 + back) or 3 when detay chip and photo exist.
+ * Garment: packshot → front; arka manken → back; detay photo → third.
+ */
+export function buildElbiseTryOnShots(
+  input: BuildElbiseTryOnShotsInput,
+): BuildElbiseTryOnShotsResult {
+  const chips = input.chips ?? {};
+  const plates = getElbiseTryOnPlates(input.modelId);
+  if (!plates) {
+    return { shots: [], error: "Bu model için elbise poz plakaları yok." };
+  }
+
+  const packshot = input.packshotUrl.trim();
+  if (!packshot) {
+    return {
+      shots: [],
+      error: "Model için ön packshot gerekli. Önce katalogu onaylayın.",
+    };
+  }
+
+  const backManken = input.backMankenUrl.trim();
+  const detailManken = input.detailMankenUrl?.trim() || "";
+  const wantDetail = hasElbiseDetay(chips) && Boolean(detailManken);
+
+  const shots: TrAiModelGenerateShot[] = [
+    shot(
+      "standing-three-quarter",
+      packshot,
+      plates.threeQuarter,
+      tryOnPrompt(chips, "front"),
+    ),
+  ];
+
+  if (plates.back) {
+    if (!backManken) {
+      return {
+        shots: [],
+        error: "Sırt model karesi için arka manken fotoğrafı gerekli.",
+      };
+    }
+    shots.push(
+      shot(
+        "standing-back",
+        backManken,
+        plates.back,
+        tryOnPrompt(chips, "back"),
+      ),
+    );
+  }
+
+  if (wantDetail) {
+    shots.push(
+      shot(
+        "standing-three-quarter",
+        detailManken,
+        plates.threeQuarter,
+        tryOnPrompt(chips, "detail"),
+      ),
+    );
+  }
+
+  return { shots };
+}

@@ -1,4 +1,8 @@
+import { hasElbiseLockedConstruction } from "@/lib/tr/aiCatalog/elbiseConstructionLock";
+import { draftProductListingFromImage } from "@/lib/tr/aiCatalog/listingDraft";
+import { buildElbisePackshotPrompt } from "@/lib/tr/aiCatalog/packshotPrompt";
 import { resolvePackshotPrompt } from "@/lib/tr/aiCatalog/resolvePackshotPrompt";
+import { isElbiseUpload } from "@/lib/tr/catalog/garmentUploadTypes";
 import { getBoutiqueByIdAdmin } from "@/lib/tr/boutiques";
 import {
   requireOwnedBoutique,
@@ -11,10 +15,21 @@ export const maxDuration = 60;
 type Body = {
   boutiqueId: string;
   sourceImageUrl: string;
+  backImageUrl?: string;
+  detailImageUrl?: string;
   title?: string;
   category?: string | null;
-  view?: "front" | "back" | "extra";
+  view?: "front" | "back" | "extra" | "detail";
   promptExtra?: string;
+  uploadType?: string | null;
+  existingTitle?: string | null;
+  existingDescription?: string | null;
+  lockedConstruction?: {
+    neckline?: string | null;
+    sleeves?: string | null;
+    length?: string | null;
+    decollete?: string | null;
+  } | null;
 };
 
 /**
@@ -58,11 +73,35 @@ export async function POST(request: Request) {
     );
   }
 
+  if (isElbiseUpload(body.uploadType) || body.detailImageUrl?.trim()) {
+    const draft = await draftProductListingFromImage({
+      sourceImageUrl,
+      backImageUrl: body.backImageUrl,
+      detailImageUrl: body.detailImageUrl,
+      category: "elbise",
+      uploadType: "elbise",
+      existingTitle: body.existingTitle,
+      existingDescription: body.existingDescription,
+      lockedConstruction: body.lockedConstruction,
+    });
+    const locked = body.lockedConstruction;
+    const hasLock = hasElbiseLockedConstruction(locked);
+    return Response.json({
+      ok: true,
+      prompt: buildElbisePackshotPrompt(
+        draft?.promptFront,
+        hasLock ? locked : undefined,
+      ),
+      listingDraft: draft,
+      usedGemini: Boolean(draft),
+    });
+  }
+
   const resolved = await resolvePackshotPrompt({
     sourceImageUrl,
     title: body.title,
     category: body.category,
-    view: body.view ?? "front",
+    view: body.view === "detail" ? "front" : body.view ?? "front",
     promptExtra: body.promptExtra,
   });
 

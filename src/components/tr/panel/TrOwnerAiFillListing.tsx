@@ -18,7 +18,10 @@ export interface TrOwnerAiFillListingProps {
   boutiqueId: string;
   /** Preferred: front packshot / marketplace cutout */
   sourceImageUrl?: string | null;
+  backImageUrl?: string | null;
+  detailImageUrl?: string | null;
   category?: string | null;
+  uploadType?: string | null;
   /** Cached draft from step-1 Gemini prepare (optional) */
   cachedDraft?: OwnerListingDraft | null;
   /** True while front photo AI identification is still running */
@@ -35,7 +38,10 @@ export interface TrOwnerAiFillListingProps {
 export function TrOwnerAiFillListing({
   boutiqueId,
   sourceImageUrl,
+  backImageUrl,
+  detailImageUrl,
   category,
+  uploadType,
   cachedDraft,
   awaitingDraft = false,
   onApply,
@@ -57,6 +63,7 @@ export function TrOwnerAiFillListing({
       description: clampDescription(cachedDraft.description ?? ""),
       features: cachedDraft.features ?? {},
       category: cachedDraft.category ?? null,
+      promptFront: cachedDraft.promptFront ?? null,
     });
   }
 
@@ -72,13 +79,17 @@ export function TrOwnerAiFillListing({
       const remote = await requestOwnerListingDraft({
         boutiqueId,
         sourceImageUrl: url,
+        backImageUrl: backImageUrl?.trim() || undefined,
+        detailImageUrl: detailImageUrl?.trim() || undefined,
         category,
+        uploadType,
       });
       onApply({
         title: clampTitle(remote.title),
         description: clampDescription(remote.description ?? ""),
         features: remote.features ?? {},
         category: remote.category ?? null,
+        promptFront: remote.promptFront ?? null,
       });
     } catch (error) {
       onError?.(

@@ -2,9 +2,13 @@
  * Owner-facing Cortisstyle credit pricing.
  *
  * - Ürün (ön + arka packshot): 1 kredi
- * - Model (tek ön model shot, isteğe bağlı): 1 kredi
+ * - Model: 1 kredi per generated shot (generic = 1; elbise = 2, or 3 with detay photo)
  * - 1 kredi = $0.25 → TRY via tryPerUsd
  */
+
+import { elbiseModelShotCount } from "@/lib/tr/aiModel/elbiseTryOn";
+import type { ElbiseConstructionChips } from "@/lib/tr/aiCatalog/elbiseConstructionLock";
+import { isElbiseUpload } from "@/lib/tr/catalog/garmentUploadTypes";
 
 export const TR_AI_CATALOG_CREDITS = {
   /** Front + back packshot together */
@@ -67,21 +71,63 @@ const exampleFullCredits =
 
 export const TR_AI_CREDITS_INFO_LINES = [
   `Ürün katalog paketi (ön + arka): ${TR_AI_CATALOG_CREDITS.productPackage} kredi → ${formatCreditPriceBoth(TR_AI_CATALOG_CREDITS.productPackage)}`,
-  `Model fotoğrafı (ön, isteğe bağlı): ${TR_AI_CATALOG_CREDITS.modelPackage} kredi → ${formatCreditPriceBoth(TR_AI_CATALOG_CREDITS.modelPackage)}`,
-  `Örnek: katalog + model = ${exampleFullCredits} kredi → ${formatCreditPriceBoth(exampleFullCredits)}`,
+  `Model fotoğrafı (isteğe bağlı): ${TR_AI_CATALOG_CREDITS.modelPackage} kredi / kare. Elbise 2 kare (dekolte/detay fotoğrafı varsa 3).`,
+  `Örnek: katalog + 1 model karesi = ${exampleFullCredits} kredi → ${formatCreditPriceBoth(exampleFullCredits)}`,
   `1 kredi = $${TR_AI_CATALOG_CREDITS.priceUsdPerCredit.toFixed(2)} (~${priceTryPerCredit()} ₺)`,
   "Ödeme: krediler butik hesabınızdan düşülür.",
   "Tahsilat: aylık paket veya dönem sonu fatura.",
   "Bakiye yetersizse işlem yapılmaz.",
 ] as const;
 
-export function describePhotoSlotCost(slotIndex: number): {
+export function describePhotoSlotCost(
+  slotIndex: number,
+  uploadType?: string | null,
+): {
   title: string;
   subtitle: string;
   bullets: string[];
   credits: number | null;
   costPrefix: string;
 } {
+  if (uploadType === "elbise") {
+    if (slotIndex === 0) {
+      return {
+        title: "Ön manken",
+        subtitle: "Elbisenin önden tam boy manken fotoğrafı.",
+        bullets: [
+          "Olduğu gibi kaydedilir — packshot sonra üretilir.",
+          "Kişi kesilmez.",
+        ],
+        credits: null,
+        costPrefix: "",
+      };
+    }
+    if (slotIndex === 1) {
+      return {
+        title: "Arka manken",
+        subtitle: "Elbisenin arkadan tam boy manken fotoğrafı.",
+        bullets: [
+          "Askı, sırt dekolte ve etek arkası görünsün.",
+          "Ön ve arka tamamınca 1 ön packshot üretilir (beyaz zemin, ghost mannequin).",
+          "Ürün paketi: 1 kredi.",
+        ],
+        credits: TR_AI_CATALOG_CREDITS.productPackage,
+        costPrefix: "Ön packshot",
+      };
+    }
+    if (slotIndex === 2) {
+      return {
+        title: "Dekolte / detay (isteğe bağlı)",
+        subtitle: "Yaka, dekolte veya dantel gibi yakın çekim.",
+        bullets: [
+          "Packshot için gerekli değil — atlayabilirsiniz.",
+          "Sonradan da ekleyebilirsiniz.",
+        ],
+        credits: null,
+        costPrefix: "",
+      };
+    }
+  }
   if (slotIndex === 0) {
     return {
       title: "Ön yüz katalog görseli",
@@ -120,13 +166,35 @@ export function describePhotoSlotCost(slotIndex: number): {
   };
 }
 
-/** Credits for the model package (1 shot / 1 credit, including Lila). */
-export function describeModelPackageCredits(_modelId?: string | null): number {
-  return TR_AI_CATALOG_CREDITS.modelPackage;
+export type ModelPackageCostContext = {
+  uploadType?: string | null;
+  features?: ElbiseConstructionChips | null;
+  detailImageUrl?: string | null;
+};
+
+/** Credits for the model package (1 kredi per shot; elbise is 2 or 3). */
+export function describeModelPackageCredits(
+  modelId?: string | null,
+  context?: ModelPackageCostContext,
+): number {
+  return (
+    describeModelPackageShots(modelId, context) *
+    TR_AI_CATALOG_CREDITS.modelPackage
+  );
 }
 
 /** How many lifestyle shots this model run produces. */
-export function describeModelPackageShots(_modelId?: string | null): number {
+export function describeModelPackageShots(
+  _modelId?: string | null,
+  context?: ModelPackageCostContext,
+): number {
+  if (isElbiseUpload(context?.uploadType)) {
+    return elbiseModelShotCount(
+      context?.features,
+      _modelId,
+      context?.detailImageUrl,
+    );
+  }
   return TR_AI_CATALOG_CREDITS.modelPackageShots;
 }
 

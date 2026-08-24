@@ -22,6 +22,7 @@ import {
 import { TrOwnerCategoryPicker } from "@/components/tr/panel/TrOwnerCategoryPicker";
 import { TrOwnerProductFeaturesFields } from "@/components/tr/panel/TrOwnerProductFeaturesFields";
 import {
+  panelChipClass,
   panelFieldClass,
   panelPrimaryBtnClass,
   panelSecondaryBtnClass,
@@ -30,6 +31,12 @@ import type { PipelineJobItem } from "@/lib/tr/aiCatalog/pipelineProgress";
 import {
   describeModelPackageShots,
 } from "@/lib/tr/aiCatalog/uploadCostHints";
+import {
+  GARMENT_UPLOAD_TYPES,
+  getGarmentUploadType,
+  isElbiseUpload,
+  requiredPhotoSlotsForUploadType,
+} from "@/lib/tr/catalog/garmentUploadTypes";
 import {
   LILA_DEFAULT_PHOTOGRAPHY_STYLE,
   parseLilaPhotographyStyle,
@@ -60,17 +67,26 @@ import {
   type ProductCreateDraftV1,
 } from "@/lib/tr/productCreateDraft";
 import {
+  alignMarketplaceSlots,
+  cleanedLifestyleImages,
+} from "@/lib/tr/productImages";
+import {
   parseSizeStockInputs,
   sumSizeStocks,
 } from "@/lib/tr/sizeStocks";
 import { formatTryFromKurus } from "@/types/tr-marketplace";
 import type { TrProduct, TrProductFeatures } from "@/types/tr-marketplace";
 
-const STEPS = [
+const ALL_STEPS = [
+  {
+    id: "type",
+    title: "Tür",
+    hint: "Ürün türünü seçin — her türün fotoğraf adımı farklıdır",
+  },
   {
     id: "photo",
     title: "Fotoğraf",
-    hint: "Ön tanıma bitince devam — katalog arka planda üretilir",
+    hint: "Zorunlu kareler bitince devam — packshot arka planda üretilir",
   },
   {
     id: "name",
@@ -99,6 +115,10 @@ const STEPS = [
   },
 ] as const;
 
+function wizardStepsFor(_uploadType: string | null) {
+  return ALL_STEPS;
+}
+
 interface TrProductCreateWizardProps {
   boutiqueId: string;
   boutiqueSlug?: string | null;
@@ -110,8 +130,10 @@ export function TrProductCreateWizard({
   boutiqueSlug = null,
   onSaved,
 }: TrProductCreateWizardProps) {
+  const [uploadType, setUploadType] = useState<string | null>(null);
+  const steps = useMemo(() => wizardStepsFor(uploadType), [uploadType]);
   const [stepIndex, setStepIndex] = useState(0);
-  const step = STEPS[stepIndex]!;
+  const step = steps[Math.min(stepIndex, steps.length - 1)]!;
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -192,6 +214,7 @@ export function TrProductCreateWizard({
         catalogBackgroundId,
         selectedModelId,
         photographyStyle,
+        uploadType,
       });
     }, 400);
     return () => window.clearTimeout(handle);
@@ -218,6 +241,7 @@ export function TrProductCreateWizard({
     stepIndex,
     stock,
     title,
+    uploadType,
   ]);
 
   const chartSizes = useMemo(
@@ -268,13 +292,17 @@ export function TrProductCreateWizard({
     });
   }, [sizeChart]);
 
-  const progress = ((stepIndex + 1) / STEPS.length) * 100;
+  const requiredSlots = requiredPhotoSlotsForUploadType(uploadType);
+  const elbise = isElbiseUpload(uploadType);
+  const selectedUpload = getGarmentUploadType(uploadType);
+
+  const progress = ((stepIndex + 1) / steps.length) * 100;
 
   const photoStepPhotosReady = useMemo(
     () =>
-      hasRequiredProductPhotosStarted(images, photoJobs) &&
+      hasRequiredProductPhotosStarted(images, photoJobs, requiredSlots) &&
       Boolean(images[0]?.trim()),
-    [images, photoJobs],
+    [images, photoJobs, requiredSlots],
   );
 
   /** Front AI prepare still running — Devam shows loading instead of an error. */
@@ -300,6 +328,7 @@ export function TrProductCreateWizard({
   };
 
   const canContinue = useMemo(() => {
+    if (step.id === "type") return Boolean(selectedUpload?.live);
     if (step.id === "photo") {
       const draftReady =
         Boolean(listingDraft?.title?.trim()) || frontDraftFailed;
@@ -342,6 +371,7 @@ export function TrProductCreateWizard({
     step.id,
     stock,
     title,
+    selectedUpload,
   ]);
 
   const goNext = () => {
@@ -350,7 +380,8 @@ export function TrProductCreateWizard({
       return;
     }
     if (!canContinue) {
-      if (step.id === "name") setError("Ürün adı zorunlu.");
+      if (step.id === "type") setError("Ürün türü seçin.");
+      else if (step.id === "name") setError("Ürün adı zorunlu.");
       else if (step.id === "price") {
         setError(
           discountEnabled
@@ -373,13 +404,13 @@ export function TrProductCreateWizard({
       setConfirmSkipModel(true);
       return;
     }
-    setStepIndex((current) => Math.min(current + 1, STEPS.length - 1));
+    setStepIndex((current) => Math.min(current + 1, steps.length - 1));
   };
 
   const proceedWithoutModel = () => {
     setConfirmSkipModel(false);
     setError(null);
-    setStepIndex((current) => Math.min(current + 1, STEPS.length - 1));
+    setStepIndex((current) => Math.min(current + 1, steps.length - 1));
   };
 
   const goBack = () => {
@@ -392,7 +423,14 @@ export function TrProductCreateWizard({
     if (!draftBanner) return;
     const draft = draftBanner;
     skipNextPersistRef.current = true;
-    setStepIndex(Math.min(Math.max(0, draft.stepIndex), STEPS.length - 1));
+    const restoredType = draft.uploadType ?? null;
+    setUploadType(restoredType);
+    const restoredSteps = wizardStepsFor(restoredType);
+    setStepIndex(
+      restoredType
+        ? Math.min(Math.max(0, draft.stepIndex), restoredSteps.length - 1)
+        : 0,
+    );
     setTitle(draft.title);
     setDescription(draft.description);
     setFeatures(draft.features ?? {});
@@ -436,11 +474,13 @@ export function TrProductCreateWizard({
       }
       const listPrice = Number(priceTry.replace(",", "."));
       if (!title.trim()) throw new Error("Başlık zorunlu.");
-      if (!hasRequiredProductPhotos(images)) {
+      if (!hasRequiredProductPhotos(images, requiredSlots)) {
         throw new Error(
           uploading
             ? "Fotoğraflar hâlâ hazırlanıyor. Biraz bekleyip tekrar deneyin."
-            : "Ön ve arka fotoğraf zorunlu.",
+            : elbise
+              ? "Ön ve arka fotoğraf zorunlu. Dekolte / detay isteğe bağlı."
+              : "Ön ve arka fotoğraf zorunlu.",
         );
       }
 
@@ -500,13 +540,8 @@ export function TrProductCreateWizard({
         colors: [],
         category,
         images,
-        marketplaceImages: images.map(
-          (_, index) => marketplaceImages[index] ?? "",
-        ),
-        lifestyleImages: lifestyleImages
-          .map((url) => url.trim())
-          .filter(Boolean)
-          .slice(0, 1),
+        marketplaceImages: alignMarketplaceSlots(images, marketplaceImages),
+        lifestyleImages: cleanedLifestyleImages(lifestyleImages),
         catalogBackgroundId,
         stock: stockValue,
         sizeStocks,
@@ -584,7 +619,7 @@ export function TrProductCreateWizard({
       <div className="rounded-2xl border border-[color:var(--panel-accent-border)] bg-white p-5 shadow-sm sm:p-6">
         <div className="flex items-center justify-between gap-3">
           <p className="text-[16px] font-semibold text-neutral-700">
-            Adım {stepIndex + 1} / {STEPS.length}
+            Adım {stepIndex + 1} / {steps.length}
           </p>
           <p
             className="text-[16px] font-semibold"
@@ -602,7 +637,11 @@ export function TrProductCreateWizard({
             }}
           />
         </div>
-        <p className="mt-3 text-[18px] text-neutral-700">{step.hint}</p>
+        <p className="mt-3 text-[18px] text-neutral-700">
+          {step.id === "photo" && elbise
+            ? "Ön ve arka manken — detay isteğe bağlı, packshot arka planda"
+            : step.hint}
+        </p>
       </div>
 
       <TrOwnerWizardPipelineStatus jobs={pipelineJobs} />
@@ -611,6 +650,43 @@ export function TrProductCreateWizard({
         <p className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-[16px] text-red-800">
           {error}
         </p>
+      ) : null}
+
+      {step.id === "type" ? (
+        <div className="rounded-2xl border border-[color:var(--panel-accent-border)] bg-white p-5 shadow-sm sm:p-6">
+          <p className="text-[20px] font-semibold text-neutral-900">
+            Ne yüklüyorsunuz?
+          </p>
+          <p className="mt-2 text-[15px] leading-relaxed text-neutral-600">
+            Elbise için ön ve arka manken zorunlu; dekolte / detay isteğe bağlı.
+            Bir ön packshot üretilir. Diğer türler yakında.
+          </p>
+          <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {GARMENT_UPLOAD_TYPES.map((entry) => {
+              const active = uploadType === entry.id;
+              return (
+                <button
+                  key={entry.id}
+                  type="button"
+                  disabled={!entry.live}
+                  onClick={() => {
+                    setUploadType(entry.id);
+                    setCategory(entry.categoryId);
+                    setError(null);
+                  }}
+                  className={`${panelChipClass(active)} inline-flex min-h-[72px] w-full flex-col items-start justify-center px-4 py-3 text-left disabled:cursor-not-allowed disabled:opacity-45`}
+                >
+                  <span className="block text-[16px] font-semibold">
+                    {entry.label}
+                  </span>
+                  <span className="mt-1 block text-[12px] font-normal text-neutral-500">
+                    {entry.live ? entry.hint : "Yakında"}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
       ) : null}
 
       {/* Photo step stays mounted (hidden) so packshot jobs survive Geri */}
@@ -623,9 +699,10 @@ export function TrProductCreateWizard({
           boutiqueId={boutiqueId}
           images={images}
           marketplaceImages={marketplaceImages}
-          catalogBackgroundCss={catalogBackground.css}
+          catalogBackgroundCss={elbise ? undefined : catalogBackground.css}
           title={title}
           category={category}
+          uploadType={uploadType}
           uploading={uploading}
           onUploadingChange={setUploading}
           onImagesChange={setImages}
@@ -633,16 +710,17 @@ export function TrProductCreateWizard({
           onError={setError}
           onLightbox={setLightbox}
           onListingDraft={(draft) => {
+            if (draft.features) setFeatures(draft.features);
             if (draft.title.trim()) setListingDraft(draft);
           }}
           onFrontAnalysisComplete={({ draft }) => {
             setFrontAnalysisDone(true);
+            if (draft?.features) setFeatures(draft.features);
             if (draft?.title?.trim()) {
               setListingDraft(draft);
               setFrontDraftFailed(false);
             } else {
               setFrontDraftFailed(true);
-              setListingDraft(null);
             }
           }}
           onFrontSlotReset={() => {
@@ -655,7 +733,9 @@ export function TrProductCreateWizard({
         />
         {frontAnalysisDone && listingDraft?.title ? (
           <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-[14px] text-emerald-900">
-            Ön fotoğraf tanındı — sonraki adımda “AI ile doldur” hazır.
+            {elbise
+              ? "Boy, yaka ve kol onaylandı — packshot arka planda; “AI ile doldur” hazır."
+              : "Ön fotoğraf tanındı — sonraki adımda “AI ile doldur” hazır."}
           </p>
         ) : null}
         {frontDraftFailed && frontAnalysisDone ? (
@@ -680,10 +760,11 @@ export function TrProductCreateWizard({
               <div className="space-y-5">
                 <TrOwnerAiFillListing
                   boutiqueId={boutiqueId}
-                  sourceImageUrl={
-                    marketplaceImages[0]?.trim() || images[0]?.trim() || null
-                  }
+                  sourceImageUrl={images[0]?.trim() || null}
+                  backImageUrl={elbise ? images[1]?.trim() || null : null}
+                  detailImageUrl={elbise ? images[2]?.trim() || null : null}
                   category={category}
+                  uploadType={uploadType}
                   cachedDraft={listingDraft}
                   awaitingDraft={
                     !frontAnalysisDone &&
@@ -744,6 +825,7 @@ export function TrProductCreateWizard({
                   onChange={setFeatures}
                   disabled={saving}
                   fieldClass={panelFieldClass}
+                  variant={elbise ? "dress" : "default"}
                 />
               </div>
             ) : null}
@@ -838,10 +920,16 @@ export function TrProductCreateWizard({
                   <p className="text-[17px] font-semibold text-neutral-800">
                     Kategori
                   </p>
-                  <TrOwnerCategoryPicker
-                    value={category}
-                    onChange={setCategory}
-                  />
+                  {elbise ? (
+                    <p className="rounded-xl bg-[color:var(--panel-accent-soft)] px-4 py-3 text-[15px] text-neutral-800">
+                      Elbise — tür adımında kilitlendi.
+                    </p>
+                  ) : (
+                    <TrOwnerCategoryPicker
+                      value={category}
+                      onChange={setCategory}
+                    />
+                  )}
                 </div>
               </div>
             ) : null}
@@ -860,10 +948,14 @@ export function TrProductCreateWizard({
 
             {step.id === "model" ? (
               <div className="space-y-6">
-                {!hasRequiredProductPhotos(images) ? (
+                {!hasRequiredProductPhotos(images, requiredSlots) ? (
                   <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[14px] text-amber-950">
                     Katalog fotoğrafları hazırlanıyor. Hazır olunca model
                     çekimini başlatabilirsiniz — diğer adımlara geçebilirsiniz.
+                  </p>
+                ) : elbise && !marketplaceImages[3]?.trim() && !images[3]?.trim() ? (
+                  <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[14px] text-amber-950">
+                    Ön packshot bitince model çekimini başlatabilirsiniz.
                   </p>
                 ) : null}
                 <TrOwnerAiCatalogEnhance
@@ -880,10 +972,17 @@ export function TrProductCreateWizard({
                   onPhotographyStyleChange={setPhotographyStyle}
                   onMarketplaceImagesChange={setMarketplaceImages}
                   onLifestyleImagesChange={setLifestyleImagesSingle}
+                  onFeaturesChange={setFeatures}
                   onListingDraft={setListingDraft}
                   onModelJobsChange={setModelJobs}
                   onSkip={() => setConfirmSkipModel(true)}
-                  disabled={saving || !hasRequiredProductPhotos(images)}
+                  disabled={
+                    saving ||
+                    !hasRequiredProductPhotos(images, requiredSlots)
+                  }
+                  skipPackshot={elbise}
+                  features={features}
+                  uploadType={uploadType}
                 />
                 {confirmSkipModel && !modelGenerating ? (
                   <div
@@ -928,11 +1027,13 @@ export function TrProductCreateWizard({
 
             {step.id === "review" ? (
               <div className="space-y-5">
-                <TrCatalogBackgroundPicker
-                  value={catalogBackgroundId}
-                  onChange={setCatalogBackgroundId}
-                  disabled={saving}
-                />
+                {elbise ? null : (
+                  <TrCatalogBackgroundPicker
+                    value={catalogBackgroundId}
+                    onChange={setCatalogBackgroundId}
+                    disabled={saving}
+                  />
+                )}
                 <TrOwnerStorePreview
                   title={title}
                   description={description}
@@ -946,7 +1047,15 @@ export function TrProductCreateWizard({
                   modelShotsPending={modelGenerating}
                   pendingModelShotCount={describeModelPackageShots(
                     selectedModelId,
+                    elbise
+                      ? {
+                          uploadType: "elbise",
+                          features,
+                          detailImageUrl: images[2]?.trim() || null,
+                        }
+                      : undefined,
                   )}
+                  onModelGallery={elbise}
                 />
                 <p className="rounded-xl bg-[color:var(--panel-accent-soft)] px-4 py-3 text-[16px] text-neutral-800">
                   Kaydettiğinizde ürün satışta görünür.
@@ -976,7 +1085,9 @@ export function TrProductCreateWizard({
             }
           >
             {awaitingFrontAi
-              ? "AI ile hazırlanıyor…"
+              ? elbise
+                ? "Boy, yaka ve kol onaylayın…"
+                : "AI ile hazırlanıyor…"
               : step.id === "model" && modelGenerating
                 ? "Model oluşturuluyor…"
                 : "Devam"}

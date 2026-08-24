@@ -25,7 +25,7 @@ import {
   updateOwnerBoutiqueSettings,
   type TrOwnerBoutiqueSettings,
 } from "@/lib/tr/ownerClient";
-import { trBoutiquePath, trPanelPath } from "@/lib/tr/paths";
+import { trBoutiquePath, trPanelOriginalsPath, trPanelPath } from "@/lib/tr/paths";
 
 function SettingsForm({ boutiqueId }: { boutiqueId: string }) {
   const [settings, setSettings] = useState<TrOwnerBoutiqueSettings | null>(null);
@@ -346,7 +346,7 @@ function SettingsForm({ boutiqueId }: { boutiqueId: string }) {
 export function TrOwnerSettingsPage() {
   return (
     <TrOwnerPanelGate>
-      {({ activeBoutique }) => (
+      {({ activeBoutique, isStaff }) => (
         <div className="space-y-6">
           <div>
             <Link href={trPanelPath()} className={panelBackLinkClass}>
@@ -356,6 +356,16 @@ export function TrOwnerSettingsPage() {
           </div>
           <TrOwnerPushNotificationsCard boutiqueId={activeBoutique.id} />
           <SettingsForm boutiqueId={activeBoutique.id} />
+          {isStaff ? (
+            <p className={`${panelHintClass} pt-2`}>
+              <Link
+                href={trPanelOriginalsPath()}
+                className="text-neutral-400 hover:text-neutral-600"
+              >
+                Orijinal fotoğraflar
+              </Link>
+            </p>
+          ) : null}
         </div>
       )}
     </TrOwnerPanelGate>

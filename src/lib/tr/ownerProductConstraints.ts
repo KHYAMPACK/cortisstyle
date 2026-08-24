@@ -17,17 +17,22 @@ export const TR_OWNER_PRODUCT_LIMITS = {
   categoryLabelMax: 40,
 } as const;
 
-export type TrProductPhotoRole = "front" | "back" | "extra";
+export type TrProductPhotoRole = "front" | "back" | "detail" | "extra";
 
-export function getProductPhotoRole(index: number): TrProductPhotoRole {
+export function getProductPhotoRole(
+  index: number,
+  requiredSlots = 2,
+): TrProductPhotoRole {
   if (index === 0) return "front";
   if (index === 1) return "back";
+  if (requiredSlots >= 3 && index === 2) return "detail";
   return "extra";
 }
 
 export function productPhotoRoleLabel(role: TrProductPhotoRole): string {
   if (role === "front") return "Ön · Kapak";
   if (role === "back") return "Arka";
+  if (role === "detail") return "Dekolte / detay";
   return "Ek fotoğraf";
 }
 

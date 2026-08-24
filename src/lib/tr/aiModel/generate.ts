@@ -13,18 +13,49 @@ import { resolveAiModelProvider } from "@/lib/tr/aiModel/providers";
 import type {
   TrAiModelGenerateRequest,
   TrAiModelGenerateResult,
+  TrAiModelGenerateShot,
 } from "@/lib/tr/aiModel/types";
+
+const POSES: TrAiModelGenerateShot["pose"][] = [
+  "standing-front",
+  "standing-back",
+  "standing-three-quarter",
+  "full-body",
+  "waist-up",
+];
+
+function sanitizeShots(
+  raw: TrAiModelGenerateShot[] | undefined,
+): TrAiModelGenerateShot[] {
+  if (!raw?.length) return [];
+  const shots: TrAiModelGenerateShot[] = [];
+  for (const entry of raw.slice(0, 3)) {
+    const cutoutImageUrl = entry.cutoutImageUrl?.trim() ?? "";
+    const modelReferenceUrl = entry.modelReferenceUrl?.trim() ?? "";
+    if (!cutoutImageUrl || !modelReferenceUrl) continue;
+    const pose = POSES.includes(entry.pose) ? entry.pose : "standing-front";
+    shots.push({
+      pose,
+      cutoutImageUrl,
+      modelReferenceUrl,
+      prompt: entry.prompt?.trim() || undefined,
+    });
+  }
+  return shots;
+}
 
 /**
  * Orchestrate on-model generation for a boutique garment cutout / packshot.
  * Lila + style: one random plate from that style’s three poses. Studio: one random plate.
+ * Elbise: pass `shots` with pinned plates and garments (2–3, all must succeed).
  */
 export async function generateBoutiqueAiModelImage(
   request: TrAiModelGenerateRequest,
 ): Promise<TrAiModelGenerateResult> {
   const slug = request.boutiqueSlug.trim().toLowerCase();
+  const requestedId = request.modelId?.trim() || "";
   const modelId =
-    request.modelId?.trim() ||
+    requestedId ||
     (getBoutiqueAiModelIdentity(slug) ? `boutique:${slug}` : "");
 
   const option = modelId
@@ -43,7 +74,8 @@ export async function generateBoutiqueAiModelImage(
     };
   }
 
-  if (!aiModelOptionHasReferences(option.id)) {
+  const pinned = sanitizeShots(request.shots);
+  if (pinned.length === 0 && !aiModelOptionHasReferences(option.id)) {
     return {
       status: "not_configured",
       providerId: "stub",
@@ -53,7 +85,7 @@ export async function generateBoutiqueAiModelImage(
     };
   }
 
-  if (!request.garment.cutoutImageUrl?.trim()) {
+  if (pinned.length === 0 && !request.garment.cutoutImageUrl?.trim()) {
     return {
       status: "failed",
       providerId: request.providerId ?? "stub",
@@ -67,19 +99,42 @@ export async function generateBoutiqueAiModelImage(
   const photographyStyle = lila
     ? parseLilaPhotographyStyle(request.photographyStyle)
     : undefined;
-  const shotCount = lilaTryOnShotCount(option.id);
-  const pool = photographyStyle
-    ? [...LILABUTIK_LILA_TRYON_REFS_BY_STYLE[photographyStyle]]
-    : option.referenceImageUrls;
-  const refs =
-    shotCount > 1
-      ? pickDistinctModelReferenceUrls(pool, shotCount)
+
+  const jobs: Array<{
+    ref: string;
+    pose: TrAiModelGenerateShot["pose"];
+    cutoutImageUrl: string;
+    prompt?: string;
+  }> =
+    pinned.length > 0
+      ? pinned.map((shot) => ({
+          ref: shot.modelReferenceUrl,
+          pose: shot.pose,
+          cutoutImageUrl: shot.cutoutImageUrl,
+          prompt: shot.prompt ?? request.prompt,
+        }))
       : (() => {
-          const one = pickRandomModelReferenceUrl(pool);
-          return one ? [one] : [];
+          const shotCount = lilaTryOnShotCount(option.id);
+          const pool = photographyStyle
+            ? [...LILABUTIK_LILA_TRYON_REFS_BY_STYLE[photographyStyle]]
+            : option.referenceImageUrls;
+          const refs =
+            shotCount > 1
+              ? pickDistinctModelReferenceUrls(pool, shotCount)
+              : (() => {
+                  const one = pickRandomModelReferenceUrl(pool);
+                  return one ? [one] : [];
+                })();
+          const cutout = request.garment.cutoutImageUrl.trim();
+          return refs.map((ref) => ({
+            ref,
+            pose: request.pose ?? option.defaultPose ?? "standing-front",
+            cutoutImageUrl: cutout,
+            prompt: request.prompt,
+          }));
         })();
 
-  if (refs.length === 0) {
+  if (jobs.length === 0) {
     return {
       status: "not_configured",
       providerId: "stub",
@@ -95,15 +150,21 @@ export async function generateBoutiqueAiModelImage(
   let lastError: string | undefined;
   let lastStatus: TrAiModelGenerateResult["status"] = "failed";
   let stub = false;
+  const requireAll = pinned.length > 0;
 
-  for (const ref of refs) {
+  for (const job of jobs) {
     const result = await provider.generate({
       ...request,
       boutiqueSlug: slug,
       modelId: option.id,
       photographyStyle,
-      pose: request.pose ?? option.defaultPose ?? "standing-front",
-      modelReferenceUrls: [ref],
+      pose: job.pose,
+      prompt: job.prompt,
+      garment: {
+        ...request.garment,
+        cutoutImageUrl: job.cutoutImageUrl,
+      },
+      modelReferenceUrls: [job.ref],
       faceReferenceUrls: option.faceReferenceUrls,
     });
     lastStatus = result.status;
@@ -130,6 +191,17 @@ export async function generateBoutiqueAiModelImage(
     };
   }
 
+  if (requireAll && imageUrls.length < jobs.length) {
+    return {
+      status: "failed",
+      providerId: provider.id,
+      jobId: lastJobId,
+      creditsUsed: creditsUsed || null,
+      error: lastError ?? "Tüm model kareleri üretilemedi.",
+      stub,
+    };
+  }
+
   return {
     status: "succeeded",
     providerId: provider.id,
@@ -138,7 +210,7 @@ export async function generateBoutiqueAiModelImage(
     jobId: lastJobId,
     creditsUsed: creditsUsed || null,
     error:
-      imageUrls.length < refs.length
+      imageUrls.length < jobs.length
         ? lastError ?? "İkinci model karesi üretilemedi."
         : undefined,
     stub,

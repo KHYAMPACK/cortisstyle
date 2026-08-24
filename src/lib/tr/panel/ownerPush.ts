@@ -43,10 +43,13 @@ export async function registerOwnerPushServiceWorker(): Promise<ServiceWorkerReg
 
 async function fetchVapidPublicKey(): Promise<string | null> {
   const response = await fetch("/api/tr/owner/push/vapid-public-key");
-  const data = (await response.json()) as {
-    publicKey?: string | null;
-    error?: string;
-  };
+  const raw = await response.text();
+  let data: { publicKey?: string | null; error?: string } = {};
+  try {
+    data = JSON.parse(raw) as typeof data;
+  } catch {
+    throw new Error("VAPID anahtarı alınamadı.");
+  }
   if (!response.ok) {
     throw new Error(data.error ?? "VAPID anahtarı alınamadı.");
   }

@@ -36,6 +36,8 @@ export interface ProductCreateDraftV1 {
   catalogBackgroundId: string;
   selectedModelId: string | null;
   photographyStyle?: TrLilaPhotographyStyle;
+  /** Garment upload pipeline — elbise is the live type. */
+  uploadType?: string | null;
 }
 
 function storageKey(boutiqueId: string): string {

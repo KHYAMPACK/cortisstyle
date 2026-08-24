@@ -56,7 +56,11 @@ import {
   batchRowHasBothPhotos,
   capturedBatchRows,
 } from "@/lib/tr/productBatchCreateFlow";
-import { getPanelProductCover } from "@/lib/tr/productImages";
+import {
+  alignMarketplaceSlots,
+  cleanedLifestyleImages,
+  getPanelProductCover,
+} from "@/lib/tr/productImages";
 import type { TrSizeChartId } from "@/lib/tr/productOptions";
 import { parseSizeStockInputs, sumSizeStocks } from "@/lib/tr/sizeStocks";
 import {
@@ -720,13 +724,8 @@ function buildCreatePayload(
     colors: [],
     category: row.category,
     images: row.images,
-    marketplaceImages: row.images.map(
-      (_, index) => row.marketplaceImages[index] ?? "",
-    ),
-    lifestyleImages: row.lifestyleImages
-      .map((url) => url.trim())
-      .filter(Boolean)
-      .slice(0, 1),
+    marketplaceImages: alignMarketplaceSlots(row.images, row.marketplaceImages),
+    lifestyleImages: cleanedLifestyleImages(row.lifestyleImages),
     catalogBackgroundId: row.catalogBackgroundId,
     stock: stockValue,
     sizeStocks,

@@ -126,5 +126,7 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image).*)"],
+  // Skip `/api/*` — nested owner APIs 404 as HTML when this matcher
+  // includes them (panel then fails with Unexpected token '<').
+  matcher: ["/((?!api|_next/static|_next/image).*)"],
 };

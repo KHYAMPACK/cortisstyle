@@ -38,6 +38,11 @@ export interface TrOwnerStorePreviewProps {
   modelShotsPending?: boolean;
   /** Expected model shot count while pending (default 2 = front + back). */
   pendingModelShotCount?: number;
+  /**
+   * Elbise: shopper gallery is on-model first, packshot last.
+   * Skip catalog-background compositing (opaque white studio packshot).
+   */
+  onModelGallery?: boolean;
 }
 
 function PendingSlot({ label }: { label: string }) {
@@ -70,21 +75,39 @@ export function TrOwnerStorePreview({
   colorNames = [],
   modelShotsPending = false,
   pendingModelShotCount = 1,
+  onModelGallery = false,
 }: TrOwnerStorePreviewProps) {
   const bg = getCatalogBackground(catalogBackgroundId);
 
   const gallery = useMemo(() => {
     const entries: GalleryEntry[] = [];
+    const onModelLabels = ["Ön manken", "Arka manken", "Detay", "Packshot"];
 
-    for (const i of [0, 1] as const) {
-      const packshot = marketplaceImages[i]?.trim() || "";
-      const original = images[i]?.trim() || "";
-      const label = i === 0 ? "Ön" : "Arka";
-      if (packshot) {
-        entries.push({ kind: "catalog", label, src: packshot });
-      } else if (original) {
-        // Original uploaded but catalog not ready — never show raw photo
-        entries.push({ kind: "catalog", label, pending: true });
+    if (onModelGallery) {
+      for (let i = 0; i < 4; i += 1) {
+        const src =
+          marketplaceImages[i]?.trim() || images[i]?.trim() || "";
+        const label = onModelLabels[i] ?? `Fotoğraf ${i + 1}`;
+        if (src) {
+          entries.push({
+            kind: i === 3 ? "catalog" : "lifestyle",
+            label,
+            src,
+          });
+        } else if (i === 3 && images[0]?.trim() && images[1]?.trim()) {
+          entries.push({ kind: "catalog", label, pending: true });
+        }
+      }
+    } else {
+      for (const i of [0, 1] as const) {
+        const packshot = marketplaceImages[i]?.trim() || "";
+        const original = images[i]?.trim() || "";
+        const label = i === 0 ? "Ön" : "Arka";
+        if (packshot) {
+          entries.push({ kind: "catalog", label, src: packshot });
+        } else if (original) {
+          entries.push({ kind: "catalog", label, pending: true });
+        }
       }
     }
 
@@ -120,6 +143,7 @@ export function TrOwnerStorePreview({
     lifestyleImages,
     modelShotsPending,
     pendingModelShotCount,
+    onModelGallery,
   ]);
 
   const [activeIndex, setActiveIndex] = useState(0);
@@ -135,7 +159,8 @@ export function TrOwnerStorePreview({
   const safeIndex =
     gallery.length === 0 ? 0 : Math.min(activeIndex, gallery.length - 1);
   const active = gallery[safeIndex] ?? null;
-  const isCatalogCover = active?.kind === "catalog" && !active.pending;
+  const isCatalogCover =
+    active?.kind === "catalog" && !active.pending && !onModelGallery;
 
   const sellKurus =
     priceTry && Number(priceTry.replace(",", ".")) > 0
@@ -298,7 +323,7 @@ export function TrOwnerStorePreview({
                         : "border-neutral-200"
                     }`}
                     style={
-                      entry.kind === "catalog" && !entry.pending
+                      entry.kind === "catalog" && !entry.pending && !onModelGallery
                         ? { background: bg.css }
                         : { background: "#f5f5f5" }
                     }

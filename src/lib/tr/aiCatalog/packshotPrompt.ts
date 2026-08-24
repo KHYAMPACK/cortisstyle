@@ -1,16 +1,18 @@
 import {
   DEFAULT_PACKSHOT_PROMPT,
+  ELBISE_PACKSHOT_PROMPT,
   finalizePackshotPrompt,
   stripConflictingPackshotPresentation,
 } from "@/lib/tr/fashn/packshot";
+import {
+  buildElbiseConstructionLock,
+  type ElbiseConstructionChips,
+} from "@/lib/tr/aiCatalog/elbiseConstructionLock";
 import type { TrProductPhotoRole } from "@/lib/tr/ownerProductConstraints";
 
 export type PackshotView = TrProductPhotoRole;
 
-export const PACKSHOT_VIEW_PROMPT: Record<
-  Exclude<PackshotView, "extra">,
-  string
-> = {
+export const PACKSHOT_VIEW_PROMPT: Record<"front" | "back", string> = {
   front:
     "Front view of the garment. Show the front face, front neckline, and front construction.",
   back: "Back view of the garment. This source photo is the BACK / REAR side. Keep rear orientation: show the back of the garment, back neckline, and back seams. Do not convert or invent a front view.",
@@ -60,5 +62,17 @@ export function buildPackshotPrompt(input?: {
     parts.push(extra);
   }
 
+  return finalizePackshotPrompt(parts.join(" "));
+}
+
+export function buildElbisePackshotPrompt(
+  extra?: string | null,
+  construction?: ElbiseConstructionChips | null,
+): string {
+  const parts = [ELBISE_PACKSHOT_PROMPT];
+  const cleaned = sanitizePackshotPromptExtra(extra);
+  if (cleaned) parts.push(cleaned);
+  const lock = buildElbiseConstructionLock(construction);
+  if (lock) parts.push(lock);
   return finalizePackshotPrompt(parts.join(" "));
 }

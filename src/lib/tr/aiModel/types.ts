@@ -83,9 +83,22 @@ export interface TrAiModelGenerateRequest {
    * (product-first Zara lookbook) when omitted.
    */
   prompt?: string;
+  /**
+   * When set, run these shots in order with pinned plates and garments.
+   * Skips random plate picking. All shots must succeed.
+   */
+  shots?: TrAiModelGenerateShot[];
   /** Storage context for re-hosting FASHN CDN outputs. */
   userId?: string;
   boutiqueId?: string;
+}
+
+/** One FASHN try-on in a multi-shot run (elbise 2–3). */
+export interface TrAiModelGenerateShot {
+  pose: TrAiModelPose;
+  cutoutImageUrl: string;
+  modelReferenceUrl: string;
+  prompt?: string;
 }
 
 export interface TrAiModelGenerateResult {

@@ -2,6 +2,7 @@ import { getSupabaseClient } from "@/lib/supabaseClient";
 import { prepareOwnerUploadFile } from "@/lib/tr/prepareOwnerUploadFile";
 import { sanitizeProductFeatures } from "@/lib/tr/catalog/productFeatures";
 import { parseAiCategoryId } from "@/lib/tr/catalog/categories";
+import type { TrOwnerProductOriginals } from "@/lib/tr/catalog/products";
 import {
   cachedOwnerFetch,
   invalidateOwnerCache,
@@ -53,8 +54,26 @@ async function ownerFetch(
   return fetch(path, { ...init, headers });
 }
 
+async function parseOwnerJson(response: Response): Promise<unknown> {
+  const text = await response.text();
+  const trimmed = text.trim();
+  if (!trimmed || (trimmed[0] !== "{" && trimmed[0] !== "[")) {
+    throw new Error(
+      response.status === 404
+        ? "Panel API bulunamadı. Sayfayı yenileyin; devam ederse dev sunucusunu yeniden başlatın."
+        : `Beklenmeyen sunucu yanıtı (${response.status}).`,
+    );
+  }
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    throw new Error(`Beklenmeyen sunucu yanıtı (${response.status}).`);
+  }
+}
+
 function invalidateProductLists(): void {
   invalidateOwnerCache("products:");
+  invalidateOwnerCache("product-originals:");
   invalidateOwnerCache("summary:");
 }
 
@@ -63,17 +82,24 @@ function invalidateOrderLists(): void {
   invalidateOwnerCache("summary:");
 }
 
-export async function fetchOwnerBoutiques(): Promise<TrOwnerBoutiqueSummary[]> {
+export async function fetchOwnerBoutiques(): Promise<{
+  boutiques: TrOwnerBoutiqueSummary[];
+  isStaff: boolean;
+}> {
   return cachedOwnerFetch(ownerCacheKeys.boutiques, async () => {
     const response = await ownerFetch("/api/tr/owner/boutiques");
-    const data = (await response.json()) as {
+    const data = (await parseOwnerJson(response)) as {
       boutiques?: TrOwnerBoutiqueSummary[];
+      isStaff?: boolean;
       error?: string;
     };
     if (!response.ok) {
       throw new Error(data.error ?? "Butikler yüklenemedi.");
     }
-    return data.boutiques ?? [];
+    return {
+      boutiques: data.boutiques ?? [],
+      isStaff: Boolean(data.isStaff),
+    };
   });
 }
 
@@ -118,7 +144,7 @@ export async function fetchOwnerProducts(boutiqueId: string): Promise<{
     const response = await ownerFetch(
       `/api/tr/owner/products?boutiqueId=${encodeURIComponent(boutiqueId)}`,
     );
-    const data = (await response.json()) as {
+    const data = (await parseOwnerJson(response)) as {
       boutique?: TrOwnerBoutiqueSummary;
       products?: TrProduct[];
       error?: string;
@@ -133,6 +159,32 @@ export async function fetchOwnerProducts(boutiqueId: string): Promise<{
   });
 }
 
+export type { TrOwnerProductOriginals };
+
+export async function fetchOwnerProductOriginals(
+  boutiqueId: string,
+): Promise<TrOwnerProductOriginals[]> {
+  return cachedOwnerFetch(
+    ownerCacheKeys.productOriginals(boutiqueId),
+    async () => {
+      const response = await ownerFetch(
+        `/api/tr/owner/products/originals?boutiqueId=${encodeURIComponent(boutiqueId)}`,
+      );
+      if (response.status === 404) {
+        return [];
+      }
+      const data = (await parseOwnerJson(response)) as {
+        products?: TrOwnerProductOriginals[];
+        error?: string;
+      };
+      if (!response.ok) {
+        throw new Error(data.error ?? "Orijinal fotoğraflar yüklenemedi.");
+      }
+      return data.products ?? [];
+    },
+  );
+}
+
 export async function fetchOwnerProduct(productId: string): Promise<{
   product: TrProduct;
   boutique: TrOwnerBoutiqueSummary;
@@ -140,7 +192,7 @@ export async function fetchOwnerProduct(productId: string): Promise<{
   const response = await ownerFetch(
     `/api/tr/owner/products/${encodeURIComponent(productId)}`,
   );
-  const data = (await response.json()) as {
+  const data = (await parseOwnerJson(response)) as {
     product?: TrProduct;
     boutique?: TrOwnerBoutiqueSummary;
     error?: string;
@@ -181,7 +233,7 @@ export async function createOwnerProduct(
     method: "POST",
     body: JSON.stringify(payload),
   });
-  const data = (await response.json()) as { product?: TrProduct; error?: string };
+  const data = (await parseOwnerJson(response)) as { product?: TrProduct; error?: string };
   if (!response.ok) {
     throw new Error(data.error ?? "Ürün oluşturulamadı.");
   }
@@ -208,7 +260,7 @@ export async function updateOwnerProduct(
       body: JSON.stringify(payload),
     },
   );
-  const data = (await response.json()) as { product?: TrProduct; error?: string };
+  const data = (await parseOwnerJson(response)) as { product?: TrProduct; error?: string };
   if (!response.ok) {
     throw new Error(data.error ?? "Ürün güncellenemedi.");
   }
@@ -259,7 +311,7 @@ export async function uploadOwnerProductImage(
     error?: string;
   };
   try {
-    data = (await response.json()) as typeof data;
+    data = (await parseOwnerJson(response)) as typeof data;
   } catch {
     throw new Error(
       response.ok
@@ -291,6 +343,7 @@ export interface OwnerListingDraft {
   description: string;
   features?: TrProductFeatures;
   category?: string | null;
+  promptFront?: string | null;
 }
 
 function readOwnerListingDraft(raw: unknown): OwnerListingDraft | null {
@@ -298,12 +351,15 @@ function readOwnerListingDraft(raw: unknown): OwnerListingDraft | null {
   const record = raw as Record<string, unknown>;
   const title = typeof record.title === "string" ? record.title.trim() : "";
   if (!title) return null;
+  const promptFront =
+    typeof record.promptFront === "string" ? record.promptFront.trim() : "";
   return {
     title,
     description:
       typeof record.description === "string" ? record.description.trim() : "",
     features: sanitizeProductFeatures(record.features),
     category: parseAiCategoryId(record.category),
+    promptFront: promptFront || null,
   };
 }
 
@@ -322,18 +378,20 @@ export async function requestOwnerPackshot(input: {
   productId?: string;
   title?: string;
   category?: string | null;
-  view?: "front" | "back" | "extra";
+  view?: "front" | "back" | "extra" | "detail";
   promptExtra?: string;
   /** From prepare-packshot — avoids a second Gemini call. */
   prompt?: string;
   listingDraft?: OwnerListingDraft | null;
   numImages?: number;
+  skipPhotoroom?: boolean;
+  uploadType?: string | null;
 }): Promise<OwnerPackshotResult> {
   const response = await ownerFetch("/api/tr/owner/ai-catalog/packshot", {
     method: "POST",
     body: JSON.stringify(input),
   });
-  const data = (await response.json()) as {
+  const data = (await parseOwnerJson(response)) as {
     ok?: boolean;
     result?: OwnerPackshotResult;
     error?: string;
@@ -357,10 +415,21 @@ export interface OwnerPackshotPrepareResult {
 export async function requestOwnerPackshotPrepare(input: {
   boutiqueId: string;
   sourceImageUrl: string;
+  backImageUrl?: string;
+  detailImageUrl?: string;
   title?: string;
   category?: string | null;
-  view?: "front" | "back" | "extra";
+  view?: "front" | "back" | "extra" | "detail";
   promptExtra?: string;
+  uploadType?: string | null;
+  existingTitle?: string | null;
+  existingDescription?: string | null;
+  lockedConstruction?: {
+    neckline?: string | null;
+    sleeves?: string | null;
+    length?: string | null;
+    decollete?: string | null;
+  } | null;
 }): Promise<OwnerPackshotPrepareResult> {
   const response = await ownerFetch(
     "/api/tr/owner/ai-catalog/prepare-packshot",
@@ -369,7 +438,7 @@ export async function requestOwnerPackshotPrepare(input: {
       body: JSON.stringify(input),
     },
   );
-  const data = (await response.json()) as {
+  const data = (await parseOwnerJson(response)) as {
     ok?: boolean;
     prompt?: string;
     listingDraft?: OwnerListingDraft | null;
@@ -392,13 +461,16 @@ export async function requestOwnerPackshotPrepare(input: {
 export async function requestOwnerListingDraft(input: {
   boutiqueId: string;
   sourceImageUrl: string;
+  backImageUrl?: string;
+  detailImageUrl?: string;
   category?: string | null;
+  uploadType?: string | null;
 }): Promise<OwnerListingDraft> {
   const response = await ownerFetch("/api/tr/owner/ai-catalog/listing-draft", {
     method: "POST",
     body: JSON.stringify(input),
   });
-  const data = (await response.json()) as {
+  const data = (await parseOwnerJson(response)) as {
     ok?: boolean;
     draft?: OwnerListingDraft;
     error?: string;
@@ -444,13 +516,25 @@ export async function requestOwnerAiModelGenerate(input: {
     | "waist-up";
   modelId?: string;
   photographyStyle?: "blinds" | "flash";
-  prompt?: string;
+    prompt?: string;
+  shots?: Array<{
+    pose:
+      | "standing-front"
+      | "standing-back"
+      | "standing-three-quarter"
+      | "full-body"
+      | "waist-up";
+    cutoutImageUrl: string;
+    modelReferenceUrl: string;
+    prompt?: string;
+  }>;
+  replaceLifestyleIndex?: number;
 }): Promise<OwnerAiModelGenerateResult> {
   const response = await ownerFetch("/api/tr/owner/ai-model/generate", {
     method: "POST",
     body: JSON.stringify(input),
   });
-  const data = (await response.json()) as {
+  const data = (await parseOwnerJson(response)) as {
     ok?: boolean;
     result?: OwnerAiModelGenerateResult;
     error?: string;
@@ -498,7 +582,7 @@ export async function fetchOwnerSummary(
     const response = await ownerFetch(
       `/api/tr/owner/summary?boutiqueId=${encodeURIComponent(boutiqueId)}&range=${range}`,
     );
-    const data = (await response.json()) as {
+    const data = (await parseOwnerJson(response)) as {
       summary?: TrOwnerSummaryResponse;
       error?: string;
     };
@@ -528,7 +612,7 @@ export async function fetchOwnerAiCredits(
     const response = await ownerFetch(
       `/api/tr/owner/ai-credits?boutiqueId=${encodeURIComponent(boutiqueId)}`,
     );
-    const data = (await response.json()) as {
+    const data = (await parseOwnerJson(response)) as {
       usage?: TrOwnerAiCreditUsage;
       error?: string;
     };
@@ -549,7 +633,7 @@ export async function deleteOwnerProduct(
   );
   let data: { error?: string; mode?: "deleted" | "hidden"; message?: string };
   try {
-    data = (await response.json()) as typeof data;
+    data = (await parseOwnerJson(response)) as typeof data;
   } catch {
     throw new Error(
       response.ok ? "Silme yanıtı okunamadı." : "Ürün silinemedi.",
@@ -575,7 +659,7 @@ export async function duplicateOwnerProduct(
       body: JSON.stringify({ action: "duplicate" }),
     },
   );
-  const data = (await response.json()) as { product?: TrProduct; error?: string };
+  const data = (await parseOwnerJson(response)) as { product?: TrProduct; error?: string };
   if (!response.ok) {
     throw new Error(data.error ?? "Ürün kopyalanamadı.");
   }
@@ -589,7 +673,7 @@ export async function fetchOwnerOrders(boutiqueId: string) {
     const response = await ownerFetch(
       `/api/tr/owner/orders?boutiqueId=${encodeURIComponent(boutiqueId)}`,
     );
-    const data = (await response.json()) as {
+    const data = (await parseOwnerJson(response)) as {
       orders?: import("@/types/tr-marketplace").TrOrderWithItems[];
       error?: string;
     };
@@ -604,7 +688,7 @@ export async function fetchOwnerOrder(boutiqueId: string, orderId: string) {
   const response = await ownerFetch(
     `/api/tr/owner/orders/${encodeURIComponent(orderId)}?boutiqueId=${encodeURIComponent(boutiqueId)}`,
   );
-  const data = (await response.json()) as {
+  const data = (await parseOwnerJson(response)) as {
     order?: import("@/types/tr-marketplace").TrOrderWithItems;
     error?: string;
   };
@@ -627,7 +711,7 @@ export async function updateOwnerOrderFulfillment(
       body: JSON.stringify({ boutiqueId, fulfillmentStatus }),
     },
   );
-  const data = (await response.json()) as {
+  const data = (await parseOwnerJson(response)) as {
     order?: import("@/types/tr-marketplace").TrOrderWithItems;
     error?: string;
   };
@@ -651,7 +735,7 @@ export async function updateOwnerOrderPaymentPaid(
       body: JSON.stringify({ boutiqueId, paymentStatus: "paid" }),
     },
   );
-  const data = (await response.json()) as {
+  const data = (await parseOwnerJson(response)) as {
     order?: import("@/types/tr-marketplace").TrOrderWithItems;
     error?: string;
   };
@@ -763,7 +847,7 @@ async function parseShipmentResponse(
   rates?: TrShippingRate[];
   trackingPath?: string | null;
 }> {
-  const data = (await response.json()) as {
+  const data = (await parseOwnerJson(response)) as {
     order?: TrOrderWithItems;
     rates?: TrShippingRate[];
     trackingPath?: string | null;
@@ -785,7 +869,7 @@ export async function fetchOwnerCustomers(boutiqueId: string) {
     const response = await ownerFetch(
       `/api/tr/owner/customers?boutiqueId=${encodeURIComponent(boutiqueId)}`,
     );
-    const data = (await response.json()) as {
+    const data = (await parseOwnerJson(response)) as {
       customers?: import("@/types/tr-marketplace").TrOwnerCustomer[];
       error?: string;
     };
@@ -801,7 +885,7 @@ export async function fetchOwnerDiscountCodes(boutiqueId: string) {
     const response = await ownerFetch(
       `/api/tr/owner/discounts?boutiqueId=${encodeURIComponent(boutiqueId)}`,
     );
-    const data = (await response.json()) as {
+    const data = (await parseOwnerJson(response)) as {
       codes?: import("@/types/tr-marketplace").TrDiscountCode[];
       error?: string;
     };
@@ -825,7 +909,7 @@ export async function createOwnerDiscountCode(
     method: "POST",
     body: JSON.stringify({ boutiqueId, ...payload }),
   });
-  const data = (await response.json()) as {
+  const data = (await parseOwnerJson(response)) as {
     code?: import("@/types/tr-marketplace").TrDiscountCode;
     error?: string;
   };
@@ -849,7 +933,7 @@ export async function setOwnerDiscountCodeActive(
       body: JSON.stringify({ boutiqueId, active }),
     },
   );
-  const data = (await response.json()) as {
+  const data = (await parseOwnerJson(response)) as {
     code?: import("@/types/tr-marketplace").TrDiscountCode;
     error?: string;
   };
@@ -865,7 +949,7 @@ export async function fetchOwnerContentPacks(boutiqueId: string) {
   const response = await ownerFetch(
     `/api/tr/owner/content-packs?boutiqueId=${encodeURIComponent(boutiqueId)}`,
   );
-  const data = (await response.json()) as {
+  const data = (await parseOwnerJson(response)) as {
     packs?: import("@/lib/tr/contentPacks").TrContentPack[];
     error?: string;
   };
@@ -879,7 +963,7 @@ export async function fetchOwnerContentPack(packId: string) {
   const response = await ownerFetch(
     `/api/tr/owner/content-packs/${encodeURIComponent(packId)}`,
   );
-  const data = (await response.json()) as {
+  const data = (await parseOwnerJson(response)) as {
     pack?: import("@/lib/tr/contentPacks").TrContentPack;
     error?: string;
   };
@@ -901,7 +985,7 @@ export async function createOwnerContentPack(
     method: "POST",
     body: JSON.stringify({ boutiqueId, productId }),
   });
-  const data = (await response.json()) as {
+  const data = (await parseOwnerJson(response)) as {
     pack?: import("@/lib/tr/contentPacks").TrContentPack;
     warning?: string | null;
     error?: string;
@@ -943,7 +1027,7 @@ export async function fetchOwnerBoutiqueSettings(
     const response = await ownerFetch(
       `/api/tr/owner/boutiques/${encodeURIComponent(boutiqueId)}`,
     );
-    const data = (await response.json()) as {
+    const data = (await parseOwnerJson(response)) as {
       boutique?: TrOwnerBoutiqueSettings;
       error?: string;
     };
@@ -981,7 +1065,7 @@ export async function updateOwnerBoutiqueSettings(
       body: JSON.stringify(payload),
     },
   );
-  const data = (await response.json()) as {
+  const data = (await parseOwnerJson(response)) as {
     boutique?: TrOwnerBoutiqueSettings;
     error?: string;
   };
@@ -1001,7 +1085,7 @@ export async function fetchOwnerBoutiqueOptions(boutiqueId: string): Promise<{
   const response = await ownerFetch(
     `/api/tr/owner/boutiques/${encodeURIComponent(boutiqueId)}/options`,
   );
-  const data = (await response.json()) as {
+  const data = (await parseOwnerJson(response)) as {
     sizePresets?: string[];
     colorPresets?: TrProductColor[];
     error?: string;
@@ -1032,7 +1116,7 @@ export async function updateOwnerBoutiqueOptions(
       body: JSON.stringify(payload),
     },
   );
-  const data = (await response.json()) as {
+  const data = (await parseOwnerJson(response)) as {
     sizePresets?: string[];
     colorPresets?: TrProductColor[];
     error?: string;
@@ -1053,7 +1137,7 @@ export async function fetchOwnerInvoices(
     const response = await ownerFetch(
       `/api/tr/owner/invoices?boutiqueId=${encodeURIComponent(boutiqueId)}`,
     );
-    const data = (await response.json()) as {
+    const data = (await parseOwnerJson(response)) as {
       invoices?: TrInvoice[];
       error?: string;
     };
@@ -1072,7 +1156,7 @@ export async function createOwnerInvoiceDraft(
     method: "POST",
     body: JSON.stringify({ boutiqueId, orderId }),
   });
-  const data = (await response.json()) as {
+  const data = (await parseOwnerJson(response)) as {
     invoice?: TrInvoice;
     error?: string;
   };
@@ -1099,7 +1183,7 @@ export async function updateOwnerInvoice(
       body: JSON.stringify(payload),
     },
   );
-  const data = (await response.json()) as {
+  const data = (await parseOwnerJson(response)) as {
     invoice?: TrInvoice;
     error?: string;
   };

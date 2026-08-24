@@ -19,6 +19,59 @@ function nonEmpty(urls: string[] | undefined): string[] {
   return (urls ?? []).filter((url) => Boolean(url?.trim()));
 }
 
+/** Keep later slots (elbise packshot at [3]) when `images` is shorter. */
+export function alignMarketplaceSlots(
+  images: string[],
+  marketplaceImages: string[],
+): string[] {
+  const len = Math.max(images.length, marketplaceImages.length);
+  const out: string[] = [];
+  for (let i = 0; i < len; i += 1) {
+    out.push(marketplaceImages[i] ?? "");
+  }
+  return out;
+}
+
+export function cleanedLifestyleImages(urls: string[] | undefined): string[] {
+  return nonEmpty(urls).slice(0, TR_OWNER_PRODUCT_LIMITS.maxImages);
+}
+
+export function replaceLifestyleShot(
+  urls: string[] | undefined,
+  index: number,
+  url: string,
+): string[] {
+  const next = [...(urls ?? [])];
+  while (next.length <= index) next.push("");
+  next[index] = url.trim();
+  return cleanedLifestyleImages(next);
+}
+
+/** Owner manken / hanger slots copied into marketplace — not shopper packshots. */
+function ownerUploadUrls(product: CatalogImageProduct): Set<string> {
+  return new Set(nonEmpty(product.images).slice(0, 3));
+}
+
+function isOwnerOriginalUrl(
+  product: CatalogImageProduct,
+  url: string,
+): boolean {
+  if (ownerUploadUrls(product).has(url)) return true;
+  return url.includes("/original/");
+}
+
+function catalogPackshotUrl(product: CatalogImageProduct): string | undefined {
+  const originals = ownerUploadUrls(product);
+  for (const url of product.marketplaceImages ?? []) {
+    const trimmed = url?.trim();
+    if (trimmed && !originals.has(trimmed)) return trimmed;
+  }
+  const slot3 =
+    product.marketplaceImages?.[3]?.trim() || product.images?.[3]?.trim();
+  if (slot3 && !originals.has(slot3)) return slot3;
+  return undefined;
+}
+
 /** Original boutique gallery (owner uploads). */
 export function getBoutiqueProductImages(
   product: Pick<TrProduct, "images">,
@@ -97,23 +150,53 @@ function galleryFromSlots(params: {
   return out;
 }
 
+/**
+ * Shopper gallery: generated model shots first when present, then packshot.
+ * Owner manken / hanger originals stay in `images` (panel / orijinaller).
+ */
+function shopperFacingGallery(product: CatalogImageProduct): string[] {
+  const lifestyle = nonEmpty(product.lifestyleImages);
+  const packshot = catalogPackshotUrl(product);
+  const seen = new Set<string>();
+  const out: string[] = [];
+  const push = (url: string | undefined) => {
+    const trimmed = url?.trim();
+    if (!trimmed || seen.has(trimmed)) return;
+    if (isOwnerOriginalUrl(product, trimmed) && trimmed !== packshot) return;
+    seen.add(trimmed);
+    out.push(trimmed);
+  };
+
+  for (const url of lifestyle) push(url);
+  push(packshot);
+  if (out.length > 0) return out;
+
+  const fallback = galleryFromSlots({ product, preferStorefront: false });
+  const cleaned = fallback.filter((url) => !isOwnerOriginalUrl(product, url));
+  return cleaned.length > 0 ? cleaned : fallback;
+}
+
 export function getProductCoverImageFor(
   surface: TrProductImageSurface,
   product: CatalogImageProduct,
 ): string | null {
   if (surface === "boutique") {
+    const lifestyle = nonEmpty(product.lifestyleImages);
+    const packshot = lifestyle.length > 0 ? catalogPackshotUrl(product) : undefined;
     const gallery = galleryFromSlots({
       product,
       preferStorefront: false,
     });
-    if (gallery[0]) {
-      return deliverPublicAssetUrl(gallery[0], "full");
+    const cover = packshot ?? gallery[0];
+    if (cover) {
+      return deliverPublicAssetUrl(cover, "full");
     }
     const fallback = getBoutiqueProductImages(product)[0];
     return fallback ? deliverPublicAssetUrl(fallback, "full") : null;
   }
 
-  const marketplace = getMarketplaceProductImages(product)[0];
+  const packshot = catalogPackshotUrl(product);
+  const marketplace = packshot ?? getMarketplaceProductImages(product)[0];
   return marketplace ? deliverPublicAssetUrl(marketplace, "full") : null;
 }
 
@@ -127,16 +210,14 @@ export function hasRealMarketplaceImagery(
 }
 
 /**
- * Boutique PDP / PLP / Merchant: PNG packshots, then unused extra originals,
- * then lifestyle. Do not prefer leftover storefront WebP copies.
+ * Boutique PDP / Merchant: model shots first when present, then packshot.
+ * Owner uploads stay in `images` (panel / orijinaller). Do not prefer leftover
+ * storefront WebP copies.
  */
 export function getStorefrontGalleryImages(
   product: CatalogImageProduct,
 ): string[] {
-  return deliverPublicAssetUrls(
-    galleryFromSlots({ product, preferStorefront: false }),
-    "full",
-  );
+  return deliverPublicAssetUrls(shopperFacingGallery(product), "full");
 }
 
 /**
@@ -145,10 +226,7 @@ export function getStorefrontGalleryImages(
 export function getMarketplaceGalleryImages(
   product: CatalogImageProduct,
 ): string[] {
-  return deliverPublicAssetUrls(
-    galleryFromSlots({ product, preferStorefront: false }),
-    "full",
-  );
+  return deliverPublicAssetUrls(shopperFacingGallery(product), "full");
 }
 
 /**
@@ -157,11 +235,13 @@ export function getMarketplaceGalleryImages(
 export function getPanelProductCover(
   product: CatalogImageProduct,
 ): string | null {
+  const packshot = catalogPackshotUrl(product);
   const boutiqueCover =
     galleryFromSlots({ product, preferStorefront: false })[0] ??
     getBoutiqueProductImages(product)[0] ??
     null;
   const raw =
+    packshot ??
     boutiqueCover ??
     getMarketplaceProductImages(product)[0] ??
     getBoutiqueProductImages(product)[0] ??

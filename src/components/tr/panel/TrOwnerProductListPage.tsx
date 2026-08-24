@@ -10,6 +10,10 @@ import {
   TrPanelDataTableCell,
   TrPanelDataTableRow,
 } from "@/components/tr/panel/TrPanelDataTable";
+import {
+  useElbiseRestyleSaved,
+  useOpenElbiseRestyle,
+} from "@/components/tr/panel/TrOwnerElbiseRestyleSession";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
 import {
   panelDesktopBtnClass,
@@ -42,6 +46,7 @@ import {
 } from "@/lib/tr/categories";
 import { runOwnerPatches } from "@/lib/tr/ownerBulk";
 import { getPanelProductCover } from "@/lib/tr/productImages";
+import { isElbiseRestyleCandidate } from "@/lib/tr/aiCatalog/elbiseRestyle";
 import {
   deleteOwnerProduct,
   fetchOwnerProducts,
@@ -94,7 +99,13 @@ function formatUpdated(iso: string): string {
   }).format(new Date(iso));
 }
 
-function ProductList({ boutiqueId }: { boutiqueId: string }) {
+function ProductList({
+  boutiqueId,
+  boutiqueSlug,
+}: {
+  boutiqueId: string;
+  boutiqueSlug: string;
+}) {
   const cached = peekOwnerProducts(boutiqueId);
   const [products, setProducts] = useState<TrProduct[]>(cached?.products ?? []);
   const [loading, setLoading] = useState(!cached);
@@ -108,6 +119,7 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
   const [bulkBusy, setBulkBusy] = useState(false);
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
   const [savingIds, setSavingIds] = useState<Set<string>>(new Set());
+  const openRestyle = useOpenElbiseRestyle();
 
   useEffect(() => {
     try {
@@ -184,11 +196,20 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
     }
     const q = search.trim().toLocaleLowerCase("tr");
     if (q) {
+      const pastedId = q.match(
+        /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i,
+      );
       list = list.filter((product) => {
         const title = product.title.toLocaleLowerCase("tr");
         const cat =
           getTrCategoryLabel(product.category)?.toLocaleLowerCase("tr") ?? "";
-        return title.includes(q) || cat.includes(q);
+        const id = product.id.toLocaleLowerCase("tr");
+        if (title.includes(q) || cat.includes(q) || id.includes(q)) {
+          return true;
+        }
+        return Boolean(
+          pastedId && id === pastedId[0].toLocaleLowerCase("tr"),
+        );
       });
     }
     return list;
@@ -196,6 +217,17 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
 
   const orderedIds = useMemo(() => visible.map((p) => p.id), [visible]);
   const selection = usePanelRowSelection(orderedIds);
+  const restyleCandidates = useMemo(
+    () => products.filter(isElbiseRestyleCandidate),
+    [products],
+  );
+  const restyleSelectionIds = useMemo(
+    () =>
+      restyleCandidates
+        .filter((product) => selection.selectedIds.has(product.id))
+        .map((product) => product.id),
+    [restyleCandidates, selection.selectedIds],
+  );
 
   useEffect(() => {
     if (selection.selectedCount === 0) setConfirmBulkDelete(false);
@@ -215,6 +247,7 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
       current.map((entry) => (entry.id === updated.id ? updated : entry)),
     );
   };
+  useElbiseRestyleSaved(applyLocal);
 
   const patchProduct = async (
     productId: string,
@@ -324,7 +357,7 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
         type="search"
         value={search}
         onChange={(event) => setSearch(event.target.value)}
-        placeholder="Ürün veya kategori ara…"
+        placeholder="Ürün, kategori veya ürün kodu ara…"
         className={`${panelDesktopSearchClass} max-w-none lg:max-w-sm`}
         aria-label="Ürünlerde ara"
       />
@@ -422,6 +455,21 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
               >
                 Toplu ekle
               </Link>
+              {restyleCandidates.length > 0 ? (
+                <button
+                  type="button"
+                  className={`${panelSecondaryBtnClass} lg:h-9 lg:min-h-0 lg:rounded-lg lg:px-4 lg:py-0 lg:text-[13px]`}
+                  onClick={() => {
+                    openRestyle?.({
+                      boutiqueId,
+                      boutiqueSlug,
+                      products: restyleCandidates,
+                    });
+                  }}
+                >
+                  Packshot + model
+                </button>
+              ) : null}
             </div>
           </div>
 
@@ -792,6 +840,21 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
                   </select>
                   <button
                     type="button"
+                    disabled={bulkBusy || restyleSelectionIds.length === 0}
+                    className={panelDesktopBtnClass}
+                    onClick={() => {
+                      openRestyle?.({
+                        boutiqueId,
+                        boutiqueSlug,
+                        products: restyleCandidates,
+                        initiallyCheckedIds: restyleSelectionIds,
+                      });
+                    }}
+                  >
+                    Packshot + model
+                  </button>
+                  <button
+                    type="button"
                     disabled={bulkBusy}
                     className={panelDesktopBtnClass}
                     onClick={() => void runBulk({ status: "hidden" })}
@@ -854,7 +917,10 @@ export function TrOwnerProductListPage() {
             </Link>
             <h2 className={panelPageTitleClass}>Ürünler</h2>
           </div>
-          <ProductList boutiqueId={activeBoutique.id} />
+          <ProductList
+            boutiqueId={activeBoutique.id}
+            boutiqueSlug={activeBoutique.slug}
+          />
         </div>
       )}
     </TrOwnerPanelGate>

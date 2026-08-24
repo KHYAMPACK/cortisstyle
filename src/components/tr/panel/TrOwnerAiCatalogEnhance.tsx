@@ -12,6 +12,7 @@ import {
 import {
   describeModelPackageCredits,
   describeModelPackageShots,
+  TR_AI_CATALOG_CREDITS,
 } from "@/lib/tr/aiCatalog/uploadCostHints";
 import {
   TrOwnerCreditsCostLine,
@@ -19,11 +20,25 @@ import {
 } from "@/components/tr/panel/TrOwnerCreditsInfo";
 import {
   getAiModelOptionById,
+  getElbiseTryOnPlates,
   isLilaHouseModelId,
   LILA_DEFAULT_PHOTOGRAPHY_STYLE,
   listAiModelOptions,
   type TrLilaPhotographyStyle,
 } from "@/lib/tr/aiModel/registry";
+import {
+  buildElbiseTryOnShots,
+  chipsFromProductFeatures,
+  elbiseLifestyleShotLabel,
+} from "@/lib/tr/aiModel/elbiseTryOn";
+import { isElbiseUpload } from "@/lib/tr/catalog/garmentUploadTypes";
+import { replaceLifestyleShot } from "@/lib/tr/catalog/productImages";
+import {
+  lifestyleModelIdAt,
+  withLifestyleModelsAll,
+  withLifestyleModelShot,
+} from "@/lib/tr/catalog/productFeatures";
+import type { TrProductFeatures } from "@/types/tr-marketplace";
 import { useScheduleAiJob } from "@/components/tr/panel/TrOwnerAiJobQueue";
 import { useRegisterLeaveBusy } from "@/components/tr/panel/TrOwnerLeaveGuard";
 import {
@@ -54,11 +69,19 @@ export interface TrOwnerAiCatalogEnhanceProps {
   onPhotographyStyleChange?: (style: TrLilaPhotographyStyle) => void;
   onMarketplaceImagesChange: (urls: string[]) => void;
   onLifestyleImagesChange: (urls: string[]) => void;
+  onFeaturesChange?: (features: TrProductFeatures) => void;
   onListingDraft?: (draft: OwnerListingDraft) => void;
   onModelJobsChange?: (jobs: PipelineJobItem[]) => void;
   /** Skip model shot and continue (optional step). */
   onSkip?: () => void;
   disabled?: boolean;
+  /**
+   * Elbise copies manken into marketplace on purpose — do not treat
+   * matching URLs as “needs a packshot”.
+   */
+  skipPackshot?: boolean;
+  features?: TrProductFeatures;
+  uploadType?: string | null;
 }
 
 type EnhancePhase =
@@ -108,10 +131,14 @@ export function TrOwnerAiCatalogEnhance({
   onPhotographyStyleChange,
   onMarketplaceImagesChange,
   onLifestyleImagesChange,
+  onFeaturesChange,
   onListingDraft,
   onModelJobsChange,
   onSkip,
   disabled = false,
+  skipPackshot = false,
+  features,
+  uploadType = null,
 }: TrOwnerAiCatalogEnhanceProps) {
   const scheduleAiJob = useScheduleAiJob();
   const [phase, setPhase] = useState<EnhancePhase>("idle");
@@ -119,6 +146,9 @@ export function TrOwnerAiCatalogEnhance({
   const [progressPct, setProgressPct] = useState(0);
   const [progressTarget, setProgressTarget] = useState(0);
   const [runMode, setRunMode] = useState<"create" | "replace" | null>(null);
+  const [busyShotIndex, setBusyShotIndex] = useState<number | "all" | null>(
+    null,
+  );
   const [error, setError] = useState<string | null>(null);
   const [regenOpen, setRegenOpen] = useState(false);
   const [regenDraftModelId, setRegenDraftModelId] = useState<string | null>(
@@ -138,16 +168,45 @@ export function TrOwnerAiCatalogEnhance({
   const selectedReady = options.find((o) => o.id === selectedModelId)?.ready;
   const previewUrls = lifestylePreviewUrls(lifestyleImages);
   const hasModelPhoto = previewUrls.length > 0;
-  const shotCount = describeModelPackageShots(selectedModelId);
-  const modelCredits = describeModelPackageCredits(selectedModelId);
+  const elbise = skipPackshot || isElbiseUpload(uploadType);
+  const dressChips = chipsFromProductFeatures(features);
+  const packshotUrl =
+    marketplaceImages[3]?.trim() || images[3]?.trim() || "";
+  const backMankenUrl = images[1]?.trim() || marketplaceImages[1]?.trim() || "";
+  const detailMankenUrl =
+    images[2]?.trim() || marketplaceImages[2]?.trim() || "";
+  const costContext = elbise
+    ? {
+        uploadType: "elbise" as const,
+        features: dressChips,
+        detailImageUrl: detailMankenUrl,
+      }
+    : undefined;
+  const shotCount = describeModelPackageShots(selectedModelId, costContext);
+  const modelCredits = describeModelPackageCredits(
+    selectedModelId,
+    costContext,
+  );
   const lilaSelected = isLilaHouseModelId(selectedModelId);
-  const currentModel = selectedModelId
-    ? getAiModelOptionById(selectedModelId, boutiqueSlug)
+  const storedPrimary =
+    lifestyleModelIdAt(features, 0) ||
+    lifestyleModelIdAt(features, 1) ||
+    lifestyleModelIdAt(features, 2);
+  const chipModelId = hasModelPhoto ? storedPrimary : selectedModelId;
+  const hasBackPlate = Boolean(
+    (chipModelId || selectedModelId) &&
+      getElbiseTryOnPlates(chipModelId || selectedModelId)?.back,
+  );
+  const currentModel = chipModelId
+    ? getAiModelOptionById(chipModelId, boutiqueSlug)
     : null;
   const regenDraftReady = options.find(
     (o) => o.id === regenDraftModelId,
   )?.ready;
-  const regenDraftCredits = describeModelPackageCredits(regenDraftModelId);
+  const regenDraftCredits = describeModelPackageCredits(
+    regenDraftModelId,
+    costContext,
+  );
 
   const slotSources = useMemo(() => {
     const slots: Array<{ index: number; source: string }> = [];
@@ -207,16 +266,20 @@ export function TrOwnerAiCatalogEnhance({
     ]);
   };
 
+  const garmentsReady = elbise
+    ? Boolean(packshotUrl && backMankenUrl)
+    : slotSources.length >= 2;
+
   const canGenerate =
     !disabled &&
     !busy &&
-    slotSources.length >= 2 &&
+    garmentsReady &&
     Boolean(selectedModelId) &&
     Boolean(selectedReady);
 
   function openRegenSheet() {
     setConfirmDelete(false);
-    setRegenDraftModelId(selectedModelId);
+    setRegenDraftModelId(selectedModelId || storedPrimary || null);
     setRegenDraftStyle(photographyStyle);
     setRegenOpen(true);
   }
@@ -226,31 +289,51 @@ export function TrOwnerAiCatalogEnhance({
     override?: {
       modelId: string;
       photographyStyle?: TrLilaPhotographyStyle;
+      shotIndex?: number;
     },
   ) {
     const modelId = override?.modelId ?? selectedModelId;
     const style = override?.photographyStyle ?? photographyStyle;
+    const shotIndex = override?.shotIndex;
+    const singleShot = typeof shotIndex === "number";
     const modelReady = options.find((o) => o.id === modelId)?.ready;
-    if (disabled || busy || slotSources.length < 2 || !modelId || !modelReady) {
+    const ready = elbise
+      ? Boolean(packshotUrl && backMankenUrl)
+      : slotSources.length >= 2;
+    if (disabled || busy || !ready || !modelId || !modelReady) {
       return;
     }
     if (mode === "create" && hasModelPhoto) return;
     if (mode === "replace" && !hasModelPhoto) return;
 
-    if (modelId !== selectedModelId) onSelectedModelIdChange(modelId);
-    if (style !== photographyStyle) onPhotographyStyleChange?.(style);
+    if (!singleShot) {
+      if (modelId) onSelectedModelIdChange(modelId);
+      if (style !== photographyStyle) onPhotographyStyleChange?.(style);
+    }
 
     setRegenOpen(false);
     setConfirmDelete(false);
     setError(null);
     setRunMode(mode);
-    setPhase("packshot");
-    setProgressPct(4);
-    setProgressTarget(12);
-    pushProgress(
-      12,
-      mode === "replace" ? "Yenileme hazırlanıyor…" : "Katalog kontrolü…",
-    );
+    setBusyShotIndex(singleShot ? shotIndex : "all");
+    if (elbise) {
+      setPhase("tryon");
+      setProgressPct(8);
+      setProgressTarget(16);
+      pushProgress(
+        16,
+        mode === "replace" ? "Model kareleri yenileniyor…" : "Model kareleri hazırlanıyor…",
+        "Model çekimi",
+      );
+    } else {
+      setPhase("packshot");
+      setProgressPct(4);
+      setProgressTarget(12);
+      pushProgress(
+        12,
+        mode === "replace" ? "Yenileme hazırlanıyor…" : "Katalog kontrolü…",
+      );
+    }
 
     try {
       const nextMarketplace = [...marketplaceImages];
@@ -258,57 +341,105 @@ export function TrOwnerAiCatalogEnhance({
         nextMarketplace.push("");
       }
 
-      for (let i = 0; i < slotSources.length; i++) {
-        const slot = slotSources[i]!;
-        const existing = nextMarketplace[slot.index]?.trim();
-        if (existing && existing !== images[slot.index]?.trim()) {
-          continue;
-        }
-        const detail = `Katalog görseli ${i + 1}/${slotSources.length}…`;
-        pushProgress(18 + i * 14, "Sırada…");
-        const pack = await scheduleAiJob(
-          () =>
-            requestOwnerPackshot({
-              boutiqueId,
-              sourceImageUrl: slot.source,
-              productId: productId ?? undefined,
-              title,
-              category,
-              view: slot.index === 1 ? "back" : "front",
-              numImages: 1,
-            }),
-          {
-            onStart: () => pushProgress(22 + i * 14, detail),
-          },
-        );
-        if (pack.status !== "succeeded" || !pack.imageUrls[0]) {
-          throw new Error(pack.error ?? "Katalog görseli üretilemedi.");
-        }
-        nextMarketplace[slot.index] = pack.imageUrls[0];
-        if (
-          slot.index === 0 &&
-          pack.listingDraft?.title?.trim() &&
-          onListingDraft
-        ) {
-          onListingDraft({
-            title: pack.listingDraft.title.trim(),
-            description: pack.listingDraft.description?.trim() ?? "",
-            features: pack.listingDraft.features ?? {},
-          });
+      if (!skipPackshot && !singleShot) {
+        for (let i = 0; i < slotSources.length; i++) {
+          const slot = slotSources[i]!;
+          const existing = nextMarketplace[slot.index]?.trim();
+          if (existing && existing !== images[slot.index]?.trim()) {
+            continue;
+          }
+          const detail = `Katalog görseli ${i + 1}/${slotSources.length}…`;
+          pushProgress(18 + i * 14, "Sırada…");
+          const pack = await scheduleAiJob(
+            () =>
+              requestOwnerPackshot({
+                boutiqueId,
+                sourceImageUrl: slot.source,
+                productId: productId ?? undefined,
+                title,
+                category,
+                view: slot.index === 1 ? "back" : "front",
+                numImages: 1,
+              }),
+            {
+              onStart: () => pushProgress(22 + i * 14, detail),
+            },
+          );
+          if (pack.status !== "succeeded" || !pack.imageUrls[0]) {
+            throw new Error(pack.error ?? "Katalog görseli üretilemedi.");
+          }
+          nextMarketplace[slot.index] = pack.imageUrls[0];
+          if (
+            slot.index === 0 &&
+            pack.listingDraft?.title?.trim() &&
+            onListingDraft
+          ) {
+            onListingDraft({
+              title: pack.listingDraft.title.trim(),
+              description: pack.listingDraft.description?.trim() ?? "",
+              features: pack.listingDraft.features ?? {},
+            });
+          }
         }
       }
       onMarketplaceImagesChange(nextMarketplace);
 
       setPhase("tryon");
-      const frontGarment = nextMarketplace[0]?.trim() || "";
-      if (!frontGarment) {
-        throw new Error(
-          "Model için ön katalog (packshot) görseli gerekli.",
-        );
+      let generateInput: Parameters<typeof requestOwnerAiModelGenerate>[0];
+      if (elbise) {
+        const packshot =
+          nextMarketplace[3]?.trim() || packshotUrl;
+        const planned = buildElbiseTryOnShots({
+          modelId,
+          packshotUrl: packshot,
+          backMankenUrl,
+          detailMankenUrl,
+          chips: dressChips,
+        });
+        if (planned.error || planned.shots.length === 0) {
+          throw new Error(
+            planned.error ?? "Model kareleri hazırlanamadı.",
+          );
+        }
+        const shots = singleShot
+          ? planned.shots.slice(shotIndex, shotIndex + 1)
+          : planned.shots;
+        if (shots.length === 0) {
+          throw new Error("Bu kare yenilenemedi.");
+        }
+        generateInput = {
+          boutiqueId,
+          cutoutImageUrl: shots[0]!.cutoutImageUrl,
+          productId: productId ?? undefined,
+          title,
+          category,
+          modelId,
+          shots,
+          replaceLifestyleIndex: singleShot ? shotIndex : undefined,
+        };
+      } else {
+        const frontGarment = nextMarketplace[0]?.trim() || "";
+        if (!frontGarment) {
+          throw new Error(
+            "Model için ön katalog (packshot) görseli gerekli.",
+          );
+        }
+        generateInput = {
+          boutiqueId,
+          cutoutImageUrl: frontGarment,
+          productId: productId ?? undefined,
+          title,
+          category,
+          modelId,
+          photographyStyle: isLilaHouseModelId(modelId) ? style : undefined,
+          pose: "standing-front",
+          replaceLifestyleIndex: singleShot ? shotIndex : undefined,
+        };
       }
 
-      const tryOnDetail =
-        mode === "replace"
+      const tryOnDetail = singleShot
+        ? `${elbiseLifestyleShotLabel(shotIndex, shotCount, hasBackPlate)} yenileniyor…`
+        : mode === "replace"
           ? shotCount > 1
             ? "Model fotoğrafları yenileniyor…"
             : "Model fotoğrafı yenileniyor…"
@@ -317,17 +448,7 @@ export function TrOwnerAiCatalogEnhance({
             : "Model fotoğrafı oluşturuluyor…";
       pushProgress(68, "Sırada…", "Model çekimi");
       const result = await scheduleAiJob(
-        () =>
-          requestOwnerAiModelGenerate({
-            boutiqueId,
-            cutoutImageUrl: frontGarment,
-            productId: productId ?? undefined,
-            title,
-            category,
-            modelId,
-            photographyStyle: isLilaHouseModelId(modelId) ? style : undefined,
-            pose: "standing-front",
-          }),
+        () => requestOwnerAiModelGenerate(generateInput),
         {
           onStart: () =>
             pushProgress(72, tryOnDetail, "Model çekimi"),
@@ -340,24 +461,43 @@ export function TrOwnerAiCatalogEnhance({
         throw new Error(result.error ?? "Model görseli üretilemedi.");
       }
 
+      const nextLifestyle = singleShot
+        ? replaceLifestyleShot(previewUrls, shotIndex, produced[0]!)
+        : produced;
+      const usedCredits = singleShot
+        ? TR_AI_CATALOG_CREDITS.modelPackage
+        : modelCredits;
+
       setProgressPct(100);
       setProgressTarget(100);
-      onLifestyleImagesChange(produced);
+      onLifestyleImagesChange(nextLifestyle);
+      onFeaturesChange?.(
+        singleShot
+          ? withLifestyleModelShot(
+              features,
+              shotIndex,
+              modelId,
+              nextLifestyle.length,
+            )
+          : withLifestyleModelsAll(features, modelId, nextLifestyle.length),
+      );
       setPhase("done");
+      setBusyShotIndex(null);
       setProgressLabel(
         productId
           ? mode === "replace"
-            ? `Model fotoğrafı yenilendi ve kaydedildi (${modelCredits} kredi).`
-            : `Model fotoğrafı kaydedildi (${modelCredits} kredi).`
+            ? `Model fotoğrafı yenilendi ve kaydedildi (${usedCredits} kredi).`
+            : `Model fotoğrafı kaydedildi (${usedCredits} kredi).`
           : mode === "replace"
-            ? `Model fotoğrafı yenilendi (${modelCredits} kredi).`
-            : `Model fotoğrafı hazır (${modelCredits} kredi).`,
+            ? `Model fotoğrafı yenilendi (${usedCredits} kredi).`
+            : `Model fotoğrafı hazır (${usedCredits} kredi).`,
       );
       setRunMode(null);
       onModelJobsChange?.([]);
     } catch (err) {
       setPhase("error");
       setRunMode(null);
+      setBusyShotIndex(null);
       setProgressPct(0);
       setProgressTarget(0);
       setError(err instanceof Error ? err.message : "İşlem başarısız.");
@@ -384,6 +524,7 @@ export function TrOwnerAiCatalogEnhance({
     setProgressPct(0);
     setProgressTarget(0);
     setRunMode(null);
+    setBusyShotIndex(null);
     setError(null);
     if (!productId) return;
     try {
@@ -408,9 +549,13 @@ export function TrOwnerAiCatalogEnhance({
           Model fotoğrafı
         </p>
         <p className="mt-1 text-[14px] text-neutral-600">
-          {lilaSelected
-            ? "Seçilen ışık stilinden 2 farklı kare."
-            : "Ürün başına 1 model karesi (ön)."}
+          {elbise
+            ? shotCount > 2
+              ? "2 stüdyo karesi (üç-çeyrek + sırt) ve 1 detay karesi."
+              : "2 stüdyo karesi: üç-çeyrek ve sırt. Detay fotoğrafı varsa üçüncü kare eklenir."
+            : lilaSelected
+              ? "Seçilen ışık stilinden 1 model karesi."
+              : "Ürün başına 1 model karesi (ön)."}
           {onSkip ? " İsterseniz bu adımı atlayabilirsiniz." : ""}
         </p>
       </div>
@@ -422,6 +567,7 @@ export function TrOwnerAiCatalogEnhance({
           onChange={onSelectedModelIdChange}
           photographyStyle={photographyStyle}
           onPhotographyStyleChange={onPhotographyStyleChange}
+          hidePhotographyStyle={elbise}
           disabled={disabled || busy}
         />
       ) : !busy && currentModel ? (
@@ -446,61 +592,114 @@ export function TrOwnerAiCatalogEnhance({
       ) : null}
 
       {previewUrls.length > 0 ? (
-        <div className={shotCount > 1 ? "grid grid-cols-2 gap-3" : "sm:max-w-xs"}>
-          {previewUrls.map((url) => (
-            <div key={url} className="relative aspect-[2/3] overflow-hidden rounded-xl bg-white">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={url}
-                alt=""
-                className={`h-full w-full object-cover transition-[filter,opacity,transform] duration-500 ease-out ${
-                  busy
-                    ? "scale-[1.03] opacity-45 blur-[2px]"
-                    : "scale-100 opacity-100 blur-0"
-                }`}
-              />
-              <AnimatePresence>
-                {busy ? (
-                  <motion.div
-                    key={`model-busy-${url}`}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.25, ease }}
-                    className="absolute inset-0 flex flex-col items-center justify-end bg-gradient-to-t from-black/70 via-black/35 to-black/10 p-4"
-                    aria-live="polite"
-                    aria-busy="true"
-                  >
-                    <div className="mb-auto mt-10 flex flex-col items-center gap-3 text-center">
-                      <ModelBusySpinner className="h-8 w-8" />
-                      <p className="text-[13px] font-semibold tracking-[0.04em] text-white uppercase">
-                        {runMode === "replace" ? "Yenileniyor" : "Hazırlanıyor"}
-                      </p>
-                    </div>
-                    <div className="w-full space-y-2">
-                      <div className="flex items-end justify-between gap-2">
-                        <p className="min-w-0 text-[12px] leading-snug text-white/90">
-                          {progressLabel || "İşleniyor…"}
-                        </p>
-                        <span className="shrink-0 text-[12px] font-semibold tabular-nums text-white">
-                          {roundedPct}%
-                        </span>
-                      </div>
-                      <div className="h-1.5 overflow-hidden rounded-full bg-white/25">
-                        <motion.div
-                          className="h-full rounded-full bg-white"
-                          animate={{ width: `${progressPct}%` }}
-                          transition={{ duration: 0.35, ease }}
-                        />
-                      </div>
-                    </div>
-                  </motion.div>
-                ) : null}
-              </AnimatePresence>
-            </div>
-          ))}
+        <div className={previewUrls.length > 1 ? "grid grid-cols-2 gap-3" : "sm:max-w-xs"}>
+          {previewUrls.map((url, index) => {
+            const shotBusy =
+              busy &&
+              (busyShotIndex === "all" || busyShotIndex === index);
+            const shotModelId = lifestyleModelIdAt(features, index);
+            const shotModel = shotModelId
+              ? getAiModelOptionById(shotModelId, boutiqueSlug)
+              : null;
+            const canRegenShot =
+              !disabled &&
+              !busy &&
+              garmentsReady &&
+              Boolean(shotModelId) &&
+              Boolean(shotModel?.ready);
+            const shotLabel = elbise
+              ? elbiseLifestyleShotLabel(
+                  index,
+                  previewUrls.length,
+                  Boolean(
+                    shotModelId && getElbiseTryOnPlates(shotModelId)?.back,
+                  ),
+                )
+              : "Model karesi";
+            return (
+              <div key={`${index}-${url}`} className="space-y-2">
+                <div className="relative aspect-[2/3] overflow-hidden rounded-xl bg-white">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={url}
+                    alt=""
+                    className={`h-full w-full object-cover transition-[filter,opacity,transform] duration-500 ease-out ${
+                      shotBusy
+                        ? "scale-[1.03] opacity-45 blur-[2px]"
+                        : "scale-100 opacity-100 blur-0"
+                    }`}
+                  />
+                  <AnimatePresence>
+                    {shotBusy ? (
+                      <motion.div
+                        key={`model-busy-${index}`}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.25, ease }}
+                        className="absolute inset-0 flex flex-col items-center justify-end bg-gradient-to-t from-black/70 via-black/35 to-black/10 p-4"
+                        aria-live="polite"
+                        aria-busy="true"
+                      >
+                        <div className="mb-auto mt-10 flex flex-col items-center gap-3 text-center">
+                          <ModelBusySpinner className="h-8 w-8" />
+                          <p className="text-[13px] font-semibold tracking-[0.04em] text-white uppercase">
+                            Yenileniyor
+                          </p>
+                        </div>
+                        <div className="w-full space-y-2">
+                          <div className="flex items-end justify-between gap-2">
+                            <p className="min-w-0 text-[12px] leading-snug text-white/90">
+                              {progressLabel || "İşleniyor…"}
+                            </p>
+                            <span className="shrink-0 text-[12px] font-semibold tabular-nums text-white">
+                              {roundedPct}%
+                            </span>
+                          </div>
+                          <div className="h-1.5 overflow-hidden rounded-full bg-white/25">
+                            <motion.div
+                              className="h-full rounded-full bg-white"
+                              animate={{ width: `${progressPct}%` }}
+                              transition={{ duration: 0.35, ease }}
+                            />
+                          </div>
+                        </div>
+                      </motion.div>
+                    ) : null}
+                  </AnimatePresence>
+                </div>
+                <p className="text-[13px] font-semibold text-neutral-800">
+                  {shotLabel}
+                  {shotModel ? ` · ${shotModel.label}` : ""}
+                </p>
+                <button
+                  type="button"
+                  className={`${panelSecondaryBtnClass} min-h-11 w-full`}
+                  disabled={!canRegenShot}
+                  onClick={() => {
+                    if (!shotModelId) return;
+                    void runEnhance("replace", {
+                      modelId: shotModelId,
+                      shotIndex: index,
+                    });
+                  }}
+                >
+                  Bu kareyi yenile
+                </button>
+                <p className="text-center text-[12px] text-neutral-500">
+                  {shotModelId
+                    ? `${TR_AI_CATALOG_CREDITS.modelPackage} kredi`
+                    : "Model kaydı yok — tüm kareleri bir model ile üretin"}
+                </p>
+              </div>
+            );
+          })}
           {!busy ? (
-            <p className={`text-[13px] font-medium text-emerald-800 ${shotCount > 1 ? "col-span-2" : ""}`}>
+            <p
+              className={`text-[13px] font-medium text-emerald-800 ${
+                previewUrls.length > 1 ? "col-span-full" : ""
+              }`}
+            >
               {previewUrls.length > 1
                 ? `${previewUrls.length} model karesi hazır.`
                 : "Model fotoğrafı hazır — ürün başına 1 adet."}
@@ -581,7 +780,7 @@ export function TrOwnerAiCatalogEnhance({
             disabled={disabled}
             onClick={openRegenSheet}
           >
-            Yeniden oluştur
+            Modeli değiştir (tüm kareler)
           </button>
           <button
             type="button"
@@ -654,6 +853,12 @@ export function TrOwnerAiCatalogEnhance({
           />
           <TrOwnerCreditsMoreInfoLink boutiqueId={boutiqueId} />
         </>
+      ) : null}
+
+      {!hasModelPhoto && !busy && elbise && !packshotUrl ? (
+        <p className="text-[13px] text-amber-800">
+          Ön packshot hazır olunca model çekimi açılır.
+        </p>
       ) : null}
 
       {!hasModelPhoto && !busy && !selectedModelId ? (
@@ -736,8 +941,10 @@ export function TrOwnerAiCatalogEnhance({
                         onChange={setRegenDraftModelId}
                         photographyStyle={regenDraftStyle}
                         onPhotographyStyleChange={setRegenDraftStyle}
+                        hidePhotographyStyle={elbise}
                         variant="sheet"
                         allowDeselect={false}
+                        autoSelectDefault={false}
                       />
                       {!regenDraftModelId ? (
                         <p className="mt-3 text-[13px] text-neutral-600">
@@ -758,7 +965,7 @@ export function TrOwnerAiCatalogEnhance({
                           disabled ||
                           !regenDraftModelId ||
                           !regenDraftReady ||
-                          slotSources.length < 2
+                          !garmentsReady
                         }
                         onClick={() => {
                           if (!regenDraftModelId) return;

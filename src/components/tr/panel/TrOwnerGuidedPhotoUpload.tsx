@@ -5,12 +5,17 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import {
   describePhotoSlotCost,
+  TR_AI_CATALOG_CREDITS,
 } from "@/lib/tr/aiCatalog/uploadCostHints";
 import {
   pipelineJobKindForSlot,
   pipelineLabelForSlot,
   type PipelineJobItem,
 } from "@/lib/tr/aiCatalog/pipelineProgress";
+import {
+  buildElbiseConstructionLock,
+  constructionChipsEqual,
+} from "@/lib/tr/aiCatalog/elbiseConstructionLock";
 import {
   TrOwnerCreditsCostLine,
   TrOwnerCreditsMoreInfoLink,
@@ -20,6 +25,19 @@ import {
   productPhotoRoleLabel,
   TR_OWNER_PRODUCT_LIMITS,
 } from "@/lib/tr/ownerProductConstraints";
+import {
+  ELBISE_DETAIL_SLOT,
+  ELBISE_PACKSHOT_SLOT,
+  guidedPhotoSlotCountForUploadType,
+  isElbiseUpload,
+  requiredPhotoSlotsForUploadType,
+} from "@/lib/tr/catalog/garmentUploadTypes";
+import { resolveDressFeatureValue } from "@/lib/tr/catalog/dressFeatures";
+import {
+  emptyElbiseGateChips,
+  elbiseGateReady,
+  TrOwnerElbiseConstructionGateFields,
+} from "@/components/tr/panel/TrOwnerElbiseConstructionGate";
 import {
   panelPrimaryBtnClass,
   panelSecondaryBtnClass,
@@ -41,6 +59,22 @@ interface ActiveSlotJob {
   roleLabel: string;
   stage: UploadStage;
   progressPct: number;
+}
+
+interface ElbiseGateState {
+  frontUrl: string;
+  backUrl: string;
+  detailUrl: string;
+  sourceToken: string;
+  promptFront: string | null;
+  preparedPrompt: string;
+  draft: OwnerListingDraft | null;
+  proposed: {
+    neckline: string;
+    sleeves: string;
+    length: string;
+    decollete: string;
+  };
 }
 
 function uploadStageLabel(stage: UploadStage): string {
@@ -69,8 +103,11 @@ function setSlotInList(list: string[], slotIndex: number, value: string): string
 function nextOpenSlotIndex(
   images: string[],
   activeSlots: Set<number>,
+  reservedSlots: ReadonlySet<number> = new Set(),
+  skipSlots: ReadonlySet<number> = new Set(),
 ): number | null {
   for (let i = 0; i < TR_OWNER_PRODUCT_LIMITS.maxImages; i++) {
+    if (reservedSlots.has(i) || skipSlots.has(i)) continue;
     const filled = Boolean(images[i]?.trim());
     if (!filled && !activeSlots.has(i)) return i;
   }
@@ -130,6 +167,7 @@ export interface TrOwnerGuidedPhotoUploadProps {
   title?: string;
   category?: string | null;
   productId?: string | null;
+  uploadType?: string | null;
   uploading: boolean;
   onUploadingChange: (value: boolean) => void;
   onImagesChange: (images: string[]) => void;
@@ -155,6 +193,7 @@ export function TrOwnerGuidedPhotoUpload({
   title,
   category,
   productId,
+  uploadType = null,
   uploading: _uploading,
   onUploadingChange,
   onImagesChange,
@@ -172,11 +211,18 @@ export function TrOwnerGuidedPhotoUpload({
   const inputId = useId();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pending, setPending] = useState<PendingPreview | null>(null);
+  const [elbiseGate, setElbiseGate] = useState<ElbiseGateState | null>(null);
+  const [elbiseGateOpen, setElbiseGateOpen] = useState(false);
+  const [elbiseGateBusy, setElbiseGateBusy] = useState(false);
+  const [gateChips, setGateChips] = useState(emptyElbiseGateChips());
   const [jobs, setJobs] = useState<Record<number, ActiveSlotJob>>({});
+  const [skippedDetail, setSkippedDetail] = useState(false);
   const [softUndo, setSoftUndo] = useState<{
     index: number;
     image: string;
     marketplace: string;
+    packshotImage?: string;
+    packshotMarketplace?: string;
     secondsLeft: number;
   } | null>(null);
   const softUndoTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -184,12 +230,16 @@ export function TrOwnerGuidedPhotoUpload({
     index: number;
     image: string;
     marketplace: string;
+    packshotImage?: string;
+    packshotMarketplace?: string;
   } | null>(null);
   const onFrontSlotResetRef = useRef(onFrontSlotReset);
   const onPhotoJobsChangeRef = useRef(onPhotoJobsChange);
   const jobsRef = useRef(jobs);
   const imagesRef = useRef(images);
   const marketplaceRef = useRef(marketplaceImages);
+  const elbiseGateRef = useRef(elbiseGate);
+  const pickerSlotRef = useRef<number | null>(null);
 
   useEffect(() => {
     scheduleAiJobRef.current = scheduleAiJob;
@@ -212,6 +262,9 @@ export function TrOwnerGuidedPhotoUpload({
   useEffect(() => {
     marketplaceRef.current = marketplaceImages;
   }, [marketplaceImages]);
+  useEffect(() => {
+    elbiseGateRef.current = elbiseGate;
+  }, [elbiseGate]);
 
   useEffect(() => {
     return () => {
@@ -226,19 +279,41 @@ export function TrOwnerGuidedPhotoUpload({
     () => new Set(Object.keys(jobs).map((k) => Number(k))),
     [jobs],
   );
-  const nextSlot = nextOpenSlotIndex(images, activeSlotSet);
+  const elbise = isElbiseUpload(uploadType);
+  const requiredSlots = requiredPhotoSlotsForUploadType(uploadType);
+  const guidedSlots = guidedPhotoSlotCountForUploadType(uploadType);
+  const packshotSlot = elbise ? ELBISE_PACKSHOT_SLOT : null;
+  const reservedSlots = useMemo(
+    () => new Set(packshotSlot != null ? [packshotSlot] : []),
+    [packshotSlot],
+  );
+  const skipSlots = useMemo(() => {
+    if (elbise && skippedDetail && !images[ELBISE_DETAIL_SLOT]?.trim()) {
+      return new Set([ELBISE_DETAIL_SLOT]);
+    }
+    return new Set<number>();
+  }, [elbise, skippedDetail, images]);
+  const nextSlot = nextOpenSlotIndex(
+    images,
+    activeSlotSet,
+    reservedSlots,
+    skipSlots,
+  );
   const frontClaimed =
     Boolean(images[0]?.trim()) || activeSlotSet.has(0);
   const backClaimed =
     Boolean(images[1]?.trim()) || activeSlotSet.has(1);
+  const detailClaimed =
+    Boolean(images[ELBISE_DETAIL_SLOT]?.trim()) ||
+    activeSlotSet.has(ELBISE_DETAIL_SLOT);
 
-  const phase: "front" | "back" | "extras" =
+  const phase: "front" | "back" | "detail" | "extras" =
     nextSlot === 0
       ? "front"
       : nextSlot === 1
         ? "back"
-        : nextSlot != null
-          ? "extras"
+        : elbise && nextSlot === 2
+          ? "detail"
           : "extras";
 
   const anyJobRunning = Object.keys(jobs).length > 0;
@@ -252,14 +327,17 @@ export function TrOwnerGuidedPhotoUpload({
     if (!notify) return;
     const items: PipelineJobItem[] = Object.values(jobs).map((job) => ({
       id: `photo-${job.slotIndex}`,
-      kind: pipelineJobKindForSlot(job.slotIndex),
-      label: pipelineLabelForSlot(job.slotIndex),
+      kind: pipelineJobKindForSlot(job.slotIndex, guidedSlots),
+      label:
+        packshotSlot != null && job.slotIndex === packshotSlot
+          ? "Ön packshot"
+          : pipelineLabelForSlot(job.slotIndex, guidedSlots),
       status: "running",
       progressPct: job.progressPct,
       detail: uploadStageLabel(job.stage),
     }));
     notify(items);
-  }, [jobs]);
+  }, [jobs, packshotSlot, guidedSlots]);
 
   useEffect(() => {
     return () => {
@@ -297,32 +375,47 @@ export function TrOwnerGuidedPhotoUpload({
   const phaseCopy = useMemo(() => {
     if (phase === "front") {
       return {
-        step: "1 / 2",
-        headline: "Ön yüz — kapak",
-        body: "Ön fotoğrafı onayladıktan sonra arka yüklemeye geçebilirsiniz — ikisi birlikte işlenebilir.",
-        cta: "Ön yüz fotoğrafı seç",
+        step: elbise ? "1 / 3" : "1 / 2",
+        headline: elbise ? "Ön manken" : "Ön yüz — kapak",
+        body: elbise
+          ? "Elbisenin önden tam boy manken fotoğrafı. Olduğu gibi kaydedilir."
+          : "Ön fotoğrafı onayladıktan sonra arka yüklemeye geçebilirsiniz — ikisi birlikte işlenebilir.",
+        cta: elbise ? "Ön manken fotoğrafı seç" : "Ön yüz fotoğrafı seç",
         outline: "front" as const,
       };
     }
     if (phase === "back") {
       return {
-        step: "2 / 2",
-        headline: "Arka yüz",
-        body: frontClaimed && !images[0]?.trim()
-          ? "Ön hâlâ hazırlanırken arka fotoğrafı seçip yüklemeyi başlatabilirsiniz."
-          : "Aynı ürünün arkasını çekin. Katalog görseli oluşturulacak.",
-        cta: "Arka yüz fotoğrafı seç",
+        step: elbise ? "2 / 3" : "2 / 2",
+        headline: elbise ? "Arka manken" : "Arka yüz",
+        body: elbise
+          ? "Elbisenin arkadan tam boy manken fotoğrafı. Askı, sırt dekolte ve etek arkası görünsün."
+          : frontClaimed && !images[0]?.trim()
+            ? "Ön hâlâ hazırlanırken arka fotoğrafı seçip yüklemeyi başlatabilirsiniz."
+            : "Aynı ürünün arkasını çekin. Katalog görseli oluşturulacak.",
+        cta: elbise ? "Arka manken fotoğrafı seç" : "Arka yüz fotoğrafı seç",
         outline: "back" as const,
+      };
+    }
+    if (phase === "detail") {
+      return {
+        step: "3 / 3",
+        headline: "Dekolte / detay (isteğe bağlı)",
+        body: "Yaka, dekolte veya dantel gibi yakın çekim. Atlayabilirsiniz — ön ve arka yetince packshot üretilir.",
+        cta: "Detay fotoğrafı seç",
+        outline: "front" as const,
       };
     }
     return {
       step: "Ek",
       headline: "Ek fotoğraflar (isteğe bağlı)",
-      body: "Ön + arka tamam veya işleniyor. İsterseniz detay ekleyin.",
+      body: elbise
+        ? "Ön ve arka tamam. Detay isterseniz boş kareye dokunun."
+        : "Ön + arka tamam veya işleniyor. İsterseniz detay ekleyin.",
       cta: "Ek fotoğraf seç",
       outline: "front" as const,
     };
-  }, [phase, frontClaimed, images]);
+  }, [phase, frontClaimed, images, elbise]);
 
   function clearPending() {
     setPending((current) => {
@@ -333,17 +426,28 @@ export function TrOwnerGuidedPhotoUpload({
 
   function openPicker() {
     if (disabled || pending || nextSlot == null) return;
+    pickerSlotRef.current = nextSlot;
+    fileInputRef.current?.click();
+  }
+
+  function openPickerForSlot(slotIndex: number) {
+    if (disabled || pending) return;
+    pickerSlotRef.current = slotIndex;
+    if (slotIndex === ELBISE_DETAIL_SLOT) setSkippedDetail(false);
     fileInputRef.current?.click();
   }
 
   function onFilePicked(fileList: FileList | null) {
-    if (!fileList?.[0] || nextSlot == null) return;
+    if (!fileList?.[0]) return;
+    const slotIndex = pickerSlotRef.current ?? nextSlot;
+    pickerSlotRef.current = null;
+    if (slotIndex == null) return;
     const file = fileList[0];
     const objectUrl = URL.createObjectURL(file);
     setPending({
       file,
       objectUrl,
-      slotIndex: nextSlot,
+      slotIndex,
     });
     onError(null);
   }
@@ -351,7 +455,7 @@ export function TrOwnerGuidedPhotoUpload({
   async function confirmPending() {
     if (!pending) return;
     const { file, objectUrl, slotIndex } = pending;
-    const role = getProductPhotoRole(slotIndex);
+    const role = getProductPhotoRole(slotIndex, guidedSlots);
     const roleLabel = productPhotoRoleLabel(role);
 
     setPending(null);
@@ -377,6 +481,114 @@ export function TrOwnerGuidedPhotoUpload({
       onImagesChange(
         setSlotInList(imagesRef.current, slotIndex, uploaded.url),
       );
+
+      if (elbise && slotIndex < guidedSlots) {
+        if (slotIndex === ELBISE_DETAIL_SLOT) setSkippedDetail(false);
+        const originalUrl = uploaded.url.trim();
+        onMarketplaceImagesChange(
+          setSlotInList(marketplaceRef.current, slotIndex, originalUrl),
+        );
+
+        const nextImages = setSlotInList(
+          imagesRef.current,
+          slotIndex,
+          originalUrl,
+        );
+        const allRequired = Array.from(
+          { length: requiredSlots },
+          (_, i) => Boolean(nextImages[i]?.trim()),
+        ).every(Boolean);
+        const packshotAlready =
+          packshotSlot != null &&
+          (Boolean(nextImages[packshotSlot]?.trim()) ||
+            Boolean(jobsRef.current[packshotSlot]) ||
+            Boolean(elbiseGateRef.current));
+        const shouldStartPackshot =
+          slotIndex < requiredSlots &&
+          allRequired &&
+          packshotSlot != null &&
+          !packshotAlready;
+
+        if (shouldStartPackshot) {
+          const frontUrl = nextImages[0]!.trim();
+          const backUrl = nextImages[1]!.trim();
+          const detailUrl = nextImages[ELBISE_DETAIL_SLOT]?.trim() || "";
+          const sourceToken = `${frontUrl}|${backUrl}|${detailUrl}`;
+
+          setJobs((current) => {
+            const finished = current[slotIndex];
+            if (finished?.previewUrl) URL.revokeObjectURL(finished.previewUrl);
+            const { [slotIndex]: _removed, ...rest } = current;
+            return {
+              ...rest,
+              [packshotSlot]: {
+                slotIndex: packshotSlot,
+                previewUrl: "",
+                roleLabel: "Ön packshot",
+                stage: "analyze",
+                progressPct: 24,
+              },
+            };
+          });
+
+          let preparedPrompt: string | undefined;
+          let preparedDraft: OwnerListingDraft | null = null;
+          try {
+            const prepared = await requestOwnerPackshotPrepare({
+              boutiqueId,
+              sourceImageUrl: frontUrl,
+              backImageUrl: backUrl,
+              detailImageUrl: detailUrl || undefined,
+              title,
+              category: "elbise",
+              view: "front",
+              uploadType: "elbise",
+            });
+            preparedPrompt = prepared.prompt;
+            preparedDraft = prepared.listingDraft;
+          } catch (analyzeError) {
+            console.warn(
+              "[guided-upload] elbise prepare-packshot failed:",
+              analyzeError instanceof Error
+                ? analyzeError.message
+                : analyzeError,
+            );
+          }
+
+          const proposed = emptyElbiseGateChips({
+            neckline: resolveDressFeatureValue(
+              "neckline",
+              preparedDraft?.features?.neckline,
+            ),
+            sleeves: resolveDressFeatureValue(
+              "sleeves",
+              preparedDraft?.features?.sleeves,
+            ),
+            length: resolveDressFeatureValue(
+              "length",
+              preparedDraft?.features?.length,
+            ),
+            decollete: resolveDressFeatureValue(
+              "decollete",
+              preparedDraft?.features?.decollete,
+            ),
+          });
+          setGateChips(proposed);
+          setElbiseGate({
+            frontUrl,
+            backUrl,
+            detailUrl,
+            sourceToken,
+            promptFront: preparedDraft?.promptFront ?? null,
+            preparedPrompt: preparedPrompt ?? "",
+            draft: preparedDraft,
+            proposed,
+          });
+          setElbiseGateOpen(true);
+        }
+        return;
+      }
+
       let marketplaceUrl = uploaded.marketplaceUrl ?? "";
       if (marketplaceUrl) {
         onMarketplaceImagesChange(
@@ -495,14 +707,214 @@ export function TrOwnerGuidedPhotoUpload({
           ? error.message
           : `${roleLabel} yüklenemedi.`,
       );
-      if (slotIndex === 0) {
+      if (slotIndex === 0 && !elbise) {
         onFrontAnalysisComplete?.({ draft: null });
       }
     } finally {
       setJobs((current) => {
-        const job = current[slotIndex];
+        const keys = [slotIndex];
+        if (
+          elbise &&
+          slotIndex === requiredSlots - 1 &&
+          packshotSlot != null
+        ) {
+          keys.push(packshotSlot);
+        }
+        let next = current;
+        for (const key of keys) {
+          const job = next[key];
+          if (job?.previewUrl) URL.revokeObjectURL(job.previewUrl);
+          const { [key]: _removed, ...rest } = next;
+          next = rest;
+        }
+        return next;
+      });
+    }
+  }
+
+  function dismissElbiseGate() {
+    setElbiseGateOpen(false);
+  }
+
+  async function confirmElbiseGate() {
+    if (!elbiseGate || packshotSlot == null || elbiseGateBusy) return;
+    const neckline = gateChips.neckline.trim();
+    const sleeves = gateChips.sleeves.trim();
+    const length = gateChips.length.trim();
+    const decollete = gateChips.decollete.trim();
+    if (!elbiseGateReady(gateChips)) {
+      onError("Boy, yaka ve kol seçin.");
+      return;
+    }
+    onError(null);
+
+    const chips = { neckline, sleeves, length, decollete };
+    const changed = !constructionChipsEqual(chips, elbiseGate.proposed);
+    const needsRewrite = changed || !elbiseGate.promptFront?.trim();
+
+    setElbiseGateBusy(true);
+    try {
+      let promptFront = elbiseGate.promptFront;
+      let draft: OwnerListingDraft | null = elbiseGate.draft
+        ? {
+            ...elbiseGate.draft,
+            features: {
+              ...elbiseGate.draft.features,
+              neckline,
+              sleeves,
+              length,
+              ...(decollete ? { decollete } : {}),
+            },
+          }
+        : {
+            title: "",
+            description: "",
+            features: {
+              neckline,
+              sleeves,
+              length,
+              ...(decollete ? { decollete } : {}),
+            },
+          };
+      if (!decollete && draft.features) {
+        const nextFeatures = { ...draft.features };
+        delete nextFeatures.decollete;
+        draft = { ...draft, features: nextFeatures };
+      }
+
+      let prompt = "";
+      if (needsRewrite) {
+        try {
+          const prepared = await requestOwnerPackshotPrepare({
+            boutiqueId,
+            sourceImageUrl: elbiseGate.frontUrl,
+            backImageUrl: elbiseGate.backUrl,
+            detailImageUrl:
+              imagesRef.current[ELBISE_DETAIL_SLOT]?.trim() ||
+              elbiseGate.detailUrl ||
+              undefined,
+            title: draft.title || title,
+            category: "elbise",
+            view: "front",
+            uploadType: "elbise",
+            existingTitle: draft.title || title,
+            existingDescription: draft.description,
+            lockedConstruction: chips,
+          });
+          prompt = prepared.prompt;
+          promptFront = prepared.listingDraft?.promptFront ?? promptFront;
+          if (prepared.listingDraft?.title?.trim()) {
+            draft = {
+              ...prepared.listingDraft,
+              features: {
+                ...prepared.listingDraft.features,
+                neckline,
+                sleeves,
+                length,
+                ...(decollete ? { decollete } : {}),
+              },
+            };
+          }
+        } catch (rewriteError) {
+          console.warn(
+            "[guided-upload] elbise prompt rewrite failed:",
+            rewriteError instanceof Error
+              ? rewriteError.message
+              : rewriteError,
+          );
+        }
+      }
+
+      if (!prompt) {
+        const lock = buildElbiseConstructionLock(chips);
+        prompt = [elbiseGate.preparedPrompt, lock].filter(Boolean).join(" ");
+      }
+
+      if (onListingDraft && draft.title.trim()) {
+        onListingDraft({ ...draft, promptFront });
+      } else if (onListingDraft) {
+        onListingDraft({
+          ...draft,
+          title: draft.title,
+          promptFront,
+        });
+      }
+      onFrontAnalysisComplete?.({
+        draft: draft.title.trim() ? { ...draft, promptFront } : draft,
+      });
+      setElbiseGateOpen(false);
+      setElbiseGate(null);
+
+      setJobs((current) => ({
+        ...current,
+        [packshotSlot]: {
+          slotIndex: packshotSlot,
+          previewUrl: "",
+          roleLabel: "Ön packshot",
+          stage: "queued",
+          progressPct: 48,
+        },
+      }));
+
+      const pack = await scheduleAiJobRef.current(
+        () =>
+          requestOwnerPackshot({
+            boutiqueId,
+            sourceImageUrl: elbiseGate.frontUrl,
+            productId: productId ?? undefined,
+            title: draft.title || title,
+            category: "elbise",
+            view: "front",
+            numImages: 1,
+            prompt,
+            listingDraft: draft.title.trim() ? draft : null,
+            skipPhotoroom: true,
+            uploadType: "elbise",
+          }),
+        {
+          onStart: () => {
+            setJobs((current) => {
+              const job = current[packshotSlot];
+              if (!job) return current;
+              return {
+                ...current,
+                [packshotSlot]: {
+                  ...job,
+                  stage: "packshot",
+                  progressPct: Math.max(job.progressPct, 52),
+                },
+              };
+            });
+          },
+        },
+      );
+
+      const stillSameSource =
+        `${imagesRef.current[0]?.trim() ?? ""}|${imagesRef.current[1]?.trim() ?? ""}|${imagesRef.current[2]?.trim() ?? ""}` ===
+        elbiseGate.sourceToken;
+      if (
+        stillSameSource &&
+        pack.status === "succeeded" &&
+        pack.imageUrls[0]?.trim()
+      ) {
+        const packUrl = pack.imageUrls[0].trim();
+        onImagesChange(setSlotInList(imagesRef.current, packshotSlot, packUrl));
+        onMarketplaceImagesChange(
+          setSlotInList(marketplaceRef.current, packshotSlot, packUrl),
+        );
+      } else if (stillSameSource) {
+        onError(pack.error?.trim() || "Ön packshot oluşturulamadı.");
+      }
+    } catch (error) {
+      onError(
+        error instanceof Error ? error.message : "Packshot oluşturulamadı.",
+      );
+    } finally {
+      setElbiseGateBusy(false);
+      setJobs((current) => {
+        const job = current[packshotSlot];
         if (job?.previewUrl) URL.revokeObjectURL(job.previewUrl);
-        const { [slotIndex]: _removed, ...rest } = current;
+        const { [packshotSlot]: _removed, ...rest } = current;
         return rest;
       });
     }
@@ -519,8 +931,12 @@ export function TrOwnerGuidedPhotoUpload({
     softUndoSnapshotRef.current = null;
     setSoftUndo(null);
     clearSoftUndoTimer();
-    if (index === 0) {
+    if (index < requiredSlots) {
       onFrontSlotResetRef.current?.();
+      if (elbise) {
+        setElbiseGate(null);
+        setElbiseGateOpen(false);
+      }
     }
   }
 
@@ -535,10 +951,37 @@ export function TrOwnerGuidedPhotoUpload({
       commitSoftDelete(softUndoSnapshotRef.current.index);
     }
 
-    softUndoSnapshotRef.current = { index, image, marketplace };
-    if (index < 2) {
-      onImagesChange(setSlotInList(images, index, ""));
-      onMarketplaceImagesChange(setSlotInList(marketplaceImages, index, ""));
+    const pinned =
+      index < guidedSlots || (packshotSlot != null && index === packshotSlot);
+    if (elbise && index < requiredSlots) {
+      setElbiseGate(null);
+      setElbiseGateOpen(false);
+    }
+    const packshotImage =
+      elbise && index < requiredSlots && packshotSlot != null
+        ? images[packshotSlot]?.trim() || ""
+        : "";
+    const packshotMarketplace =
+      elbise && index < requiredSlots && packshotSlot != null
+        ? marketplaceImages[packshotSlot]?.trim() || ""
+        : "";
+
+    softUndoSnapshotRef.current = {
+      index,
+      image,
+      marketplace,
+      packshotImage,
+      packshotMarketplace,
+    };
+    if (pinned) {
+      let nextImages = setSlotInList(images, index, "");
+      let nextMarket = setSlotInList(marketplaceImages, index, "");
+      if (packshotImage || packshotMarketplace) {
+        nextImages = setSlotInList(nextImages, packshotSlot!, "");
+        nextMarket = setSlotInList(nextMarket, packshotSlot!, "");
+      }
+      onImagesChange(nextImages);
+      onMarketplaceImagesChange(nextMarket);
     } else {
       onImagesChange(images.filter((_, i) => i !== index));
       onMarketplaceImagesChange(
@@ -554,7 +997,7 @@ export function TrOwnerGuidedPhotoUpload({
         if (current.secondsLeft <= 1) {
           clearSoftUndoTimer();
           softUndoSnapshotRef.current = null;
-          if (current.index === 0) {
+          if (current.index < requiredSlots) {
             onFrontSlotResetRef.current?.();
           }
           return null;
@@ -574,11 +1017,30 @@ export function TrOwnerGuidedPhotoUpload({
     clearSoftUndoTimer();
     softUndoSnapshotRef.current = null;
     setSoftUndo(null);
-    if (snap.index < 2) {
-      onImagesChange(setSlotInList(imagesRef.current, snap.index, snap.image));
-      onMarketplaceImagesChange(
-        setSlotInList(marketplaceRef.current, snap.index, snap.marketplace),
+    const pinned =
+      snap.index < requiredSlots ||
+      (packshotSlot != null && snap.index === packshotSlot);
+    if (pinned) {
+      let nextImages = setSlotInList(imagesRef.current, snap.index, snap.image);
+      let nextMarket = setSlotInList(
+        marketplaceRef.current,
+        snap.index,
+        snap.marketplace,
       );
+      if (packshotSlot != null && (snap.packshotImage || snap.packshotMarketplace)) {
+        nextImages = setSlotInList(
+          nextImages,
+          packshotSlot,
+          snap.packshotImage ?? "",
+        );
+        nextMarket = setSlotInList(
+          nextMarket,
+          packshotSlot,
+          snap.packshotMarketplace ?? "",
+        );
+      }
+      onImagesChange(nextImages);
+      onMarketplaceImagesChange(nextMarket);
     } else {
       const nextImages = [...imagesRef.current];
       const nextMarket = [...marketplaceRef.current];
@@ -590,7 +1052,7 @@ export function TrOwnerGuidedPhotoUpload({
   }
 
   const pendingCost = pending
-    ? describePhotoSlotCost(pending.slotIndex)
+    ? describePhotoSlotCost(pending.slotIndex, uploadType)
     : null;
 
   const showPicker =
@@ -601,10 +1063,12 @@ export function TrOwnerGuidedPhotoUpload({
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-2">
-        {([0, 1] as const).map((i) => {
+        {Array.from({ length: guidedSlots }, (_, i) => i).map((i) => {
           const done = Boolean(images[i]?.trim());
           const running = Boolean(jobs[i]);
           const active = nextSlot === i;
+          const slotLabel =
+            i === 0 ? "1 · Ön" : i === 1 ? "2 · Arka" : "3 · Detay";
           return (
             <div key={i} className="flex flex-1 items-center gap-2">
               <div
@@ -618,10 +1082,10 @@ export function TrOwnerGuidedPhotoUpload({
                         : "border-dashed border-neutral-300 bg-neutral-50 text-neutral-400"
                 }`}
               >
-                {i === 0 ? "1 · Ön" : "2 · Arka"}
+                {slotLabel}
                 {done ? " ✓" : running ? " …" : ""}
               </div>
-              {i === 0 ? (
+              {i < guidedSlots - 1 ? (
                 <span className="text-neutral-300" aria-hidden>
                   →
                 </span>
@@ -670,10 +1134,23 @@ export function TrOwnerGuidedPhotoUpload({
               {phaseCopy.cta}
             </span>
             <span className="relative z-[1] mt-2 max-w-xs text-[14px] text-neutral-600">
-              {phase === "extras"
-                ? "İsteğe bağlı"
-                : "Onaydan sonra diğer fotoğrafa geçebilirsiniz"}
+              {phase === "detail"
+                ? "İsteğe bağlı — atlayabilirsiniz"
+                : phase === "extras"
+                  ? "İsteğe bağlı"
+                  : "Onaydan sonra diğer fotoğrafa geçebilirsiniz"}
             </span>
+          </button>
+        ) : null}
+
+        {elbise && phase === "detail" && !detailClaimed ? (
+          <button
+            type="button"
+            className={`${panelSecondaryBtnClass} w-full`}
+            disabled={disabled || Boolean(pending)}
+            onClick={() => setSkippedDetail(true)}
+          >
+            Atla — detayı sonra eklerim
           </button>
         ) : null}
 
@@ -691,13 +1168,16 @@ export function TrOwnerGuidedPhotoUpload({
         />
       </div>
 
-      {/* Slot grid: done + in-progress */}
+      {/* Slot grid: required + packshot job */}
       <div className="grid grid-cols-2 gap-3">
-        {[0, 1].map((index) => {
+        {Array.from({ length: guidedSlots }, (_, i) => i).map((index) => {
           const job = jobs[index];
           const url = images[index]?.trim();
           const catalogUrl = marketplaceImages[index]?.trim();
-          const roleLabel = productPhotoRoleLabel(getProductPhotoRole(index));
+          const roleLabel = productPhotoRoleLabel(
+            getProductPhotoRole(index, guidedSlots),
+          );
+          const useCatalogBg = Boolean(catalogUrl && catalogBackgroundCss && !elbise);
 
           if (job) {
             return (
@@ -707,12 +1187,14 @@ export function TrOwnerGuidedPhotoUpload({
                 aria-busy
               >
                 <div className="relative mx-auto aspect-[3/4] w-full max-w-[140px] overflow-hidden rounded-lg bg-[#EDE9E2]">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={job.previewUrl}
-                    alt=""
-                    className="h-full w-full object-cover opacity-75"
-                  />
+                  {job.previewUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={job.previewUrl}
+                      alt=""
+                      className="h-full w-full object-cover opacity-75"
+                    />
+                  ) : null}
                 </div>
                 <p className="mt-2 text-center text-[13px] font-semibold text-neutral-800">
                   {roleLabel}
@@ -736,6 +1218,24 @@ export function TrOwnerGuidedPhotoUpload({
           }
 
           if (!url) {
+            const optionalDetail =
+              elbise && index === ELBISE_DETAIL_SLOT;
+            if (optionalDetail) {
+              return (
+                <button
+                  key={`empty-${index}`}
+                  type="button"
+                  disabled={disabled || Boolean(pending)}
+                  onClick={() => openPickerForSlot(index)}
+                  className="flex aspect-[3/4] flex-col items-center justify-center rounded-xl border-2 border-dashed border-neutral-200 bg-neutral-50 px-3 text-center text-[13px] text-neutral-400 disabled:opacity-60"
+                >
+                  {roleLabel}
+                  <span className="mt-1 block text-[12px] font-normal">
+                    İsteğe bağlı — dokunarak ekle
+                  </span>
+                </button>
+              );
+            }
             return (
               <div
                 key={`empty-${index}`}
@@ -746,16 +1246,12 @@ export function TrOwnerGuidedPhotoUpload({
             );
           }
 
-          const previewSrc = catalogUrl || url;
+          const previewSrc = elbise ? url : catalogUrl || url;
           return (
             <div
               key={`${url}-${index}`}
               className="relative aspect-[3/4] overflow-hidden rounded-xl bg-[#F3F1EC]"
-              style={
-                catalogUrl && catalogBackgroundCss
-                  ? { background: catalogBackgroundCss }
-                  : undefined
-              }
+              style={useCatalogBg ? { background: catalogBackgroundCss } : undefined}
             >
               <button
                 type="button"
@@ -769,7 +1265,7 @@ export function TrOwnerGuidedPhotoUpload({
                 src={previewSrc}
                 alt={roleLabel}
                 fill
-                className={catalogUrl ? "object-contain p-2" : "object-cover"}
+                className={useCatalogBg ? "object-contain p-2" : "object-cover"}
                 sizes="160px"
               />
               <span className="pointer-events-none absolute top-2 left-2 z-[2] rounded-lg bg-white px-2 py-1 text-[13px] font-semibold">
@@ -786,17 +1282,95 @@ export function TrOwnerGuidedPhotoUpload({
             </div>
           );
         })}
+        {elbise && packshotSlot != null
+          ? (() => {
+              const index = packshotSlot;
+              const job = jobs[index];
+              const url = images[index]?.trim();
+              const roleLabel = "Ön packshot";
+              if (job) {
+                return (
+                  <div
+                    key="job-packshot"
+                    className="relative overflow-hidden rounded-xl border-2 border-[color:var(--panel-accent-border)] bg-[#F7F5F1] p-3"
+                    aria-busy
+                  >
+                    <div className="relative mx-auto flex aspect-[3/4] w-full max-w-[140px] items-center justify-center overflow-hidden rounded-lg bg-white">
+                      <p className="px-2 text-center text-[12px] text-neutral-500">
+                        {uploadStageLabel(job.stage)}
+                      </p>
+                    </div>
+                    <p className="mt-2 text-center text-[13px] font-semibold text-neutral-800">
+                      {roleLabel}
+                    </p>
+                    <div className="mt-2 h-1.5 overflow-hidden rounded-sm bg-white/80">
+                      <motion.div
+                        className="h-full rounded-sm"
+                        style={{ background: "var(--panel-accent)" }}
+                        animate={{ width: `${job.progressPct}%` }}
+                        transition={{ duration: 0.3 }}
+                      />
+                    </div>
+                    <p className="mt-1 text-center text-[11px] tabular-nums text-neutral-500">
+                      {Math.round(job.progressPct)}%
+                    </p>
+                  </div>
+                );
+              }
+              if (!url) return null;
+              return (
+                <div
+                  key={`packshot-${url}`}
+                  className="relative aspect-[3/4] overflow-hidden rounded-xl bg-white"
+                >
+                  <button
+                    type="button"
+                    className="absolute inset-0 z-[1]"
+                    aria-label={`${roleLabel} — büyüt`}
+                    onClick={() =>
+                      onLightbox?.({ src: url, label: roleLabel })
+                    }
+                  />
+                  <Image
+                    src={url}
+                    alt={roleLabel}
+                    fill
+                    className="object-contain p-2"
+                    sizes="160px"
+                  />
+                  <span className="pointer-events-none absolute top-2 left-2 z-[2] rounded-lg bg-white px-2 py-1 text-[13px] font-semibold">
+                    {roleLabel}
+                  </span>
+                  <button
+                    type="button"
+                    className="absolute right-2 bottom-2 z-[2] rounded-lg bg-white px-3 py-2 text-[14px] font-semibold text-red-700"
+                    disabled={disabled || Boolean(jobs[index])}
+                    onClick={() => removeAt(index)}
+                  >
+                    Sil
+                  </button>
+                </div>
+              );
+            })()
+          : null}
       </div>
 
-      {/* Extra completed images beyond front/back */}
-      {images.length > 2 ? (
+      {/* Extra completed images beyond required + packshot */}
+      {images.length > (elbise ? ELBISE_PACKSHOT_SLOT + 1 : 2) ? (
         <div className="grid grid-cols-2 gap-3">
-          {images.slice(2).map((url, offset) => {
-            const index = offset + 2;
-            if (!url?.trim()) return null;
+          {images
+            .map((url, index) => ({ url, index }))
+            .filter(
+              ({ url, index }) =>
+                index >= (elbise ? ELBISE_PACKSHOT_SLOT + 1 : 2) &&
+                Boolean(url?.trim()),
+            )
+            .map(({ url, index }) => {
             const catalogUrl = marketplaceImages[index]?.trim();
             const previewSrc = catalogUrl || url;
-            const roleLabel = productPhotoRoleLabel(getProductPhotoRole(index));
+            const roleLabel = productPhotoRoleLabel(
+              getProductPhotoRole(index, guidedSlots),
+            );
             return (
               <div
                 key={`${url}-${index}`}
@@ -825,9 +1399,21 @@ export function TrOwnerGuidedPhotoUpload({
 
       {!frontClaimed || !backClaimed ? (
         <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[14px] text-amber-950">
-          Ön ve arka zorunlu. Ön yüklenirken arka seçebilirsiniz — işlemler
-          paralel ilerler.
+          {elbise
+            ? "Ön ve arka zorunlu. Dekolte / detay isteğe bağlı. Boy, yaka ve kol onaylayınca packshot üretilir."
+            : "Ön ve arka zorunlu. Ön yüklenirken arka seçebilirsiniz — işlemler paralel ilerler."}
         </p>
+      ) : null}
+
+      {elbise && elbiseGate && !elbiseGateOpen && packshotSlot != null && !images[packshotSlot]?.trim() ? (
+        <button
+          type="button"
+          className={`${panelPrimaryBtnClass} w-full`}
+          onClick={() => setElbiseGateOpen(true)}
+          disabled={disabled || elbiseGateBusy}
+        >
+          Boy, yaka ve kol onayla — packshot üret
+        </button>
       ) : null}
 
       <AnimatePresence>
@@ -888,9 +1474,13 @@ export function TrOwnerGuidedPhotoUpload({
                 prefix={pendingCost.costPrefix || "Bu işlem"}
                 boutiqueId={boutiqueId}
                 freeLabel={
-                  pending.slotIndex === 1
-                    ? "Ürün paketine dahil — ekstra kredi yok."
-                    : "Ekstra kredi yok."
+                  elbise
+                    ? pending.slotIndex === 1
+                      ? undefined
+                      : "Ekstra kredi yok."
+                    : pending.slotIndex === 1
+                      ? "Ürün paketine dahil — ekstra kredi yok."
+                      : "Ekstra kredi yok."
                 }
               />
 
@@ -907,7 +1497,85 @@ export function TrOwnerGuidedPhotoUpload({
                   className={panelPrimaryBtnClass}
                   onClick={() => void confirmPending()}
                 >
-                  Onayla — katalog görseli oluştur
+                  {elbise || pending.slotIndex >= 2
+                    ? "Onayla — bu fotoğrafı kullan"
+                    : "Onayla — katalog görseli oluştur"}
+                </button>
+              </div>
+              <TrOwnerCreditsMoreInfoLink
+                className="mt-3"
+                boutiqueId={boutiqueId}
+              />
+            </motion.div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {elbiseGateOpen && elbiseGate ? (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 p-4 sm:items-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby={`${inputId}-elbise-gate-title`}
+              className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl border border-[color:var(--panel-accent-border)] bg-white p-5 shadow-xl"
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 16 }}
+              transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <p
+                id={`${inputId}-elbise-gate-title`}
+                className="text-[18px] font-semibold text-neutral-900"
+              >
+                Gemini önerisi
+              </p>
+              <p className="mt-1 text-[14px] leading-relaxed text-neutral-600">
+                Boy, yaka ve kol doğru mu? Yanlışsa düzeltin — packshot bu
+                bilgilere kilitlenir. Detay isteğe bağlı.
+              </p>
+
+              <div className="mt-5">
+                <TrOwnerElbiseConstructionGateFields
+                  chips={gateChips}
+                  onChange={setGateChips}
+                  disabled={elbiseGateBusy}
+                />
+              </div>
+
+              <TrOwnerCreditsCostLine
+                className="mt-5"
+                credits={TR_AI_CATALOG_CREDITS.productPackage}
+                prefix="Ön packshot"
+                boutiqueId={boutiqueId}
+              />
+
+              <div className="mt-5 flex gap-3">
+                <button
+                  type="button"
+                  className={panelSecondaryBtnClass}
+                  onClick={dismissElbiseGate}
+                  disabled={elbiseGateBusy}
+                >
+                  Vazgeç
+                </button>
+                <button
+                  type="button"
+                  className={`${panelPrimaryBtnClass} flex-1`}
+                  disabled={
+                    elbiseGateBusy || !elbiseGateReady(gateChips)
+                  }
+                  onClick={() => void confirmElbiseGate()}
+                >
+                  {elbiseGateBusy
+                    ? "Hazırlanıyor…"
+                    : "Onayla ve packshot üret"}
                 </button>
               </div>
               <TrOwnerCreditsMoreInfoLink
@@ -933,7 +1601,9 @@ export function TrOwnerGuidedPhotoUpload({
               className="flex w-full max-w-md items-center gap-3 rounded-2xl border border-neutral-800 bg-neutral-900 px-4 py-3 text-white shadow-xl"
             >
               <p className="min-w-0 flex-1 text-[14px] font-medium">
-                {productPhotoRoleLabel(getProductPhotoRole(softUndo.index))}{" "}
+                {productPhotoRoleLabel(
+                  getProductPhotoRole(softUndo.index, guidedSlots),
+                )}{" "}
                 silindi · {softUndo.secondsLeft}sn
               </p>
               <button
@@ -951,21 +1621,29 @@ export function TrOwnerGuidedPhotoUpload({
   );
 }
 
-/** Both front + back finished (URLs present). */
-export function hasRequiredProductPhotos(images: string[]): boolean {
-  return Boolean(images[0]?.trim() && images[1]?.trim());
+/** Required photo slots finished (URLs present). */
+export function hasRequiredProductPhotos(
+  images: string[],
+  requiredSlots = 2,
+): boolean {
+  for (let i = 0; i < requiredSlots; i += 1) {
+    if (!images[i]?.trim()) return false;
+  }
+  return true;
 }
 
-/** Front + back started (finished or still generating). */
+/** Required slots started (finished or still generating). */
 export function hasRequiredProductPhotosStarted(
   images: string[],
   photoJobs: PipelineJobItem[],
+  requiredSlots = 2,
 ): boolean {
-  const frontOk =
-    Boolean(images[0]?.trim()) ||
-    photoJobs.some((j) => j.kind === "photo-front" && j.status === "running");
-  const backOk =
-    Boolean(images[1]?.trim()) ||
-    photoJobs.some((j) => j.kind === "photo-back" && j.status === "running");
-  return frontOk && backOk;
+  for (let i = 0; i < requiredSlots; i += 1) {
+    const kind = pipelineJobKindForSlot(i, requiredSlots);
+    const ok =
+      Boolean(images[i]?.trim()) ||
+      photoJobs.some((j) => j.kind === kind && j.status === "running");
+    if (!ok) return false;
+  }
+  return true;
 }

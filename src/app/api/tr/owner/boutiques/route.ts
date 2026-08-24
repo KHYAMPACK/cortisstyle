@@ -11,6 +11,7 @@ export async function GET(request: Request) {
   if (!authResult.ok) return authResult.response;
 
   return Response.json({
+    isStaff: authResult.auth.isStaff,
     boutiques: authResult.auth.boutiques.map((boutique) => ({
       id: boutique.id,
       slug: boutique.slug,

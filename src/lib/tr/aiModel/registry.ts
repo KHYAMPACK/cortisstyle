@@ -9,9 +9,15 @@
  */
 
 import {
+  LILA_STUDIO_BACK_PATH,
+  LILA_STUDIO_THREE_QUARTER_PATH,
+  STUDIO_AYLA_BACK_PATH,
   STUDIO_AYLA_PUBLIC_PATH,
+  STUDIO_AYLA_THREE_QUARTER_PATH,
   STUDIO_DENIZ_PUBLIC_PATH,
+  STUDIO_SELIN_BACK_PATH,
   STUDIO_SELIN_PUBLIC_PATH,
+  STUDIO_SELIN_THREE_QUARTER_PATH,
 } from "@/lib/tr/aiModel/prompts";
 import type {
   TrAiModelGender,
@@ -107,6 +113,44 @@ export function parseLilaPhotographyStyle(
 
 export function lilaTryOnShotCount(modelId: string | null | undefined): number {
   return isLilaHouseModelId(modelId) ? LILA_TRYON_SHOTS_PER_STYLE : 1;
+}
+
+export interface ElbiseTryOnPlates {
+  threeQuarter: string;
+  /** Null when the model has no back-over-shoulder plate (e.g. Deniz). */
+  back: string | null;
+}
+
+/**
+ * Pinned light-grey studio plates for elbise try-on (no shuffle, no blinds/flash).
+ */
+export function getElbiseTryOnPlates(
+  modelId: string | null | undefined,
+): ElbiseTryOnPlates | null {
+  const id = modelId?.trim();
+  if (!id) return null;
+  if (id === "studio:ayla") {
+    return {
+      threeQuarter: STUDIO_AYLA_THREE_QUARTER_PATH,
+      back: STUDIO_AYLA_BACK_PATH,
+    };
+  }
+  if (id === "studio:selin") {
+    return {
+      threeQuarter: STUDIO_SELIN_THREE_QUARTER_PATH,
+      back: STUDIO_SELIN_BACK_PATH,
+    };
+  }
+  if (isLilaHouseModelId(id)) {
+    return {
+      threeQuarter: LILA_STUDIO_THREE_QUARTER_PATH,
+      back: LILA_STUDIO_BACK_PATH,
+    };
+  }
+  const option = getAiModelOptionById(id);
+  const first = option?.referenceImageUrls.find((url) => Boolean(url?.trim()));
+  if (!first) return null;
+  return { threeQuarter: first.trim(), back: null };
 }
 
 /** Owners pick the person (and Lila lighting), not the pose. */
@@ -278,7 +322,7 @@ export function boutiqueAiModelHasReferences(boutiqueSlug: string): boolean {
 
 export function getAiModelOptionById(
   modelId: string,
-  boutiqueSlug?: string | null,
+  _boutiqueSlug?: string | null,
 ): TrAiModelOption | null {
   const id = modelId.trim();
   if (!id) return null;
@@ -294,8 +338,8 @@ export function getAiModelOptionById(
     return identity ? boutiqueOption(identity) : null;
   }
 
-  const slug = (boutiqueSlug ?? id).trim().toLowerCase();
-  const identity = getBoutiqueAiModelIdentity(slug);
+  // Bare boutique slug only — never map an unknown id onto the house model.
+  const identity = getBoutiqueAiModelIdentity(id.toLowerCase());
   return identity ? boutiqueOption(identity) : null;
 }
 
@@ -331,4 +375,17 @@ export function getDefaultReadyAiModelId(
   const boutique = options.find((o) => o.kind === "boutique" && o.ready);
   if (boutique) return boutique.id;
   return options.find((o) => o.ready)?.id ?? null;
+}
+
+/** Prefer a picked model when it is ready; otherwise the house default. */
+export function resolveReadyAiModelId(
+  boutiqueSlug: string | null | undefined,
+  preferredId?: string | null,
+): string | null {
+  const preferred = preferredId?.trim() || "";
+  if (preferred) {
+    const option = getAiModelOptionById(preferred, boutiqueSlug);
+    if (option?.ready) return option.id;
+  }
+  return getDefaultReadyAiModelId(boutiqueSlug);
 }

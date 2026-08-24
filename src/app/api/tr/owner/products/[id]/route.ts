@@ -21,6 +21,10 @@ import type {
   UpdateTrProductInput,
 } from "@/types/tr-marketplace";
 import { sanitizeProductFeatures } from "@/lib/tr/catalog/productFeatures";
+import {
+  alignMarketplaceSlots,
+  cleanedLifestyleImages,
+} from "@/lib/tr/productImages";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -176,10 +180,15 @@ export async function PATCH(request: Request, context: RouteContext) {
   if (body.colors !== undefined) patch.colors = readColors(body.colors) ?? [];
   if (body.images !== undefined) patch.images = readStringArray(body.images) ?? [];
   if (body.marketplaceImages !== undefined) {
-    patch.marketplaceImages = readStringArray(body.marketplaceImages) ?? [];
+    patch.marketplaceImages = alignMarketplaceSlots(
+      patch.images ?? [],
+      readStringArray(body.marketplaceImages) ?? [],
+    );
   }
   if (body.lifestyleImages !== undefined) {
-    patch.lifestyleImages = readStringArray(body.lifestyleImages) ?? [];
+    patch.lifestyleImages = cleanedLifestyleImages(
+      readStringArray(body.lifestyleImages),
+    );
   }
   if (body.catalogBackgroundId !== undefined) {
     patch.catalogBackgroundId =

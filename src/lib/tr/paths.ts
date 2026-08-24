@@ -262,6 +262,11 @@ export function trPanelSettingsPath(): string {
   return "/tr/panel/ayarlar";
 }
 
+/** Staff-only originals browser — not in TR_PANEL_NAV. */
+export function trPanelOriginalsPath(): string {
+  return "/tr/panel/orijinaller";
+}
+
 export function trPanelInvoicesPath(): string {
   return "/tr/panel/faturalar";
 }

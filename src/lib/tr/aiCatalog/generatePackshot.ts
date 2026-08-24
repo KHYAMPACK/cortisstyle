@@ -19,6 +19,7 @@ export interface GenerateOwnerPackshotInput {
   prompt?: string | null;
   listingDraft?: ProductListingDraft | null;
   numImages?: number;
+  skipPhotoroom?: boolean;
 }
 
 export async function generateOwnerPackshot(input: GenerateOwnerPackshotInput) {
@@ -50,6 +51,7 @@ export async function generateOwnerPackshot(input: GenerateOwnerPackshotInput) {
     numImages: input.numImages ?? 1,
     userId: input.userId,
     boutiqueId: input.boutiqueId,
+    skipPhotoroom: input.skipPhotoroom,
   });
 
   await logTrAiUsageEvent({

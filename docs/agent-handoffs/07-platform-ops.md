@@ -28,7 +28,7 @@
 | Panel staff | JWT whose **confirmed** email is in `TR_PANEL_STAFF_EMAILS` → **all** boutiques (switcher in `/tr/panel`) | `isTrPanelStaffEmail` in `ownerAuth.ts`. Does **not** replace `owner_user_id` for the real owner. |
 | TR admin | Bearer `TR_ADMIN_SECRET` (timing-safe compare) | `lib/tr/panel/adminAuth.ts`, `/api/tr/admin/*` |
 
-Middleware does **not** enforce general login — it handles maintenance, `/` → `/tr`, and custom domain rewrite (`src/middleware.ts`).
+Middleware does **not** enforce general login — it handles maintenance, `/` → `/tr`, and custom domain rewrite (`src/middleware.ts`). Matcher **skips `/api/*`**: Next 16 proxy matching API paths returned HTML 404 for nested owner routes (`/api/tr/owner/…`), which the panel parsed as JSON (`Unexpected token '<'`). APIs on custom domains were already passthrough.
 
 ### Tenancy boundary (important)
 

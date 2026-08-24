@@ -16,6 +16,10 @@ import { uploadTrProductAsset } from "@/lib/tr/trAssetStorage";
 export const DEFAULT_PACKSHOT_PROMPT =
   "ghost mannequin packshot. Invisible ghost-mannequin form, clothing only, hollow neck and sleeve openings. No hanger, no hook, no visible mannequin, no dress form, no person. Pressed, symmetric, even studio lighting. Preserve the garment exactly as photographed: fabric, color, details, cut, and length. Do not invent missing parts or change the silhouette.";
 
+/** Elbise ön packshot: opaque white studio, keep FASHN output (no Photoroom). */
+export const ELBISE_PACKSHOT_PROMPT =
+  "Front ghost-mannequin product photo of this exact dress. Solid white studio background, soft drop shadow to the side, clothing only. Invisible form, no person, no hanger, no visible mannequin, no dress form. Straight-on, centered, three-dimensional worn volume. Preserve fabric, color, seams, hem, and lace or trim as photographed. Do not invent sleeves, off-shoulder pieces, arm flaps, or straps that are not named in the construction lock. Do not invent panels, change the silhouette, or turn the dress into a skirt.";
+
 /** Always last so FASHN does not copy hanger / visible-mannequin from the source. */
 export const PACKSHOT_PRESENTATION_LOCK =
   "Presentation: ghost mannequin packshot only. Clothing only — no hanger, no visible mannequin.";
@@ -45,6 +49,8 @@ export interface FashnPackshotParams {
   generationMode?: FashnGenerationMode;
   userId: string;
   boutiqueId: string;
+  /** Keep FASHN white-studio PNG; do not Photoroom (elbise). */
+  skipPhotoroom?: boolean;
 }
 
 export interface FashnPackshotResult {
@@ -126,28 +132,44 @@ export async function generateFashnPackshot(
       };
     }
 
-    if (!isPhotoroomConfigured()) {
-      return {
-        status: "failed",
-        predictionId: run.predictionId,
-        imageUrls: [],
-        creditsUsed: run.creditsUsed,
-        error: "PHOTOROOM_API_KEY yapılandırılmadı (katalog kesiti için).",
-      };
-    }
-
     const hosted: string[] = [];
-    for (const remoteUrl of run.outputUrls) {
-      // Keep alpha — do not composite onto an opaque normalize canvas
-      const cutoutPng = await photoroomCutoutFromRemoteUrl(remoteUrl);
-      const marketplace = await uploadTrProductAsset({
-        userId: params.userId,
-        boutiqueId: params.boutiqueId,
-        bytes: cutoutPng,
-        contentType: "image/png",
-        kind: "marketplace",
-      });
-      hosted.push(marketplace.url);
+    if (params.skipPhotoroom) {
+      for (const remoteUrl of run.outputUrls) {
+        const response = await fetch(remoteUrl);
+        if (!response.ok) {
+          throw new Error(`Packshot indirilemedi (${response.status}).`);
+        }
+        const bytes = Buffer.from(await response.arrayBuffer());
+        const marketplace = await uploadTrProductAsset({
+          userId: params.userId,
+          boutiqueId: params.boutiqueId,
+          bytes,
+          contentType: "image/png",
+          kind: "marketplace",
+        });
+        hosted.push(marketplace.url);
+      }
+    } else {
+      if (!isPhotoroomConfigured()) {
+        return {
+          status: "failed",
+          predictionId: run.predictionId,
+          imageUrls: [],
+          creditsUsed: run.creditsUsed,
+          error: "PHOTOROOM_API_KEY yapılandırılmadı (katalog kesiti için).",
+        };
+      }
+      for (const remoteUrl of run.outputUrls) {
+        const cutoutPng = await photoroomCutoutFromRemoteUrl(remoteUrl);
+        const marketplace = await uploadTrProductAsset({
+          userId: params.userId,
+          boutiqueId: params.boutiqueId,
+          bytes: cutoutPng,
+          contentType: "image/png",
+          kind: "marketplace",
+        });
+        hosted.push(marketplace.url);
+      }
     }
 
     return {

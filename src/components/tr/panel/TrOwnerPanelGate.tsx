@@ -4,6 +4,7 @@ import { AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type CSSProperties } from "react";
 import { AuthPopup } from "@/components/AuthPopup";
+import { TrOwnerElbiseRestyleProvider } from "@/components/tr/panel/TrOwnerElbiseRestyleSession";
 import {
   TrOwnerLeaveGuardProvider,
   useRequestBusyLeave,
@@ -35,6 +36,7 @@ interface TrOwnerPanelGateProps {
     boutiques: TrOwnerBoutiqueSummary[];
     activeBoutique: TrOwnerBoutiqueSummary;
     setActiveBoutiqueId: (id: string) => void;
+    isStaff: boolean;
   }) => React.ReactNode;
 }
 
@@ -43,7 +45,9 @@ const STORAGE_KEY = "tr-panel-boutique-id";
 export function TrOwnerPanelGate({ children }: TrOwnerPanelGateProps) {
   return (
     <TrOwnerLeaveGuardProvider>
-      <TrOwnerPanelGateBody>{children}</TrOwnerPanelGateBody>
+      <TrOwnerElbiseRestyleProvider>
+        <TrOwnerPanelGateBody>{children}</TrOwnerPanelGateBody>
+      </TrOwnerElbiseRestyleProvider>
     </TrOwnerLeaveGuardProvider>
   );
 }
@@ -56,6 +60,7 @@ function TrOwnerPanelGateBody({ children }: TrOwnerPanelGateProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [boutiques, setBoutiques] = useState<TrOwnerBoutiqueSummary[]>([]);
+  const [isStaff, setIsStaff] = useState(false);
   const [activeBoutiqueId, setActiveBoutiqueId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -64,6 +69,7 @@ function TrOwnerPanelGateBody({ children }: TrOwnerPanelGateProps) {
     if (!isAuthenticated) {
       setLoading(false);
       setBoutiques([]);
+      setIsStaff(false);
       setShowAuth(true);
       return;
     }
@@ -74,16 +80,19 @@ function TrOwnerPanelGateBody({ children }: TrOwnerPanelGateProps) {
       setLoading(true);
       setError(null);
       try {
-        const list = await fetchOwnerBoutiques();
+        const result = await fetchOwnerBoutiques();
         if (cancelled) return;
-        setBoutiques(list);
+        setBoutiques(result.boutiques);
+        setIsStaff(result.isStaff);
 
         const stored =
           typeof window !== "undefined"
             ? window.localStorage.getItem(STORAGE_KEY)
             : null;
         const preferred =
-          list.find((entry) => entry.id === stored)?.id ?? list[0]?.id ?? null;
+          result.boutiques.find((entry) => entry.id === stored)?.id ??
+          result.boutiques[0]?.id ??
+          null;
         setActiveBoutiqueId(preferred);
       } catch (loadError) {
         if (cancelled) return;
@@ -267,6 +276,7 @@ function TrOwnerPanelGateBody({ children }: TrOwnerPanelGateProps) {
                   boutiques,
                   activeBoutique,
                   setActiveBoutiqueId: (id) => setActiveBoutiqueId(id),
+                  isStaff,
                 })}
               </TrPanelPageTransition>
             ) : null}

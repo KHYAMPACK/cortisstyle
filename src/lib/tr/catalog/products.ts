@@ -337,7 +337,8 @@ export async function listProductsByBoutiqueIdAdmin(
     .from("tr_products")
     .select("*")
     .eq("boutique_id", boutiqueId)
-    .order("sort_order", { ascending: true });
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: false });
 
   if (error) throw error;
 
@@ -372,7 +373,8 @@ export async function listOwnerProductsLiteAdmin(
     .from("tr_products")
     .select(PANEL_LIST_COLUMNS)
     .eq("boutique_id", boutiqueId)
-    .order("sort_order", { ascending: true });
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: false });
 
   let data: unknown[] | null = withStorefront.data ?? null;
   if (withStorefront.error) {
@@ -386,7 +388,8 @@ export async function listOwnerProductsLiteAdmin(
       .from("tr_products")
       .select(PANEL_LIST_COLUMNS_LEGACY)
       .eq("boutique_id", boutiqueId)
-      .order("sort_order", { ascending: true });
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: false });
     if (legacy.error) throw legacy.error;
     data = legacy.data ?? [];
   }
@@ -403,6 +406,50 @@ export async function listOwnerProductsLiteAdmin(
       colors: [],
       features: {},
     });
+  });
+}
+
+export type TrOwnerProductOriginals = {
+  id: string;
+  title: string;
+  images: string[];
+  marketplaceImages: string[];
+};
+
+function readUrlList(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(
+    (entry): entry is string =>
+      typeof entry === "string" && Boolean(entry.trim()),
+  );
+}
+
+/** Full original galleries for the staff originals browser. */
+export async function listOwnerProductOriginalsAdmin(
+  boutiqueId: string,
+): Promise<TrOwnerProductOriginals[]> {
+  const supabase = getServiceSupabase();
+  if (!supabase) {
+    throw new Error("Supabase service role is not configured.");
+  }
+
+  const { data, error } = await supabase
+    .from("tr_products")
+    .select("id, title, images, marketplace_images")
+    .eq("boutique_id", boutiqueId)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+
+  return (data ?? []).map((row) => {
+    const record = row as Record<string, unknown>;
+    return {
+      id: String(record.id ?? ""),
+      title: typeof record.title === "string" ? record.title : "",
+      images: readUrlList(record.images),
+      marketplaceImages: readUrlList(record.marketplace_images),
+    };
   });
 }
 

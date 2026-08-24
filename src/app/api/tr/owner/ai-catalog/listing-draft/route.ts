@@ -11,7 +11,10 @@ export const maxDuration = 60;
 type Body = {
   boutiqueId: string;
   sourceImageUrl: string;
+  backImageUrl?: string;
+  detailImageUrl?: string;
   category?: string | null;
+  uploadType?: string | null;
 };
 
 /**
@@ -57,7 +60,10 @@ export async function POST(request: Request) {
 
   const draft = await draftProductListingFromImage({
     sourceImageUrl,
+    backImageUrl: body.backImageUrl,
+    detailImageUrl: body.detailImageUrl,
     category: body.category,
+    uploadType: body.uploadType,
   });
 
   if (!draft) {

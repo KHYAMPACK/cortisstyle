@@ -5,8 +5,9 @@
  * 1. Owner uploads flat-lay → Photoroom cutout (marketplaceImages)
  * 2. Optional FASHN packshot polish → marketplaceImages
  * 3. Model identity from registry (boutique house or studio:ayla/selin/deniz).
- *    Lila: owner picks blinds/flash; one random pose from that style’s three plates.
- *    Studio: one random plate.
+ *    Lila (non-elbise): owner picks blinds/flash; one random pose from that style.
+ *    Studio (non-elbise): one random plate.
+ *    Elbise: pinned grey-studio 3/4 + back plates; 3rd shot if detay chip.
  * 4. FASHN tryon-max only — not model-create
  */
 
@@ -14,6 +15,7 @@ export type {
   TrAiModelGarmentInput,
   TrAiModelGenerateRequest,
   TrAiModelGenerateResult,
+  TrAiModelGenerateShot,
   TrAiModelGender,
   TrAiModelIdentity,
   TrAiModelJobStatus,
@@ -29,6 +31,8 @@ export {
   getAiModelOptionById,
   getBoutiqueAiModelIdentity,
   getDefaultReadyAiModelId,
+  resolveReadyAiModelId,
+  getElbiseTryOnPlates,
   isLilaHouseModelId,
   LILA_DEFAULT_PHOTOGRAPHY_STYLE,
   LILA_HOUSE_MODEL_ID,
@@ -44,6 +48,14 @@ export {
   pickRandomModelReferenceUrl,
   registerBoutiqueAiModelIdentity,
 } from "@/lib/tr/aiModel/registry";
+
+export {
+  buildElbiseTryOnShots,
+  chipsFromProductFeatures,
+  elbiseModelShotCount,
+  elbiseLifestyleShotLabel,
+  hasElbiseDetay,
+} from "@/lib/tr/aiModel/elbiseTryOn";
 
 export {
   NATURAL_TRYON_PROMPT,

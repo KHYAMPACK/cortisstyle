@@ -90,6 +90,24 @@ export type TrProductFeatures = {
   neckHem?: string;
   fabric?: string;
   composition?: string;
+  /** Elbise chips — stored as Turkish labels. */
+  neckline?: string;
+  sleeves?: string;
+  length?: string;
+  decollete?: string;
+  zipper?: string;
+  stretch?: string;
+  silhouette?: string;
+  /**
+   * Last AI try-on model (`studio:selin`, `boutique:lilabutik`, …).
+   * Owner-only — not a PDP feature row.
+   */
+  aiModelId?: string;
+  /**
+   * Model id per lifestyle shot (same order as `lifestyleImages`).
+   * “Bu kareyi yenile” uses this slot — not the picker default.
+   */
+  lifestyleModelIds?: string[];
 };
 
 /** Full boutique record — service role / admin only. */

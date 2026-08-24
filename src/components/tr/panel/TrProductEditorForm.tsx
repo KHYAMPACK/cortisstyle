@@ -11,6 +11,11 @@ import {
 import { TrCatalogBackgroundPicker } from "@/components/tr/panel/TrCatalogBackgroundPicker";
 import { useRegisterLeaveBusy } from "@/components/tr/panel/TrOwnerLeaveGuard";
 import { TrOwnerAiCatalogEnhance } from "@/components/tr/panel/TrOwnerAiCatalogEnhance";
+import {
+  useElbiseRestyleModelLocked,
+  useElbiseRestyleSaved,
+  useOpenElbiseRestyle,
+} from "@/components/tr/panel/TrOwnerElbiseRestyleSession";
 import { TrOwnerAiFillListing } from "@/components/tr/panel/TrOwnerAiFillListing";
 import {
   emptyStockInputsForChart,
@@ -26,6 +31,10 @@ import { TrProductImageLightbox } from "@/components/tr/panel/TrProductImageLigh
 import { TrOwnerCategoryPicker } from "@/components/tr/panel/TrOwnerCategoryPicker";
 import { TrOwnerProductFeaturesFields } from "@/components/tr/panel/TrOwnerProductFeaturesFields";
 import { TR_BOUTIQUE_CATEGORIES } from "@/lib/tr/categories";
+import {
+  isElbiseUpload,
+  requiredPhotoSlotsForUploadType,
+} from "@/lib/tr/catalog/garmentUploadTypes";
 import {
   DEFAULT_CATALOG_BACKGROUND_ID,
   getCatalogBackground,
@@ -50,6 +59,10 @@ import {
   type OwnerListingDraft,
   updateOwnerProduct,
 } from "@/lib/tr/ownerClient";
+import {
+  alignMarketplaceSlots,
+  cleanedLifestyleImages,
+} from "@/lib/tr/productImages";
 import {
   parseSizeStockInputs,
   sumSizeStocks,
@@ -124,6 +137,18 @@ const STATUS_OPTIONS: Array<{ id: TrProductStatus; label: string }> = [
   { id: "sold", label: "Satıldı" },
   { id: "hidden", label: "Gizli" },
 ];
+
+function hasZeroSizeStockOnChart(
+  sizeChart: TrSizeChartId,
+  sizesEnabled: boolean,
+  sizeStockInputs: Record<string, string>,
+): boolean {
+  if (!sizesEnabled || sizeChart === "none") return false;
+  const sizes = sizesFromStockInputs(sizeChart, sizeStockInputs);
+  if (sizes.length === 0) return false;
+  const parsed = parseSizeStockInputs(sizes, sizeStockInputs);
+  return parsed !== null && sumSizeStocks(parsed) <= 0;
+}
 
 /** Edit mode: jump between sections (durum stays visible except on Sil). */
 const EDIT_STEPS = [
@@ -203,6 +228,8 @@ export function TrProductEditorForm({
   const [category, setCategory] = useState<string | null>(
     initialProduct?.category ?? null,
   );
+  const elbise = isElbiseUpload(category);
+  const requiredSlots = requiredPhotoSlotsForUploadType(category);
   const [extraCategories, setExtraCategories] = useState<
     Array<{ id: string; label: string }>
   >([]);
@@ -241,7 +268,9 @@ export function TrProductEditorForm({
   const [catalogBackgroundId, setCatalogBackgroundId] = useState(
     initialProduct?.catalogBackgroundId ?? DEFAULT_CATALOG_BACKGROUND_ID,
   );
-  const [selectedModelId, setSelectedModelId] = useState<string | null>(null);
+  const [selectedModelId, setSelectedModelId] = useState<string | null>(
+    () => initialProduct?.features?.aiModelId?.trim() || null,
+  );
   const [photographyStyle, setPhotographyStyle] =
     useState<TrLilaPhotographyStyle>(LILA_DEFAULT_PHOTOGRAPHY_STYLE);
   const [lightbox, setLightbox] = useState<{
@@ -263,6 +292,7 @@ export function TrProductEditorForm({
   const [autoSaveError, setAutoSaveError] = useState<string | null>(null);
   const autosaveReadyRef = useRef(false);
   const autosaveSeqRef = useRef(0);
+  const statusSaveSeqRef = useRef(0);
   const lastSavedFingerprintRef = useRef<string | null>(null);
 
   const [addingCategory, setAddingCategory] = useState(false);
@@ -348,6 +378,7 @@ export function TrProductEditorForm({
     setCatalogBackgroundId(
       initialProduct.catalogBackgroundId ?? DEFAULT_CATALOG_BACKGROUND_ID,
     );
+    setSelectedModelId(initialProduct.features?.aiModelId?.trim() || null);
     setStatus(initialProduct.status);
     setAutoSaveState("idle");
     setAutoSaveError(null);
@@ -380,6 +411,29 @@ export function TrProductEditorForm({
       return true;
     });
   }, [extraCategories]);
+
+  function selectAiModel(id: string | null) {
+    setSelectedModelId(id);
+    setFeatures((current) => {
+      const next = { ...current };
+      const trimmed = id?.trim() || "";
+      if (trimmed) next.aiModelId = trimmed;
+      else delete next.aiModelId;
+      return next;
+    });
+  }
+
+  const openRestyle = useOpenElbiseRestyle();
+  useElbiseRestyleModelLocked(selectAiModel);
+  useElbiseRestyleSaved((saved) => {
+    if (!initialProduct || saved.id !== initialProduct.id) return;
+    setImages(saved.images);
+    setMarketplaceImages(saved.marketplaceImages ?? []);
+    setLifestyleImages(saved.lifestyleImages ?? []);
+    setFeatures(saved.features ?? {});
+    onSaved(saved);
+    lastSavedFingerprintRef.current = null;
+  });
 
   const toggleColor = (color: TrProductColor) => {
     setColors((current) => {
@@ -437,16 +491,20 @@ export function TrProductEditorForm({
     if (!title.trim()) {
       throw new Error("Başlık zorunlu.");
     }
-    if (!hasRequiredProductPhotos(images)) {
-      throw new Error("Ön ve arka fotoğraf zorunlu.");
+    if (!hasRequiredProductPhotos(images, requiredSlots)) {
+      throw new Error(
+        elbise
+          ? "Ön ve arka fotoğraf zorunlu. Dekolte / detay isteğe bağlı."
+          : "Ön ve arka fotoğraf zorunlu.",
+      );
     }
 
     const activeSizes =
       sizeChart === "none" || !sizesEnabled
         ? []
         : sizesFromStockInputs(sizeChart, sizeStockInputs);
-    let stockValue: number;
-    let sizeStocks: Record<string, number> = {};
+    let stockValue: number | undefined;
+    let sizeStocks: Record<string, number> | undefined;
     if (activeSizes.length > 0) {
       const parsed = parseSizeStockInputs(activeSizes, sizeStockInputs);
       if (!parsed) {
@@ -454,11 +512,14 @@ export function TrProductEditorForm({
           `Her beden için stok ${TR_OWNER_PRODUCT_LIMITS.stockMin}–${TR_OWNER_PRODUCT_LIMITS.stockMax} arası olmalı.`,
         );
       }
-      sizeStocks = parsed;
-      stockValue = sumSizeStocks(sizeStocks);
-      if (stockValue <= 0) {
+      const sizeTotal = sumSizeStocks(parsed);
+      if (sizeTotal > 0) {
+        sizeStocks = parsed;
+        stockValue = sizeTotal;
+      } else if (mode === "create") {
         throw new Error("En az bir bedende stok girin.");
       }
+      // Edit: omit empty size map so autosave can persist durum without wiping stock.
     } else {
       if (!isValidStock(stock)) {
         throw new Error(
@@ -493,16 +554,11 @@ export function TrProductEditorForm({
       colors: colorsEnabled ? colors : [],
       category,
       images,
-      marketplaceImages: images.map(
-        (_, index) => marketplaceImages[index] ?? "",
-      ),
-      lifestyleImages: lifestyleImages
-        .map((url) => url.trim())
-        .filter(Boolean)
-        .slice(0, 1),
+      marketplaceImages: alignMarketplaceSlots(images, marketplaceImages),
+      lifestyleImages: cleanedLifestyleImages(lifestyleImages),
       catalogBackgroundId,
-      stock: stockValue,
-      sizeStocks,
+      ...(stockValue !== undefined ? { stock: stockValue } : {}),
+      ...(sizeStocks !== undefined ? { sizeStocks } : {}),
       status,
     };
   };
@@ -554,6 +610,34 @@ export function TrProductEditorForm({
     lastSavedFingerprintRef.current = fingerprint;
     onSaved(product);
     return product;
+  };
+
+  const persistStatus = async (next: TrProductStatus) => {
+    if (next === status) return;
+    const previous = status;
+    setStatus(next);
+    if (mode !== "edit" || !initialProduct) return;
+
+    const seq = ++statusSaveSeqRef.current;
+    setAutoSaveState("saving");
+    setAutoSaveError(null);
+    setError(null);
+    try {
+      const product = await updateOwnerProduct(initialProduct.id, {
+        status: next,
+      });
+      if (seq !== statusSaveSeqRef.current) return;
+      onSaved(product);
+      setAutoSaveState("saved");
+    } catch (saveError) {
+      if (seq !== statusSaveSeqRef.current) return;
+      setStatus(previous);
+      const message =
+        saveError instanceof Error ? saveError.message : "Durum kaydedilemedi.";
+      setAutoSaveState("error");
+      setAutoSaveError(message);
+      setError(message);
+    }
   };
 
   const handleSubmit = async (event: FormEvent) => {
@@ -654,12 +738,21 @@ export function TrProductEditorForm({
                 key={option.id}
                 type="button"
                 className={chipClass(status === option.id)}
-                onClick={() => setStatus(option.id)}
+                onClick={() => {
+                  void persistStatus(option.id);
+                }}
               >
                 {option.label}
               </button>
             ))}
           </div>
+          {status === "available" &&
+          hasZeroSizeStockOnChart(sizeChart, sizesEnabled, sizeStockInputs) ? (
+            <p className={`mt-3 ${panelHintClass}`}>
+              Mağazada satışta görünür; sepete eklemek için en az bir bedende
+              stok girin.
+            </p>
+          ) : null}
         </section>
       ) : null}
 
@@ -689,7 +782,9 @@ export function TrProductEditorForm({
         <div>
           <p className={panelLabelClass}>Fotoğraflar</p>
           <p className={`mt-1 ${panelHintClass}`}>
-            Önce ön, sonra arka — her fotoğraf önizlenir.
+            {elbise
+              ? "Ön ve arka manken zorunlu; dekolte / detay isteğe bağlı. Packshot ön+arka tamamınca üretilir."
+              : "Önce ön, sonra arka — her fotoğraf önizlenir."}
           </p>
         </div>
 
@@ -697,21 +792,35 @@ export function TrProductEditorForm({
           boutiqueId={boutiqueId}
           images={images}
           marketplaceImages={marketplaceImages}
-          catalogBackgroundCss={catalogBackground.css}
+          catalogBackgroundCss={elbise ? undefined : catalogBackground.css}
           title={title}
           category={category}
           productId={initialProduct?.id}
+          uploadType={elbise ? "elbise" : null}
           uploading={uploading}
           onUploadingChange={setUploading}
           onImagesChange={setImages}
           onMarketplaceImagesChange={setMarketplaceImages}
           onError={setError}
           onLightbox={setLightbox}
-          onListingDraft={setListingDraft}
+          onListingDraft={(draft) => {
+            setListingDraft(draft);
+            if (draft.features) {
+              setFeatures((current) => ({
+                ...draft.features,
+                ...(current.aiModelId
+                  ? { aiModelId: current.aiModelId }
+                  : {}),
+                ...(current.lifestyleModelIds?.length
+                  ? { lifestyleModelIds: current.lifestyleModelIds }
+                  : {}),
+              }));
+            }
+          }}
           disabled={saving}
         />
 
-        {hasRequiredProductPhotos(images) ? (
+        {hasRequiredProductPhotos(images, requiredSlots) ? (
           <div className="space-y-6 rounded-xl border border-[color:var(--panel-accent-border)] bg-[color:var(--panel-accent-soft)] p-4 sm:p-5">
             <TrOwnerAiCatalogEnhance
               boutiqueId={boutiqueId}
@@ -723,22 +832,61 @@ export function TrProductEditorForm({
               marketplaceImages={marketplaceImages}
               lifestyleImages={lifestyleImages}
               selectedModelId={selectedModelId}
-              onSelectedModelIdChange={setSelectedModelId}
+              onSelectedModelIdChange={selectAiModel}
               photographyStyle={photographyStyle}
               onPhotographyStyleChange={setPhotographyStyle}
               onMarketplaceImagesChange={setMarketplaceImages}
               onLifestyleImagesChange={setLifestyleImages}
+              onFeaturesChange={setFeatures}
               onListingDraft={setListingDraft}
               disabled={uploading || saving}
+              skipPackshot={elbise}
+              features={features}
+              uploadType={elbise ? "elbise" : null}
             />
-            {(marketplaceImages.some((url) => url?.trim()) ||
-              lifestyleImages.length > 0) && (
+            {mode === "edit" && elbise && initialProduct ? (
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  className={panelPrimaryBtnClass}
+                  disabled={uploading || saving}
+                  onClick={() =>
+                    openRestyle?.({
+                      boutiqueId,
+                      boutiqueSlug,
+                      products: [
+                        {
+                          ...initialProduct,
+                          title: title.trim() || initialProduct.title,
+                          category,
+                          images,
+                          marketplaceImages,
+                          lifestyleImages,
+                          features,
+                        },
+                      ],
+                      initiallyCheckedIds: [initialProduct.id],
+                      initialModelId: selectedModelId,
+                    })
+                  }
+                >
+                  Packshot + modeli yenile
+                </button>
+                <p className={panelHintClass}>
+                  Seçili model kullanılır. Chip onayı → ön packshot → model
+                  kareleri. Askı fotoğrafları aynı kalır.
+                </p>
+              </div>
+            ) : null}
+            {!elbise &&
+            (marketplaceImages.some((url) => url?.trim()) ||
+              lifestyleImages.length > 0) ? (
               <TrCatalogBackgroundPicker
                 value={catalogBackgroundId}
                 onChange={setCatalogBackgroundId}
                 disabled={uploading || saving}
               />
-            )}
+            ) : null}
           </div>
         ) : null}
       </section>
@@ -748,17 +896,28 @@ export function TrProductEditorForm({
       >
         <TrOwnerAiFillListing
           boutiqueId={boutiqueId}
-          sourceImageUrl={
-            marketplaceImages[0]?.trim() || images[0]?.trim() || null
-          }
+          sourceImageUrl={images[0]?.trim() || null}
+          backImageUrl={elbise ? images[1]?.trim() || null : null}
+          detailImageUrl={elbise ? images[2]?.trim() || null : null}
           category={category}
+          uploadType={elbise ? "elbise" : null}
           cachedDraft={listingDraft}
           disabled={saving}
           onError={setError}
           onApply={(draft) => {
             setTitle(clampTitle(draft.title));
             setDescription(clampDescription(draft.description));
-            if (draft.features) setFeatures(draft.features);
+            if (draft.features) {
+              setFeatures((current) => ({
+                ...draft.features,
+                ...(current.aiModelId
+                  ? { aiModelId: current.aiModelId }
+                  : {}),
+                ...(current.lifestyleModelIds?.length
+                  ? { lifestyleModelIds: current.lifestyleModelIds }
+                  : {}),
+              }));
+            }
             if (draft.category) setCategory(draft.category);
             setListingDraft(draft);
           }}
@@ -800,6 +959,7 @@ export function TrProductEditorForm({
           fieldClass={fieldClass}
           labelClass={panelLabelClass}
           hintClass={panelHintClass}
+          variant={elbise ? "dress" : "default"}
         />
       </section>
 

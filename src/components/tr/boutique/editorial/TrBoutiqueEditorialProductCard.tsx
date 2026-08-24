@@ -82,7 +82,7 @@ export function TrBoutiqueEditorialProductCard({
       <div
         className={`relative overflow-hidden ${
           atelier ? "aspect-[3/4.2]" : "aspect-[3/4]"
-        } ${packshotIsCutout ? "bg-[#F3F1EC]" : atelier ? "bg-[#F0EEEA]" : "bg-neutral-100"}`}
+        } ${packshotIsCutout || atelier ? "bg-white" : "bg-neutral-100"}`}
       >
         <TrBoutiquePendingLink
           href={productHref}

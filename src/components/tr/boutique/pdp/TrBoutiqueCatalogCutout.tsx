@@ -50,7 +50,7 @@ export function TrBoutiqueCatalogCutout({
       <div
         className="relative mx-auto aspect-[2/3] max-w-[220px] overflow-hidden md:max-w-[260px]"
         style={{
-          backgroundColor: "#f3f1ec",
+          backgroundColor: "#ffffff",
           boxShadow: `inset 0 0 0 1px ${accent}33`,
         }}
       >
