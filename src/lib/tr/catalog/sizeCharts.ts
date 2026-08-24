@@ -1,6 +1,8 @@
 import {
   DEFAULT_NUMERIC_SIZES,
+  NUMERIC_EXPANDED_SIZES,
   detectSizeChart,
+  evenNumericSizes,
   type TrSizeChartId,
 } from "@/lib/tr/catalog/productOptions";
 
@@ -52,8 +54,8 @@ export const LETTER_SIZE_CHART: TrSizeChartTable = {
 };
 
 /**
- * Even-size garment measurements (cm). Odds and sizes above 40 are
- * interpolated / extrapolated from these anchors.
+ * Even-size garment measurements (cm) for 24–40. Larger even sizes (42–52)
+ * are extrapolated from the last step when a product uses them.
  */
 const NUMERIC_EVEN_ANCHORS = {
   sizes: [24, 26, 28, 30, 32, 34, 36, 38, 40],
@@ -63,6 +65,14 @@ const NUMERIC_EVEN_ANCHORS = {
   hip: [44, 46, 48, 50, 52.5, 55, 57.5, 60, 62.5],
   inseam: [76, 76, 78, 78, 80, 80, 80, 80, 80],
 } as const;
+
+const NUMERIC_ANCHOR_BY_ROW: Record<string, readonly number[]> = {
+  eu: NUMERIC_EVEN_ANCHORS.eu,
+  waist: NUMERIC_EVEN_ANCHORS.waist,
+  thigh: NUMERIC_EVEN_ANCHORS.thigh,
+  hip: NUMERIC_EVEN_ANCHORS.hip,
+  inseam: NUMERIC_EVEN_ANCHORS.inseam,
+};
 
 function interpolateNumericMeasure(
   size: number,
@@ -96,14 +106,23 @@ function formatChartMeasure(value: number): string {
   return Number.isInteger(rounded) ? String(rounded) : String(rounded);
 }
 
-function numericChartRow(values: readonly number[]): string[] {
-  return DEFAULT_NUMERIC_SIZES.map((column) =>
-    formatChartMeasure(
-      interpolateNumericMeasure(
-        Number(column),
-        NUMERIC_EVEN_ANCHORS.sizes,
-        values,
-      ),
+function numericMeasureForColumn(
+  column: string,
+  rowId: string,
+  fallbackIndex: number,
+  fallbackValues: string[],
+): string {
+  const fromDefault = DEFAULT_NUMERIC_SIZES.indexOf(column);
+  if (fromDefault >= 0) {
+    return fallbackValues[fromDefault] ?? fallbackValues[fallbackIndex] ?? "";
+  }
+  const series = NUMERIC_ANCHOR_BY_ROW[rowId];
+  if (!series) return "";
+  return formatChartMeasure(
+    interpolateNumericMeasure(
+      Number(column),
+      NUMERIC_EVEN_ANCHORS.sizes,
+      series,
     ),
   );
 }
@@ -118,26 +137,30 @@ export const NUMERIC_SIZE_CHART: TrSizeChartTable = {
     "Bel ve basen, ürün düz yatırılıp kenardan kenara yarım ölçü (1/2) olarak alınır. Baldır ve iç boy, bacak dikişi üzerinden ölçülür.",
   tolerance: "Ölçülerde ± 2 cm fark tolerans dahilindedir.",
   rows: [
-    { id: "eu", label: "EU", values: numericChartRow(NUMERIC_EVEN_ANCHORS.eu) },
+    {
+      id: "eu",
+      label: "EU",
+      values: ["32", "34", "36", "38", "40", "42", "44", "46", "48"],
+    },
     {
       id: "waist",
       label: "Bel (1/2)",
-      values: numericChartRow(NUMERIC_EVEN_ANCHORS.waist),
+      values: ["32", "34", "36", "38", "40.5", "43", "45.5", "48", "50.5"],
     },
     {
       id: "thigh",
       label: "Baldır",
-      values: numericChartRow(NUMERIC_EVEN_ANCHORS.thigh),
+      values: ["26", "27.5", "29", "30.5", "32", "33.5", "35", "36.5", "38"],
     },
     {
       id: "hip",
       label: "Basen (1/2)",
-      values: numericChartRow(NUMERIC_EVEN_ANCHORS.hip),
+      values: ["44", "46", "48", "50", "52.5", "55", "57.5", "60", "62.5"],
     },
     {
       id: "inseam",
       label: "İç Boy Uzunluğu",
-      values: numericChartRow(NUMERIC_EVEN_ANCHORS.inseam),
+      values: ["76", "76", "78", "78", "80", "80", "80", "80", "80"],
     },
   ],
 };
@@ -154,5 +177,23 @@ export function resolveProductSizeChart(
 ): TrSizeChartTable | null {
   const id = detectSizeChart(sizes);
   if (id === "none") return null;
-  return getSizeChartTable(id);
+  if (id !== "numeric") return LETTER_SIZE_CHART;
+
+  const expandedUsed = NUMERIC_EXPANDED_SIZES.filter((size) =>
+    sizes.some((entry) => entry.trim() === size),
+  );
+  if (expandedUsed.length === 0) return NUMERIC_SIZE_CHART;
+
+  const max = Math.max(...expandedUsed.map((size) => Number(size)));
+  const columns = evenNumericSizes(NUMERIC_EVEN_ANCHORS.sizes[0]!, max);
+  return {
+    ...NUMERIC_SIZE_CHART,
+    columns,
+    rows: NUMERIC_SIZE_CHART.rows.map((row) => ({
+      ...row,
+      values: columns.map((column, index) =>
+        numericMeasureForColumn(column, row.id, index, row.values),
+      ),
+    })),
+  };
 }

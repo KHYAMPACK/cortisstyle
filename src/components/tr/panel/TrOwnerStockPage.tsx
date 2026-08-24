@@ -2,14 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
+import { ChevronDown } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { TrPanelBulkBar } from "@/components/tr/panel/TrPanelBulkBar";
-import {
-  TrPanelDataTable,
-  TrPanelDataTableCell,
-  TrPanelDataTableRow,
-} from "@/components/tr/panel/TrPanelDataTable";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
 import {
   panelDesktopBtnClass,
@@ -18,6 +14,7 @@ import {
   panelDesktopSecondaryBtnClass,
 } from "@/components/tr/panel/panelDesktopUi";
 import {
+  panelAddChipClass,
   panelBackLinkClass,
   panelChipClass,
   panelEmptyClass,
@@ -29,6 +26,7 @@ import {
   TrPanelFadeIn,
   TrPanelListSkeleton,
   TrPanelStagger,
+  trPanelEase,
   trPanelStaggerItem,
 } from "@/components/tr/panel/TrPanelMotion";
 import { runOwnerPatches } from "@/lib/tr/ownerBulk";
@@ -42,7 +40,12 @@ import {
   trPanelPath,
   trPanelProductsPath,
 } from "@/lib/tr/paths";
-import { sizesForStockBoard, sortProductSizes } from "@/lib/tr/productOptions";
+import {
+  missingNumericExpandedSizes,
+  NUMERIC_EXPANDED_SIZES,
+  sizesForStockBoard,
+  sortProductSizes,
+} from "@/lib/tr/productOptions";
 import { sumSizeStocks } from "@/lib/tr/sizeStocks";
 import type { TrProduct } from "@/types/tr-marketplace";
 
@@ -103,6 +106,61 @@ function StockStepper({
   );
 }
 
+function SizeStockList({
+  product,
+  sizes,
+  busy,
+  onChange,
+}: {
+  product: TrProduct;
+  sizes: string[];
+  busy: boolean;
+  onChange: (product: TrProduct, size: string, next: number) => void;
+}) {
+  return (
+    <div className="space-y-2">
+      {sizes.map((size) => {
+        const qty = sizeQty(product, size);
+        const sizeLow =
+          product.status === "available" && qty > 0 && qty <= LOW_STOCK;
+        const empty = qty === 0;
+        return (
+          <div
+            key={size}
+            className={`flex items-center justify-between gap-3 rounded-xl px-3 py-3 ${
+              empty
+                ? "bg-neutral-100"
+                : "bg-[color:var(--panel-accent-soft)]"
+            }`}
+          >
+            <div>
+              <p className="text-[18px] font-semibold text-neutral-900 lg:text-[15px]">
+                {size}
+              </p>
+              <p
+                className={`text-[14px] lg:text-[12px] ${
+                  empty
+                    ? "font-medium text-neutral-500"
+                    : "text-neutral-600"
+                }`}
+              >
+                {empty ? "Stokta yok" : sizeLow ? "Az kaldı" : "Stokta"}
+              </p>
+            </div>
+            <StockStepper
+              value={qty}
+              disabled={busy}
+              label={`${product.title} ${size}`}
+              onDecrease={() => onChange(product, size, qty - 1)}
+              onIncrease={() => onChange(product, size, qty + 1)}
+            />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function StockBoard({ boutiqueId }: { boutiqueId: string }) {
   const cached = peekOwnerProducts(boutiqueId);
   const [products, setProducts] = useState<TrProduct[]>(cached?.products ?? []);
@@ -114,6 +172,7 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
   const [search, setSearch] = useState("");
   const [stockFilter, setStockFilter] = useState<StockFilter>("all");
   const [categoryFilter, setCategoryFilter] = useState<string | "all">("all");
+  const [openIds, setOpenIds] = useState<Set<string>>(() => new Set());
   const saveTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
   const revertById = useRef(new Map<string, TrProduct>());
 
@@ -186,17 +245,17 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
     return list;
   }, [products, search, stockFilter, categoryFilter]);
 
-  /** Shared size columns: chart defaults (incl. 2XL/3XL) plus extras on products. */
-  const sizeColumns = useMemo(() => {
-    const set = new Set<string>();
-    for (const product of products) {
-      for (const size of sizesForStockBoard(product.sizes)) set.add(size);
-    }
-    return sortProductSizes([...set]);
-  }, [products]);
-
   const orderedIds = useMemo(() => visible.map((p) => p.id), [visible]);
   const selection = usePanelRowSelection(orderedIds);
+
+  const toggleOpen = (id: string) => {
+    setOpenIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const markSaving = (id: string, on: boolean) => {
     setSavingIds((current) => {
@@ -270,12 +329,7 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
     if (!boardSizes.includes(size)) {
       nextStocks[size] = next;
     }
-    const persistedSizes = sortProductSizes(
-      Object.keys(nextStocks).filter(
-        (entry) =>
-          product.sizes.includes(entry) || (nextStocks[entry] ?? 0) > 0,
-      ),
-    );
+    const persistedSizes = sortProductSizes(Object.keys(nextStocks));
     const persistedStocks: Record<string, number> = {};
     for (const entry of persistedSizes) {
       persistedStocks[entry] = nextStocks[entry] ?? 0;
@@ -291,6 +345,31 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
       },
       {
         sizeStocks: persistedStocks,
+        stock,
+      },
+    );
+  };
+
+  const expandNumericSizes = (product: TrProduct) => {
+    const board = sizesForStockBoard(product.sizes);
+    const nextSizes = sortProductSizes([
+      ...new Set([...board, ...NUMERIC_EXPANDED_SIZES]),
+    ]);
+    const nextStocks: Record<string, number> = {};
+    for (const size of nextSizes) {
+      nextStocks[size] = sizeQty(product, size);
+    }
+    const stock = sumSizeStocks(nextStocks);
+    patchStock(
+      product,
+      {
+        ...product,
+        sizes: nextSizes,
+        sizeStocks: nextStocks,
+        stock,
+      },
+      {
+        sizeStocks: nextStocks,
         stock,
       },
     );
@@ -377,7 +456,7 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
                 : `${visible.length} / ${products.length} ürün`}
             </p>
             <p className="mt-1 text-[15px] text-neutral-700 lg:text-[13px]">
-              Her beden için ayrı stok girin. Toplam otomatik hesaplanır.
+              Ürüne dokunarak stokları açın. Toplam otomatik hesaplanır.
             </p>
           </div>
 
@@ -454,8 +533,39 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
             </p>
           ) : (
             <>
-              {/* Mobile cards */}
-              <div className="lg:hidden">
+              <div
+                className="space-y-3"
+                tabIndex={0}
+                onKeyDown={selection.onKeyDown}
+                role="region"
+                aria-label="Stok listesi"
+              >
+                <div className="hidden items-center gap-3 lg:flex">
+                  <label className="flex items-center gap-2 text-[13px] text-neutral-600">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 accent-[color:var(--panel-accent)]"
+                      checked={selection.allVisibleSelected}
+                      ref={(el) => {
+                        if (el) {
+                          el.indeterminate =
+                            selection.someVisibleSelected &&
+                            !selection.allVisibleSelected;
+                        }
+                      }}
+                      onChange={(event) =>
+                        selection.setAllVisible(event.target.checked)
+                      }
+                      disabled={bulkBusy}
+                      aria-label="Tümünü seç"
+                    />
+                    Tümünü seç
+                  </label>
+                  <p className="text-[12px] text-neutral-500">
+                    Shift aralık · Ctrl+A tümü
+                  </p>
+                </div>
+
                 <TrPanelStagger className="space-y-3">
                   {visible.map((product) => {
                     const cover =
@@ -475,184 +585,23 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
                     const outOfStock =
                       product.status === "available" && total === 0;
                     const busy = bulkBusy;
+                    const open = openIds.has(product.id);
+                    const missingExpanded = missingNumericExpandedSizes(
+                      product.sizes,
+                    );
 
                     return (
                       <motion.div
                         key={product.id}
                         variants={trPanelStaggerItem}
-                        className={`rounded-2xl border bg-white p-4 shadow-sm sm:p-5 ${
+                        className={`rounded-2xl border bg-white p-4 shadow-sm sm:p-5 lg:rounded-xl lg:p-4 ${
                           outOfStock
                             ? "border-neutral-300"
                             : "border-[color:var(--panel-accent-border)]"
                         }`}
                       >
-                        <div className="flex items-start gap-4">
-                          <Link
-                            href={trPanelEditProductPath(product.id)}
-                            className="relative h-20 w-16 shrink-0 overflow-hidden rounded-xl bg-[color:var(--panel-accent-soft)]"
-                          >
-                            {cover ? (
-                              <Image
-                                src={cover}
-                                alt=""
-                                fill
-                                className="object-contain p-2"
-                                sizes="64px"
-                              />
-                            ) : null}
-                          </Link>
-                          <div className="min-w-0 flex-1 space-y-1">
-                            <p className="text-[19px] leading-snug font-semibold text-neutral-900">
-                              {product.title}
-                            </p>
-                            {outOfStock ? (
-                              <p className="inline-flex rounded-lg bg-neutral-100 px-2.5 py-1 text-[14px] font-semibold text-neutral-600">
-                                Stokta yok
-                              </p>
-                            ) : low ? (
-                              <p className="text-[14px] font-semibold text-neutral-700">
-                                Düşük stok — dikkat
-                              </p>
-                            ) : null}
-                            <p className="text-[15px] text-neutral-600">
-                              Toplam:{" "}
-                              <span className="font-semibold text-neutral-900">
-                                {total}
-                              </span>
-                              {hasSizes ? " adet (tüm bedenler)" : " adet"}
-                            </p>
-                            <Link
-                              href={trPanelEditProductPath(product.id)}
-                              className="inline-block text-[15px] font-medium text-[color:var(--panel-accent-deep)]"
-                            >
-                              Ürünü düzenle →
-                            </Link>
-                          </div>
-                        </div>
-
-                        {hasSizes ? (
-                          <div className="mt-4 space-y-2 border-t border-[color:var(--panel-accent-border)] pt-4">
-                            <p className="text-[16px] font-semibold text-neutral-800">
-                              Beden stokları
-                            </p>
-                            {sizes.map((size) => {
-                              const qty = sizeQty(product, size);
-                              const sizeLow =
-                                product.status === "available" &&
-                                qty > 0 &&
-                                qty <= LOW_STOCK;
-                              const empty = qty === 0;
-                              return (
-                                <div
-                                  key={size}
-                                  className={`flex items-center justify-between gap-3 rounded-xl px-3 py-3 ${
-                                    empty
-                                      ? "bg-neutral-100"
-                                      : "bg-[color:var(--panel-accent-soft)]"
-                                  }`}
-                                >
-                                  <div>
-                                    <p className="text-[18px] font-semibold text-neutral-900">
-                                      {size}
-                                    </p>
-                                    <p
-                                      className={`text-[14px] ${
-                                        empty
-                                          ? "font-medium text-neutral-500"
-                                          : "text-neutral-600"
-                                      }`}
-                                    >
-                                      {empty
-                                        ? "Stokta yok"
-                                        : sizeLow
-                                          ? "Az kaldı"
-                                          : "Stokta"}
-                                    </p>
-                                  </div>
-                                  <StockStepper
-                                    value={qty}
-                                    disabled={busy}
-                                    label={`${product.title} ${size}`}
-                                    onDecrease={() =>
-                                      setSizeStock(product, size, qty - 1)
-                                    }
-                                    onIncrease={() =>
-                                      setSizeStock(product, size, qty + 1)
-                                    }
-                                  />
-                                </div>
-                              );
-                            })}
-                          </div>
-                        ) : (
-                          <div className="mt-4 flex items-center justify-between gap-3 border-t border-[color:var(--panel-accent-border)] pt-4">
-                            <p className="text-[16px] font-semibold text-neutral-800">
-                              Toplam stok
-                            </p>
-                            <StockStepper
-                              value={product.stock}
-                              disabled={busy}
-                              label={product.title}
-                              onDecrease={() =>
-                                setTotalStock(product, product.stock - 1)
-                              }
-                              onIncrease={() =>
-                                setTotalStock(product, product.stock + 1)
-                              }
-                            />
-                          </div>
-                        )}
-                      </motion.div>
-                    );
-                  })}
-                </TrPanelStagger>
-              </div>
-
-              {/* Desktop table */}
-              <div className="hidden space-y-3 lg:block">
-                  <TrPanelDataTable
-                    onKeyDown={selection.onKeyDown}
-                    selectAll={{
-                      checked: selection.allVisibleSelected,
-                      indeterminate:
-                        selection.someVisibleSelected &&
-                        !selection.allVisibleSelected,
-                      onChange: selection.setAllVisible,
-                      disabled: bulkBusy,
-                    }}
-                    headers={[
-                      "Ürün",
-                      ...(sizeColumns.length > 0
-                        ? sizeColumns
-                        : ["Adet"]),
-                      "Toplam",
-                    ]}
-                    footer={`${visible.length} ürün · Shift aralık · Ctrl+A tümü`}
-                  >
-                    {visible.map((product) => {
-                      const cover =
-                        getPanelProductCover(product) ??
-                        product.images[0] ??
-                        null;
-                      const sizes = sizesForStockBoard(product.sizes);
-                      const hasSizes = product.sizes.length > 0;
-                      const sizeSet = new Set(sizes);
-                      const total = hasSizes
-                        ? sizes.reduce(
-                            (sum, size) => sum + sizeQty(product, size),
-                            0,
-                          )
-                        : product.stock;
-                      const busy = bulkBusy;
-                      const low =
-                        product.status === "available" && total <= LOW_STOCK;
-
-                      return (
-                        <TrPanelDataTableRow
-                          key={product.id}
-                          selected={selection.isSelected(product.id)}
-                        >
-                          <TrPanelDataTableCell className="w-10">
+                        <div className="flex items-start gap-3">
+                          <div className="hidden shrink-0 pt-2 lg:block">
                             <PanelSelectCheckbox
                               id={product.id}
                               checked={selection.isSelected(product.id)}
@@ -660,157 +609,139 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
                               label={`${product.title} seç`}
                               onItemClick={selection.onItemClick}
                             />
-                          </TrPanelDataTableCell>
-                          <TrPanelDataTableCell>
-                            <div className="flex items-center gap-3">
-                              <div className="relative h-10 w-8 shrink-0 overflow-hidden rounded bg-[color:var(--panel-accent-soft)]">
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <button
+                              type="button"
+                              aria-expanded={open}
+                              aria-controls={`stock-rows-${product.id}`}
+                              onClick={() => toggleOpen(product.id)}
+                              className="flex w-full min-h-11 items-start gap-4 text-left"
+                            >
+                              <span className="relative h-20 w-16 shrink-0 overflow-hidden rounded-xl bg-[color:var(--panel-accent-soft)] lg:h-14 lg:w-11 lg:rounded-lg">
                                 {cover ? (
                                   <Image
                                     src={cover}
                                     alt=""
                                     fill
-                                    className="object-contain p-0.5"
-                                    sizes="32px"
+                                    className="object-contain p-2 lg:p-1"
+                                    sizes="64px"
                                   />
                                 ) : null}
-                              </div>
-                              <div className="min-w-0">
-                                <Link
-                                  href={trPanelEditProductPath(product.id)}
-                                  className="block max-w-[240px] truncate font-semibold text-[color:var(--panel-accent-deep)] hover:underline"
-                                >
+                              </span>
+                              <span className="min-w-0 flex-1 space-y-1">
+                                <span className="block text-[19px] leading-snug font-semibold text-neutral-900 lg:text-[15px]">
                                   {product.title}
-                                </Link>
-                                {low ? (
-                                  <p className="text-[11px] font-medium text-amber-800">
-                                    Düşük stok
-                                  </p>
+                                </span>
+                                {outOfStock ? (
+                                  <span className="inline-flex rounded-lg bg-neutral-100 px-2.5 py-1 text-[14px] font-semibold text-neutral-600 lg:text-[12px]">
+                                    Stokta yok
+                                  </span>
+                                ) : low ? (
+                                  <span className="block text-[14px] font-semibold text-neutral-700 lg:text-[12px]">
+                                    Düşük stok — dikkat
+                                  </span>
                                 ) : null}
-                              </div>
-                            </div>
-                          </TrPanelDataTableCell>
-                          {sizeColumns.length > 0
-                            ? sizeColumns.map((size) => {
-                                if (!hasSizes) {
-                                  return (
-                                    <TrPanelDataTableCell
-                                      key={size}
-                                      className="w-[4.5rem] text-center text-neutral-300"
-                                    >
-                                      —
-                                    </TrPanelDataTableCell>
-                                  );
-                                }
-                                if (!sizeSet.has(size)) {
-                                  return (
-                                    <TrPanelDataTableCell
-                                      key={size}
-                                      className="w-[4.5rem] text-center text-neutral-300"
-                                    >
-                                      —
-                                    </TrPanelDataTableCell>
-                                  );
-                                }
-                                const qty = sizeQty(product, size);
-                                return (
-                                  <TrPanelDataTableCell
-                                    key={size}
-                                    className="w-[4.5rem]"
-                                  >
-                                    <input
-                                      type="number"
-                                      min={0}
-                                      step={1}
-                                      className={`${panelDesktopInputClass} w-14 text-center`}
-                                      defaultValue={qty}
-                                      key={`${product.id}-${size}-${qty}`}
-                                      disabled={busy}
-                                      aria-label={`${product.title} ${size}`}
-                                      onBlur={(event) => {
-                                        const next = Number(event.target.value);
-                                        if (
-                                          !Number.isFinite(next) ||
-                                          !Number.isInteger(next) ||
-                                          next < 0 ||
-                                          next === qty
-                                        ) {
-                                          event.target.value = String(qty);
-                                          return;
-                                        }
-                                        setSizeStock(product, size, next);
-                                      }}
-                                    />
-                                  </TrPanelDataTableCell>
-                                );
-                              })
-                            : (
-                              <TrPanelDataTableCell className="w-[4.5rem]">
-                                <input
-                                  type="number"
-                                  min={0}
-                                  step={1}
-                                  className={`${panelDesktopInputClass} w-14 text-center`}
-                                  defaultValue={product.stock}
-                                  key={`${product.id}-stock-${product.stock}`}
-                                  disabled={busy}
-                                  onBlur={(event) => {
-                                    const next = Number(event.target.value);
-                                    if (
-                                      !Number.isFinite(next) ||
-                                      !Number.isInteger(next) ||
-                                      next < 0 ||
-                                      next === product.stock
-                                    ) {
-                                      event.target.value = String(
-                                        product.stock,
-                                      );
-                                      return;
-                                    }
-                                    setTotalStock(product, next);
-                                  }}
-                                />
-                              </TrPanelDataTableCell>
-                            )}
-                          <TrPanelDataTableCell>
-                            {hasSizes ? (
-                              <span className="font-semibold tabular-nums">
-                                {total}
+                                <span className="block text-[15px] text-neutral-600 lg:text-[13px]">
+                                  Toplam:{" "}
+                                  <span className="font-semibold text-neutral-900">
+                                    {total}
+                                  </span>
+                                  {hasSizes ? " adet (tüm bedenler)" : " adet"}
+                                </span>
                               </span>
-                            ) : sizeColumns.length > 0 ? (
-                              <input
-                                type="number"
-                                min={0}
-                                step={1}
-                                className={`${panelDesktopInputClass} w-14 text-center`}
-                                defaultValue={product.stock}
-                                key={`${product.id}-total-${product.stock}`}
-                                disabled={busy}
-                                aria-label={`${product.title} toplam stok`}
-                                onBlur={(event) => {
-                                  const next = Number(event.target.value);
-                                  if (
-                                    !Number.isFinite(next) ||
-                                    !Number.isInteger(next) ||
-                                    next < 0 ||
-                                    next === product.stock
-                                  ) {
-                                    event.target.value = String(product.stock);
-                                    return;
-                                  }
-                                  setTotalStock(product, next);
-                                }}
+                              <ChevronDown
+                                className={`mt-1 h-5 w-5 shrink-0 text-neutral-400 transition-transform duration-200 ${
+                                  open ? "rotate-180" : ""
+                                }`}
+                                strokeWidth={1.75}
+                                aria-hidden
                               />
-                            ) : (
-                              <span className="font-semibold tabular-nums">
-                                {total}
-                              </span>
-                            )}
-                          </TrPanelDataTableCell>
-                        </TrPanelDataTableRow>
-                      );
-                    })}
-                  </TrPanelDataTable>
+                            </button>
 
+                            <AnimatePresence initial={false}>
+                              {open ? (
+                                <motion.div
+                                  key="stock-body"
+                                  initial={{ height: 0, opacity: 0 }}
+                                  animate={{ height: "auto", opacity: 1 }}
+                                  exit={{ height: 0, opacity: 0 }}
+                                  transition={{
+                                    duration: 0.28,
+                                    ease: trPanelEase,
+                                  }}
+                                  className="overflow-hidden"
+                                >
+                                  <div
+                                    id={`stock-rows-${product.id}`}
+                                    className="mt-4 space-y-3 border-t border-[color:var(--panel-accent-border)] pt-4"
+                                  >
+                                    <Link
+                                      href={trPanelEditProductPath(product.id)}
+                                      className="inline-block text-[15px] font-medium text-[color:var(--panel-accent-deep)] lg:text-[13px]"
+                                    >
+                                      Ürünü düzenle →
+                                    </Link>
+                                    {hasSizes ? (
+                                      <>
+                                        <p className="text-[16px] font-semibold text-neutral-800 lg:text-[13px]">
+                                          Beden stokları
+                                        </p>
+                                        <SizeStockList
+                                          product={product}
+                                          sizes={sizes}
+                                          busy={busy}
+                                          onChange={setSizeStock}
+                                        />
+                                        {missingExpanded.length > 0 ? (
+                                          <button
+                                            type="button"
+                                            className={panelAddChipClass}
+                                            onClick={() =>
+                                              expandNumericSizes(product)
+                                            }
+                                          >
+                                            Daha büyük bedenler (42–52)
+                                          </button>
+                                        ) : null}
+                                      </>
+                                    ) : (
+                                      <div className="flex items-center justify-between gap-3">
+                                        <p className="text-[16px] font-semibold text-neutral-800 lg:text-[13px]">
+                                          Toplam stok
+                                        </p>
+                                        <StockStepper
+                                          value={product.stock}
+                                          disabled={busy}
+                                          label={product.title}
+                                          onDecrease={() =>
+                                            setTotalStock(
+                                              product,
+                                              product.stock - 1,
+                                            )
+                                          }
+                                          onIncrease={() =>
+                                            setTotalStock(
+                                              product,
+                                              product.stock + 1,
+                                            )
+                                          }
+                                        />
+                                      </div>
+                                    )}
+                                  </div>
+                                </motion.div>
+                              ) : null}
+                            </AnimatePresence>
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </TrPanelStagger>
+              </div>
+
+              <div className="hidden lg:block">
                 <TrPanelBulkBar
                   selectedCount={selection.selectedCount}
                   onClear={selection.clear}
@@ -818,11 +749,8 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
                 >
                   <div className="flex w-full flex-col gap-2 sm:w-auto">
                     <p className="text-[12px] text-neutral-600">
-                      Seçili ürünlerin stokuna uygula
-                      {sizeColumns.length > 0
-                        ? " (bedenli ürünlerde her bedene)"
-                        : ""}
-                      :
+                      Seçili ürünlerin stokuna uygula (bedenli ürünlerde her
+                      bedene):
                     </p>
                     <div className="flex flex-wrap items-center gap-2">
                       <label className="flex items-center gap-1.5 text-[12px] font-medium text-neutral-700">
@@ -891,7 +819,7 @@ export function TrOwnerStockPage() {
             </Link>
             <h2 className={panelPageTitleClass}>Stok</h2>
             <p className="mt-2 text-[16px] leading-relaxed text-neutral-600 lg:text-[14px]">
-              Her bedenin stoğunu ayrı ayrı ayarlayın.
+              Ürüne dokunun, beden stokları açılsın.
             </p>
           </div>
           <StockBoard boutiqueId={activeBoutique.id} />

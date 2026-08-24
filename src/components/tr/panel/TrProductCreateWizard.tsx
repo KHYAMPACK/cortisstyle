@@ -16,6 +16,7 @@ import { TrOwnerWizardPipelineStatus } from "@/components/tr/panel/TrOwnerWizard
 import { TrProductImageLightbox } from "@/components/tr/panel/TrProductImageLightbox";
 import {
   emptyStockInputsForChart,
+  sizesFromStockInputs,
   TrOwnerSizeChartStock,
 } from "@/components/tr/panel/TrOwnerSizeChartStock";
 import { TrOwnerCategoryPicker } from "@/components/tr/panel/TrOwnerCategoryPicker";
@@ -38,10 +39,7 @@ import {
   DEFAULT_CATALOG_BACKGROUND_ID,
   getCatalogBackground,
 } from "@/lib/tr/catalogBackgrounds/registry";
-import {
-  sizesForChart,
-  type TrSizeChartId,
-} from "@/lib/tr/productOptions";
+import type { TrSizeChartId } from "@/lib/tr/productOptions";
 import {
   clampDescription,
   clampTitle,
@@ -222,7 +220,10 @@ export function TrProductCreateWizard({
     title,
   ]);
 
-  const chartSizes = useMemo(() => sizesForChart(sizeChart), [sizeChart]);
+  const chartSizes = useMemo(
+    () => sizesFromStockInputs(sizeChart, sizeStockInputs),
+    [sizeChart, sizeStockInputs],
+  );
 
   const catalogBackground = getCatalogBackground(catalogBackgroundId);
   const modelGenerating = modelJobs.some((j) => j.status === "running");
@@ -450,7 +451,9 @@ export function TrProductCreateWizard({
       let stockValue: number;
       let sizeStocks: Record<string, number> = {};
       const sizes =
-        sizeChart === "none" ? [] : sizesForChart(sizeChart);
+        sizeChart === "none"
+          ? []
+          : sizesFromStockInputs(sizeChart, sizeStockInputs);
       if (sizes.length > 0) {
         const parsed = parseSizeStockInputs(sizes, sizeStockInputs);
         if (!parsed) {

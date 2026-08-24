@@ -10,14 +10,36 @@ export const DEFAULT_LETTER_SIZES = [
   "3XL",
 ] as const;
 
-/** Numeric / jean-style chart — every integer from 24 through 50. */
-export const NUMERIC_SIZE_MIN = 24;
-export const NUMERIC_SIZE_MAX = 50;
+/** Even jean-style numbers from `min` through `max` (inclusive). */
+export function evenNumericSizes(min: number, max: number): string[] {
+  const out: string[] = [];
+  const start = min % 2 === 0 ? min : min + 1;
+  for (let size = start; size <= max; size += 2) {
+    out.push(String(size));
+  }
+  return out;
+}
 
-export const DEFAULT_NUMERIC_SIZES = Array.from(
-  { length: NUMERIC_SIZE_MAX - NUMERIC_SIZE_MIN + 1 },
-  (_, index) => String(NUMERIC_SIZE_MIN + index),
+/** Default numeric chart shown in the panel (24–40 even). */
+export const NUMERIC_SIZE_MIN = 24;
+export const NUMERIC_SIZE_DEFAULT_MAX = 40;
+/** Extra even sizes revealed by “expand” in the panel. */
+export const NUMERIC_SIZE_EXPANDED_MAX = 52;
+
+export const DEFAULT_NUMERIC_SIZES = evenNumericSizes(
+  NUMERIC_SIZE_MIN,
+  NUMERIC_SIZE_DEFAULT_MAX,
 );
+
+export const NUMERIC_EXPANDED_SIZES = evenNumericSizes(
+  NUMERIC_SIZE_DEFAULT_MAX + 2,
+  NUMERIC_SIZE_EXPANDED_MAX,
+);
+
+export const ALL_NUMERIC_SIZES = [
+  ...DEFAULT_NUMERIC_SIZES,
+  ...NUMERIC_EXPANDED_SIZES,
+];
 
 export type TrSizeChartId = "letter" | "numeric" | "none";
 
@@ -52,9 +74,8 @@ export function sizesForChart(chart: TrSizeChartId): string[] {
 }
 
 /**
- * Sizes shown on the stock board: chart defaults (XS–3XL / 24–50) plus any
- * extra labels already on the product. Empty sizes → no size columns.
- * Numeric chart is 24–50 (including odd sizes).
+ * Sizes shown on the stock board: chart defaults (XS–3XL / 24–40) plus any
+ * extra labels already on the product (expanded 42–52, custom). Empty sizes → no size columns.
  */
 export function sizesForStockBoard(sizes: string[]): string[] {
   const cleaned = sizes.map((size) => size.trim()).filter(Boolean);
@@ -64,6 +85,14 @@ export function sizesForStockBoard(sizes: string[]): string[] {
   return sortProductSizes([...new Set([...sizesForChart(chart), ...cleaned])]);
 }
 
+/** Even sizes 42–52 not yet on this numeric product’s stock board. */
+export function missingNumericExpandedSizes(sizes: string[]): string[] {
+  const cleaned = sizes.map((size) => size.trim()).filter(Boolean);
+  if (detectSizeChart(cleaned) !== "numeric") return [];
+  const present = new Set(sizesForStockBoard(cleaned));
+  return NUMERIC_EXPANDED_SIZES.filter((size) => !present.has(size));
+}
+
 export function detectSizeChart(sizes: string[]): TrSizeChartId {
   const cleaned = sizes.map((size) => size.trim()).filter(Boolean);
   if (cleaned.length === 0) return "none";
@@ -71,7 +100,7 @@ export function detectSizeChart(sizes: string[]): TrSizeChartId {
   const letterSet = new Set(
     DEFAULT_LETTER_SIZES.map((size) => size.toLocaleUpperCase("en")),
   );
-  const numericSet = new Set<string>(DEFAULT_NUMERIC_SIZES);
+  const numericSet = new Set<string>(ALL_NUMERIC_SIZES);
 
   const allLetter = cleaned.every((size) =>
     letterSet.has(size.toLocaleUpperCase("en")),

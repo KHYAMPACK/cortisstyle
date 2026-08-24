@@ -2,7 +2,11 @@
 
 import { useState } from "react";
 import type { TrSizeChartId } from "@/lib/tr/productOptions";
-import { sizesForChart, sortProductSizes } from "@/lib/tr/productOptions";
+import {
+  NUMERIC_EXPANDED_SIZES,
+  sizesForChart,
+  sortProductSizes,
+} from "@/lib/tr/productOptions";
 import {
   sanitizeStockInput,
   TR_OWNER_PRODUCT_LIMITS,
@@ -26,7 +30,7 @@ const CHART_OPTIONS: Array<{ id: TrSizeChartId; label: string; hint: string }> =
     },
     {
       id: "numeric",
-      label: "Numara (24–50)",
+      label: "Numara (24–40)",
       hint: "Pantolon / jean ölçüsü",
     },
     {
@@ -131,6 +135,18 @@ export function TrOwnerSizeChartStock({
   const chartSizes = displaySizesForChart(chart, stockInputs);
   const [addingSize, setAddingSize] = useState(false);
   const [newSize, setNewSize] = useState("");
+  const missingExpandedSizes =
+    chart === "numeric"
+      ? NUMERIC_EXPANDED_SIZES.filter((size) => stockInputs[size] === undefined)
+      : [];
+
+  const expandNumericSizes = () => {
+    const next = { ...stockInputs };
+    for (const size of NUMERIC_EXPANDED_SIZES) {
+      if (next[size] === undefined) next[size] = "0";
+    }
+    onStockInputsChange(next);
+  };
 
   const commitSize = () => {
     const size = newSize.trim().toLocaleUpperCase("en");
@@ -209,7 +225,10 @@ export function TrOwnerSizeChartStock({
           <p className={panelLabelClass}>Beden stokları</p>
           <div className="space-y-3">
             {chartSizes.map((size) => {
-              const isCustom = !sizesForChart(chart).includes(size);
+              const isDefault = sizesForChart(chart).includes(size);
+              const isExpandedNumeric = NUMERIC_EXPANDED_SIZES.includes(size);
+              const canRemove =
+                !isDefault && (allowCustomSizes || isExpandedNumeric);
               return (
                 <div
                   key={size}
@@ -228,7 +247,7 @@ export function TrOwnerSizeChartStock({
                     }
                     label={`${size} stok`}
                   />
-                  {allowCustomSizes && isCustom ? (
+                  {canRemove ? (
                     <button
                       type="button"
                       className="min-h-11 shrink-0 text-[15px] font-semibold text-red-700"
@@ -241,6 +260,16 @@ export function TrOwnerSizeChartStock({
               );
             })}
           </div>
+
+          {missingExpandedSizes.length > 0 ? (
+            <button
+              type="button"
+              className={panelAddChipClass}
+              onClick={expandNumericSizes}
+            >
+              Daha büyük bedenler (42–52)
+            </button>
+          ) : null}
 
           {allowCustomSizes ? (
             <div className="space-y-3 pt-1">
@@ -257,7 +286,7 @@ export function TrOwnerSizeChartStock({
                   <input
                     value={newSize}
                     onChange={(event) => setNewSize(event.target.value)}
-                    placeholder="Örn. XXL veya 52"
+                    placeholder="Örn. XXL veya 54"
                     className={`${panelFieldClass} min-w-[140px] flex-1`}
                     onKeyDown={(event) => {
                       if (event.key === "Enter") {
@@ -286,7 +315,7 @@ export function TrOwnerSizeChartStock({
                 </div>
               )}
               <p className={panelHintClass}>
-                Tabloda olmayan beden ekleyebilirsiniz (XXL, 52 vb.).
+                Tabloda olmayan beden ekleyebilirsiniz (XXL, 54 vb.).
               </p>
             </div>
           ) : null}

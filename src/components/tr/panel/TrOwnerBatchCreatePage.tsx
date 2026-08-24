@@ -15,6 +15,7 @@ import { TrOwnerBatchPricesStep } from "@/components/tr/panel/TrOwnerBatchPrices
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
 import {
   emptyStockInputsForChart,
+  sizesFromStockInputs,
   TrOwnerSizeChartStock,
 } from "@/components/tr/panel/TrOwnerSizeChartStock";
 import { TrOwnerStorePreview } from "@/components/tr/panel/TrOwnerStorePreview";
@@ -56,7 +57,7 @@ import {
   capturedBatchRows,
 } from "@/lib/tr/productBatchCreateFlow";
 import { getPanelProductCover } from "@/lib/tr/productImages";
-import { sizesForChart, type TrSizeChartId } from "@/lib/tr/productOptions";
+import type { TrSizeChartId } from "@/lib/tr/productOptions";
 import { parseSizeStockInputs, sumSizeStocks } from "@/lib/tr/sizeStocks";
 import {
   trBoutiqueProductPath,
@@ -89,7 +90,7 @@ function priceRowValid(row: ProductBatchCreateRow): boolean {
 
 function stockRowValid(row: ProductBatchCreateRow): boolean {
   if (row.sizeChart === "none") return isValidStock(row.stock);
-  const sizes = sizesForChart(row.sizeChart);
+  const sizes = sizesFromStockInputs(row.sizeChart, row.sizeStockInputs);
   if (!sizes.every((size) => isValidStock(row.sizeStockInputs[size] ?? ""))) {
     return false;
   }
@@ -606,7 +607,10 @@ function BatchCreateFlow({
                       sizes={
                         row.sizeChart === "none"
                           ? []
-                          : sizesForChart(row.sizeChart)
+                          : sizesFromStockInputs(
+                              row.sizeChart,
+                              row.sizeStockInputs,
+                            )
                       }
                     />
                   </section>
@@ -694,7 +698,9 @@ function buildCreatePayload(
     compareAtPriceTry = listPrice;
   }
   const sizes =
-    row.sizeChart === "none" ? [] : sizesForChart(row.sizeChart);
+    row.sizeChart === "none"
+      ? []
+      : sizesFromStockInputs(row.sizeChart, row.sizeStockInputs);
   let stockValue: number;
   let sizeStocks: Record<string, number> = {};
   if (sizes.length > 0) {
