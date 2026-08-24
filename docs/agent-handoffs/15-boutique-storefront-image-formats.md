@@ -21,14 +21,21 @@ Packshot: `src/lib/tr/fashn/packshot.ts` keeps alpha PNG. Flatten helpers (`src/
 
 Photoroom **intermediate** stays PNG. JPEG cannot hold transparency.
 
+### Display delivery (Hobby / quota)
+
+Vercel Hobby cannot run Image Optimization on a catalog (5K unique transforms/month). [next.config.ts](../../next.config.ts) sets `images.unoptimized: true`. `next/image` is layout-only; browsers request the stored file URL.
+
+Catalog cover/gallery/hover/panel URLs go through `deliverPublicAssetUrl` (`src/lib/tr/assets/deliverPublicAssetUrl.ts`) at **display** time. Uploads and DB rows stay on `*.supabase.co/storage/v1/object/public/tr-assets/…` (`getTrAssetPublicUrl`). Optional `NEXT_PUBLIC_ASSET_CDN_ORIGIN` later swaps only the origin (Cloudflare cache) without a data migration. `role: "plp" | "full"` is reserved for sibling PLP thumbs — unused until those files exist. Do not JPEG/WebP marketplace PNGs in place.
+
 ### Panel display
 
-Owner-panel **list/stock thumbs** use `getPanelProductCover` (marketplace PNG) via `next/image` (~80–96px). Wizard / store-preview thumbs also go through the optimizer; keep `unoptimized` on the product **lightbox** so the owner can inspect the exact PNG. Catalog-backdrop picker still stores `catalogBackgroundId` for panel preview CSS; it does not bake a live storefront file.
+Owner-panel **list/stock thumbs** use `getPanelProductCover` (marketplace PNG) via `next/image` (~80–96px). With `images.unoptimized`, the browser loads the stored file (no `/_next/image`). Keep inspecting the exact PNG in the product **lightbox**. Catalog-backdrop picker still stores `catalogBackgroundId` for panel preview CSS; it does not bake a live storefront file.
 
 Panel chrome logos prefer SVG via `panelBoutiqueLogoSrc` (`src/lib/tr/panel/panelLogo.ts`).
 
 ## What not to do
 
+- Do not persist CDN-rewritten URLs in product columns — display rewrite only (`deliverPublicAssetUrl`).
 - Do not flatten packshots onto the opaque 2:3 canvas for **Cadde** (already avoided in `packshot.ts`).
 - Do not convert marketplace PNGs at PDP render time.
 - Do not write a sibling storefront WebP “for the boutique site” — boutique customers see the PNG on the paper/beige card background.
@@ -40,5 +47,6 @@ Panel chrome logos prefer SVG via `panelBoutiqueLogoSrc` (`src/lib/tr/panel/pane
 
 - Pipeline UI / credits: [06-sell-enablement.md](./06-sell-enablement.md)
 - Storefront gallery helpers: `src/lib/tr/catalog/productImages.ts`
+- Display URL rewrite: `src/lib/tr/assets/deliverPublicAssetUrl.ts`
 - Upload route: `src/app/api/tr/owner/upload/route.ts`
 - Opaque encode: `src/lib/tr/assets/encodeOpaqueImage.ts` (`OPAQUE_WEBP_QUALITY` 95)

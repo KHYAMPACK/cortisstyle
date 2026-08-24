@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { Analytics } from "@vercel/analytics/next";
-import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Providers } from "@/components/Providers";
 import { PATHNAME_HEADER, BOUTIQUE_SLUG_HEADER, rootHtmlClassName } from "@/lib/introLoader";
 import "./globals.css";
@@ -31,7 +30,6 @@ export default async function RootLayout({
       <body className="min-h-full bg-ice-floor font-sans text-jet-black">
         <Providers boutiqueSlug={boutiqueSlug}>{children}</Providers>
         <Analytics />
-        <SpeedInsights />
       </body>
     </html>
   );

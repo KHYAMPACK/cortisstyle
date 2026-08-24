@@ -1,4 +1,8 @@
 import { isLookbookPieceImage } from "@/data/tr/lookbookPieceImages";
+import {
+  deliverPublicAssetUrl,
+  deliverPublicAssetUrls,
+} from "@/lib/tr/assets/deliverPublicAssetUrl";
 import { TR_OWNER_PRODUCT_LIMITS } from "@/lib/tr/ownerProductConstraints";
 import {
   isTrMarketplaceAssetUrl,
@@ -102,13 +106,15 @@ export function getProductCoverImageFor(
       product,
       preferStorefront: false,
     });
-    if (gallery.length > 0) return gallery[0] ?? null;
-    return getBoutiqueProductImages(product)[0] ?? null;
+    if (gallery[0]) {
+      return deliverPublicAssetUrl(gallery[0], "full");
+    }
+    const fallback = getBoutiqueProductImages(product)[0];
+    return fallback ? deliverPublicAssetUrl(fallback, "full") : null;
   }
 
-  const marketplace = getMarketplaceProductImages(product);
-  if (marketplace.length > 0) return marketplace[0] ?? null;
-  return null;
+  const marketplace = getMarketplaceProductImages(product)[0];
+  return marketplace ? deliverPublicAssetUrl(marketplace, "full") : null;
 }
 
 export function hasRealMarketplaceImagery(
@@ -127,7 +133,10 @@ export function hasRealMarketplaceImagery(
 export function getStorefrontGalleryImages(
   product: CatalogImageProduct,
 ): string[] {
-  return galleryFromSlots({ product, preferStorefront: false });
+  return deliverPublicAssetUrls(
+    galleryFromSlots({ product, preferStorefront: false }),
+    "full",
+  );
 }
 
 /**
@@ -136,7 +145,10 @@ export function getStorefrontGalleryImages(
 export function getMarketplaceGalleryImages(
   product: CatalogImageProduct,
 ): string[] {
-  return galleryFromSlots({ product, preferStorefront: false });
+  return deliverPublicAssetUrls(
+    galleryFromSlots({ product, preferStorefront: false }),
+    "full",
+  );
 }
 
 /**
@@ -145,12 +157,16 @@ export function getMarketplaceGalleryImages(
 export function getPanelProductCover(
   product: CatalogImageProduct,
 ): string | null {
-  return (
-    getProductCoverImageFor("boutique", product) ??
-    getProductCoverImageFor("marketplace", product) ??
+  const boutiqueCover =
+    galleryFromSlots({ product, preferStorefront: false })[0] ??
     getBoutiqueProductImages(product)[0] ??
-    null
-  );
+    null;
+  const raw =
+    boutiqueCover ??
+    getMarketplaceProductImages(product)[0] ??
+    getBoutiqueProductImages(product)[0] ??
+    null;
+  return raw ? deliverPublicAssetUrl(raw, "plp") : null;
 }
 
 /**
@@ -160,7 +176,8 @@ export function getPanelProductCover(
 export function getProductHoverImage(
   product: Pick<TrProduct, "lifestyleImages">,
 ): string | null {
-  return nonEmpty(product.lifestyleImages)[0] ?? null;
+  const hover = nonEmpty(product.lifestyleImages)[0];
+  return hover ? deliverPublicAssetUrl(hover, "plp") : null;
 }
 
 /**
@@ -173,7 +190,7 @@ export function getProductSecondaryImage(
   if (list.length < 2) return null;
   const secondary = list[1]?.trim();
   if (!secondary || secondary === list[0]) return null;
-  return secondary;
+  return deliverPublicAssetUrl(secondary, "plp");
 }
 
 /**

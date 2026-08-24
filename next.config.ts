@@ -53,6 +53,9 @@ const nextConfig: NextConfig = {
     ];
   },
   images: {
+    // Hobby 5K unique transforms cannot support a catalog. Serve stored
+    // files as-is; display URLs may later rewrite via deliverPublicAssetUrl.
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: "https",

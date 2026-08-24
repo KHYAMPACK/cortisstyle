@@ -51,6 +51,7 @@ Branded reset (`/api/tr/customer/auth/send-password-reset`) uses `admin.generate
 |-----|------|
 | `NEXT_PUBLIC_SUPABASE_*`, `SUPABASE_SERVICE_ROLE_KEY` | DB/auth |
 | `NEXT_PUBLIC_SITE_URL` | Origins / auth redirects |
+| `NEXT_PUBLIC_ASSET_CDN_ORIGIN` | Optional display CDN for `tr-assets` (e.g. `https://images.example.com`). Unset = browsers hit Supabase Storage. Rewrite is display-only in `deliverPublicAssetUrl` — do **not** store CDN URLs in Postgres. Hobby Image Optimization is off (`images.unoptimized`). |
 | `TR_ORDER_CONFIRM_SECRET` | Order confirmation HMAC (required in production) |
 | `PHOTOROOM_API_KEY` | Panel / packshot background removal |
 | `FASHN_API_KEY` | Packshot + try-on only (not model-create) |
