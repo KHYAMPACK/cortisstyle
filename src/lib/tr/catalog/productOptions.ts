@@ -10,18 +10,14 @@ export const DEFAULT_LETTER_SIZES = [
   "3XL",
 ] as const;
 
-/** Numeric / jean-style chart (even waist-style labels). */
-export const DEFAULT_NUMERIC_SIZES = [
-  "24",
-  "26",
-  "28",
-  "30",
-  "32",
-  "34",
-  "36",
-  "38",
-  "40",
-] as const;
+/** Numeric / jean-style chart — every integer from 24 through 50. */
+export const NUMERIC_SIZE_MIN = 24;
+export const NUMERIC_SIZE_MAX = 50;
+
+export const DEFAULT_NUMERIC_SIZES = Array.from(
+  { length: NUMERIC_SIZE_MAX - NUMERIC_SIZE_MIN + 1 },
+  (_, index) => String(NUMERIC_SIZE_MIN + index),
+);
 
 export type TrSizeChartId = "letter" | "numeric" | "none";
 
@@ -56,8 +52,9 @@ export function sizesForChart(chart: TrSizeChartId): string[] {
 }
 
 /**
- * Sizes shown on the stock board: chart defaults (XS–3XL / 24–40) plus any
+ * Sizes shown on the stock board: chart defaults (XS–3XL / 24–50) plus any
  * extra labels already on the product. Empty sizes → no size columns.
+ * Numeric chart is 24–50 (including odd sizes).
  */
 export function sizesForStockBoard(sizes: string[]): string[] {
   const cleaned = sizes.map((size) => size.trim()).filter(Boolean);

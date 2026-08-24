@@ -26,7 +26,7 @@ const CHART_OPTIONS: Array<{ id: TrSizeChartId; label: string; hint: string }> =
     },
     {
       id: "numeric",
-      label: "Numara (24–40)",
+      label: "Numara (24–50)",
       hint: "Pantolon / jean ölçüsü",
     },
     {
@@ -257,7 +257,7 @@ export function TrOwnerSizeChartStock({
                   <input
                     value={newSize}
                     onChange={(event) => setNewSize(event.target.value)}
-                    placeholder="Örn. XXL veya 42"
+                    placeholder="Örn. XXL veya 52"
                     className={`${panelFieldClass} min-w-[140px] flex-1`}
                     onKeyDown={(event) => {
                       if (event.key === "Enter") {
@@ -286,7 +286,7 @@ export function TrOwnerSizeChartStock({
                 </div>
               )}
               <p className={panelHintClass}>
-                Tabloda olmayan beden ekleyebilirsiniz (XXL, 42 vb.).
+                Tabloda olmayan beden ekleyebilirsiniz (XXL, 52 vb.).
               </p>
             </div>
           ) : null}
