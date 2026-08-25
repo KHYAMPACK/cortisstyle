@@ -10,14 +10,16 @@ export type CheckoutShippingQuote = {
   handlerCode: typeof CHECKOUT_SHIPPING_HANDLER;
 };
 
-/** Quantity sum across checkout / cart lines (qty defaults to 1). */
-export function shippingItemCount(
-  items: Array<{ quantity?: number }>,
-): number {
-  return items.reduce(
-    (sum, item) => sum + Math.max(1, Math.floor(item.quantity ?? 1)),
-    0,
-  );
+function lineQuantity(item: unknown): number {
+  if (!item || typeof item !== "object" || !("quantity" in item)) return 1;
+  const raw = (item as { quantity?: unknown }).quantity;
+  const qty = typeof raw === "number" && Number.isFinite(raw) ? raw : 1;
+  return Math.max(1, Math.floor(qty));
+}
+
+/** Quantity sum. Boutique cart rows have no `quantity` and count as 1. */
+export function shippingItemCount(items: ReadonlyArray<unknown>): number {
+  return items.reduce<number>((sum, item) => sum + lineQuantity(item), 0);
 }
 
 /**

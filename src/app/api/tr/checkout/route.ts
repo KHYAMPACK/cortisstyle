@@ -26,7 +26,10 @@ import {
 import { abandonUnpaidIyzicoOrder } from "@/lib/tr/payments/abandonUnpaid";
 import { startIyzicoCheckoutForm } from "@/lib/tr/payments/startCheckoutForm";
 import { autoFulfillPaidShipment } from "@/lib/tr/shipping/ownerShipment";
-import { quoteCheckoutShippingFee } from "@/lib/tr/shipping/quoteShipping";
+import {
+  quoteCheckoutShippingFee,
+  shippingItemCount,
+} from "@/lib/tr/shipping/quoteShipping";
 import { boutiqueHasLiveShipping } from "@/lib/tr/shipping/registry";
 import type {
   CreateTrOrderInput,
@@ -180,10 +183,7 @@ export async function POST(request: Request) {
     let shippingFeeKurus = 0;
     let shippingProvider: CreateTrOrderInput["shippingProvider"] = null;
     if (boutiqueSlug && boutiqueHasLiveShipping(boutiqueSlug)) {
-      const itemCount = checkout.lines.reduce(
-        (sum, line) => sum + line.quantity,
-        0,
-      );
+      const itemCount = shippingItemCount(checkout.lines);
       const quote = quoteCheckoutShippingFee(boutiqueSlug, itemCount);
       if (!quote) {
         return Response.json(
