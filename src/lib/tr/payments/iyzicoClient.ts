@@ -82,10 +82,12 @@ export type IyzicoInitializeResult = {
 
 export type IyzicoRetrieveResult = {
   status?: string;
+  errorCode?: string;
   errorMessage?: string;
   paymentStatus?: string;
   paymentId?: string | number;
   conversationId?: string;
+  basketId?: string;
   token?: string;
   paidPrice?: string | number;
   currency?: string;

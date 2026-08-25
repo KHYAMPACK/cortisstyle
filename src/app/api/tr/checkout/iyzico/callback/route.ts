@@ -4,7 +4,11 @@ import { getOrderByIdAdmin } from "@/lib/tr/orders";
 import { abandonUnpaidIyzicoOrder } from "@/lib/tr/payments/abandonUnpaid";
 import { captureBoutiqueOrderAsPaid } from "@/lib/tr/payments/capturePaidOrder";
 import { IyzicoError, iyzicoRetrieveCheckoutForm } from "@/lib/tr/payments/iyzicoClient";
-import { iyzicoPaymentMatchesOrder } from "@/lib/tr/payments/iyzicoFormat";
+import {
+  iyzicoPaymentMatchesOrder,
+  iyzicoTextId,
+  resolveIyzicoCallbackOrderId,
+} from "@/lib/tr/payments/iyzicoFormat";
 import { getIyzicoCredentials } from "@/lib/tr/payments/registry";
 import { iyzicoConfirmUrl } from "@/lib/tr/payments/startCheckoutForm";
 import {
@@ -15,30 +19,47 @@ import { CHECKOUT_RATE_LIMITS } from "@/lib/tr/rateLimitPolicies";
 
 export const runtime = "nodejs";
 
+type CallbackFields = { token: string; conversationId: string };
+
 function redirectTo(url: string, status = 303): Response {
   return Response.redirect(url, status);
 }
 
-async function tokenFromRequest(request: Request): Promise<string> {
+async function fieldsFromRequest(request: Request): Promise<CallbackFields> {
   const url = new URL(request.url);
-  const fromQuery = url.searchParams.get("token")?.trim() ?? "";
-  if (fromQuery) return fromQuery;
+  const fromQuery: CallbackFields = {
+    token: url.searchParams.get("token")?.trim() ?? "",
+    conversationId: url.searchParams.get("conversationId")?.trim() ?? "",
+  };
 
   const contentType = request.headers.get("content-type") ?? "";
   if (contentType.includes("application/json")) {
     try {
-      const body = (await request.json()) as { token?: string };
-      return body.token?.trim() ?? "";
+      const body = (await request.json()) as {
+        token?: string;
+        conversationId?: string;
+      };
+      return {
+        token: body.token?.trim() || fromQuery.token,
+        conversationId: body.conversationId?.trim() || fromQuery.conversationId,
+      };
     } catch {
-      return "";
+      return fromQuery;
     }
   }
 
+  if (request.method === "GET") return fromQuery;
+
   try {
     const form = await request.formData();
-    return String(form.get("token") ?? "").trim();
+    return {
+      token: String(form.get("token") ?? "").trim() || fromQuery.token,
+      conversationId:
+        String(form.get("conversationId") ?? "").trim() ||
+        fromQuery.conversationId,
+    };
   } catch {
-    return "";
+    return fromQuery;
   }
 }
 
@@ -64,14 +85,22 @@ async function handleCallback(request: Request): Promise<Response> {
     return new Response("Ödeme yapılandırması yok.", { status: 404 });
   }
 
-  const token = await tokenFromRequest(request);
+  const orderFromQuery = url.searchParams.get("order")?.trim() ?? "";
+  const { token, conversationId: conversationFromCallback } =
+    await fieldsFromRequest(request);
   if (!token) {
     return new Response("Ödeme jetonu eksik.", { status: 400 });
   }
 
+  const conversationForRetrieve =
+    orderFromQuery || conversationFromCallback || undefined;
+
   let retrieve;
   try {
-    retrieve = await iyzicoRetrieveCheckoutForm(creds, { token });
+    retrieve = await iyzicoRetrieveCheckoutForm(creds, {
+      token,
+      conversationId: conversationForRetrieve,
+    });
   } catch (error) {
     console.error("[tr/checkout/iyzico/callback] retrieve failed:", error);
     return new Response(
@@ -80,12 +109,23 @@ async function handleCallback(request: Request): Promise<Response> {
     );
   }
 
-  const orderId =
-    typeof retrieve.conversationId === "string"
-      ? retrieve.conversationId.trim()
-      : "";
+  const orderId = resolveIyzicoCallbackOrderId({
+    orderFromQuery,
+    conversationFromCallback,
+    retrieve,
+  });
   if (!orderId) {
-    return new Response("Sipariş eşleşmedi.", { status: 400 });
+    console.error("[tr/checkout/iyzico/callback] missing order id", {
+      status: retrieve.status,
+      errorCode: retrieve.errorCode,
+      errorMessage: retrieve.errorMessage,
+      paymentStatus: retrieve.paymentStatus,
+      hasBasketId: Boolean(iyzicoTextId(retrieve.basketId)),
+    });
+    return new Response(
+      retrieve.errorMessage?.trim() || "Sipariş eşleşmedi.",
+      { status: 400 },
+    );
   }
 
   const order = await getOrderByIdAdmin(orderId);

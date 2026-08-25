@@ -39,6 +39,35 @@ export function ipv4ForIyzico(ip: string): string {
   return "85.34.78.112";
 }
 
+export function iyzicoTextId(value: unknown): string {
+  if (typeof value === "string") return value.trim();
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return String(Math.trunc(value));
+  }
+  return "";
+}
+
+/**
+ * Checkout Form retrieve echoes `conversationId` from the retrieve request,
+ * not from initialize. The order UUID lives on `basketId` (and our callback
+ * `?order=` query) after pay.
+ */
+export function resolveIyzicoCallbackOrderId(input: {
+  orderFromQuery?: string;
+  conversationFromCallback?: string;
+  retrieve?: {
+    basketId?: unknown;
+    conversationId?: unknown;
+  };
+}): string {
+  return (
+    iyzicoTextId(input.retrieve?.basketId) ||
+    iyzicoTextId(input.orderFromQuery) ||
+    iyzicoTextId(input.retrieve?.conversationId) ||
+    iyzicoTextId(input.conversationFromCallback)
+  );
+}
+
 function iyzicoPaidPriceKurus(
   paidPrice: string | number | undefined,
 ): number | null {
@@ -54,6 +83,7 @@ export function iyzicoPaymentMatchesOrder(
     paymentStatus?: string;
     paymentId?: string | number;
     conversationId?: string;
+    basketId?: string;
     paidPrice?: string | number;
     currency?: string;
     mdStatus?: string | number;
@@ -64,11 +94,8 @@ export function iyzicoPaymentMatchesOrder(
   }
   const paymentId = String(retrieve.paymentId ?? "").trim();
   if (!paymentId) return "Ödeme numarası yok.";
-  const conversationId =
-    typeof retrieve.conversationId === "string"
-      ? retrieve.conversationId.trim()
-      : "";
-  if (conversationId && conversationId !== order.id) {
+  const basketId = iyzicoTextId(retrieve.basketId);
+  if (basketId && basketId !== order.id) {
     return "Sipariş eşleşmedi.";
   }
   if (

@@ -73,7 +73,7 @@ src/
 | Boutique PDP size charts / care / features | `lib/tr/catalog/sizeCharts.ts`, `modelMeasurements.ts`, `careInstructions.ts`, `productFeatures.ts`, `pdpReturns.ts` |
 | Owner auth / panel APIs helpers | `lib/tr/panel/` |
 | Boutique shipping (Lila BK, others stub) | `lib/tr/shipping/` (120 TL / 2+ items free + 140 TL auto-buy cap; gated address retry) |
-| Boutique card pay (Lila iyzico) | `lib/tr/payments/` (`TR_LILABUTIK_IYZICO_*`; callback `/api/tr/checkout/iyzico/callback`) |
+| Boutique card pay (Lila iyzico) | `lib/tr/payments/` (`TR_LILABUTIK_IYZICO_*`; callback `/api/tr/checkout/iyzico/callback?boutique=&order=`; order id from retrieve `basketId`, not retrieve `conversationId`) |
 | TR il/ilçe allowlist | `lib/tr/geo/turkeyAddress.ts`, `data/tr/turkey-cities-districts.json` |
 | PhotoRoom cutout | **`lib/tr/ai/photoroomRemoveBg.ts`** (never delete with “studio”) |
 | Auth helpers | `lib/auth/` |

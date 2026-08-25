@@ -43,13 +43,19 @@ function callbackOrigin(boutique: {
   throw new IyzicoError("iyzico dönüş adresi yapılandırılmadı.", 500);
 }
 
-export function iyzicoCallbackUrl(boutique: {
-  slug: string;
-  customDomain?: string | null;
-}): string {
+export function iyzicoCallbackUrl(
+  boutique: {
+    slug: string;
+    customDomain?: string | null;
+  },
+  orderId: string,
+): string {
   const origin = callbackOrigin(boutique);
-  const slug = encodeURIComponent(boutique.slug.trim().toLowerCase());
-  return `${origin}/api/tr/checkout/iyzico/callback?boutique=${slug}`;
+  const params = new URLSearchParams({
+    boutique: boutique.slug.trim().toLowerCase(),
+    order: orderId.trim(),
+  });
+  return `${origin}/api/tr/checkout/iyzico/callback?${params.toString()}`;
 }
 
 export function iyzicoConfirmUrl(input: {
@@ -105,10 +111,13 @@ export async function startIyzicoCheckoutForm(input: {
     throw new IyzicoError("Bu butik için iyzico anahtarı yok.", 503);
   }
 
-  const callbackUrl = iyzicoCallbackUrl({
-    slug: input.boutiqueSlug,
-    customDomain: input.boutiqueCustomDomain,
-  });
+  const callbackUrl = iyzicoCallbackUrl(
+    {
+      slug: input.boutiqueSlug,
+      customDomain: input.boutiqueCustomDomain,
+    },
+    input.order.id,
+  );
   if (!callbackUrl.startsWith("https://")) {
     throw new IyzicoError(
       "Kart ödemesi HTTPS adresi ister. Canlı Lila domaininde deneyin.",
