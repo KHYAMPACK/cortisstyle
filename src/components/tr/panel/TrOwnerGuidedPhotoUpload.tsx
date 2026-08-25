@@ -21,7 +21,7 @@ import {
   pipelineLabelForSlot,
   type PipelineJobItem,
 } from "@/lib/tr/aiCatalog/pipelineProgress";
-import { constructionChipsEqual } from "@/lib/tr/aiCatalog/elbiseConstructionLock";
+import { constructionChipsEqual, constructionChipsForFamily } from "@/lib/tr/aiCatalog/elbiseConstructionLock";
 import { applyConstructionListingTitle } from "@/lib/tr/aiCatalog/listingDraft";
 import { buildElbisePackshotPrompt } from "@/lib/tr/aiCatalog/packshotPrompt";
 import { chipsFromProductFeatures } from "@/lib/tr/aiModel/elbiseTryOn";
@@ -847,36 +847,41 @@ export function TrOwnerGuidedPhotoUpload({
             );
           }
 
-          const proposed = emptyElbiseGateChips({
-            neckline: resolveDressFeatureValue(
-              "neckline",
-              preparedDraft?.features?.neckline,
+          const proposed = emptyElbiseGateChips(
+            constructionChipsForFamily(
+              {
+                neckline: resolveDressFeatureValue(
+                  "neckline",
+                  preparedDraft?.features?.neckline,
+                ),
+                sleeves: resolveDressFeatureValue(
+                  "sleeves",
+                  preparedDraft?.features?.sleeves,
+                ),
+                fit: resolveDressFeatureValue(
+                  "fit",
+                  preparedDraft?.features?.fit,
+                ),
+                length: resolveDressFeatureValue(
+                  "length",
+                  preparedDraft?.features?.length,
+                ),
+                decollete: resolveDressFeatureValue(
+                  "decollete",
+                  preparedDraft?.features?.decollete,
+                ),
+                rise: resolveDressFeatureValue(
+                  "rise",
+                  preparedDraft?.features?.rise,
+                ),
+                hem: resolveDressFeatureValue(
+                  "hem",
+                  preparedDraft?.features?.neckHem,
+                ),
+              },
+              knownFamily,
             ),
-            sleeves: resolveDressFeatureValue(
-              "sleeves",
-              preparedDraft?.features?.sleeves,
-            ),
-            fit: resolveDressFeatureValue(
-              "fit",
-              preparedDraft?.features?.fit,
-            ),
-            length: resolveDressFeatureValue(
-              "length",
-              preparedDraft?.features?.length,
-            ),
-            decollete: resolveDressFeatureValue(
-              "decollete",
-              preparedDraft?.features?.decollete,
-            ),
-            rise: resolveDressFeatureValue(
-              "rise",
-              preparedDraft?.features?.rise,
-            ),
-            hem: resolveDressFeatureValue(
-              "hem",
-              preparedDraft?.features?.neckHem,
-            ),
-          });
+          );
 
           if (deferConstructionPackshot) {
             if (preparedDraft?.title?.trim()) {
@@ -1286,7 +1291,7 @@ export function TrOwnerGuidedPhotoUpload({
       return;
     }
     const chips = emptyElbiseGateChips(
-      chipsFromProductFeatures(features ?? listingDraft?.features),
+      chipsFromProductFeatures(features ?? listingDraft?.features, family),
     );
     if (!elbiseGateReady(chips, family, category)) {
       onError(constructionGateErrorCopy(family, category));

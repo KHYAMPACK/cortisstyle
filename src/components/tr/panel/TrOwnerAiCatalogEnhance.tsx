@@ -171,9 +171,9 @@ export function TrOwnerAiCatalogEnhance({
   const selectedReady = options.find((o) => o.id === selectedModelId)?.ready;
   const previewUrls = lifestylePreviewUrls(lifestyleImages);
   const hasModelPhoto = previewUrls.length > 0;
-  const family = constructionCatalogFamily(uploadType);
+  const family = constructionCatalogFamily(uploadType, category);
   const elbise = skipPackshot || isConstructionCatalogUpload(uploadType);
-  const dressChips = chipsFromProductFeatures(features);
+  const dressChips = chipsFromProductFeatures(features, family);
   const packshotUrl =
     marketplaceImages[3]?.trim() || images[3]?.trim() || "";
   const backMankenUrl = images[1]?.trim() || marketplaceImages[1]?.trim() || "";

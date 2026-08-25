@@ -108,6 +108,7 @@ export function mergeElbiseRestyleFeatures(
   next.neckline = chips.neckline;
   next.sleeves = chips.sleeves;
   delete next.rise;
+  delete next.neckHem;
   if (chips.decollete.trim()) next.decollete = chips.decollete.trim();
   else delete next.decollete;
   return next;
@@ -129,7 +130,7 @@ export function estimateElbiseRestyleCredits(
   const family = constructionCatalogFamily(undefined, product.category);
   const modelCredits = describeModelPackageCredits(modelId, {
     uploadType: family ?? "elbise",
-    features: chipsFromProductFeatures(product.features),
+    features: chipsFromProductFeatures(product.features, family),
     detailImageUrl: detailUrl,
   });
   return TR_AI_CATALOG_CREDITS.productPackage + modelCredits;

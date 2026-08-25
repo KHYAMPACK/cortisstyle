@@ -555,7 +555,13 @@ export function TrOwnerElbiseRestyleQueue({
                     ? elbiseModelShotCount(
                         stage === "run"
                           ? chips
-                          : chipsFromProductFeatures(current.features),
+                          : chipsFromProductFeatures(
+                              current.features,
+                              constructionCatalogFamily(
+                                undefined,
+                                current.category,
+                              ),
+                            ),
                         activeModelId,
                         current.images[2],
                         constructionCatalogFamily(undefined, current.category),

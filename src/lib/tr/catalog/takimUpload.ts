@@ -169,7 +169,7 @@ export function takimTryOnPrompt(input: {
   kind: "front" | "back";
   keepPreviousGarment: boolean;
 }): string {
-  const lock = buildElbiseTryOnConstructionLock(input.chips ?? {});
+  const lock = buildElbiseTryOnConstructionLock(input.chips ?? {}, input.family);
   const keep = input.keepPreviousGarment ? KEEP_PREVIOUS : "";
   const view =
     input.kind === "back"

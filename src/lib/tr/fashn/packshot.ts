@@ -49,8 +49,9 @@ export const PACKSHOT_PRESENTATION_LOCK =
 export const FLAT_LAY_PACKSHOT_PRESENTATION_LOCK =
   "Presentation: top-down flat lay packshot only. Clothing pressed flat — no ghost mannequin, no hanger, no person, no worn volume.";
 
-const CONFLICTING_PACKSHOT_PRESENTATION =
-  /\b(on[- ]hanger|on a hanger|on the hanger|clothes hangers?|hanger hook|visible mannequin|dress forms?|flat[- ]lay(?: packshot)?|floating garment|on a (?:visible )?mannequin|on mannequin)\b/gi;
+/** Positive hanger / visible-mannequin staging. Keeps "no visible mannequin". */
+const UNNEGATED_PACKSHOT_CONFLICT =
+  /(?<!\bno\s)\b(on[- ]hanger|on a hanger|on the hanger|clothes hangers?|hanger hook|visible mannequin|dress forms?|flat[- ]lay(?: packshot)?|floating garment|on a (?:visible )?mannequin|on mannequin)\b/gi;
 
 /** Positive ghost-mannequin staging. Does not match "no ghost mannequin". */
 const UNNEGATED_GHOST_MANNEQUIN =
@@ -61,7 +62,7 @@ const UNNEGATED_FLAT_LAY_CONFLICT =
   /(?<!\bno\s)\b(on[- ]?hanger|hangers?|askı|dress form|visible mannequin|ghost mannequin|on mannequin)\b/gi;
 
 export function stripConflictingPackshotPresentation(text: string): string {
-  return text.replace(CONFLICTING_PACKSHOT_PRESENTATION, " ").replace(/\s+/g, " ").trim();
+  return text.replace(UNNEGATED_PACKSHOT_CONFLICT, " ").replace(/\s+/g, " ").trim();
 }
 
 function stripUnnegatedGhostMannequin(text: string): string {

@@ -101,6 +101,48 @@ function fitLock(id: string | null, label: string): string {
   return FIT_EN[id ?? ""] ?? `Fit: ${label} as photographed. Do not change the ease.`;
 }
 
+function knownFeature(
+  key: "neckline" | "sleeves" | "fit" | "length" | "decollete" | "rise" | "hem",
+  raw: string | null | undefined,
+): string {
+  if (!dressFeatureOptionId(key, raw)) return "";
+  return resolveDressFeatureValue(key, raw);
+}
+
+/**
+ * Drop family-invalid chips so leftover `neckHem` / collar text cannot
+ * become Paça on a dress or trigger the bottoms try-on lock.
+ */
+export function constructionChipsForFamily(
+  chips: ElbiseConstructionChips | null | undefined,
+  family?: ConstructionCatalogFamily | null,
+): ElbiseConstructionChips {
+  const rise = knownFeature("rise", chips?.rise);
+  const hem = knownFeature("hem", chips?.hem);
+  const bottom = family === "alt-giyim";
+  const dress = family === "elbise";
+  const top = family === "ust-giyim";
+  const unspecified = family == null;
+  const treatBottom = bottom || (unspecified && Boolean(rise || hem));
+  const treatDressOrTop = dress || top || (unspecified && !treatBottom);
+
+  return {
+    neckline: treatDressOrTop
+      ? resolveDressFeatureValue("neckline", chips?.neckline) || null
+      : null,
+    sleeves: treatDressOrTop
+      ? resolveDressFeatureValue("sleeves", chips?.sleeves) || null
+      : null,
+    decollete: treatDressOrTop
+      ? resolveDressFeatureValue("decollete", chips?.decollete) || null
+      : null,
+    fit: dress ? null : knownFeature("fit", chips?.fit) || null,
+    length: resolveDressFeatureValue("length", chips?.length) || null,
+    rise: treatBottom ? rise || null : null,
+    hem: treatBottom ? hem || null : null,
+  };
+}
+
 export function hasElbiseLockedConstruction(
   chips: ElbiseConstructionChips | null | undefined,
   family?: ConstructionCatalogFamily | null,
@@ -131,14 +173,16 @@ export function hasElbiseLockedConstruction(
 /** English FASHN lock from owner-confirmed boy / yaka / kol / detay. */
 export function buildElbiseConstructionLock(
   chips: ElbiseConstructionChips | null | undefined,
+  family?: ConstructionCatalogFamily | null,
 ): string {
-  const neckline = resolveDressFeatureValue("neckline", chips?.neckline);
-  const sleeves = resolveDressFeatureValue("sleeves", chips?.sleeves);
-  const fit = resolveDressFeatureValue("fit", chips?.fit);
-  const length = resolveDressFeatureValue("length", chips?.length);
-  const decollete = resolveDressFeatureValue("decollete", chips?.decollete);
-  const rise = resolveDressFeatureValue("rise", chips?.rise);
-  const hem = resolveDressFeatureValue("hem", chips?.hem);
+  const scoped = constructionChipsForFamily(chips, family);
+  const neckline = scoped.neckline?.trim() || "";
+  const sleeves = scoped.sleeves?.trim() || "";
+  const fit = scoped.fit?.trim() || "";
+  const length = scoped.length?.trim() || "";
+  const decollete = scoped.decollete?.trim() || "";
+  const rise = scoped.rise?.trim() || "";
+  const hem = scoped.hem?.trim() || "";
   const parts: string[] = [];
 
   if (neckline) {
@@ -182,15 +226,17 @@ export function buildElbiseConstructionLock(
  */
 export function buildElbiseTryOnConstructionLock(
   chips: ElbiseConstructionChips | null | undefined,
+  family?: ConstructionCatalogFamily | null,
 ): string {
-  const neckline = resolveDressFeatureValue("neckline", chips?.neckline);
-  const sleeves = resolveDressFeatureValue("sleeves", chips?.sleeves);
-  const fit = resolveDressFeatureValue("fit", chips?.fit);
-  const length = resolveDressFeatureValue("length", chips?.length);
-  const decollete = resolveDressFeatureValue("decollete", chips?.decollete);
-  const rise = resolveDressFeatureValue("rise", chips?.rise);
-  const hem = resolveDressFeatureValue("hem", chips?.hem);
-  const bottoms = Boolean(rise || hem);
+  const scoped = constructionChipsForFamily(chips, family);
+  const neckline = scoped.neckline?.trim() || "";
+  const sleeves = scoped.sleeves?.trim() || "";
+  const fit = scoped.fit?.trim() || "";
+  const length = scoped.length?.trim() || "";
+  const decollete = scoped.decollete?.trim() || "";
+  const rise = scoped.rise?.trim() || "";
+  const hem = scoped.hem?.trim() || "";
+  const bottoms = family === "alt-giyim" || (family == null && Boolean(rise || hem));
   const parts: string[] = [];
 
   if (length) {
@@ -210,6 +256,10 @@ export function buildElbiseTryOnConstructionLock(
   if (bottoms) {
     parts.push(
       "Replace ONLY the bottom garment from the product image. Keep the model's top from the reference plate. Do not turn pants into a dress or a skirt into pants. Do not invent a matching top or a tracksuit set.",
+    );
+  } else if (family === "elbise") {
+    parts.push(
+      "This is a one-piece dress. Replace the plate's outfit with this dress. Do not keep a separate top. Do not treat the dress as pants or a skirt-only bottom.",
     );
   }
   if (neckline) {

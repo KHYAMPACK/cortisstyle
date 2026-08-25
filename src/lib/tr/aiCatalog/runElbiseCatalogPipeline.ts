@@ -1,5 +1,6 @@
 import {
   constructionChipsEqual,
+  constructionChipsForFamily,
   type ElbiseConstructionChips,
 } from "@/lib/tr/aiCatalog/elbiseConstructionLock";
 import {
@@ -55,44 +56,48 @@ export interface ElbiseConfirmedChips {
 function proposedFromDraft(
   product: Pick<TrProduct, "features">,
   draft: OwnerListingDraft | null,
+  family?: ConstructionCatalogFamily | null,
 ): ElbiseConstructionChips {
-  return withDefaultSleeves({
-    neckline:
-      resolveDressFeatureValue(
-        "neckline",
-        draft?.features?.neckline ?? product.features?.neckline,
-      ) || null,
-    sleeves:
-      resolveDressFeatureValue(
-        "sleeves",
-        draft?.features?.sleeves ?? product.features?.sleeves,
-      ) || null,
-    length:
-      resolveDressFeatureValue(
-        "length",
-        draft?.features?.length ?? product.features?.length,
-      ) || null,
-    decollete:
-      resolveDressFeatureValue(
-        "decollete",
-        draft?.features?.decollete ?? product.features?.decollete,
-      ) || null,
-    fit:
-      resolveDressFeatureValue(
-        "fit",
-        draft?.features?.fit ?? product.features?.fit,
-      ) || null,
-    rise:
-      resolveDressFeatureValue(
-        "rise",
-        draft?.features?.rise ?? product.features?.rise,
-      ) || null,
-    hem:
-      resolveDressFeatureValue(
-        "hem",
-        draft?.features?.neckHem ?? product.features?.neckHem,
-      ) || null,
-  });
+  return constructionChipsForFamily(
+    withDefaultSleeves({
+      neckline:
+        resolveDressFeatureValue(
+          "neckline",
+          draft?.features?.neckline ?? product.features?.neckline,
+        ) || null,
+      sleeves:
+        resolveDressFeatureValue(
+          "sleeves",
+          draft?.features?.sleeves ?? product.features?.sleeves,
+        ) || null,
+      length:
+        resolveDressFeatureValue(
+          "length",
+          draft?.features?.length ?? product.features?.length,
+        ) || null,
+      decollete:
+        resolveDressFeatureValue(
+          "decollete",
+          draft?.features?.decollete ?? product.features?.decollete,
+        ) || null,
+      fit:
+        resolveDressFeatureValue(
+          "fit",
+          draft?.features?.fit ?? product.features?.fit,
+        ) || null,
+      rise:
+        resolveDressFeatureValue(
+          "rise",
+          draft?.features?.rise ?? product.features?.rise,
+        ) || null,
+      hem:
+        resolveDressFeatureValue(
+          "hem",
+          draft?.features?.neckHem ?? product.features?.neckHem,
+        ) || null,
+    }),
+    family,
+  );
 }
 
 function restyleListingFields(input: {
@@ -172,7 +177,7 @@ export async function prepareElbiseCatalogRestyle(input: {
     return {
       prompt: prepared.prompt,
       listingDraft: prepared.listingDraft,
-      proposed: proposedFromDraft(input.product, prepared.listingDraft),
+      proposed: proposedFromDraft(input.product, prepared.listingDraft, family),
       frontUrl,
       backUrl,
       detailUrl,
@@ -181,7 +186,7 @@ export async function prepareElbiseCatalogRestyle(input: {
     return {
       prompt: "",
       listingDraft: null,
-      proposed: proposedFromDraft(input.product, null),
+      proposed: proposedFromDraft(input.product, null, family),
       frontUrl,
       backUrl,
       detailUrl,
@@ -222,15 +227,18 @@ export async function commitElbiseCatalogRestyle(input: {
     throw new Error("Kalıp seçin.");
   }
 
-  const chips: ElbiseConstructionChips = {
-    neckline,
-    sleeves,
-    fit,
-    length,
-    decollete,
-    rise,
-    hem,
-  };
+  const chips: ElbiseConstructionChips = constructionChipsForFamily(
+    {
+      neckline,
+      sleeves,
+      fit,
+      length,
+      decollete,
+      rise,
+      hem,
+    },
+    family,
+  );
   const changed = !constructionChipsEqual(chips, input.prepared.proposed);
   let draft: OwnerListingDraft | null = input.prepared.listingDraft
     ? {

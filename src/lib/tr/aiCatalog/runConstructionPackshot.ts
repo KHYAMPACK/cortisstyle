@@ -1,5 +1,6 @@
 import {
   constructionChipsEqual,
+  constructionChipsForFamily,
   type ElbiseConstructionChips,
 } from "@/lib/tr/aiCatalog/elbiseConstructionLock";
 import { mergeElbiseRestyleFeatures } from "@/lib/tr/aiCatalog/elbiseRestyle";
@@ -10,7 +11,10 @@ import {
   type ScheduleAiJob,
 } from "@/lib/tr/aiCatalog/ownerAiJobQueue";
 import { resolveDressFeatureValue, withDefaultSleeves } from "@/lib/tr/catalog/dressFeatures";
-import type { ConstructionCatalogFamily } from "@/lib/tr/catalog/garmentUploadTypes";
+import {
+  constructionCatalogFamily,
+  type ConstructionCatalogFamily,
+} from "@/lib/tr/catalog/garmentUploadTypes";
 import {
   requestOwnerPackshot,
   requestOwnerPackshotPrepare,
@@ -31,44 +35,51 @@ export interface ConstructionPackshotChips {
 export function proposedConstructionChipsFromDraft(
   draft: OwnerListingDraft | null,
   features?: TrProductFeatures | null,
+  family?: ConstructionCatalogFamily | null,
 ): ElbiseConstructionChips {
-  return withDefaultSleeves({
-    neckline:
-      resolveDressFeatureValue(
-        "neckline",
-        draft?.features?.neckline ?? features?.neckline,
-      ) || null,
-    sleeves:
-      resolveDressFeatureValue(
-        "sleeves",
-        draft?.features?.sleeves ?? features?.sleeves,
-      ) || null,
-    length:
-      resolveDressFeatureValue(
-        "length",
-        draft?.features?.length ?? features?.length,
-      ) || null,
-    decollete:
-      resolveDressFeatureValue(
-        "decollete",
-        draft?.features?.decollete ?? features?.decollete,
-      ) || null,
-    fit:
-      resolveDressFeatureValue(
-        "fit",
-        draft?.features?.fit ?? features?.fit,
-      ) || null,
-    rise:
-      resolveDressFeatureValue(
-        "rise",
-        draft?.features?.rise ?? features?.rise,
-      ) || null,
-    hem:
-      resolveDressFeatureValue(
-        "hem",
-        draft?.features?.neckHem ?? features?.neckHem,
-      ) || null,
-  });
+  const inferred =
+    family ??
+    constructionCatalogFamily(undefined, draft?.category ?? null);
+  return constructionChipsForFamily(
+    withDefaultSleeves({
+      neckline:
+        resolveDressFeatureValue(
+          "neckline",
+          draft?.features?.neckline ?? features?.neckline,
+        ) || null,
+      sleeves:
+        resolveDressFeatureValue(
+          "sleeves",
+          draft?.features?.sleeves ?? features?.sleeves,
+        ) || null,
+      length:
+        resolveDressFeatureValue(
+          "length",
+          draft?.features?.length ?? features?.length,
+        ) || null,
+      decollete:
+        resolveDressFeatureValue(
+          "decollete",
+          draft?.features?.decollete ?? features?.decollete,
+        ) || null,
+      fit:
+        resolveDressFeatureValue(
+          "fit",
+          draft?.features?.fit ?? features?.fit,
+        ) || null,
+      rise:
+        resolveDressFeatureValue(
+          "rise",
+          draft?.features?.rise ?? features?.rise,
+        ) || null,
+      hem:
+        resolveDressFeatureValue(
+          "hem",
+          draft?.features?.neckHem ?? features?.neckHem,
+        ) || null,
+    }),
+    inferred,
+  );
 }
 
 export async function runConstructionPackshot(input: {

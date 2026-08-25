@@ -73,7 +73,7 @@ export function TrOwnerBatchModelsStep({
       describeModelPackageCredits(modelId, {
         uploadType: family ?? "elbise",
         features:
-          row.gateChips ?? chipsFromProductFeatures(row.features),
+          row.gateChips ?? chipsFromProductFeatures(row.features, family),
         detailImageUrl: row.images[2]?.trim() || null,
       })
     );
@@ -106,7 +106,7 @@ export function TrOwnerBatchModelsStep({
       packshotUrlOf(row) || (await waitForPackshot(row.clientId));
     const latest = getRow(row.clientId) ?? row;
     const chips =
-      latest.gateChips ?? chipsFromProductFeatures(latest.features);
+      latest.gateChips ?? chipsFromProductFeatures(latest.features, family);
     const planned = buildElbiseTryOnShots({
       modelId: selectedModelId,
       packshotUrl,

@@ -1,5 +1,6 @@
 import {
   buildElbiseTryOnConstructionLock,
+  constructionChipsForFamily,
   type ElbiseConstructionChips,
 } from "@/lib/tr/aiCatalog/elbiseConstructionLock";
 import {
@@ -89,25 +90,30 @@ export function chipsFromProductFeatures(
       }
     | null
     | undefined,
+  family?: ConstructionCatalogFamily | null,
 ): ElbiseConstructionChips {
-  return {
-    neckline: features?.neckline ?? null,
-    sleeves: features?.sleeves ?? null,
-    fit: features?.fit ?? null,
-    length: features?.length ?? null,
-    decollete: features?.decollete ?? null,
-    rise: features?.rise ?? null,
-    hem: features?.neckHem ?? null,
-  };
+  return constructionChipsForFamily(
+    {
+      neckline: features?.neckline ?? null,
+      sleeves: features?.sleeves ?? null,
+      fit: features?.fit ?? null,
+      length: features?.length ?? null,
+      decollete: features?.decollete ?? null,
+      rise: features?.rise ?? null,
+      hem: features?.neckHem ?? null,
+    },
+    family,
+  );
 }
 
 function tryOnPrompt(
   chips: ElbiseConstructionChips,
   kind: "front" | "back" | "detail",
+  family?: ConstructionCatalogFamily | null,
 ): string {
   const base =
     kind === "back" ? NATURAL_TRYON_PROMPT_BACK : NATURAL_TRYON_PROMPT;
-  const lock = buildElbiseTryOnConstructionLock(chips);
+  const lock = buildElbiseTryOnConstructionLock(chips, family);
   const extra = kind === "detail" ? DETAIL_EXTRA : HEM_VISIBLE;
   return [base, lock, extra].filter(Boolean).join(" ");
 }
@@ -169,7 +175,7 @@ export function buildElbiseTryOnShots(
       "standing-three-quarter",
       packshot,
       plates.threeQuarter,
-      tryOnPrompt(chips, "front"),
+      tryOnPrompt(chips, "front", input.family),
     ),
   ];
 
@@ -185,7 +191,7 @@ export function buildElbiseTryOnShots(
         "standing-back",
         backManken,
         plates.back,
-        tryOnPrompt(chips, "back"),
+        tryOnPrompt(chips, "back", input.family),
       ),
     );
   }
@@ -196,7 +202,7 @@ export function buildElbiseTryOnShots(
         "standing-three-quarter",
         detailManken,
         plates.threeQuarter,
-        tryOnPrompt(chips, "detail"),
+        tryOnPrompt(chips, "detail", input.family),
       ),
     );
   }

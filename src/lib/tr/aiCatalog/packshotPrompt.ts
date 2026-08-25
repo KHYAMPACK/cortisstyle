@@ -22,7 +22,7 @@ export const PACKSHOT_VIEW_PROMPT: Record<"front" | "back", string> = {
 };
 
 const OTHER_PACKSHOT_STYLE =
-  /\b(on[- ]?hanger|hangers?|askı|dress form|visible mannequin|flat[- ]lay|floating garment|on mannequin)\b/i;
+  /(?<!\bno\s)\b(on[- ]?hanger|on a hanger|clothes hangers?|askı|dress form|visible mannequin|flat[- ]lay|floating garment|on mannequin)\b/i;
 
 /** Drop Gemini extras that would switch FASHN off the locked presentation. */
 export function sanitizePackshotPromptExtra(
@@ -80,7 +80,7 @@ export function buildElbisePackshotPrompt(
   const parts = [constructionPackshotBasePrompt(family)];
   const cleaned = sanitizePackshotPromptExtra(extra, family);
   if (cleaned) parts.push(cleaned);
-  const lock = buildElbiseConstructionLock(construction);
+  const lock = buildElbiseConstructionLock(construction, family);
   if (lock) parts.push(lock);
   return finalizePackshotPrompt(parts.join(" "));
 }
