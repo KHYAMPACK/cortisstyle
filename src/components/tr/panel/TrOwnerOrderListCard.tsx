@@ -19,12 +19,17 @@ import { TrPanelBusySpinner } from "@/components/tr/panel/TrPanelMotion";
 import {
   fetchOwnerShipmentLabel,
   fulfillOwnerShipment,
+  openOwnerShipmentLabel,
+  OwnerShipmentStaleError,
   updateOwnerOrderFulfillment,
   updateOwnerOrderPaymentPaid,
 } from "@/lib/tr/ownerClient";
 import { boutiqueOffersIyzicoCheckout } from "@/lib/tr/payments/registry";
 import { boutiqueHasLiveShipping } from "@/lib/tr/shipping/registry";
-import { SHIPPING_BLOCK_ADDRESS_REJECTED } from "@/lib/tr/shipping/types";
+import {
+  SHIPPING_BLOCK_ADDRESS_REJECTED,
+  hasPurchasedShippingLabel,
+} from "@/lib/tr/shipping/types";
 import {
   buildAddressCorrectionWhatsAppMessage,
   buildWhatsAppOrderUrl,
@@ -70,7 +75,7 @@ export function TrOwnerOrderListCard({
   const cancelled = order.fulfillmentStatus === "cancelled";
   const delivered = order.fulfillmentStatus === "delivered";
   const shipment = order.shipment;
-  const hasBarcode = Boolean(shipment.barcode);
+  const hasBarcode = hasPurchasedShippingLabel(shipment);
   const addressRejected =
     shipment.block === SHIPPING_BLOCK_ADDRESS_REJECTED && !hasBarcode;
   const needsManualPaid =
@@ -135,16 +140,26 @@ export function TrOwnerOrderListCard({
 
   const printLabel = () =>
     void run(async () => {
-      const blob = await fetchOwnerShipmentLabel(boutiqueId, order.id);
-      const url = URL.createObjectURL(blob);
-      window.open(url, "_blank", "noopener,noreferrer");
-      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      try {
+        const svg = await fetchOwnerShipmentLabel(boutiqueId, order.id);
+        openOwnerShipmentLabel(svg);
+      } catch (err) {
+        if (err instanceof OwnerShipmentStaleError) {
+          onUpdated(err.order);
+        }
+        throw err;
+      }
     });
 
   const prepareLabel = () =>
     void run(async () => {
       const result = await fulfillOwnerShipment(boutiqueId, order.id);
       onUpdated(result.order);
+      if (!hasPurchasedShippingLabel(result.order.shipment)) {
+        throw new Error(
+          result.order.shipment.lastError ?? "Etiket üretilemedi.",
+        );
+      }
     });
 
   return (

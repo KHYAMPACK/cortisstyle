@@ -215,6 +215,37 @@ export type BasitKargoOrderPayload = {
   traces?: Array<{ status?: string; time?: string; location?: string }>;
 };
 
+export function coerceBasitBarcode(value: unknown): string | null {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    const text = String(Math.trunc(value));
+    return text.length > 0 ? text : null;
+  }
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+/** Bought kargo kodu only — `NEW` drafts/cancels are not printable. */
+export function purchasedBasitBarcode(payload: {
+  barcode?: unknown;
+  status?: string | null;
+}): string | null {
+  const status = (payload.status ?? "").trim().toUpperCase();
+  if (status === "NEW") return null;
+  return coerceBasitBarcode(payload.barcode);
+}
+
+function normalizeBasitOrderPayload(
+  raw: BasitKargoOrderPayload,
+): BasitKargoOrderPayload {
+  const status = raw.status?.trim() || "NEW";
+  return {
+    ...raw,
+    status,
+    barcode: purchasedBasitBarcode({ barcode: raw.barcode, status }),
+  };
+}
+
 export function mapBasitKargoTraces(traces: unknown): TrShippingTrace[] {
   if (!Array.isArray(traces)) return [];
   return traces
@@ -262,10 +293,11 @@ export async function basitKargoCreateOrder(
   token: string,
   order: TrOrderWithItems,
 ): Promise<BasitKargoOrderPayload> {
-  return bkJson<BasitKargoOrderPayload>(token, "/v2/order", {
+  const created = await bkJson<BasitKargoOrderPayload>(token, "/v2/order", {
     method: "POST",
     body: JSON.stringify(mapOrderToBasitKargoBody(order)),
   });
+  return normalizeBasitOrderPayload(created);
 }
 
 export async function basitKargoUpdateOrder(
@@ -276,13 +308,14 @@ export async function basitKargoUpdateOrder(
   if (!externalId) {
     throw new BasitKargoError("Güncellenecek kargo kaydı yok.", 400);
   }
-  return bkJson<BasitKargoOrderPayload>(token, "/v2/order", {
+  const updated = await bkJson<BasitKargoOrderPayload>(token, "/v2/order", {
     method: "PUT",
     body: JSON.stringify({
       id: externalId,
       ...mapOrderToBasitKargoBody(order),
     }),
   });
+  return normalizeBasitOrderPayload(updated);
 }
 
 export async function basitKargoListFees(
@@ -315,7 +348,7 @@ export async function basitKargoBuyBarcode(
   bkOrderId: string,
   handlerCode: string,
 ): Promise<BasitKargoOrderPayload> {
-  return bkJson<BasitKargoOrderPayload>(
+  const bought = await bkJson<BasitKargoOrderPayload>(
     token,
     `/v2/order/${encodeURIComponent(bkOrderId)}/barcode`,
     {
@@ -323,16 +356,18 @@ export async function basitKargoBuyBarcode(
       body: JSON.stringify({ handlerCode }),
     },
   );
+  return normalizeBasitOrderPayload(bought);
 }
 
 export async function basitKargoGetOrder(
   token: string,
   bkOrderId: string,
 ): Promise<BasitKargoOrderPayload> {
-  return bkJson<BasitKargoOrderPayload>(
+  const payload = await bkJson<BasitKargoOrderPayload>(
     token,
     `/v2/order/${encodeURIComponent(bkOrderId)}`,
   );
+  return normalizeBasitOrderPayload(payload);
 }
 
 export async function basitKargoCancelBarcode(
@@ -399,7 +434,21 @@ export async function basitKargoGetLabelSvg(
   if (!response.ok) {
     throw new BasitKargoError(await parseErrorMessage(response), response.status);
   }
-  return response.text();
+  const svg = await response.text();
+  if (!isPrintableBasitLabelSvg(svg)) {
+    throw new BasitKargoError("Etiket boş veya iptal.", 404);
+  }
+  return svg;
+}
+
+/** Empty / non-drawing SVG is what Chrome shows as a black “XML file” tab. */
+export function isPrintableBasitLabelSvg(svg: string): boolean {
+  const trimmed = svg.trim();
+  if (trimmed.length < 80) return false;
+  if (!/<svg[\s>]/i.test(trimmed)) return false;
+  return /<(path|rect|text|image|g|polyline|polygon|line|circle)\b/i.test(
+    trimmed,
+  );
 }
 
 export function feeKurusFromPayload(

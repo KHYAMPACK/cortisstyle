@@ -11,6 +11,7 @@ import { getOrderByIdAdmin } from "@/lib/tr/orders";
 import { trackingStepFromProviderStatus } from "@/lib/tr/shipping/mapFulfillment";
 import { refreshBasitKargoOrder } from "@/lib/tr/shipping/ownerShipment";
 import { getShippingProviderId } from "@/lib/tr/shipping/registry";
+import { hasPurchasedShippingLabel } from "@/lib/tr/shipping/types";
 import { safeGetBoutiqueStorefront, safeGetPublicBoutique } from "@/lib/tr/publicData";
 
 interface BoutiqueOrderTrackingPageProps {
@@ -78,7 +79,7 @@ export default async function BoutiqueOrderTrackingPage({
           Kargo takip
         </h1>
         <p className="mt-3 text-[14px] text-neutral-600">
-          {order.shipment.barcode
+          {hasPurchasedShippingLabel(order.shipment)
             ? "Kargo bilgisi kargo firmanızın sitesinden takip edilir."
             : "Bu sipariş henüz kargoya verilmedi."}
         </p>
@@ -89,9 +90,13 @@ export default async function BoutiqueOrderTrackingPage({
   order = await refreshBasitKargoOrder(boutique.slug, order);
   const step = trackingStepFromProviderStatus(order.shipment.status);
   const trackingNumber =
-    order.shipment.trackingCode || order.shipment.barcode || "—";
+    order.shipment.trackingCode ||
+    (hasPurchasedShippingLabel(order.shipment)
+      ? order.shipment.barcode
+      : null) ||
+    "—";
 
-  if (step < 0 && !order.shipment.barcode) {
+  if (step < 0 && !hasPurchasedShippingLabel(order.shipment)) {
     return (
       <div className="mx-auto max-w-3xl px-5 py-10 md:px-8 md:py-14">
         <h1 className="font-serif text-3xl tracking-tight text-neutral-950">

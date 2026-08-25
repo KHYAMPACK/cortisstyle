@@ -17,6 +17,7 @@ import {
   isBenignBasitCancelError,
   mapBasitKargoTraces,
   ownerMessageForBasitFailure,
+  purchasedBasitBarcode,
   type BasitKargoOrderPayload,
 } from "@/lib/tr/shipping/providers/basitKargo";
 import { getShippingProviderId } from "@/lib/tr/shipping/registry";
@@ -24,6 +25,7 @@ import {
   SHIPPING_BLOCK_ADDRESS_REJECTED,
   SHIPPING_BLOCK_INSUFFICIENT_BALANCE,
   SHIPPING_BLOCK_PROVIDER_ERROR,
+  hasPurchasedShippingLabel,
   isEligibleAutoBuyRate,
   type TrShippingBlock,
   type TrShippingRate,
@@ -35,6 +37,15 @@ import {
 import { trBoutiqueOrderTrackingPath } from "@/lib/tr/paths";
 import type { TrOrderWithItems, TrShippingAddress } from "@/types/tr-marketplace";
 
+export class BasitLabelGoneError extends Error {
+  readonly order: TrOrderWithItems;
+
+  constructor(order: TrOrderWithItems) {
+    super("Etiket Basit Kargo’da iptal edildi. Yeniden Etiket hazırla.");
+    this.name = "BasitLabelGoneError";
+    this.order = order;
+  }
+}
 export function orderMayCreateShipment(order: TrOrderWithItems): boolean {
   if (order.fulfillmentStatus === "cancelled") return false;
   if (order.paymentStatus === "refunded") return false;
@@ -65,18 +76,12 @@ function requireBasitKargoToken(slug: string): string {
   return token;
 }
 
-function basitBarcode(payload: BasitKargoOrderPayload): string | null {
-  if (typeof payload.barcode !== "string") return null;
-  const trimmed = payload.barcode.trim();
-  return trimmed.length > 0 ? trimmed : null;
-}
-
-/** Write Basit as source of truth — a cancelled etiket (null barcode) clears ours. */
+/** Write Basit as source of truth — a cancelled etiket (NEW / null barcode) clears ours. */
 export async function persistBasitShipmentPayload(
   order: TrOrderWithItems,
   payload: BasitKargoOrderPayload,
 ) {
-  const barcode = basitBarcode(payload);
+  const barcode = purchasedBasitBarcode(payload);
   const traces = mapBasitKargoTraces(payload.traces);
   const status = payload.status?.trim() || (barcode ? null : "NEW");
 
@@ -145,7 +150,7 @@ export async function createBoutiqueShipment(
 
   if (order.shipment.externalId && order.shipment.provider === "basitkargo") {
     const synced = await refreshBasitKargoOrder(boutique.slug, order);
-    if (synced.shipment.barcode) {
+    if (hasPurchasedShippingLabel(synced.shipment)) {
       return { order: synced, rates: [] as TrShippingRate[] };
     }
     const rates = await basitKargoListFees(
@@ -189,7 +194,9 @@ export async function cancelBoutiqueShipmentBarcode(
   if (getShippingProviderId(boutique.slug) !== "basitkargo") {
     throw new Error("Bu butik için kargo entegrasyonu yok.");
   }
-  const barcode = order.shipment.barcode;
+  const barcode = hasPurchasedShippingLabel(order.shipment)
+    ? order.shipment.barcode
+    : null;
   if (!barcode) {
     throw new Error("İptal edilecek kargo kodu yok.");
   }
@@ -271,17 +278,56 @@ export async function getBoutiqueShipmentLabelSvg(
   boutique: { id: string; slug: string },
   orderId: string,
 ): Promise<string> {
-  const order = await requireOwnedOrder(boutique, orderId);
+  const existing = await requireOwnedOrder(boutique, orderId);
   if (getShippingProviderId(boutique.slug) !== "basitkargo") {
     throw new Error("Bu butik için kargo entegrasyonu yok.");
   }
-  if (!order.shipment.externalId || !order.shipment.barcode) {
-    throw new Error("Etiket için kargo kodu yok.");
+
+  const order = await refreshBasitKargoOrder(boutique.slug, existing);
+  if (
+    !order.shipment.externalId ||
+    !hasPurchasedShippingLabel(order.shipment)
+  ) {
+    if (order.shipment.barcode) {
+      await updateOrderShipmentAdmin(order.id, {
+        barcode: null,
+        trackingCode: null,
+        carrierCode: null,
+        carrierName: null,
+        status: "NEW",
+        fulfillmentStatus:
+          order.fulfillmentStatus === "ready" ? "created" : undefined,
+      });
+      const cleared = await getOrderByIdAdmin(order.id);
+      throw new BasitLabelGoneError(cleared ?? order);
+    }
+    throw new BasitLabelGoneError(order);
   }
-  return basitKargoGetLabelSvg(
-    requireBasitKargoToken(boutique.slug),
-    order.shipment.externalId,
-  );
+
+  try {
+    return await basitKargoGetLabelSvg(
+      requireBasitKargoToken(boutique.slug),
+      order.shipment.externalId,
+    );
+  } catch (error) {
+    if (
+      error instanceof BasitKargoError &&
+      (error.status === 404 || error.status === 400)
+    ) {
+      await updateOrderShipmentAdmin(order.id, {
+        barcode: null,
+        trackingCode: null,
+        carrierCode: null,
+        carrierName: null,
+        status: "NEW",
+        fulfillmentStatus:
+          order.fulfillmentStatus === "ready" ? "created" : undefined,
+      });
+      const cleared = await getOrderByIdAdmin(order.id);
+      throw new BasitLabelGoneError(cleared ?? order);
+    }
+    throw error;
+  }
 }
 
 export function shopperTrackingPath(
@@ -328,6 +374,40 @@ export async function refreshBasitKargoOrder(
     }
     return order;
   }
+}
+
+async function mapPool<T, R>(
+  items: T[],
+  concurrency: number,
+  fn: (item: T) => Promise<R>,
+): Promise<R[]> {
+  if (items.length === 0) return [];
+  const out: R[] = new Array(items.length);
+  let next = 0;
+  async function worker() {
+    while (next < items.length) {
+      const index = next;
+      next += 1;
+      out[index] = await fn(items[index]!);
+    }
+  }
+  const workers = Math.min(Math.max(1, concurrency), items.length);
+  await Promise.all(Array.from({ length: workers }, () => worker()));
+  return out;
+}
+
+/** Refresh Basit drafts/barcodes for a boutique order list. */
+export async function refreshBasitShipmentsForOrders(
+  boutiqueSlug: string,
+  orders: TrOrderWithItems[],
+): Promise<TrOrderWithItems[]> {
+  if (getShippingProviderId(boutiqueSlug) !== "basitkargo") return orders;
+  return mapPool(orders, 4, async (order) => {
+    if (order.shipment.provider !== "basitkargo" || !order.shipment.externalId) {
+      return order;
+    }
+    return refreshBasitKargoOrder(boutiqueSlug, order);
+  });
 }
 
 export async function autoFulfillPaidShipment(
@@ -392,7 +472,7 @@ export async function retryShipmentAfterAddressEdit(
     if (!orderMayCreateShipment(order)) {
       throw new Error("Bu siparişte kargo üretilemez.");
     }
-    if (order.shipment.barcode) {
+    if (hasPurchasedShippingLabel(order.shipment)) {
       throw new Error("Etiket oluşmuş; adres değiştirilemez.");
     }
     if (order.shipment.block !== SHIPPING_BLOCK_ADDRESS_REJECTED) {
@@ -469,7 +549,7 @@ async function runCarrierWaterfall(
 ): Promise<TrOrderWithItems | null> {
   const created = await createBoutiqueShipment(boutique, orderId);
   let order = created.order;
-  if (order.shipment.barcode) return order;
+  if (hasPurchasedShippingLabel(order.shipment)) return order;
   if (
     isAddressRejectLock(order.shipment) &&
     !options.allowWhenAddressRejected
@@ -519,14 +599,14 @@ async function runCarrierWaterfall(
   let otherRefusals = 0;
   for (const rate of rates) {
     const latest = await getOrderByIdAdmin(order.id);
-    if (latest?.shipment.barcode) return latest;
+    if (latest && hasPurchasedShippingLabel(latest.shipment)) return latest;
     try {
       const bought = await basitKargoBuyBarcode(
         token,
         externalId,
         rate.handlerCode,
       );
-      if (bought.barcode) {
+      if (purchasedBasitBarcode(bought)) {
         await persistPayload(latest ?? order, bought);
         await updateOrderShipmentAdmin(order.id, {
           block: null,
@@ -577,7 +657,7 @@ async function runCarrierWaterfall(
     boutique.slug,
     (await getOrderByIdAdmin(order.id)) ?? order,
   );
-  if (after.shipment.barcode) return after;
+  if (hasPurchasedShippingLabel(after.shipment)) return after;
 
   await markShippingBlock(
     order.id,

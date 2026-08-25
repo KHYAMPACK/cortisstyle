@@ -2,8 +2,12 @@ import {
   requireOwnedBoutique,
   requireTrOwner,
 } from "@/lib/tr/ownerAuth";
+import { wrapShipmentLabelHtml } from "@/lib/tr/shipping/labelHtml";
 import { BasitKargoError } from "@/lib/tr/shipping/providers/basitKargo";
-import { getBoutiqueShipmentLabelSvg } from "@/lib/tr/shipping/ownerShipment";
+import {
+  BasitLabelGoneError,
+  getBoutiqueShipmentLabelSvg,
+} from "@/lib/tr/shipping/ownerShipment";
 
 export const runtime = "nodejs";
 
@@ -31,6 +35,15 @@ export async function GET(request: Request, context: RouteContext) {
 
   try {
     const svg = await getBoutiqueShipmentLabelSvg(boutique, id);
+    const accept = request.headers.get("accept") ?? "";
+    if (/\btext\/html\b/i.test(accept)) {
+      return new Response(wrapShipmentLabelHtml(svg), {
+        headers: {
+          "Content-Type": "text/html; charset=utf-8",
+          "Content-Disposition": `inline; filename="kargo-${id.slice(0, 8)}.html"`,
+        },
+      });
+    }
     return new Response(svg, {
       headers: {
         "Content-Type": "image/svg+xml; charset=utf-8",
@@ -38,6 +51,12 @@ export async function GET(request: Request, context: RouteContext) {
       },
     });
   } catch (error) {
+    if (error instanceof BasitLabelGoneError) {
+      return Response.json(
+        { error: error.message, order: error.order, stale: true },
+        { status: 409 },
+      );
+    }
     if (error instanceof BasitKargoError) {
       return Response.json({ error: error.message }, { status: 502 });
     }

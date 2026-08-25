@@ -19,6 +19,8 @@ import {
   cancelOwnerShipmentBarcode,
   fetchOwnerShipmentLabel,
   fulfillOwnerShipment,
+  openOwnerShipmentLabel,
+  OwnerShipmentStaleError,
   retryOwnerShipmentAddress,
 } from "@/lib/tr/ownerClient";
 import {
@@ -30,6 +32,7 @@ import {
   SHIPPING_BLOCK_ADDRESS_REJECTED,
   SHIPPING_BLOCK_INSUFFICIENT_BALANCE,
   SHIPPING_BLOCK_PROVIDER_ERROR,
+  hasPurchasedShippingLabel,
 } from "@/lib/tr/shipping/types";
 import { formatTryFromKurus, type TrOrderWithItems } from "@/types/tr-marketplace";
 
@@ -81,7 +84,7 @@ export function TrOwnerShipmentSection({
     order.isSandbox;
   const cancelled = order.fulfillmentStatus === "cancelled";
   const shipment = order.shipment;
-  const hasBarcode = Boolean(shipment.barcode);
+  const hasBarcode = hasPurchasedShippingLabel(shipment);
   const lastErrorLooksLikeBalance = (shipment.lastError ?? "")
     .toLocaleLowerCase("tr-TR")
     .includes("bakiye") ||
@@ -116,6 +119,11 @@ export function TrOwnerShipmentSection({
       const result = await fulfillOwnerShipment(boutiqueId, order.id);
       onOrder(result.order);
       setTrackingPath(result.trackingPath ?? null);
+      if (!hasPurchasedShippingLabel(result.order.shipment)) {
+        throw new Error(
+          result.order.shipment.lastError ?? "Etiket üretilemedi.",
+        );
+      }
     });
 
   const cancel = () =>
@@ -126,10 +134,15 @@ export function TrOwnerShipmentSection({
 
   const printLabel = () =>
     void run(async () => {
-      const blob = await fetchOwnerShipmentLabel(boutiqueId, order.id);
-      const url = URL.createObjectURL(blob);
-      window.open(url, "_blank", "noopener,noreferrer");
-      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      try {
+        const svg = await fetchOwnerShipmentLabel(boutiqueId, order.id);
+        openOwnerShipmentLabel(svg);
+      } catch (err) {
+        if (err instanceof OwnerShipmentStaleError) {
+          onOrder(err.order);
+        }
+        throw err;
+      }
     });
 
   const saveAddressAndRetry = () => {
@@ -201,7 +214,7 @@ export function TrOwnerShipmentSection({
             {shipment.carrierName ? (
               <p>Firma: {shipment.carrierName}</p>
             ) : null}
-            {shipment.barcode ? (
+            {hasBarcode && shipment.barcode ? (
               <p className="font-mono text-[15px]">Barkod: {shipment.barcode}</p>
             ) : null}
             {shipment.trackingCode ? (

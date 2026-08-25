@@ -13,6 +13,20 @@ export type TrShippingRate = {
   pickupAddress: string | null;
 };
 
+/**
+ * Basit drafts stay `NEW` until a kargo kodu is bought. After cancel they
+ * return to `NEW` but GET may still echo the old barcode string — that is
+ * not a printable etiket.
+ */
+export function hasPurchasedShippingLabel(shipment: {
+  barcode: string | null;
+  status: string | null;
+}): boolean {
+  const status = (shipment.status ?? "").trim().toUpperCase();
+  if (status === "NEW") return false;
+  return Boolean(shipment.barcode?.trim());
+}
+
 export const EMPTY_ORDER_SHIPMENT: TrOrderShipment = {
   provider: null,
   externalId: null,

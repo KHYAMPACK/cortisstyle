@@ -9,6 +9,7 @@ import {
   ownerCacheKeys,
   peekOwnerCache,
 } from "@/lib/tr/panel/ownerCache";
+import { wrapShipmentLabelHtml } from "@/lib/tr/shipping/labelHtml";
 import type { TrShippingRate } from "@/lib/tr/shipping/types";
 import type {
   TrInvoice,
@@ -715,19 +716,23 @@ export async function duplicateOwnerProduct(
 }
 
 export async function fetchOwnerOrders(boutiqueId: string) {
-  return cachedOwnerFetch(ownerCacheKeys.orders(boutiqueId), async () => {
-    const response = await ownerFetch(
-      `/api/tr/owner/orders?boutiqueId=${encodeURIComponent(boutiqueId)}`,
-    );
-    const data = (await parseOwnerJson(response)) as {
-      orders?: import("@/types/tr-marketplace").TrOrderWithItems[];
-      error?: string;
-    };
-    if (!response.ok) {
-      throw new Error(data.error ?? "Siparişler yüklenemedi.");
-    }
-    return data.orders ?? [];
-  });
+  return cachedOwnerFetch(
+    ownerCacheKeys.orders(boutiqueId),
+    async () => {
+      const response = await ownerFetch(
+        `/api/tr/owner/orders?boutiqueId=${encodeURIComponent(boutiqueId)}`,
+      );
+      const data = (await parseOwnerJson(response)) as {
+        orders?: import("@/types/tr-marketplace").TrOrderWithItems[];
+        error?: string;
+      };
+      if (!response.ok) {
+        throw new Error(data.error ?? "Siparişler yüklenemedi.");
+      }
+      return data.orders ?? [];
+    },
+    0,
+  );
 }
 
 export async function fetchOwnerOrder(boutiqueId: string, orderId: string) {
@@ -869,20 +874,52 @@ export async function cancelOwnerShipmentBarcode(
   return parseShipmentResponse(response, "Kargo kodu iptal edilemedi.");
 }
 
+export class OwnerShipmentStaleError extends Error {
+  readonly order: TrOrderWithItems;
+
+  constructor(message: string, order: TrOrderWithItems) {
+    super(message);
+    this.name = "OwnerShipmentStaleError";
+    this.order = order;
+  }
+}
+
 export async function fetchOwnerShipmentLabel(
   boutiqueId: string,
   orderId: string,
-): Promise<Blob> {
+): Promise<string> {
   const response = await ownerFetch(
     `/api/tr/owner/orders/${encodeURIComponent(orderId)}/shipment/label?boutiqueId=${encodeURIComponent(boutiqueId)}`,
   );
   if (!response.ok) {
     const data = (await response.json().catch(() => ({}))) as {
       error?: string;
+      stale?: boolean;
+      order?: TrOrderWithItems;
     };
+    if (data.stale && data.order) {
+      invalidateOrderLists();
+      throw new OwnerShipmentStaleError(
+        data.error ?? "Etiket Basit Kargo’da iptal edildi.",
+        data.order,
+      );
+    }
     throw new Error(data.error ?? "Etiket alınamadı.");
   }
-  return response.blob();
+  const svg = await response.text();
+  if (!svg.includes("<svg")) {
+    throw new Error("Etiket alınamadı.");
+  }
+  return svg;
+}
+
+export function openOwnerShipmentLabel(svg: string) {
+  const html = wrapShipmentLabelHtml(svg);
+  const url = URL.createObjectURL(
+    new Blob([html], { type: "text/html;charset=utf-8" }),
+  );
+  window.open(url, "_blank", "noopener,noreferrer");
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
 async function parseShipmentResponse(
