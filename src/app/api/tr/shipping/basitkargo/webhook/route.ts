@@ -6,10 +6,9 @@ import {
 import { fulfillmentFromProviderStatus } from "@/lib/tr/shipping/mapFulfillment";
 import {
   basitKargoGetOrder,
-  feeKurusFromPayload,
   getBasitKargoTokenForSlug,
-  mapBasitKargoTraces,
 } from "@/lib/tr/shipping/providers/basitKargo";
+import { persistBasitShipmentPayload } from "@/lib/tr/shipping/ownerShipment";
 import { getShippingProviderId } from "@/lib/tr/shipping/registry";
 
 export const runtime = "nodejs";
@@ -82,33 +81,7 @@ export async function POST(request: Request) {
   try {
     if (token) {
       const fresh = await basitKargoGetOrder(token, externalId);
-      const traces = mapBasitKargoTraces(
-        Array.isArray(body.traces) ? body.traces : fresh.traces,
-      );
-      await updateOrderShipmentAdmin(order.id, {
-        provider: "basitkargo",
-        externalId: fresh.id,
-        barcode: fresh.barcode ?? order.shipment.barcode,
-        carrierCode:
-          fresh.shipmentInfo?.handler?.code ?? order.shipment.carrierCode,
-        carrierName:
-          fresh.shipmentInfo?.handler?.name ?? order.shipment.carrierName,
-        trackingCode:
-          fresh.shipmentInfo?.handlerShipmentCode ??
-          (typeof body.handlerShipmentCode === "string"
-            ? body.handlerShipmentCode
-            : order.shipment.trackingCode),
-        status: fresh.status,
-        traces: traces.length > 0 ? traces : order.shipment.traces,
-        feeKurus:
-          feeKurusFromPayload(fresh) ?? order.shipment.feeKurus,
-        block: fresh.barcode ? null : order.shipment.block,
-        lastError: fresh.barcode ? null : order.shipment.lastError,
-        fulfillmentStatus: fulfillmentFromProviderStatus(
-          order.fulfillmentStatus,
-          fresh.status,
-        ),
-      });
+      await persistBasitShipmentPayload(order, fresh);
     } else {
       const status =
         typeof body.status === "string" ? body.status : order.shipment.status;
@@ -116,22 +89,31 @@ export async function POST(request: Request) {
         body.handler && typeof body.handler === "object"
           ? (body.handler as Record<string, unknown>)
           : null;
+      const barcodeCleared =
+        body.barcode === null ||
+        body.barcode === "" ||
+        (typeof body.status === "string" &&
+          body.status.trim().toUpperCase() === "NEW");
       await updateOrderShipmentAdmin(order.id, {
         status,
-        barcode:
-          typeof body.barcode === "string"
+        barcode: barcodeCleared
+          ? null
+          : typeof body.barcode === "string"
             ? body.barcode
             : order.shipment.barcode,
-        carrierCode:
-          typeof handler?.code === "string"
+        carrierCode: barcodeCleared
+          ? null
+          : typeof handler?.code === "string"
             ? handler.code
             : order.shipment.carrierCode,
-        carrierName:
-          typeof handler?.name === "string"
+        carrierName: barcodeCleared
+          ? null
+          : typeof handler?.name === "string"
             ? handler.name
             : order.shipment.carrierName,
-        trackingCode:
-          typeof body.handlerShipmentCode === "string"
+        trackingCode: barcodeCleared
+          ? null
+          : typeof body.handlerShipmentCode === "string"
             ? body.handlerShipmentCode
             : order.shipment.trackingCode,
         fulfillmentStatus: fulfillmentFromProviderStatus(

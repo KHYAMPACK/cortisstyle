@@ -65,37 +65,65 @@ function requireBasitKargoToken(slug: string): string {
   return token;
 }
 
-function patchFromPayload(payload: BasitKargoOrderPayload) {
-  return {
-    provider: "basitkargo" as const,
+function basitBarcode(payload: BasitKargoOrderPayload): string | null {
+  if (typeof payload.barcode !== "string") return null;
+  const trimmed = payload.barcode.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+/** Write Basit as source of truth — a cancelled etiket (null barcode) clears ours. */
+export async function persistBasitShipmentPayload(
+  order: TrOrderWithItems,
+  payload: BasitKargoOrderPayload,
+) {
+  const barcode = basitBarcode(payload);
+  const traces = mapBasitKargoTraces(payload.traces);
+  const status = payload.status?.trim() || (barcode ? null : "NEW");
+
+  if (!barcode) {
+    return updateOrderShipmentAdmin(order.id, {
+      provider: "basitkargo",
+      externalId: payload.id,
+      barcode: null,
+      trackingCode: null,
+      carrierCode: null,
+      carrierName: null,
+      status: status || "NEW",
+      traces: traces.length > 0 ? traces : order.shipment.traces,
+      feeKurus: order.shipment.feeKurus,
+      block: order.shipment.block,
+      lastError: order.shipment.lastError,
+      fulfillmentStatus: fulfillmentFromProviderStatus(
+        order.fulfillmentStatus,
+        status || "NEW",
+      ),
+    });
+  }
+
+  return updateOrderShipmentAdmin(order.id, {
+    provider: "basitkargo",
     externalId: payload.id,
-    barcode: payload.barcode ?? null,
+    barcode,
     carrierCode: payload.shipmentInfo?.handler?.code ?? null,
     carrierName: payload.shipmentInfo?.handler?.name ?? null,
     trackingCode: payload.shipmentInfo?.handlerShipmentCode ?? null,
     status: payload.status,
-    traces: mapBasitKargoTraces(payload.traces),
-    feeKurus: feeKurusFromPayload(payload),
-  };
+    traces: traces.length > 0 ? traces : order.shipment.traces,
+    feeKurus: order.shipment.feeKurus ?? feeKurusFromPayload(payload),
+    block: null,
+    lastError: null,
+    fulfillmentStatus: fulfillmentFromProviderStatus(
+      order.fulfillmentStatus,
+      payload.status,
+    ),
+  });
 }
 
 async function persistPayload(
   order: TrOrderWithItems,
   payload: BasitKargoOrderPayload,
 ) {
-  const mappedTraces = mapBasitKargoTraces(payload.traces);
-  const patch = patchFromPayload(payload);
-  return updateOrderShipmentAdmin(order.id, {
-    ...patch,
-    traces: mappedTraces.length > 0 ? mappedTraces : order.shipment.traces,
-    feeKurus: order.shipment.feeKurus ?? patch.feeKurus,
-    block: payload.barcode ? null : order.shipment.block,
-    lastError: payload.barcode ? null : order.shipment.lastError,
-    fulfillmentStatus: fulfillmentFromProviderStatus(
-      order.fulfillmentStatus,
-      payload.status,
-    ),
-  });
+  return persistBasitShipmentPayload(order, payload);
 }
 
 export async function createBoutiqueShipment(
@@ -282,6 +310,19 @@ export async function refreshBasitKargoOrder(
     await persistPayload(order, payload);
     return (await getOrderByIdAdmin(order.id)) ?? order;
   } catch (error) {
+    if (error instanceof BasitKargoError && error.status === 404) {
+      await updateOrderShipmentAdmin(order.id, {
+        barcode: null,
+        trackingCode: null,
+        carrierCode: null,
+        carrierName: null,
+        externalId: null,
+        status: null,
+        fulfillmentStatus:
+          order.fulfillmentStatus === "ready" ? "created" : undefined,
+      });
+      return (await getOrderByIdAdmin(order.id)) ?? order;
+    }
     if (error instanceof BasitKargoError) {
       console.error("[shipping/basitkargo] refresh failed:", error.message);
     }

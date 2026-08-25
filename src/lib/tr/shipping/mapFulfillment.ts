@@ -8,6 +8,8 @@ export function fulfillmentFromProviderStatus(
   if (current === "cancelled") return "cancelled";
   const status = (providerStatus ?? "").trim().toUpperCase();
   switch (status) {
+    case "NEW":
+      return current === "ready" ? "created" : current;
     case "READY_TO_SHIP":
       return "ready";
     case "SHIPPED":
