@@ -11,8 +11,8 @@ import {
   autoFulfillPaidShipment,
   cancelBoutiqueShipmentBarcode,
   createBoutiqueShipment,
-  isAddressRejectLock,
   listBoutiqueShipmentRates,
+  refreshBasitKargoOrder,
   retryShipmentAfterAddressEdit,
   shopperTrackingPath,
 } from "@/lib/tr/shipping/ownerShipment";
@@ -67,15 +67,19 @@ export async function GET(request: Request, context: RouteContext) {
   }
 
   const provider = getShippingProviderId(boutique.slug);
+  const live =
+    provider === "basitkargo"
+      ? await refreshBasitKargoOrder(boutique.slug, order)
+      : order;
   return Response.json({
     provider,
     order: {
-      ...order,
-      items: order.items.filter((item) => item.boutiqueId === boutique.id),
+      ...live,
+      items: live.items.filter((item) => item.boutiqueId === boutique.id),
     },
     trackingPath:
-      provider && order.shipment.externalId
-        ? shopperTrackingPath(boutique.slug, order.id)
+      provider && live.shipment.externalId
+        ? shopperTrackingPath(boutique.slug, live.id)
         : null,
   });
 }
@@ -155,17 +159,9 @@ export async function POST(request: Request, context: RouteContext) {
       });
     }
     if (action === "fulfill") {
-      const current = await getOrderByIdAdmin(id);
-      if (current && isAddressRejectLock(current.shipment)) {
-        return Response.json(
-          {
-            error:
-              "Adres kargo firmalarınca reddedildi. Müşteriyle WhatsApp’tan konuşup adresi güncelleyin.",
-          },
-          { status: 409 },
-        );
-      }
-      const order = await autoFulfillPaidShipment(boutique, id);
+      const order = await autoFulfillPaidShipment(boutique, id, {
+        manual: true,
+      });
       if (!order) {
         return Response.json(
           { error: "Etiket üretilemedi. Basit Kargo bakiyesini kontrol edin." },

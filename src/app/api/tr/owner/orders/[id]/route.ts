@@ -8,8 +8,13 @@ import {
   updateOrderFulfillmentStatusAdmin,
   updateOrderPaymentStatusAdmin,
 } from "@/lib/tr/orders";
-import { autoFulfillPaidShipment, cancelLiveShipmentForCancelledOrder } from "@/lib/tr/shipping/ownerShipment";
+import {
+  autoFulfillPaidShipment,
+  cancelLiveShipmentForCancelledOrder,
+  refreshBasitKargoOrder,
+} from "@/lib/tr/shipping/ownerShipment";
 import { boutiqueOffersIyzicoCheckout } from "@/lib/tr/payments/registry";
+import { getShippingProviderId } from "@/lib/tr/shipping/registry";
 import type {
   TrFulfillmentStatus,
   TrPaymentStatus,
@@ -52,9 +57,13 @@ export async function GET(request: Request, context: RouteContext) {
     );
   }
 
-  const order = await getOrderByIdAdmin(id);
+  let order = await getOrderByIdAdmin(id);
   if (!order || !order.items.some((item) => item.boutiqueId === boutique.id)) {
     return Response.json({ error: "Sipariş bulunamadı." }, { status: 404 });
+  }
+
+  if (getShippingProviderId(boutique.slug) === "basitkargo") {
+    order = await refreshBasitKargoOrder(boutique.slug, order);
   }
 
   if (

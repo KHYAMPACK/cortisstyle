@@ -102,6 +102,8 @@ export async function POST(request: Request) {
         traces: traces.length > 0 ? traces : order.shipment.traces,
         feeKurus:
           feeKurusFromPayload(fresh) ?? order.shipment.feeKurus,
+        block: fresh.barcode ? null : order.shipment.block,
+        lastError: fresh.barcode ? null : order.shipment.lastError,
         fulfillmentStatus: fulfillmentFromProviderStatus(
           order.fulfillmentStatus,
           fresh.status,

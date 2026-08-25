@@ -116,14 +116,15 @@ export async function createBoutiqueShipment(
   }
 
   if (order.shipment.externalId && order.shipment.provider === "basitkargo") {
-    if (order.shipment.barcode) {
-      return { order, rates: [] as TrShippingRate[] };
+    const synced = await refreshBasitKargoOrder(boutique.slug, order);
+    if (synced.shipment.barcode) {
+      return { order: synced, rates: [] as TrShippingRate[] };
     }
     const rates = await basitKargoListFees(
       requireBasitKargoToken(boutique.slug),
-      order.shipment.externalId,
+      synced.shipment.externalId ?? order.shipment.externalId,
     );
-    return { order, rates };
+    return { order: synced, rates };
   }
 
   const token = requireBasitKargoToken(boutique.slug);
@@ -291,6 +292,7 @@ export async function refreshBasitKargoOrder(
 export async function autoFulfillPaidShipment(
   boutique: { id: string; slug: string },
   orderId: string,
+  options?: { manual?: boolean },
 ): Promise<TrOrderWithItems | null> {
   if (getShippingProviderId(boutique.slug) !== "basitkargo") {
     return null;
@@ -299,7 +301,7 @@ export async function autoFulfillPaidShipment(
   return withOrderLock(orderId, async () => {
     try {
       return await runCarrierWaterfall(boutique, orderId, {
-        allowWhenAddressRejected: false,
+        allowWhenAddressRejected: options?.manual === true,
       });
     } catch (error) {
       console.error("[shipping] auto-fulfill failed:", error);
@@ -471,7 +473,9 @@ async function runCarrierWaterfall(
     return (await getOrderByIdAdmin(order.id)) ?? order;
   }
 
-  let lastError = "Hiçbir kargo firması bu adresi kabul etmedi.";
+  let lastError = "Etiket üretilemedi.";
+  let addressRefusals = 0;
+  let otherRefusals = 0;
   for (const rate of rates) {
     const latest = await getOrderByIdAdmin(order.id);
     if (latest?.shipment.barcode) return latest;
@@ -523,13 +527,25 @@ async function runCarrierWaterfall(
         );
         return (await getOrderByIdAdmin(order.id)) ?? order;
       }
+      if (kind === "address") addressRefusals += 1;
+      else otherRefusals += 1;
     }
   }
 
+  const after = await refreshBasitKargoOrder(
+    boutique.slug,
+    (await getOrderByIdAdmin(order.id)) ?? order,
+  );
+  if (after.shipment.barcode) return after;
+
   await markShippingBlock(
     order.id,
-    SHIPPING_BLOCK_ADDRESS_REJECTED,
-    lastError,
+    addressRefusals > 0 && otherRefusals === 0
+      ? SHIPPING_BLOCK_ADDRESS_REJECTED
+      : SHIPPING_BLOCK_PROVIDER_ERROR,
+    addressRefusals > 0 && otherRefusals === 0
+      ? lastError || "Hiçbir kargo firması bu adresi kabul etmedi."
+      : lastError,
   );
   return (await getOrderByIdAdmin(order.id)) ?? order;
 }
