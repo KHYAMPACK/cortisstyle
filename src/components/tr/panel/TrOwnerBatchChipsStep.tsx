@@ -2,10 +2,8 @@
 
 import {
   emptyElbiseGateChips,
-  TrOwnerElbiseConstructionGateFields,
-  type ElbiseGateChipState,
 } from "@/components/tr/panel/TrOwnerElbiseConstructionGate";
-import { TrOwnerCategoryPicker } from "@/components/tr/panel/TrOwnerCategoryPicker";
+import { TrOwnerConstructionTriageFields } from "@/components/tr/panel/TrOwnerConstructionTriageFields";
 import {
   TrOwnerCreditsCostLine,
   TrOwnerCreditsMoreInfoLink,
@@ -19,12 +17,6 @@ import {
   panelStickyActionsSpacerClass,
 } from "@/components/tr/panel/panelUi";
 import { TR_AI_CATALOG_CREDITS } from "@/lib/tr/aiCatalog/uploadCostHints";
-import {
-  GARMENT_UPLOAD_TYPES,
-  isAltGiyimShopLeaf,
-  isUstGiyimShopLeaf,
-  type ConstructionCatalogFamily,
-} from "@/lib/tr/catalog/garmentUploadTypes";
 import type { ProductBatchCreateRow } from "@/lib/tr/productBatchCreateDraft";
 import {
   batchRowChipsReady,
@@ -32,23 +24,6 @@ import {
   batchRowFamily,
   batchRowPackshotReady,
 } from "@/lib/tr/productBatchCreateFlow";
-
-const FAMILIES = GARMENT_UPLOAD_TYPES.filter(
-  (entry) =>
-    entry.live &&
-    (entry.id === "elbise" ||
-      entry.id === "ust-giyim" ||
-      entry.id === "alt-giyim"),
-);
-
-function familyStillMatchesCategory(
-  family: ConstructionCatalogFamily,
-  category: string | null,
-): boolean {
-  if (family === "elbise") return true;
-  if (family === "ust-giyim") return isUstGiyimShopLeaf(category);
-  return isAltGiyimShopLeaf(category);
-}
 
 export function TrOwnerBatchChipsStep({
   boutiqueId,
@@ -92,8 +67,12 @@ export function TrOwnerBatchChipsStep({
           const family = batchRowFamily(row);
           const packingRow = Boolean(packingById[row.clientId]);
           const packReady = batchRowPackshotReady(row);
+          const chips =
+            row.gateChips ??
+            emptyElbiseGateChips(row.proposedChips, {
+              hasDetailPhoto: Boolean(row.images[2]?.trim()),
+            });
           const cover = batchRowCover(row);
-          const chips = row.gateChips ?? emptyElbiseGateChips(row.proposedChips);
           return (
             <section
               key={row.clientId}
@@ -138,79 +117,20 @@ export function TrOwnerBatchChipsStep({
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <p className="text-[14px] font-semibold text-neutral-800">
-                  Tür
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {FAMILIES.map((entry) => {
-                    const active = family === entry.id;
-                    return (
-                      <button
-                        key={entry.id}
-                        type="button"
-                        disabled={packingRow}
-                        onClick={() => {
-                          const nextFamily = entry.id as ConstructionCatalogFamily;
-                          const keepCategory = familyStillMatchesCategory(
-                            nextFamily,
-                            row.category,
-                          );
-                          onPatchRow(row.clientId, {
-                            uploadType: nextFamily,
-                            category:
-                              nextFamily === "elbise"
-                                ? "elbise"
-                                : keepCategory
-                                  ? row.category
-                                  : null,
-                            gateChips:
-                              nextFamily === family
-                                ? chips
-                                : emptyElbiseGateChips(),
-                          });
-                        }}
-                        className={`rounded-full border px-3 py-1.5 text-[13px] font-semibold ${
-                          active
-                            ? "border-[color:var(--panel-accent)] bg-[color:var(--panel-accent)] text-white"
-                            : "border-neutral-200 bg-white text-neutral-800"
-                        }`}
-                      >
-                        {entry.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {family === "ust-giyim" || family === "alt-giyim" ? (
-                <div className="space-y-2">
-                  <p className="text-[14px] font-semibold text-neutral-800">
-                    Alt kategori
-                  </p>
-                  <TrOwnerCategoryPicker
-                    value={row.category}
-                    onChange={(category) =>
-                      onPatchRow(row.clientId, { category })
-                    }
-                    parentId={family}
-                  />
-                </div>
-              ) : null}
-
-              {family ? (
-                <TrOwnerElbiseConstructionGateFields
-                  chips={chips}
-                  onChange={(next: ElbiseGateChipState) =>
-                    onPatchRow(row.clientId, { gateChips: next })
-                  }
-                  disabled={packingRow}
-                  family={family}
-                  shopCategory={row.category}
-                />
-              ) : (
-                <p className={panelHintClass}>Önce tür seçin.</p>
-              )}
+              <TrOwnerConstructionTriageFields
+                family={family}
+                shopCategory={row.category}
+                chips={chips}
+                disabled={packingRow}
+                hasDetailPhoto={Boolean(row.images[2]?.trim())}
+                onChange={({ family: nextFamily, category, chips: nextChips }) =>
+                  onPatchRow(row.clientId, {
+                    uploadType: nextFamily,
+                    category,
+                    gateChips: nextChips,
+                  })
+                }
+              />
             </section>
           );
         })}

@@ -12,6 +12,7 @@ import {
 import { TrFavoriteButton } from "@/components/tr/TrFavoriteButton";
 import { TrMobileBuyBar } from "@/components/tr/TrMobileBuyBar";
 import { TrProductColorPicker } from "@/components/tr/TrProductColorPicker";
+import { TrProductColorSiblings } from "@/components/tr/product/TrProductColorSiblings";
 import { TrProductPurchasePanel } from "@/components/tr/TrProductPurchasePanel";
 import { TrProductSizePicker } from "@/components/tr/TrProductSizePicker";
 import { TrPurchaseActions } from "@/components/tr/TrPurchaseActions";
@@ -42,12 +43,14 @@ interface TrProductDetailPanelProps {
   branded: boolean;
   /** When `"cadde"`, back falls back to /tr; otherwise boutique storefront. */
   entry?: "cadde" | "store";
+  colorSiblings?: TrProductWithBoutique[];
 }
 
 export function TrProductDetailPanel({
   product,
   branded,
   entry = "store",
+  colorSiblings = [],
 }: TrProductDetailPanelProps) {
   const sizes = useMemo(() => resolveProductSizes(product), [product]);
   const inStockSizes = useMemo(
@@ -217,12 +220,22 @@ export function TrProductDetailPanel({
           </p>
         )}
 
-        <TrProductColorPicker
-          colors={colors}
-          selectedColor={selectedColor}
-          onChange={setSelectedColor}
-          accentColor={accent}
-        />
+        {colorSiblings.length >= 2 ? (
+          <TrProductColorSiblings
+            product={product}
+            siblings={colorSiblings}
+            surface="boutique"
+            fromCadde={entry === "cadde"}
+            accentColor={accent}
+          />
+        ) : (
+          <TrProductColorPicker
+            colors={colors}
+            selectedColor={selectedColor}
+            onChange={setSelectedColor}
+            accentColor={accent}
+          />
+        )}
 
         <TrProductSizePicker
           sizes={sizes}

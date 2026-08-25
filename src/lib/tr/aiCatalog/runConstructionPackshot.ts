@@ -36,6 +36,7 @@ export function proposedConstructionChipsFromDraft(
   draft: OwnerListingDraft | null,
   features?: TrProductFeatures | null,
   family?: ConstructionCatalogFamily | null,
+  detailImageUrl?: string | null,
 ): ElbiseConstructionChips {
   const inferred =
     family ??
@@ -79,6 +80,7 @@ export function proposedConstructionChipsFromDraft(
         ) || null,
     }),
     inferred,
+    detailImageUrl ?? "",
   );
 }
 
@@ -97,7 +99,11 @@ export async function runConstructionPackshot(input: {
   scheduleAiJob?: ScheduleAiJob;
 }): Promise<{ packshotUrl: string; draft: OwnerListingDraft }> {
   const schedule = input.scheduleAiJob ?? runAiJobImmediately;
-  const chips: ElbiseConstructionChips = input.chips;
+  const chips: ElbiseConstructionChips = constructionChipsForFamily(
+    input.chips,
+    input.family,
+    input.detailUrl || "",
+  );
   const changed = !constructionChipsEqual(chips, input.proposed);
   let draft: OwnerListingDraft = input.listingDraft
     ? {
@@ -167,6 +173,7 @@ export async function runConstructionPackshot(input: {
     draft.promptFront,
     chips,
     input.family,
+    input.detailUrl || "",
   );
 
   const pack = await schedule(() =>

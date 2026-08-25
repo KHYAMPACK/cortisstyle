@@ -398,7 +398,11 @@ function BatchCreateFlow({
     setError(null);
     const next = current.map((row) => {
       const family = batchRowFamily(row)!;
-      const chips = row.gateChips ?? emptyElbiseGateChips();
+      const chips =
+        row.gateChips ??
+        emptyElbiseGateChips(undefined, {
+          hasDetailPhoto: Boolean(row.images[2]?.trim()),
+        });
       const features = mergeElbiseRestyleFeatures(
         row.features,
         chips,

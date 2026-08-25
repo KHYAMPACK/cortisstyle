@@ -105,6 +105,7 @@ export async function POST(request: Request) {
             draft?.promptFront,
             hasLock ? locked : undefined,
             inferred,
+            body.detailImageUrl?.trim() || "",
           )
         : constructionPackshotBasePrompt("elbise");
     return Response.json({

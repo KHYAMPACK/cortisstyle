@@ -13,6 +13,7 @@ import { TR_OWNER_PRODUCT_LIMITS } from "@/lib/tr/ownerProductConstraints";
 import {
   dressFeatureOptionId,
   dressGeminiEnumHint,
+  decolleteNoneLabel,
   resolveDressFeatureValue,
 } from "@/lib/tr/catalog/dressFeatures";
 import { hasElbiseLockedConstruction } from "@/lib/tr/aiCatalog/elbiseConstructionLock";
@@ -559,6 +560,13 @@ export async function draftProductListingFromImage(input: {
       }
       const inferredFamily =
         family ?? constructionCatalogFamily(undefined, draft.category);
+      if (
+        !input.detailImageUrl?.trim() &&
+        inferredFamily !== "alt-giyim" &&
+        draft.features
+      ) {
+        draft.features.decollete = decolleteNoneLabel();
+      }
       return applyConstructionListingTitle(draft, inferredFamily);
     } catch (error) {
       console.warn(
@@ -829,4 +837,73 @@ promptFront:
 ${promptRules}
 - Do not describe a person or a back packshot.
 `;
+}
+
+/**
+ * Color name only — used for extra color variants so construction chips
+ * and the packshot base prompt stay locked to the primary.
+ */
+export async function draftGarmentColorFromImage(input: {
+  sourceImageUrl: string;
+  backImageUrl?: string | null;
+}): Promise<string | null> {
+  const llm = resolveLlmProvider();
+  if (llm?.provider !== "gemini") return null;
+
+  const image = await Promise.race([
+    fetchImageAsBase64ForVision(input.sourceImageUrl),
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), 15_000)),
+  ]);
+  if (!image) return null;
+
+  const extraImages: Array<{ mimeType: string; data: string; label: string }> =
+    [];
+  if (input.backImageUrl?.trim()) {
+    const fetched = await Promise.race([
+      fetchImageAsBase64ForVision(input.backImageUrl),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 15_000)),
+    ]);
+    if (fetched) {
+      extraImages.push({ ...fetched, label: "Image 2 BACK ON MODEL" });
+    }
+  }
+
+  const models = Array.from(new Set([llm.model, ...GEMINI_MODELS]));
+  const systemText = `You name the garment color from on-model photos for a Turkish boutique.
+
+Return JSON only:
+{ "color": "Turkish color name" }
+
+Rules:
+- color is a short Turkish name (Siyah, Beyaz, Lacivert, Vizon, Bej, Mavi…).
+- Name the fabric color, not the model's skin or the studio background.
+- One or two words. No adjectives like "şık" or "yazlık".`;
+
+  for (const model of models) {
+    try {
+      const parsed = await Promise.race([
+        callGeminiJsonVision({
+          apiKey: llm.apiKey,
+          model,
+          mimeType: image.mimeType,
+          data: image.data,
+          systemText,
+          extraImages,
+        }),
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 20_000)),
+      ]);
+      if (!parsed) continue;
+      const color =
+        typeof parsed.color === "string"
+          ? parsed.color.replace(/\s+/g, " ").trim().slice(0, 40)
+          : "";
+      if (color) return color;
+    } catch (error) {
+      console.warn(
+        "[listing-draft] color-only Gemini failed:",
+        error instanceof Error ? error.message : error,
+      );
+    }
+  }
+  return null;
 }

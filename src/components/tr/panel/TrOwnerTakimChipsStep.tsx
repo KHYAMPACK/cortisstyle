@@ -99,7 +99,9 @@ export function TrOwnerTakimChipsStep({
         const packReady = Boolean(takimItemPackshotUrl(item));
         const cover =
           item.images[0]?.trim() || item.marketplaceImages[0]?.trim() || "";
-        const chips = item.gateChips ?? emptyElbiseGateChips(item.proposedChips);
+        const chips =
+          item.gateChips ??
+          emptyElbiseGateChips(item.proposedChips, { hasDetailPhoto: false });
         return (
           <section
             key={item.clientId}
@@ -167,7 +169,9 @@ export function TrOwnerTakimChipsStep({
                           gateChips:
                             nextFamily === family
                               ? chips
-                              : emptyElbiseGateChips(),
+                              : emptyElbiseGateChips(undefined, {
+                                  hasDetailPhoto: false,
+                                }),
                         });
                       }}
                       className={`rounded-full border px-3 py-1.5 text-[13px] font-semibold ${
@@ -206,6 +210,7 @@ export function TrOwnerTakimChipsStep({
                 disabled={packingRow}
                 family={family}
                 shopCategory={item.category}
+                hasDetailPhoto={false}
               />
             ) : (
               <p className={panelHintClass}>Önce tür seçin.</p>

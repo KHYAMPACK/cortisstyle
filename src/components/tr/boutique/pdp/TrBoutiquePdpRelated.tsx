@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { useTrBoutiqueProductsOptional } from "@/components/tr/boutique/TrBoutiqueProductsContext";
 import { TrBoutiqueYouMayAlsoLike } from "@/components/tr/boutique/TrBoutiqueYouMayAlsoLike";
+import { excludeColorSiblingIds } from "@/lib/tr/catalog/colorSiblings";
 import { pickRelatedProducts } from "@/lib/tr/recommendations";
 import type { TrProductWithBoutique } from "@/types/tr-marketplace";
 
@@ -23,11 +24,11 @@ export function TrBoutiquePdpRelated({
     () =>
       pickRelatedProducts({
         catalog,
-        excludeIds: [product.id],
+        excludeIds: excludeColorSiblingIds(product),
         category: product.category,
         limit: 8,
       }),
-    [catalog, product.id, product.category],
+    [catalog, product],
   );
 
   if (related.length === 0 || !product.boutique) return null;

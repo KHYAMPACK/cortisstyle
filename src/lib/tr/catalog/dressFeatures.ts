@@ -380,6 +380,11 @@ export function dressFeatureOptionId(
   return option?.id ?? null;
 }
 
+/** Stored label for no decollete — used when the owner skipped the 3rd photo. */
+export function decolleteNoneLabel(): string {
+  return resolveDressFeatureValue("decollete", "yok") || "Yok";
+}
+
 export type ConstructionGateKey =
   | "length"
   | "neckline"
@@ -404,6 +409,7 @@ export const DRESS_PACKSHOT_GATE_GROUPS: Array<{
 export function getConstructionPackshotGateGroups(
   family: ConstructionCatalogFamily = "elbise",
   category?: string | null,
+  hasDetailPhoto = true,
 ): Array<{
   key: ConstructionGateKey;
   label: string;
@@ -425,15 +431,24 @@ export function getConstructionPackshotGateGroups(
     return groups;
   }
   if (family === "ust-giyim") {
-    return [
+    const groups: Array<{
+      key: ConstructionGateKey;
+      label: string;
+      required: boolean;
+    }> = [
       { key: "length", label: "Boy", required: true },
       { key: "neckline", label: "Yaka", required: true },
       { key: "sleeves", label: "Kol", required: true },
       { key: "fit", label: "Kalıp", required: true },
-      { key: "decollete", label: "Detay", required: false },
     ];
+    if (hasDetailPhoto) {
+      groups.push({ key: "decollete", label: "Detay", required: false });
+    }
+    return groups;
   }
-  return DRESS_PACKSHOT_GATE_GROUPS;
+  return hasDetailPhoto
+    ? DRESS_PACKSHOT_GATE_GROUPS
+    : DRESS_PACKSHOT_GATE_GROUPS.filter((group) => group.key !== "decollete");
 }
 
 /** Owner-facing required-chip list for gate copy. */

@@ -9,6 +9,7 @@ interface TrBoutiquePdpSplitProps {
   product: TrProductWithBoutique;
   branded: boolean;
   entry?: "cadde" | "store";
+  colorSiblings?: TrProductWithBoutique[];
 }
 
 /**
@@ -19,6 +20,7 @@ export function TrBoutiquePdpSplit({
   product,
   branded,
   entry = "store",
+  colorSiblings = [],
 }: TrBoutiquePdpSplitProps) {
   const atelier = isAtelierEditorialSkin(product.boutique.slug);
   const galleryProduct = {
@@ -69,6 +71,7 @@ export function TrBoutiquePdpSplit({
               product={product}
               branded={branded}
               entry={entry}
+              colorSiblings={colorSiblings}
             />
           </div>
 

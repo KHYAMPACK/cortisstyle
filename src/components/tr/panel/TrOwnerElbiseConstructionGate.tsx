@@ -3,6 +3,7 @@
 import { panelChipClass } from "@/components/tr/panel/panelUi";
 import {
   constructionGateRequiredCopy,
+  decolleteNoneLabel,
   getConstructionGateGroup,
   getConstructionPackshotGateGroups,
   withDefaultSleeves,
@@ -30,6 +31,7 @@ interface TrOwnerElbiseConstructionGateFieldsProps {
   disabled?: boolean;
   family?: ConstructionCatalogFamily;
   shopCategory?: string | null;
+  hasDetailPhoto?: boolean;
 }
 
 export function emptyElbiseGateChips(
@@ -42,13 +44,17 @@ export function emptyElbiseGateChips(
     rise?: string | null;
     hem?: string | null;
   } | null,
+  options?: { hasDetailPhoto?: boolean },
 ): ElbiseGateChipState {
+  const hasDetailPhoto = options?.hasDetailPhoto !== false;
   return withDefaultSleeves({
     neckline: proposed?.neckline?.trim() || "",
     sleeves: proposed?.sleeves?.trim() || "",
     fit: proposed?.fit?.trim() || "",
     length: proposed?.length?.trim() || "",
-    decollete: proposed?.decollete?.trim() || "",
+    decollete: hasDetailPhoto
+      ? proposed?.decollete?.trim() || ""
+      : decolleteNoneLabel(),
     rise: proposed?.rise?.trim() || "",
     hem: proposed?.hem?.trim() || "",
   });
@@ -88,10 +94,15 @@ export function TrOwnerElbiseConstructionGateFields({
   disabled = false,
   family = "elbise",
   shopCategory = null,
+  hasDetailPhoto = true,
 }: TrOwnerElbiseConstructionGateFieldsProps) {
   return (
     <div className="space-y-4">
-      {getConstructionPackshotGateGroups(family, shopCategory).map((gate) => {
+      {getConstructionPackshotGateGroups(
+        family,
+        shopCategory,
+        hasDetailPhoto,
+      ).map((gate) => {
         const group = getConstructionGateGroup(gate.key, family, shopCategory);
         if (!group) return null;
         const current = chips[gate.key];

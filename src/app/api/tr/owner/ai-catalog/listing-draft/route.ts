@@ -1,4 +1,7 @@
-import { draftProductListingFromImage } from "@/lib/tr/aiCatalog/listingDraft";
+import {
+  draftGarmentColorFromImage,
+  draftProductListingFromImage,
+} from "@/lib/tr/aiCatalog/listingDraft";
 import { getBoutiqueByIdAdmin } from "@/lib/tr/boutiques";
 import {
   requireOwnedBoutique,
@@ -16,11 +19,13 @@ type Body = {
   category?: string | null;
   uploadType?: string | null;
   inferConstructionFamily?: boolean;
+  colorOnly?: boolean;
 };
 
 /**
  * POST /api/tr/owner/ai-catalog/listing-draft
  * Optional Gemini draft for product title + description from a catalog image.
+ * `colorOnly` returns `{ color }` for extra color variants.
  */
 export async function POST(request: Request) {
   const authResult = await requireTrOwner(request);
@@ -57,6 +62,18 @@ export async function POST(request: Request) {
       { error: "sourceImageUrl zorunlu." },
       { status: 400 },
     );
+  }
+
+  if (body.colorOnly) {
+    const color = await draftGarmentColorFromImage({
+      sourceImageUrl,
+      backImageUrl: body.backImageUrl,
+    });
+    return Response.json({
+      ok: true,
+      color: color ?? "",
+      usedGemini: Boolean(color),
+    });
   }
 
   const draft = await draftProductListingFromImage({

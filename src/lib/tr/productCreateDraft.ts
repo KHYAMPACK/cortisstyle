@@ -4,16 +4,22 @@
  * Prefer localStorage over a DB table: catalog/lifestyle URLs already live in
  * tr-assets; the draft is small JSON; restore is instant on reload with no
  * new schema/API. Clear on successful save.
+ *
+ * v2 is photo-first (no Tür step). v1 drafts are ignored and not restored.
  */
 
 import type { TrSizeChartId } from "@/lib/tr/productOptions";
 import type { OwnerListingDraft } from "@/lib/tr/ownerClient";
 import type { TrProductFeatures } from "@/types/tr-marketplace";
 import type { TrLilaPhotographyStyle } from "@/lib/tr/aiModel/types";
+import {
+  sanitizeColorVariantDrafts,
+  type ColorVariantUploadDraft,
+} from "@/lib/tr/catalog/colorSiblings";
 
-export const PRODUCT_CREATE_DRAFT_VERSION = 1 as const;
+export const PRODUCT_CREATE_DRAFT_VERSION = 2 as const;
 
-export interface ProductCreateDraftV1 {
+export interface ProductCreateDraftV2 {
   version: typeof PRODUCT_CREATE_DRAFT_VERSION;
   updatedAt: number;
   stepIndex: number;
@@ -36,15 +42,17 @@ export interface ProductCreateDraftV1 {
   catalogBackgroundId: string;
   selectedModelId: string | null;
   photographyStyle?: TrLilaPhotographyStyle;
-  /** Garment upload pipeline — elbise is the live type. */
+  /** Construction family inferred from the photo (or owner-corrected). */
   uploadType?: string | null;
+  /** Extra color photo pairs (linked SKUs). */
+  colorVariants?: ColorVariantUploadDraft[];
 }
 
 function storageKey(boutiqueId: string): string {
-  return `tr:product-create-draft:v1:${boutiqueId.trim()}`;
+  return `tr:product-create-draft:v2:${boutiqueId.trim()}`;
 }
 
-export function draftHasProgress(draft: ProductCreateDraftV1): boolean {
+export function draftHasProgress(draft: ProductCreateDraftV2): boolean {
   return (
     draft.images.some((u) => Boolean(u?.trim())) ||
     draft.marketplaceImages.some((u) => Boolean(u?.trim())) ||
@@ -57,14 +65,15 @@ export function draftHasProgress(draft: ProductCreateDraftV1): boolean {
 
 export function readProductCreateDraft(
   boutiqueId: string,
-): ProductCreateDraftV1 | null {
+): ProductCreateDraftV2 | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = window.localStorage.getItem(storageKey(boutiqueId));
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as ProductCreateDraftV1;
+    const parsed = JSON.parse(raw) as ProductCreateDraftV2;
     if (parsed?.version !== PRODUCT_CREATE_DRAFT_VERSION) return null;
     if (!Array.isArray(parsed.images)) return null;
+    parsed.colorVariants = sanitizeColorVariantDrafts(parsed.colorVariants);
     return parsed;
   } catch {
     return null;
@@ -73,10 +82,10 @@ export function readProductCreateDraft(
 
 export function writeProductCreateDraft(
   boutiqueId: string,
-  draft: Omit<ProductCreateDraftV1, "version" | "updatedAt">,
+  draft: Omit<ProductCreateDraftV2, "version" | "updatedAt">,
 ): void {
   if (typeof window === "undefined") return;
-  const payload: ProductCreateDraftV1 = {
+  const payload: ProductCreateDraftV2 = {
     ...draft,
     version: PRODUCT_CREATE_DRAFT_VERSION,
     updatedAt: Date.now(),

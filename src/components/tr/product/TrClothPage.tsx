@@ -8,6 +8,7 @@ import { TrDemoGarmentVisual } from "@/components/tr/demo/TrDemoGarmentVisual";
 import { TrFavoriteButton } from "@/components/tr/TrFavoriteButton";
 import { TrMobileBuyBar } from "@/components/tr/TrMobileBuyBar";
 import { TrProductColorPicker } from "@/components/tr/TrProductColorPicker";
+import { TrProductColorSiblings } from "@/components/tr/product/TrProductColorSiblings";
 import { TrProductPurchasePanel } from "@/components/tr/TrProductPurchasePanel";
 import { TrProductSizePicker } from "@/components/tr/TrProductSizePicker";
 import { TrPurchaseActions } from "@/components/tr/TrPurchaseActions";
@@ -38,9 +39,14 @@ import type { TrProductWithBoutique } from "@/types/tr-marketplace";
 interface TrClothPageProps {
   product: TrProductWithBoutique;
   relatedProducts: TrProductWithBoutique[];
+  colorSiblings?: TrProductWithBoutique[];
 }
 
-export function TrClothPage({ product, relatedProducts }: TrClothPageProps) {
+export function TrClothPage({
+  product,
+  relatedProducts,
+  colorSiblings = [],
+}: TrClothPageProps) {
   const images = getMarketplaceGalleryImages(product);
   const cover = images[0] ?? null;
   const demoIcon = isTrDemoIconSrc(cover);
@@ -216,11 +222,19 @@ export function TrClothPage({ product, relatedProducts }: TrClothPageProps) {
             {formatTryFromKurus(product.priceKurus)}
           </p>
 
-          <TrProductColorPicker
-            colors={colors}
-            selectedColor={selectedColor}
-            onChange={setSelectedColor}
-          />
+          {colorSiblings.length >= 2 ? (
+            <TrProductColorSiblings
+              product={product}
+              siblings={colorSiblings}
+              surface="cadde"
+            />
+          ) : (
+            <TrProductColorPicker
+              colors={colors}
+              selectedColor={selectedColor}
+              onChange={setSelectedColor}
+            />
+          )}
           <TrProductSizePicker
             sizes={sizes}
             selectedSize={selectedSize}

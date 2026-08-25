@@ -298,7 +298,11 @@ export function TrOwnerElbiseRestyleQueue({
         product,
       });
       setPrepare(prepared);
-      setChips(emptyElbiseGateChips(prepared.proposed));
+      setChips(
+        emptyElbiseGateChips(prepared.proposed, {
+          hasDetailPhoto: Boolean(prepared.detailUrl?.trim()),
+        }),
+      );
       setStage("gate");
     } catch (error) {
       setItemError(
@@ -595,6 +599,7 @@ export function TrOwnerElbiseRestyleQueue({
                     "elbise"
                   }
                   shopCategory={current.category}
+                  hasDetailPhoto={Boolean(current.images[2]?.trim())}
                 />
                 {itemError ? (
                   <p className="text-[14px] text-red-700">{itemError}</p>

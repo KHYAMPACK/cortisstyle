@@ -57,6 +57,7 @@ function proposedFromDraft(
   product: Pick<TrProduct, "features">,
   draft: OwnerListingDraft | null,
   family?: ConstructionCatalogFamily | null,
+  detailImageUrl?: string | null,
 ): ElbiseConstructionChips {
   return constructionChipsForFamily(
     withDefaultSleeves({
@@ -97,6 +98,7 @@ function proposedFromDraft(
         ) || null,
     }),
     family,
+    detailImageUrl ?? "",
   );
 }
 
@@ -177,7 +179,12 @@ export async function prepareElbiseCatalogRestyle(input: {
     return {
       prompt: prepared.prompt,
       listingDraft: prepared.listingDraft,
-      proposed: proposedFromDraft(input.product, prepared.listingDraft, family),
+      proposed: proposedFromDraft(
+        input.product,
+        prepared.listingDraft,
+        family,
+        detailUrl,
+      ),
       frontUrl,
       backUrl,
       detailUrl,
@@ -186,7 +193,7 @@ export async function prepareElbiseCatalogRestyle(input: {
     return {
       prompt: "",
       listingDraft: null,
-      proposed: proposedFromDraft(input.product, null, family),
+      proposed: proposedFromDraft(input.product, null, family, detailUrl),
       frontUrl,
       backUrl,
       detailUrl,
@@ -238,21 +245,35 @@ export async function commitElbiseCatalogRestyle(input: {
       hem,
     },
     family,
+    input.prepared.detailUrl || "",
   );
+  const confirmed: ElbiseConfirmedChips = {
+    neckline: chips.neckline ?? "",
+    sleeves: chips.sleeves ?? "",
+    fit: chips.fit ?? "",
+    length: chips.length ?? "",
+    decollete: chips.decollete ?? "",
+    rise: chips.rise ?? "",
+    hem: chips.hem ?? "",
+  };
   const changed = !constructionChipsEqual(chips, input.prepared.proposed);
   let draft: OwnerListingDraft | null = input.prepared.listingDraft
     ? {
         ...input.prepared.listingDraft,
         features: mergeElbiseRestyleFeatures(
           input.prepared.listingDraft.features,
-          input.chips,
+          confirmed,
           family,
         ),
       }
     : {
         title: input.product.title,
         description: input.product.description ?? "",
-        features: mergeElbiseRestyleFeatures(input.product.features, input.chips, family),
+        features: mergeElbiseRestyleFeatures(
+          input.product.features,
+          confirmed,
+          family,
+        ),
       };
   draft = applyConstructionListingTitle(draft, family);
 
@@ -308,12 +329,13 @@ export async function commitElbiseCatalogRestyle(input: {
     draft.promptFront,
     chips,
     family,
+    input.prepared.detailUrl || "",
   );
 
   const listing = restyleListingFields({
     product: input.product,
     draft,
-    chips: input.chips,
+    chips: confirmed,
     family,
   });
 

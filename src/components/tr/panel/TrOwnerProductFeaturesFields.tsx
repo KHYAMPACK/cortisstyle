@@ -46,6 +46,8 @@ interface TrOwnerProductFeaturesFieldsProps {
   variant?: "default" | "dress";
   family?: ConstructionCatalogFamily;
   shopCategory?: string | null;
+  /** Linked-color upload: color is inferred per SKU from photos. */
+  hideColorField?: boolean;
 }
 
 export function TrOwnerProductFeaturesFields({
@@ -58,6 +60,7 @@ export function TrOwnerProductFeaturesFields({
   variant = "default",
   family = "elbise",
   shopCategory = null,
+  hideColorField = false,
 }: TrOwnerProductFeaturesFieldsProps) {
   const setField = (key: (typeof TR_PRODUCT_FEATURE_KEYS)[number], raw: string) => {
     const next = raw.slice(0, TR_PRODUCT_FEATURE_LIMITS[key]);
@@ -153,7 +156,9 @@ export function TrOwnerProductFeaturesFields({
           </label>
         ) : null}
 
-        {DRESS_FREE_TEXT_KEYS.map((key) => {
+        {DRESS_FREE_TEXT_KEYS.filter(
+          (key) => !(hideColorField && key === "color"),
+        ).map((key) => {
           const multiline = key === "composition";
           return (
             <label key={key} className="block space-y-2">

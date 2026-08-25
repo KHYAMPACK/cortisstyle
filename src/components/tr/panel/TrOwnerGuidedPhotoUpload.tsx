@@ -40,7 +40,9 @@ import {
   constructionCatalogFamily,
   guidedPhotoSlotCountForUploadType,
   isConstructionCatalogUpload,
+  parseConstructionShopCategory,
   requiredPhotoSlotsForUploadType,
+  type ConstructionCatalogFamily,
 } from "@/lib/tr/catalog/garmentUploadTypes";
 import { resolveDressFeatureValue } from "@/lib/tr/catalog/dressFeatures";
 import {
@@ -48,8 +50,11 @@ import {
   constructionGateRequiredCopy,
   emptyElbiseGateChips,
   elbiseGateReady,
-  TrOwnerElbiseConstructionGateFields,
 } from "@/components/tr/panel/TrOwnerElbiseConstructionGate";
+import {
+  constructionTriageReady,
+  TrOwnerConstructionTriageFields,
+} from "@/components/tr/panel/TrOwnerConstructionTriageFields";
 import {
   panelPrimaryBtnClass,
   panelSecondaryBtnClass,
@@ -352,6 +357,13 @@ export interface TrOwnerGuidedPhotoUploadProps {
    * identify after ön+arka, do not open the chip gate or start FASHN.
    */
   deferConstructionPackshot?: boolean;
+  /**
+   * Photo-first construction: 3 slots + Gemini infers family/leaf even when
+   * `uploadType` is still empty. Opens the triage gate (unlike defer).
+   */
+  inferConstructionFamily?: boolean;
+  onUploadTypeChange?: (uploadType: ConstructionCatalogFamily) => void;
+  onCategoryChange?: (category: string | null) => void;
   /** Override picker tiles (takım items: 2 — no detay). */
   photoSlotCount?: number;
   onConstructionPrepared?: (result: {
@@ -367,6 +379,8 @@ export interface TrOwnerGuidedPhotoUploadProps {
     };
     preparedPrompt: string;
   }) => void;
+  /** Linked-color upload: skip optional detay so every color is ön+arka only. */
+  skipDetailSlot?: boolean;
 }
 
 export function TrOwnerGuidedPhotoUpload({
@@ -392,8 +406,12 @@ export function TrOwnerGuidedPhotoUpload({
   features = null,
   listingDraft = null,
   deferConstructionPackshot = false,
+  inferConstructionFamily = false,
+  onUploadTypeChange,
+  onCategoryChange,
   photoSlotCount,
   onConstructionPrepared,
+  skipDetailSlot = false,
 }: TrOwnerGuidedPhotoUploadProps) {
   const scheduleAiJob = useScheduleAiJob();
   const scheduleAiJobRef = useRef(scheduleAiJob);
@@ -404,6 +422,10 @@ export function TrOwnerGuidedPhotoUpload({
   const [elbiseGateOpen, setElbiseGateOpen] = useState(false);
   const [elbiseGateBusy, setElbiseGateBusy] = useState(false);
   const [gateChips, setGateChips] = useState(emptyElbiseGateChips());
+  const [gateFamily, setGateFamily] = useState<ConstructionCatalogFamily | null>(
+    null,
+  );
+  const [gateCategory, setGateCategory] = useState<string | null>(null);
   const [jobs, setJobs] = useState<Record<number, ActiveSlotJob>>({});
   const [skippedDetail, setSkippedDetail] = useState(false);
   const [softUndo, setSoftUndo] = useState<{
@@ -471,14 +493,20 @@ export function TrOwnerGuidedPhotoUpload({
     [jobs],
   );
   const elbise =
-    isConstructionCatalogUpload(uploadType) || deferConstructionPackshot;
+    isConstructionCatalogUpload(uploadType) ||
+    deferConstructionPackshot ||
+    inferConstructionFamily;
   const knownFamily = constructionCatalogFamily(uploadType, category);
-  const family = knownFamily ?? "elbise";
+  const triageFamily = gateFamily ?? knownFamily;
+  const family = triageFamily ?? "elbise";
+  const shopCategory = gateCategory ?? category;
   const requiredSlots = requiredPhotoSlotsForUploadType(
     elbise ? uploadType ?? "elbise" : uploadType,
   );
   const guidedSlots = photoSlotCount ?? (elbise
-    ? 3
+    ? skipDetailSlot && !images[ELBISE_DETAIL_SLOT]?.trim()
+      ? 2
+      : 3
     : guidedPhotoSlotCountForUploadType(uploadType));
   const packshotSlot = elbise ? ELBISE_PACKSHOT_SLOT : null;
   const reservedSlots = useMemo(
@@ -486,11 +514,15 @@ export function TrOwnerGuidedPhotoUpload({
     [packshotSlot],
   );
   const skipSlots = useMemo(() => {
-    if (elbise && skippedDetail && !images[ELBISE_DETAIL_SLOT]?.trim()) {
+    if (
+      elbise &&
+      (skipDetailSlot || skippedDetail) &&
+      !images[ELBISE_DETAIL_SLOT]?.trim()
+    ) {
       return new Set([ELBISE_DETAIL_SLOT]);
     }
     return new Set<number>();
-  }, [elbise, skippedDetail, images]);
+  }, [elbise, skipDetailSlot, skippedDetail, images]);
   const nextSlot = nextOpenSlotIndex(
     images,
     activeSlotSet,
@@ -834,7 +866,8 @@ export function TrOwnerGuidedPhotoUpload({
               view: "front",
               uploadType: knownFamily ?? undefined,
               inferConstructionFamily:
-                deferConstructionPackshot && !knownFamily,
+                !knownFamily &&
+                (inferConstructionFamily || deferConstructionPackshot),
             });
             preparedPrompt = prepared.prompt;
             preparedDraft = prepared.listingDraft;
@@ -879,8 +912,13 @@ export function TrOwnerGuidedPhotoUpload({
                   preparedDraft?.features?.neckHem,
                 ),
               },
-              knownFamily,
+              constructionCatalogFamily(
+                knownFamily,
+                preparedDraft?.category,
+              ),
+              detailUrl || "",
             ),
+            { hasDetailPhoto: Boolean(detailUrl) },
           );
 
           if (deferConstructionPackshot) {
@@ -903,6 +941,21 @@ export function TrOwnerGuidedPhotoUpload({
             return;
           }
 
+          const inferredFamily = constructionCatalogFamily(
+            knownFamily,
+            preparedDraft?.category,
+          );
+          setGateFamily(inferredFamily);
+          setGateCategory(
+            inferredFamily === "elbise"
+              ? "elbise"
+              : inferredFamily
+                ? parseConstructionShopCategory(
+                    preparedDraft?.category,
+                    inferredFamily,
+                  )
+                : null,
+          );
           setGateChips(proposed);
           setElbiseGate({
             frontUrl,
@@ -1068,6 +1121,11 @@ export function TrOwnerGuidedPhotoUpload({
 
   async function confirmElbiseGate() {
     if (!elbiseGate || packshotSlot == null || elbiseGateBusy) return;
+    const confirmedFamily = gateFamily;
+    const confirmedCategory =
+      confirmedFamily === "elbise"
+        ? "elbise"
+        : gateCategory;
     const neckline = gateChips.neckline.trim();
     const sleeves = gateChips.sleeves.trim();
     const fit = gateChips.fit.trim();
@@ -1075,30 +1133,49 @@ export function TrOwnerGuidedPhotoUpload({
     const decollete = gateChips.decollete.trim();
     const rise = gateChips.rise.trim();
     const hem = gateChips.hem.trim();
-    if (!elbiseGateReady(gateChips, family, category)) {
-      onError(constructionGateErrorCopy(family, category));
+    if (
+      !confirmedFamily ||
+      !constructionTriageReady(
+        confirmedFamily,
+        confirmedCategory,
+        gateChips,
+      )
+    ) {
+      onError(
+        confirmedFamily
+          ? constructionGateErrorCopy(confirmedFamily, confirmedCategory)
+          : "Tür seçin.",
+      );
       return;
     }
     onError(null);
 
-    const chips = { neckline, sleeves, fit, length, decollete, rise, hem };
+    const detailUrl =
+      imagesRef.current[ELBISE_DETAIL_SLOT]?.trim() ||
+      elbiseGate.detailUrl ||
+      "";
+    const chips = constructionChipsForFamily(
+      { neckline, sleeves, fit, length, decollete, rise, hem },
+      confirmedFamily,
+      detailUrl,
+    );
     const changed = !constructionChipsEqual(chips, elbiseGate.proposed);
     const needsRewrite = changed || !elbiseGate.promptFront?.trim();
 
     const chipFeatures =
-      family === "alt-giyim"
+      confirmedFamily === "alt-giyim"
         ? {
-            fit,
-            length,
-            ...(rise ? { rise } : {}),
-            ...(hem ? { neckHem: hem } : {}),
+            fit: chips.fit ?? fit,
+            length: chips.length ?? length,
+            ...(chips.rise ? { rise: chips.rise } : {}),
+            ...(chips.hem ? { neckHem: chips.hem } : {}),
           }
         : {
-            neckline,
-            sleeves,
-            fit,
-            length,
-            ...(decollete ? { decollete } : {}),
+            neckline: chips.neckline ?? neckline,
+            sleeves: chips.sleeves ?? sleeves,
+            fit: chips.fit ?? fit,
+            length: chips.length ?? length,
+            decollete: chips.decollete ?? decollete,
           };
 
     setElbiseGateBusy(true);
@@ -1117,7 +1194,7 @@ export function TrOwnerGuidedPhotoUpload({
             description: "",
             features: chipFeatures,
           };
-      if (family === "alt-giyim" && draft.features) {
+      if (confirmedFamily === "alt-giyim" && draft.features) {
         const nextFeatures = { ...draft.features };
         delete nextFeatures.neckline;
         delete nextFeatures.sleeves;
@@ -1130,7 +1207,10 @@ export function TrOwnerGuidedPhotoUpload({
         delete nextFeatures.decollete;
         draft = { ...draft, features: nextFeatures };
       }
-      draft = applyConstructionListingTitle(draft, family);
+      draft = {
+        ...applyConstructionListingTitle(draft, confirmedFamily),
+        category: confirmedCategory,
+      };
 
       let prompt = "";
       if (needsRewrite) {
@@ -1144,12 +1224,9 @@ export function TrOwnerGuidedPhotoUpload({
               elbiseGate.detailUrl ||
               undefined,
             title: draft.title || title,
-            category:
-              family === "elbise"
-                ? "elbise"
-                : draft.category || category,
+            category: confirmedCategory,
             view: "front",
-            uploadType: family,
+            uploadType: confirmedFamily,
             existingTitle: draft.title || title,
             existingDescription: draft.description,
             lockedConstruction: chips,
@@ -1159,17 +1236,20 @@ export function TrOwnerGuidedPhotoUpload({
             const ornament =
               prepared.listingDraft.features?.ornament?.trim() ||
               draft.features?.ornament?.trim();
-            draft = applyConstructionListingTitle(
-              {
-                ...prepared.listingDraft,
-                features: {
-                  ...prepared.listingDraft.features,
-                  ...chipFeatures,
-                  ...(ornament ? { ornament } : {}),
+            draft = {
+              ...applyConstructionListingTitle(
+                {
+                  ...prepared.listingDraft,
+                  features: {
+                    ...prepared.listingDraft.features,
+                    ...chipFeatures,
+                    ...(ornament ? { ornament } : {}),
+                  },
                 },
-              },
-              family,
-            );
+                confirmedFamily,
+              ),
+              category: confirmedCategory,
+            };
           }
         } catch (rewriteError) {
           console.warn(
@@ -1181,8 +1261,15 @@ export function TrOwnerGuidedPhotoUpload({
         }
       }
 
-      prompt = buildElbisePackshotPrompt(promptFront, chips, family);
+      prompt = buildElbisePackshotPrompt(
+        promptFront,
+        chips,
+        confirmedFamily,
+        detailUrl,
+      );
 
+      onUploadTypeChange?.(confirmedFamily);
+      onCategoryChange?.(confirmedCategory);
       if (onListingDraft && draft.title.trim()) {
         onListingDraft({ ...draft, promptFront });
       } else if (onListingDraft) {
@@ -1216,15 +1303,12 @@ export function TrOwnerGuidedPhotoUpload({
             sourceImageUrl: elbiseGate.frontUrl,
             productId: productId ?? undefined,
             title: draft.title || title,
-            category:
-              family === "elbise"
-                ? "elbise"
-                : draft.category || category,
+            category: confirmedCategory,
             view: "front",
             numImages: 1,
             prompt,
             listingDraft: draft.title.trim() ? draft : null,
-            uploadType: family,
+            uploadType: confirmedFamily,
           }),
         {
           onStart: () => {
@@ -1290,11 +1374,13 @@ export function TrOwnerGuidedPhotoUpload({
       onError("Packshot yenilemek için ön ve arka manken gerekli.");
       return;
     }
+    const detailUrl = imagesRef.current[ELBISE_DETAIL_SLOT]?.trim() || "";
     const chips = emptyElbiseGateChips(
       chipsFromProductFeatures(features ?? listingDraft?.features, family),
+      { hasDetailPhoto: Boolean(detailUrl) },
     );
-    if (!elbiseGateReady(chips, family, category)) {
-      onError(constructionGateErrorCopy(family, category));
+    if (!elbiseGateReady(chips, family, shopCategory)) {
+      onError(constructionGateErrorCopy(family, shopCategory));
       return;
     }
     onError(null);
@@ -1302,6 +1388,7 @@ export function TrOwnerGuidedPhotoUpload({
       listingDraft?.promptFront,
       chips,
       family,
+      detailUrl,
     );
     const sourceToken = `${frontUrl}|${backUrl}|${imagesRef.current[2]?.trim() ?? ""}`;
     setJobs((current) => ({
@@ -1395,6 +1482,9 @@ export function TrOwnerGuidedPhotoUpload({
       if (elbise) {
         setElbiseGate(null);
         setElbiseGateOpen(false);
+        setGateFamily(null);
+        setGateCategory(null);
+        setGateChips(emptyElbiseGateChips());
       }
     }
   }
@@ -1415,6 +1505,9 @@ export function TrOwnerGuidedPhotoUpload({
     if (elbise && index < requiredSlots) {
       setElbiseGate(null);
       setElbiseGateOpen(false);
+      setGateFamily(null);
+      setGateCategory(null);
+      setGateChips(emptyElbiseGateChips());
     }
     const packshotImage =
       elbise && index < requiredSlots && packshotSlot != null
@@ -1881,7 +1974,9 @@ export function TrOwnerGuidedPhotoUpload({
               ? guidedSlots < 3
                 ? "Ön ve arka zorunlu. Özellikler sonraki adımda onaylanır — packshot o zaman üretilir."
                 : "Ön ve arka zorunlu. Detay isteğe bağlı. Özellikler sonraki adımda onaylanır — packshot o zaman üretilir."
-              : `Ön ve arka zorunlu. Detay isteğe bağlı. ${constructionGateRequiredCopy(family, category)} onaylayınca packshot üretilir.`
+              : triageFamily
+                ? `Ön ve arka zorunlu. Detay isteğe bağlı. ${constructionGateRequiredCopy(triageFamily, shopCategory)} onaylayınca packshot üretilir.`
+                : "Ön ve arka zorunlu. Detay isteğe bağlı. Gemini önerisini onaylayınca packshot üretilir."
             : "Ön ve arka zorunlu. Ön yüklenirken arka seçebilirsiniz — işlemler paralel ilerler."}
         </p>
       ) : null}
@@ -1898,7 +1993,9 @@ export function TrOwnerGuidedPhotoUpload({
           onClick={() => setElbiseGateOpen(true)}
           disabled={disabled || elbiseGateBusy}
         >
-          {`${constructionGateRequiredCopy(family, category)} onayla — packshot üret`}
+          {triageFamily
+            ? `${constructionGateRequiredCopy(triageFamily, shopCategory)} onayla — packshot üret`
+            : "Tür ve özellikleri onayla — packshot üret"}
         </button>
       ) : null}
 
@@ -2018,19 +2115,35 @@ export function TrOwnerGuidedPhotoUpload({
                 id={`${inputId}-elbise-gate-title`}
                 className="text-[18px] font-semibold text-neutral-900"
               >
-                Gemini önerisi
+                {elbiseGate.draft?.title?.trim()
+                  ? "Gemini önerisi"
+                  : "Ürünü tanımlayın"}
               </p>
               <p className="mt-1 text-[14px] leading-relaxed text-neutral-600">
-                {`${constructionGateRequiredCopy(family, category)} doğru mu? Yanlışsa düzeltin — packshot bu bilgilere kilitlenir. Detay isteğe bağlı.`}
+                {elbiseGate.draft?.title?.trim()
+                  ? `${
+                      triageFamily
+                        ? `${constructionGateRequiredCopy(triageFamily, shopCategory)} doğru mu? Yanlışsa düzeltin`
+                        : "Tür, kategori ve özellikler doğru mu? Yanlışsa düzeltin"
+                    } — packshot bu bilgilere kilitlenir.`
+                  : "AI tanıyamadı — tür, kategori ve özellikleri seçin. Packshot bu bilgilere kilitlenir."}
+                {elbiseGate.detailUrl.trim()
+                  ? " Detay isteğe bağlı."
+                  : ""}
               </p>
 
               <div className="mt-5">
-                <TrOwnerElbiseConstructionGateFields
+                <TrOwnerConstructionTriageFields
+                  family={gateFamily}
+                  shopCategory={gateCategory}
                   chips={gateChips}
-                  onChange={setGateChips}
                   disabled={elbiseGateBusy}
-                  family={family}
-                  shopCategory={category}
+                  hasDetailPhoto={Boolean(elbiseGate.detailUrl.trim())}
+                  onChange={({ family: nextFamily, category: nextCategory, chips }) => {
+                    setGateFamily(nextFamily);
+                    setGateCategory(nextCategory);
+                    setGateChips(chips);
+                  }}
                 />
               </div>
 
@@ -2054,7 +2167,12 @@ export function TrOwnerGuidedPhotoUpload({
                   type="button"
                   className={`${panelPrimaryBtnClass} flex-1`}
                   disabled={
-                    elbiseGateBusy || !elbiseGateReady(gateChips, family, category)
+                    elbiseGateBusy ||
+                    !constructionTriageReady(
+                      gateFamily,
+                      gateCategory,
+                      gateChips,
+                    )
                   }
                   onClick={() => void confirmElbiseGate()}
                 >

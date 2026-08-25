@@ -110,10 +110,15 @@ function tryOnPrompt(
   chips: ElbiseConstructionChips,
   kind: "front" | "back" | "detail",
   family?: ConstructionCatalogFamily | null,
+  detailImageUrl?: string | null,
 ): string {
   const base =
     kind === "back" ? NATURAL_TRYON_PROMPT_BACK : NATURAL_TRYON_PROMPT;
-  const lock = buildElbiseTryOnConstructionLock(chips, family);
+  const lock = buildElbiseTryOnConstructionLock(
+    chips,
+    family,
+    detailImageUrl,
+  );
   const extra = kind === "detail" ? DETAIL_EXTRA : HEM_VISIBLE;
   return [base, lock, extra].filter(Boolean).join(" ");
 }
@@ -175,7 +180,7 @@ export function buildElbiseTryOnShots(
       "standing-three-quarter",
       packshot,
       plates.threeQuarter,
-      tryOnPrompt(chips, "front", input.family),
+      tryOnPrompt(chips, "front", input.family, detailManken),
     ),
   ];
 
@@ -191,7 +196,7 @@ export function buildElbiseTryOnShots(
         "standing-back",
         backManken,
         plates.back,
-        tryOnPrompt(chips, "back", input.family),
+        tryOnPrompt(chips, "back", input.family, detailManken),
       ),
     );
   }
@@ -202,7 +207,7 @@ export function buildElbiseTryOnShots(
         "standing-three-quarter",
         detailManken,
         plates.threeQuarter,
-        tryOnPrompt(chips, "detail", input.family),
+        tryOnPrompt(chips, "detail", input.family, detailManken),
       ),
     );
   }

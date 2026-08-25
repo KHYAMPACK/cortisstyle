@@ -21,6 +21,7 @@ import type {
   UpdateTrProductInput,
 } from "@/types/tr-marketplace";
 import { sanitizeProductFeatures } from "@/lib/tr/catalog/productFeatures";
+import { ensureColorSiblingLifestyleModelRecord } from "@/lib/tr/catalog/syncColorGroup";
 import {
   alignMarketplaceSlots,
   cleanedLifestyleImages,
@@ -74,8 +75,18 @@ export async function GET(request: Request, context: RouteContext) {
     return Response.json({ error: "Ürün bulunamadı." }, { status: 404 });
   }
 
+  let resolved = product;
+  try {
+    resolved = await ensureColorSiblingLifestyleModelRecord(product);
+  } catch (error) {
+    console.error(
+      "[tr/owner/products/[id]] color sibling model kaydı copy failed:",
+      error,
+    );
+  }
+
   return Response.json({
-    product,
+    product: resolved,
     boutique: {
       id: owned.boutique.id,
       slug: owned.boutique.slug,

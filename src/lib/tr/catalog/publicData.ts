@@ -5,6 +5,8 @@ import {
   listPublicAvailableProducts,
   listPublicBoutiques,
 } from "@/lib/tr";
+import { colorSiblingIdsOf } from "@/lib/tr/catalog/colorSiblings";
+import { listProductsByIdsAdmin } from "@/lib/tr/catalog/products";
 import { mapProductsWithLookbookImages } from "@/lib/tr/lookbookImages";
 import type {
   TrBoutiquePublic,
@@ -220,4 +222,34 @@ export async function safeListMarketplaceBoutiques(): Promise<
 
   const { listDemoBoutiques } = await import("@/lib/tr/looks/demoCatalog");
   return listDemoBoutiques();
+}
+
+export async function safeGetPublicColorSiblings(
+  product: TrProductWithBoutique,
+): Promise<TrProductWithBoutique[]> {
+  const ids = colorSiblingIdsOf(product);
+  if (ids.length < 2) return [];
+  try {
+    const rows = await listProductsByIdsAdmin(ids);
+    const byId = new Map(
+      rows
+        .filter(
+          (entry) =>
+            entry.boutiqueId === product.boutiqueId &&
+            entry.status === "available",
+        )
+        .map((entry) => [entry.id, entry]),
+    );
+    return ids.flatMap((id) => {
+      const row = byId.get(id);
+      if (!row) return [];
+      return [{ ...row, boutique: product.boutique }];
+    });
+  } catch (error) {
+    console.error(
+      `Failed to load color siblings (${product.id}):`,
+      formatTrDataError(error),
+    );
+    return [];
+  }
 }

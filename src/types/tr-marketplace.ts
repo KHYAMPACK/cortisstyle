@@ -118,6 +118,13 @@ export type TrProductFeatures = {
    */
   uploadKind?: "takim";
   setItems?: TrTakimSetItem[];
+  /**
+   * Linked color SKUs (one product per color). Same id on every sibling.
+   * Restyle / slot-3 still belong to this product only.
+   */
+  colorGroupId?: string;
+  /** All product ids in the color group, including self. */
+  colorSiblingIds?: string[];
 };
 
 export type TrTakimSetItem = {

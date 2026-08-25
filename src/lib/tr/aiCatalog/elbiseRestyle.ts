@@ -10,6 +10,7 @@ import {
   TR_AI_CATALOG_CREDITS,
 } from "@/lib/tr/aiCatalog/uploadCostHints";
 import { chipsFromProductFeatures } from "@/lib/tr/aiModel/elbiseTryOn";
+import { dressFeatureOptionId } from "@/lib/tr/catalog/dressFeatures";
 import { withLifestyleModelsAll } from "@/lib/tr/catalog/productFeatures";
 import { alignMarketplaceSlots } from "@/lib/tr/catalog/productImages";
 import type { TrProduct, TrProductFeatures } from "@/types/tr-marketplace";
@@ -109,8 +110,10 @@ export function mergeElbiseRestyleFeatures(
   next.sleeves = chips.sleeves;
   delete next.rise;
   delete next.neckHem;
-  if (chips.decollete.trim()) next.decollete = chips.decollete.trim();
-  else delete next.decollete;
+  const decolleteId = dressFeatureOptionId("decollete", chips.decollete);
+  if (chips.decollete.trim() && decolleteId && decolleteId !== "yok") {
+    next.decollete = chips.decollete.trim();
+  } else delete next.decollete;
   return next;
 }
 

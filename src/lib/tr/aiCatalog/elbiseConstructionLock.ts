@@ -1,4 +1,5 @@
 import {
+  decolleteNoneLabel,
   dressFeatureOptionId,
   resolveDressFeatureValue,
 } from "@/lib/tr/catalog/dressFeatures";
@@ -116,6 +117,7 @@ function knownFeature(
 export function constructionChipsForFamily(
   chips: ElbiseConstructionChips | null | undefined,
   family?: ConstructionCatalogFamily | null,
+  detailImageUrl?: string | null,
 ): ElbiseConstructionChips {
   const rise = knownFeature("rise", chips?.rise);
   const hem = knownFeature("hem", chips?.hem);
@@ -126,6 +128,17 @@ export function constructionChipsForFamily(
   const treatBottom = bottom || (unspecified && Boolean(rise || hem));
   const treatDressOrTop = dress || top || (unspecified && !treatBottom);
 
+  let decollete = treatDressOrTop
+    ? resolveDressFeatureValue("decollete", chips?.decollete) || null
+    : null;
+  if (
+    treatDressOrTop &&
+    detailImageUrl !== undefined &&
+    !detailImageUrl?.trim()
+  ) {
+    decollete = decolleteNoneLabel();
+  }
+
   return {
     neckline: treatDressOrTop
       ? resolveDressFeatureValue("neckline", chips?.neckline) || null
@@ -133,9 +146,7 @@ export function constructionChipsForFamily(
     sleeves: treatDressOrTop
       ? resolveDressFeatureValue("sleeves", chips?.sleeves) || null
       : null,
-    decollete: treatDressOrTop
-      ? resolveDressFeatureValue("decollete", chips?.decollete) || null
-      : null,
+    decollete,
     fit: dress ? null : knownFeature("fit", chips?.fit) || null,
     length: resolveDressFeatureValue("length", chips?.length) || null,
     rise: treatBottom ? rise || null : null,
@@ -174,8 +185,9 @@ export function hasElbiseLockedConstruction(
 export function buildElbiseConstructionLock(
   chips: ElbiseConstructionChips | null | undefined,
   family?: ConstructionCatalogFamily | null,
+  detailImageUrl?: string | null,
 ): string {
-  const scoped = constructionChipsForFamily(chips, family);
+  const scoped = constructionChipsForFamily(chips, family, detailImageUrl);
   const neckline = scoped.neckline?.trim() || "";
   const sleeves = scoped.sleeves?.trim() || "";
   const fit = scoped.fit?.trim() || "";
@@ -227,8 +239,9 @@ export function buildElbiseConstructionLock(
 export function buildElbiseTryOnConstructionLock(
   chips: ElbiseConstructionChips | null | undefined,
   family?: ConstructionCatalogFamily | null,
+  detailImageUrl?: string | null,
 ): string {
-  const scoped = constructionChipsForFamily(chips, family);
+  const scoped = constructionChipsForFamily(chips, family, detailImageUrl);
   const neckline = scoped.neckline?.trim() || "";
   const sleeves = scoped.sleeves?.trim() || "";
   const fit = scoped.fit?.trim() || "";
@@ -279,7 +292,7 @@ export function buildElbiseTryOnConstructionLock(
         ? " The midriff between the waistband and the top hem must stay visible. Do not pull the waistband up."
         : "";
     parts.push(
-      `Bel/rise is also critical. ${RISE_EN[id ?? ""] ?? `Rise: ${rise}.`}${lowRise}`,
+      `Waist/rise (bel) is also critical. ${RISE_EN[id ?? ""] ?? `Rise: ${rise}.`}${lowRise} Keep any belt, buckle, and belt loops from the product at this waistband. Do not strip them to a plain waistband. Do not add a belt the product does not have.`,
     );
   }
   if (fit) {

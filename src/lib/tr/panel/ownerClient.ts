@@ -269,6 +269,27 @@ export async function updateOwnerProduct(
   return data.product;
 }
 
+export async function setOwnerColorGroup(input: {
+  boutiqueId: string;
+  anchorProductId: string;
+  productIds: string[];
+}): Promise<TrProduct> {
+  const response = await ownerFetch("/api/tr/owner/products/color-group", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  const data = (await parseOwnerJson(response)) as {
+    product?: TrProduct;
+    error?: string;
+  };
+  if (!response.ok) {
+    throw new Error(data.error ?? "Renk grubu kaydedilemedi.");
+  }
+  if (!data.product) throw new Error("Renk grubu kaydedilemedi.");
+  invalidateProductLists();
+  return data.product;
+}
+
 export type TrMarketplaceUploadStatus = "ready" | "skipped" | "failed";
 
 export interface OwnerProductImageUploadResult {
@@ -493,6 +514,26 @@ export async function requestOwnerListingDraft(input: {
       features: {},
     }
   );
+}
+
+export async function requestOwnerGarmentColor(input: {
+  boutiqueId: string;
+  sourceImageUrl: string;
+  backImageUrl?: string;
+}): Promise<string> {
+  const response = await ownerFetch("/api/tr/owner/ai-catalog/listing-draft", {
+    method: "POST",
+    body: JSON.stringify({ ...input, colorOnly: true }),
+  });
+  const data = (await parseOwnerJson(response)) as {
+    ok?: boolean;
+    color?: string;
+    error?: string;
+  };
+  if (!response.ok) {
+    throw new Error(data.error ?? "Renk analizi başarısız.");
+  }
+  return typeof data.color === "string" ? data.color.trim() : "";
 }
 
 export interface OwnerAiModelGenerateResult {

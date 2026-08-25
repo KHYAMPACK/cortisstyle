@@ -5,11 +5,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { TrCatalogBackgroundPicker } from "@/components/tr/panel/TrCatalogBackgroundPicker";
 import { TrOwnerAiCatalogEnhance } from "@/components/tr/panel/TrOwnerAiCatalogEnhance";
 import { TrOwnerAiFillListing } from "@/components/tr/panel/TrOwnerAiFillListing";
+import { TrOwnerColorVariantPhotos, TrOwnerColorVariantProgress } from "@/components/tr/panel/TrOwnerColorVariantPhotos";
 import {
   hasRequiredProductPhotos,
   hasRequiredProductPhotosStarted,
   TrOwnerGuidedPhotoUpload,
 } from "@/components/tr/panel/TrOwnerGuidedPhotoUpload";
+import { useScheduleAiJob } from "@/components/tr/panel/TrOwnerAiJobQueue";
 import { TrOwnerStorePreview } from "@/components/tr/panel/TrOwnerStorePreview";
 import { useRegisterLeaveBusy } from "@/components/tr/panel/TrOwnerLeaveGuard";
 import { TrOwnerWizardPipelineStatus } from "@/components/tr/panel/TrOwnerWizardPipelineStatus";
@@ -22,7 +24,6 @@ import {
 import { TrOwnerCategoryPicker } from "@/components/tr/panel/TrOwnerCategoryPicker";
 import { TrOwnerProductFeaturesFields } from "@/components/tr/panel/TrOwnerProductFeaturesFields";
 import {
-  panelChipClass,
   panelFieldClass,
   panelHintClass,
   panelPrimaryBtnClass,
@@ -31,19 +32,26 @@ import {
   panelStickyActionsSpacerClass,
 } from "@/components/tr/panel/panelUi";
 import type { PipelineJobItem } from "@/lib/tr/aiCatalog/pipelineProgress";
+import { formatConstructionProductTitle } from "@/lib/tr/aiCatalog/listingDraft";
+import {
+  runColorVariantPackshot,
+  runColorVariantTryOn,
+} from "@/lib/tr/aiCatalog/runColorVariantCatalog";
 import {
   describeModelPackageShots,
 } from "@/lib/tr/aiCatalog/uploadCostHints";
+import { constructionChipsForFamily } from "@/lib/tr/aiCatalog/elbiseConstructionLock";
+import { chipsFromProductFeatures } from "@/lib/tr/aiModel/elbiseTryOn";
 import { constructionGateRequiredCopy } from "@/lib/tr/catalog/dressFeatures";
 import {
-  GARMENT_UPLOAD_TYPES,
   constructionCatalogFamily,
-  getGarmentUploadType,
   isAltGiyimShopLeaf,
   isElbiseUpload,
   isUstGiyimShopLeaf,
   requiredPhotoSlotsForUploadType,
+  type ConstructionCatalogFamily,
 } from "@/lib/tr/catalog/garmentUploadTypes";
+import { withLifestyleModelsAll } from "@/lib/tr/catalog/productFeatures";
 import {
   LILA_DEFAULT_PHOTOGRAPHY_STYLE,
   parseLilaPhotographyStyle,
@@ -51,7 +59,6 @@ import {
 } from "@/lib/tr/aiModel/registry";
 import {
   DEFAULT_CATALOG_BACKGROUND_ID,
-  getCatalogBackground,
 } from "@/lib/tr/catalogBackgrounds/registry";
 import type { TrSizeChartId } from "@/lib/tr/productOptions";
 import {
@@ -64,6 +71,7 @@ import {
 } from "@/lib/tr/ownerProductConstraints";
 import {
   createOwnerProduct,
+  setOwnerColorGroup,
   type OwnerListingDraft,
 } from "@/lib/tr/ownerClient";
 import {
@@ -71,8 +79,16 @@ import {
   draftHasProgress,
   readProductCreateDraft,
   writeProductCreateDraft,
-  type ProductCreateDraftV1,
+  type ProductCreateDraftV2,
 } from "@/lib/tr/productCreateDraft";
+import {
+  colorSwatchFromName,
+  colorVariantPhotosReady,
+  constructionImagesForVariant,
+  constructionMarketplaceForVariant,
+  featuresForColorVariant,
+  type ColorVariantUploadDraft,
+} from "@/lib/tr/catalog/colorSiblings";
 import {
   alignMarketplaceSlots,
   cleanedLifestyleImages,
@@ -86,14 +102,9 @@ import type { TrProduct, TrProductFeatures } from "@/types/tr-marketplace";
 
 const ALL_STEPS = [
   {
-    id: "type",
-    title: "Tür",
-    hint: "Ürün türünü seçin — her türün fotoğraf adımı farklıdır",
-  },
-  {
     id: "photo",
     title: "Fotoğraf",
-    hint: "Zorunlu kareler bitince devam — packshot arka planda üretilir",
+    hint: "Ön ve arka manken — detay isteğe bağlı, packshot arka planda",
   },
   {
     id: "name",
@@ -122,8 +133,62 @@ const ALL_STEPS = [
   },
 ] as const;
 
-function wizardStepsFor(_uploadType: string | null) {
-  return ALL_STEPS;
+function remapStockInputsForChart(
+  chart: TrSizeChartId,
+  current: Record<string, string>,
+): Record<string, string> {
+  const nextInputs = emptyStockInputsForChart(chart, "0");
+  for (const size of Object.keys(nextInputs)) {
+    if (current[size] !== undefined) nextInputs[size] = current[size]!;
+  }
+  return nextInputs;
+}
+
+function stockInputsReady(
+  chart: TrSizeChartId,
+  chartSizes: string[],
+  stock: string,
+  sizeStockInputs: Record<string, string>,
+): boolean {
+  if (chart === "none") return isValidStock(stock);
+  if (!chartSizes.every((size) => isValidStock(sizeStockInputs[size] ?? ""))) {
+    return false;
+  }
+  const parsed = parseSizeStockInputs(chartSizes, sizeStockInputs);
+  return parsed !== null && sumSizeStocks(parsed) > 0;
+}
+
+function parseListingStock(
+  chart: TrSizeChartId,
+  stock: string,
+  sizeStockInputs: Record<string, string>,
+  colorLabel: string,
+): { stockValue: number; sizeStocks: Record<string, number>; sizes: string[] } {
+  const sizes =
+    chart === "none" ? [] : sizesFromStockInputs(chart, sizeStockInputs);
+  if (sizes.length > 0) {
+    const parsed = parseSizeStockInputs(sizes, sizeStockInputs);
+    if (!parsed) {
+      throw new Error(
+        `${colorLabel}: her beden için stok ${TR_OWNER_PRODUCT_LIMITS.stockMin}–${TR_OWNER_PRODUCT_LIMITS.stockMax} arası olmalı.`,
+      );
+    }
+    const stockValue = sumSizeStocks(parsed);
+    if (stockValue <= 0) {
+      throw new Error(`${colorLabel}: en az bir bedende stok girin.`);
+    }
+    return { stockValue, sizeStocks: parsed, sizes };
+  }
+  if (!isValidStock(stock)) {
+    throw new Error(
+      `${colorLabel}: stok ${TR_OWNER_PRODUCT_LIMITS.stockMin}–${TR_OWNER_PRODUCT_LIMITS.stockMax} arası olmalı.`,
+    );
+  }
+  return {
+    stockValue: Number.parseInt(stock, 10),
+    sizeStocks: {},
+    sizes,
+  };
 }
 
 interface TrProductCreateWizardProps {
@@ -138,7 +203,7 @@ export function TrProductCreateWizard({
   onSaved,
 }: TrProductCreateWizardProps) {
   const [uploadType, setUploadType] = useState<string | null>(null);
-  const steps = useMemo(() => wizardStepsFor(uploadType), [uploadType]);
+  const steps = ALL_STEPS;
   const [stepIndex, setStepIndex] = useState(0);
   const step = steps[Math.min(stepIndex, steps.length - 1)]!;
 
@@ -157,6 +222,18 @@ export function TrProductCreateWizard({
   const [images, setImages] = useState<string[]>([]);
   const [marketplaceImages, setMarketplaceImages] = useState<string[]>([]);
   const [lifestyleImages, setLifestyleImages] = useState<string[]>([]);
+  const [colorVariants, setColorVariants] = useState<ColorVariantUploadDraft[]>(
+    [],
+  );
+  const [colorPackshotBusyIds, setColorPackshotBusyIds] = useState<string[]>(
+    [],
+  );
+  const [colorTryOnBusyIds, setColorTryOnBusyIds] = useState<string[]>([]);
+  const colorPackshotBusyRef = useRef(new Set<string>());
+  const colorTryOnBusyRef = useRef(new Set<string>());
+  const colorPackshotStartedRef = useRef(new Set<string>());
+  const colorTryOnStartedRef = useRef(new Set<string>());
+  const scheduleAiJob = useScheduleAiJob();
   const [listingDraft, setListingDraft] = useState<OwnerListingDraft | null>(
     null,
   );
@@ -178,7 +255,7 @@ export function TrProductCreateWizard({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmSkipModel, setConfirmSkipModel] = useState(false);
-  const [draftBanner, setDraftBanner] = useState<ProductCreateDraftV1 | null>(
+  const [draftBanner, setDraftBanner] = useState<ProductCreateDraftV2 | null>(
     null,
   );
   const draftHydratedRef = useRef(false);
@@ -222,6 +299,7 @@ export function TrProductCreateWizard({
         selectedModelId,
         photographyStyle,
         uploadType,
+        colorVariants,
       });
     }, 400);
     return () => window.clearTimeout(handle);
@@ -249,6 +327,7 @@ export function TrProductCreateWizard({
     stock,
     title,
     uploadType,
+    colorVariants,
   ]);
 
   const chartSizes = useMemo(
@@ -256,12 +335,16 @@ export function TrProductCreateWizard({
     [sizeChart, sizeStockInputs],
   );
 
-  const catalogBackground = getCatalogBackground(catalogBackgroundId);
   const modelGenerating = modelJobs.some((j) => j.status === "running");
   const photoBusy = photoJobs.some((job) => job.status === "running");
   useRegisterLeaveBusy(
     "product-create",
-    uploading || photoBusy || modelGenerating || saving,
+    uploading ||
+      photoBusy ||
+      modelGenerating ||
+      saving ||
+      colorPackshotBusyIds.length > 0 ||
+      colorTryOnBusyIds.length > 0,
   );
   const pipelineJobs = useMemo(
     () => [...photoJobs, ...modelJobs],
@@ -272,15 +355,24 @@ export function TrProductCreateWizard({
     setSizeChart(next);
     if (next === "none") {
       setSizeStockInputs({});
+      setColorVariants((current) =>
+        current.map((variant) => ({
+          ...variant,
+          sizeStockInputs: {},
+        })),
+      );
       return;
     }
-    setSizeStockInputs((current) => {
-      const nextInputs = emptyStockInputsForChart(next, "0");
-      for (const size of Object.keys(nextInputs)) {
-        if (current[size] !== undefined) nextInputs[size] = current[size]!;
-      }
-      return nextInputs;
-    });
+    setSizeStockInputs((current) => remapStockInputsForChart(next, current));
+    setColorVariants((current) =>
+      current.map((variant) => ({
+        ...variant,
+        sizeStockInputs: remapStockInputsForChart(
+          next,
+          variant.sizeStockInputs ?? {},
+        ),
+      })),
+    );
   };
 
   useEffect(() => {
@@ -299,10 +391,36 @@ export function TrProductCreateWizard({
     });
   }, [sizeChart]);
 
+  useEffect(() => {
+    setColorVariants((current) => {
+      let changed = false;
+      const next = current.map((variant) => {
+        if (variant.sizeStockInputs) return variant;
+        changed = true;
+        return {
+          ...variant,
+          sizeStockInputs: { ...sizeStockInputs },
+          stock,
+        };
+      });
+      return changed ? next : current;
+    });
+  }, [sizeStockInputs, stock, colorVariants]);
+
   const requiredSlots = requiredPhotoSlotsForUploadType(uploadType);
   const family = constructionCatalogFamily(uploadType, category);
-  const elbise = family != null;
-  const selectedUpload = getGarmentUploadType(uploadType);
+  const elbise = true;
+  const extraColorPhotos = useMemo(
+    () => colorVariants.filter(colorVariantPhotosReady),
+    [colorVariants],
+  );
+  const linkedColors = extraColorPhotos.length > 0;
+  const skuCount = 1 + extraColorPhotos.length;
+  const extraModelShotCount = describeModelPackageShots(selectedModelId, {
+    uploadType: family ?? "elbise",
+    features,
+    detailImageUrl: null,
+  });
 
   const progress = ((stepIndex + 1) / steps.length) * 100;
 
@@ -336,11 +454,21 @@ export function TrProductCreateWizard({
   };
 
   const canContinue = useMemo(() => {
-    if (step.id === "type") return Boolean(selectedUpload?.live);
     if (step.id === "photo") {
       const draftReady =
         Boolean(listingDraft?.title?.trim()) || frontDraftFailed;
-      return photoStepPhotosReady && frontAnalysisDone && draftReady;
+      const extrasReady = colorVariants.every(
+        (variant) =>
+          (!variant.frontUrl.trim() && !variant.backUrl.trim()) ||
+          colorVariantPhotosReady(variant),
+      );
+      return (
+        photoStepPhotosReady &&
+        frontAnalysisDone &&
+        draftReady &&
+        Boolean(family) &&
+        extrasReady
+      );
     }
     if (step.id === "name") return title.trim().length > 0;
     if (step.id === "price") {
@@ -354,14 +482,22 @@ export function TrProductCreateWizard({
       return true;
     }
     if (step.id === "sizes") {
-      if (sizeChart === "none") return isValidStock(stock);
-      if (
-        !chartSizes.every((size) => isValidStock(sizeStockInputs[size] ?? ""))
-      ) {
+      if (!stockInputsReady(sizeChart, chartSizes, stock, sizeStockInputs)) {
         return false;
       }
-      const parsed = parseSizeStockInputs(chartSizes, sizeStockInputs);
-      return parsed !== null && sumSizeStocks(parsed) > 0;
+      return colorVariants
+        .filter(colorVariantPhotosReady)
+        .every((variant) =>
+          stockInputsReady(
+            sizeChart,
+            sizesFromStockInputs(
+              sizeChart,
+              variant.sizeStockInputs ?? sizeStockInputs,
+            ),
+            variant.stock ?? stock,
+            variant.sizeStockInputs ?? sizeStockInputs,
+          ),
+        );
     }
     if (step.id === "model") return true;
     return true;
@@ -379,7 +515,150 @@ export function TrProductCreateWizard({
     step.id,
     stock,
     title,
-    selectedUpload,
+    family,
+    colorVariants,
+  ]);
+
+  const primaryPackshotUrl =
+    marketplaceImages[3]?.trim() || images[3]?.trim() || "";
+
+  useEffect(() => {
+    if (!elbise) {
+      if (colorVariants.length) setColorVariants([]);
+      return;
+    }
+    const chips = constructionChipsForFamily(
+      chipsFromProductFeatures(features, family),
+      family,
+      "",
+    );
+    if (!primaryPackshotUrl || !frontAnalysisDone || !family) return;
+
+    for (const variant of colorVariants) {
+      if (!colorVariantPhotosReady(variant)) continue;
+      if (variant.packshotUrl.trim()) continue;
+      const token = `${variant.id}|${variant.frontUrl}|${variant.backUrl}`;
+      if (colorPackshotStartedRef.current.has(token)) continue;
+      colorPackshotStartedRef.current.add(token);
+      colorPackshotBusyRef.current.add(variant.id);
+      setColorPackshotBusyIds([...colorPackshotBusyRef.current]);
+      const variantId = variant.id;
+      void (async () => {
+        try {
+          const result = await runColorVariantPackshot({
+            boutiqueId,
+            frontUrl: variant.frontUrl,
+            backUrl: variant.backUrl,
+            family,
+            chips,
+            promptFront: listingDraft?.promptFront,
+            title: listingDraft?.title || title,
+            category,
+            scheduleAiJob,
+          });
+          setColorVariants((current) =>
+            current.map((entry) =>
+              entry.id === variantId
+                ? {
+                    ...entry,
+                    packshotUrl: result.packshotUrl,
+                    colorName: result.colorName || entry.colorName,
+                    colorHex: result.colorHex || entry.colorHex,
+                    lifestyleImages: [],
+                  }
+                : entry,
+            ),
+          );
+        } catch (packError) {
+          colorPackshotStartedRef.current.delete(token);
+          setError(
+            packError instanceof Error
+              ? packError.message
+              : "Renk packshot oluşturulamadı.",
+          );
+        } finally {
+          colorPackshotBusyRef.current.delete(variantId);
+          setColorPackshotBusyIds([...colorPackshotBusyRef.current]);
+        }
+      })();
+    }
+  }, [
+    boutiqueId,
+    category,
+    colorVariants,
+    elbise,
+    family,
+    features,
+    frontAnalysisDone,
+    listingDraft?.promptFront,
+    listingDraft?.title,
+    primaryPackshotUrl,
+    scheduleAiJob,
+    title,
+  ]);
+
+  useEffect(() => {
+    if (!elbise || !family || !selectedModelId) return;
+    if (!lifestyleImages.some((url) => url.trim())) return;
+    const chips = constructionChipsForFamily(
+      chipsFromProductFeatures(features, family),
+      family,
+      "",
+    );
+    for (const variant of colorVariants) {
+      if (!variant.packshotUrl.trim() || !variant.backUrl.trim()) continue;
+      if (variant.lifestyleImages.length > 0) continue;
+      const token = `${variant.id}|${variant.packshotUrl}|${selectedModelId}`;
+      if (colorTryOnStartedRef.current.has(token)) continue;
+      colorTryOnStartedRef.current.add(token);
+      colorTryOnBusyRef.current.add(variant.id);
+      setColorTryOnBusyIds([...colorTryOnBusyRef.current]);
+      const variantId = variant.id;
+      void (async () => {
+        try {
+          const urls = await runColorVariantTryOn({
+            boutiqueId,
+            packshotUrl: variant.packshotUrl,
+            backMankenUrl: variant.backUrl,
+            modelId: selectedModelId,
+            family,
+            chips,
+            title: listingDraft?.title || title,
+            category,
+            scheduleAiJob,
+          });
+          setColorVariants((current) =>
+            current.map((entry) =>
+              entry.id === variantId
+                ? { ...entry, lifestyleImages: urls }
+                : entry,
+            ),
+          );
+        } catch (tryOnError) {
+          colorTryOnStartedRef.current.delete(token);
+          setError(
+            tryOnError instanceof Error
+              ? tryOnError.message
+              : "Renk model görseli üretilemedi.",
+          );
+        } finally {
+          colorTryOnBusyRef.current.delete(variantId);
+          setColorTryOnBusyIds([...colorTryOnBusyRef.current]);
+        }
+      })();
+    }
+  }, [
+    boutiqueId,
+    category,
+    colorVariants,
+    elbise,
+    family,
+    features,
+    listingDraft?.title,
+    lifestyleImages,
+    scheduleAiJob,
+    selectedModelId,
+    title,
   ]);
 
   const goNext = () => {
@@ -388,8 +667,17 @@ export function TrProductCreateWizard({
       return;
     }
     if (!canContinue) {
-      if (step.id === "type") setError("Ürün türü seçin.");
-      else if (step.id === "name") setError("Ürün adı zorunlu.");
+      if (step.id === "photo") {
+        const extrasIncomplete = colorVariants.some(
+          (variant) =>
+            (Boolean(variant.frontUrl.trim()) ||
+              Boolean(variant.backUrl.trim())) &&
+            !colorVariantPhotosReady(variant),
+        );
+        if (extrasIncomplete) {
+          setError("Ek renk için ön ve arka fotoğrafı yükleyin.");
+        }
+      } else if (step.id === "name") setError("Ürün adı zorunlu.");
       else if (step.id === "price") {
         setError(
           discountEnabled
@@ -433,11 +721,8 @@ export function TrProductCreateWizard({
     skipNextPersistRef.current = true;
     const restoredType = draft.uploadType ?? null;
     setUploadType(restoredType);
-    const restoredSteps = wizardStepsFor(restoredType);
     setStepIndex(
-      restoredType
-        ? Math.min(Math.max(0, draft.stepIndex), restoredSteps.length - 1)
-        : 0,
+      Math.min(Math.max(0, draft.stepIndex), ALL_STEPS.length - 1),
     );
     setTitle(draft.title);
     setDescription(draft.description);
@@ -463,6 +748,7 @@ export function TrProductCreateWizard({
     );
     setSelectedModelId(draft.selectedModelId);
     setPhotographyStyle(parseLilaPhotographyStyle(draft.photographyStyle));
+    setColorVariants(draft.colorVariants ?? []);
     setDraftBanner(null);
   };
 
@@ -482,12 +768,15 @@ export function TrProductCreateWizard({
       }
       const listPrice = Number(priceTry.replace(",", "."));
       if (!title.trim()) throw new Error("Başlık zorunlu.");
-      if (uploadType === "ust-giyim" && !isUstGiyimShopLeaf(category)) {
+      if (!family) {
+        throw new Error("Fotoğraf adımında türü onaylayın.");
+      }
+      if (family === "ust-giyim" && !isUstGiyimShopLeaf(category)) {
         throw new Error(
           "Üst giyim için alt kategori seçin (bluz, gömlek, tişört…).",
         );
       }
-      if (uploadType === "alt-giyim" && !isAltGiyimShopLeaf(category)) {
+      if (family === "alt-giyim" && !isAltGiyimShopLeaf(category)) {
         throw new Error(
           "Alt giyim için alt kategori seçin (etek, pantolon, eşofman).",
         );
@@ -508,30 +797,15 @@ export function TrProductCreateWizard({
 
       let stockValue: number;
       let sizeStocks: Record<string, number> = {};
-      const sizes =
-        sizeChart === "none"
-          ? []
-          : sizesFromStockInputs(sizeChart, sizeStockInputs);
-      if (sizes.length > 0) {
-        const parsed = parseSizeStockInputs(sizes, sizeStockInputs);
-        if (!parsed) {
-          throw new Error(
-            `Her beden için stok ${TR_OWNER_PRODUCT_LIMITS.stockMin}–${TR_OWNER_PRODUCT_LIMITS.stockMax} arası olmalı.`,
-          );
-        }
-        sizeStocks = parsed;
-        stockValue = sumSizeStocks(sizeStocks);
-        if (stockValue <= 0) {
-          throw new Error("En az bir bedende stok girin.");
-        }
-      } else {
-        if (!isValidStock(stock)) {
-          throw new Error(
-            `Stok ${TR_OWNER_PRODUCT_LIMITS.stockMin}–${TR_OWNER_PRODUCT_LIMITS.stockMax} arası olmalı.`,
-          );
-        }
-        stockValue = Number.parseInt(stock, 10);
-      }
+      const primaryStock = parseListingStock(
+        sizeChart,
+        stock,
+        sizeStockInputs,
+        features.color?.trim() || "Ana renk",
+      );
+      stockValue = primaryStock.stockValue;
+      sizeStocks = primaryStock.sizeStocks;
+      const sizes = primaryStock.sizes;
 
       let sellPrice = listPrice;
       let compareAtPriceTryValue: number | null = null;
@@ -547,15 +821,25 @@ export function TrProductCreateWizard({
         compareAtPriceTryValue = listPrice;
       }
 
+      const listingFeatures = selectedModelId
+        ? withLifestyleModelsAll(
+            features,
+            selectedModelId,
+            Math.max(cleanedLifestyleImages(lifestyleImages).length, 1),
+          )
+        : features;
+
       const product = await createOwnerProduct({
         boutiqueId,
         title: title.trim(),
         description: description.trim() || null,
-        features,
+        features: listingFeatures,
         priceTry: sellPrice,
         compareAtPriceTry: compareAtPriceTryValue,
         sizes,
-        colors: [],
+        colors: features.color?.trim()
+          ? [colorSwatchFromName(features.color)]
+          : [],
         category,
         images,
         marketplaceImages: alignMarketplaceSlots(images, marketplaceImages),
@@ -565,6 +849,85 @@ export function TrProductCreateWizard({
         sizeStocks,
         status: "available",
       });
+
+      const readyExtras = colorVariants.filter(
+        (variant) =>
+          colorVariantPhotosReady(variant) && variant.packshotUrl.trim(),
+      );
+      const incompleteExtras = colorVariants.filter(
+        (variant) =>
+          colorVariantPhotosReady(variant) && !variant.packshotUrl.trim(),
+      );
+      if (incompleteExtras.length > 0 || colorPackshotBusyIds.length > 0) {
+        throw new Error(
+          "Ek renk packshot’ları hâlâ hazırlanıyor. Biraz bekleyip kaydedin.",
+        );
+      }
+      if (colorTryOnBusyIds.length > 0) {
+        throw new Error(
+          "Ek renk model kareleri hâlâ hazırlanıyor. Biraz bekleyip kaydedin.",
+        );
+      }
+
+      if (elbise && family && readyExtras.length > 0) {
+        const extraProducts: TrProduct[] = [];
+        for (const extra of readyExtras) {
+          const colorName: string =
+            extra.colorName.trim() || `Renk ${extraProducts.length + 2}`;
+          let extraFeatures = featuresForColorVariant(listingFeatures, colorName);
+          const extraLifestyle = cleanedLifestyleImages(extra.lifestyleImages);
+          const extraModelId = selectedModelId || extraFeatures.aiModelId;
+          if (extraModelId) {
+            extraFeatures = withLifestyleModelsAll(
+              extraFeatures,
+              extraModelId,
+              Math.max(extraLifestyle.length, 1),
+            );
+          }
+          const extraTitle: string =
+            formatConstructionProductTitle({
+              family,
+              color: colorName,
+              length: extraFeatures.length,
+              neckline: extraFeatures.neckline,
+              fit: extraFeatures.fit,
+              hem: extraFeatures.neckHem,
+              ornament: extraFeatures.ornament,
+              category,
+            }) || colorName;
+          const extraStock = parseListingStock(
+            sizeChart,
+            extra.stock ?? stock,
+            extra.sizeStockInputs ?? sizeStockInputs,
+            colorName,
+          );
+          extraProducts.push(
+            await createOwnerProduct({
+              boutiqueId,
+              title: extraTitle,
+              description: description.trim() || null,
+              features: extraFeatures,
+              priceTry: sellPrice,
+              compareAtPriceTry: compareAtPriceTryValue,
+              sizes: extraStock.sizes,
+              colors: [colorSwatchFromName(colorName)],
+              category,
+              images: constructionImagesForVariant(extra),
+              marketplaceImages: constructionMarketplaceForVariant(extra),
+              lifestyleImages: extraLifestyle,
+              catalogBackgroundId,
+              stock: extraStock.stockValue,
+              sizeStocks: extraStock.sizeStocks,
+              status: "available",
+            }),
+          );
+        }
+        await setOwnerColorGroup({
+          boutiqueId,
+          anchorProductId: product.id,
+          productIds: [product.id, ...extraProducts.map((entry) => entry.id)],
+        });
+      }
 
       clearProductCreateDraft(boutiqueId);
       onSaved(product);
@@ -656,9 +1019,7 @@ export function TrProductCreateWizard({
           />
         </div>
         <p className="mt-3 text-[18px] text-neutral-700">
-          {step.id === "photo" && elbise
-            ? "Ön ve arka manken — detay isteğe bağlı, packshot arka planda"
-            : step.hint}
+          {step.hint}
         </p>
       </div>
 
@@ -668,43 +1029,6 @@ export function TrProductCreateWizard({
         <p className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-[16px] text-red-800">
           {error}
         </p>
-      ) : null}
-
-      {step.id === "type" ? (
-        <div className="rounded-2xl border border-[color:var(--panel-accent-border)] bg-white p-5 shadow-sm sm:p-6">
-          <p className="text-[20px] font-semibold text-neutral-900">
-            Ne yüklüyorsunuz?
-          </p>
-          <p className="mt-2 text-[15px] leading-relaxed text-neutral-600">
-            Elbise ve üst giyim için ön ve arka manken zorunlu; detay isteğe
-            bağlı. Bir ön packshot üretilir. Diğer türler yakında.
-          </p>
-          <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {GARMENT_UPLOAD_TYPES.map((entry) => {
-              const active = uploadType === entry.id;
-              return (
-                <button
-                  key={entry.id}
-                  type="button"
-                  disabled={!entry.live}
-                  onClick={() => {
-                    setUploadType(entry.id);
-                    setCategory(entry.id === "elbise" ? "elbise" : null);
-                    setError(null);
-                  }}
-                  className={`${panelChipClass(active)} inline-flex min-h-[72px] w-full flex-col items-start justify-center px-4 py-3 text-left disabled:cursor-not-allowed disabled:opacity-45`}
-                >
-                  <span className="block text-[16px] font-semibold">
-                    {entry.label}
-                  </span>
-                  <span className="mt-1 block text-[12px] font-normal text-neutral-500">
-                    {entry.live ? entry.hint : "Yakında"}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
       ) : null}
 
       {/* Photo step stays mounted (hidden) so packshot jobs survive Geri */}
@@ -717,7 +1041,6 @@ export function TrProductCreateWizard({
           boutiqueId={boutiqueId}
           images={images}
           marketplaceImages={marketplaceImages}
-          catalogBackgroundCss={elbise ? undefined : catalogBackground.css}
           title={title}
           category={category}
           uploadType={uploadType}
@@ -729,6 +1052,11 @@ export function TrProductCreateWizard({
           onMarketplaceImagesChange={setMarketplaceImages}
           onError={setError}
           onLightbox={setLightbox}
+          inferConstructionFamily
+          onUploadTypeChange={(next: ConstructionCatalogFamily) =>
+            setUploadType(next)
+          }
+          onCategoryChange={setCategory}
           onListingDraft={(draft) => {
             if (draft.features) setFeatures(draft.features);
             if (draft.title.trim()) {
@@ -736,11 +1064,21 @@ export function TrProductCreateWizard({
               setTitle(clampTitle(draft.title));
             }
             if (draft.category) setCategory(draft.category);
+            const inferred = constructionCatalogFamily(
+              null,
+              draft.category,
+            );
+            if (inferred) setUploadType(inferred);
           }}
           onFrontAnalysisComplete={({ draft }) => {
             setFrontAnalysisDone(true);
             if (draft?.features) setFeatures(draft.features);
             if (draft?.category) setCategory(draft.category);
+            const inferred = constructionCatalogFamily(
+              null,
+              draft?.category,
+            );
+            if (inferred) setUploadType(inferred);
             if (draft?.title?.trim()) {
               setListingDraft(draft);
               setTitle(clampTitle(draft.title));
@@ -753,15 +1091,26 @@ export function TrProductCreateWizard({
             setFrontAnalysisDone(false);
             setFrontDraftFailed(false);
             setListingDraft(null);
+            setUploadType(null);
+            setCategory(null);
           }}
           onPhotoJobsChange={setPhotoJobs}
           disabled={saving}
+          skipDetailSlot={colorVariants.length > 0}
         />
+        {elbise ? (
+          <TrOwnerColorVariantPhotos
+            boutiqueId={boutiqueId}
+            variants={colorVariants}
+            onChange={setColorVariants}
+            disabled={saving}
+            generatingIds={new Set(colorPackshotBusyIds)}
+            tryOnGeneratingIds={new Set(colorTryOnBusyIds)}
+          />
+        ) : null}
         {frontAnalysisDone && listingDraft?.title ? (
           <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-[14px] text-emerald-900">
-            {elbise
-              ? `${constructionGateRequiredCopy(family ?? "elbise", category)} onaylandı — packshot arka planda; “AI ile doldur” hazır.`
-              : "Ön fotoğraf tanındı — sonraki adımda “AI ile doldur” hazır."}
+            {`${constructionGateRequiredCopy(family ?? "elbise", category)} onaylandı — packshot arka planda; “AI ile doldur” hazır.`}
           </p>
         ) : null}
         {frontDraftFailed && frontAnalysisDone ? (
@@ -784,6 +1133,16 @@ export function TrProductCreateWizard({
           >
             {step.id === "name" ? (
               <div className="space-y-5">
+                {linkedColors ? (
+                  <p className="rounded-xl bg-[color:var(--panel-accent-soft)] px-4 py-3 text-[15px] text-neutral-800">
+                    {skuCount} ayrı ürün kaydedilecek
+                    {features.color?.trim()
+                      ? ` (${[features.color.trim(), ...extraColorPhotos.map((entry) => entry.colorName.trim() || "renk")].join(", ")})`
+                      : ""}
+                    . Bu isim kalıbı ve özellikler tüm renklere kopyalanır;
+                    her rengin kendi fotoğrafı ve stoğu olur.
+                  </p>
+                ) : null}
                 <TrOwnerAiFillListing
                   boutiqueId={boutiqueId}
                   sourceImageUrl={images[0]?.trim() || null}
@@ -881,12 +1240,25 @@ export function TrProductCreateWizard({
                   variant={elbise ? "dress" : "default"}
                   family={family ?? "elbise"}
                   shopCategory={category}
+                  hideColorField={linkedColors}
                 />
+                {linkedColors && features.color?.trim() ? (
+                  <p className={panelHintClass}>
+                    Ana ürün rengi fotoğraftan: {features.color.trim()}. Diğer
+                    renkler kendi fotoğraflarından yazılır.
+                  </p>
+                ) : null}
               </div>
             ) : null}
 
             {step.id === "price" ? (
               <div className="space-y-6">
+                {linkedColors ? (
+                  <p className="rounded-xl bg-[color:var(--panel-accent-soft)] px-4 py-3 text-[15px] text-neutral-800">
+                    Bu fiyat {skuCount} ürünün hepsine uygulanır. Stoklar bir
+                    sonraki adımda renk başına ayrı girilir.
+                  </p>
+                ) : null}
                 <label className="block space-y-2">
                   <span className="text-[17px] font-semibold text-neutral-800">
                     Fiyat (TL)
@@ -974,15 +1346,64 @@ export function TrProductCreateWizard({
             ) : null}
 
             {step.id === "sizes" ? (
-              <TrOwnerSizeChartStock
-                chart={sizeChart}
-                onChartChange={applySizeChart}
-                stockInputs={sizeStockInputs}
-                onStockInputsChange={setSizeStockInputs}
-                stock={stock}
-                onStockChange={setStock}
-                variant="wizard"
-              />
+              <div className="space-y-6">
+                {linkedColors ? (
+                  <p className="rounded-xl bg-[color:var(--panel-accent-soft)] px-4 py-3 text-[15px] text-neutral-800">
+                    Beden tablosu ortak; stok her renk (ayrı ürün) için ayrı.
+                  </p>
+                ) : null}
+                <TrOwnerSizeChartStock
+                  chart={sizeChart}
+                  onChartChange={applySizeChart}
+                  stockInputs={sizeStockInputs}
+                  onStockInputsChange={setSizeStockInputs}
+                  stock={stock}
+                  onStockChange={setStock}
+                  variant="wizard"
+                  heading={
+                    linkedColors
+                      ? `Ana ürün${features.color?.trim() ? ` — ${features.color.trim()}` : ""}`
+                      : undefined
+                  }
+                />
+                {extraColorPhotos.map((variant, index) => (
+                  <div
+                    key={variant.id}
+                    className="rounded-xl border border-neutral-200/80 bg-[#F7F5F1] p-4"
+                  >
+                    <TrOwnerSizeChartStock
+                      chart={sizeChart}
+                      hideChart
+                      heading={`Ürün ${index + 2}${
+                        variant.colorName.trim()
+                          ? ` — ${variant.colorName.trim()}`
+                          : ""
+                      }`}
+                      stockInputs={variant.sizeStockInputs ?? sizeStockInputs}
+                      onStockInputsChange={(next) =>
+                        setColorVariants((current) =>
+                          current.map((entry) =>
+                            entry.id === variant.id
+                              ? { ...entry, sizeStockInputs: next }
+                              : entry,
+                          ),
+                        )
+                      }
+                      stock={variant.stock ?? stock}
+                      onStockChange={(value) =>
+                        setColorVariants((current) =>
+                          current.map((entry) =>
+                            entry.id === variant.id
+                              ? { ...entry, stock: value }
+                              : entry,
+                          ),
+                        )
+                      }
+                      variant="wizard"
+                    />
+                  </div>
+                ))}
+              </div>
             ) : null}
 
             {step.id === "model" ? (
@@ -995,6 +1416,12 @@ export function TrProductCreateWizard({
                 ) : elbise && !marketplaceImages[3]?.trim() && !images[3]?.trim() ? (
                   <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[14px] text-amber-950">
                     Ön packshot bitince model çekimini başlatabilirsiniz.
+                  </p>
+                ) : null}
+                {linkedColors ? (
+                  <p className="rounded-xl bg-[color:var(--panel-accent-soft)] px-4 py-3 text-[15px] text-neutral-800">
+                    Model çekimi her renk için ayrı üretilir — {skuCount} ayrı
+                    ürün.
                   </p>
                 ) : null}
                 <TrOwnerAiCatalogEnhance
@@ -1023,6 +1450,13 @@ export function TrProductCreateWizard({
                   features={features}
                   uploadType={uploadType}
                 />
+                {linkedColors ? (
+                  <TrOwnerColorVariantProgress
+                    variants={colorVariants}
+                    packshotBusyIds={new Set(colorPackshotBusyIds)}
+                    tryOnBusyIds={new Set(colorTryOnBusyIds)}
+                  />
+                ) : null}
                 {confirmSkipModel && !modelGenerating ? (
                   <div
                     className="rounded-2xl border-2 border-amber-300 bg-amber-50 p-5"
@@ -1073,32 +1507,109 @@ export function TrProductCreateWizard({
                     disabled={saving}
                   />
                 )}
-                <TrOwnerStorePreview
-                  title={title}
-                  description={description}
-                  priceTry={displaySellPrice}
-                  compareAtPriceTry={displayListPrice}
-                  images={images}
-                  marketplaceImages={marketplaceImages}
-                  lifestyleImages={lifestyleImages}
-                  catalogBackgroundId={catalogBackgroundId}
-                  sizes={chartSizes}
-                  modelShotsPending={modelGenerating}
-                  pendingModelShotCount={describeModelPackageShots(
-                    selectedModelId,
-                    elbise
-                      ? {
-                          uploadType: family ?? "elbise",
-                          features,
-                          detailImageUrl: images[2]?.trim() || null,
-                        }
-                      : undefined,
-                  )}
-                  onModelGallery={elbise}
-                />
+                {linkedColors ? (
+                  <p className="rounded-xl bg-[color:var(--panel-accent-soft)] px-4 py-3 text-[15px] leading-relaxed text-neutral-800">
+                    {skuCount} ayrı ürün kaydedilecek. Fiyat ortak; stoklar
+                    ayrı. Mağazada “Diğer renkler” ile bağlanır.
+                  </p>
+                ) : null}
+                <section className="space-y-3">
+                  {linkedColors ? (
+                    <p className="text-[16px] font-semibold text-neutral-900">
+                      Ürün 1 / {skuCount}
+                      {features.color?.trim()
+                        ? ` — ${features.color.trim()}`
+                        : ""}
+                    </p>
+                  ) : null}
+                  <TrOwnerStorePreview
+                    title={title}
+                    description={description}
+                    priceTry={displaySellPrice}
+                    compareAtPriceTry={displayListPrice}
+                    images={images}
+                    marketplaceImages={marketplaceImages}
+                    lifestyleImages={lifestyleImages}
+                    catalogBackgroundId={catalogBackgroundId}
+                    sizes={chartSizes}
+                    modelShotsPending={modelGenerating}
+                    pendingModelShotCount={describeModelPackageShots(
+                      selectedModelId,
+                      elbise
+                        ? {
+                            uploadType: family ?? "elbise",
+                            features,
+                            detailImageUrl: images[2]?.trim() || null,
+                          }
+                        : undefined,
+                    )}
+                    onModelGallery={elbise}
+                  />
+                </section>
+                {extraColorPhotos.map((variant, index) => {
+                  const colorName =
+                    variant.colorName.trim() || `Renk ${index + 2}`;
+                  const extraTitle =
+                    family
+                      ? formatConstructionProductTitle({
+                          family,
+                          color: colorName,
+                          length: features.length,
+                          neckline: features.neckline,
+                          fit: features.fit,
+                          hem: features.neckHem,
+                          ornament: features.ornament,
+                          category,
+                        }) || colorName
+                      : colorName;
+                  const extraTryingOn = colorTryOnBusyIds.includes(variant.id);
+                  const extraPacking = colorPackshotBusyIds.includes(
+                    variant.id,
+                  );
+                  return (
+                    <section key={variant.id} className="space-y-3">
+                      <p className="text-[16px] font-semibold text-neutral-900">
+                        Ürün {index + 2} / {skuCount} — {colorName}
+                      </p>
+                      {extraPacking ? (
+                        <p className="text-[14px] text-neutral-600">
+                          Packshot üretiliyor…
+                        </p>
+                      ) : extraTryingOn ? (
+                        <p className="text-[14px] text-neutral-600">
+                          Model fotoğrafı hazırlanıyor…
+                        </p>
+                      ) : null}
+                      <TrOwnerStorePreview
+                        title={extraTitle}
+                        description={description}
+                        priceTry={displaySellPrice}
+                        compareAtPriceTry={displayListPrice}
+                        images={constructionImagesForVariant(variant)}
+                        marketplaceImages={constructionMarketplaceForVariant(
+                          variant,
+                        )}
+                        lifestyleImages={variant.lifestyleImages}
+                        catalogBackgroundId={catalogBackgroundId}
+                        sizes={sizesFromStockInputs(
+                          sizeChart,
+                          variant.sizeStockInputs ?? sizeStockInputs,
+                        )}
+                        modelShotsPending={extraTryingOn}
+                        pendingModelShotCount={extraModelShotCount}
+                        onModelGallery={elbise}
+                      />
+                    </section>
+                  );
+                })}
                 <p className="rounded-xl bg-[color:var(--panel-accent-soft)] px-4 py-3 text-[16px] text-neutral-800">
-                  Kaydettiğinizde ürün satışta görünür.
-                  {uploading || modelGenerating
+                  {linkedColors
+                    ? `Kaydettiğinizde ${skuCount} ürün satışta görünür.`
+                    : "Kaydettiğinizde ürün satışta görünür."}
+                  {uploading ||
+                  modelGenerating ||
+                  colorPackshotBusyIds.length > 0 ||
+                  colorTryOnBusyIds.length > 0
                     ? " Arka plan işleri bitmeden kaydetmeyin."
                     : ""}
                 </p>
@@ -1121,13 +1632,13 @@ export function TrProductCreateWizard({
             className={`${panelPrimaryBtnClass} flex-1 disabled:opacity-60`}
             onClick={goNext}
             disabled={
-              awaitingFrontAi || (step.id === "model" && modelGenerating)
+              awaitingFrontAi ||
+              (step.id === "model" && modelGenerating) ||
+              !canContinue
             }
           >
             {awaitingFrontAi
-              ? elbise
-                ? `${constructionGateRequiredCopy(family ?? "elbise", category)} onaylayın…`
-                : "AI ile hazırlanıyor…"
+              ? "Gemini önerisini onaylayın…"
               : step.id === "model" && modelGenerating
                 ? "Model oluşturuluyor…"
                 : "Devam"}
@@ -1138,13 +1649,24 @@ export function TrProductCreateWizard({
             type="button"
             className={`${panelPrimaryBtnClass} flex-1`}
             onClick={() => void save()}
-            disabled={saving || uploading || modelGenerating}
+            disabled={
+              saving ||
+              uploading ||
+              modelGenerating ||
+              colorPackshotBusyIds.length > 0 ||
+              colorTryOnBusyIds.length > 0
+            }
           >
             {saving
               ? "Kaydediliyor…"
-              : uploading || modelGenerating
+              : uploading ||
+                  modelGenerating ||
+                  colorPackshotBusyIds.length > 0 ||
+                  colorTryOnBusyIds.length > 0
                 ? "Görseller hazırlanıyor…"
-                : "Ürünü kaydet"}
+                : linkedColors
+                  ? `${skuCount} ürünü kaydet`
+                  : "Ürünü kaydet"}
           </button>
         ) : null}
       </div>

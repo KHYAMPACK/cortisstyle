@@ -3,6 +3,10 @@
 import type {
   ConstructionCatalogFamily,
 } from "@/lib/tr/catalog/garmentUploadTypes";
+import {
+  sanitizeColorGroupId,
+  sanitizeColorSiblingIds,
+} from "@/lib/tr/catalog/colorSiblings";
 import type {
   TrProductFeatures,
   TrTakimSetItem,
@@ -153,6 +157,34 @@ export function withLifestyleModelsAll(
   return next;
 }
 
+export function hasLifestyleModelRecord(
+  features: TrProductFeatures | null | undefined,
+): boolean {
+  return Boolean(
+    sanitizeAiModelId(features?.aiModelId) ||
+      sanitizeLifestyleModelIds(features?.lifestyleModelIds)?.some(Boolean),
+  );
+}
+
+/** Fill a sibling SKU that is missing the AI model kaydı. */
+export function withCopiedLifestyleModelRecord(
+  target: TrProductFeatures | null | undefined,
+  source: TrProductFeatures | null | undefined,
+): TrProductFeatures {
+  const next: TrProductFeatures = { ...(target ?? {}) };
+  if (hasLifestyleModelRecord(next) || !hasLifestyleModelRecord(source)) {
+    return next;
+  }
+  const lifestyleModelIds = sanitizeLifestyleModelIds(source?.lifestyleModelIds);
+  const aiModelId =
+    sanitizeAiModelId(source?.aiModelId) ||
+    lifestyleModelIds?.find((id) => id);
+  if (aiModelId) next.aiModelId = aiModelId;
+  if (lifestyleModelIds) next.lifestyleModelIds = lifestyleModelIds;
+  else if (aiModelId) next.lifestyleModelIds = [aiModelId];
+  return next;
+}
+
 export function emptyProductFeatures(): TrProductFeatures {
   return { ...EMPTY };
 }
@@ -199,6 +231,12 @@ export function sanitizeProductFeatures(
     next.uploadKind = "takim";
     const setItems = sanitizeTakimSetItems(record.setItems);
     if (setItems) next.setItems = setItems;
+  }
+  const colorGroupId = sanitizeColorGroupId(record.colorGroupId);
+  const colorSiblingIds = sanitizeColorSiblingIds(record.colorSiblingIds);
+  if (colorGroupId && colorSiblingIds) {
+    next.colorGroupId = colorGroupId;
+    next.colorSiblingIds = colorSiblingIds;
   }
   if (next.neckline && next.neckHem) {
     delete next.neckHem;

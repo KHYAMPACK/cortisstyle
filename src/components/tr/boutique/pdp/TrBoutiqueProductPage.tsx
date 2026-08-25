@@ -6,11 +6,13 @@ import type { TrProductWithBoutique } from "@/types/tr-marketplace";
 interface TrBoutiqueProductPageProps {
   product: TrProductWithBoutique;
   entry?: "cadde" | "store";
+  colorSiblings?: TrProductWithBoutique[];
 }
 
 export function TrBoutiqueProductPage({
   product,
   entry = "store",
+  colorSiblings = [],
 }: TrBoutiqueProductPageProps) {
   const branded = hasBoutiqueBrand(product.boutique);
   const layout = resolveBoutiquePdpLayout(product.boutique.slug);
@@ -23,6 +25,7 @@ export function TrBoutiqueProductPage({
           product={product}
           branded={branded}
           entry={entry}
+          colorSiblings={colorSiblings}
         />
       );
   }

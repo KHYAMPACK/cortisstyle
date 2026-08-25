@@ -29,6 +29,7 @@ import {
 } from "@/components/tr/panel/TrOwnerGuidedPhotoUpload";
 import { TrProductImageLightbox } from "@/components/tr/panel/TrProductImageLightbox";
 import { TrOwnerCategoryPicker } from "@/components/tr/panel/TrOwnerCategoryPicker";
+import { TrOwnerColorGroupLinker } from "@/components/tr/panel/TrOwnerColorGroupLinker";
 import { TrOwnerProductFeaturesFields } from "@/components/tr/panel/TrOwnerProductFeaturesFields";
 import { TR_BOUTIQUE_CATEGORIES } from "@/lib/tr/categories";
 import {
@@ -1344,6 +1345,26 @@ export function TrProductEditorForm({
           ) : null}
         </AnimatePresence>
       </section>
+
+      {mode === "edit" && initialProduct ? (
+        <section
+          className={`${panelSectionClass} ${showSection("colors") ? "" : "hidden"}`}
+        >
+          <TrOwnerColorGroupLinker
+            boutiqueId={boutiqueId}
+            product={{
+              ...initialProduct,
+              title,
+              features,
+            }}
+            onLinked={(saved) => {
+              setFeatures(saved.features ?? {});
+              lastSavedFingerprintRef.current = null;
+              onSaved(saved);
+            }}
+          />
+        </section>
+      ) : null}
 
       {error ? <p className={panelErrorClass}>{error}</p> : null}
 

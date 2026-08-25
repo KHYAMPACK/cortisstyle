@@ -109,10 +109,22 @@ export function TrOwnerBatchPhotoStep({
         frontDraftFailed: false,
         uploadType: constructionCatalogFamily(undefined, draft.category),
         gateChips: emptyElbiseGateChips(
-          proposedConstructionChipsFromDraft(draft),
+          proposedConstructionChipsFromDraft(
+            draft,
+            undefined,
+            constructionCatalogFamily(undefined, draft.category),
+            row.images[2]?.trim() || "",
+          ),
+          { hasDetailPhoto: Boolean(row.images[2]?.trim()) },
         ),
         proposedChips: emptyElbiseGateChips(
-          proposedConstructionChipsFromDraft(draft),
+          proposedConstructionChipsFromDraft(
+            draft,
+            undefined,
+            constructionCatalogFamily(undefined, draft.category),
+            row.images[2]?.trim() || "",
+          ),
+          { hasDetailPhoto: Boolean(row.images[2]?.trim()) },
         ),
         packshotError: null,
       });

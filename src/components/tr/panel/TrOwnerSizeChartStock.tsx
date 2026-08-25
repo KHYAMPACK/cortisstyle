@@ -42,7 +42,7 @@ const CHART_OPTIONS: Array<{ id: TrSizeChartId; label: string; hint: string }> =
 
 interface TrOwnerSizeChartStockProps {
   chart: TrSizeChartId;
-  onChartChange: (chart: TrSizeChartId) => void;
+  onChartChange?: (chart: TrSizeChartId) => void;
   stockInputs: Record<string, string>;
   onStockInputsChange: (next: Record<string, string>) => void;
   /** Single stock when chart is none. */
@@ -52,6 +52,9 @@ interface TrOwnerSizeChartStockProps {
   allowCustomSizes?: boolean;
   /** @deprecated Both surfaces use the large accessible UI. */
   variant?: "wizard" | "editor";
+  /** Extra colors: stock rows only — chart is shared with the primary SKU. */
+  hideChart?: boolean;
+  heading?: string;
 }
 
 function parsedStockQty(raw: string): number {
@@ -131,6 +134,8 @@ export function TrOwnerSizeChartStock({
   stock = "1",
   onStockChange,
   allowCustomSizes = false,
+  hideChart = false,
+  heading,
 }: TrOwnerSizeChartStockProps) {
   const chartSizes = displaySizesForChart(chart, stockInputs);
   const [addingSize, setAddingSize] = useState(false);
@@ -174,6 +179,7 @@ export function TrOwnerSizeChartStock({
 
   return (
     <div className="space-y-6">
+      {hideChart ? null : (
       <div className="space-y-3">
         <p className={panelLabelClass}>Beden tablosu</p>
         <p className={panelHintClass}>
@@ -188,7 +194,7 @@ export function TrOwnerSizeChartStock({
               <button
                 key={option.id}
                 type="button"
-                onClick={() => onChartChange(option.id)}
+                onClick={() => onChartChange?.(option.id)}
                 className={`rounded-xl px-4 py-4 text-left text-[16px] font-semibold transition-colors ${
                   active
                     ? "bg-[color:var(--panel-accent)] text-white hover:bg-[color:var(--panel-accent-hover)]"
@@ -208,6 +214,9 @@ export function TrOwnerSizeChartStock({
           })}
         </div>
       </div>
+      )}
+
+      {heading ? <p className={panelLabelClass}>{heading}</p> : null}
 
       {chart === "none" ? (
         onStockChange ? (

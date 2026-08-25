@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { TrBoutiqueProductPage } from "@/components/tr/boutique/pdp/TrBoutiqueProductPage";
 import { TR_PDP_FROM_CADDE } from "@/lib/tr/paths";
-import { safeGetPublicProductByBoutiqueSlugAndId } from "@/lib/tr/publicData";
+import {
+  safeGetPublicColorSiblings,
+  safeGetPublicProductByBoutiqueSlugAndId,
+} from "@/lib/tr/publicData";
 
 interface BoutiqueProductPageProps {
   params: Promise<{ boutiqueSlug: string; productId: string }>;
@@ -45,6 +48,13 @@ export default async function BoutiqueProductPage({
   }
 
   const entry = from === TR_PDP_FROM_CADDE ? "cadde" : "store";
+  const colorSiblings = await safeGetPublicColorSiblings(product);
 
-  return <TrBoutiqueProductPage product={product} entry={entry} />;
+  return (
+    <TrBoutiqueProductPage
+      product={product}
+      entry={entry}
+      colorSiblings={colorSiblings}
+    />
+  );
 }

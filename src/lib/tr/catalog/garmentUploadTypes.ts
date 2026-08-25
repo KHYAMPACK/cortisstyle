@@ -176,6 +176,28 @@ export function constructionCatalogFamily(
   return null;
 }
 
+/** Keep the shop leaf when the owner switches family only if it still belongs. */
+export function familyStillMatchesCategory(
+  family: ConstructionCatalogFamily,
+  category: string | null,
+): boolean {
+  if (isTakimShopLeaf(category)) return false;
+  if (family === "elbise") return true;
+  if (family === "ust-giyim") return isUstGiyimShopLeaf(category);
+  return isAltGiyimShopLeaf(category);
+}
+
+/** Family plus shop leaf (etek / bluz…) required before packshot. */
+export function constructionFamilyLeafReady(
+  family: ConstructionCatalogFamily | null,
+  shopCategory: string | null,
+): boolean {
+  if (!family) return false;
+  if (family === "elbise") return true;
+  if (family === "ust-giyim") return isUstGiyimShopLeaf(shopCategory);
+  return isAltGiyimShopLeaf(shopCategory);
+}
+
 /** Persist a shop leaf — never parent `ust-giyim` / `alt-giyim`, never `takim`. */
 export function parseConstructionShopCategory(
   raw: unknown,

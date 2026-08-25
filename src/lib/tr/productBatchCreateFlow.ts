@@ -3,6 +3,7 @@ import type { ProductBatchCreateRow } from "@/lib/tr/productBatchCreateDraft";
 import {
   altGiyimUsesPaca,
   constructionCatalogFamily,
+  constructionFamilyLeafReady,
   ELBISE_PACKSHOT_SLOT,
   type ConstructionCatalogFamily,
 } from "@/lib/tr/catalog/garmentUploadTypes";
@@ -155,6 +156,7 @@ export function batchRowChipsReady(row: ProductBatchCreateRow): boolean {
   const family = batchRowFamily(row);
   const chips = row.gateChips;
   if (!family || !chips) return false;
+  if (!constructionFamilyLeafReady(family, row.category)) return false;
   if (family === "alt-giyim") {
     const base = Boolean(
       chips.length.trim() && chips.rise.trim() && chips.fit.trim(),

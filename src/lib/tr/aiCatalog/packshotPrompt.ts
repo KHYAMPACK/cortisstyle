@@ -24,7 +24,10 @@ export const PACKSHOT_VIEW_PROMPT: Record<"front" | "back", string> = {
 const OTHER_PACKSHOT_STYLE =
   /(?<!\bno\s)\b(on[- ]?hanger|on a hanger|clothes hangers?|askı|dress form|visible mannequin|flat[- ]lay|floating garment|on mannequin)\b/i;
 
-/** Drop Gemini extras that would switch FASHN off the locked presentation. */
+/**
+ * Drop Gemini extras that would switch FASHN off the locked presentation.
+ * Also strips a restated construction base so the prompt is not duplicated.
+ */
 export function sanitizePackshotPromptExtra(
   extra: string | null | undefined,
   family: ConstructionCatalogFamily = "elbise",
@@ -32,11 +35,40 @@ export function sanitizePackshotPromptExtra(
   const trimmed = extra?.trim();
   if (!trimmed) return null;
   if (isFlatLayPackshotFamily(family)) {
-    return stripConflictingFlatLayPresentation(trimmed) || null;
+    return (
+      stripRepeatedPackshotBase(
+        stripConflictingFlatLayPresentation(trimmed),
+        family,
+      ) || null
+    );
   }
   const withoutGhost = trimmed.replace(/\bghost mannequin\b/gi, "");
   if (OTHER_PACKSHOT_STYLE.test(withoutGhost)) return null;
-  return stripConflictingPackshotPresentation(trimmed) || null;
+  return (
+    stripRepeatedPackshotBase(
+      stripConflictingPackshotPresentation(trimmed),
+      family,
+    ) || null
+  );
+}
+
+/** Remove the stitched construction base if Gemini echoed it in promptFront. */
+export function stripRepeatedPackshotBase(
+  extra: string,
+  family: ConstructionCatalogFamily,
+): string {
+  const base = constructionPackshotBasePrompt(family).trim();
+  let next = extra.trim();
+  if (!next) return "";
+  const chunks = [
+    base,
+    ...base.split(/(?<=\.)\s+/).map((part) => part.trim()),
+  ].filter((chunk) => chunk.length >= 24);
+  for (const chunk of chunks) {
+    const escaped = chunk.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    next = next.replace(new RegExp(escaped, "gi"), " ");
+  }
+  return next.replace(/\s+/g, " ").trim();
 }
 
 /**
@@ -76,11 +108,16 @@ export function buildElbisePackshotPrompt(
   extra?: string | null,
   construction?: ElbiseConstructionChips | null,
   family: ConstructionCatalogFamily = "elbise",
+  detailImageUrl?: string | null,
 ): string {
   const parts = [constructionPackshotBasePrompt(family)];
   const cleaned = sanitizePackshotPromptExtra(extra, family);
-  if (cleaned) parts.push(cleaned);
-  const lock = buildElbiseConstructionLock(construction, family);
+  if (cleaned && cleaned.length >= 80) parts.push(cleaned);
+  const lock = buildElbiseConstructionLock(
+    construction,
+    family,
+    detailImageUrl,
+  );
   if (lock) parts.push(lock);
   return finalizePackshotPrompt(parts.join(" "));
 }
