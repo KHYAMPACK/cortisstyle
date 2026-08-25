@@ -1,6 +1,9 @@
 import { generateOwnerPackshot } from "@/lib/tr/aiCatalog/generatePackshot";
 import { sanitizeListingDraft } from "@/lib/tr/aiCatalog/listingDraft";
-import { isElbiseUpload } from "@/lib/tr/catalog/garmentUploadTypes";
+import {
+  constructionCatalogFamily,
+  isConstructionCatalogUpload,
+} from "@/lib/tr/catalog/garmentUploadTypes";
 import { getBoutiqueByIdAdmin } from "@/lib/tr/boutiques";
 import {
   requireOwnedBoutique,
@@ -84,17 +87,26 @@ export async function POST(request: Request) {
     promptExtra: body.promptExtra,
     prompt: body.prompt,
     listingDraft: body.listingDraft
-      ? sanitizeListingDraft({
-          title: body.listingDraft.title,
-          description: body.listingDraft.description,
-          features: body.listingDraft.features,
-          category: body.listingDraft.category,
-          promptFront: body.listingDraft.promptFront,
-        })
+      ? sanitizeListingDraft(
+          {
+            title: body.listingDraft.title,
+            description: body.listingDraft.description,
+            features: body.listingDraft.features,
+            category: body.listingDraft.category,
+            promptFront: body.listingDraft.promptFront,
+          },
+          {
+            family: constructionCatalogFamily(
+              body.uploadType,
+              body.listingDraft.category ?? body.category,
+            ),
+          },
+        )
       : null,
     numImages: body.numImages,
     skipPhotoroom:
-      Boolean(body.skipPhotoroom) || isElbiseUpload(body.uploadType),
+      Boolean(body.skipPhotoroom) ||
+      isConstructionCatalogUpload(body.uploadType),
   });
 
   return Response.json({

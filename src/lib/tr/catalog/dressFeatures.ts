@@ -1,10 +1,18 @@
-/** Structured elbise PDP chips — Gemini suggests ids, we store Turkish labels. */
+import {
+  altGiyimUsesPaca,
+  type ConstructionCatalogFamily,
+} from "@/lib/tr/catalog/garmentUploadTypes";
+
+/** Structured elbise / üst giyim PDP chips — Gemini suggests ids, we store Turkish labels. */
 
 export type DressFeatureKey =
   | "neckline"
   | "sleeves"
+  | "fit"
   | "length"
   | "decollete"
+  | "rise"
+  | "hem"
   | "fabric"
   | "zipper"
   | "stretch"
@@ -25,6 +33,87 @@ export interface DressFeatureGroup {
   /** Owner can leave empty / Gemini omits when not visible. */
   optional?: boolean;
 }
+
+export const DRESS_LENGTH_OPTIONS: DressFeatureOption[] = [
+  { id: "mikro", label: "Mikro" },
+  { id: "mini", label: "Mini" },
+  { id: "diz-ustu", label: "Diz üstü" },
+  { id: "diz-boyu", label: "Diz boyu" },
+  { id: "midi", label: "Midi" },
+  { id: "maxi", label: "Maxi" },
+  { id: "asimetrik", label: "Asimetrik" },
+];
+
+/** Same `features.length` key — tops never show midi/maxi. */
+export const TOP_LENGTH_OPTIONS: DressFeatureOption[] = [
+  { id: "crop", label: "Crop" },
+  { id: "normal", label: "Normal" },
+  { id: "uzun", label: "Uzun" },
+  { id: "tunik", label: "Tunik boy" },
+];
+
+/** Same `features.fit` key generic uploads already use. Tops only. */
+export const TOP_FIT_OPTIONS: DressFeatureOption[] = [
+  { id: "slim", label: "Slim" },
+  { id: "regular", label: "Regular" },
+  { id: "rahat", label: "Rahat" },
+  { id: "oversize", label: "Oversize" },
+];
+
+const TOP_FIT_GROUP: DressFeatureGroup = {
+  key: "fit",
+  label: "Kalıp",
+  options: TOP_FIT_OPTIONS,
+};
+
+/** Same `features.length` key — pants never show midi/maxi. */
+export const BOTTOM_LENGTH_OPTIONS: DressFeatureOption[] = [
+  { id: "kisa", label: "Kısa" },
+  { id: "normal", label: "Normal" },
+  { id: "uzun", label: "Uzun" },
+];
+
+/** Same `features.fit` key. Bottoms use Wide instead of Oversize. */
+export const BOTTOM_FIT_OPTIONS: DressFeatureOption[] = [
+  { id: "slim", label: "Slim" },
+  { id: "regular", label: "Regular" },
+  { id: "rahat", label: "Rahat" },
+  { id: "wide", label: "Wide" },
+];
+
+const BOTTOM_FIT_GROUP: DressFeatureGroup = {
+  key: "fit",
+  label: "Kalıp",
+  options: BOTTOM_FIT_OPTIONS,
+};
+
+export const BOTTOM_RISE_OPTIONS: DressFeatureOption[] = [
+  { id: "yuksek", label: "Yüksek bel" },
+  { id: "normal", label: "Normal bel" },
+  { id: "dusuk", label: "Düşük bel" },
+];
+
+const BOTTOM_RISE_GROUP: DressFeatureGroup = {
+  key: "rise",
+  label: "Bel",
+  options: BOTTOM_RISE_OPTIONS,
+};
+
+/** Stored on `features.neckHem`. */
+export const BOTTOM_HEM_OPTIONS: DressFeatureOption[] = [
+  { id: "dar", label: "Dar" },
+  { id: "duz", label: "Düz" },
+  { id: "bol", label: "Bol" },
+  { id: "ispanyol", label: "İspanyol" },
+  { id: "lastikli", label: "Lastikli" },
+  { id: "katlamali", label: "Katlamalı" },
+];
+
+const BOTTOM_HEM_GROUP: DressFeatureGroup = {
+  key: "hem",
+  label: "Paça",
+  options: BOTTOM_HEM_OPTIONS,
+};
 
 export const DRESS_FEATURE_GROUPS: DressFeatureGroup[] = [
   {
@@ -59,15 +148,7 @@ export const DRESS_FEATURE_GROUPS: DressFeatureGroup[] = [
   {
     key: "length",
     label: "Boy",
-    options: [
-      { id: "mikro", label: "Mikro" },
-      { id: "mini", label: "Mini" },
-      { id: "diz-ustu", label: "Diz üstü" },
-      { id: "diz-boyu", label: "Diz boyu" },
-      { id: "midi", label: "Midi" },
-      { id: "maxi", label: "Maxi" },
-      { id: "asimetrik", label: "Asimetrik" },
-    ],
+    options: DRESS_LENGTH_OPTIONS,
   },
   {
     key: "decollete",
@@ -132,14 +213,64 @@ export const DRESS_FEATURE_GROUPS: DressFeatureGroup[] = [
   },
 ];
 
+const LENGTH_ALIASES: Record<string, string> = {
+  "bel üstü": "crop",
+  "crop (bel üstü)": "crop",
+  "bel / kalça üstü": "normal",
+  "kalça üstü": "normal",
+  longline: "uzun",
+  "uzun / longline": "uzun",
+  "tunik boy": "tunik",
+  "üst uyluk": "tunik",
+};
+
 const OPTION_BY_KEY = new Map<DressFeatureKey, Map<string, DressFeatureOption>>();
-for (const group of DRESS_FEATURE_GROUPS) {
+for (const group of [
+  ...DRESS_FEATURE_GROUPS,
+  TOP_FIT_GROUP,
+  BOTTOM_FIT_GROUP,
+  BOTTOM_RISE_GROUP,
+  BOTTOM_HEM_GROUP,
+]) {
   const map = new Map<string, DressFeatureOption>();
-  for (const option of group.options) {
+  const options =
+    group.key === "length"
+      ? [...DRESS_LENGTH_OPTIONS, ...TOP_LENGTH_OPTIONS, ...BOTTOM_LENGTH_OPTIONS]
+      : group.key === "fit"
+        ? [...TOP_FIT_OPTIONS, ...BOTTOM_FIT_OPTIONS]
+        : group.options;
+  for (const option of options) {
     map.set(option.id, option);
     map.set(option.label.toLocaleLowerCase("tr"), option);
   }
   OPTION_BY_KEY.set(group.key, map);
+}
+
+const lengthMap = OPTION_BY_KEY.get("length");
+if (lengthMap) {
+  for (const [alias, id] of Object.entries(LENGTH_ALIASES)) {
+    const option = lengthMap.get(id);
+    if (option) lengthMap.set(alias, option);
+  }
+}
+
+const FIT_ALIASES: Record<string, string> = {
+  fitted: "slim",
+  "vücuda oturan": "slim",
+  "vucuda oturan": "slim",
+  "regular fit": "regular",
+  relaxed: "rahat",
+  oversized: "oversize",
+  "geniş": "wide",
+  "wide leg": "wide",
+};
+
+const fitMap = OPTION_BY_KEY.get("fit");
+if (fitMap) {
+  for (const [alias, id] of Object.entries(FIT_ALIASES)) {
+    const option = fitMap.get(id);
+    if (option) fitMap.set(alias, option);
+  }
 }
 
 export function dressFeatureLabel(
@@ -161,8 +292,57 @@ export function resolveDressFeatureValue(
   return dressFeatureLabel(key, raw) ?? "";
 }
 
-export function dressGeminiEnumHint(): string {
-  return DRESS_FEATURE_GROUPS.map((group) => {
+export function getConstructionFeatureGroups(
+  family: ConstructionCatalogFamily = "elbise",
+  category?: string | null,
+): DressFeatureGroup[] {
+  if (family === "alt-giyim") {
+    const extras = DRESS_FEATURE_GROUPS.filter(
+      (group) =>
+        group.key === "fabric" ||
+        group.key === "zipper" ||
+        group.key === "stretch",
+    );
+    return [
+      {
+        key: "length",
+        label: "Boy",
+        options: altGiyimUsesPaca(category)
+          ? BOTTOM_LENGTH_OPTIONS
+          : DRESS_LENGTH_OPTIONS,
+      },
+      BOTTOM_RISE_GROUP,
+      BOTTOM_FIT_GROUP,
+      ...(altGiyimUsesPaca(category) ? [BOTTOM_HEM_GROUP] : []),
+      ...extras,
+    ];
+  }
+  const groups: DressFeatureGroup[] = [];
+  for (const group of DRESS_FEATURE_GROUPS) {
+    if (group.key === "length") {
+      groups.push({
+        ...group,
+        options:
+          family === "ust-giyim" ? TOP_LENGTH_OPTIONS : DRESS_LENGTH_OPTIONS,
+      });
+      continue;
+    }
+    if (group.key === "sleeves") {
+      groups.push(group);
+      if (family === "ust-giyim") groups.push(TOP_FIT_GROUP);
+      continue;
+    }
+    if (group.key === "silhouette" && family === "ust-giyim") continue;
+    groups.push(group);
+  }
+  return groups;
+}
+
+export function dressGeminiEnumHint(
+  family: ConstructionCatalogFamily = "elbise",
+  category?: string | null,
+): string {
+  return getConstructionFeatureGroups(family, category).map((group) => {
     const ids = group.options.map((option) => option.id).join(" | ");
     const omit = group.optional ? " (omit if not visible)" : "";
     return `- ${group.key}: ${ids}${omit}`;
@@ -173,6 +353,18 @@ export function getDressFeatureGroup(
   key: DressFeatureKey,
 ): DressFeatureGroup | null {
   return DRESS_FEATURE_GROUPS.find((group) => group.key === key) ?? null;
+}
+
+export function getConstructionGateGroup(
+  key: DressFeatureKey,
+  family: ConstructionCatalogFamily = "elbise",
+  category?: string | null,
+): DressFeatureGroup | null {
+  return (
+    getConstructionFeatureGroups(family, category).find(
+      (group) => group.key === key,
+    ) ?? null
+  );
 }
 
 /** Chip id from Gemini id or stored Turkish label. */
@@ -188,9 +380,18 @@ export function dressFeatureOptionId(
   return option?.id ?? null;
 }
 
-/** Boy / yaka / kol / detay shown before FASHN. */
+export type ConstructionGateKey =
+  | "length"
+  | "neckline"
+  | "sleeves"
+  | "fit"
+  | "decollete"
+  | "rise"
+  | "hem";
+
+/** Boy / yaka / kol / detay shown before FASHN. Tops also require Kalıp. */
 export const DRESS_PACKSHOT_GATE_GROUPS: Array<{
-  key: "length" | "neckline" | "sleeves" | "decollete";
+  key: ConstructionGateKey;
   label: string;
   required: boolean;
 }> = [
@@ -199,6 +400,55 @@ export const DRESS_PACKSHOT_GATE_GROUPS: Array<{
   { key: "sleeves", label: "Kol", required: true },
   { key: "decollete", label: "Detay", required: false },
 ];
+
+export function getConstructionPackshotGateGroups(
+  family: ConstructionCatalogFamily = "elbise",
+  category?: string | null,
+): Array<{
+  key: ConstructionGateKey;
+  label: string;
+  required: boolean;
+}> {
+  if (family === "alt-giyim") {
+    const groups: Array<{
+      key: ConstructionGateKey;
+      label: string;
+      required: boolean;
+    }> = [
+      { key: "length", label: "Boy", required: true },
+      { key: "rise", label: "Bel", required: true },
+      { key: "fit", label: "Kalıp", required: true },
+    ];
+    if (altGiyimUsesPaca(category)) {
+      groups.push({ key: "hem", label: "Paça", required: true });
+    }
+    return groups;
+  }
+  if (family === "ust-giyim") {
+    return [
+      { key: "length", label: "Boy", required: true },
+      { key: "neckline", label: "Yaka", required: true },
+      { key: "sleeves", label: "Kol", required: true },
+      { key: "fit", label: "Kalıp", required: true },
+      { key: "decollete", label: "Detay", required: false },
+    ];
+  }
+  return DRESS_PACKSHOT_GATE_GROUPS;
+}
+
+/** Owner-facing required-chip list for gate copy. */
+export function constructionGateRequiredCopy(
+  family: ConstructionCatalogFamily,
+  category?: string | null,
+): string {
+  if (family === "alt-giyim") {
+    return altGiyimUsesPaca(category)
+      ? "Boy, bel, kalıp ve paça"
+      : "Boy, bel ve kalıp";
+  }
+  if (family === "ust-giyim") return "Boy, yaka, kol ve kalıp";
+  return "Boy, yaka ve kol";
+}
 
 const SLEEVELESS_NECKLINE_IDS = new Set([
   "straplez",

@@ -69,7 +69,7 @@ src/
 | Owner panel UI | `components/tr/panel/` |
 | Checkout/orders logic | `lib/tr/commerce/` |
 | Boutique catalog queries | `lib/tr/catalog/` |
-| Boutique PDP size charts / care / features | `lib/tr/catalog/sizeCharts.ts`, `careInstructions.ts`, `productFeatures.ts`, `pdpReturns.ts` |
+| Boutique PDP size charts / care / features | `lib/tr/catalog/sizeCharts.ts`, `modelMeasurements.ts`, `careInstructions.ts`, `productFeatures.ts`, `pdpReturns.ts` |
 | Owner auth / panel APIs helpers | `lib/tr/panel/` |
 | Boutique shipping (Lila BK, others stub) | `lib/tr/shipping/` (flat 120 TL + 140 TL auto-buy cap; gated address retry) |
 | Boutique card pay (Lila iyzico) | `lib/tr/payments/` (`TR_LILABUTIK_IYZICO_*`; callback `/api/tr/checkout/iyzico/callback`) |

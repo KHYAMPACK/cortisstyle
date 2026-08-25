@@ -1,6 +1,6 @@
 import {
   DEFAULT_PACKSHOT_PROMPT,
-  ELBISE_PACKSHOT_PROMPT,
+  constructionPackshotBasePrompt,
   finalizePackshotPrompt,
   stripConflictingPackshotPresentation,
 } from "@/lib/tr/fashn/packshot";
@@ -8,6 +8,7 @@ import {
   buildElbiseConstructionLock,
   type ElbiseConstructionChips,
 } from "@/lib/tr/aiCatalog/elbiseConstructionLock";
+import type { ConstructionCatalogFamily } from "@/lib/tr/catalog/garmentUploadTypes";
 import type { TrProductPhotoRole } from "@/lib/tr/ownerProductConstraints";
 
 export type PackshotView = TrProductPhotoRole;
@@ -21,12 +22,20 @@ export const PACKSHOT_VIEW_PROMPT: Record<"front" | "back", string> = {
 const OTHER_PACKSHOT_STYLE =
   /\b(on[- ]?hanger|hangers?|askı|dress form|visible mannequin|flat[- ]lay|floating garment|on mannequin)\b/i;
 
-/** Drop Gemini extras that would switch FASHN off ghost mannequin. */
+const OTHER_FLAT_LAY_STYLE =
+  /\b(on[- ]?hanger|hangers?|askı|dress form|visible mannequin|ghost mannequin|on mannequin)\b/i;
+
+/** Drop Gemini extras that would switch FASHN off the locked presentation. */
 export function sanitizePackshotPromptExtra(
   extra: string | null | undefined,
+  family: ConstructionCatalogFamily = "elbise",
 ): string | null {
   const trimmed = extra?.trim();
   if (!trimmed) return null;
+  if (family === "alt-giyim") {
+    if (OTHER_FLAT_LAY_STYLE.test(trimmed)) return null;
+    return trimmed.replace(/\s+/g, " ").trim() || null;
+  }
   const withoutGhost = trimmed.replace(/\bghost mannequin\b/gi, "");
   if (OTHER_PACKSHOT_STYLE.test(withoutGhost)) return null;
   return stripConflictingPackshotPresentation(trimmed) || null;
@@ -68,9 +77,10 @@ export function buildPackshotPrompt(input?: {
 export function buildElbisePackshotPrompt(
   extra?: string | null,
   construction?: ElbiseConstructionChips | null,
+  family: ConstructionCatalogFamily = "elbise",
 ): string {
-  const parts = [ELBISE_PACKSHOT_PROMPT];
-  const cleaned = sanitizePackshotPromptExtra(extra);
+  const parts = [constructionPackshotBasePrompt(family)];
+  const cleaned = sanitizePackshotPromptExtra(extra, family);
   if (cleaned) parts.push(cleaned);
   const lock = buildElbiseConstructionLock(construction);
   if (lock) parts.push(lock);

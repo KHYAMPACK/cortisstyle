@@ -31,10 +31,14 @@ import type { PipelineJobItem } from "@/lib/tr/aiCatalog/pipelineProgress";
 import {
   describeModelPackageShots,
 } from "@/lib/tr/aiCatalog/uploadCostHints";
+import { constructionGateRequiredCopy } from "@/lib/tr/catalog/dressFeatures";
 import {
   GARMENT_UPLOAD_TYPES,
+  constructionCatalogFamily,
   getGarmentUploadType,
+  isAltGiyimShopLeaf,
   isElbiseUpload,
+  isUstGiyimShopLeaf,
   requiredPhotoSlotsForUploadType,
 } from "@/lib/tr/catalog/garmentUploadTypes";
 import {
@@ -293,7 +297,8 @@ export function TrProductCreateWizard({
   }, [sizeChart]);
 
   const requiredSlots = requiredPhotoSlotsForUploadType(uploadType);
-  const elbise = isElbiseUpload(uploadType);
+  const family = constructionCatalogFamily(uploadType, category);
+  const elbise = family != null;
   const selectedUpload = getGarmentUploadType(uploadType);
 
   const progress = ((stepIndex + 1) / steps.length) * 100;
@@ -474,6 +479,16 @@ export function TrProductCreateWizard({
       }
       const listPrice = Number(priceTry.replace(",", "."));
       if (!title.trim()) throw new Error("Başlık zorunlu.");
+      if (uploadType === "ust-giyim" && !isUstGiyimShopLeaf(category)) {
+        throw new Error(
+          "Üst giyim için alt kategori seçin (bluz, gömlek, tişört…).",
+        );
+      }
+      if (uploadType === "alt-giyim" && !isAltGiyimShopLeaf(category)) {
+        throw new Error(
+          "Alt giyim için alt kategori seçin (etek, pantolon, eşofman).",
+        );
+      }
       if (!hasRequiredProductPhotos(images, requiredSlots)) {
         throw new Error(
           uploading
@@ -658,8 +673,8 @@ export function TrProductCreateWizard({
             Ne yüklüyorsunuz?
           </p>
           <p className="mt-2 text-[15px] leading-relaxed text-neutral-600">
-            Elbise için ön ve arka manken zorunlu; dekolte / detay isteğe bağlı.
-            Bir ön packshot üretilir. Diğer türler yakında.
+            Elbise ve üst giyim için ön ve arka manken zorunlu; detay isteğe
+            bağlı. Bir ön packshot üretilir. Diğer türler yakında.
           </p>
           <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
             {GARMENT_UPLOAD_TYPES.map((entry) => {
@@ -711,13 +726,19 @@ export function TrProductCreateWizard({
           onLightbox={setLightbox}
           onListingDraft={(draft) => {
             if (draft.features) setFeatures(draft.features);
-            if (draft.title.trim()) setListingDraft(draft);
+            if (draft.title.trim()) {
+              setListingDraft(draft);
+              setTitle(clampTitle(draft.title));
+            }
+            if (draft.category) setCategory(draft.category);
           }}
           onFrontAnalysisComplete={({ draft }) => {
             setFrontAnalysisDone(true);
             if (draft?.features) setFeatures(draft.features);
+            if (draft?.category) setCategory(draft.category);
             if (draft?.title?.trim()) {
               setListingDraft(draft);
+              setTitle(clampTitle(draft.title));
               setFrontDraftFailed(false);
             } else {
               setFrontDraftFailed(true);
@@ -734,7 +755,7 @@ export function TrProductCreateWizard({
         {frontAnalysisDone && listingDraft?.title ? (
           <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-[14px] text-emerald-900">
             {elbise
-              ? "Boy, yaka ve kol onaylandı — packshot arka planda; “AI ile doldur” hazır."
+              ? `${constructionGateRequiredCopy(family ?? "elbise", category)} onaylandı — packshot arka planda; “AI ile doldur” hazır.`
               : "Ön fotoğraf tanındı — sonraki adımda “AI ile doldur” hazır."}
           </p>
         ) : null}
@@ -826,6 +847,8 @@ export function TrProductCreateWizard({
                   disabled={saving}
                   fieldClass={panelFieldClass}
                   variant={elbise ? "dress" : "default"}
+                  family={family ?? "elbise"}
+                  shopCategory={category}
                 />
               </div>
             ) : null}
@@ -920,7 +943,7 @@ export function TrProductCreateWizard({
                   <p className="text-[17px] font-semibold text-neutral-800">
                     Kategori
                   </p>
-                  {elbise ? (
+                  {isElbiseUpload(uploadType) ? (
                     <p className="rounded-xl bg-[color:var(--panel-accent-soft)] px-4 py-3 text-[15px] text-neutral-800">
                       Elbise — tür adımında kilitlendi.
                     </p>
@@ -930,6 +953,18 @@ export function TrProductCreateWizard({
                       onChange={setCategory}
                     />
                   )}
+                  {family === "ust-giyim" ? (
+                    <p className="text-[13px] text-neutral-500">
+                      AI bir alt kategori önerir (bluz, gömlek…). Gerekirse
+                      düzeltin — üst giyim olarak bırakmayın.
+                    </p>
+                  ) : null}
+                  {family === "alt-giyim" ? (
+                    <p className="text-[13px] text-neutral-500">
+                      AI bir alt kategori önerir (etek, pantolon, eşofman).
+                      Gerekirse düzeltin — alt giyim olarak bırakmayın.
+                    </p>
+                  ) : null}
                 </div>
               </div>
             ) : null}
@@ -1049,7 +1084,7 @@ export function TrProductCreateWizard({
                     selectedModelId,
                     elbise
                       ? {
-                          uploadType: "elbise",
+                          uploadType: family ?? "elbise",
                           features,
                           detailImageUrl: images[2]?.trim() || null,
                         }
@@ -1086,7 +1121,7 @@ export function TrProductCreateWizard({
           >
             {awaitingFrontAi
               ? elbise
-                ? "Boy, yaka ve kol onaylayın…"
+                ? `${constructionGateRequiredCopy(family ?? "elbise", category)} onaylayın…`
                 : "AI ile hazırlanıyor…"
               : step.id === "model" && modelGenerating
                 ? "Model oluşturuluyor…"

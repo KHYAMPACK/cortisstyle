@@ -15,6 +15,7 @@ import {
   dressFeatureOptionId,
   resolveDressFeatureValue,
 } from "@/lib/tr/catalog/dressFeatures";
+import type { ConstructionCatalogFamily } from "@/lib/tr/catalog/garmentUploadTypes";
 
 export type { ElbiseConstructionChips };
 
@@ -32,13 +33,23 @@ export function hasElbiseDetay(
   return dressFeatureOptionId("decollete", value) !== "yok";
 }
 
+function wantsDetailShot(
+  chips: ElbiseConstructionChips | null | undefined,
+  family: ConstructionCatalogFamily | null | undefined,
+  detailImageUrl?: string | null,
+): boolean {
+  if (!detailImageUrl?.trim()) return false;
+  if (family === "alt-giyim") return true;
+  return hasElbiseDetay(chips);
+}
+
 export function elbiseModelShotCount(
   chips: ElbiseConstructionChips | null | undefined,
   modelId?: string | null,
   detailImageUrl?: string | null,
+  family?: ConstructionCatalogFamily | null,
 ): 1 | 2 | 3 {
-  const detail =
-    hasElbiseDetay(chips) && Boolean(detailImageUrl?.trim());
+  const detail = wantsDetailShot(chips, family, detailImageUrl);
   if (modelId?.trim()) {
     const plates = getElbiseTryOnPlates(modelId);
     if (plates && !plates.back) {
@@ -72,6 +83,9 @@ export function chipsFromProductFeatures(
         length?: string | null;
         decollete?: string | null;
         sleeves?: string | null;
+        fit?: string | null;
+        rise?: string | null;
+        neckHem?: string | null;
       }
     | null
     | undefined,
@@ -79,8 +93,11 @@ export function chipsFromProductFeatures(
   return {
     neckline: features?.neckline ?? null,
     sleeves: features?.sleeves ?? null,
+    fit: features?.fit ?? null,
     length: features?.length ?? null,
     decollete: features?.decollete ?? null,
+    rise: features?.rise ?? null,
+    hem: features?.neckHem ?? null,
   };
 }
 
@@ -101,6 +118,7 @@ export interface BuildElbiseTryOnShotsInput {
   backMankenUrl: string;
   detailMankenUrl?: string | null;
   chips?: ElbiseConstructionChips | null;
+  family?: ConstructionCatalogFamily | null;
 }
 
 export interface BuildElbiseTryOnShotsResult {
@@ -140,7 +158,11 @@ export function buildElbiseTryOnShots(
 
   const backManken = input.backMankenUrl.trim();
   const detailManken = input.detailMankenUrl?.trim() || "";
-  const wantDetail = hasElbiseDetay(chips) && Boolean(detailManken);
+  const wantDetail = wantsDetailShot(
+    chips,
+    input.family,
+    detailManken,
+  );
 
   const shots: TrAiModelGenerateShot[] = [
     shot(

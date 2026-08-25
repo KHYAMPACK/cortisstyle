@@ -5,6 +5,8 @@ import { X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
+  constructionGateErrorCopy,
+  constructionGateRequiredCopy,
   emptyElbiseGateChips,
   elbiseGateReady,
   TrOwnerElbiseConstructionGateFields,
@@ -41,6 +43,7 @@ import {
   getAiModelOptionById,
   resolveReadyAiModelId,
 } from "@/lib/tr/aiModel/registry";
+import { constructionCatalogFamily } from "@/lib/tr/catalog/garmentUploadTypes";
 import { getPanelProductCover } from "@/lib/tr/productImages";
 import type { TrProduct } from "@/types/tr-marketplace";
 
@@ -116,9 +119,9 @@ export function TrOwnerElbiseRestyleQueue({
   const [results, setResults] = useState<ItemResult[]>([]);
 
   const busy = stage === "prepare" || stage === "run";
-  useRegisterLeaveBusy("elbise-restyle-queue", busy, {
-    blockPanelNav: false,
-  });
+  const leaveBusy =
+    busy || stage === "gate" || stage === "itemError";
+  useRegisterLeaveBusy("elbise-restyle-queue", leaveBusy);
 
   useEffect(() => {
     setPortalReady(true);
@@ -309,8 +312,10 @@ export function TrOwnerElbiseRestyleQueue({
     const commitModelId =
       lockedModelIdRef.current ?? runModelId ?? modelId;
     if (!current || !prepare || !commitModelId) return;
-    if (!elbiseGateReady(chips)) {
-      setItemError("Boy, yaka ve kol seçin.");
+    const family =
+      constructionCatalogFamily(undefined, current.category) ?? "elbise";
+    if (!elbiseGateReady(chips, family, current.category)) {
+      setItemError(constructionGateErrorCopy(family, current.category));
       return;
     }
     setItemError(null);
@@ -453,7 +458,7 @@ export function TrOwnerElbiseRestyleQueue({
                     onClick={selectToday}
                     disabled={todayCount === 0}
                   >
-                    Bugünün elbiseleri ({todayCount})
+                    Bugünün ürünleri ({todayCount})
                   </button>
                   <button
                     type="button"
@@ -523,7 +528,7 @@ export function TrOwnerElbiseRestyleQueue({
                 <TrOwnerCreditsCostLine
                   boutiqueId={boutiqueId}
                   credits={credits}
-                  prefix={`${selected.length} elbise · packshot + model`}
+                  prefix={`${selected.length} ürün · packshot + model`}
                 />
                 <TrOwnerCreditsMoreInfoLink boutiqueId={boutiqueId} />
               </div>
@@ -553,6 +558,7 @@ export function TrOwnerElbiseRestyleQueue({
                           : chipsFromProductFeatures(current.features),
                         activeModelId,
                         current.images[2],
+                        constructionCatalogFamily(undefined, current.category),
                       )
                     : 2
                 }
@@ -565,13 +571,24 @@ export function TrOwnerElbiseRestyleQueue({
                   {current.title}
                 </p>
                 <p className={panelHintClass}>
-                  {cursor + 1} / {queue.length} · Boy, yaka ve kol doğru mu?
+                  {cursor + 1} / {queue.length} ·{" "}
+                  {constructionGateRequiredCopy(
+                    constructionCatalogFamily(undefined, current.category) ??
+                      "elbise",
+                    current.category,
+                  )}{" "}
+                  doğru mu?
                   Packshot buna kilitlenir.
                   {activeModelLabel ? ` Model: ${activeModelLabel}.` : ""}
                 </p>
                 <TrOwnerElbiseConstructionGateFields
                   chips={chips}
                   onChange={setChips}
+                  family={
+                    constructionCatalogFamily(undefined, current.category) ??
+                    "elbise"
+                  }
+                  shopCategory={current.category}
                 />
                 {itemError ? (
                   <p className="text-[14px] text-red-700">{itemError}</p>
@@ -637,7 +654,14 @@ export function TrOwnerElbiseRestyleQueue({
                 <button
                   type="button"
                   className={`${panelPrimaryBtnClass} flex-1`}
-                  disabled={!elbiseGateReady(chips)}
+                  disabled={
+                    !elbiseGateReady(
+                      chips,
+                      constructionCatalogFamily(undefined, current?.category) ??
+                        "elbise",
+                      current?.category,
+                    )
+                  }
                   onClick={() => void confirmCurrent()}
                 >
                   Onayla ve üret

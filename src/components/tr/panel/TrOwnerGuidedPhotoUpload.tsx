@@ -2,7 +2,15 @@
 
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import {
   describePhotoSlotCost,
   TR_AI_CATALOG_CREDITS,
@@ -16,6 +24,7 @@ import {
   buildElbiseConstructionLock,
   constructionChipsEqual,
 } from "@/lib/tr/aiCatalog/elbiseConstructionLock";
+import { applyConstructionListingTitle } from "@/lib/tr/aiCatalog/listingDraft";
 import {
   TrOwnerCreditsCostLine,
   TrOwnerCreditsMoreInfoLink,
@@ -28,12 +37,15 @@ import {
 import {
   ELBISE_DETAIL_SLOT,
   ELBISE_PACKSHOT_SLOT,
+  constructionCatalogFamily,
   guidedPhotoSlotCountForUploadType,
-  isElbiseUpload,
+  isConstructionCatalogUpload,
   requiredPhotoSlotsForUploadType,
 } from "@/lib/tr/catalog/garmentUploadTypes";
 import { resolveDressFeatureValue } from "@/lib/tr/catalog/dressFeatures";
 import {
+  constructionGateErrorCopy,
+  constructionGateRequiredCopy,
   emptyElbiseGateChips,
   elbiseGateReady,
   TrOwnerElbiseConstructionGateFields,
@@ -159,6 +171,108 @@ function GarmentChalkOutline({
   );
 }
 
+const COMPACT_THUMB_COL = "w-[4.75rem] sm:w-[5.5rem]";
+
+function CompactPhotoColumn({
+  label,
+  children,
+  action,
+  busy,
+}: {
+  label: string;
+  children: ReactNode;
+  action?: ReactNode;
+  busy?: boolean;
+}) {
+  return (
+    <div className={`min-w-0 ${COMPACT_THUMB_COL}`} aria-busy={busy || undefined}>
+      {children}
+      <p className="mt-1 truncate text-center text-[11px] font-semibold leading-tight text-neutral-800">
+        {label}
+      </p>
+      {action}
+    </div>
+  );
+}
+
+function CompactThumbFrame({
+  children,
+  className,
+  style,
+}: {
+  children?: ReactNode;
+  className?: string;
+  style?: CSSProperties;
+}) {
+  return (
+    <div
+      className={`relative aspect-[3/4] w-full overflow-hidden rounded-lg ${className ?? "bg-[#F3F1EC]"}`}
+      style={style}
+    >
+      {children}
+    </div>
+  );
+}
+
+function CompactExpandHint() {
+  return (
+    <span
+      className="pointer-events-none absolute right-1 bottom-1 z-[2] rounded bg-black/55 px-1 py-0.5 text-[9px] font-semibold tracking-wide text-white uppercase"
+      aria-hidden
+    >
+      Büyüt
+    </span>
+  );
+}
+
+function CompactDeleteButton({
+  disabled,
+  onClick,
+}: {
+  disabled: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className="mt-1 min-h-9 w-full rounded-md bg-white text-[12px] font-semibold text-red-700 ring-1 ring-black/10 disabled:opacity-50"
+      disabled={disabled}
+      onClick={onClick}
+    >
+      Sil
+    </button>
+  );
+}
+
+function CompactJobProgress({
+  stageLabel,
+  progressPct,
+}: {
+  stageLabel: string;
+  progressPct: number;
+}) {
+  return (
+    <>
+      {stageLabel ? (
+        <p className="mt-0.5 truncate text-center text-[10px] leading-tight text-neutral-600">
+          {stageLabel}
+        </p>
+      ) : null}
+      <div className="mt-1 h-1 overflow-hidden rounded-sm bg-neutral-200">
+        <motion.div
+          className="h-full rounded-sm"
+          style={{ background: "var(--panel-accent)" }}
+          animate={{ width: `${progressPct}%` }}
+          transition={{ duration: 0.3 }}
+        />
+      </div>
+      <p className="mt-0.5 text-center text-[10px] tabular-nums text-neutral-500">
+        {Math.round(progressPct)}%
+      </p>
+    </>
+  );
+}
+
 export interface TrOwnerGuidedPhotoUploadProps {
   boutiqueId: string;
   images: string[];
@@ -279,7 +393,8 @@ export function TrOwnerGuidedPhotoUpload({
     () => new Set(Object.keys(jobs).map((k) => Number(k))),
     [jobs],
   );
-  const elbise = isElbiseUpload(uploadType);
+  const elbise = isConstructionCatalogUpload(uploadType);
+  const family = constructionCatalogFamily(uploadType, category) ?? "elbise";
   const requiredSlots = requiredPhotoSlotsForUploadType(uploadType);
   const guidedSlots = guidedPhotoSlotCountForUploadType(uploadType);
   const packshotSlot = elbise ? ELBISE_PACKSHOT_SLOT : null;
@@ -378,7 +493,7 @@ export function TrOwnerGuidedPhotoUpload({
         step: elbise ? "1 / 3" : "1 / 2",
         headline: elbise ? "Ön manken" : "Ön yüz — kapak",
         body: elbise
-          ? "Elbisenin önden tam boy manken fotoğrafı. Olduğu gibi kaydedilir."
+          ? "Önden tam boy manken fotoğrafı. Olduğu gibi kaydedilir."
           : "Ön fotoğrafı onayladıktan sonra arka yüklemeye geçebilirsiniz — ikisi birlikte işlenebilir.",
         cta: elbise ? "Ön manken fotoğrafı seç" : "Ön yüz fotoğrafı seç",
         outline: "front" as const,
@@ -389,7 +504,7 @@ export function TrOwnerGuidedPhotoUpload({
         step: elbise ? "2 / 3" : "2 / 2",
         headline: elbise ? "Arka manken" : "Arka yüz",
         body: elbise
-          ? "Elbisenin arkadan tam boy manken fotoğrafı. Askı, sırt dekolte ve etek arkası görünsün."
+          ? "Arkadan tam boy manken fotoğrafı. Askı, sırt detay ve etek / hem arkası görünsün."
           : frontClaimed && !images[0]?.trim()
             ? "Ön hâlâ hazırlanırken arka fotoğrafı seçip yüklemeyi başlatabilirsiniz."
             : "Aynı ürünün arkasını çekin. Katalog görseli oluşturulacak.",
@@ -540,9 +655,9 @@ export function TrOwnerGuidedPhotoUpload({
               backImageUrl: backUrl,
               detailImageUrl: detailUrl || undefined,
               title,
-              category: "elbise",
+              category: family === "elbise" ? "elbise" : category,
               view: "front",
-              uploadType: "elbise",
+              uploadType: family,
             });
             preparedPrompt = prepared.prompt;
             preparedDraft = prepared.listingDraft;
@@ -564,6 +679,10 @@ export function TrOwnerGuidedPhotoUpload({
               "sleeves",
               preparedDraft?.features?.sleeves,
             ),
+            fit: resolveDressFeatureValue(
+              "fit",
+              preparedDraft?.features?.fit,
+            ),
             length: resolveDressFeatureValue(
               "length",
               preparedDraft?.features?.length,
@@ -571,6 +690,14 @@ export function TrOwnerGuidedPhotoUpload({
             decollete: resolveDressFeatureValue(
               "decollete",
               preparedDraft?.features?.decollete,
+            ),
+            rise: resolveDressFeatureValue(
+              "rise",
+              preparedDraft?.features?.rise,
+            ),
+            hem: resolveDressFeatureValue(
+              "hem",
+              preparedDraft?.features?.neckHem,
             ),
           });
           setGateChips(proposed);
@@ -740,17 +867,36 @@ export function TrOwnerGuidedPhotoUpload({
     if (!elbiseGate || packshotSlot == null || elbiseGateBusy) return;
     const neckline = gateChips.neckline.trim();
     const sleeves = gateChips.sleeves.trim();
+    const fit = gateChips.fit.trim();
     const length = gateChips.length.trim();
     const decollete = gateChips.decollete.trim();
-    if (!elbiseGateReady(gateChips)) {
-      onError("Boy, yaka ve kol seçin.");
+    const rise = gateChips.rise.trim();
+    const hem = gateChips.hem.trim();
+    if (!elbiseGateReady(gateChips, family, category)) {
+      onError(constructionGateErrorCopy(family, category));
       return;
     }
     onError(null);
 
-    const chips = { neckline, sleeves, length, decollete };
+    const chips = { neckline, sleeves, fit, length, decollete, rise, hem };
     const changed = !constructionChipsEqual(chips, elbiseGate.proposed);
     const needsRewrite = changed || !elbiseGate.promptFront?.trim();
+
+    const chipFeatures =
+      family === "alt-giyim"
+        ? {
+            fit,
+            length,
+            ...(rise ? { rise } : {}),
+            ...(hem ? { neckHem: hem } : {}),
+          }
+        : {
+            neckline,
+            sleeves,
+            fit,
+            length,
+            ...(decollete ? { decollete } : {}),
+          };
 
     setElbiseGateBusy(true);
     try {
@@ -760,27 +906,28 @@ export function TrOwnerGuidedPhotoUpload({
             ...elbiseGate.draft,
             features: {
               ...elbiseGate.draft.features,
-              neckline,
-              sleeves,
-              length,
-              ...(decollete ? { decollete } : {}),
+              ...chipFeatures,
             },
           }
         : {
             title: "",
             description: "",
-            features: {
-              neckline,
-              sleeves,
-              length,
-              ...(decollete ? { decollete } : {}),
-            },
+            features: chipFeatures,
           };
-      if (!decollete && draft.features) {
+      if (family === "alt-giyim" && draft.features) {
+        const nextFeatures = { ...draft.features };
+        delete nextFeatures.neckline;
+        delete nextFeatures.sleeves;
+        delete nextFeatures.decollete;
+        if (!rise) delete nextFeatures.rise;
+        if (!hem) delete nextFeatures.neckHem;
+        draft = { ...draft, features: nextFeatures };
+      } else if (!decollete && draft.features) {
         const nextFeatures = { ...draft.features };
         delete nextFeatures.decollete;
         draft = { ...draft, features: nextFeatures };
       }
+      draft = applyConstructionListingTitle(draft, family);
 
       let prompt = "";
       if (needsRewrite) {
@@ -794,9 +941,12 @@ export function TrOwnerGuidedPhotoUpload({
               elbiseGate.detailUrl ||
               undefined,
             title: draft.title || title,
-            category: "elbise",
+            category:
+              family === "elbise"
+                ? "elbise"
+                : draft.category || category,
             view: "front",
-            uploadType: "elbise",
+            uploadType: family,
             existingTitle: draft.title || title,
             existingDescription: draft.description,
             lockedConstruction: chips,
@@ -804,16 +954,20 @@ export function TrOwnerGuidedPhotoUpload({
           prompt = prepared.prompt;
           promptFront = prepared.listingDraft?.promptFront ?? promptFront;
           if (prepared.listingDraft?.title?.trim()) {
-            draft = {
-              ...prepared.listingDraft,
-              features: {
-                ...prepared.listingDraft.features,
-                neckline,
-                sleeves,
-                length,
-                ...(decollete ? { decollete } : {}),
+            const ornament =
+              prepared.listingDraft.features?.ornament?.trim() ||
+              draft.features?.ornament?.trim();
+            draft = applyConstructionListingTitle(
+              {
+                ...prepared.listingDraft,
+                features: {
+                  ...prepared.listingDraft.features,
+                  ...chipFeatures,
+                  ...(ornament ? { ornament } : {}),
+                },
               },
-            };
+              family,
+            );
           }
         } catch (rewriteError) {
           console.warn(
@@ -863,13 +1017,16 @@ export function TrOwnerGuidedPhotoUpload({
             sourceImageUrl: elbiseGate.frontUrl,
             productId: productId ?? undefined,
             title: draft.title || title,
-            category: "elbise",
+            category:
+              family === "elbise"
+                ? "elbise"
+                : draft.category || category,
             view: "front",
             numImages: 1,
             prompt,
             listingDraft: draft.title.trim() ? draft : null,
             skipPhotoroom: true,
-            uploadType: "elbise",
+            uploadType: family,
           }),
         {
           onStart: () => {
@@ -1061,7 +1218,7 @@ export function TrOwnerGuidedPhotoUpload({
     nextSlot < TR_OWNER_PRODUCT_LIMITS.maxImages;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <div className="flex items-center gap-2">
         {Array.from({ length: guidedSlots }, (_, i) => i).map((i) => {
           const done = Boolean(images[i]?.trim());
@@ -1113,7 +1270,7 @@ export function TrOwnerGuidedPhotoUpload({
             type="button"
             onClick={openPicker}
             disabled={disabled || Boolean(pending)}
-            className="group relative flex min-h-[220px] w-full flex-col items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed border-[color:var(--panel-accent-border)] bg-[#F7F5F1] px-4 py-8 text-center disabled:cursor-not-allowed disabled:opacity-60"
+            className="group relative flex min-h-[5.75rem] w-full items-center gap-3 overflow-hidden rounded-xl border-2 border-dashed border-[color:var(--panel-accent-border)] bg-[#F7F5F1] px-3 py-3 text-left disabled:cursor-not-allowed disabled:opacity-60 sm:gap-4 sm:px-4"
           >
             <div
               className="pointer-events-none absolute inset-0 opacity-[0.07]"
@@ -1125,20 +1282,22 @@ export function TrOwnerGuidedPhotoUpload({
             />
             <GarmentChalkOutline
               variant={phaseCopy.outline}
-              className="relative z-[1] h-36 w-28 text-neutral-700 transition-transform duration-300 group-hover:scale-[1.02]"
+              className="relative z-[1] h-14 w-11 shrink-0 text-neutral-700 transition-transform duration-300 group-hover:scale-[1.02] sm:h-16 sm:w-12"
             />
-            <span
-              className="relative z-[1] mt-4 text-[18px] font-semibold"
-              style={{ color: "var(--panel-accent-deep)" }}
-            >
-              {phaseCopy.cta}
-            </span>
-            <span className="relative z-[1] mt-2 max-w-xs text-[14px] text-neutral-600">
-              {phase === "detail"
-                ? "İsteğe bağlı — atlayabilirsiniz"
-                : phase === "extras"
-                  ? "İsteğe bağlı"
-                  : "Onaydan sonra diğer fotoğrafa geçebilirsiniz"}
+            <span className="relative z-[1] min-w-0">
+              <span
+                className="block text-[16px] font-semibold"
+                style={{ color: "var(--panel-accent-deep)" }}
+              >
+                {phaseCopy.cta}
+              </span>
+              <span className="mt-0.5 block text-[13px] leading-snug text-neutral-600">
+                {phase === "detail"
+                  ? "İsteğe bağlı — atlayabilirsiniz"
+                  : phase === "extras"
+                    ? "İsteğe bağlı"
+                    : "Onaydan sonra diğer fotoğrafa geçebilirsiniz"}
+              </span>
             </span>
           </button>
         ) : null}
@@ -1169,7 +1328,7 @@ export function TrOwnerGuidedPhotoUpload({
       </div>
 
       {/* Slot grid: required + packshot job */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="flex flex-wrap gap-2.5">
         {Array.from({ length: guidedSlots }, (_, i) => i).map((index) => {
           const job = jobs[index];
           const url = images[index]?.trim();
@@ -1181,39 +1340,30 @@ export function TrOwnerGuidedPhotoUpload({
 
           if (job) {
             return (
-              <div
+              <CompactPhotoColumn
                 key={`job-${index}`}
-                className="relative overflow-hidden rounded-xl border-2 border-[color:var(--panel-accent-border)] bg-[#F7F5F1] p-3"
-                aria-busy
+                label={roleLabel}
+                busy
+                action={
+                  <CompactJobProgress
+                    stageLabel={uploadStageLabel(job.stage)}
+                    progressPct={job.progressPct}
+                  />
+                }
               >
-                <div className="relative mx-auto aspect-[3/4] w-full max-w-[140px] overflow-hidden rounded-lg bg-[#EDE9E2]">
+                <CompactThumbFrame
+                  className="border-2 border-[color:var(--panel-accent-border)] bg-[#EDE9E2]"
+                >
                   {job.previewUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={job.previewUrl}
                       alt=""
-                      className="h-full w-full object-cover opacity-75"
+                      className="absolute inset-0 h-full w-full object-cover opacity-75"
                     />
                   ) : null}
-                </div>
-                <p className="mt-2 text-center text-[13px] font-semibold text-neutral-800">
-                  {roleLabel}
-                </p>
-                <p className="mt-0.5 text-center text-[12px] text-neutral-600">
-                  {uploadStageLabel(job.stage)}
-                </p>
-                <div className="mt-2 h-1.5 overflow-hidden rounded-sm bg-white/80">
-                  <motion.div
-                    className="h-full rounded-sm"
-                    style={{ background: "var(--panel-accent)" }}
-                    animate={{ width: `${job.progressPct}%` }}
-                    transition={{ duration: 0.3 }}
-                  />
-                </div>
-                <p className="mt-1 text-center text-[11px] tabular-nums text-neutral-500">
-                  {Math.round(job.progressPct)}%
-                </p>
-              </div>
+                </CompactThumbFrame>
+              </CompactPhotoColumn>
             );
           }
 
@@ -1227,59 +1377,67 @@ export function TrOwnerGuidedPhotoUpload({
                   type="button"
                   disabled={disabled || Boolean(pending)}
                   onClick={() => openPickerForSlot(index)}
-                  className="flex aspect-[3/4] flex-col items-center justify-center rounded-xl border-2 border-dashed border-neutral-200 bg-neutral-50 px-3 text-center text-[13px] text-neutral-400 disabled:opacity-60"
+                  className={`${COMPACT_THUMB_COL} min-w-0 text-left disabled:opacity-60`}
                 >
-                  {roleLabel}
-                  <span className="mt-1 block text-[12px] font-normal">
-                    İsteğe bağlı — dokunarak ekle
-                  </span>
+                  <CompactThumbFrame className="flex items-center justify-center border-2 border-dashed border-neutral-200 bg-neutral-50">
+                    <span className="px-1 text-center text-[10px] leading-tight text-neutral-400">
+                      Ekle
+                    </span>
+                  </CompactThumbFrame>
+                  <p className="mt-1 truncate text-center text-[11px] font-semibold leading-tight text-neutral-800">
+                    {roleLabel}
+                  </p>
+                  <p className="mt-0.5 text-center text-[10px] leading-tight text-neutral-400">
+                    İsteğe bağlı
+                  </p>
                 </button>
               );
             }
             return (
-              <div
-                key={`empty-${index}`}
-                className="flex aspect-[3/4] items-center justify-center rounded-xl border-2 border-dashed border-neutral-200 bg-neutral-50 text-[13px] text-neutral-400"
-              >
-                {roleLabel}
-              </div>
+              <CompactPhotoColumn key={`empty-${index}`} label={roleLabel}>
+                <CompactThumbFrame className="border-2 border-dashed border-neutral-200 bg-neutral-50" />
+              </CompactPhotoColumn>
             );
           }
 
           const previewSrc = elbise ? url : catalogUrl || url;
           return (
-            <div
+            <CompactPhotoColumn
               key={`${url}-${index}`}
-              className="relative aspect-[3/4] overflow-hidden rounded-xl bg-[#F3F1EC]"
-              style={useCatalogBg ? { background: catalogBackgroundCss } : undefined}
+              label={roleLabel}
+              action={
+                <CompactDeleteButton
+                  disabled={disabled || Boolean(jobs[index])}
+                  onClick={() => removeAt(index)}
+                />
+              }
             >
-              <button
-                type="button"
-                className="absolute inset-0 z-[1]"
-                aria-label={`${roleLabel} — büyüt`}
-                onClick={() =>
-                  onLightbox?.({ src: previewSrc, label: roleLabel })
+              <CompactThumbFrame
+                style={
+                  useCatalogBg
+                    ? { background: catalogBackgroundCss }
+                    : undefined
                 }
-              />
-              <Image
-                src={previewSrc}
-                alt={roleLabel}
-                fill
-                className={useCatalogBg ? "object-contain p-2" : "object-cover"}
-                sizes="160px"
-              />
-              <span className="pointer-events-none absolute top-2 left-2 z-[2] rounded-lg bg-white px-2 py-1 text-[13px] font-semibold">
-                {roleLabel}
-              </span>
-              <button
-                type="button"
-                className="absolute right-2 bottom-2 z-[2] rounded-lg bg-white px-3 py-2 text-[14px] font-semibold text-red-700"
-                disabled={disabled || Boolean(jobs[index])}
-                onClick={() => removeAt(index)}
+                className={useCatalogBg ? "bg-transparent" : undefined}
               >
-                Sil
-              </button>
-            </div>
+                <button
+                  type="button"
+                  className="absolute inset-0 z-[1]"
+                  aria-label={`${roleLabel} — büyüt`}
+                  onClick={() =>
+                    onLightbox?.({ src: previewSrc, label: roleLabel })
+                  }
+                />
+                <Image
+                  src={previewSrc}
+                  alt={roleLabel}
+                  fill
+                  className={useCatalogBg ? "object-contain p-1" : "object-cover"}
+                  sizes="88px"
+                />
+                <CompactExpandHint />
+              </CompactThumbFrame>
+            </CompactPhotoColumn>
           );
         })}
         {elbise && packshotSlot != null
@@ -1290,66 +1448,58 @@ export function TrOwnerGuidedPhotoUpload({
               const roleLabel = "Ön packshot";
               if (job) {
                 return (
-                  <div
+                  <CompactPhotoColumn
                     key="job-packshot"
-                    className="relative overflow-hidden rounded-xl border-2 border-[color:var(--panel-accent-border)] bg-[#F7F5F1] p-3"
-                    aria-busy
+                    label={roleLabel}
+                    busy
+                    action={
+                      <CompactJobProgress
+                        stageLabel={uploadStageLabel(job.stage)}
+                        progressPct={job.progressPct}
+                      />
+                    }
                   >
-                    <div className="relative mx-auto flex aspect-[3/4] w-full max-w-[140px] items-center justify-center overflow-hidden rounded-lg bg-white">
-                      <p className="px-2 text-center text-[12px] text-neutral-500">
+                    <CompactThumbFrame
+                      className="flex items-center justify-center border-2 border-[color:var(--panel-accent-border)] bg-white"
+                    >
+                      <p className="px-1 text-center text-[10px] leading-tight text-neutral-500">
                         {uploadStageLabel(job.stage)}
                       </p>
-                    </div>
-                    <p className="mt-2 text-center text-[13px] font-semibold text-neutral-800">
-                      {roleLabel}
-                    </p>
-                    <div className="mt-2 h-1.5 overflow-hidden rounded-sm bg-white/80">
-                      <motion.div
-                        className="h-full rounded-sm"
-                        style={{ background: "var(--panel-accent)" }}
-                        animate={{ width: `${job.progressPct}%` }}
-                        transition={{ duration: 0.3 }}
-                      />
-                    </div>
-                    <p className="mt-1 text-center text-[11px] tabular-nums text-neutral-500">
-                      {Math.round(job.progressPct)}%
-                    </p>
-                  </div>
+                    </CompactThumbFrame>
+                  </CompactPhotoColumn>
                 );
               }
               if (!url) return null;
               return (
-                <div
+                <CompactPhotoColumn
                   key={`packshot-${url}`}
-                  className="relative aspect-[3/4] overflow-hidden rounded-xl bg-white"
+                  label={roleLabel}
+                  action={
+                    <CompactDeleteButton
+                      disabled={disabled || Boolean(jobs[index])}
+                      onClick={() => removeAt(index)}
+                    />
+                  }
                 >
-                  <button
-                    type="button"
-                    className="absolute inset-0 z-[1]"
-                    aria-label={`${roleLabel} — büyüt`}
-                    onClick={() =>
-                      onLightbox?.({ src: url, label: roleLabel })
-                    }
-                  />
-                  <Image
-                    src={url}
-                    alt={roleLabel}
-                    fill
-                    className="object-contain p-2"
-                    sizes="160px"
-                  />
-                  <span className="pointer-events-none absolute top-2 left-2 z-[2] rounded-lg bg-white px-2 py-1 text-[13px] font-semibold">
-                    {roleLabel}
-                  </span>
-                  <button
-                    type="button"
-                    className="absolute right-2 bottom-2 z-[2] rounded-lg bg-white px-3 py-2 text-[14px] font-semibold text-red-700"
-                    disabled={disabled || Boolean(jobs[index])}
-                    onClick={() => removeAt(index)}
-                  >
-                    Sil
-                  </button>
-                </div>
+                  <CompactThumbFrame className="bg-white">
+                    <button
+                      type="button"
+                      className="absolute inset-0 z-[1]"
+                      aria-label={`${roleLabel} — büyüt`}
+                      onClick={() =>
+                        onLightbox?.({ src: url, label: roleLabel })
+                      }
+                    />
+                    <Image
+                      src={url}
+                      alt={roleLabel}
+                      fill
+                      className="object-contain p-1"
+                      sizes="88px"
+                    />
+                    <CompactExpandHint />
+                  </CompactThumbFrame>
+                </CompactPhotoColumn>
               );
             })()
           : null}
@@ -1357,7 +1507,7 @@ export function TrOwnerGuidedPhotoUpload({
 
       {/* Extra completed images beyond required + packshot */}
       {images.length > (elbise ? ELBISE_PACKSHOT_SLOT + 1 : 2) ? (
-        <div className="grid grid-cols-2 gap-3">
+        <div className="flex flex-wrap gap-2.5">
           {images
             .map((url, index) => ({ url, index }))
             .filter(
@@ -1372,26 +1522,35 @@ export function TrOwnerGuidedPhotoUpload({
               getProductPhotoRole(index, guidedSlots),
             );
             return (
-              <div
+              <CompactPhotoColumn
                 key={`${url}-${index}`}
-                className="relative aspect-[3/4] overflow-hidden rounded-xl bg-[#F3F1EC]"
+                label={roleLabel}
+                action={
+                  <CompactDeleteButton
+                    disabled={disabled}
+                    onClick={() => removeAt(index)}
+                  />
+                }
               >
-                <Image
-                  src={previewSrc}
-                  alt={roleLabel}
-                  fill
-                  className="object-cover"
-                  sizes="160px"
-                />
-                <button
-                  type="button"
-                  className="absolute right-2 bottom-2 z-[2] rounded-lg bg-white px-3 py-2 text-[14px] font-semibold text-red-700"
-                  disabled={disabled}
-                  onClick={() => removeAt(index)}
-                >
-                  Sil
-                </button>
-              </div>
+                <CompactThumbFrame>
+                  <button
+                    type="button"
+                    className="absolute inset-0 z-[1]"
+                    aria-label={`${roleLabel} — büyüt`}
+                    onClick={() =>
+                      onLightbox?.({ src: previewSrc, label: roleLabel })
+                    }
+                  />
+                  <Image
+                    src={previewSrc}
+                    alt={roleLabel}
+                    fill
+                    className="object-cover"
+                    sizes="88px"
+                  />
+                  <CompactExpandHint />
+                </CompactThumbFrame>
+              </CompactPhotoColumn>
             );
           })}
         </div>
@@ -1400,7 +1559,7 @@ export function TrOwnerGuidedPhotoUpload({
       {!frontClaimed || !backClaimed ? (
         <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[14px] text-amber-950">
           {elbise
-            ? "Ön ve arka zorunlu. Dekolte / detay isteğe bağlı. Boy, yaka ve kol onaylayınca packshot üretilir."
+            ? `Ön ve arka zorunlu. Detay isteğe bağlı. ${constructionGateRequiredCopy(family, category)} onaylayınca packshot üretilir.`
             : "Ön ve arka zorunlu. Ön yüklenirken arka seçebilirsiniz — işlemler paralel ilerler."}
         </p>
       ) : null}
@@ -1412,7 +1571,7 @@ export function TrOwnerGuidedPhotoUpload({
           onClick={() => setElbiseGateOpen(true)}
           disabled={disabled || elbiseGateBusy}
         >
-          Boy, yaka ve kol onayla — packshot üret
+          {`${constructionGateRequiredCopy(family, category)} onayla — packshot üret`}
         </button>
       ) : null}
 
@@ -1537,8 +1696,7 @@ export function TrOwnerGuidedPhotoUpload({
                 Gemini önerisi
               </p>
               <p className="mt-1 text-[14px] leading-relaxed text-neutral-600">
-                Boy, yaka ve kol doğru mu? Yanlışsa düzeltin — packshot bu
-                bilgilere kilitlenir. Detay isteğe bağlı.
+                {`${constructionGateRequiredCopy(family, category)} doğru mu? Yanlışsa düzeltin — packshot bu bilgilere kilitlenir. Detay isteğe bağlı.`}
               </p>
 
               <div className="mt-5">
@@ -1546,6 +1704,8 @@ export function TrOwnerGuidedPhotoUpload({
                   chips={gateChips}
                   onChange={setGateChips}
                   disabled={elbiseGateBusy}
+                  family={family}
+                  shopCategory={category}
                 />
               </div>
 
@@ -1569,7 +1729,7 @@ export function TrOwnerGuidedPhotoUpload({
                   type="button"
                   className={`${panelPrimaryBtnClass} flex-1`}
                   disabled={
-                    elbiseGateBusy || !elbiseGateReady(gateChips)
+                    elbiseGateBusy || !elbiseGateReady(gateChips, family, category)
                   }
                   onClick={() => void confirmElbiseGate()}
                 >

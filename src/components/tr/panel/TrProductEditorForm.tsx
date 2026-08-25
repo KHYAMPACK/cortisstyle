@@ -32,7 +32,9 @@ import { TrOwnerCategoryPicker } from "@/components/tr/panel/TrOwnerCategoryPick
 import { TrOwnerProductFeaturesFields } from "@/components/tr/panel/TrOwnerProductFeaturesFields";
 import { TR_BOUTIQUE_CATEGORIES } from "@/lib/tr/categories";
 import {
-  isElbiseUpload,
+  constructionCatalogFamily,
+  isAltGiyimShopLeaf,
+  isUstGiyimShopLeaf,
   requiredPhotoSlotsForUploadType,
 } from "@/lib/tr/catalog/garmentUploadTypes";
 import {
@@ -228,8 +230,9 @@ export function TrProductEditorForm({
   const [category, setCategory] = useState<string | null>(
     initialProduct?.category ?? null,
   );
-  const elbise = isElbiseUpload(category);
-  const requiredSlots = requiredPhotoSlotsForUploadType(category);
+  const family = constructionCatalogFamily(null, category);
+  const elbise = family != null;
+  const requiredSlots = requiredPhotoSlotsForUploadType(family);
   const [extraCategories, setExtraCategories] = useState<
     Array<{ id: string; label: string }>
   >([]);
@@ -490,6 +493,16 @@ export function TrProductEditorForm({
     const price = Number(priceTry.replace(",", "."));
     if (!title.trim()) {
       throw new Error("Başlık zorunlu.");
+    }
+    if (family === "ust-giyim" && !isUstGiyimShopLeaf(category)) {
+      throw new Error(
+        "Üst giyim için alt kategori seçin (bluz, gömlek, tişört…).",
+      );
+    }
+    if (family === "alt-giyim" && !isAltGiyimShopLeaf(category)) {
+      throw new Error(
+        "Alt giyim için alt kategori seçin (etek, pantolon, eşofman).",
+      );
     }
     if (!hasRequiredProductPhotos(images, requiredSlots)) {
       throw new Error(
@@ -796,7 +809,7 @@ export function TrProductEditorForm({
           title={title}
           category={category}
           productId={initialProduct?.id}
-          uploadType={elbise ? "elbise" : null}
+          uploadType={family}
           uploading={uploading}
           onUploadingChange={setUploading}
           onImagesChange={setImages}
@@ -842,7 +855,7 @@ export function TrProductEditorForm({
               disabled={uploading || saving}
               skipPackshot={elbise}
               features={features}
-              uploadType={elbise ? "elbise" : null}
+              uploadType={family}
             />
             {mode === "edit" && elbise && initialProduct ? (
               <div className="space-y-2">
@@ -900,7 +913,7 @@ export function TrProductEditorForm({
           backImageUrl={elbise ? images[1]?.trim() || null : null}
           detailImageUrl={elbise ? images[2]?.trim() || null : null}
           category={category}
-          uploadType={elbise ? "elbise" : null}
+          uploadType={family}
           cachedDraft={listingDraft}
           disabled={saving}
           onError={setError}
@@ -960,6 +973,8 @@ export function TrProductEditorForm({
           labelClass={panelLabelClass}
           hintClass={panelHintClass}
           variant={elbise ? "dress" : "default"}
+          family={family ?? "elbise"}
+          shopCategory={category}
         />
       </section>
 
@@ -1046,6 +1061,17 @@ export function TrProductEditorForm({
         className={`${panelSectionClass} ${showSection("category") ? "" : "hidden"}`}
       >
         <p className={panelLabelClass}>Kategori</p>
+        {family === "ust-giyim" ? (
+          <p className={`mt-1 ${panelHintClass}`}>
+            Bluz, gömlek, tişört gibi bir alt kategori kullanın — üst giyim
+            olarak bırakmayın.
+          </p>
+        ) : null}
+        {family === "alt-giyim" ? (
+          <p className={`mt-1 ${panelHintClass}`}>
+            Etek, pantolon veya eşofman kullanın — alt giyim olarak bırakmayın.
+          </p>
+        ) : null}
         <TrOwnerCategoryPicker
           value={category}
           onChange={setCategory}

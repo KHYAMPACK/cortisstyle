@@ -11,6 +11,12 @@ import {
 } from "@/lib/tr/aiCatalog/elbiseRestyle";
 import { buildElbiseTryOnShots } from "@/lib/tr/aiModel/elbiseTryOn";
 import { resolveDressFeatureValue, withDefaultSleeves } from "@/lib/tr/catalog/dressFeatures";
+import { applyConstructionListingTitle } from "@/lib/tr/aiCatalog/listingDraft";
+import {
+  altGiyimUsesPaca,
+  constructionCatalogFamily,
+  parseConstructionShopCategory,
+} from "@/lib/tr/catalog/garmentUploadTypes";
 import {
   runAiJobImmediately,
   type ScheduleAiJob,
@@ -38,8 +44,11 @@ export interface ElbiseCatalogPrepareResult {
 export interface ElbiseConfirmedChips {
   neckline: string;
   sleeves: string;
+  fit: string;
   length: string;
   decollete: string;
+  rise: string;
+  hem: string;
 }
 
 function proposedFromDraft(
@@ -67,6 +76,21 @@ function proposedFromDraft(
         "decollete",
         draft?.features?.decollete ?? product.features?.decollete,
       ) || null,
+    fit:
+      resolveDressFeatureValue(
+        "fit",
+        draft?.features?.fit ?? product.features?.fit,
+      ) || null,
+    rise:
+      resolveDressFeatureValue(
+        "rise",
+        draft?.features?.rise ?? product.features?.rise,
+      ) || null,
+    hem:
+      resolveDressFeatureValue(
+        "hem",
+        draft?.features?.neckHem ?? product.features?.neckHem,
+      ) || null,
   });
 }
 
@@ -82,6 +106,9 @@ export async function prepareElbiseCatalogRestyle(input: {
     throw new Error("Ön ve arka manken fotoğrafı gerekli.");
   }
 
+  const family =
+    constructionCatalogFamily(undefined, input.product.category) ?? "elbise";
+
   try {
     const prepared = await requestOwnerPackshotPrepare({
       boutiqueId: input.boutiqueId,
@@ -89,9 +116,9 @@ export async function prepareElbiseCatalogRestyle(input: {
       backImageUrl: backUrl,
       detailImageUrl: detailUrl || undefined,
       title: input.product.title,
-      category: "elbise",
+      category: family === "elbise" ? "elbise" : input.product.category,
       view: "front",
-      uploadType: "elbise",
+      uploadType: family,
       existingTitle: input.product.title,
       existingDescription: input.product.description,
     });
@@ -126,15 +153,38 @@ export async function commitElbiseCatalogRestyle(input: {
   onProgress?: (phase: ElbiseRestyleProgressPhase, label: string) => void;
 }): Promise<TrProduct> {
   const schedule = input.scheduleAiJob ?? runAiJobImmediately;
+  const family =
+    constructionCatalogFamily(undefined, input.product.category) ?? "elbise";
   const neckline = input.chips.neckline.trim();
   const sleeves = input.chips.sleeves.trim();
+  const fit = input.chips.fit.trim();
   const length = input.chips.length.trim();
   const decollete = input.chips.decollete.trim();
-  if (!neckline || !sleeves || !length) {
+  const rise = input.chips.rise.trim();
+  const hem = input.chips.hem.trim();
+  if (family === "alt-giyim") {
+    if (!length || !rise || !fit) {
+      throw new Error("Boy, bel ve kalıp seçin.");
+    }
+    if (altGiyimUsesPaca(input.product.category) && !hem) {
+      throw new Error("Paça seçin.");
+    }
+  } else if (!neckline || !sleeves || !length) {
     throw new Error("Boy, yaka ve kol seçin.");
   }
+  if (family === "ust-giyim" && !fit) {
+    throw new Error("Kalıp seçin.");
+  }
 
-  const chips: ElbiseConstructionChips = { neckline, sleeves, length, decollete };
+  const chips: ElbiseConstructionChips = {
+    neckline,
+    sleeves,
+    fit,
+    length,
+    decollete,
+    rise,
+    hem,
+  };
   const changed = !constructionChipsEqual(chips, input.prepared.proposed);
   let prompt = input.prepared.prompt;
   let draft: OwnerListingDraft | null = input.prepared.listingDraft
@@ -143,13 +193,15 @@ export async function commitElbiseCatalogRestyle(input: {
         features: mergeElbiseRestyleFeatures(
           input.prepared.listingDraft.features,
           input.chips,
+          family,
         ),
       }
     : {
         title: input.product.title,
         description: input.product.description ?? "",
-        features: mergeElbiseRestyleFeatures(input.product.features, input.chips),
+        features: mergeElbiseRestyleFeatures(input.product.features, input.chips, family),
       };
+  draft = applyConstructionListingTitle(draft, family);
 
   if (changed || !prompt.trim()) {
     input.onProgress?.("prepare", "Prompt güncelleniyor…");
@@ -160,22 +212,35 @@ export async function commitElbiseCatalogRestyle(input: {
         backImageUrl: input.prepared.backUrl,
         detailImageUrl: input.prepared.detailUrl || undefined,
         title: draft.title || input.product.title,
-        category: "elbise",
+        category:
+          family === "elbise"
+            ? "elbise"
+            : draft.category || input.product.category,
         view: "front",
-        uploadType: "elbise",
+        uploadType: family,
         existingTitle: draft.title || input.product.title,
         existingDescription: draft.description,
         lockedConstruction: chips,
       });
       prompt = rewritten.prompt;
       if (rewritten.listingDraft?.title?.trim()) {
-        draft = {
-          ...rewritten.listingDraft,
-          features: mergeElbiseRestyleFeatures(
-            rewritten.listingDraft.features,
-            input.chips,
-          ),
-        };
+        const ornament =
+          rewritten.listingDraft.features?.ornament?.trim() ||
+          draft.features?.ornament?.trim();
+        draft = applyConstructionListingTitle(
+          {
+            ...rewritten.listingDraft,
+            features: {
+              ...mergeElbiseRestyleFeatures(
+                rewritten.listingDraft.features,
+                input.chips,
+                family,
+              ),
+              ...(ornament ? { ornament } : {}),
+            },
+          },
+          family,
+        );
       }
     } catch {
       prompt = [prompt, buildElbiseConstructionLock(chips)]
@@ -196,13 +261,16 @@ export async function commitElbiseCatalogRestyle(input: {
         sourceImageUrl: input.prepared.frontUrl,
         productId: input.product.id,
         title: draft.title || input.product.title,
-        category: "elbise",
+        category:
+          family === "elbise"
+            ? "elbise"
+            : draft.category || input.product.category,
         view: "front",
         numImages: 1,
         prompt,
         listingDraft: draft.title.trim() ? draft : null,
         skipPhotoroom: true,
-        uploadType: "elbise",
+        uploadType: family,
       }),
     { onStart: () => input.onProgress?.("packshot", "Ön packshot üretiliyor…") },
   );
@@ -220,12 +288,19 @@ export async function commitElbiseCatalogRestyle(input: {
   const features = mergeElbiseRestyleFeatures(
     input.product.features,
     input.chips,
+    family,
   );
+
+  const nextCategory =
+    parseConstructionShopCategory(draft.category, family) ??
+    parseConstructionShopCategory(input.product.category, family) ??
+    (family === "elbise" ? "elbise" : input.product.category);
 
   await updateOwnerProduct(input.product.id, {
     images: slotted.images,
     marketplaceImages: slotted.marketplaceImages,
     features,
+    ...(nextCategory ? { category: nextCategory } : {}),
   });
 
   const planned = buildElbiseTryOnShots({
@@ -234,6 +309,7 @@ export async function commitElbiseCatalogRestyle(input: {
     backMankenUrl: input.prepared.backUrl,
     detailMankenUrl: input.prepared.detailUrl,
     chips,
+    family,
   });
   if (planned.error || planned.shots.length === 0) {
     throw new Error(planned.error ?? "Model kareleri hazırlanamadı.");
@@ -247,7 +323,10 @@ export async function commitElbiseCatalogRestyle(input: {
         cutoutImageUrl: planned.shots[0]!.cutoutImageUrl,
         productId: input.product.id,
         title: draft.title || input.product.title,
-        category: "elbise",
+        category:
+          family === "elbise"
+            ? "elbise"
+            : draft.category || input.product.category,
         modelId: input.modelId,
         shots: planned.shots,
       }),
@@ -275,5 +354,6 @@ export async function commitElbiseCatalogRestyle(input: {
     marketplaceImages: slotted.marketplaceImages,
     lifestyleImages: lifestyle,
     features: featuresWithLifestyleModels(features, input.modelId, lifestyle.length),
+    ...(nextCategory ? { category: nextCategory } : {}),
   });
 }

@@ -31,7 +31,10 @@ import {
   chipsFromProductFeatures,
   elbiseLifestyleShotLabel,
 } from "@/lib/tr/aiModel/elbiseTryOn";
-import { isElbiseUpload } from "@/lib/tr/catalog/garmentUploadTypes";
+import {
+  constructionCatalogFamily,
+  isConstructionCatalogUpload,
+} from "@/lib/tr/catalog/garmentUploadTypes";
 import { replaceLifestyleShot } from "@/lib/tr/catalog/productImages";
 import {
   lifestyleModelIdAt,
@@ -168,7 +171,8 @@ export function TrOwnerAiCatalogEnhance({
   const selectedReady = options.find((o) => o.id === selectedModelId)?.ready;
   const previewUrls = lifestylePreviewUrls(lifestyleImages);
   const hasModelPhoto = previewUrls.length > 0;
-  const elbise = skipPackshot || isElbiseUpload(uploadType);
+  const family = constructionCatalogFamily(uploadType);
+  const elbise = skipPackshot || isConstructionCatalogUpload(uploadType);
   const dressChips = chipsFromProductFeatures(features);
   const packshotUrl =
     marketplaceImages[3]?.trim() || images[3]?.trim() || "";
@@ -177,7 +181,7 @@ export function TrOwnerAiCatalogEnhance({
     images[2]?.trim() || marketplaceImages[2]?.trim() || "";
   const costContext = elbise
     ? {
-        uploadType: "elbise" as const,
+        uploadType: family ?? "elbise",
         features: dressChips,
         detailImageUrl: detailMankenUrl,
       }

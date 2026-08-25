@@ -3,6 +3,7 @@ import {
   deliverPublicAssetUrl,
   deliverPublicAssetUrls,
 } from "@/lib/tr/assets/deliverPublicAssetUrl";
+import { ELBISE_PACKSHOT_SLOT } from "@/lib/tr/catalog/garmentUploadTypes";
 import { TR_OWNER_PRODUCT_LIMITS } from "@/lib/tr/ownerProductConstraints";
 import {
   isTrMarketplaceAssetUrl,
@@ -47,29 +48,50 @@ export function replaceLifestyleShot(
   return cleanedLifestyleImages(next);
 }
 
-/** Owner manken / hanger slots copied into marketplace — not shopper packshots. */
+/** Owner manken / hanger at indexes 0–2. Do not compact — empty detay would pull packshot [3] into this set. */
 function ownerUploadUrls(product: CatalogImageProduct): Set<string> {
-  return new Set(nonEmpty(product.images).slice(0, 3));
+  const images = product.images ?? [];
+  return new Set(
+    [images[0], images[1], images[2]]
+      .map((url) => url?.trim())
+      .filter((url): url is string => Boolean(url)),
+  );
+}
+
+function isGeneratedCatalogAssetUrl(url: string): boolean {
+  return isTrMarketplaceAssetUrl(url) || isTrStorefrontAssetUrl(url);
 }
 
 function isOwnerOriginalUrl(
   product: CatalogImageProduct,
   url: string,
 ): boolean {
+  if (isGeneratedCatalogAssetUrl(url)) return false;
   if (ownerUploadUrls(product).has(url)) return true;
   return url.includes("/original/");
 }
 
-function catalogPackshotUrl(product: CatalogImageProduct): string | undefined {
-  const originals = ownerUploadUrls(product);
-  for (const url of product.marketplaceImages ?? []) {
+function firstMarketplaceAssetUrl(urls: string[] | undefined): string | undefined {
+  for (const url of urls ?? []) {
     const trimmed = url?.trim();
-    if (trimmed && !originals.has(trimmed)) return trimmed;
+    if (trimmed && isTrMarketplaceAssetUrl(trimmed)) return trimmed;
   }
-  const slot3 =
-    product.marketplaceImages?.[3]?.trim() || product.images?.[3]?.trim();
-  if (slot3 && !originals.has(slot3)) return slot3;
   return undefined;
+}
+
+/**
+ * Packshot identity is slot 3 or a `/marketplace/` path — not “URL missing
+ * from images[0..2]”. Compacted / duplicated slots still count.
+ */
+function catalogPackshotUrl(product: CatalogImageProduct): string | undefined {
+  const slotted =
+    product.marketplaceImages?.[ELBISE_PACKSHOT_SLOT]?.trim() ||
+    product.images?.[ELBISE_PACKSHOT_SLOT]?.trim();
+  if (slotted && !isOwnerOriginalUrl(product, slotted)) return slotted;
+  return (
+    firstMarketplaceAssetUrl(product.marketplaceImages) ??
+    firstMarketplaceAssetUrl(product.images)
+  );
 }
 
 /** Original boutique gallery (owner uploads). */
@@ -167,6 +189,8 @@ function shopperFacingGallery(product: CatalogImageProduct): string[] {
     out.push(trimmed);
   };
 
+  // Model shots first, then packshot — always append when detected.
+  // Do not return lifestyle-only just because owner slots also list the PNG.
   for (const url of lifestyle) push(url);
   push(packshot);
   if (out.length > 0) return out;

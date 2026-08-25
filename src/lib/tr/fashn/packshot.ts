@@ -20,21 +20,59 @@ export const DEFAULT_PACKSHOT_PROMPT =
 export const ELBISE_PACKSHOT_PROMPT =
   "Front ghost-mannequin product photo of this exact dress. Solid white studio background, soft drop shadow to the side, clothing only. Invisible form, no person, no hanger, no visible mannequin, no dress form. Straight-on, centered, three-dimensional worn volume. Preserve fabric, color, seams, hem, and lace or trim as photographed. Do not invent sleeves, off-shoulder pieces, arm flaps, or straps that are not named in the construction lock. Do not invent panels, change the silhouette, or turn the dress into a skirt.";
 
+/** Üst giyim ön packshot — same staging as elbise, garment not dress. */
+export const UST_GIYIM_PACKSHOT_PROMPT =
+  "Front ghost-mannequin product photo of this exact top. Solid white studio background, soft drop shadow to the side, clothing only. Invisible form, no person, no hanger, no visible mannequin, no dress form. Straight-on, centered, three-dimensional worn volume. Preserve fabric, color, seams, hem, and lace or trim as photographed. Do not invent sleeves, off-shoulder pieces, arm flaps, or straps that are not named in the construction lock. Do not invent panels, change the silhouette, or turn the top into a dress or a skirt.";
+
+/** Alt giyim packshot — top-down flat lay, not ghost mannequin. */
+export const ALT_GIYIM_PACKSHOT_PROMPT =
+  "Top-down flat lay product photo of this exact skirt or pant. Solid white studio background, even diffused light, no drop shadow, clothing only. Garment pressed completely flat, legs or panels parallel, full silhouette from waistband to hem visible. No person, no hanger, no ghost mannequin, no worn volume, no 3D dressing. Preserve fabric, wash, seams, pockets, belt loops, fly, and hem finish as photographed. Do not turn pants into a dress or a skirt into pants. Do not invent a matching top.";
+
+export function constructionPackshotBasePrompt(
+  family: "elbise" | "ust-giyim" | "alt-giyim" = "elbise",
+): string {
+  if (family === "ust-giyim") return UST_GIYIM_PACKSHOT_PROMPT;
+  if (family === "alt-giyim") return ALT_GIYIM_PACKSHOT_PROMPT;
+  return ELBISE_PACKSHOT_PROMPT;
+}
+
 /** Always last so FASHN does not copy hanger / visible-mannequin from the source. */
 export const PACKSHOT_PRESENTATION_LOCK =
   "Presentation: ghost mannequin packshot only. Clothing only — no hanger, no visible mannequin.";
 
+export const FLAT_LAY_PACKSHOT_PRESENTATION_LOCK =
+  "Presentation: top-down flat lay packshot only. Clothing pressed flat — no ghost mannequin, no hanger, no person, no worn volume.";
+
 const CONFLICTING_PACKSHOT_PRESENTATION =
   /\b(on[- ]hanger|on a hanger|on the hanger|clothes hangers?|hanger hook|visible mannequin|dress forms?|flat[- ]lay(?: packshot)?|floating garment|on a (?:visible )?mannequin|on mannequin)\b/gi;
+
+const CONFLICTING_GHOST_MANNEQUIN =
+  /\b(ghost mannequin|invisible form|worn volume|three-dimensional worn|soft drop shadow)\b/gi;
 
 export function stripConflictingPackshotPresentation(text: string): string {
   return text.replace(CONFLICTING_PACKSHOT_PRESENTATION, " ").replace(/\s+/g, " ").trim();
 }
 
-export function finalizePackshotPrompt(prompt?: string | null): string {
-  const stripped = stripConflictingPackshotPresentation(
-    prompt?.trim() || DEFAULT_PACKSHOT_PROMPT,
+function stripConflictingGhostMannequin(text: string): string {
+  return text.replace(CONFLICTING_GHOST_MANNEQUIN, " ").replace(/\s+/g, " ").trim();
+}
+
+function wantsFlatLayPackshot(prompt: string): boolean {
+  return (
+    prompt.includes(FLAT_LAY_PACKSHOT_PRESENTATION_LOCK) ||
+    /\btop-down flat lay\b/i.test(prompt)
   );
+}
+
+export function finalizePackshotPrompt(prompt?: string | null): string {
+  const raw = prompt?.trim() || DEFAULT_PACKSHOT_PROMPT;
+  if (wantsFlatLayPackshot(raw)) {
+    const stripped = stripConflictingGhostMannequin(raw);
+    const base = stripped || ALT_GIYIM_PACKSHOT_PROMPT;
+    if (base.includes(FLAT_LAY_PACKSHOT_PRESENTATION_LOCK)) return base;
+    return `${base} ${FLAT_LAY_PACKSHOT_PRESENTATION_LOCK}`;
+  }
+  const stripped = stripConflictingPackshotPresentation(raw);
   const base = stripped || DEFAULT_PACKSHOT_PROMPT;
   if (base.includes(PACKSHOT_PRESENTATION_LOCK)) return base;
   return `${base} ${PACKSHOT_PRESENTATION_LOCK}`;

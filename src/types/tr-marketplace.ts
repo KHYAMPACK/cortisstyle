@@ -95,6 +95,10 @@ export type TrProductFeatures = {
   sleeves?: string;
   length?: string;
   decollete?: string;
+  /** Alt giyim bel — Yüksek bel / Normal bel / Düşük bel. */
+  rise?: string;
+  /** Visible ornament for bottoms titles — e.g. İnci işlemeli. Omit when none. */
+  ornament?: string;
   zipper?: string;
   stretch?: string;
   silhouette?: string;

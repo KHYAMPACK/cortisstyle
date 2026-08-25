@@ -1,7 +1,8 @@
 import {
   ELBISE_DETAIL_SLOT,
   ELBISE_PACKSHOT_SLOT,
-  isElbiseUpload,
+  constructionCatalogFamily,
+  isConstructionCatalogCategory,
 } from "@/lib/tr/catalog/garmentUploadTypes";
 import {
   describeModelPackageCredits,
@@ -48,7 +49,7 @@ export function elbiseSourceUrls(product: Pick<TrProduct, "images">): {
 export function isElbiseRestyleCandidate(
   product: Pick<TrProduct, "category" | "images">,
 ): boolean {
-  if (!isElbiseUpload(product.category)) return false;
+  if (!isConstructionCatalogCategory(product.category)) return false;
   const { frontUrl, backUrl } = elbiseSourceUrls(product);
   return Boolean(frontUrl && backUrl);
 }
@@ -75,12 +76,36 @@ export function applyElbisePipelineImages(input: {
 
 export function mergeElbiseRestyleFeatures(
   current: TrProductFeatures | null | undefined,
-  chips: { neckline: string; sleeves: string; length: string; decollete: string },
+  chips: {
+    neckline: string;
+    sleeves: string;
+    fit?: string;
+    length: string;
+    decollete: string;
+    rise?: string;
+    hem?: string;
+  },
+  family?: "elbise" | "ust-giyim" | "alt-giyim" | null,
 ): TrProductFeatures {
   const next: TrProductFeatures = { ...(current ?? {}) };
+  next.length = chips.length;
+  if (chips.fit?.trim()) {
+    next.fit = chips.fit.trim();
+    delete next.silhouette;
+  } else delete next.fit;
+  if (family === "alt-giyim") {
+    delete next.neckline;
+    delete next.sleeves;
+    delete next.decollete;
+    if (chips.rise?.trim()) next.rise = chips.rise.trim();
+    else delete next.rise;
+    if (chips.hem?.trim()) next.neckHem = chips.hem.trim();
+    else delete next.neckHem;
+    return next;
+  }
   next.neckline = chips.neckline;
   next.sleeves = chips.sleeves;
-  next.length = chips.length;
+  delete next.rise;
   if (chips.decollete.trim()) next.decollete = chips.decollete.trim();
   else delete next.decollete;
   return next;
@@ -95,12 +120,13 @@ export function featuresWithLifestyleModels(
 }
 
 export function estimateElbiseRestyleCredits(
-  product: Pick<TrProduct, "features" | "images">,
+  product: Pick<TrProduct, "features" | "images" | "category">,
   modelId: string | null,
 ): number {
   const { detailUrl } = elbiseSourceUrls(product);
+  const family = constructionCatalogFamily(undefined, product.category);
   const modelCredits = describeModelPackageCredits(modelId, {
-    uploadType: "elbise",
+    uploadType: family ?? "elbise",
     features: chipsFromProductFeatures(product.features),
     detailImageUrl: detailUrl,
   });

@@ -1,4 +1,9 @@
-/** Garment-specific product upload pipelines. Elbise is live; others are stubs. */
+import {
+  isTrCategoryMatch,
+  parseAiCategoryId,
+} from "@/lib/tr/catalog/categories";
+
+/** Garment-specific product upload pipelines. Elbise + üst giyim + alt giyim are live. */
 
 export const GARMENT_UPLOAD_TYPE_IDS = [
   "elbise",
@@ -9,6 +14,8 @@ export const GARMENT_UPLOAD_TYPE_IDS = [
 ] as const;
 
 export type GarmentUploadTypeId = (typeof GARMENT_UPLOAD_TYPE_IDS)[number];
+
+export type ConstructionCatalogFamily = "elbise" | "ust-giyim" | "alt-giyim";
 
 export interface GarmentUploadType {
   id: GarmentUploadTypeId;
@@ -31,15 +38,15 @@ export const GARMENT_UPLOAD_TYPES: GarmentUploadType[] = [
     id: "ust-giyim",
     label: "Üst giyim",
     categoryId: "ust-giyim",
-    live: false,
-    hint: "Yakında",
+    live: true,
+    hint: "Ön manken, arka manken, isteğe bağlı detay + ön packshot",
   },
   {
     id: "alt-giyim",
     label: "Alt giyim",
     categoryId: "alt-giyim",
-    live: false,
-    hint: "Yakında",
+    live: true,
+    hint: "Ön manken, arka manken, isteğe bağlı detay + düz serim packshot",
   },
   {
     id: "aksesuar",
@@ -80,6 +87,97 @@ export function isElbiseUpload(
   return parseGarmentUploadTypeId(uploadType) === "elbise";
 }
 
+export function isConstructionCatalogUpload(
+  uploadType: string | null | undefined,
+): boolean {
+  const id = parseGarmentUploadTypeId(uploadType);
+  return id === "elbise" || id === "ust-giyim" || id === "alt-giyim";
+}
+
+/** Parent `ust-giyim` or any descendant leaf (bluz, gömlek, …). */
+export function isUstGiyimCategory(
+  category: string | null | undefined,
+): boolean {
+  return isTrCategoryMatch(category, "ust-giyim");
+}
+
+/** Shop leaf under üst giyim — never the parent tile. */
+export function isUstGiyimShopLeaf(
+  category: string | null | undefined,
+): boolean {
+  const id = category?.trim();
+  if (!id || id === "ust-giyim") return false;
+  return isUstGiyimCategory(id);
+}
+
+/** Parent `alt-giyim` or any descendant leaf (etek, pantolon, …). */
+export function isAltGiyimCategory(
+  category: string | null | undefined,
+): boolean {
+  return isTrCategoryMatch(category, "alt-giyim");
+}
+
+/** Shop leaf under alt giyim — never the parent tile. */
+export function isAltGiyimShopLeaf(
+  category: string | null | undefined,
+): boolean {
+  const id = category?.trim();
+  if (!id || id === "alt-giyim") return false;
+  return isAltGiyimCategory(id);
+}
+
+/** Etek (and etek variants) — no Paça chip; dress-style boy. */
+export function isAltGiyimSkirtLeaf(
+  category: string | null | undefined,
+): boolean {
+  return isTrCategoryMatch(category, "etek");
+}
+
+/** Pantolon / eşofman — Paça required. Unknown leaf defaults to this. */
+export function altGiyimUsesPaca(
+  category: string | null | undefined,
+): boolean {
+  return !isAltGiyimSkirtLeaf(category);
+}
+
+/** Elbise, or an üst / alt giyim leaf (a saved bluz is `bluz`, not `ust-giyim`). */
+export function isConstructionCatalogCategory(
+  category: string | null | undefined,
+): boolean {
+  return (
+    isElbiseUpload(category) ||
+    isUstGiyimCategory(category) ||
+    isAltGiyimCategory(category)
+  );
+}
+
+export function constructionCatalogFamily(
+  uploadType?: string | null,
+  category?: string | null,
+): ConstructionCatalogFamily | null {
+  const type = parseGarmentUploadTypeId(uploadType);
+  if (type === "elbise" || type === "ust-giyim" || type === "alt-giyim") {
+    return type;
+  }
+  if (isElbiseUpload(category)) return "elbise";
+  if (isUstGiyimCategory(category)) return "ust-giyim";
+  if (isAltGiyimCategory(category)) return "alt-giyim";
+  return null;
+}
+
+/** Persist a shop leaf — never parent `ust-giyim` / `alt-giyim`. */
+export function parseConstructionShopCategory(
+  raw: unknown,
+  family: ConstructionCatalogFamily,
+): string | null {
+  if (family === "elbise") return "elbise";
+  const id = parseAiCategoryId(raw);
+  if (family === "alt-giyim") {
+    return id && isAltGiyimShopLeaf(id) ? id : null;
+  }
+  return id && isUstGiyimShopLeaf(id) ? id : null;
+}
+
 /** Elbise FASHN packshot always lives here — not `requiredPhotoSlots`. */
 export const ELBISE_PACKSHOT_SLOT = 3;
 /** Optional dekolte / detay manken photo. */
@@ -92,9 +190,9 @@ export function requiredPhotoSlotsForUploadType(
   return 2;
 }
 
-/** Guided picker tiles (elbise still shows optional detay as slot 2). */
+/** Guided picker tiles (construction catalog shows optional detay as slot 2). */
 export function guidedPhotoSlotCountForUploadType(
   uploadType: string | null | undefined,
 ): number {
-  return isElbiseUpload(uploadType) ? 3 : 2;
+  return isConstructionCatalogUpload(uploadType) ? 3 : 2;
 }

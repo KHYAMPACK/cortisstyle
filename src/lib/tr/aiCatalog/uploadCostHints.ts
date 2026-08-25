@@ -8,7 +8,7 @@
 
 import { elbiseModelShotCount } from "@/lib/tr/aiModel/elbiseTryOn";
 import type { ElbiseConstructionChips } from "@/lib/tr/aiCatalog/elbiseConstructionLock";
-import { isElbiseUpload } from "@/lib/tr/catalog/garmentUploadTypes";
+import { constructionCatalogFamily, isConstructionCatalogUpload } from "@/lib/tr/catalog/garmentUploadTypes";
 
 export const TR_AI_CATALOG_CREDITS = {
   /** Front + back packshot together */
@@ -71,7 +71,7 @@ const exampleFullCredits =
 
 export const TR_AI_CREDITS_INFO_LINES = [
   `Ürün katalog paketi (ön + arka): ${TR_AI_CATALOG_CREDITS.productPackage} kredi → ${formatCreditPriceBoth(TR_AI_CATALOG_CREDITS.productPackage)}`,
-  `Model fotoğrafı (isteğe bağlı): ${TR_AI_CATALOG_CREDITS.modelPackage} kredi / kare. Elbise 2 kare (dekolte/detay fotoğrafı varsa 3).`,
+  `Model fotoğrafı (isteğe bağlı): ${TR_AI_CATALOG_CREDITS.modelPackage} kredi / kare. Elbise / üst giyim 2 kare (detay fotoğrafı varsa 3).`,
   `Örnek: katalog + 1 model karesi = ${exampleFullCredits} kredi → ${formatCreditPriceBoth(exampleFullCredits)}`,
   `1 kredi = $${TR_AI_CATALOG_CREDITS.priceUsdPerCredit.toFixed(2)} (~${priceTryPerCredit()} ₺)`,
   "Ödeme: krediler butik hesabınızdan düşülür.",
@@ -89,11 +89,11 @@ export function describePhotoSlotCost(
   credits: number | null;
   costPrefix: string;
 } {
-  if (uploadType === "elbise") {
+  if (isConstructionCatalogUpload(uploadType)) {
     if (slotIndex === 0) {
       return {
         title: "Ön manken",
-        subtitle: "Elbisenin önden tam boy manken fotoğrafı.",
+        subtitle: "Önden tam boy manken fotoğrafı.",
         bullets: [
           "Olduğu gibi kaydedilir — packshot sonra üretilir.",
           "Kişi kesilmez.",
@@ -105,10 +105,13 @@ export function describePhotoSlotCost(
     if (slotIndex === 1) {
       return {
         title: "Arka manken",
-        subtitle: "Elbisenin arkadan tam boy manken fotoğrafı.",
+        subtitle: "Arkadan tam boy manken fotoğrafı.",
         bullets: [
-          "Askı, sırt dekolte ve etek arkası görünsün.",
-          "Ön ve arka tamamınca 1 ön packshot üretilir (beyaz zemin, ghost mannequin).",
+          "Askı, sırt detay ve etek / paça arkası görünsün.",
+          isConstructionCatalogUpload(uploadType) &&
+            constructionCatalogFamily(uploadType) === "alt-giyim"
+            ? "Ön ve arka tamamınca 1 ön packshot üretilir (beyaz zemin, düz serim)."
+            : "Ön ve arka tamamınca 1 ön packshot üretilir (beyaz zemin, ghost mannequin).",
           "Ürün paketi: 1 kredi.",
         ],
         credits: TR_AI_CATALOG_CREDITS.productPackage,
@@ -188,11 +191,12 @@ export function describeModelPackageShots(
   _modelId?: string | null,
   context?: ModelPackageCostContext,
 ): number {
-  if (isElbiseUpload(context?.uploadType)) {
+  if (isConstructionCatalogUpload(context?.uploadType)) {
     return elbiseModelShotCount(
       context?.features,
       _modelId,
       context?.detailImageUrl,
+      constructionCatalogFamily(context?.uploadType),
     );
   }
   return TR_AI_CATALOG_CREDITS.modelPackageShots;

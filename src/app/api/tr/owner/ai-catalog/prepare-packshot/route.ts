@@ -2,7 +2,7 @@ import { hasElbiseLockedConstruction } from "@/lib/tr/aiCatalog/elbiseConstructi
 import { draftProductListingFromImage } from "@/lib/tr/aiCatalog/listingDraft";
 import { buildElbisePackshotPrompt } from "@/lib/tr/aiCatalog/packshotPrompt";
 import { resolvePackshotPrompt } from "@/lib/tr/aiCatalog/resolvePackshotPrompt";
-import { isElbiseUpload } from "@/lib/tr/catalog/garmentUploadTypes";
+import { constructionCatalogFamily } from "@/lib/tr/catalog/garmentUploadTypes";
 import { getBoutiqueByIdAdmin } from "@/lib/tr/boutiques";
 import {
   requireOwnedBoutique,
@@ -27,8 +27,11 @@ type Body = {
   lockedConstruction?: {
     neckline?: string | null;
     sleeves?: string | null;
+    fit?: string | null;
     length?: string | null;
     decollete?: string | null;
+    rise?: string | null;
+    hem?: string | null;
   } | null;
 };
 
@@ -73,24 +76,26 @@ export async function POST(request: Request) {
     );
   }
 
-  if (isElbiseUpload(body.uploadType) || body.detailImageUrl?.trim()) {
+  const family = constructionCatalogFamily(body.uploadType, body.category);
+  if (family) {
     const draft = await draftProductListingFromImage({
       sourceImageUrl,
       backImageUrl: body.backImageUrl,
       detailImageUrl: body.detailImageUrl,
-      category: "elbise",
-      uploadType: "elbise",
+      category: family === "elbise" ? "elbise" : body.category,
+      uploadType: family,
       existingTitle: body.existingTitle,
       existingDescription: body.existingDescription,
       lockedConstruction: body.lockedConstruction,
     });
     const locked = body.lockedConstruction;
-    const hasLock = hasElbiseLockedConstruction(locked);
+    const hasLock = hasElbiseLockedConstruction(locked, family, body.category);
     return Response.json({
       ok: true,
       prompt: buildElbisePackshotPrompt(
         draft?.promptFront,
         hasLock ? locked : undefined,
+        family,
       ),
       listingDraft: draft,
       usedGemini: Boolean(draft),

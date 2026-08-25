@@ -17,6 +17,8 @@ export const TR_PRODUCT_FEATURE_KEYS = [
   "sleeves",
   "length",
   "decollete",
+  "rise",
+  "ornament",
   "fabric",
   "zipper",
   "stretch",
@@ -28,13 +30,15 @@ export type TrProductFeatureKey = (typeof TR_PRODUCT_FEATURE_KEYS)[number];
 
 export const TR_PRODUCT_FEATURE_LABELS: Record<TrProductFeatureKey, string> = {
   gender: "Cinsiyet",
-  fit: "Fit",
+  fit: "Kalıp",
   color: "Renk",
   neckHem: "Yaka / Paça Detay",
   neckline: "Yaka",
   sleeves: "Kol",
   length: "Boy",
   decollete: "Dekolte",
+  rise: "Bel",
+  ornament: "Detay",
   fabric: "Kumaş",
   zipper: "Fermuar",
   stretch: "Esneklik",
@@ -51,6 +55,8 @@ export const TR_PRODUCT_FEATURE_LIMITS: Record<TrProductFeatureKey, number> = {
   sleeves: 40,
   length: 40,
   decollete: 40,
+  rise: 40,
+  ornament: 48,
   fabric: 160,
   zipper: 40,
   stretch: 40,
@@ -61,8 +67,10 @@ export const TR_PRODUCT_FEATURE_LIMITS: Record<TrProductFeatureKey, number> = {
 const DRESS_SANITIZE_KEYS: DressFeatureKey[] = [
   "neckline",
   "sleeves",
+  "fit",
   "length",
   "decollete",
+  "rise",
   "fabric",
   "zipper",
   "stretch",
@@ -159,10 +167,19 @@ export function sanitizeProductFeatures(
   const record = raw as Record<string, unknown>;
   const next: TrProductFeatures = {};
   for (const key of TR_PRODUCT_FEATURE_KEYS) {
-    const rawValue = typeof record[key] === "string" ? record[key] : null;
-    const mapped = DRESS_SANITIZE_KEYS.includes(key as DressFeatureKey)
-      ? resolveDressFeatureValue(key as DressFeatureKey, rawValue)
-      : clampFeature(key, rawValue);
+    const rawValue =
+      key === "neckHem" && typeof record.hem === "string" && !record.neckHem
+        ? record.hem
+        : typeof record[key] === "string"
+          ? record[key]
+          : null;
+    const mapped =
+      key === "neckHem"
+        ? resolveDressFeatureValue("hem", rawValue) ||
+          clampFeature(key, rawValue)
+        : DRESS_SANITIZE_KEYS.includes(key as DressFeatureKey)
+          ? resolveDressFeatureValue(key as DressFeatureKey, rawValue)
+          : clampFeature(key, rawValue);
     const value = clampFeature(key, mapped);
     if (value) next[key] = value;
   }
@@ -205,6 +222,10 @@ export function listProductFeatureRows(
     if (key === "fit" && merged.silhouette?.trim()) return [];
     const value = merged[key]?.trim();
     if (!value) return [];
-    return [{ key, label: TR_PRODUCT_FEATURE_LABELS[key], value }];
+    const label =
+      key === "neckHem" && merged.rise?.trim()
+        ? "Paça"
+        : TR_PRODUCT_FEATURE_LABELS[key];
+    return [{ key, label, value }];
   });
 }

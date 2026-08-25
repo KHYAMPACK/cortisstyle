@@ -2,9 +2,9 @@
 
 import { panelChipClass } from "@/components/tr/panel/panelUi";
 import {
-  DRESS_FEATURE_GROUPS,
-  type DressFeatureKey,
+  getConstructionFeatureGroups,
 } from "@/lib/tr/catalog/dressFeatures";
+import type { ConstructionCatalogFamily } from "@/lib/tr/catalog/garmentUploadTypes";
 import {
   TR_PRODUCT_FEATURE_KEYS,
   TR_PRODUCT_FEATURE_LABELS,
@@ -17,6 +17,7 @@ const HINTS: Partial<Record<keyof TrProductFeatures, string>> = {
   fit: "Örn. Relaxed, Slim, Oversize",
   color: "Fotoğraftaki renk",
   neckHem: "Yaka veya paça detayı",
+  ornament: "İnci işlemeli, dantel — yoksa boş",
   fabric: "Kumaşın görünümü / tutumu",
   composition: "Yalnızca etiketten okunabiliyorsa",
 };
@@ -41,8 +42,10 @@ interface TrOwnerProductFeaturesFieldsProps {
   fieldClass: string;
   labelClass?: string;
   hintClass?: string;
-  /** Elbise: chip groups instead of the generic free-text grid. */
+  /** Elbise / üst giyim / alt giyim: chip groups instead of the generic free-text grid. */
   variant?: "default" | "dress";
+  family?: ConstructionCatalogFamily;
+  shopCategory?: string | null;
 }
 
 export function TrOwnerProductFeaturesFields({
@@ -53,6 +56,8 @@ export function TrOwnerProductFeaturesFields({
   labelClass = "text-[17px] font-semibold text-neutral-800",
   hintClass = "text-[13px] text-neutral-500",
   variant = "default",
+  family = "elbise",
+  shopCategory = null,
 }: TrOwnerProductFeaturesFieldsProps) {
   const setField = (key: (typeof TR_PRODUCT_FEATURE_KEYS)[number], raw: string) => {
     const next = raw.slice(0, TR_PRODUCT_FEATURE_LIMITS[key]);
@@ -62,7 +67,7 @@ export function TrOwnerProductFeaturesFields({
     });
   };
 
-  const toggleChip = (key: DressFeatureKey | "gender", label: string) => {
+  const toggleChip = (key: "gender", label: string) => {
     const current = value[key] ?? "";
     setField(key, current === label ? "" : label);
   };
@@ -94,8 +99,9 @@ export function TrOwnerProductFeaturesFields({
           </div>
         </div>
 
-        {DRESS_FEATURE_GROUPS.map((group) => {
-          const current = value[group.key] ?? "";
+        {getConstructionFeatureGroups(family, shopCategory).map((group) => {
+          const storageKey = group.key === "hem" ? "neckHem" : group.key;
+          const current = value[storageKey as keyof TrProductFeatures] ?? "";
           return (
             <div key={group.key} className="space-y-2">
               <p className="text-[14px] font-medium text-neutral-700">
@@ -112,7 +118,12 @@ export function TrOwnerProductFeaturesFields({
                     key={option.id}
                     type="button"
                     disabled={disabled}
-                    onClick={() => toggleChip(group.key, option.label)}
+                    onClick={() =>
+                      setField(
+                        storageKey as (typeof TR_PRODUCT_FEATURE_KEYS)[number],
+                        current === option.label ? "" : option.label,
+                      )
+                    }
                     className={panelChipClass(current === option.label)}
                   >
                     {option.label}
@@ -122,6 +133,25 @@ export function TrOwnerProductFeaturesFields({
             </div>
           );
         })}
+
+        {family === "alt-giyim" ? (
+          <label className="block space-y-2">
+            <span className="text-[14px] font-medium text-neutral-700">
+              {TR_PRODUCT_FEATURE_LABELS.ornament}
+              <span className="ml-1 font-normal text-neutral-400">
+                (isteğe bağlı)
+              </span>
+            </span>
+            <input
+              value={value.ornament ?? ""}
+              onChange={(event) => setField("ornament", event.target.value)}
+              className={fieldClass}
+              maxLength={TR_PRODUCT_FEATURE_LIMITS.ornament}
+              placeholder={HINTS.ornament}
+              disabled={disabled}
+            />
+          </label>
+        ) : null}
 
         {DRESS_FREE_TEXT_KEYS.map((key) => {
           const multiline = key === "composition";

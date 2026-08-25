@@ -427,8 +427,11 @@ export async function requestOwnerPackshotPrepare(input: {
   lockedConstruction?: {
     neckline?: string | null;
     sleeves?: string | null;
+    fit?: string | null;
     length?: string | null;
     decollete?: string | null;
+    rise?: string | null;
+    hem?: string | null;
   } | null;
 }): Promise<OwnerPackshotPrepareResult> {
   const response = await ownerFetch(

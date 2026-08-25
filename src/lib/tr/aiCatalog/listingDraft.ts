@@ -4,13 +4,25 @@ import {
   type TrProductFeatures,
 } from "@/lib/tr/catalog/productFeatures";
 import {
+  getTrCategoryLabel,
+  getTrCategoryNavChildren,
   listAssignableTrCategories,
   parseAiCategoryId,
 } from "@/lib/tr/catalog/categories";
 import { TR_OWNER_PRODUCT_LIMITS } from "@/lib/tr/ownerProductConstraints";
-import { dressGeminiEnumHint, resolveDressFeatureValue } from "@/lib/tr/catalog/dressFeatures";
+import {
+  dressFeatureOptionId,
+  dressGeminiEnumHint,
+  resolveDressFeatureValue,
+} from "@/lib/tr/catalog/dressFeatures";
 import { hasElbiseLockedConstruction } from "@/lib/tr/aiCatalog/elbiseConstructionLock";
-import { ELBISE_PACKSHOT_PROMPT } from "@/lib/tr/fashn/packshot";
+import {
+  constructionCatalogFamily,
+  isAltGiyimSkirtLeaf,
+  parseConstructionShopCategory,
+  type ConstructionCatalogFamily,
+} from "@/lib/tr/catalog/garmentUploadTypes";
+import { constructionPackshotBasePrompt } from "@/lib/tr/fashn/packshot";
 
 const GEMINI_MODELS = [
   "gemini-2.5-flash",
@@ -61,13 +73,16 @@ export async function fetchImageAsBase64ForVision(
 }
 
 /** Strip marketing fluff and clamp to product limits. */
-export function sanitizeListingDraft(raw: {
-  title?: string | null;
-  description?: string | null;
-  features?: unknown;
-  category?: unknown;
-  promptFront?: string | null;
-}): ProductListingDraft | null {
+export function sanitizeListingDraft(
+  raw: {
+    title?: string | null;
+    description?: string | null;
+    features?: unknown;
+    category?: unknown;
+    promptFront?: string | null;
+  },
+  options?: { family?: ConstructionCatalogFamily | null },
+): ProductListingDraft | null {
   let title = (raw.title ?? "")
     .replace(/\s+/g, " ")
     .replace(/^["“”']+|["“”']+$/g, "")
@@ -88,14 +103,116 @@ export function sanitizeListingDraft(raw: {
     .trim()
     .slice(0, 600);
 
-  return {
+  const draft: ProductListingDraft = {
     title,
     description,
     features: sanitizeProductFeatures(raw.features),
-    category: parseAiCategoryId(raw.category),
+    category: options?.family
+      ? parseConstructionShopCategory(raw.category, options.family)
+      : parseAiCategoryId(raw.category),
     promptFront: promptFront || null,
   };
+  return applyConstructionListingTitle(draft, options?.family);
 }
+
+/** Elbise / tops / bottoms title formulas. */
+export function formatConstructionProductTitle(input: {
+  family: ConstructionCatalogFamily;
+  color?: string | null;
+  length?: string | null;
+  neckline?: string | null;
+  fit?: string | null;
+  hem?: string | null;
+  ornament?: string | null;
+  category?: string | null;
+}): string | null {
+  const color = input.color?.replace(/\s+/g, " ").trim();
+  if (!color) return null;
+
+  const length = resolveDressFeatureValue("length", input.length);
+  const lengthId = dressFeatureOptionId("length", input.length);
+  const neckline = resolveDressFeatureValue("neckline", input.neckline);
+  const fit = resolveDressFeatureValue("fit", input.fit);
+  const fitId = dressFeatureOptionId("fit", input.fit);
+  const hem = resolveDressFeatureValue("hem", input.hem);
+  const hemId = dressFeatureOptionId("hem", input.hem);
+  const ornament = (input.ornament ?? "").replace(/\s+/g, " ").trim();
+
+  if (input.family === "elbise") {
+    const title = [color, length, neckline, "Elbise"]
+      .filter(Boolean)
+      .join(" ");
+    return title.length >= 2 ? title : null;
+  }
+
+  const includeFit = Boolean(fit && fitId && fitId !== "regular");
+  const includeLength = Boolean(length && lengthId && lengthId !== "normal");
+  const parentId = input.family === "alt-giyim" ? "alt-giyim" : "ust-giyim";
+  const category =
+    getTrCategoryLabel(input.category)?.trim() ||
+    (input.category && input.category !== parentId
+      ? input.category.trim()
+      : "");
+
+  if (input.family === "alt-giyim") {
+    const includeHem = Boolean(hem && hemId && hemId !== "duz");
+    const skirt = isAltGiyimSkirtLeaf(input.category);
+    const title = [
+      color,
+      ornament,
+      includeFit ? fit : "",
+      skirt ? (includeLength ? length : "") : includeHem ? hem : "",
+      category,
+    ]
+      .filter(Boolean)
+      .join(" ");
+    return title.length >= 2 ? title : null;
+  }
+
+  const title = [
+    color,
+    neckline,
+    includeFit ? fit : "",
+    includeLength ? length : "",
+    category,
+  ]
+    .filter(Boolean)
+    .join(" ");
+  return title.length >= 2 ? title : null;
+}
+
+export function applyConstructionListingTitle<
+  T extends {
+    title: string;
+    features?: TrProductFeatures | null;
+    category?: string | null;
+  },
+>(draft: T, family?: ConstructionCatalogFamily | null): T {
+  if (!family) return draft;
+  const formatted = formatConstructionProductTitle({
+    family,
+    color: draft.features?.color,
+    length: draft.features?.length,
+    neckline: draft.features?.neckline,
+    fit: draft.features?.fit,
+    hem: draft.features?.neckHem,
+    ornament: draft.features?.ornament,
+    category: family === "elbise" ? "elbise" : draft.category,
+  });
+  if (!formatted) return draft;
+  return {
+    ...draft,
+    title: formatted.slice(0, TR_OWNER_PRODUCT_LIMITS.titleMax),
+  };
+}
+
+const UST_GIYIM_LEAF_HINT = getTrCategoryNavChildren("ust-giyim")
+  .map((entry) => `${entry.id} (${entry.label})`)
+  .join(", ");
+
+const ALT_GIYIM_LEAF_HINT = getTrCategoryNavChildren("alt-giyim")
+  .map((entry) => `${entry.id} (${entry.label})`)
+  .join(", ");
 
 const ASSIGNABLE_CATEGORY_HINT = listAssignableTrCategories()
   .map((entry) => `${entry.id} (${entry.label})`)
@@ -307,8 +424,11 @@ export async function draftProductListingFromImage(input: {
   lockedConstruction?: {
     neckline?: string | null;
     sleeves?: string | null;
+    fit?: string | null;
     length?: string | null;
     decollete?: string | null;
+    rise?: string | null;
+    hem?: string | null;
   } | null;
 }): Promise<ProductListingDraft | null> {
   const llm = resolveLlmProvider();
@@ -335,18 +455,24 @@ export async function draftProductListingFromImage(input: {
   }
 
   const locked = input.lockedConstruction;
-  const rewrite = hasElbiseLockedConstruction(locked);
-  const elbise = extraImages.length > 0 || input.uploadType === "elbise";
+  const family =
+    constructionCatalogFamily(input.uploadType, input.category) ??
+    (extraImages.length > 0 ? "elbise" : null);
+  const rewrite = hasElbiseLockedConstruction(locked, family, input.category);
+  const construction = family != null;
   const models = Array.from(new Set([llm.model, ...GEMINI_MODELS]));
-  const systemText = rewrite
-    ? dressPackshotRewritePrompt({
-        neckline: locked!.neckline!.trim(),
-        sleeves: locked!.sleeves!.trim(),
+  const systemText = rewrite && family
+    ? constructionPackshotRewritePrompt(family, {
+        neckline: locked!.neckline?.trim() || "",
+        sleeves: locked!.sleeves?.trim() || "",
+        fit: locked?.fit?.trim() || "",
         length: locked!.length!.trim(),
         decollete: locked?.decollete?.trim() || "",
+        rise: locked?.rise?.trim() || "",
+        hem: locked?.hem?.trim() || "",
       })
-    : elbise
-      ? dressListingSystemPrompt()
+    : construction && family
+      ? constructionListingSystemPrompt(family)
       : listingDraftSystemPrompt({
           category: input.category,
           includePromptExtra: false,
@@ -367,36 +493,52 @@ export async function draftProductListingFromImage(input: {
         new Promise<null>((resolve) => setTimeout(() => resolve(null), 25_000)),
       ]);
       if (!parsed) continue;
-      const draft = sanitizeListingDraft({
-        title:
-          (typeof parsed.title === "string" ? parsed.title : null) ||
-          input.existingTitle ||
-          null,
-        description:
-          (typeof parsed.description === "string" ? parsed.description : null) ||
-          input.existingDescription ||
-          null,
-        features: parsed.features,
-        category: parsed.category ?? (elbise || rewrite ? "elbise" : null),
-        promptFront:
-          typeof parsed.promptFront === "string" ? parsed.promptFront : null,
-      });
+      const draft = sanitizeListingDraft(
+        {
+          title:
+            (typeof parsed.title === "string" ? parsed.title : null) ||
+            input.existingTitle ||
+            null,
+          description:
+            (typeof parsed.description === "string"
+              ? parsed.description
+              : null) ||
+            input.existingDescription ||
+            null,
+          features: parsed.features,
+          category: parsed.category ?? (family === "elbise" ? "elbise" : null),
+          promptFront:
+            typeof parsed.promptFront === "string" ? parsed.promptFront : null,
+        },
+        { family },
+      );
       if (!draft) continue;
       if (rewrite && locked) {
         const neckline = resolveDressFeatureValue("neckline", locked.neckline);
         const sleeves = resolveDressFeatureValue("sleeves", locked.sleeves);
+        const fit = resolveDressFeatureValue("fit", locked.fit);
         const length = resolveDressFeatureValue("length", locked.length);
         const decollete = resolveDressFeatureValue(
           "decollete",
           locked.decollete,
         );
+        const rise = resolveDressFeatureValue("rise", locked.rise);
+        const hem = resolveDressFeatureValue("hem", locked.hem);
         if (neckline) draft.features.neckline = neckline;
         if (sleeves) draft.features.sleeves = sleeves;
+        if (fit) draft.features.fit = fit;
         if (length) draft.features.length = length;
+        if (rise) draft.features.rise = rise;
+        if (hem) draft.features.neckHem = hem;
         if (decollete) draft.features.decollete = decollete;
         else delete draft.features.decollete;
+        if (family === "alt-giyim") {
+          delete draft.features.neckline;
+          delete draft.features.sleeves;
+          delete draft.features.decollete;
+        }
       }
-      return draft;
+      return applyConstructionListingTitle(draft, family);
     } catch (error) {
       console.warn(
         "[listing-draft] Gemini failed:",
@@ -408,90 +550,185 @@ export async function draftProductListingFromImage(input: {
   return null;
 }
 
-function dressListingSystemPrompt(): string {
-  return `You help a Turkish boutique list a DRESS (elbise) from on-model photos.
-
-Return JSON only:
-{
-  "title": "Turkish product name",
-  "description": "Turkish elegant two-sentence product detail",
-  "features": {
-    "gender": "Kadın",
+function constructionListingSystemPrompt(
+  family: ConstructionCatalogFamily,
+): string {
+  const bottom = family === "alt-giyim";
+  const top = family === "ust-giyim";
+  const garment = bottom
+    ? "BOTTOM (alt giyim — etek, pantolon, eşofman)"
+    : top
+      ? "TOP (üst giyim — bluz, gömlek, tişört, ceket…)"
+      : "DRESS (elbise)";
+  const nameHint = bottom
+    ? `Exact formula: pants [Renk] [Detay if photographed] [Kalıp if not Regular] [Paça if not Düz] [Kategori]; etek [Renk] [Detay if photographed] [Kalıp if not Regular] [Boy if not Normal] [Kategori]. Examples: "Siyah İnci işlemeli Wide İspanyol Pantolon", "Mavi Slim Pantolon", "Siyah İnci işlemeli Slim Midi Etek", "Siyah Midi Etek". Detay is a short visible ornament only (inci işlemeli, dantel, pile) — omit when none. Omit Regular kalıp, Düz paça, Normal boy. Do not put Bel in the title. Use the shop-leaf label (Etek, Pantolon, Eşofman), not "alt giyim". Eşofman is joggers only — not a tracksuit set. No extra adjectives, brand, or fabric unless it is the color.`
+    : top
+      ? `Exact formula: [Renk] [Yaka] [Kalıp if not Regular] [Boy if not Normal] [Kategori]. Examples: "Kahverengi Polo yaka Oversize Crop Bluz", "Beyaz Yuvarlak yaka Gömlek" (omit Regular kalıp and Normal boy). Use the shop-leaf label (Bluz, Gömlek, Tişört…), not "üst giyim". No extra adjectives, brand, or fabric unless it is the color.`
+      : `Exact formula: [Renk] [Boy] [Yaka] Elbise. Example: "Siyah Midi Straplez Elbise". Use chip labels (Midi, Maxi, Polo yaka…). No extra adjectives, brand, or fabric unless it is the color.`;
+  const categoryRule = bottom
+    ? `- Must be a shop leaf under alt giyim: ${ALT_GIYIM_LEAF_HINT}
+- Never return parent "alt-giyim". Never return elbise or üst giyim.`
+    : top
+      ? `- Must be a shop leaf under üst giyim: ${UST_GIYIM_LEAF_HINT}
+- Never return parent "ust-giyim". Never return elbise.`
+      : '- Always "elbise".';
+  const noSkirt = bottom
+    ? "Do not invent missing parts. Do not turn pants into a dress or a skirt into pants. Do not invent a matching top. Do not describe a person."
+    : top
+      ? "Do not invent missing parts. Do not turn the top into a dress or a skirt. Do not describe a back packshot or a person."
+      : "Do not invent missing parts. Do not turn the dress into a skirt. Do not describe a back packshot or a person.";
+  const featuresBlock = bottom
+    ? `"gender": "Kadın",
+    "color": "",
+    "rise": "",
+    "fit": "",
+    "length": "",
+    "hem": "",
+    "ornament": "",
+    "fabric": "",
+    "zipper": "",
+    "stretch": "",
+    "composition": ""`
+    : `"gender": "Kadın",
     "color": "",
     "neckline": "",
     "sleeves": "",
+    "fit": "",
     "length": "",
     "decollete": "",
     "fabric": "",
     "zipper": "",
     "stretch": "",
     "silhouette": "",
-    "composition": ""
+    "composition": ""`;
+  const promptRules = bottom
+    ? `- English. Staging + construction lock for ONE top-down flat-lay packshot (not ghost mannequin).
+- Base look: "${constructionPackshotBasePrompt(family)}"
+- Name the exact rise (bel), fit, paça, and hem length from ALL photos.
+- Do not describe a ghost mannequin, worn volume, or a person.`
+    : `- English. Staging + construction lock for ONE front ghost-mannequin packshot.
+- Base look: "${constructionPackshotBasePrompt(family)}"
+- Name the exact neckline, sleeve length, and hem length from ALL photos.
+- sleeves is independent of yaka: polo/shirt pieces often have short or long sleeves; straplez is usually kolsuz. Do not assume sleeveless from yaka.
+- If sleeveless, say so via sleeves=kolsuz. If short/three-quarter/long sleeves are visible, lock that. Do not invent or remove sleeves, off-shoulder drape, or arm flaps.`;
+  return `You help a Turkish boutique list a ${garment} from on-model photos.
+
+Return JSON only:
+{
+  "title": "Turkish product name",
+  "description": "Turkish elegant two-sentence product detail",
+  "features": {
+    ${featuresBlock}
   },
-  "category": "elbise",
+  "category": ${bottom ? '"pantolon"' : top ? '"bluz"' : '"elbise"'},
   "promptFront": "English FASHN packshot lock, under 400 characters"
 }
 
 title:
-- Color + elbise + one concrete visible detail. Max ~40 chars. No invented brand.
+- ${nameHint}
 
 description:
-- Exactly 2 Turkish sentences. Use only what is photographed (neckline, sleeves, length, hem/lace, straps, fabric look).
+- Exactly 2 Turkish sentences. Use only what is photographed (${bottom ? "rise, length, paça, fabric look" : "neckline, sleeves, length, hem/lace, straps, fabric look"}).
 - Do not invent zipper, stretch %, or fiber unless visible.
 
 features — use these enum ids (omit key if not visible):
-${dressGeminiEnumHint()}
+${dressGeminiEnumHint(family)}
 - color: Turkish color name from the photo.
 - gender: almost always Kadın.
 - composition: ONLY if a care label with fiber % is readable. Never invent percentages.
 - Fermuar/kapama IS allowed as zipper. Omit if you cannot see a zipper.
+${bottom ? "- hem is paça (leg opening). Omit hem when the garment is an etek.\n- ornament: short Turkish phrase only if a distinctive trim is clearly photographed (inci işlemeli, dantel, taşlı, pile). Omit if none. Not fabric, not kalıp, not paça." : ""}
+
+category:
+${categoryRule}
 
 promptFront:
-- English. Staging + construction lock for ONE front ghost-mannequin packshot.
-- Base look: "${ELBISE_PACKSHOT_PROMPT}"
-- Name the exact neckline, sleeve length, and hem length from ALL photos.
-- sleeves is independent of yaka: polo/shirt dresses often have short or long sleeves; straplez is usually kolsuz. Do not assume sleeveless from yaka.
-- If sleeveless, say so via sleeves=kolsuz. If short/three-quarter/long sleeves are visible, lock that. Do not invent or remove sleeves, off-shoulder drape, or arm flaps.
-- Do not invent missing parts. Do not turn the dress into a skirt. Do not describe a back packshot or a person.
+${promptRules}
+- ${noSkirt}
 `;
 }
 
-function dressPackshotRewritePrompt(locked: {
-  neckline: string;
-  sleeves: string;
-  length: string;
-  decollete: string;
-}): string {
-  const detay = locked.decollete
-    ? `- Decollete/detail: ${locked.decollete}`
-    : "- Decollete: none specified — do not invent cleavage or extra cutouts.";
-  return `You rewrite ONLY the English FASHN packshot prompt for this exact dress.
-
-LOCKED construction — do not contradict, do not invent a different neckline, sleeves, or length:
-- Neckline (yaka): ${locked.neckline}
+function constructionPackshotRewritePrompt(
+  family: ConstructionCatalogFamily,
+  locked: {
+    neckline: string;
+    sleeves: string;
+    fit: string;
+    length: string;
+    decollete: string;
+    rise: string;
+    hem: string;
+  },
+): string {
+  const bottom = family === "alt-giyim";
+  const top = family === "ust-giyim";
+  const garment = bottom ? "bottom" : top ? "top" : "dress";
+  const categoryExample = bottom ? '"pantolon"' : top ? '"bluz"' : '"elbise"';
+  const categoryRule = bottom
+    ? `- Must be a shop leaf under alt giyim: ${ALT_GIYIM_LEAF_HINT}. Never parent alt-giyim.`
+    : top
+      ? `- Must be a shop leaf under üst giyim: ${UST_GIYIM_LEAF_HINT}. Never parent ust-giyim.`
+      : '- Always "elbise".';
+  const titleHint = bottom
+    ? `Formula: pants [Renk] [Detay if photographed] [Kalıp if not Regular] [Paça if not Düz] [Kategori]; etek [Renk] [Detay if photographed] [Kalıp if not Regular] [Boy if not Normal] [Kategori]. Example: "Siyah İnci işlemeli Wide İspanyol Pantolon". Omit Regular kalıp, Düz paça, Normal boy. Do not put Bel in the title. Keep existing ornament if still visible.`
+    : top
+      ? `Formula: [Renk] [Yaka] [Kalıp if not Regular] [Boy if not Normal] [Kategori]. Example: "Kahverengi Polo yaka Oversize Crop Bluz". Omit Regular kalıp and Normal boy.`
+      : `Formula: [Renk] [Boy] [Yaka] Elbise. Example: "Siyah Midi Straplez Elbise".`;
+  const lockedLines = bottom
+    ? `- Length (boy): ${locked.length}
+- Rise (bel): ${locked.rise || "not set"}
+- Fit (kalıp): ${locked.fit || "not set"}
+- Hem / paça: ${locked.hem || "not set (etek)"}`
+    : `- Neckline (yaka): ${locked.neckline}
 - Sleeves (kol): ${locked.sleeves}
 - Length (boy): ${locked.length}
-${detay}
+${top ? `- Fit (kalıp): ${locked.fit || "not set"}` : ""}
+${locked.decollete ? `- Decollete/detail: ${locked.decollete}` : "- Decollete: none specified — do not invent cleavage or extra cutouts."}`;
+  const featuresJson = bottom
+    ? `"rise": "",
+    "fit": "",
+    "length": "",
+    "hem": "",
+    "ornament": ""`
+    : `"neckline": "",
+    "sleeves": "",
+    "fit": "",
+    "length": "",
+    "decollete": ""`;
+  const promptRules = bottom
+    ? `- Base look: "${constructionPackshotBasePrompt(family)}"
+- Must match the LOCKED boy, bel, kalıp, and paça exactly.
+- Top-down flat lay only — no ghost mannequin, no person.
+- Do not turn pants into a dress or a skirt into pants.`
+    : `- Base look: "${constructionPackshotBasePrompt(family)}"
+- Must match the LOCKED yaka, kol, and boy exactly.
+- Sleeves come only from the locked kol chip — do not infer sleeveless from yaka (polo can have sleeves).
+- Do not invent off-shoulder drape or arm flaps.`;
+  return `You rewrite ONLY the English FASHN packshot prompt for this exact ${garment}.
+
+LOCKED construction — do not contradict, do not invent a different construction:
+${lockedLines}
 
 Return JSON only:
 {
   "title": "short Turkish product name",
   "description": "two Turkish sentences",
   "promptFront": "English FASHN packshot lock, under 400 characters",
-  "category": "elbise",
+  "category": ${categoryExample},
   "features": {
-    "neckline": "",
-    "sleeves": "",
-    "length": "",
-    "decollete": ""
+    ${featuresJson}
   }
 }
 
+title:
+- ${titleHint}
+- Use the LOCKED labels. Color from the photo. No extra adjectives.
+
+category:
+${categoryRule}
+
 promptFront:
-- Base look: "${ELBISE_PACKSHOT_PROMPT}"
-- Must match the LOCKED yaka, kol, and boy exactly.
-- Sleeves come only from the locked kol chip — do not infer sleeveless from yaka (polo can have sleeves).
-- Do not invent off-shoulder drape or arm flaps.
+${promptRules}
 - Do not describe a person or a back packshot.
 `;
 }

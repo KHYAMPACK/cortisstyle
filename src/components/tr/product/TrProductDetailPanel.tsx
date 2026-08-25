@@ -1,6 +1,7 @@
 "use client";
 
 import { useTrScopedCart } from "@/components/tr/boutique/TrBoutiqueCommerceScope";
+import { TrBoutiqueModelMeasurements } from "@/components/tr/boutique/pdp/TrBoutiqueModelMeasurements";
 import { TrBoutiquePdpInfoSections } from "@/components/tr/boutique/pdp/TrBoutiquePdpInfoSections";
 import { TrBoutiqueSizeChartModal } from "@/components/tr/boutique/pdp/TrBoutiqueSizeChartModal";
 import { TrBackButton } from "@/components/tr/TrBackButton";
@@ -25,6 +26,7 @@ import {
   resolveProductColors,
   resolveProductSizes,
 } from "@/lib/tr/productOptions";
+import { resolveProductModelScale } from "@/lib/tr/catalog/modelMeasurements";
 import { resolveProductSizeChart } from "@/lib/tr/catalog/sizeCharts";
 import { isSizeInStock } from "@/lib/tr/sizeStocks";
 import { trBoutiquePath, trHomePath } from "@/lib/tr/paths";
@@ -73,6 +75,14 @@ export function TrProductDetailPanel({
   const sizeChart = useMemo(
     () => resolveProductSizeChart(sizes),
     [sizes],
+  );
+  const modelScale = useMemo(
+    () =>
+      resolveProductModelScale({
+        sizes,
+        features: product.features,
+      }),
+    [sizes, product.features],
   );
 
   const openAddedSheet = useTrAddedToCartStore((state) => state.open);
@@ -224,6 +234,10 @@ export function TrProductDetailPanel({
           accentColor={accent}
           onOpenSizeChart={sizeChart ? () => setSizeChartOpen(true) : undefined}
         />
+
+        {modelScale ? (
+          <TrBoutiqueModelMeasurements scale={modelScale} />
+        ) : null}
 
         <dl
           className={`mt-6 space-y-3 text-[12px] ${
