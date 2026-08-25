@@ -433,6 +433,7 @@ export async function requestOwnerPackshotPrepare(input: {
     rise?: string | null;
     hem?: string | null;
   } | null;
+  inferConstructionFamily?: boolean;
 }): Promise<OwnerPackshotPrepareResult> {
   const response = await ownerFetch(
     "/api/tr/owner/ai-catalog/prepare-packshot",
@@ -468,6 +469,7 @@ export async function requestOwnerListingDraft(input: {
   detailImageUrl?: string;
   category?: string | null;
   uploadType?: string | null;
+  inferConstructionFamily?: boolean;
 }): Promise<OwnerListingDraft> {
   const response = await ownerFetch("/api/tr/owner/ai-catalog/listing-draft", {
     method: "POST",

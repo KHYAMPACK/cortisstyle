@@ -1,5 +1,11 @@
 import type { PipelineJobItem } from "@/lib/tr/aiCatalog/pipelineProgress";
 import type { ProductBatchCreateRow } from "@/lib/tr/productBatchCreateDraft";
+import {
+  altGiyimUsesPaca,
+  constructionCatalogFamily,
+  ELBISE_PACKSHOT_SLOT,
+  type ConstructionCatalogFamily,
+} from "@/lib/tr/catalog/garmentUploadTypes";
 
 export type BatchPhotoTileKind =
   | "empty"
@@ -15,6 +21,11 @@ export function batchRowHasBothPhotos(row: ProductBatchCreateRow): boolean {
 }
 
 export function batchRowCover(row: ProductBatchCreateRow): string | null {
+  const packshot =
+    row.marketplaceImages[ELBISE_PACKSHOT_SLOT]?.trim() ||
+    row.images[ELBISE_PACKSHOT_SLOT]?.trim() ||
+    "";
+  if (packshot) return packshot;
   return (
     row.marketplaceImages.find((url) => Boolean(url?.trim())) ||
     row.images.find((url) => Boolean(url?.trim())) ||
@@ -53,6 +64,9 @@ export function batchPhotoTileStatus(
   }
 
   if (row.images[0]?.trim() && !row.frontAnalysisDone) {
+    if (!row.images[1]?.trim()) {
+      return { kind: "uploading", label: "Arka fotoğraf bekleniyor" };
+    }
     return { kind: "identifying", label: "Ürün tanınıyor" };
   }
 
@@ -114,12 +128,45 @@ export function batchIdentifyCounts(
     captured,
     identifying: captured.filter((row) => {
       if (row.frontAnalysisDone) return false;
-      const jobs = jobsById[row.clientId] ?? [];
-      return Boolean(row.images[0]?.trim()) || Boolean(runningJob(jobs, "photo-front"));
+      if (!batchRowHasBothPhotos(row)) return false;
+      return true;
     }),
     failed: captured.filter(
       (row) => row.frontAnalysisDone && row.frontDraftFailed,
     ),
     incomplete: captured.filter((row) => !batchRowHasBothPhotos(row)),
   };
+}
+
+export function batchRowFamily(
+  row: ProductBatchCreateRow,
+): ConstructionCatalogFamily | null {
+  return constructionCatalogFamily(row.uploadType, row.category);
+}
+
+export function batchRowPackshotReady(row: ProductBatchCreateRow): boolean {
+  return Boolean(
+    row.images[ELBISE_PACKSHOT_SLOT]?.trim() ||
+      row.marketplaceImages[ELBISE_PACKSHOT_SLOT]?.trim(),
+  );
+}
+
+export function batchRowChipsReady(row: ProductBatchCreateRow): boolean {
+  const family = batchRowFamily(row);
+  const chips = row.gateChips;
+  if (!family || !chips) return false;
+  if (family === "alt-giyim") {
+    const base = Boolean(
+      chips.length.trim() && chips.rise.trim() && chips.fit.trim(),
+    );
+    if (!base) return false;
+    if (!altGiyimUsesPaca(row.category)) return true;
+    return Boolean(chips.hem.trim());
+  }
+  const base = Boolean(
+    chips.neckline.trim() && chips.sleeves.trim() && chips.length.trim(),
+  );
+  if (!base) return false;
+  if (family === "ust-giyim") return Boolean(chips.fit.trim());
+  return true;
 }

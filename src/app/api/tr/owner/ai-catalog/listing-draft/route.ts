@@ -15,6 +15,7 @@ type Body = {
   detailImageUrl?: string;
   category?: string | null;
   uploadType?: string | null;
+  inferConstructionFamily?: boolean;
 };
 
 /**
@@ -64,6 +65,7 @@ export async function POST(request: Request) {
     detailImageUrl: body.detailImageUrl,
     category: body.category,
     uploadType: body.uploadType,
+    inferConstructionFamily: Boolean(body.inferConstructionFamily),
   });
 
   if (!draft) {

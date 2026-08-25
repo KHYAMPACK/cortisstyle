@@ -9,6 +9,7 @@ import {
   useRef,
   useState,
   type CSSProperties,
+  type DragEvent as ReactDragEvent,
   type ReactNode,
 } from "react";
 import {
@@ -20,11 +21,10 @@ import {
   pipelineLabelForSlot,
   type PipelineJobItem,
 } from "@/lib/tr/aiCatalog/pipelineProgress";
-import {
-  buildElbiseConstructionLock,
-  constructionChipsEqual,
-} from "@/lib/tr/aiCatalog/elbiseConstructionLock";
+import { constructionChipsEqual } from "@/lib/tr/aiCatalog/elbiseConstructionLock";
 import { applyConstructionListingTitle } from "@/lib/tr/aiCatalog/listingDraft";
+import { buildElbisePackshotPrompt } from "@/lib/tr/aiCatalog/packshotPrompt";
+import { chipsFromProductFeatures } from "@/lib/tr/aiModel/elbiseTryOn";
 import {
   TrOwnerCreditsCostLine,
   TrOwnerCreditsMoreInfoLink,
@@ -56,6 +56,7 @@ import {
 } from "@/components/tr/panel/panelUi";
 import { useScheduleAiJob } from "@/components/tr/panel/TrOwnerAiJobQueue";
 import { uploadOwnerProductImage, requestOwnerPackshot, requestOwnerPackshotPrepare, type OwnerListingDraft } from "@/lib/tr/ownerClient";
+import type { TrProductFeatures } from "@/types/tr-marketplace";
 
 type UploadStage = "idle" | "cutout" | "analyze" | "queued" | "packshot";
 
@@ -124,6 +125,26 @@ function nextOpenSlotIndex(
     if (!filled && !activeSlots.has(i)) return i;
   }
   return null;
+}
+
+function isAcceptedProductPhoto(file: File): boolean {
+  const type = file.type.toLowerCase();
+  if (type === "image/png" || type === "image/jpeg" || type === "image/webp") {
+    return true;
+  }
+  return /\.(png|jpe?g|webp)$/i.test(file.name);
+}
+
+function imageFilesFromList(files: FileList | File[]): File[] {
+  return Array.from(files).filter(isAcceptedProductPhoto);
+}
+
+function leftDropTarget(
+  event: ReactDragEvent<HTMLElement>,
+): boolean {
+  const next = event.relatedTarget;
+  if (!(next instanceof Node)) return true;
+  return !event.currentTarget.contains(next);
 }
 
 /** Chalk-outline garment silhouette (crime-scene style dashed contour). */
@@ -244,6 +265,33 @@ function CompactDeleteButton({
   );
 }
 
+function CompactRecreateButton({
+  disabled,
+  onClick,
+  creditHint,
+}: {
+  disabled: boolean;
+  onClick: () => void;
+  creditHint: string;
+}) {
+  return (
+    <div className="mt-1 space-y-0.5">
+      <button
+        type="button"
+        className="min-h-9 w-full rounded-md bg-white text-[12px] font-semibold text-[color:var(--panel-accent-deep)] ring-1 ring-black/10 disabled:opacity-50"
+        disabled={disabled}
+        onClick={onClick}
+        aria-label="Packshot'u yeniden üret"
+      >
+        Yenile
+      </button>
+      <p className="text-center text-[10px] leading-tight text-neutral-500">
+        {creditHint}
+      </p>
+    </div>
+  );
+}
+
 function CompactJobProgress({
   stageLabel,
   progressPct,
@@ -297,6 +345,28 @@ export interface TrOwnerGuidedPhotoUploadProps {
   /** Emit photo pipeline jobs for the wizard status rail */
   onPhotoJobsChange?: (jobs: PipelineJobItem[]) => void;
   disabled?: boolean;
+  features?: TrProductFeatures | null;
+  listingDraft?: OwnerListingDraft | null;
+  /**
+   * Construction capture without a Tür step: 3 slots, no Photoroom on people,
+   * identify after ön+arka, do not open the chip gate or start FASHN.
+   */
+  deferConstructionPackshot?: boolean;
+  /** Override picker tiles (takım items: 2 — no detay). */
+  photoSlotCount?: number;
+  onConstructionPrepared?: (result: {
+    draft: OwnerListingDraft | null;
+    proposed: {
+      neckline: string;
+      sleeves: string;
+      fit: string;
+      length: string;
+      decollete: string;
+      rise: string;
+      hem: string;
+    };
+    preparedPrompt: string;
+  }) => void;
 }
 
 export function TrOwnerGuidedPhotoUpload({
@@ -319,6 +389,11 @@ export function TrOwnerGuidedPhotoUpload({
   onFrontSlotReset,
   onPhotoJobsChange,
   disabled = false,
+  features = null,
+  listingDraft = null,
+  deferConstructionPackshot = false,
+  photoSlotCount,
+  onConstructionPrepared,
 }: TrOwnerGuidedPhotoUploadProps) {
   const scheduleAiJob = useScheduleAiJob();
   const scheduleAiJobRef = useRef(scheduleAiJob);
@@ -354,6 +429,8 @@ export function TrOwnerGuidedPhotoUpload({
   const marketplaceRef = useRef(marketplaceImages);
   const elbiseGateRef = useRef(elbiseGate);
   const pickerSlotRef = useRef<number | null>(null);
+  const dropQueueRef = useRef<Array<{ file: File; slotIndex: number }>>([]);
+  const [dragOver, setDragOver] = useState<"picker" | number | null>(null);
 
   useEffect(() => {
     scheduleAiJobRef.current = scheduleAiJob;
@@ -393,10 +470,16 @@ export function TrOwnerGuidedPhotoUpload({
     () => new Set(Object.keys(jobs).map((k) => Number(k))),
     [jobs],
   );
-  const elbise = isConstructionCatalogUpload(uploadType);
-  const family = constructionCatalogFamily(uploadType, category) ?? "elbise";
-  const requiredSlots = requiredPhotoSlotsForUploadType(uploadType);
-  const guidedSlots = guidedPhotoSlotCountForUploadType(uploadType);
+  const elbise =
+    isConstructionCatalogUpload(uploadType) || deferConstructionPackshot;
+  const knownFamily = constructionCatalogFamily(uploadType, category);
+  const family = knownFamily ?? "elbise";
+  const requiredSlots = requiredPhotoSlotsForUploadType(
+    elbise ? uploadType ?? "elbise" : uploadType,
+  );
+  const guidedSlots = photoSlotCount ?? (elbise
+    ? 3
+    : guidedPhotoSlotCountForUploadType(uploadType));
   const packshotSlot = elbise ? ELBISE_PACKSHOT_SLOT : null;
   const reservedSlots = useMemo(
     () => new Set(packshotSlot != null ? [packshotSlot] : []),
@@ -533,10 +616,75 @@ export function TrOwnerGuidedPhotoUpload({
   }, [phase, frontClaimed, images, elbise]);
 
   function clearPending() {
+    dropQueueRef.current = [];
     setPending((current) => {
       if (current?.objectUrl) URL.revokeObjectURL(current.objectUrl);
       return null;
     });
+  }
+
+  function showPendingFile(file: File, slotIndex: number) {
+    const objectUrl = URL.createObjectURL(file);
+    setPending({ file, objectUrl, slotIndex });
+    onError(null);
+  }
+
+  function flushDropQueue() {
+    const next = dropQueueRef.current.shift();
+    if (!next) return;
+    showPendingFile(next.file, next.slotIndex);
+  }
+
+  function collectDropSlots(preferred: number | null): number[] {
+    const skip = new Set(skipSlots);
+    if (preferred === ELBISE_DETAIL_SLOT) skip.delete(ELBISE_DETAIL_SLOT);
+    const taken = new Set<number>([
+      ...reservedSlots,
+      ...skip,
+      ...Object.keys(jobs).map(Number),
+      ...dropQueueRef.current.map((item) => item.slotIndex),
+    ]);
+    if (pending) taken.add(pending.slotIndex);
+    const out: number[] = [];
+    const consider = (index: number) => {
+      if (index < 0 || index >= TR_OWNER_PRODUCT_LIMITS.maxImages) return;
+      if (packshotSlot != null && index === packshotSlot) return;
+      if (taken.has(index)) return;
+      if (images[index]?.trim()) return;
+      taken.add(index);
+      out.push(index);
+    };
+    if (preferred != null) consider(preferred);
+    for (let index = 0; index < TR_OWNER_PRODUCT_LIMITS.maxImages; index++) {
+      consider(index);
+    }
+    return out;
+  }
+
+  function offerDroppedFiles(files: File[], preferredSlot: number | null) {
+    if (disabled) return;
+    const photos = imageFilesFromList(files);
+    if (photos.length === 0) {
+      onError("PNG, JPEG veya WebP yükleyin.");
+      return;
+    }
+    const slots = collectDropSlots(preferredSlot);
+    if (slots.length === 0) {
+      onError("Boş fotoğraf yeri yok.");
+      return;
+    }
+    let photoIndex = 0;
+    if (!pending) {
+      showPendingFile(photos[0]!, slots[0]!);
+      slots.shift();
+      photoIndex = 1;
+    }
+    for (; photoIndex < photos.length && slots.length > 0; photoIndex++) {
+      dropQueueRef.current.push({
+        file: photos[photoIndex]!,
+        slotIndex: slots.shift()!,
+      });
+    }
   }
 
   function openPicker() {
@@ -557,14 +705,40 @@ export function TrOwnerGuidedPhotoUpload({
     const slotIndex = pickerSlotRef.current ?? nextSlot;
     pickerSlotRef.current = null;
     if (slotIndex == null) return;
-    const file = fileList[0];
-    const objectUrl = URL.createObjectURL(file);
-    setPending({
-      file,
-      objectUrl,
-      slotIndex,
-    });
-    onError(null);
+    offerDroppedFiles(imageFilesFromList(fileList), slotIndex);
+  }
+
+  function onDragOverTarget(
+    event: ReactDragEvent<HTMLElement>,
+    target: "picker" | number,
+  ) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (disabled) return;
+    event.dataTransfer.dropEffect = "copy";
+    setDragOver(target);
+  }
+
+  function onDragLeaveTarget(
+    event: ReactDragEvent<HTMLElement>,
+    target: "picker" | number,
+  ) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!leftDropTarget(event)) return;
+    setDragOver((current) => (current === target ? null : current));
+  }
+
+  function onDropOnTarget(
+    event: ReactDragEvent<HTMLElement>,
+    preferredSlot: number | null,
+  ) {
+    event.preventDefault();
+    event.stopPropagation();
+    setDragOver(null);
+    if (disabled) return;
+    if (preferredSlot === ELBISE_DETAIL_SLOT) setSkippedDetail(false);
+    offerDroppedFiles(Array.from(event.dataTransfer.files), preferredSlot);
   }
 
   async function confirmPending() {
@@ -574,6 +748,7 @@ export function TrOwnerGuidedPhotoUpload({
     const roleLabel = productPhotoRoleLabel(role);
 
     setPending(null);
+    flushDropQueue();
     setJobs((current) => ({
       ...current,
       [slotIndex]: {
@@ -655,9 +830,11 @@ export function TrOwnerGuidedPhotoUpload({
               backImageUrl: backUrl,
               detailImageUrl: detailUrl || undefined,
               title,
-              category: family === "elbise" ? "elbise" : category,
+              category: knownFamily === "elbise" ? "elbise" : category,
               view: "front",
-              uploadType: family,
+              uploadType: knownFamily ?? undefined,
+              inferConstructionFamily:
+                deferConstructionPackshot && !knownFamily,
             });
             preparedPrompt = prepared.prompt;
             preparedDraft = prepared.listingDraft;
@@ -700,6 +877,27 @@ export function TrOwnerGuidedPhotoUpload({
               preparedDraft?.features?.neckHem,
             ),
           });
+
+          if (deferConstructionPackshot) {
+            if (preparedDraft?.title?.trim()) {
+              onListingDraft?.(preparedDraft);
+              onFrontAnalysisComplete?.({ draft: preparedDraft });
+            } else {
+              onFrontAnalysisComplete?.({ draft: null });
+            }
+            onConstructionPrepared?.({
+              draft: preparedDraft,
+              proposed,
+              preparedPrompt: preparedPrompt ?? "",
+            });
+            setJobs((current) => {
+              if (packshotSlot == null) return current;
+              const { [packshotSlot]: _removed, ...rest } = current;
+              return rest;
+            });
+            return;
+          }
+
           setGateChips(proposed);
           setElbiseGate({
             frontUrl,
@@ -951,7 +1149,6 @@ export function TrOwnerGuidedPhotoUpload({
             existingDescription: draft.description,
             lockedConstruction: chips,
           });
-          prompt = prepared.prompt;
           promptFront = prepared.listingDraft?.promptFront ?? promptFront;
           if (prepared.listingDraft?.title?.trim()) {
             const ornament =
@@ -979,10 +1176,7 @@ export function TrOwnerGuidedPhotoUpload({
         }
       }
 
-      if (!prompt) {
-        const lock = buildElbiseConstructionLock(chips);
-        prompt = [elbiseGate.preparedPrompt, lock].filter(Boolean).join(" ");
-      }
+      prompt = buildElbisePackshotPrompt(promptFront, chips, family);
 
       if (onListingDraft && draft.title.trim()) {
         onListingDraft({ ...draft, promptFront });
@@ -1025,7 +1219,6 @@ export function TrOwnerGuidedPhotoUpload({
             numImages: 1,
             prompt,
             listingDraft: draft.title.trim() ? draft : null,
-            skipPhotoroom: true,
             uploadType: family,
           }),
         {
@@ -1068,6 +1261,110 @@ export function TrOwnerGuidedPhotoUpload({
       );
     } finally {
       setElbiseGateBusy(false);
+      setJobs((current) => {
+        const job = current[packshotSlot];
+        if (job?.previewUrl) URL.revokeObjectURL(job.previewUrl);
+        const { [packshotSlot]: _removed, ...rest } = current;
+        return rest;
+      });
+    }
+  }
+
+  async function recreatePackshot() {
+    if (
+      packshotSlot == null ||
+      jobs[packshotSlot] ||
+      disabled ||
+      elbiseGateBusy
+    ) {
+      return;
+    }
+    const frontUrl = imagesRef.current[0]?.trim();
+    const backUrl = imagesRef.current[1]?.trim();
+    if (!frontUrl || !backUrl) {
+      onError("Packshot yenilemek için ön ve arka manken gerekli.");
+      return;
+    }
+    const chips = emptyElbiseGateChips(
+      chipsFromProductFeatures(features ?? listingDraft?.features),
+    );
+    if (!elbiseGateReady(chips, family, category)) {
+      onError(constructionGateErrorCopy(family, category));
+      return;
+    }
+    onError(null);
+    const prompt = buildElbisePackshotPrompt(
+      listingDraft?.promptFront,
+      chips,
+      family,
+    );
+    const sourceToken = `${frontUrl}|${backUrl}|${imagesRef.current[2]?.trim() ?? ""}`;
+    setJobs((current) => ({
+      ...current,
+      [packshotSlot]: {
+        slotIndex: packshotSlot,
+        previewUrl: "",
+        roleLabel: "Ön packshot",
+        stage: "queued",
+        progressPct: 48,
+      },
+    }));
+    try {
+      const pack = await scheduleAiJobRef.current(
+        () =>
+          requestOwnerPackshot({
+            boutiqueId,
+            sourceImageUrl: frontUrl,
+            productId: productId ?? undefined,
+            title: listingDraft?.title || title,
+            category:
+              family === "elbise"
+                ? "elbise"
+                : listingDraft?.category || category,
+            view: "front",
+            numImages: 1,
+            prompt,
+            listingDraft: listingDraft?.title?.trim() ? listingDraft : null,
+            uploadType: family,
+          }),
+        {
+          onStart: () => {
+            setJobs((current) => {
+              const job = current[packshotSlot];
+              if (!job) return current;
+              return {
+                ...current,
+                [packshotSlot]: {
+                  ...job,
+                  stage: "packshot",
+                  progressPct: Math.max(job.progressPct, 52),
+                },
+              };
+            });
+          },
+        },
+      );
+      const stillSameSource =
+        `${imagesRef.current[0]?.trim() ?? ""}|${imagesRef.current[1]?.trim() ?? ""}|${imagesRef.current[2]?.trim() ?? ""}` ===
+        sourceToken;
+      if (
+        stillSameSource &&
+        pack.status === "succeeded" &&
+        pack.imageUrls[0]?.trim()
+      ) {
+        const packUrl = pack.imageUrls[0].trim();
+        onImagesChange(setSlotInList(imagesRef.current, packshotSlot, packUrl));
+        onMarketplaceImagesChange(
+          setSlotInList(marketplaceRef.current, packshotSlot, packUrl),
+        );
+      } else if (stillSameSource) {
+        onError(pack.error?.trim() || "Packshot yenilenemedi.");
+      }
+    } catch (error) {
+      onError(
+        error instanceof Error ? error.message : "Packshot yenilenemedi.",
+      );
+    } finally {
       setJobs((current) => {
         const job = current[packshotSlot];
         if (job?.previewUrl) URL.revokeObjectURL(job.previewUrl);
@@ -1209,7 +1506,9 @@ export function TrOwnerGuidedPhotoUpload({
   }
 
   const pendingCost = pending
-    ? describePhotoSlotCost(pending.slotIndex, uploadType)
+    ? describePhotoSlotCost(pending.slotIndex, uploadType, {
+        deferPackshot: deferConstructionPackshot,
+      })
     : null;
 
   const showPicker =
@@ -1269,8 +1568,15 @@ export function TrOwnerGuidedPhotoUpload({
           <button
             type="button"
             onClick={openPicker}
-            disabled={disabled || Boolean(pending)}
-            className="group relative flex min-h-[5.75rem] w-full items-center gap-3 overflow-hidden rounded-xl border-2 border-dashed border-[color:var(--panel-accent-border)] bg-[#F7F5F1] px-3 py-3 text-left disabled:cursor-not-allowed disabled:opacity-60 sm:gap-4 sm:px-4"
+            disabled={disabled}
+            onDragOver={(event) => onDragOverTarget(event, "picker")}
+            onDragLeave={(event) => onDragLeaveTarget(event, "picker")}
+            onDrop={(event) => onDropOnTarget(event, nextSlot)}
+            className={`group relative flex min-h-[5.75rem] w-full items-center gap-3 overflow-hidden rounded-xl border-2 border-dashed px-3 py-3 text-left transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-60 sm:gap-4 sm:px-4 ${
+              dragOver === "picker"
+                ? "border-[color:var(--panel-accent)] bg-[color:var(--panel-accent-softer)]"
+                : "border-[color:var(--panel-accent-border)] bg-[#F7F5F1]"
+            }`}
           >
             <div
               className="pointer-events-none absolute inset-0 opacity-[0.07]"
@@ -1293,10 +1599,10 @@ export function TrOwnerGuidedPhotoUpload({
               </span>
               <span className="mt-0.5 block text-[13px] leading-snug text-neutral-600">
                 {phase === "detail"
-                  ? "İsteğe bağlı — atlayabilirsiniz"
+                  ? "Sürükleyip bırakın veya seçin — atlayabilirsiniz"
                   : phase === "extras"
-                    ? "İsteğe bağlı"
-                    : "Onaydan sonra diğer fotoğrafa geçebilirsiniz"}
+                    ? "Sürükleyip bırakın veya seçin — isteğe bağlı"
+                    : "Sürükleyip bırakın veya fotoğraf seçin"}
               </span>
             </span>
           </button>
@@ -1318,8 +1624,9 @@ export function TrOwnerGuidedPhotoUpload({
           ref={fileInputRef}
           type="file"
           accept="image/png,image/jpeg,image/webp"
+          multiple
           className="hidden"
-          disabled={disabled || Boolean(pending)}
+          disabled={disabled}
           onChange={(event) => {
             onFilePicked(event.target.files);
             event.target.value = "";
@@ -1370,33 +1677,38 @@ export function TrOwnerGuidedPhotoUpload({
           if (!url) {
             const optionalDetail =
               elbise && index === ELBISE_DETAIL_SLOT;
-            if (optionalDetail) {
-              return (
-                <button
-                  key={`empty-${index}`}
-                  type="button"
-                  disabled={disabled || Boolean(pending)}
-                  onClick={() => openPickerForSlot(index)}
-                  className={`${COMPACT_THUMB_COL} min-w-0 text-left disabled:opacity-60`}
+            const over = dragOver === index;
+            return (
+              <button
+                key={`empty-${index}`}
+                type="button"
+                disabled={disabled}
+                onClick={() => openPickerForSlot(index)}
+                onDragOver={(event) => onDragOverTarget(event, index)}
+                onDragLeave={(event) => onDragLeaveTarget(event, index)}
+                onDrop={(event) => onDropOnTarget(event, index)}
+                className={`${COMPACT_THUMB_COL} min-w-0 text-left disabled:opacity-60`}
+              >
+                <CompactThumbFrame
+                  className={`flex items-center justify-center border-2 border-dashed transition-colors duration-200 ${
+                    over
+                      ? "border-[color:var(--panel-accent)] bg-[color:var(--panel-accent-softer)]"
+                      : "border-neutral-200 bg-neutral-50"
+                  }`}
                 >
-                  <CompactThumbFrame className="flex items-center justify-center border-2 border-dashed border-neutral-200 bg-neutral-50">
-                    <span className="px-1 text-center text-[10px] leading-tight text-neutral-400">
-                      Ekle
-                    </span>
-                  </CompactThumbFrame>
-                  <p className="mt-1 truncate text-center text-[11px] font-semibold leading-tight text-neutral-800">
-                    {roleLabel}
-                  </p>
+                  <span className="px-1 text-center text-[10px] leading-tight text-neutral-400">
+                    {over ? "Bırak" : optionalDetail ? "Ekle" : ""}
+                  </span>
+                </CompactThumbFrame>
+                <p className="mt-1 truncate text-center text-[11px] font-semibold leading-tight text-neutral-800">
+                  {roleLabel}
+                </p>
+                {optionalDetail ? (
                   <p className="mt-0.5 text-center text-[10px] leading-tight text-neutral-400">
                     İsteğe bağlı
                   </p>
-                </button>
-              );
-            }
-            return (
-              <CompactPhotoColumn key={`empty-${index}`} label={roleLabel}>
-                <CompactThumbFrame className="border-2 border-dashed border-neutral-200 bg-neutral-50" />
-              </CompactPhotoColumn>
+                ) : null}
+              </button>
             );
           }
 
@@ -1475,9 +1787,10 @@ export function TrOwnerGuidedPhotoUpload({
                   key={`packshot-${url}`}
                   label={roleLabel}
                   action={
-                    <CompactDeleteButton
+                    <CompactRecreateButton
                       disabled={disabled || Boolean(jobs[index])}
-                      onClick={() => removeAt(index)}
+                      onClick={() => void recreatePackshot()}
+                      creditHint={`${TR_AI_CATALOG_CREDITS.productPackage} kredi`}
                     />
                   }
                 >
@@ -1559,12 +1872,21 @@ export function TrOwnerGuidedPhotoUpload({
       {!frontClaimed || !backClaimed ? (
         <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[14px] text-amber-950">
           {elbise
-            ? `Ön ve arka zorunlu. Detay isteğe bağlı. ${constructionGateRequiredCopy(family, category)} onaylayınca packshot üretilir.`
+            ? deferConstructionPackshot
+              ? guidedSlots < 3
+                ? "Ön ve arka zorunlu. Özellikler sonraki adımda onaylanır — packshot o zaman üretilir."
+                : "Ön ve arka zorunlu. Detay isteğe bağlı. Özellikler sonraki adımda onaylanır — packshot o zaman üretilir."
+              : `Ön ve arka zorunlu. Detay isteğe bağlı. ${constructionGateRequiredCopy(family, category)} onaylayınca packshot üretilir.`
             : "Ön ve arka zorunlu. Ön yüklenirken arka seçebilirsiniz — işlemler paralel ilerler."}
         </p>
       ) : null}
 
-      {elbise && elbiseGate && !elbiseGateOpen && packshotSlot != null && !images[packshotSlot]?.trim() ? (
+      {elbise &&
+      !deferConstructionPackshot &&
+      elbiseGate &&
+      !elbiseGateOpen &&
+      packshotSlot != null &&
+      !images[packshotSlot]?.trim() ? (
         <button
           type="button"
           className={`${panelPrimaryBtnClass} w-full`}
@@ -1634,9 +1956,7 @@ export function TrOwnerGuidedPhotoUpload({
                 boutiqueId={boutiqueId}
                 freeLabel={
                   elbise
-                    ? pending.slotIndex === 1
-                      ? undefined
-                      : "Ekstra kredi yok."
+                    ? "Ekstra kredi yok."
                     : pending.slotIndex === 1
                       ? "Ürün paketine dahil — ekstra kredi yok."
                       : "Ekstra kredi yok."
@@ -1671,7 +1991,7 @@ export function TrOwnerGuidedPhotoUpload({
       </AnimatePresence>
 
       <AnimatePresence>
-        {elbiseGateOpen && elbiseGate ? (
+        {elbiseGateOpen && elbiseGate && !deferConstructionPackshot ? (
           <motion.div
             className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 p-4 sm:items-center"
             initial={{ opacity: 0 }}

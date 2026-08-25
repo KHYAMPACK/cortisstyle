@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getCatalogBackground } from "@/lib/tr/catalogBackgrounds/registry";
+import { ELBISE_PACKSHOT_SLOT } from "@/lib/tr/catalog/garmentUploadTypes";
 import { formatTryFromKurus } from "@/types/tr-marketplace";
 
 type GalleryEntry =
@@ -39,10 +40,78 @@ export interface TrOwnerStorePreviewProps {
   /** Expected model shot count while pending (default 2 = front + back). */
   pendingModelShotCount?: number;
   /**
-   * Elbise: shopper gallery is on-model first, packshot last.
-   * Skip catalog-background compositing (opaque white studio packshot).
+   * Construction catalog: shopper gallery is model shots first, packshot last.
+   * Owner manken originals stay off this preview (same as the storefront).
+   * Transparent packshot uses the catalog CSS backdrop.
    */
   onModelGallery?: boolean;
+  /**
+   * Takım: model shots first, then two item packshots (`marketplaceImages[0..1]`).
+   */
+  takimGallery?: boolean;
+}
+
+function lifestyleGalleryEntries(
+  lifestyleImages: string[],
+  modelShotsPending: boolean,
+  pendingModelShotCount: number,
+): GalleryEntry[] {
+  const ready = lifestyleImages
+    .filter((src) => Boolean(src?.trim()))
+    .map((src, index) => ({
+      kind: "lifestyle" as const,
+      label: index === 0 ? "Model" : `Model ${index + 1}`,
+      src: src.trim(),
+    }));
+  const entries: GalleryEntry[] = [...ready];
+  if (modelShotsPending) {
+    const need = Math.max(0, pendingModelShotCount - ready.length);
+    for (let i = 0; i < need; i += 1) {
+      const index = ready.length + i;
+      entries.push({
+        kind: "lifestyle",
+        label: index === 0 ? "Model" : `Model ${index + 1}`,
+        pending: true,
+      });
+    }
+  }
+  return entries;
+}
+
+function takimPackshotEntries(
+  images: string[],
+  marketplaceImages: string[],
+): GalleryEntry[] {
+  const entries: GalleryEntry[] = [];
+  for (const index of [0, 1] as const) {
+    const src = marketplaceImages[index]?.trim() || "";
+    const front = images[index * 2]?.trim() || "";
+    const back = images[index * 2 + 1]?.trim() || "";
+    const label = index === 0 ? "Parça 1 packshot" : "Parça 2 packshot";
+    if (src) {
+      entries.push({ kind: "catalog", label, src });
+    } else if (front && back) {
+      entries.push({ kind: "catalog", label, pending: true });
+    }
+  }
+  return entries;
+}
+
+function constructionPackshotEntry(
+  images: string[],
+  marketplaceImages: string[],
+): GalleryEntry | null {
+  const src =
+    marketplaceImages[ELBISE_PACKSHOT_SLOT]?.trim() ||
+    images[ELBISE_PACKSHOT_SLOT]?.trim() ||
+    "";
+  if (src) {
+    return { kind: "catalog", label: "Packshot", src };
+  }
+  if (images[0]?.trim() && images[1]?.trim()) {
+    return { kind: "catalog", label: "Packshot", pending: true };
+  }
+  return null;
 }
 
 function PendingSlot({ label }: { label: string }) {
@@ -76,66 +145,40 @@ export function TrOwnerStorePreview({
   modelShotsPending = false,
   pendingModelShotCount = 1,
   onModelGallery = false,
+  takimGallery = false,
 }: TrOwnerStorePreviewProps) {
   const bg = getCatalogBackground(catalogBackgroundId);
 
   const gallery = useMemo(() => {
-    const entries: GalleryEntry[] = [];
-    const onModelLabels = ["Ön manken", "Arka manken", "Detay", "Packshot"];
+    const lifestyle = lifestyleGalleryEntries(
+      lifestyleImages,
+      modelShotsPending,
+      pendingModelShotCount,
+    );
+
+    if (takimGallery) {
+      return [...lifestyle, ...takimPackshotEntries(images, marketplaceImages)];
+    }
 
     if (onModelGallery) {
-      for (let i = 0; i < 4; i += 1) {
-        const src =
-          marketplaceImages[i]?.trim() || images[i]?.trim() || "";
-        const label = onModelLabels[i] ?? `Fotoğraf ${i + 1}`;
-        if (src) {
-          entries.push({
-            kind: i === 3 ? "catalog" : "lifestyle",
-            label,
-            src,
-          });
-        } else if (i === 3 && images[0]?.trim() && images[1]?.trim()) {
-          entries.push({ kind: "catalog", label, pending: true });
-        }
-      }
-    } else {
-      for (const i of [0, 1] as const) {
-        const packshot = marketplaceImages[i]?.trim() || "";
-        const original = images[i]?.trim() || "";
-        const label = i === 0 ? "Ön" : "Arka";
-        if (packshot) {
-          entries.push({ kind: "catalog", label, src: packshot });
-        } else if (original) {
-          entries.push({ kind: "catalog", label, pending: true });
-        }
-      }
+      const entries = [...lifestyle];
+      const packshot = constructionPackshotEntry(images, marketplaceImages);
+      if (packshot) entries.push(packshot);
+      return entries;
     }
 
-    const lifestyle = lifestyleImages
-      .filter((src) => Boolean(src?.trim()))
-      .map((src, index) => ({
-        kind: "lifestyle" as const,
-        label:
-          index === 0
-            ? "Model"
-            : `Model ${index + 1}`,
-        src: src.trim(),
-      }));
-
+    const entries: GalleryEntry[] = [];
+    for (const i of [0, 1] as const) {
+      const packshot = marketplaceImages[i]?.trim() || "";
+      const original = images[i]?.trim() || "";
+      const label = i === 0 ? "Ön" : "Arka";
+      if (packshot) {
+        entries.push({ kind: "catalog", label, src: packshot });
+      } else if (original) {
+        entries.push({ kind: "catalog", label, pending: true });
+      }
+    }
     entries.push(...lifestyle);
-
-    if (modelShotsPending) {
-      const need = Math.max(0, pendingModelShotCount - lifestyle.length);
-      for (let i = 0; i < need; i++) {
-        const index = lifestyle.length + i;
-        entries.push({
-          kind: "lifestyle",
-          label: index === 0 ? "Model" : `Model ${index + 1}`,
-          pending: true,
-        });
-      }
-    }
-
     return entries;
   }, [
     images,
@@ -144,6 +187,7 @@ export function TrOwnerStorePreview({
     modelShotsPending,
     pendingModelShotCount,
     onModelGallery,
+    takimGallery,
   ]);
 
   const [activeIndex, setActiveIndex] = useState(0);
@@ -159,8 +203,7 @@ export function TrOwnerStorePreview({
   const safeIndex =
     gallery.length === 0 ? 0 : Math.min(activeIndex, gallery.length - 1);
   const active = gallery[safeIndex] ?? null;
-  const isCatalogCover =
-    active?.kind === "catalog" && !active.pending && !onModelGallery;
+  const isCatalogCover = active?.kind === "catalog" && !active.pending;
 
   const sellKurus =
     priceTry && Number(priceTry.replace(",", ".")) > 0
@@ -323,7 +366,7 @@ export function TrOwnerStorePreview({
                         : "border-neutral-200"
                     }`}
                     style={
-                      entry.kind === "catalog" && !entry.pending && !onModelGallery
+                      entry.kind === "catalog" && !entry.pending
                         ? { background: bg.css }
                         : { background: "#f5f5f5" }
                     }

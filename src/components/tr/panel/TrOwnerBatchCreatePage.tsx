@@ -2,9 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { TrOwnerAiJobQueueProvider } from "@/components/tr/panel/TrOwnerAiJobQueue";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { TrOwnerAiJobQueueProvider, useScheduleAiJob } from "@/components/tr/panel/TrOwnerAiJobQueue";
 import { TrOwnerBatchListingsStep } from "@/components/tr/panel/TrOwnerBatchListingsStep";
+import { TrOwnerBatchChipsStep } from "@/components/tr/panel/TrOwnerBatchChipsStep";
 import { useRegisterLeaveBusy } from "@/components/tr/panel/TrOwnerLeaveGuard";
 import {
   TrOwnerBatchModelsStep,
@@ -27,13 +28,16 @@ import {
   panelPageTitleClass,
   panelPrimaryBtnClass,
   panelSecondaryBtnClass,
+  panelStickyActionsClass,
+  panelStickyActionsSpacerClass,
 } from "@/components/tr/panel/panelUi";
 import type { PipelineJobItem } from "@/lib/tr/aiCatalog/pipelineProgress";
-import {
-  LILA_DEFAULT_PHOTOGRAPHY_STYLE,
-  parseLilaPhotographyStyle,
-  type TrLilaPhotographyStyle,
-} from "@/lib/tr/aiModel/registry";
+import { applyConstructionListingTitle } from "@/lib/tr/aiCatalog/listingDraft";
+import { mergeElbiseRestyleFeatures } from "@/lib/tr/aiCatalog/elbiseRestyle";
+import { runConstructionPackshot } from "@/lib/tr/aiCatalog/runConstructionPackshot";
+import { describeModelPackageShots } from "@/lib/tr/aiCatalog/uploadCostHints";
+import { emptyElbiseGateChips } from "@/components/tr/panel/TrOwnerElbiseConstructionGate";
+import { ELBISE_PACKSHOT_SLOT } from "@/lib/tr/catalog/garmentUploadTypes";
 import { runOwnerPatches } from "@/lib/tr/ownerBulk";
 import { createOwnerProduct, type TrOwnerProductPayload } from "@/lib/tr/ownerClient";
 import {
@@ -53,7 +57,10 @@ import {
 } from "@/lib/tr/productBatchCreateDraft";
 import {
   batchIdentifyCounts,
+  batchRowChipsReady,
+  batchRowFamily,
   batchRowHasBothPhotos,
+  batchRowPackshotReady,
   capturedBatchRows,
 } from "@/lib/tr/productBatchCreateFlow";
 import {
@@ -72,6 +79,7 @@ import { formatTryFromKurus, type TrProduct } from "@/types/tr-marketplace";
 
 const STEP_LABELS: Record<(typeof BATCH_CREATE_STEPS)[number], string> = {
   photos: "Fotoğraf",
+  chips: "Özellikler",
   listings: "İsim",
   models: "Model",
   prices: "Fiyat",
@@ -102,9 +110,17 @@ function stockRowValid(row: ProductBatchCreateRow): boolean {
   return parsed !== null && sumSizeStocks(parsed) > 0;
 }
 
+function setSlotInList(list: string[], slotIndex: number, value: string): string[] {
+  const next = [...list];
+  while (next.length <= slotIndex) next.push("");
+  next[slotIndex] = value;
+  return next;
+}
+
 function jobsRunning(
   photoJobsById: Record<string, PipelineJobItem[]>,
   modelStatusById: Record<string, { status: ModelRowStatus }>,
+  packingById: Record<string, boolean>,
 ): boolean {
   const photos = Object.values(photoJobsById).some((jobs) =>
     jobs.some((job) => job.status === "running"),
@@ -115,7 +131,8 @@ function jobsRunning(
       item.status === "queued" ||
       item.status === "waiting-catalog",
   );
-  return photos || models;
+  const packshots = Object.values(packingById).some(Boolean);
+  return photos || models || packshots;
 }
 
 export function TrOwnerBatchCreatePage() {
@@ -140,6 +157,7 @@ function BatchCreateFlow({
   boutiqueId: string;
   boutiqueSlug: string;
 }) {
+  const scheduleAiJob = useScheduleAiJob();
   const [rows, setRows] = useState<ProductBatchCreateRow[] | null>(null);
   const [stepIndex, setStepIndex] = useState(0);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -153,8 +171,7 @@ function BatchCreateFlow({
     Record<string, { status: ModelRowStatus; error?: string }>
   >({});
   const [batchModelId, setBatchModelId] = useState<string | null>(null);
-  const [photographyStyle, setPhotographyStyle] =
-    useState<TrLilaPhotographyStyle>(LILA_DEFAULT_PHOTOGRAPHY_STYLE);
+  const [packingById, setPackingById] = useState<Record<string, boolean>>({});
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveErrors, setSaveErrors] = useState<Record<string, string>>({});
@@ -199,9 +216,11 @@ function BatchCreateFlow({
     (clientId: string, patch: Partial<ProductBatchCreateRow>) => {
       setRows((current) => {
         if (!current) return current;
-        return current.map((row) =>
+        const next = current.map((row) =>
           row.clientId === clientId ? { ...row, ...patch } : row,
         );
+        rowsRef.current = next;
+        return next;
       });
     },
     [],
@@ -249,9 +268,6 @@ function BatchCreateFlow({
     const withModel = restored.find((row) => row.selectedModelId);
     if (withModel?.selectedModelId) {
       setBatchModelId(withModel.selectedModelId);
-      setPhotographyStyle(
-        parseLilaPhotographyStyle(withModel.photographyStyle),
-      );
     }
     setDraftBanner(null);
   };
@@ -317,6 +333,99 @@ function BatchCreateFlow({
     setStepIndex(1);
   };
 
+  const runRowPackshot = async (row: ProductBatchCreateRow) => {
+    if (batchRowPackshotReady(row)) return;
+    const family = batchRowFamily(row);
+    const chips = row.gateChips;
+    if (!family || !chips) {
+      throw new Error("Tür ve özellikler eksik.");
+    }
+    setPackingById((current) => ({ ...current, [row.clientId]: true }));
+    patchRow(row.clientId, { packshotError: null });
+    try {
+      const { packshotUrl, draft } = await runConstructionPackshot({
+        boutiqueId,
+        frontUrl: row.images[0]!.trim(),
+        backUrl: row.images[1]!.trim(),
+        detailUrl: row.images[2]?.trim() || "",
+        family,
+        chips,
+        proposed: row.proposedChips ?? chips,
+        preparedPrompt: row.preparedPrompt,
+        listingDraft: row.listingDraft,
+        title: row.title,
+        category: row.category,
+        scheduleAiJob,
+      });
+      const latest = rowsRef.current.find((item) => item.clientId === row.clientId);
+      const images = latest?.images ?? row.images;
+      const marketplace = latest?.marketplaceImages ?? row.marketplaceImages;
+      patchRow(row.clientId, {
+        images: setSlotInList(images, ELBISE_PACKSHOT_SLOT, packshotUrl),
+        marketplaceImages: setSlotInList(
+          marketplace,
+          ELBISE_PACKSHOT_SLOT,
+          packshotUrl,
+        ),
+        listingDraft: draft,
+        title: draft.title.trim() || row.title,
+        description: draft.description || row.description,
+        features: draft.features ?? row.features,
+        category: draft.category ?? row.category,
+        packshotError: null,
+      });
+    } catch (packError) {
+      patchRow(row.clientId, {
+        packshotError:
+          packError instanceof Error
+            ? packError.message
+            : "Packshot oluşturulamadı.",
+      });
+    } finally {
+      setPackingById((current) => {
+        const { [row.clientId]: _removed, ...rest } = current;
+        return rest;
+      });
+    }
+  };
+
+  const confirmChips = () => {
+    const current = rowsRef.current;
+    if (current.some((row) => !batchRowChipsReady(row))) {
+      setError("Her üründe tür ve zorunlu özellikleri seçin.");
+      return;
+    }
+    setError(null);
+    const next = current.map((row) => {
+      const family = batchRowFamily(row)!;
+      const chips = row.gateChips ?? emptyElbiseGateChips();
+      const features = mergeElbiseRestyleFeatures(
+        row.features,
+        chips,
+        family,
+      );
+      const titled = applyConstructionListingTitle(
+        {
+          title: row.title,
+          features,
+          category: family === "elbise" ? "elbise" : row.category,
+        },
+        family,
+      );
+      return {
+        ...row,
+        features: titled.features ?? features,
+        title: titled.title,
+        category: titled.category ?? row.category,
+        uploadType: family,
+      };
+    });
+    rowsRef.current = next;
+    setRows(next);
+    setStepIndex(2);
+    void Promise.all(next.map((row) => runRowPackshot(row)));
+  };
+
   const goNext = () => {
     setError(null);
     if (!rows) return;
@@ -330,12 +439,6 @@ function BatchCreateFlow({
         setError("Her üründe isim gerekli.");
         return;
       }
-      setStepIndex(2);
-      return;
-    }
-    if (step === "models") {
-      setStepIndex(3);
-      return;
     }
     if (step === "prices") {
       if (!rows.every(priceRowValid)) {
@@ -344,8 +447,6 @@ function BatchCreateFlow({
         );
         return;
       }
-      setStepIndex(4);
-      return;
     }
     if (step === "stock") {
       if (!rows.every(stockRowValid)) {
@@ -354,8 +455,10 @@ function BatchCreateFlow({
         );
         return;
       }
-      setStepIndex(5);
     }
+    setStepIndex((current) =>
+      Math.min(current + 1, BATCH_CREATE_STEPS.length - 1),
+    );
   };
 
   const goBack = () => {
@@ -382,10 +485,14 @@ function BatchCreateFlow({
 
   async function saveAll() {
     if (!rows) return;
-    if (jobsRunning(photoJobsById, modelStatusById)) {
+    if (jobsRunning(photoJobsById, modelStatusById, packingById)) {
       setError(
         "Katalog veya model görselleri hâlâ hazırlanıyor. Bitmesini bekleyin.",
       );
+      return;
+    }
+    if (rows.some((row) => !batchRowPackshotReady(row))) {
+      setError("Her üründe packshot gerekli. Özellikler adımından tekrar deneyin.");
       return;
     }
     if (
@@ -427,7 +534,7 @@ function BatchCreateFlow({
   }
 
   const step = BATCH_CREATE_STEPS[stepIndex] ?? "photos";
-  const packing = jobsRunning(photoJobsById, modelStatusById);
+  const packing = jobsRunning(photoJobsById, modelStatusById, packingById);
   useRegisterLeaveBusy("batch-create", packing || saving);
 
   return (
@@ -479,8 +586,8 @@ function BatchCreateFlow({
           </Link>
           <h2 className={panelPageTitleClass}>Toplu ürün ekle</h2>
           <p className={`mt-2 ${panelHintClass}`}>
-            Önce fotoğrafları çekin. Tanıma bitince isimleri doldurun; katalog
-            görselleri arka planda hazırlanır.
+            Önce fotoğrafları çekin. Sonra özellikleri onaylayın — packshot o
+            zaman üretilir. İsim ve fiyatı beklerken doldurabilirsiniz.
           </p>
         </div>
 
@@ -519,11 +626,22 @@ function BatchCreateFlow({
               />
             </div>
 
+            {step === "chips" ? (
+              <TrOwnerBatchChipsStep
+                boutiqueId={boutiqueId}
+                rows={rows}
+                packingById={packingById}
+                onPatchRow={patchRow}
+                onBack={goBack}
+                onConfirm={confirmChips}
+              />
+            ) : null}
+
             {step === "listings" ? (
               <TrOwnerBatchListingsStep
                 boutiqueId={boutiqueId}
                 rows={rows}
-                photoJobsById={photoJobsById}
+                packingById={packingById}
                 onPatchRow={patchRow}
               />
             ) : null}
@@ -534,11 +652,9 @@ function BatchCreateFlow({
                 boutiqueSlug={boutiqueSlug}
                 rows={rows}
                 modelId={batchModelId}
-                photographyStyle={photographyStyle}
                 modelStatusById={modelStatusById}
                 getRow={getRow}
                 onModelIdChange={setBatchModelId}
-                onPhotographyStyleChange={setPhotographyStyle}
                 onPatchRow={patchRow}
                 onModelStatusChange={(clientId, status) =>
                   setModelStatusById((current) => ({
@@ -616,51 +732,64 @@ function BatchCreateFlow({
                               row.sizeStockInputs,
                             )
                       }
+                      onModelGallery
+                      modelShotsPending={
+                        modelStatusById[row.clientId]?.status === "running" ||
+                        modelStatusById[row.clientId]?.status === "queued" ||
+                        modelStatusById[row.clientId]?.status ===
+                          "waiting-catalog"
+                      }
+                      pendingModelShotCount={describeModelPackageShots(
+                        batchModelId ?? row.selectedModelId,
+                        {
+                          uploadType: batchRowFamily(row) ?? "elbise",
+                          features: row.gateChips,
+                          detailImageUrl: row.images[2]?.trim() || null,
+                        },
+                      )}
                     />
                   </section>
                 ))}
-                <button
-                  type="button"
-                  className={`${panelPrimaryBtnClass} w-full`}
-                  disabled={saving || packing}
-                  onClick={() => void saveAll()}
-                >
-                  {saving
-                    ? "Kaydediliyor…"
-                    : packing
-                      ? "Görseller bitince kaydedin"
-                      : "Hepsini kaydet"}
-                </button>
               </div>
             ) : null}
 
-            {step !== "photos" && step !== "preview" ? (
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <button
-                  type="button"
-                  className={`${panelSecondaryBtnClass} flex-1`}
-                  onClick={goBack}
-                >
-                  Geri
-                </button>
-                <button
-                  type="button"
-                  className={`${panelPrimaryBtnClass} flex-1`}
-                  onClick={goNext}
-                >
-                  {step === "models" ? "Devam (model isteğe bağlı)" : "Devam"}
-                </button>
-              </div>
-            ) : null}
-
-            {step === "preview" ? (
-              <button
-                type="button"
-                className={panelSecondaryBtnClass}
-                onClick={goBack}
-              >
-                Geri
-              </button>
+            {step !== "photos" && step !== "chips" ? (
+              <>
+                <div className={panelStickyActionsSpacerClass} aria-hidden />
+                <div className={panelStickyActionsClass}>
+                  <button
+                    type="button"
+                    className={`${panelSecondaryBtnClass} flex-1`}
+                    onClick={goBack}
+                  >
+                    Geri
+                  </button>
+                  {step !== "preview" ? (
+                    <button
+                      type="button"
+                      className={`${panelPrimaryBtnClass} flex-1`}
+                      onClick={goNext}
+                    >
+                      {step === "models"
+                        ? "Devam (model isteğe bağlı)"
+                        : "Devam"}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className={`${panelPrimaryBtnClass} flex-1`}
+                      disabled={saving || packing}
+                      onClick={() => void saveAll()}
+                    >
+                      {saving
+                        ? "Kaydediliyor…"
+                        : packing
+                          ? "Görseller bitince kaydedin"
+                          : "Hepsini kaydet"}
+                    </button>
+                  )}
+                </div>
+              </>
             ) : null}
           </>
         ) : saved.length > 0 ? (

@@ -2,6 +2,8 @@ import {
   DEFAULT_PACKSHOT_PROMPT,
   constructionPackshotBasePrompt,
   finalizePackshotPrompt,
+  isFlatLayPackshotFamily,
+  stripConflictingFlatLayPresentation,
   stripConflictingPackshotPresentation,
 } from "@/lib/tr/fashn/packshot";
 import {
@@ -22,9 +24,6 @@ export const PACKSHOT_VIEW_PROMPT: Record<"front" | "back", string> = {
 const OTHER_PACKSHOT_STYLE =
   /\b(on[- ]?hanger|hangers?|askı|dress form|visible mannequin|flat[- ]lay|floating garment|on mannequin)\b/i;
 
-const OTHER_FLAT_LAY_STYLE =
-  /\b(on[- ]?hanger|hangers?|askı|dress form|visible mannequin|ghost mannequin|on mannequin)\b/i;
-
 /** Drop Gemini extras that would switch FASHN off the locked presentation. */
 export function sanitizePackshotPromptExtra(
   extra: string | null | undefined,
@@ -32,9 +31,8 @@ export function sanitizePackshotPromptExtra(
 ): string | null {
   const trimmed = extra?.trim();
   if (!trimmed) return null;
-  if (family === "alt-giyim") {
-    if (OTHER_FLAT_LAY_STYLE.test(trimmed)) return null;
-    return trimmed.replace(/\s+/g, " ").trim() || null;
+  if (isFlatLayPackshotFamily(family)) {
+    return stripConflictingFlatLayPresentation(trimmed) || null;
   }
   const withoutGhost = trimmed.replace(/\bghost mannequin\b/gi, "");
   if (OTHER_PACKSHOT_STYLE.test(withoutGhost)) return null;

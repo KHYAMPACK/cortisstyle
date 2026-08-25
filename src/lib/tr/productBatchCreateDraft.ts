@@ -1,22 +1,28 @@
 /**
  * Client-side draft for the toplu ürün photo-first wizard.
  *
- * Separate key from the single-product wizard. v2 is the stepped session
- * (photos → listings → models → prices → stock → preview). v1 accordion drafts are
- * ignored and not restored.
+ * Separate key from the single-product wizard. v3 is construction-catalog
+ * (photos → chips → listings → models → prices → stock → preview). v1/v2 drafts
+ * are ignored and not restored.
  */
 
 import { DEFAULT_CATALOG_BACKGROUND_ID } from "@/lib/tr/catalogBackgrounds/registry";
 import { LILA_DEFAULT_PHOTOGRAPHY_STYLE } from "@/lib/tr/aiModel/registry";
 import type { TrLilaPhotographyStyle } from "@/lib/tr/aiModel/types";
 import type { OwnerListingDraft } from "@/lib/tr/ownerClient";
+import {
+  clampDescription,
+  clampTitle,
+} from "@/lib/tr/ownerProductConstraints";
 import { sizesForChart, type TrSizeChartId } from "@/lib/tr/productOptions";
+import type { ConstructionCatalogFamily } from "@/lib/tr/catalog/garmentUploadTypes";
 import type { TrProductFeatures } from "@/types/tr-marketplace";
 
-export const PRODUCT_BATCH_CREATE_DRAFT_VERSION = 2 as const;
+export const PRODUCT_BATCH_CREATE_DRAFT_VERSION = 3 as const;
 
 export const BATCH_CREATE_STEPS = [
   "photos",
+  "chips",
   "listings",
   "models",
   "prices",
@@ -47,6 +53,28 @@ export interface ProductBatchCreateRow {
   catalogBackgroundId: string;
   selectedModelId: string | null;
   photographyStyle?: TrLilaPhotographyStyle;
+  /** Construction family inferred from the photo (or owner-corrected). */
+  uploadType?: ConstructionCatalogFamily | null;
+  gateChips?: {
+    neckline: string;
+    sleeves: string;
+    fit: string;
+    length: string;
+    decollete: string;
+    rise: string;
+    hem: string;
+  };
+  proposedChips?: {
+    neckline: string;
+    sleeves: string;
+    fit: string;
+    length: string;
+    decollete: string;
+    rise: string;
+    hem: string;
+  };
+  preparedPrompt?: string;
+  packshotError?: string | null;
 }
 
 export interface ProductBatchCreateDraftV2 {
@@ -93,6 +121,24 @@ export function createEmptyBatchRow(): ProductBatchCreateRow {
     catalogBackgroundId: DEFAULT_CATALOG_BACKGROUND_ID,
     selectedModelId: null,
     photographyStyle: LILA_DEFAULT_PHOTOGRAPHY_STYLE,
+    uploadType: null,
+    gateChips: undefined,
+    proposedChips: undefined,
+    preparedPrompt: "",
+    packshotError: null,
+  };
+}
+
+export function applyBatchListingDraft(
+  row: ProductBatchCreateRow,
+  draft: OwnerListingDraft,
+): Partial<ProductBatchCreateRow> {
+  return {
+    title: clampTitle(draft.title),
+    description: clampDescription(draft.description ?? ""),
+    features: draft.features ?? row.features,
+    category: draft.category ?? row.category,
+    listingDraft: draft,
   };
 }
 

@@ -32,6 +32,7 @@ import {
   panelPageTitleClass,
   panelPrimaryBtnClass,
   panelSecondaryBtnClass,
+  panelStickyFilterClass,
 } from "@/components/tr/panel/panelUi";
 import {
   TrPanelFadeIn,
@@ -60,6 +61,7 @@ import {
   trPanelEditProductPath,
   trPanelNewProductPath,
   trPanelPath,
+  trPanelTakimNewProductPath,
 } from "@/lib/tr/paths";
 import { sortProductSizes } from "@/lib/tr/productOptions";
 import { formatTryFromKurus } from "@/types/tr-marketplace";
@@ -352,7 +354,7 @@ function ProductList({
   };
 
   const filters = (
-    <div className="space-y-3">
+    <div className={panelStickyFilterClass}>
       <input
         type="search"
         value={search}
@@ -426,7 +428,7 @@ function ProductList({
           <p className={panelErrorClass}>{error}</p>
         </TrPanelFadeIn>
       ) : (
-        <TrPanelFadeIn key="products-ready" className="space-y-5">
+        <TrPanelFadeIn key="products-ready" className="space-y-5" shift={false}>
           {notice ? (
             <p className="rounded-2xl border-2 border-amber-200 bg-amber-50 px-5 py-4 text-[16px] text-amber-950">
               {notice}
@@ -448,6 +450,12 @@ function ProductList({
                 className={`${panelPrimaryBtnClass} lg:h-9 lg:min-h-0 lg:rounded-lg lg:px-4 lg:py-0 lg:text-[13px]`}
               >
                 + Yeni ürün ekle
+              </Link>
+              <Link
+                href={trPanelTakimNewProductPath()}
+                className={`${panelSecondaryBtnClass} lg:h-9 lg:min-h-0 lg:rounded-lg lg:px-4 lg:py-0 lg:text-[13px]`}
+              >
+                Takım yükle
               </Link>
               <Link
                 href={trPanelBatchNewProductsPath()}

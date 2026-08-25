@@ -24,8 +24,11 @@ import { TrOwnerProductFeaturesFields } from "@/components/tr/panel/TrOwnerProdu
 import {
   panelChipClass,
   panelFieldClass,
+  panelHintClass,
   panelPrimaryBtnClass,
   panelSecondaryBtnClass,
+  panelStickyActionsClass,
+  panelStickyActionsSpacerClass,
 } from "@/components/tr/panel/panelUi";
 import type { PipelineJobItem } from "@/lib/tr/aiCatalog/pipelineProgress";
 import {
@@ -95,12 +98,12 @@ const ALL_STEPS = [
   {
     id: "name",
     title: "İsim",
-    hint: "Ürün adı, açıklama ve özellikler",
+    hint: "Ürün adı, açıklama, özellikler — alt kategoriyi AI seçer",
   },
   {
     id: "price",
     title: "Fiyat",
-    hint: "Fiyat ve kategori",
+    hint: "Satış fiyatı",
   },
   {
     id: "sizes",
@@ -686,7 +689,7 @@ export function TrProductCreateWizard({
                   disabled={!entry.live}
                   onClick={() => {
                     setUploadType(entry.id);
-                    setCategory(entry.categoryId);
+                    setCategory(entry.id === "elbise" ? "elbise" : null);
                     setError(null);
                   }}
                   className={`${panelChipClass(active)} inline-flex min-h-[72px] w-full flex-col items-start justify-center px-4 py-3 text-left disabled:cursor-not-allowed disabled:opacity-45`}
@@ -718,6 +721,8 @@ export function TrProductCreateWizard({
           title={title}
           category={category}
           uploadType={uploadType}
+          features={features}
+          listingDraft={listingDraft}
           uploading={uploading}
           onUploadingChange={setUploading}
           onImagesChange={setImages}
@@ -841,6 +846,33 @@ export function TrProductCreateWizard({
                     {TR_OWNER_PRODUCT_LIMITS.descriptionMax}
                   </span>
                 </label>
+                {isElbiseUpload(uploadType) ? (
+                  <p className="rounded-xl bg-[color:var(--panel-accent-soft)] px-4 py-3 text-[15px] text-neutral-800">
+                    Kategori: Elbise
+                  </p>
+                ) : family === "ust-giyim" || family === "alt-giyim" ? (
+                  <div className="space-y-2">
+                    <p className="text-[17px] font-semibold text-neutral-800">
+                      Alt kategori
+                    </p>
+                    <p className={panelHintClass}>
+                      {isUstGiyimShopLeaf(category) ||
+                      isAltGiyimShopLeaf(category)
+                        ? "AI fotoğraftan seçti. Gerekirse düzeltin."
+                        : "AI fotoğraftan seçer — gerekirse aşağıdan düzeltin."}
+                    </p>
+                    <TrOwnerCategoryPicker
+                      value={
+                        isUstGiyimShopLeaf(category) ||
+                        isAltGiyimShopLeaf(category)
+                          ? category
+                          : null
+                      }
+                      onChange={setCategory}
+                      parentId={family}
+                    />
+                  </div>
+                ) : null}
                 <TrOwnerProductFeaturesFields
                   value={features}
                   onChange={setFeatures}
@@ -938,34 +970,6 @@ export function TrProductCreateWizard({
                     </span>
                   </label>
                 ) : null}
-
-                <div className="space-y-3">
-                  <p className="text-[17px] font-semibold text-neutral-800">
-                    Kategori
-                  </p>
-                  {isElbiseUpload(uploadType) ? (
-                    <p className="rounded-xl bg-[color:var(--panel-accent-soft)] px-4 py-3 text-[15px] text-neutral-800">
-                      Elbise — tür adımında kilitlendi.
-                    </p>
-                  ) : (
-                    <TrOwnerCategoryPicker
-                      value={category}
-                      onChange={setCategory}
-                    />
-                  )}
-                  {family === "ust-giyim" ? (
-                    <p className="text-[13px] text-neutral-500">
-                      AI bir alt kategori önerir (bluz, gömlek…). Gerekirse
-                      düzeltin — üst giyim olarak bırakmayın.
-                    </p>
-                  ) : null}
-                  {family === "alt-giyim" ? (
-                    <p className="text-[13px] text-neutral-500">
-                      AI bir alt kategori önerir (etek, pantolon, eşofman).
-                      Gerekirse düzeltin — alt giyim olarak bırakmayın.
-                    </p>
-                  ) : null}
-                </div>
               </div>
             ) : null}
 
@@ -1104,7 +1108,8 @@ export function TrProductCreateWizard({
         ) : null}
       </AnimatePresence>
 
-      <div className="flex flex-wrap gap-3">
+      <div className={panelStickyActionsSpacerClass} aria-hidden />
+      <div className={panelStickyActionsClass}>
         {stepIndex > 0 ? (
           <button type="button" className={panelSecondaryBtnClass} onClick={goBack}>
             Geri

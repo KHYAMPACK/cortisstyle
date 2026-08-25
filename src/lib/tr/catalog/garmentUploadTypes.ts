@@ -110,6 +110,15 @@ export function isUstGiyimShopLeaf(
   return isUstGiyimCategory(id);
 }
 
+/** Two-piece set listing. Shop leaf under üst giyim; own upload pipeline. */
+export const TAKIM_SHOP_LEAF = "takim";
+
+export function isTakimShopLeaf(
+  category: string | null | undefined,
+): boolean {
+  return isTrCategoryMatch(category, TAKIM_SHOP_LEAF);
+}
+
 /** Parent `alt-giyim` or any descendant leaf (etek, pantolon, …). */
 export function isAltGiyimCategory(
   category: string | null | undefined,
@@ -140,10 +149,11 @@ export function altGiyimUsesPaca(
   return !isAltGiyimSkirtLeaf(category);
 }
 
-/** Elbise, or an üst / alt giyim leaf (a saved bluz is `bluz`, not `ust-giyim`). */
+/** Elbise, or an üst / alt giyim leaf (a saved bluz is `bluz`, not `ust-giyim`). Takım is not construction. */
 export function isConstructionCatalogCategory(
   category: string | null | undefined,
 ): boolean {
+  if (isTakimShopLeaf(category)) return false;
   return (
     isElbiseUpload(category) ||
     isUstGiyimCategory(category) ||
@@ -155,6 +165,7 @@ export function constructionCatalogFamily(
   uploadType?: string | null,
   category?: string | null,
 ): ConstructionCatalogFamily | null {
+  if (isTakimShopLeaf(category)) return null;
   const type = parseGarmentUploadTypeId(uploadType);
   if (type === "elbise" || type === "ust-giyim" || type === "alt-giyim") {
     return type;
@@ -165,17 +176,18 @@ export function constructionCatalogFamily(
   return null;
 }
 
-/** Persist a shop leaf — never parent `ust-giyim` / `alt-giyim`. */
+/** Persist a shop leaf — never parent `ust-giyim` / `alt-giyim`, never `takim`. */
 export function parseConstructionShopCategory(
   raw: unknown,
   family: ConstructionCatalogFamily,
 ): string | null {
   if (family === "elbise") return "elbise";
   const id = parseAiCategoryId(raw);
+  if (!id || isTakimShopLeaf(id)) return null;
   if (family === "alt-giyim") {
-    return id && isAltGiyimShopLeaf(id) ? id : null;
+    return isAltGiyimShopLeaf(id) ? id : null;
   }
-  return id && isUstGiyimShopLeaf(id) ? id : null;
+  return isUstGiyimShopLeaf(id) ? id : null;
 }
 
 /** Elbise FASHN packshot always lives here — not `requiredPhotoSlots`. */

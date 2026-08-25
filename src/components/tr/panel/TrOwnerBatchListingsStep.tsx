@@ -10,41 +10,29 @@ import {
   panelPrimaryBtnClass,
   panelSecondaryBtnClass,
 } from "@/components/tr/panel/panelUi";
-import type { PipelineJobItem } from "@/lib/tr/aiCatalog/pipelineProgress";
 import {
   requestOwnerListingDraft,
-  type OwnerListingDraft,
 } from "@/lib/tr/ownerClient";
 import {
   clampDescription,
   clampTitle,
   TR_OWNER_PRODUCT_LIMITS,
 } from "@/lib/tr/ownerProductConstraints";
-import type { ProductBatchCreateRow } from "@/lib/tr/productBatchCreateDraft";
-import { batchPhotoTileStatus, batchRowCover } from "@/lib/tr/productBatchCreateFlow";
-
-function applyDraft(
-  row: ProductBatchCreateRow,
-  draft: OwnerListingDraft,
-): Partial<ProductBatchCreateRow> {
-  return {
-    title: clampTitle(draft.title),
-    description: clampDescription(draft.description ?? ""),
-    features: draft.features ?? row.features,
-    category: draft.category ?? row.category,
-    listingDraft: draft,
-  };
-}
+import {
+  applyBatchListingDraft,
+  type ProductBatchCreateRow,
+} from "@/lib/tr/productBatchCreateDraft";
+import { batchRowCover, batchRowFamily } from "@/lib/tr/productBatchCreateFlow";
 
 export function TrOwnerBatchListingsStep({
   boutiqueId,
   rows,
-  photoJobsById,
+  packingById,
   onPatchRow,
 }: {
   boutiqueId: string;
   rows: ProductBatchCreateRow[];
-  photoJobsById: Record<string, PipelineJobItem[]>;
+  packingById?: Record<string, boolean>;
   onPatchRow: (clientId: string, patch: Partial<ProductBatchCreateRow>) => void;
 }) {
   const [filling, setFilling] = useState(false);
@@ -57,7 +45,7 @@ export function TrOwnerBatchListingsStep({
     const failures: string[] = [];
     for (const [index, row] of rows.entries()) {
       if (row.listingDraft?.title?.trim()) {
-        onPatchRow(row.clientId, applyDraft(row, row.listingDraft));
+        onPatchRow(row.clientId, applyBatchListingDraft(row, row.listingDraft));
         continue;
       }
       const source =
@@ -70,9 +58,13 @@ export function TrOwnerBatchListingsStep({
         const draft = await requestOwnerListingDraft({
           boutiqueId,
           sourceImageUrl: source,
+          backImageUrl: row.images[1]?.trim() || undefined,
+          detailImageUrl: row.images[2]?.trim() || undefined,
           category: row.category,
+          uploadType: row.uploadType,
+          inferConstructionFamily: !row.uploadType,
         });
-        onPatchRow(row.clientId, applyDraft(row, draft));
+        onPatchRow(row.clientId, applyBatchListingDraft(row, draft));
       } catch (fillError) {
         failures.push(
           `Ürün ${index + 1}: ${
@@ -96,20 +88,16 @@ export function TrOwnerBatchListingsStep({
         {filling ? "Dolduruluyor…" : "Hepsini AI ile doldur"}
       </button>
       <p className={panelHintClass}>
-        İsim, açıklama, özellik ve kategori AI’dan gelir. İsterseniz elle
-        düzeltin.
+        İsim, açıklama, özellik ve kategori fotoğraftan AI ile gelir. İsterseniz
+        elle düzeltin.
       </p>
       {error ? <p className={panelErrorClass}>{error}</p> : null}
 
       <div className="space-y-4">
         {rows.map((row, index) => {
-          const photoStatus = batchPhotoTileStatus(
-            row,
-            photoJobsById[row.clientId] ?? [],
-          );
+          const family = batchRowFamily(row);
+          const packing = Boolean(packingById?.[row.clientId]);
           const cover = batchRowCover(row);
-          const packing =
-            photoStatus.kind === "queued" || photoStatus.kind === "packshot";
           return (
             <section
               key={row.clientId}
@@ -136,7 +124,7 @@ export function TrOwnerBatchListingsStep({
                   </p>
                   {packing ? (
                     <p className="mt-1 text-[13px] text-neutral-500">
-                      Katalog hazırlanıyor — metni şimdi yazabilirsiniz.
+                      Packshot hazırlanıyor — metni şimdi yazabilirsiniz.
                     </p>
                   ) : null}
                 </div>
@@ -177,12 +165,31 @@ export function TrOwnerBatchListingsStep({
                 <p className="text-[14px] font-semibold text-neutral-800">
                   Kategori
                 </p>
-                <TrOwnerCategoryPicker
-                  value={row.category}
-                  onChange={(category) =>
-                    onPatchRow(row.clientId, { category })
-                  }
-                />
+                {family === "elbise" ? (
+                  <p className="rounded-xl bg-[color:var(--panel-accent-soft)] px-4 py-3 text-[15px] text-neutral-800">
+                    Elbise
+                  </p>
+                ) : family === "ust-giyim" || family === "alt-giyim" ? (
+                  <>
+                    <p className={panelHintClass}>
+                      AI fotoğraftan seçti. Gerekirse düzeltin.
+                    </p>
+                    <TrOwnerCategoryPicker
+                      value={row.category}
+                      onChange={(category) =>
+                        onPatchRow(row.clientId, { category })
+                      }
+                      parentId={family}
+                    />
+                  </>
+                ) : (
+                  <TrOwnerCategoryPicker
+                    value={row.category}
+                    onChange={(category) =>
+                      onPatchRow(row.clientId, { category })
+                    }
+                  />
+                )}
               </div>
               <button
                 type="button"
@@ -204,6 +211,9 @@ export function TrOwnerBatchListingsStep({
                     onPatchRow(row.clientId, { features })
                   }
                   fieldClass={panelFieldClass}
+                  variant="dress"
+                  family={family ?? "elbise"}
+                  shopCategory={row.category}
                 />
               ) : null}
             </section>

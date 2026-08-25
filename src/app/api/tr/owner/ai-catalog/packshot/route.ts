@@ -1,9 +1,6 @@
 import { generateOwnerPackshot } from "@/lib/tr/aiCatalog/generatePackshot";
 import { sanitizeListingDraft } from "@/lib/tr/aiCatalog/listingDraft";
-import {
-  constructionCatalogFamily,
-  isConstructionCatalogUpload,
-} from "@/lib/tr/catalog/garmentUploadTypes";
+import { constructionCatalogFamily } from "@/lib/tr/catalog/garmentUploadTypes";
 import { getBoutiqueByIdAdmin } from "@/lib/tr/boutiques";
 import {
   requireOwnedBoutique,
@@ -37,7 +34,7 @@ type Body = {
 
 /**
  * POST /api/tr/owner/ai-catalog/packshot
- * FASHN packshot from a product photo / cutout → rehosted marketplace URL.
+ * FASHN packshot from a product photo → Photoroom transparent PNG → rehosted marketplace URL.
  */
 export async function POST(request: Request) {
   const authResult = await requireTrOwner(request);
@@ -104,9 +101,7 @@ export async function POST(request: Request) {
         )
       : null,
     numImages: body.numImages,
-    skipPhotoroom:
-      Boolean(body.skipPhotoroom) ||
-      isConstructionCatalogUpload(body.uploadType),
+    skipPhotoroom: Boolean(body.skipPhotoroom),
   });
 
   return Response.json({

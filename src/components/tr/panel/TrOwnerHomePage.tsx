@@ -39,6 +39,7 @@ import {
   trPanelOrderPath,
   trPanelOrdersPath,
   trPanelProductsPath,
+  trPanelTakimNewProductPath,
 } from "@/lib/tr/paths";
 import { formatTryFromKurus } from "@/types/tr-marketplace";
 
@@ -151,6 +152,12 @@ function HomeDashboard({
           className="rounded-lg bg-white px-3 py-2 text-[13px] font-medium text-neutral-700 ring-1 ring-neutral-200 hover:bg-neutral-50"
         >
           + Yeni ürün
+        </Link>
+        <Link
+          href={trPanelTakimNewProductPath()}
+          className="rounded-lg bg-white px-3 py-2 text-[13px] font-medium text-neutral-700 ring-1 ring-neutral-200 hover:bg-neutral-50"
+        >
+          Takım yükle
         </Link>
         <Link
           href={trPanelBatchNewProductsPath()}

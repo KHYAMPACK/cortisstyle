@@ -16,13 +16,13 @@ import { uploadTrProductAsset } from "@/lib/tr/trAssetStorage";
 export const DEFAULT_PACKSHOT_PROMPT =
   "ghost mannequin packshot. Invisible ghost-mannequin form, clothing only, hollow neck and sleeve openings. No hanger, no hook, no visible mannequin, no dress form, no person. Pressed, symmetric, even studio lighting. Preserve the garment exactly as photographed: fabric, color, details, cut, and length. Do not invent missing parts or change the silhouette.";
 
-/** Elbise ön packshot: opaque white studio, keep FASHN output (no Photoroom). */
+/** Elbise ön packshot: white studio for FASHN; Photoroom cutout is last. */
 export const ELBISE_PACKSHOT_PROMPT =
   "Front ghost-mannequin product photo of this exact dress. Solid white studio background, soft drop shadow to the side, clothing only. Invisible form, no person, no hanger, no visible mannequin, no dress form. Straight-on, centered, three-dimensional worn volume. Preserve fabric, color, seams, hem, and lace or trim as photographed. Do not invent sleeves, off-shoulder pieces, arm flaps, or straps that are not named in the construction lock. Do not invent panels, change the silhouette, or turn the dress into a skirt.";
 
-/** Üst giyim ön packshot — same staging as elbise, garment not dress. */
+/** Üst giyim packshot — same top-down flat lay as alt giyim. */
 export const UST_GIYIM_PACKSHOT_PROMPT =
-  "Front ghost-mannequin product photo of this exact top. Solid white studio background, soft drop shadow to the side, clothing only. Invisible form, no person, no hanger, no visible mannequin, no dress form. Straight-on, centered, three-dimensional worn volume. Preserve fabric, color, seams, hem, and lace or trim as photographed. Do not invent sleeves, off-shoulder pieces, arm flaps, or straps that are not named in the construction lock. Do not invent panels, change the silhouette, or turn the top into a dress or a skirt.";
+  "Top-down flat lay product photo of this exact top. Solid white studio background, even diffused light, no drop shadow, clothing only. Garment pressed completely flat, sleeves and body laid out, full silhouette from neckline to hem visible. No person, no hanger, no ghost mannequin, no worn volume, no 3D dressing. Preserve fabric, color, seams, hem, and lace or trim as photographed. Do not invent sleeves, off-shoulder pieces, arm flaps, or straps that are not named in the construction lock. Do not turn the top into a dress or a skirt.";
 
 /** Alt giyim packshot — top-down flat lay, not ghost mannequin. */
 export const ALT_GIYIM_PACKSHOT_PROMPT =
@@ -36,6 +36,12 @@ export function constructionPackshotBasePrompt(
   return ELBISE_PACKSHOT_PROMPT;
 }
 
+export function isFlatLayPackshotFamily(
+  family: "elbise" | "ust-giyim" | "alt-giyim" | null | undefined,
+): boolean {
+  return family === "ust-giyim" || family === "alt-giyim";
+}
+
 /** Always last so FASHN does not copy hanger / visible-mannequin from the source. */
 export const PACKSHOT_PRESENTATION_LOCK =
   "Presentation: ghost mannequin packshot only. Clothing only — no hanger, no visible mannequin.";
@@ -46,15 +52,25 @@ export const FLAT_LAY_PACKSHOT_PRESENTATION_LOCK =
 const CONFLICTING_PACKSHOT_PRESENTATION =
   /\b(on[- ]hanger|on a hanger|on the hanger|clothes hangers?|hanger hook|visible mannequin|dress forms?|flat[- ]lay(?: packshot)?|floating garment|on a (?:visible )?mannequin|on mannequin)\b/gi;
 
-const CONFLICTING_GHOST_MANNEQUIN =
-  /\b(ghost mannequin|invisible form|worn volume|three-dimensional worn|soft drop shadow)\b/gi;
+/** Positive ghost-mannequin staging. Does not match "no ghost mannequin". */
+const UNNEGATED_GHOST_MANNEQUIN =
+  /(?<!\bno\s)\b(ghost mannequin|invisible form|worn volume|three-dimensional worn|soft drop shadow)\b/gi;
+
+/** Positive hanger / mannequin staging on a flat-lay extra. Keeps "no hanger". */
+const UNNEGATED_FLAT_LAY_CONFLICT =
+  /(?<!\bno\s)\b(on[- ]?hanger|hangers?|askı|dress form|visible mannequin|ghost mannequin|on mannequin)\b/gi;
 
 export function stripConflictingPackshotPresentation(text: string): string {
   return text.replace(CONFLICTING_PACKSHOT_PRESENTATION, " ").replace(/\s+/g, " ").trim();
 }
 
-function stripConflictingGhostMannequin(text: string): string {
-  return text.replace(CONFLICTING_GHOST_MANNEQUIN, " ").replace(/\s+/g, " ").trim();
+function stripUnnegatedGhostMannequin(text: string): string {
+  return text.replace(UNNEGATED_GHOST_MANNEQUIN, " ").replace(/\s+/g, " ").trim();
+}
+
+/** Drop extras that switch off flat lay; keep "no hanger" / "no ghost mannequin". */
+export function stripConflictingFlatLayPresentation(text: string): string {
+  return text.replace(UNNEGATED_FLAT_LAY_CONFLICT, " ").replace(/\s+/g, " ").trim();
 }
 
 function wantsFlatLayPackshot(prompt: string): boolean {
@@ -67,7 +83,7 @@ function wantsFlatLayPackshot(prompt: string): boolean {
 export function finalizePackshotPrompt(prompt?: string | null): string {
   const raw = prompt?.trim() || DEFAULT_PACKSHOT_PROMPT;
   if (wantsFlatLayPackshot(raw)) {
-    const stripped = stripConflictingGhostMannequin(raw);
+    const stripped = stripUnnegatedGhostMannequin(raw);
     const base = stripped || ALT_GIYIM_PACKSHOT_PROMPT;
     if (base.includes(FLAT_LAY_PACKSHOT_PRESENTATION_LOCK)) return base;
     return `${base} ${FLAT_LAY_PACKSHOT_PRESENTATION_LOCK}`;
@@ -87,7 +103,7 @@ export interface FashnPackshotParams {
   generationMode?: FashnGenerationMode;
   userId: string;
   boutiqueId: string;
-  /** Keep FASHN white-studio PNG; do not Photoroom (elbise). */
+  /** Keep FASHN PNG as-is (no cutout). Packshots should leave this unset. */
   skipPhotoroom?: boolean;
 }
 

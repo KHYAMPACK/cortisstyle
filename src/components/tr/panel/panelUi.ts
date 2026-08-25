@@ -55,3 +55,15 @@ export const panelErrorClass =
 
 export const panelEmptyClass =
   "rounded-xl border border-neutral-200/80 bg-white px-5 py-10 text-center text-[14px] text-neutral-500";
+
+/** Search + chips stay visible while the list scrolls.
+ *  Sits under the mobile panel header (`min-h-14`); desktop has no top chrome. */
+export const panelStickyFilterClass =
+  "sticky top-14 z-10 -mx-4 space-y-3 border-b border-neutral-200/80 bg-[color:var(--panel-canvas)] px-4 py-3 sm:-mx-5 sm:px-5 lg:top-0 lg:-mx-6 lg:px-6";
+
+/** Always-visible wizard actions, above the mobile tab bar. */
+export const panelStickyActionsClass =
+  "fixed inset-x-0 z-20 flex flex-wrap gap-3 border-t border-[color:var(--panel-accent-border)] bg-[#F2F3F5]/95 px-4 py-3 shadow-[0_-6px_16px_rgba(16,24,40,0.08)] backdrop-blur-sm sm:px-5 lg:bottom-0 lg:left-[232px] lg:px-6 bottom-[calc(3.5rem+env(safe-area-inset-bottom))]";
+
+/** Clears the fixed action bar so the last field can scroll into view. */
+export const panelStickyActionsSpacerClass = "h-24 shrink-0 lg:h-20";

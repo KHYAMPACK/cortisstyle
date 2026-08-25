@@ -4,6 +4,7 @@ import {
   deliverPublicAssetUrls,
 } from "@/lib/tr/assets/deliverPublicAssetUrl";
 import { ELBISE_PACKSHOT_SLOT } from "@/lib/tr/catalog/garmentUploadTypes";
+import { isTakimCatalogProduct, takimPackshotUrls } from "@/lib/tr/catalog/takimUpload";
 import { TR_OWNER_PRODUCT_LIMITS } from "@/lib/tr/ownerProductConstraints";
 import {
   isTrMarketplaceAssetUrl,
@@ -14,7 +15,7 @@ import type { TrProduct } from "@/types/tr-marketplace";
 export type TrProductImageSurface = "boutique" | "marketplace";
 
 type CatalogImageProduct = Pick<TrProduct, "images" | "marketplaceImages"> &
-  Partial<Pick<TrProduct, "storefrontImages" | "lifestyleImages">>;
+  Partial<Pick<TrProduct, "storefrontImages" | "lifestyleImages" | "features">>;
 
 function nonEmpty(urls: string[] | undefined): string[] {
   return (urls ?? []).filter((url) => Boolean(url?.trim()));
@@ -48,11 +49,14 @@ export function replaceLifestyleShot(
   return cleanedLifestyleImages(next);
 }
 
-/** Owner manken / hanger at indexes 0–2. Do not compact — empty detay would pull packshot [3] into this set. */
+/** Owner manken / hanger at indexes 0–2 (takım: 0–3). Do not compact. */
 function ownerUploadUrls(product: CatalogImageProduct): Set<string> {
   const images = product.images ?? [];
+  const slots = isTakimCatalogProduct(product)
+    ? [images[0], images[1], images[2], images[3]]
+    : [images[0], images[1], images[2]];
   return new Set(
-    [images[0], images[1], images[2]]
+    slots
       .map((url) => url?.trim())
       .filter((url): url is string => Boolean(url)),
   );
@@ -84,6 +88,8 @@ function firstMarketplaceAssetUrl(urls: string[] | undefined): string | undefine
  * from images[0..2]”. Compacted / duplicated slots still count.
  */
 function catalogPackshotUrl(product: CatalogImageProduct): string | undefined {
+  const takim = takimPackshotUrls(product)[0];
+  if (takim) return takim;
   const slotted =
     product.marketplaceImages?.[ELBISE_PACKSHOT_SLOT]?.trim() ||
     product.images?.[ELBISE_PACKSHOT_SLOT]?.trim();
@@ -178,21 +184,28 @@ function galleryFromSlots(params: {
  */
 function shopperFacingGallery(product: CatalogImageProduct): string[] {
   const lifestyle = nonEmpty(product.lifestyleImages);
-  const packshot = catalogPackshotUrl(product);
+  const packshots = isTakimCatalogProduct(product)
+    ? takimPackshotUrls(product)
+    : [catalogPackshotUrl(product)].filter(
+        (url): url is string => Boolean(url),
+      );
   const seen = new Set<string>();
   const out: string[] = [];
   const push = (url: string | undefined) => {
     const trimmed = url?.trim();
     if (!trimmed || seen.has(trimmed)) return;
-    if (isOwnerOriginalUrl(product, trimmed) && trimmed !== packshot) return;
+    if (
+      isOwnerOriginalUrl(product, trimmed) &&
+      !packshots.includes(trimmed)
+    ) {
+      return;
+    }
     seen.add(trimmed);
     out.push(trimmed);
   };
 
-  // Model shots first, then packshot — always append when detected.
-  // Do not return lifestyle-only just because owner slots also list the PNG.
   for (const url of lifestyle) push(url);
-  push(packshot);
+  for (const url of packshots) push(url);
   if (out.length > 0) return out;
 
   const fallback = galleryFromSlots({ product, preferStorefront: false });

@@ -18,7 +18,9 @@ export const trPanelStaggerTransition: Transition = {
 
 const STAGGER_CAP = 12;
 
-/** Soft enter/exit page body — pair with parent `AnimatePresence`. */
+/** Soft enter/exit page body — pair with parent `AnimatePresence`.
+ *  Opacity only: a translate transform on this wrapper would break
+ *  `position: sticky` descendants (product/stock filters). */
 export function TrPanelPageTransition({
   children,
 }: {
@@ -28,9 +30,9 @@ export function TrPanelPageTransition({
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -4 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
       transition={trPanelFadeTransition}
     >
       {children}
@@ -43,16 +45,19 @@ export function TrPanelFadeIn({
   children,
   className,
   delay = 0,
+  shift = true,
 }: {
   children: React.ReactNode;
   className?: string;
   delay?: number;
+  /** Set false when this wrapper contains `position: sticky` children. */
+  shift?: boolean;
 }) {
   return (
     <motion.div
       className={className}
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={shift ? { opacity: 0, y: 8 } : { opacity: 0 }}
+      animate={shift ? { opacity: 1, y: 0 } : { opacity: 1 }}
       transition={{ ...trPanelFadeTransition, delay }}
     >
       {children}

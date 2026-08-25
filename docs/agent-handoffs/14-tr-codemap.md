@@ -67,6 +67,7 @@ src/
 | Cart/checkout UI | `components/tr/commerce/` |
 | PDP/product UI | `components/tr/product/` or `boutique/` |
 | Owner panel UI | `components/tr/panel/` |
+| Takım set upload | `lib/tr/catalog/takimUpload.ts`, `panel/TrOwnerTakimCreatePage.tsx`, route `/tr/panel/urun/takim` |
 | Checkout/orders logic | `lib/tr/commerce/` |
 | Boutique catalog queries | `lib/tr/catalog/` |
 | Boutique PDP size charts / care / features | `lib/tr/catalog/sizeCharts.ts`, `modelMeasurements.ts`, `careInstructions.ts`, `productFeatures.ts`, `pdpReturns.ts` |

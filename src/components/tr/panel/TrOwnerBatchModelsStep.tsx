@@ -10,27 +10,40 @@ import {
   panelPrimaryBtnClass,
   panelSecondaryBtnClass,
 } from "@/components/tr/panel/panelUi";
-import { TR_AI_CATALOG_CREDITS } from "@/lib/tr/aiCatalog/uploadCostHints";
+import { featuresWithLifestyleModels } from "@/lib/tr/aiCatalog/elbiseRestyle";
 import {
-  isLilaHouseModelId,
-  listAiModelOptions,
-  type TrLilaPhotographyStyle,
-} from "@/lib/tr/aiModel/registry";
+  describeModelPackageCredits,
+} from "@/lib/tr/aiCatalog/uploadCostHints";
+import {
+  buildElbiseTryOnShots,
+  chipsFromProductFeatures,
+} from "@/lib/tr/aiModel/elbiseTryOn";
+import { listAiModelOptions } from "@/lib/tr/aiModel/registry";
+import { ELBISE_PACKSHOT_SLOT } from "@/lib/tr/catalog/garmentUploadTypes";
 import { requestOwnerAiModelGenerate } from "@/lib/tr/ownerClient";
 import type { ProductBatchCreateRow } from "@/lib/tr/productBatchCreateDraft";
-import { batchRowCover } from "@/lib/tr/productBatchCreateFlow";
+import {
+  batchRowCover,
+  batchRowFamily,
+} from "@/lib/tr/productBatchCreateFlow";
 
 type ModelRowStatus = "idle" | "waiting-catalog" | "queued" | "running" | "done" | "error";
+
+function packshotUrlOf(row: ProductBatchCreateRow): string {
+  return (
+    row.marketplaceImages[ELBISE_PACKSHOT_SLOT]?.trim() ||
+    row.images[ELBISE_PACKSHOT_SLOT]?.trim() ||
+    ""
+  );
+}
 
 export function TrOwnerBatchModelsStep({
   boutiqueId,
   boutiqueSlug,
   rows,
   modelId,
-  photographyStyle,
   modelStatusById,
   onModelIdChange,
-  onPhotographyStyleChange,
   getRow,
   onPatchRow,
   onModelStatusChange,
@@ -39,11 +52,9 @@ export function TrOwnerBatchModelsStep({
   boutiqueSlug: string;
   rows: ProductBatchCreateRow[];
   modelId: string | null;
-  photographyStyle: TrLilaPhotographyStyle;
   modelStatusById: Record<string, { status: ModelRowStatus; error?: string }>;
   getRow: (clientId: string) => ProductBatchCreateRow | undefined;
   onModelIdChange: (id: string | null) => void;
-  onPhotographyStyleChange: (style: TrLilaPhotographyStyle) => void;
   onPatchRow: (clientId: string, patch: Partial<ProductBatchCreateRow>) => void;
   onModelStatusChange: (
     clientId: string,
@@ -55,39 +66,69 @@ export function TrOwnerBatchModelsStep({
   const [error, setError] = useState<string | null>(null);
   const options = listAiModelOptions(boutiqueSlug);
   const selectedReady = options.find((option) => option.id === modelId)?.ready;
-  const credits = rows.length * TR_AI_CATALOG_CREDITS.modelPackage;
+  const credits = rows.reduce((sum, row) => {
+    const family = batchRowFamily(row);
+    return (
+      sum +
+      describeModelPackageCredits(modelId, {
+        uploadType: family ?? "elbise",
+        features:
+          row.gateChips ?? chipsFromProductFeatures(row.features),
+        detailImageUrl: row.images[2]?.trim() || null,
+      })
+    );
+  }, 0);
 
-  async function waitForCutout(clientId: string): Promise<string> {
+  async function waitForPackshot(clientId: string): Promise<string> {
     const deadline = Date.now() + 180_000;
     while (Date.now() < deadline) {
       const latest = getRow(clientId);
-      const cutout = latest?.marketplaceImages[0]?.trim() || "";
-      if (cutout) return cutout;
+      const url = latest ? packshotUrlOf(latest) : "";
+      if (url) return url;
+      if (latest?.packshotError) {
+        throw new Error(latest.packshotError);
+      }
       await new Promise((resolve) => window.setTimeout(resolve, 800));
     }
-    throw new Error("Katalog görseli hazır olmadı.");
+    throw new Error("Packshot hazır olmadı.");
   }
 
   async function generateOne(
     row: ProductBatchCreateRow,
     selectedModelId: string,
   ) {
+    const family = batchRowFamily(row);
+    if (!family) {
+      throw new Error("Önce tür ve özellikleri onaylayın.");
+    }
     onModelStatusChange(row.clientId, { status: "waiting-catalog" });
-    const cutout =
-      row.marketplaceImages[0]?.trim() || (await waitForCutout(row.clientId));
+    const packshotUrl =
+      packshotUrlOf(row) || (await waitForPackshot(row.clientId));
+    const latest = getRow(row.clientId) ?? row;
+    const chips =
+      latest.gateChips ?? chipsFromProductFeatures(latest.features);
+    const planned = buildElbiseTryOnShots({
+      modelId: selectedModelId,
+      packshotUrl,
+      backMankenUrl: latest.images[1]?.trim() || "",
+      detailMankenUrl: latest.images[2]?.trim() || "",
+      chips,
+      family,
+    });
+    if (planned.error || planned.shots.length === 0) {
+      throw new Error(planned.error ?? "Model kareleri hazırlanamadı.");
+    }
     onModelStatusChange(row.clientId, { status: "queued" });
     const result = await scheduleAiJob(
       () =>
         requestOwnerAiModelGenerate({
           boutiqueId,
-          cutoutImageUrl: cutout,
-          title: row.title,
-          category: row.category,
+          cutoutImageUrl: planned.shots[0]!.cutoutImageUrl,
+          title: latest.title,
+          category:
+            family === "elbise" ? "elbise" : latest.category,
           modelId: selectedModelId,
-          photographyStyle: isLilaHouseModelId(selectedModelId)
-            ? photographyStyle
-            : undefined,
-          pose: "standing-front",
+          shots: planned.shots,
         }),
       {
         onStart: () =>
@@ -107,9 +148,13 @@ export function TrOwnerBatchModelsStep({
       throw new Error(result.error ?? "Model görseli üretilemedi.");
     }
     onPatchRow(row.clientId, {
-      lifestyleImages: produced.slice(0, 1),
+      lifestyleImages: produced,
       selectedModelId,
-      photographyStyle,
+      features: featuresWithLifestyleModels(
+        latest.features,
+        selectedModelId,
+        produced.length,
+      ),
     });
     onModelStatusChange(row.clientId, { status: "done" });
   }
@@ -144,7 +189,7 @@ export function TrOwnerBatchModelsStep({
       return "Hazır";
     }
     const status = modelStatusById[row.clientId]?.status ?? "idle";
-    if (status === "waiting-catalog") return "Katalog bekleniyor";
+    if (status === "waiting-catalog") return "Packshot bekleniyor";
     if (status === "queued") return "Sırada…";
     if (status === "running") return "Model oluşturuluyor…";
     if (status === "error") {
@@ -156,14 +201,14 @@ export function TrOwnerBatchModelsStep({
   return (
     <div className="space-y-5">
       <p className={panelHintClass}>
-        İsterseniz atlayabilirsiniz. Model fotoğrafı arka planda üretilir.
+        İsterseniz atlayabilirsiniz. Construction katalog: 2 kare (detay
+        fotoğrafı varsa 3). Packshot bitince başlar.
       </p>
       <TrOwnerAiModelPicker
         boutiqueSlug={boutiqueSlug}
         value={modelId}
         onChange={onModelIdChange}
-        photographyStyle={photographyStyle}
-        onPhotographyStyleChange={onPhotographyStyleChange}
+        hidePhotographyStyle
         disabled={busy}
       />
       <TrOwnerCreditsCostLine

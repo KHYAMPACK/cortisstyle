@@ -3,6 +3,7 @@ import { draftProductListingFromImage } from "@/lib/tr/aiCatalog/listingDraft";
 import { buildElbisePackshotPrompt } from "@/lib/tr/aiCatalog/packshotPrompt";
 import { resolvePackshotPrompt } from "@/lib/tr/aiCatalog/resolvePackshotPrompt";
 import { constructionCatalogFamily } from "@/lib/tr/catalog/garmentUploadTypes";
+import { constructionPackshotBasePrompt } from "@/lib/tr/fashn/packshot";
 import { getBoutiqueByIdAdmin } from "@/lib/tr/boutiques";
 import {
   requireOwnedBoutique,
@@ -33,6 +34,7 @@ type Body = {
     rise?: string | null;
     hem?: string | null;
   } | null;
+  inferConstructionFamily?: boolean;
 };
 
 /**
@@ -77,7 +79,7 @@ export async function POST(request: Request) {
   }
 
   const family = constructionCatalogFamily(body.uploadType, body.category);
-  if (family) {
+  if (family || body.inferConstructionFamily) {
     const draft = await draftProductListingFromImage({
       sourceImageUrl,
       backImageUrl: body.backImageUrl,
@@ -87,16 +89,27 @@ export async function POST(request: Request) {
       existingTitle: body.existingTitle,
       existingDescription: body.existingDescription,
       lockedConstruction: body.lockedConstruction,
+      inferConstructionFamily: !family && body.inferConstructionFamily,
     });
+    const inferred =
+      family ?? constructionCatalogFamily(undefined, draft?.category);
     const locked = body.lockedConstruction;
-    const hasLock = hasElbiseLockedConstruction(locked, family, body.category);
+    const hasLock = hasElbiseLockedConstruction(
+      locked,
+      inferred,
+      draft?.category ?? body.category,
+    );
+    const prompt =
+      inferred
+        ? buildElbisePackshotPrompt(
+            draft?.promptFront,
+            hasLock ? locked : undefined,
+            inferred,
+          )
+        : constructionPackshotBasePrompt("elbise");
     return Response.json({
       ok: true,
-      prompt: buildElbisePackshotPrompt(
-        draft?.promptFront,
-        hasLock ? locked : undefined,
-        family,
-      ),
+      prompt,
       listingDraft: draft,
       usedGemini: Boolean(draft),
     });

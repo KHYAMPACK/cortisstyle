@@ -34,9 +34,11 @@ import { TR_BOUTIQUE_CATEGORIES } from "@/lib/tr/categories";
 import {
   constructionCatalogFamily,
   isAltGiyimShopLeaf,
+  isTakimShopLeaf,
   isUstGiyimShopLeaf,
   requiredPhotoSlotsForUploadType,
 } from "@/lib/tr/catalog/garmentUploadTypes";
+import { isTakimCatalogProduct } from "@/lib/tr/catalog/takimUpload";
 import {
   DEFAULT_CATALOG_BACKGROUND_ID,
   getCatalogBackground,
@@ -230,7 +232,9 @@ export function TrProductEditorForm({
   const [category, setCategory] = useState<string | null>(
     initialProduct?.category ?? null,
   );
-  const family = constructionCatalogFamily(null, category);
+  const takim =
+    isTakimCatalogProduct({ features }) || isTakimShopLeaf(category);
+  const family = takim ? null : constructionCatalogFamily(null, category);
   const elbise = family != null;
   const requiredSlots = requiredPhotoSlotsForUploadType(family);
   const [extraCategories, setExtraCategories] = useState<
@@ -795,13 +799,31 @@ export function TrProductEditorForm({
         <div>
           <p className={panelLabelClass}>Fotoğraflar</p>
           <p className={`mt-1 ${panelHintClass}`}>
-            {elbise
+            {takim
+              ? "Takım görselleri bu sihirbazda değiştirilmez. Yeni packshot / model için Takım yükle akışını kullanın."
+              : elbise
               ? "Ön ve arka manken zorunlu; dekolte / detay isteğe bağlı. Packshot ön+arka tamamınca üretilir."
               : "Önce ön, sonra arka — her fotoğraf önizlenir."}
           </p>
         </div>
 
-        <TrOwnerGuidedPhotoUpload
+        {takim ? (
+          <div className="flex flex-wrap gap-2">
+            {[...lifestyleImages, ...marketplaceImages, ...images]
+              .filter((url) => Boolean(url?.trim()))
+              .slice(0, 8)
+              .map((src) => (
+                <div
+                  key={src}
+                  className="relative h-24 w-16 overflow-hidden rounded-lg bg-neutral-100"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={src} alt="" className="h-full w-full object-contain p-1" />
+                </div>
+              ))}
+          </div>
+        ) : (
+          <TrOwnerGuidedPhotoUpload
           boutiqueId={boutiqueId}
           images={images}
           marketplaceImages={marketplaceImages}
@@ -810,6 +832,8 @@ export function TrProductEditorForm({
           category={category}
           productId={initialProduct?.id}
           uploadType={family}
+          features={features}
+          listingDraft={listingDraft}
           uploading={uploading}
           onUploadingChange={setUploading}
           onImagesChange={setImages}
@@ -821,6 +845,12 @@ export function TrProductEditorForm({
             if (draft.features) {
               setFeatures((current) => ({
                 ...draft.features,
+                ...(current.uploadKind
+                  ? {
+                      uploadKind: current.uploadKind,
+                      setItems: current.setItems,
+                    }
+                  : {}),
                 ...(current.aiModelId
                   ? { aiModelId: current.aiModelId }
                   : {}),
@@ -832,8 +862,9 @@ export function TrProductEditorForm({
           }}
           disabled={saving}
         />
+        )}
 
-        {hasRequiredProductPhotos(images, requiredSlots) ? (
+        {takim ? null : hasRequiredProductPhotos(images, requiredSlots) ? (
           <div className="space-y-6 rounded-xl border border-[color:var(--panel-accent-border)] bg-[color:var(--panel-accent-soft)] p-4 sm:p-5">
             <TrOwnerAiCatalogEnhance
               boutiqueId={boutiqueId}
@@ -923,6 +954,12 @@ export function TrProductEditorForm({
             if (draft.features) {
               setFeatures((current) => ({
                 ...draft.features,
+                ...(current.uploadKind
+                  ? {
+                      uploadKind: current.uploadKind,
+                      setItems: current.setItems,
+                    }
+                  : {}),
                 ...(current.aiModelId
                   ? { aiModelId: current.aiModelId }
                   : {}),
@@ -1061,6 +1098,11 @@ export function TrProductEditorForm({
         className={`${panelSectionClass} ${showSection("category") ? "" : "hidden"}`}
       >
         <p className={panelLabelClass}>Kategori</p>
+        {takim ? (
+          <p className={`mt-1 ${panelHintClass}`}>
+            Takım ürünleri Takım kategorisinde kalır.
+          </p>
+        ) : null}
         {family === "ust-giyim" ? (
           <p className={`mt-1 ${panelHintClass}`}>
             Bluz, gömlek, tişört gibi bir alt kategori kullanın — üst giyim
@@ -1076,7 +1118,9 @@ export function TrProductEditorForm({
           value={category}
           onChange={setCategory}
           extras={categoryOptions}
+          disabled={takim}
         />
+        {takim ? null : (
         <div className="mt-3 flex flex-wrap gap-3">
           {!addingCategory ? (
             <button
@@ -1088,6 +1132,7 @@ export function TrProductEditorForm({
             </button>
           ) : null}
         </div>
+        )}
         <AnimatePresence>
           {addingCategory ? (
             <motion.div

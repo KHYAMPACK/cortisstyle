@@ -1,5 +1,4 @@
 import {
-  buildElbiseConstructionLock,
   constructionChipsEqual,
   type ElbiseConstructionChips,
 } from "@/lib/tr/aiCatalog/elbiseConstructionLock";
@@ -12,6 +11,7 @@ import {
 import { buildElbiseTryOnShots } from "@/lib/tr/aiModel/elbiseTryOn";
 import { resolveDressFeatureValue, withDefaultSleeves } from "@/lib/tr/catalog/dressFeatures";
 import { applyConstructionListingTitle } from "@/lib/tr/aiCatalog/listingDraft";
+import { buildElbisePackshotPrompt } from "@/lib/tr/aiCatalog/packshotPrompt";
 import {
   altGiyimUsesPaca,
   constructionCatalogFamily,
@@ -186,7 +186,6 @@ export async function commitElbiseCatalogRestyle(input: {
     hem,
   };
   const changed = !constructionChipsEqual(chips, input.prepared.proposed);
-  let prompt = input.prepared.prompt;
   let draft: OwnerListingDraft | null = input.prepared.listingDraft
     ? {
         ...input.prepared.listingDraft,
@@ -203,7 +202,7 @@ export async function commitElbiseCatalogRestyle(input: {
       };
   draft = applyConstructionListingTitle(draft, family);
 
-  if (changed || !prompt.trim()) {
+  if (changed) {
     input.onProgress?.("prepare", "Prompt güncelleniyor…");
     try {
       const rewritten = await requestOwnerPackshotPrepare({
@@ -222,7 +221,6 @@ export async function commitElbiseCatalogRestyle(input: {
         existingDescription: draft.description,
         lockedConstruction: chips,
       });
-      prompt = rewritten.prompt;
       if (rewritten.listingDraft?.title?.trim()) {
         const ornament =
           rewritten.listingDraft.features?.ornament?.trim() ||
@@ -241,17 +239,22 @@ export async function commitElbiseCatalogRestyle(input: {
           },
           family,
         );
+      } else if (rewritten.listingDraft?.promptFront?.trim()) {
+        draft = {
+          ...draft,
+          promptFront: rewritten.listingDraft.promptFront,
+        };
       }
     } catch {
-      prompt = [prompt, buildElbiseConstructionLock(chips)]
-        .filter(Boolean)
-        .join(" ");
+      // Keep identify promptFront; chip lock is still stitched below.
     }
   }
 
-  if (!prompt.trim()) {
-    prompt = buildElbiseConstructionLock(chips);
-  }
+  const prompt = buildElbisePackshotPrompt(
+    draft.promptFront,
+    chips,
+    family,
+  );
 
   input.onProgress?.("packshot", "Ön packshot üretiliyor…");
   const pack = await schedule(
@@ -269,7 +272,6 @@ export async function commitElbiseCatalogRestyle(input: {
         numImages: 1,
         prompt,
         listingDraft: draft.title.trim() ? draft : null,
-        skipPhotoroom: true,
         uploadType: family,
       }),
     { onStart: () => input.onProgress?.("packshot", "Ön packshot üretiliyor…") },

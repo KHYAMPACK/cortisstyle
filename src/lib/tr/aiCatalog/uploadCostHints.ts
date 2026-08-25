@@ -71,7 +71,7 @@ const exampleFullCredits =
 
 export const TR_AI_CREDITS_INFO_LINES = [
   `Ürün katalog paketi (ön + arka): ${TR_AI_CATALOG_CREDITS.productPackage} kredi → ${formatCreditPriceBoth(TR_AI_CATALOG_CREDITS.productPackage)}`,
-  `Model fotoğrafı (isteğe bağlı): ${TR_AI_CATALOG_CREDITS.modelPackage} kredi / kare. Elbise / üst giyim 2 kare (detay fotoğrafı varsa 3).`,
+  `Model fotoğrafı (isteğe bağlı): ${TR_AI_CATALOG_CREDITS.modelPackage} kredi / kare. Elbise / üst giyim 2 kare (detay fotoğrafı varsa 3). Takım: 2 packshot + 2 birlikte giydirme karesi.`,
   `Örnek: katalog + 1 model karesi = ${exampleFullCredits} kredi → ${formatCreditPriceBoth(exampleFullCredits)}`,
   `1 kredi = $${TR_AI_CATALOG_CREDITS.priceUsdPerCredit.toFixed(2)} (~${priceTryPerCredit()} ₺)`,
   "Ödeme: krediler butik hesabınızdan düşülür.",
@@ -82,6 +82,7 @@ export const TR_AI_CREDITS_INFO_LINES = [
 export function describePhotoSlotCost(
   slotIndex: number,
   uploadType?: string | null,
+  options?: { deferPackshot?: boolean },
 ): {
   title: string;
   subtitle: string;
@@ -89,7 +90,7 @@ export function describePhotoSlotCost(
   credits: number | null;
   costPrefix: string;
 } {
-  if (isConstructionCatalogUpload(uploadType)) {
+  if (isConstructionCatalogUpload(uploadType) || options?.deferPackshot) {
     if (slotIndex === 0) {
       return {
         title: "Ön manken",
@@ -106,16 +107,22 @@ export function describePhotoSlotCost(
       return {
         title: "Arka manken",
         subtitle: "Arkadan tam boy manken fotoğrafı.",
-        bullets: [
-          "Askı, sırt detay ve etek / paça arkası görünsün.",
-          isConstructionCatalogUpload(uploadType) &&
-            constructionCatalogFamily(uploadType) === "alt-giyim"
-            ? "Ön ve arka tamamınca 1 ön packshot üretilir (beyaz zemin, düz serim)."
-            : "Ön ve arka tamamınca 1 ön packshot üretilir (beyaz zemin, ghost mannequin).",
-          "Ürün paketi: 1 kredi.",
-        ],
-        credits: TR_AI_CATALOG_CREDITS.productPackage,
-        costPrefix: "Ön packshot",
+        bullets: options?.deferPackshot
+          ? [
+              "Askı, sırt detay ve etek / paça arkası görünsün.",
+              "Özellikler sonraki adımda onaylanır; sonra 1 ön packshot (1 kredi).",
+            ]
+          : [
+              "Askı, sırt detay ve etek / paça arkası görünsün.",
+              constructionCatalogFamily(uploadType) === "elbise"
+                ? "Ön ve arka tamamınca 1 ön packshot üretilir (beyaz zemin, ghost mannequin)."
+                : "Ön ve arka tamamınca 1 ön packshot üretilir (beyaz zemin, düz serim).",
+              "Ürün paketi: 1 kredi.",
+            ],
+        credits: options?.deferPackshot
+          ? null
+          : TR_AI_CATALOG_CREDITS.productPackage,
+        costPrefix: options?.deferPackshot ? "" : "Ön packshot",
       };
     }
     if (slotIndex === 2) {

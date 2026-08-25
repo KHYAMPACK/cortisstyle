@@ -430,6 +430,8 @@ export async function draftProductListingFromImage(input: {
     rise?: string | null;
     hem?: string | null;
   } | null;
+  /** Batch capture: Gemini picks elbise / üst / alt from the photo. */
+  inferConstructionFamily?: boolean;
 }): Promise<ProductListingDraft | null> {
   const llm = resolveLlmProvider();
   if (llm?.provider !== "gemini") return null;
@@ -455,9 +457,17 @@ export async function draftProductListingFromImage(input: {
   }
 
   const locked = input.lockedConstruction;
+  const knownFamily = constructionCatalogFamily(
+    input.uploadType,
+    input.category,
+  );
   const family =
-    constructionCatalogFamily(input.uploadType, input.category) ??
-    (extraImages.length > 0 ? "elbise" : null);
+    knownFamily ??
+    (input.inferConstructionFamily
+      ? null
+      : extraImages.length > 0
+        ? "elbise"
+        : null);
   const rewrite = hasElbiseLockedConstruction(locked, family, input.category);
   const construction = family != null;
   const models = Array.from(new Set([llm.model, ...GEMINI_MODELS]));
@@ -473,11 +483,13 @@ export async function draftProductListingFromImage(input: {
       })
     : construction && family
       ? constructionListingSystemPrompt(family)
-      : listingDraftSystemPrompt({
-          category: input.category,
-          includePromptExtra: false,
-          viewHint: "front",
-        });
+      : input.inferConstructionFamily
+        ? constructionListingSystemPromptInferFamily()
+        : listingDraftSystemPrompt({
+            category: input.category,
+            includePromptExtra: false,
+            viewHint: "front",
+          });
 
   for (const model of models) {
     try {
@@ -510,7 +522,14 @@ export async function draftProductListingFromImage(input: {
           promptFront:
             typeof parsed.promptFront === "string" ? parsed.promptFront : null,
         },
-        { family },
+        {
+          family:
+            family ??
+            constructionCatalogFamily(
+              undefined,
+              typeof parsed.category === "string" ? parsed.category : null,
+            ),
+        },
       );
       if (!draft) continue;
       if (rewrite && locked) {
@@ -538,7 +557,9 @@ export async function draftProductListingFromImage(input: {
           delete draft.features.decollete;
         }
       }
-      return applyConstructionListingTitle(draft, family);
+      const inferredFamily =
+        family ?? constructionCatalogFamily(undefined, draft.category);
+      return applyConstructionListingTitle(draft, inferredFamily);
     } catch (error) {
       console.warn(
         "[listing-draft] Gemini failed:",
@@ -548,6 +569,70 @@ export async function draftProductListingFromImage(input: {
   }
 
   return null;
+}
+
+function constructionListingSystemPromptInferFamily(): string {
+  return `You help a Turkish boutique list a garment from on-model photos. The piece may be a DRESS (elbise), a TOP (üst giyim), or a BOTTOM (alt giyim). Detect which from the photos.
+
+Return JSON only:
+{
+  "title": "Turkish product name",
+  "description": "Turkish elegant two-sentence product detail",
+  "features": {
+    "gender": "Kadın",
+    "color": "",
+    "neckline": "",
+    "sleeves": "",
+    "fit": "",
+    "length": "",
+    "decollete": "",
+    "rise": "",
+    "hem": "",
+    "ornament": "",
+    "fabric": "",
+    "zipper": "",
+    "stretch": "",
+    "silhouette": "",
+    "composition": ""
+  },
+  "category": "elbise",
+  "promptFront": "English FASHN packshot lock, under 400 characters"
+}
+
+category:
+- If a one-piece dress: always "elbise".
+- If a top: a shop leaf under üst giyim: ${UST_GIYIM_LEAF_HINT}. Never parent "ust-giyim". Never elbise.
+- If a bottom: a shop leaf under alt giyim: ${ALT_GIYIM_LEAF_HINT}. Never parent "alt-giyim". Never elbise.
+- Never aksesuar or ev.
+
+title:
+- Dress: [Renk] [Boy] [Yaka] Elbise. Example: "Siyah Midi Straplez Elbise".
+- Top: [Renk] [Yaka] [Kalıp if not Regular] [Boy if not Normal] [Kategori]. Example: "Kahverengi Polo yaka Oversize Crop Bluz".
+- Bottom pants: [Renk] [Detay if photographed] [Kalıp if not Regular] [Paça if not Düz] [Kategori]; etek: [Renk] [Detay if photographed] [Kalıp if not Regular] [Boy if not Normal] [Kategori].
+- Omit Regular kalıp, Düz paça, Normal boy. Do not put Bel in the title.
+
+description:
+- Exactly 2 Turkish sentences. Use only what is photographed. Do not invent zipper, stretch %, or fiber unless visible.
+
+features — use these enum ids (omit key if not visible / not that garment):
+Dress or top:
+${dressGeminiEnumHint("elbise")}
+Top kalıp:
+${dressGeminiEnumHint("ust-giyim")}
+Bottom:
+${dressGeminiEnumHint("alt-giyim")}
+- color: Turkish color name from the photo.
+- gender: almost always Kadın.
+- composition: ONLY if a care label with fiber % is readable. Never invent percentages.
+- hem is paça (leg opening) for pants only. Omit hem for etek and for dresses/tops.
+- ornament: short Turkish phrase only if a distinctive trim is clearly photographed. Omit if none.
+- Omit neckline/sleeves/decollete on bottoms. Omit rise/hem on dresses and tops.
+
+promptFront:
+- Dress: staging + construction lock for ONE front ghost-mannequin packshot. Base look: "${constructionPackshotBasePrompt("elbise")}"
+- Top or bottom: staging + construction lock for ONE top-down flat-lay packshot (not ghost mannequin). Base look: "${constructionPackshotBasePrompt("ust-giyim")}" for tops, "${constructionPackshotBasePrompt("alt-giyim")}" for bottoms.
+- Name the exact construction from ALL photos. Do not invent missing parts. Do not describe a person.
+`;
 }
 
 function constructionListingSystemPrompt(
@@ -605,6 +690,13 @@ function constructionListingSystemPrompt(
     ? `- English. Staging + construction lock for ONE top-down flat-lay packshot (not ghost mannequin).
 - Base look: "${constructionPackshotBasePrompt(family)}"
 - Name the exact rise (bel), fit, paça, and hem length from ALL photos.
+- Do not describe a ghost mannequin, worn volume, or a person.`
+    : top
+      ? `- English. Staging + construction lock for ONE top-down flat-lay packshot (not ghost mannequin).
+- Base look: "${constructionPackshotBasePrompt(family)}"
+- Name the exact neckline, sleeve length, and hem length from ALL photos.
+- sleeves is independent of yaka: polo/shirt pieces often have short or long sleeves; straplez is usually kolsuz. Do not assume sleeveless from yaka.
+- If sleeveless, say so via sleeves=kolsuz. If short/three-quarter/long sleeves are visible, lock that. Do not invent or remove sleeves, off-shoulder drape, or arm flaps.
 - Do not describe a ghost mannequin, worn volume, or a person.`
     : `- English. Staging + construction lock for ONE front ghost-mannequin packshot.
 - Base look: "${constructionPackshotBasePrompt(family)}"
@@ -700,6 +792,12 @@ ${locked.decollete ? `- Decollete/detail: ${locked.decollete}` : "- Decollete: n
 - Must match the LOCKED boy, bel, kalıp, and paça exactly.
 - Top-down flat lay only — no ghost mannequin, no person.
 - Do not turn pants into a dress or a skirt into pants.`
+    : top
+      ? `- Base look: "${constructionPackshotBasePrompt(family)}"
+- Must match the LOCKED yaka, kol, and boy exactly.
+- Sleeves come only from the locked kol chip — do not infer sleeveless from yaka (polo can have sleeves).
+- Top-down flat lay only — no ghost mannequin, no person.
+- Do not invent off-shoulder drape or arm flaps.`
     : `- Base look: "${constructionPackshotBasePrompt(family)}"
 - Must match the LOCKED yaka, kol, and boy exactly.
 - Sleeves come only from the locked kol chip — do not infer sleeveless from yaka (polo can have sleeves).

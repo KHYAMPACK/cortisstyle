@@ -112,6 +112,26 @@ export type TrProductFeatures = {
    * “Bu kareyi yenile” uses this slot — not the picker default.
    */
   lifestyleModelIds?: string[];
+  /**
+   * Two-piece set upload. Shop leaf is always `takim`.
+   * Item chips live on `setItems` — not the construction slot-3 packshot path.
+   */
+  uploadKind?: "takim";
+  setItems?: TrTakimSetItem[];
+};
+
+export type TrTakimSetItem = {
+  family: "elbise" | "ust-giyim" | "alt-giyim";
+  category: string | null;
+  chips: {
+    neckline?: string | null;
+    sleeves?: string | null;
+    fit?: string | null;
+    length?: string | null;
+    decollete?: string | null;
+    rise?: string | null;
+    hem?: string | null;
+  };
 };
 
 /** Full boutique record — service role / admin only. */

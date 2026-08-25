@@ -11,12 +11,20 @@ import {
   panelHintClass,
   panelPrimaryBtnClass,
   panelSecondaryBtnClass,
+  panelStickyActionsClass,
+  panelStickyActionsSpacerClass,
 } from "@/components/tr/panel/panelUi";
 import type { PipelineJobItem } from "@/lib/tr/aiCatalog/pipelineProgress";
+import { proposedConstructionChipsFromDraft } from "@/lib/tr/aiCatalog/runConstructionPackshot";
+import { emptyElbiseGateChips } from "@/components/tr/panel/TrOwnerElbiseConstructionGate";
 import { getCatalogBackground } from "@/lib/tr/catalogBackgrounds/registry";
+import { constructionCatalogFamily } from "@/lib/tr/catalog/garmentUploadTypes";
 import { requestOwnerListingDraft } from "@/lib/tr/ownerClient";
 import { TR_OWNER_PRODUCT_LIMITS } from "@/lib/tr/ownerProductConstraints";
-import type { ProductBatchCreateRow } from "@/lib/tr/productBatchCreateDraft";
+import {
+  applyBatchListingDraft,
+  type ProductBatchCreateRow,
+} from "@/lib/tr/productBatchCreateDraft";
 import {
   batchIdentifyCounts,
   batchPhotoTileStatus,
@@ -89,12 +97,24 @@ export function TrOwnerBatchPhotoStep({
       const draft = await requestOwnerListingDraft({
         boutiqueId,
         sourceImageUrl: source,
+        backImageUrl: row.images[1]?.trim() || undefined,
+        detailImageUrl: row.images[2]?.trim() || undefined,
         category: row.category,
+        uploadType: row.uploadType,
+        inferConstructionFamily: !row.uploadType,
       });
       onPatchRow(row.clientId, {
-        listingDraft: draft,
+        ...applyBatchListingDraft(row, draft),
         frontAnalysisDone: true,
         frontDraftFailed: false,
+        uploadType: constructionCatalogFamily(undefined, draft.category),
+        gateChips: emptyElbiseGateChips(
+          proposedConstructionChipsFromDraft(draft),
+        ),
+        proposedChips: emptyElbiseGateChips(
+          proposedConstructionChipsFromDraft(draft),
+        ),
+        packshotError: null,
       });
     } catch (retryError) {
       onPatchRow(row.clientId, {
@@ -119,8 +139,8 @@ export function TrOwnerBatchPhotoStep({
             Ürün tanınıyor… {identifiedCount} / {identifyingTotal}
           </p>
           <p className={`mt-1 ${panelHintClass}`}>
-            İsim ve kategori için her ürünün ön fotoğrafı analiz ediliyor.
-            Katalog görselleri arka planda devam eder.
+            İsim ve kategori için her ürünün ön ve arka fotoğrafı analiz
+            ediliyor. Packshot sonraki adımda, özellik onayından sonra.
           </p>
         </div>
       ) : null}
@@ -227,6 +247,8 @@ export function TrOwnerBatchPhotoStep({
             catalogBackgroundCss={catalogCss}
             title={row.title}
             category={row.category}
+            uploadType={row.uploadType}
+            deferConstructionPackshot
             uploading={Boolean(
               (photoJobsById[row.clientId] ?? []).some(
                 (job) => job.status === "running",
@@ -241,13 +263,29 @@ export function TrOwnerBatchPhotoStep({
             onLightbox={setLightbox}
             onListingDraft={(draft) => {
               if (draft.title.trim()) {
-                onPatchRow(row.clientId, { listingDraft: draft });
+                onPatchRow(row.clientId, applyBatchListingDraft(row, draft));
               }
+            }}
+            onConstructionPrepared={({ draft, proposed, preparedPrompt }) => {
+              const family = constructionCatalogFamily(
+                undefined,
+                draft?.category,
+              );
+              onPatchRow(row.clientId, {
+                ...(draft?.title?.trim()
+                  ? applyBatchListingDraft(row, draft)
+                  : {}),
+                uploadType: family,
+                gateChips: proposed,
+                proposedChips: proposed,
+                preparedPrompt,
+                packshotError: null,
+              });
             }}
             onFrontAnalysisComplete={({ draft }) => {
               if (draft?.title?.trim()) {
                 onPatchRow(row.clientId, {
-                  listingDraft: draft,
+                  ...applyBatchListingDraft(row, draft),
                   frontAnalysisDone: true,
                   frontDraftFailed: false,
                 });
@@ -281,7 +319,8 @@ export function TrOwnerBatchPhotoStep({
         </div>
       ))}
 
-      <div className="flex flex-col gap-3 sm:flex-row">
+      <div className={panelStickyActionsSpacerClass} aria-hidden />
+      <div className={panelStickyActionsClass}>
         <button
           type="button"
           className={`${panelSecondaryBtnClass} flex-1`}
@@ -301,10 +340,10 @@ export function TrOwnerBatchPhotoStep({
       </div>
       {!canContinue ? (
         <p className={panelHintClass}>
-          {photosIncomplete
-            ? "Her üründe ön ve arka fotoğraf gerekli."
+            {photosIncomplete
+            ? "Her üründe ön ve arka fotoğraf gerekli. Detay isteğe bağlı."
             : identifyBusy
-              ? "Tanıma bitince devam edebilirsiniz — katalog arka planda sürer."
+              ? "Tanıma bitince devam edebilirsiniz — packshot sonraki adımda."
               : counts.captured.length === 0
                 ? "En az bir ürünün ön ve arka fotoğrafını ekleyin."
                 : counts.failed.length > 0

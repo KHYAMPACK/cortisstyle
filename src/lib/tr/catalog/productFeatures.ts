@@ -1,6 +1,12 @@
 /** PDP “Ürün özellikleri” — AI-filled on upload, owner-editable. */
 
-import type { TrProductFeatures } from "@/types/tr-marketplace";
+import type {
+  ConstructionCatalogFamily,
+} from "@/lib/tr/catalog/garmentUploadTypes";
+import type {
+  TrProductFeatures,
+  TrTakimSetItem,
+} from "@/types/tr-marketplace";
 import {
   resolveDressFeatureValue,
   type DressFeatureKey,
@@ -189,10 +195,61 @@ export function sanitizeProductFeatures(
   if (aiModelId) next.aiModelId = aiModelId;
   const lifestyleModelIds = sanitizeLifestyleModelIds(record.lifestyleModelIds);
   if (lifestyleModelIds) next.lifestyleModelIds = lifestyleModelIds;
+  if (record.uploadKind === "takim") {
+    next.uploadKind = "takim";
+    const setItems = sanitizeTakimSetItems(record.setItems);
+    if (setItems) next.setItems = setItems;
+  }
   if (next.neckline && next.neckHem) {
     delete next.neckHem;
   }
   return next;
+}
+
+const TAKIM_FAMILIES: ConstructionCatalogFamily[] = [
+  "elbise",
+  "ust-giyim",
+  "alt-giyim",
+];
+
+function sanitizeTakimSetItems(raw: unknown): TrTakimSetItem[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const items = raw.slice(0, 2).flatMap((entry): TrTakimSetItem[] => {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) return [];
+    const row = entry as Record<string, unknown>;
+    const family = TAKIM_FAMILIES.includes(row.family as ConstructionCatalogFamily)
+      ? (row.family as ConstructionCatalogFamily)
+      : null;
+    if (!family) return [];
+    const chips =
+      row.chips && typeof row.chips === "object" && !Array.isArray(row.chips)
+        ? (row.chips as Record<string, unknown>)
+        : {};
+    const chip = (key: string) => {
+      const value = chips[key];
+      return typeof value === "string" ? value.trim() || null : null;
+    };
+    return [
+      {
+        family,
+        category: (() => {
+          const id =
+            typeof row.category === "string" ? row.category.trim() || null : null;
+          return id && id !== "takim" ? id : null;
+        })(),
+        chips: {
+          neckline: chip("neckline"),
+          sleeves: chip("sleeves"),
+          fit: chip("fit"),
+          length: chip("length"),
+          decollete: chip("decollete"),
+          rise: chip("rise"),
+          hem: chip("hem"),
+        },
+      },
+    ];
+  });
+  return items.length > 0 ? items : undefined;
 }
 
 export function productFeaturesHaveValues(

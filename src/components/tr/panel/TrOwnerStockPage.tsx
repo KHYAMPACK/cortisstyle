@@ -21,6 +21,7 @@ import {
   panelErrorClass,
   panelPageTitleClass,
   panelStepperBtnClass,
+  panelStickyFilterClass,
 } from "@/components/tr/panel/panelUi";
 import {
   TrPanelFadeIn,
@@ -450,7 +451,7 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
           <p className={panelErrorClass}>{error}</p>
         </TrPanelFadeIn>
       ) : (
-        <TrPanelFadeIn key="stock-ready" className="space-y-5">
+        <TrPanelFadeIn key="stock-ready" className="space-y-5" shift={false}>
           {error ? <p className={panelErrorClass}>{error}</p> : null}
 
           <div className="rounded-2xl border border-[color:var(--panel-accent-border)] bg-[color:var(--panel-accent-soft)] px-5 py-4 lg:rounded-xl lg:px-4 lg:py-3">
@@ -468,7 +469,7 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
           </div>
 
           {products.length > 0 ? (
-            <div className="space-y-3">
+            <div className={panelStickyFilterClass}>
               <input
                 type="search"
                 value={search}

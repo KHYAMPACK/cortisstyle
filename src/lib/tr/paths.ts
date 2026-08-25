@@ -213,6 +213,10 @@ export function trPanelBatchNewProductsPath(): string {
   return "/tr/panel/urun/toplu";
 }
 
+export function trPanelTakimNewProductPath(): string {
+  return "/tr/panel/urun/takim";
+}
+
 export function trPanelEditProductPath(productId: string): string {
   return `/tr/panel/urun/${encodeURIComponent(productId)}`;
 }
