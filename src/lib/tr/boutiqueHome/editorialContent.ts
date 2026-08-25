@@ -14,7 +14,9 @@ import {
 } from "@/lib/tr/boutiqueHome/editorialDemoContent";
 import { isAtelierEditorialSkin } from "@/lib/tr/boutiqueHome/editorialSkin";
 import { listTrCategoryRoots } from "@/lib/tr/categories";
+import { liveShippingHomeBody } from "@/lib/tr/catalog/pdpReturns";
 import { trBoutiqueLegalPath, trBoutiquePath } from "@/lib/tr/paths";
+import { boutiqueHasLiveShipping } from "@/lib/tr/shipping/registry";
 import type { TrBoutiquePublic } from "@/types/tr-marketplace";
 
 const TEMPLATE_ASSET = (name: string) => `/tr/boutiques/demo-maya/${name}`;
@@ -279,6 +281,9 @@ export function getEditorialContent(
       ? merged.shopByCategoryTitle?.trim() || "Kategorilere göz atın"
       : merged.shopByCategoryTitle,
     promoBar: merged.promoBar ?? defaults.promoBar,
+    infoStrip: atelier
+      ? applyAtelierShippingInfoStrip(boutique.slug, merged.infoStrip)
+      : merged.infoStrip,
     categoryHero: {
       ...defaults.categoryHero,
       ...merged.categoryHero,
@@ -332,6 +337,41 @@ export function getEditorialContent(
         }
       : merged.join,
   };
+}
+
+function applyAtelierShippingInfoStrip(
+  slug: string,
+  strip: EditorialDemoContent["infoStrip"],
+): EditorialDemoContent["infoStrip"] {
+  if (!boutiqueHasLiveShipping(slug)) return strip;
+  const shippingBody = liveShippingHomeBody();
+  if (!strip || strip.length === 0) {
+    return [
+      {
+        id: "returns",
+        title: "Kolay iade",
+        body: "Yasal süre içinde cayma ve iade taleplerinizi WhatsApp’tan iletebilirsiniz.",
+        icon: "returns",
+      },
+      {
+        id: "shipping",
+        title: "Kargo",
+        body: shippingBody,
+        icon: "shipping",
+      },
+      {
+        id: "exchange",
+        title: "Değişim",
+        body: "Beden veya model değişimi için bize yazın — yardımcı olalım.",
+        icon: "exchange",
+      },
+    ];
+  }
+  return strip.map((item) =>
+    item.id === "shipping" || item.icon === "shipping"
+      ? { ...item, body: shippingBody }
+      : item,
+  );
 }
 
 function atelierHomeImage(

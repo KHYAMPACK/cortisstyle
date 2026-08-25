@@ -10,7 +10,7 @@
       "whatsappPhone": "905496088860",
       "instagramHandle": "lilaboutiquedenizli",
       "themeAccent": "#9B7EBD",
-      "shippingNote": "Siparişler anlaşmalı kargo firması tarafından mağaza adresinden alınır ve belirtilen adrese teslim edilir. Tahmini süre sipariş sonrası paylaşılır; yasal azami süreler saklıdır.",
+      "shippingNote": "2 ürün ve üzeri kargo ücretsiz; tek üründe 120 TL. Siparişler anlaşmalı kargo firması tarafından mağaza adresinden alınır ve belirtilen adrese teslim edilir. Tahmini süre sipariş sonrası paylaşılır; yasal azami süreler saklıdır.",
       "exchangePolicy": "Mesafeli satışlarda cayma hakkı, yasal istisnalar saklı kalmak kaydıyla, malın tesliminden itibaren 14 gün içinde kullanılabilir. Cayma kapsamında iade kargo ücreti satıcıya aittir. Değişim talepleri stok durumuna göre WhatsApp üzerinden değerlendirilir. İade adresi: Bahçelievler Mh. Gülistan Cd. No:7/A Merkezefendi/Denizli.",
       "physicalAddress": "Bahçelievler Mh. Gülistan Cd. No:7/A Merkezefendi/Denizli",
       "homeLayout": "editorial",
@@ -146,7 +146,7 @@
           {
             "id": "shipping",
             "title": "Kargo",
-            "body": "Sipariş onayından sonra kargo bilgisi paylaşılır. Türkiye geneline gönderim.",
+            "body": "2 ürün ve üzeri kargo ücretsiz. Tek üründe 120 TL. Türkiye geneline gönderim.",
             "icon": "shipping"
           },
           {

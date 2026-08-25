@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   getProductCoverImageFor,
+  getProductHoverImage,
   isCatalogCutoutImage,
 } from "@/lib/tr/productImages";
 import {
@@ -44,7 +45,8 @@ export function TrProductColorSiblings({
             surface === "cadde" ? "marketplace" : "boutique",
             sibling,
           );
-          const cutout = isCatalogCutoutImage(cover);
+          const thumbSrc = getProductHoverImage(sibling) ?? cover;
+          const cutout = isCatalogCutoutImage(thumbSrc);
           const href =
             surface === "cadde"
               ? trClothPath(sibling.id)
@@ -77,9 +79,9 @@ export function TrProductColorSiblings({
                   cutout ? "bg-white" : "bg-neutral-100"
                 }`}
               >
-                {cover ? (
+                {thumbSrc ? (
                   <Image
-                    src={cover}
+                    src={thumbSrc}
                     alt={label}
                     fill
                     className={

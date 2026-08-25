@@ -15,7 +15,8 @@ export const runtime = "nodejs";
 
 /**
  * POST /api/tr/shipping/quote
- * { boutiqueSlug, city, district } — fee is the server flat rate; city/district must be on the TR list.
+ * { boutiqueSlug, city, district, itemCount? } — fee is the server flat rate
+ * (0 when itemCount >= 2); city/district must be on the TR list.
  */
 export async function POST(request: Request) {
   const ip = clientIpFromRequest(request);
@@ -55,7 +56,12 @@ export async function POST(request: Request) {
   }
 
   try {
-    const quote = quoteCheckoutShippingFee(boutiqueSlug);
+    const rawCount = body.itemCount;
+    const itemCount =
+      typeof rawCount === "number" && Number.isFinite(rawCount)
+        ? Math.max(0, Math.floor(rawCount))
+        : 1;
+    const quote = quoteCheckoutShippingFee(boutiqueSlug, itemCount);
     if (!quote) {
       return Response.json({ feeKurus: 0, live: false });
     }

@@ -35,6 +35,20 @@ export function buildSizeRestockNotifyMessage(product: {
   ].join("\n");
 }
 
+export function buildSizeHelpWhatsAppMessage(product: {
+  title: string;
+  size?: string | null;
+}): string {
+  const lines = [
+    "Merhaba, bu ürünün bedeni hakkında bilgi almak istiyorum. Birlikte seçebilir miyiz?",
+    "",
+    `Ürün: ${product.title}`,
+  ];
+  const size = product.size?.trim();
+  if (size) lines.push(`Beden: ${size}`);
+  return lines.join("\n");
+}
+
 export function buildProductOrderMessage(product: {
   title: string;
   priceKurus: number;

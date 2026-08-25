@@ -9,11 +9,15 @@ import {
   type TrCareGuide,
 } from "@/lib/tr/catalog/careInstructions";
 import { listProductFeatureRows } from "@/lib/tr/catalog/productFeatures";
-import { getPdpDeliverySummary } from "@/lib/tr/catalog/pdpReturns";
+import {
+  getPdpDeliverySummary,
+  type TrPdpPolicyRun,
+} from "@/lib/tr/catalog/pdpReturns";
 import {
   formatColorLabel,
   resolveProductColors,
 } from "@/lib/tr/productOptions";
+import { TrSoftNavLink } from "@/components/tr/TrSoftNavLink";
 import type { TrProductWithBoutique } from "@/types/tr-marketplace";
 
 interface TrBoutiquePdpInfoSectionsProps {
@@ -29,7 +33,10 @@ export function TrBoutiquePdpInfoSections({
     color: formatColorLabel(resolveProductColors(product)),
   });
   const care = getCareInstructions(product.category);
-  const delivery = getPdpDeliverySummary();
+  const delivery = getPdpDeliverySummary(
+    product.boutique.slug,
+    product.boutique.name,
+  );
   const rule = branded ? "border-black/8" : "border-blueprint-border";
 
   return (
@@ -54,15 +61,36 @@ export function TrBoutiquePdpInfoSections({
         <CareGuideList care={care} />
       </PdpAccordion>
 
-      <PdpAccordion title="Teslimat ve Kolay İade" rule={rule} defaultOpen>
+      <PdpAccordion title="Teslimat ve İade" rule={rule} defaultOpen>
         <div className="space-y-3 text-[13px] leading-relaxed text-neutral-800">
-          <p>{delivery.methodLabel}</p>
-          <p>{delivery.feeLabel}</p>
-          <p className="text-neutral-600">{delivery.freeNote}</p>
+          {delivery.paragraphs.map((runs, index) => (
+            <p key={index}>
+              {runs.map((run, runIndex) => (
+                <PolicyRun key={runIndex} run={run} />
+              ))}
+            </p>
+          ))}
+          {delivery.legalHref ? (
+            <p>
+              <TrSoftNavLink
+                href={delivery.legalHref}
+                className="underline underline-offset-2 decoration-black/25 hover:decoration-black/60"
+              >
+                İade koşullarının ayrıntısı
+              </TrSoftNavLink>
+            </p>
+          ) : null}
         </div>
       </PdpAccordion>
     </div>
   );
+}
+
+function PolicyRun({ run }: { run: TrPdpPolicyRun }) {
+  if (run.strong) {
+    return <strong className="font-semibold text-neutral-950">{run.text}</strong>;
+  }
+  return run.text;
 }
 
 function CareGuideList({ care }: { care: TrCareGuide }) {

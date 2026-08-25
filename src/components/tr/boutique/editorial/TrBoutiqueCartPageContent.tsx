@@ -38,6 +38,12 @@ import {
   type TrBoutiquePublic,
   type TrProductWithBoutique,
 } from "@/types/tr-marketplace";
+import { boutiqueHasLiveShipping } from "@/lib/tr/shipping/registry";
+import { quoteCheckoutShippingFee } from "@/lib/tr/shipping/quoteShipping";
+import {
+  FREE_SHIPPING_NUDGE_COPY,
+  FREE_SHIPPING_PROMO_COPY,
+} from "@/lib/tr/shipping/types";
 
 function CartCheckbox({
   checked,
@@ -249,6 +255,11 @@ export function TrBoutiqueCartPageContent({
   );
   const selectedTotal = cartTotalKurus(selectedItems);
   const selectedCount = selectedItems.length;
+  const liveShipping = boutiqueHasLiveShipping(boutique.slug) && !demoCart;
+  const shippingFeeKurus =
+    liveShipping && selectedCount > 0
+      ? (quoteCheckoutShippingFee(boutique.slug, selectedCount)?.feeKurus ?? 0)
+      : 0;
 
   const cartIds = useMemo(
     () => items.map((item) => item.productId),
@@ -379,11 +390,23 @@ export function TrBoutiqueCartPageContent({
                 : ""}
             </p>
             <p className="mt-1 text-[17px] font-semibold tracking-tight text-brand-primary">
-              {formatTryFromKurus(selectedTotal)}
+              {formatTryFromKurus(
+                liveShipping ? selectedTotal + shippingFeeKurus : selectedTotal,
+              )}
             </p>
-            <p className="mt-0.5 text-[9px] tracking-[0.12em] text-neutral-400">
-              * KDV dahil olmayabilir
-            </p>
+            {liveShipping ? (
+              <p className="mt-0.5 text-[9px] tracking-[0.12em] text-neutral-400">
+                {selectedCount === 0
+                  ? "Kargo seçili ürünlere göre"
+                  : shippingFeeKurus === 0
+                    ? `Kargo ücretsiz · ${FREE_SHIPPING_PROMO_COPY}`
+                    : `Kargo ${formatTryFromKurus(shippingFeeKurus)} · ${FREE_SHIPPING_NUDGE_COPY}`}
+              </p>
+            ) : (
+              <p className="mt-0.5 text-[9px] tracking-[0.12em] text-neutral-400">
+                * KDV dahil olmayabilir
+              </p>
+            )}
           </div>
           {selectedCount > 0 ? (
             <TrSoftNavLink

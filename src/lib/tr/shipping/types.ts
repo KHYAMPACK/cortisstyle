@@ -36,14 +36,17 @@ export const DEFAULT_APPAREL_PACKAGE = {
   weight: 1,
 } as const;
 
-/** What the shopper is charged at checkout (Lila). Server-set only. */
+/** What the shopper is charged at checkout for a single item (Lila). Server-set only. */
 export const FLAT_SHIPPING_FEE_KURUS = 12_000;
 
-/**
- * PDP free-shipping threshold copy. Checkout does not apply this yet —
- * wire cart/quote to the same constant when that ships.
- */
-export const FREE_SHIPPING_THRESHOLD_KURUS = 350_000;
+/** 2+ items (quantity sum) → shopper pays 0 TL kargo. Checkout quotes this. */
+export const FREE_SHIPPING_MIN_ITEMS = 2;
+
+/** Sitewide atelier header + cart / checkout promo. */
+export const FREE_SHIPPING_PROMO_COPY = "2 ürün ve üzeri kargo ücretsiz";
+
+/** One-item cart / checkout nudge. */
+export const FREE_SHIPPING_NUDGE_COPY = "1 ürün daha ekle, kargo bedava";
 
 /** Auto-buy may debit Lila up to charged fee + 20 TL buffer. */
 export const AUTO_BUY_FEE_CAP_KURUS = FLAT_SHIPPING_FEE_KURUS + 2_000;

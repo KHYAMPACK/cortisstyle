@@ -16,10 +16,12 @@ import {
 } from "lucide-react";
 import { TrBoutiqueEditorialCatalog } from "@/components/tr/boutique/editorial/TrBoutiqueEditorialCatalog";
 import type { EditorialDemoContent } from "@/lib/tr/boutiqueHome";
+import { liveShippingHomeBody } from "@/lib/tr/catalog/pdpReturns";
 import {
   trBoutiqueAuthPath,
   trBoutiqueProductsPath,
 } from "@/lib/tr/paths";
+import { boutiqueHasLiveShipping } from "@/lib/tr/shipping/registry";
 import type { TrBoutiquePublic, TrProduct } from "@/types/tr-marketplace";
 
 const fadeUp = {
@@ -147,9 +149,10 @@ export function TrBoutiqueAtelierHomeSections({
           {
             id: "shipping",
             title: "Kargo",
-            body:
-              boutique.shippingNote?.trim() ||
-              "Sipariş sonrası kargo bilgisi paylaşılır.",
+            body: boutiqueHasLiveShipping(slug)
+              ? liveShippingHomeBody()
+              : boutique.shippingNote?.trim() ||
+                "Sipariş sonrası kargo bilgisi paylaşılır.",
             icon: "shipping" as const,
           },
           {

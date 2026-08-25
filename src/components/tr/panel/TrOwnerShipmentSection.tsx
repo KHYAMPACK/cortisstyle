@@ -176,9 +176,11 @@ export function TrOwnerShipmentSection({
     <section className="space-y-4 rounded-2xl border border-[color:var(--panel-accent-border)] bg-white p-5 shadow-sm sm:p-6">
       <p className="text-[19px] font-semibold text-neutral-900">Kargo</p>
       <p className={panelHintClass}>
-        Müşteri 120 TL kargo ödedi; en uygun firma otomatik seçilir (en fazla
-        140 TL). Siz paketi hazırlayıp etiketi yazdırın. Adresi normalde
-        değiştiremezsiniz.
+        {shipment.feeKurus === 0
+          ? "Alıcı kargo ödemedi (2 ürün ve üzeri ücretsiz). En uygun firma otomatik seçilir (en fazla 140 TL). Siz paketi hazırlayıp etiketi yazdırın. Adresi normalde değiştiremezsiniz."
+          : shipment.feeKurus != null
+            ? `Alıcı ${formatTryFromKurus(shipment.feeKurus)} kargo ödedi; en uygun firma otomatik seçilir (en fazla 140 TL). Siz paketi hazırlayıp etiketi yazdırın. Adresi normalde değiştiremezsiniz.`
+            : "Alıcı kargo ücreti siparişte kayıtlıdır; en uygun firma otomatik seçilir (en fazla 140 TL). Siz paketi hazırlayıp etiketi yazdırın. Adresi normalde değiştiremezsiniz."}
       </p>
 
       {cancelled ? (

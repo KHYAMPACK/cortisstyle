@@ -24,7 +24,14 @@ import {
 import { isTrCheckoutEnabled } from "@/lib/tr/platform";
 import { boutiqueHasLiveShipping } from "@/lib/tr/shipping/registry";
 import { boutiqueOffersIyzicoCheckout } from "@/lib/tr/payments/registry";
-import { FLAT_SHIPPING_FEE_KURUS } from "@/lib/tr/shipping/types";
+import {
+  quoteCheckoutShippingFee,
+  shippingItemCount,
+} from "@/lib/tr/shipping/quoteShipping";
+import {
+  FREE_SHIPPING_NUDGE_COPY,
+  FREE_SHIPPING_PROMO_COPY,
+} from "@/lib/tr/shipping/types";
 import {
   trBoutiqueCartPath,
   trBoutiqueLegalPath,
@@ -197,7 +204,10 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
   const liveShipping = Boolean(
     boutiqueSlug && boutiqueHasLiveShipping(boutiqueSlug) && !demoCart,
   );
-  const shippingFeeKurus = liveShipping ? FLAT_SHIPPING_FEE_KURUS : 0;
+  const itemCount = shippingItemCount(items);
+  const shippingFeeKurus = liveShipping
+    ? (quoteCheckoutShippingFee(boutiqueSlug!, itemCount)?.feeKurus ?? 0)
+    : 0;
   const payableKurus = totalKurus + shippingFeeKurus;
   const canSubmit =
     demoCart || boutiqueCheckout || isTrCheckoutEnabled();
@@ -558,7 +568,9 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
               />
               {liveShipping ? (
                 <p className="text-[13px] text-neutral-600">
-                  Kargo: {formatTryFromKurus(shippingFeeKurus)} (sabit)
+                  {shippingFeeKurus === 0
+                    ? `Kargo: Ücretsiz (${FREE_SHIPPING_PROMO_COPY})`
+                    : `Kargo: ${formatTryFromKurus(shippingFeeKurus)} · ${FREE_SHIPPING_NUDGE_COPY}`}
                 </p>
               ) : null}
 
@@ -920,8 +932,21 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
                 </div>
                 <div className="flex items-center justify-between text-[13px]">
                   <span className="text-neutral-500">Kargo</span>
-                  <span>{formatTryFromKurus(shippingFeeKurus)}</span>
+                  <span>
+                    {shippingFeeKurus === 0
+                      ? "Ücretsiz"
+                      : formatTryFromKurus(shippingFeeKurus)}
+                  </span>
                 </div>
+                {shippingFeeKurus > 0 ? (
+                  <p className="text-[12px] text-neutral-500">
+                    {FREE_SHIPPING_NUDGE_COPY}
+                  </p>
+                ) : (
+                  <p className="text-[12px] text-neutral-500">
+                    {FREE_SHIPPING_PROMO_COPY}
+                  </p>
+                )}
               </>
             ) : null}
             <div className="flex items-center justify-between">

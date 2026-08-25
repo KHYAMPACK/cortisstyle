@@ -1,6 +1,8 @@
 "use client";
 
+import { ArrowUpRight, MessageCircle } from "lucide-react";
 import {
+  buildSizeHelpWhatsAppMessage,
   buildSizeRestockNotifyMessage,
   buildWhatsAppOrderUrl,
 } from "@/lib/tr/whatsapp";
@@ -20,6 +22,8 @@ interface TrProductSizePickerProps {
   hideLabel?: boolean;
   /** Opens the size guide next to the size label. */
   onOpenSizeChart?: () => void;
+  /** WhatsApp “pick a size together” under the chips. Off in add-to-cart sheets. */
+  showSizeHelp?: boolean;
   className?: string;
 }
 
@@ -33,6 +37,7 @@ export function TrProductSizePicker({
   accentColor,
   hideLabel = false,
   onOpenSizeChart,
+  showSizeHelp = true,
   className = "",
 }: TrProductSizePickerProps) {
   if (sizes.length === 0) return null;
@@ -45,6 +50,17 @@ export function TrProductSizePicker({
       ? buildWhatsAppOrderUrl(
           whatsappPhone,
           buildSizeRestockNotifyMessage({
+            title: productTitle,
+            size: selectedSize,
+          }),
+        )
+      : null;
+
+  const sizeHelpHref =
+    showSizeHelp && whatsappPhone
+      ? buildWhatsAppOrderUrl(
+          whatsappPhone,
+          buildSizeHelpWhatsAppMessage({
             title: productTitle,
             size: selectedSize,
           }),
@@ -114,6 +130,36 @@ export function TrProductSizePicker({
           );
         })}
       </div>
+
+      {sizeHelpHref ? (
+        <a
+          href={sizeHelpHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="group mt-4 flex min-h-14 w-full items-center gap-3 border border-black/10 bg-[#F7F4EF] px-3.5 py-3 text-left transition-colors duration-200 hover:border-black/25 hover:bg-[#F1EDE6]"
+        >
+          <span
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white"
+            style={{ backgroundColor: accentColor || "#25D366" }}
+            aria-hidden
+          >
+            <MessageCircle className="h-4 w-4" strokeWidth={1.75} />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[13px] font-semibold tracking-[-0.01em] text-neutral-950">
+              Bedeni birlikte seçelim
+            </span>
+            <span className="mt-0.5 block text-[11px] leading-snug text-neutral-600">
+              Emin değil misiniz? WhatsApp’tan yazın
+            </span>
+          </span>
+          <ArrowUpRight
+            className="h-4 w-4 shrink-0 text-neutral-400 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-neutral-800"
+            strokeWidth={1.75}
+            aria-hidden
+          />
+        </a>
+      ) : null}
 
       {selectedOutOfStock && selectedSize ? (
         <div className="mt-3 rounded-lg border border-black/8 bg-neutral-50 px-3 py-3">

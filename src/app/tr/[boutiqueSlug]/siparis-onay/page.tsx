@@ -167,6 +167,11 @@ export default async function BoutiqueOrderConfirmationPage({
               <span>Kargo</span>
               <span>{formatTryFromKurus(order.shipment.feeKurus)}</span>
             </div>
+          ) : order.shipment.feeKurus === 0 ? (
+            <div className="flex justify-between text-[13px] text-neutral-600">
+              <span>Kargo</span>
+              <span>Ücretsiz</span>
+            </div>
           ) : null}
 
           <div className="flex items-center justify-between border-t border-black/5 pt-4">

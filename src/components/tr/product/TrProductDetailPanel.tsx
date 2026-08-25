@@ -402,6 +402,7 @@ export function TrProductDetailPanel({
         sizeStocks={product.sizeStocks}
         productTitle={product.title}
         whatsappPhone={product.boutique.whatsappPhone}
+        accentColor={accent}
         confirmLabel={sizeGateIntent === "buyNow" ? "Hemen al" : "Sepete ekle"}
         onConfirm={addWithSize}
       />

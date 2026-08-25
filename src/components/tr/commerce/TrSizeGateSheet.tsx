@@ -18,6 +18,7 @@ interface TrSizeGateSheetProps {
   sizeStocks?: SizeStocks | null;
   productTitle?: string;
   whatsappPhone?: string | null;
+  accentColor?: string;
 }
 
 /**
@@ -35,6 +36,7 @@ export function TrSizeGateSheet({
   sizeStocks = null,
   productTitle,
   whatsappPhone = null,
+  accentColor,
 }: TrSizeGateSheetProps) {
   const [draft, setDraft] = useState<string | null>(initialSize);
   const [mounted, setMounted] = useState(false);
@@ -75,7 +77,7 @@ export function TrSizeGateSheet({
     <AnimatePresence>
       {open ? (
         <motion.div
-          className="fixed inset-0 z-[125] flex items-end justify-center"
+          className="fixed inset-x-0 bottom-0 z-[125] flex h-dvh items-end justify-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -96,10 +98,13 @@ export function TrSizeGateSheet({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 18 }}
             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            className="relative z-10 w-full max-w-lg border-t border-blueprint-border bg-ice-floor px-5 pt-5 pb-6 shadow-xl"
-            style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}
+            className="relative z-10 flex max-h-[85dvh] w-full max-w-lg flex-col border-t border-blueprint-border bg-ice-floor shadow-xl"
+            style={{
+              paddingBottom:
+                "max(1.5rem, env(safe-area-inset-bottom), calc(100lvh - 100dvh))",
+            }}
           >
-            <div className="relative mb-2 flex items-center justify-center">
+            <div className="relative mb-2 flex shrink-0 items-center justify-center px-5 pt-5">
               <h2
                 id="tr-size-gate-title"
                 className="text-center text-[12px] tracking-[0.28em] text-neutral-900 uppercase"
@@ -110,33 +115,38 @@ export function TrSizeGateSheet({
                 type="button"
                 onClick={onClose}
                 aria-label="Kapat"
-                className="absolute right-0 top-1/2 -translate-y-1/2 p-1 text-neutral-500 transition-colors hover:text-neutral-950"
+                className="absolute right-5 top-1/2 -translate-y-1/2 p-1 text-neutral-500 transition-colors hover:text-neutral-950"
               >
                 <X className="h-5 w-5" strokeWidth={1.25} />
               </button>
             </div>
 
-            <TrProductSizePicker
-              sizes={sizes}
-              selectedSize={draft}
-              onChange={setDraft}
-              sizeStocks={sizeStocks}
-              productTitle={productTitle}
-              whatsappPhone={whatsappPhone}
-              hideLabel
-            />
+            <div className="min-h-0 flex-1 overflow-y-auto px-5">
+              <TrProductSizePicker
+                sizes={sizes}
+                selectedSize={draft}
+                onChange={setDraft}
+                sizeStocks={sizeStocks}
+                productTitle={productTitle}
+                whatsappPhone={whatsappPhone}
+                accentColor={accentColor}
+                hideLabel
+              />
+            </div>
 
-            <button
-              type="button"
-              disabled={!canConfirm}
-              onClick={() => {
-                if (!draft || !isSizeInStock(sizeStocks, draft)) return;
-                onConfirm(draft);
-              }}
-              className="btn-primary mt-6 inline-flex w-full items-center justify-center px-6 py-4 text-[11px] tracking-[0.2em] disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {confirmLabel}
-            </button>
+            <div className="shrink-0 px-5 pt-3">
+              <button
+                type="button"
+                disabled={!canConfirm}
+                onClick={() => {
+                  if (!draft || !isSizeInStock(sizeStocks, draft)) return;
+                  onConfirm(draft);
+                }}
+                className="btn-primary inline-flex w-full items-center justify-center px-6 py-4 text-[11px] tracking-[0.2em] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {confirmLabel}
+              </button>
+            </div>
           </motion.div>
         </motion.div>
       ) : null}

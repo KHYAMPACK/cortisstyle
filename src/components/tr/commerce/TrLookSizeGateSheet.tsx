@@ -182,6 +182,7 @@ export function TrLookSizeGateSheet({
                           productTitle={product.title}
                           whatsappPhone={product.boutique.whatsappPhone}
                           hideLabel
+                          showSizeHelp={false}
                         />
                       </div>
                     </div>
