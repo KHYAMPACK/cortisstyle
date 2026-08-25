@@ -16,6 +16,7 @@ import {
   altGiyimUsesPaca,
   constructionCatalogFamily,
   parseConstructionShopCategory,
+  type ConstructionCatalogFamily,
 } from "@/lib/tr/catalog/garmentUploadTypes";
 import {
   runAiJobImmediately,
@@ -92,6 +93,51 @@ function proposedFromDraft(
         draft?.features?.neckHem ?? product.features?.neckHem,
       ) || null,
   });
+}
+
+function restyleListingFields(input: {
+  product: Pick<TrProduct, "title" | "description" | "features" | "category">;
+  draft: OwnerListingDraft;
+  chips: ElbiseConfirmedChips;
+  family: ConstructionCatalogFamily;
+}): {
+  title: string;
+  description: string | null;
+  features: TrProduct["features"];
+  category: string | null;
+} {
+  const existing = input.product.features ?? {};
+  const features = mergeElbiseRestyleFeatures(
+    {
+      ...(input.draft.features ?? existing),
+      ...(existing.aiModelId ? { aiModelId: existing.aiModelId } : {}),
+      ...(existing.lifestyleModelIds
+        ? { lifestyleModelIds: existing.lifestyleModelIds }
+        : {}),
+    },
+    input.chips,
+    input.family,
+  );
+  const titled = applyConstructionListingTitle(
+    {
+      title: input.draft.title || input.product.title,
+      description: input.draft.description,
+      features,
+      category: input.draft.category ?? input.product.category,
+    },
+    input.family,
+  );
+  const category =
+    parseConstructionShopCategory(titled.category, input.family) ??
+    parseConstructionShopCategory(input.product.category, input.family) ??
+    (input.family === "elbise" ? "elbise" : input.product.category);
+  return {
+    title: titled.title.trim() || input.product.title,
+    description:
+      titled.description?.trim() || input.product.description || null,
+    features,
+    category,
+  };
 }
 
 export async function prepareElbiseCatalogRestyle(input: {
@@ -256,6 +302,13 @@ export async function commitElbiseCatalogRestyle(input: {
     family,
   );
 
+  const listing = restyleListingFields({
+    product: input.product,
+    draft,
+    chips: input.chips,
+    family,
+  });
+
   input.onProgress?.("packshot", "Ön packshot üretiliyor…");
   const pack = await schedule(
     () =>
@@ -263,11 +316,8 @@ export async function commitElbiseCatalogRestyle(input: {
         boutiqueId: input.boutiqueId,
         sourceImageUrl: input.prepared.frontUrl,
         productId: input.product.id,
-        title: draft.title || input.product.title,
-        category:
-          family === "elbise"
-            ? "elbise"
-            : draft.category || input.product.category,
+        title: listing.title,
+        category: listing.category,
         view: "front",
         numImages: 1,
         prompt,
@@ -287,22 +337,14 @@ export async function commitElbiseCatalogRestyle(input: {
     marketplaceImages: input.product.marketplaceImages ?? [],
     packshotUrl,
   });
-  const features = mergeElbiseRestyleFeatures(
-    input.product.features,
-    input.chips,
-    family,
-  );
-
-  const nextCategory =
-    parseConstructionShopCategory(draft.category, family) ??
-    parseConstructionShopCategory(input.product.category, family) ??
-    (family === "elbise" ? "elbise" : input.product.category);
 
   await updateOwnerProduct(input.product.id, {
+    title: listing.title,
+    description: listing.description,
     images: slotted.images,
     marketplaceImages: slotted.marketplaceImages,
-    features,
-    ...(nextCategory ? { category: nextCategory } : {}),
+    features: listing.features,
+    ...(listing.category ? { category: listing.category } : {}),
   });
 
   const planned = buildElbiseTryOnShots({
@@ -324,11 +366,8 @@ export async function commitElbiseCatalogRestyle(input: {
         boutiqueId: input.boutiqueId,
         cutoutImageUrl: planned.shots[0]!.cutoutImageUrl,
         productId: input.product.id,
-        title: draft.title || input.product.title,
-        category:
-          family === "elbise"
-            ? "elbise"
-            : draft.category || input.product.category,
+        title: listing.title,
+        category: listing.category,
         modelId: input.modelId,
         shots: planned.shots,
       }),
@@ -352,10 +391,16 @@ export async function commitElbiseCatalogRestyle(input: {
   }
 
   return updateOwnerProduct(input.product.id, {
+    title: listing.title,
+    description: listing.description,
     images: slotted.images,
     marketplaceImages: slotted.marketplaceImages,
     lifestyleImages: lifestyle,
-    features: featuresWithLifestyleModels(features, input.modelId, lifestyle.length),
-    ...(nextCategory ? { category: nextCategory } : {}),
+    features: featuresWithLifestyleModels(
+      listing.features,
+      input.modelId,
+      lifestyle.length,
+    ),
+    ...(listing.category ? { category: listing.category } : {}),
   });
 }
