@@ -264,6 +264,21 @@ export function getTrCategoryAncestors(
 }
 
 /**
+ * Top-level shop family for a product category (`mont` → `ust-giyim`).
+ * Unknown ids pass through; empty/null returns null.
+ */
+export function getTrCategoryRootId(
+  categoryId: string | null | undefined,
+): string | null {
+  const trimmed = categoryId?.trim();
+  if (!trimmed) return null;
+  const def = getTrCategoryDefinition(trimmed);
+  if (!def) return trimmed;
+  const root = getTrCategoryAncestors(def.id).at(-1);
+  return root?.id ?? def.id;
+}
+
+/**
  * True when product category equals filter, or product leaf sits under filter parent.
  * Unknown filter/product ids fall back to exact string match.
  */

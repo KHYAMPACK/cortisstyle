@@ -2,10 +2,14 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { TrBoutiqueAtelierCategoryMarquee } from "@/components/tr/boutique/editorial/TrBoutiqueAtelierCategoryMarquee";
 import { TrBoutiqueEditorialProductCard } from "@/components/tr/boutique/editorial/TrBoutiqueEditorialProductCard";
 import { useTrBoutiqueCatalog } from "@/components/tr/boutique/TrBoutiqueCatalogContext";
 import { isAtelierEditorialSkin } from "@/lib/tr/boutiqueHome";
-import { groupProductsForHomeCategoryRows } from "@/lib/tr/catalog/homeCategoryRows";
+import {
+  groupProductsForHomeCategoryRows,
+  groupProductsForHomeRootCategoryRows,
+} from "@/lib/tr/catalog/homeCategoryRows";
 import { getTrCategoryLabel, isTrCategoryMatch } from "@/lib/tr/categories";
 import { trBoutiqueProductsPath } from "@/lib/tr/paths";
 import type { TrProduct } from "@/types/tr-marketplace";
@@ -93,7 +97,12 @@ export function TrBoutiqueEditorialCatalog({
     () => groupProductsForHomeCategoryRows(filtered),
     [filtered],
   );
+  const rootCategoryRows = useMemo(
+    () => groupProductsForHomeRootCategoryRows(filtered),
+    [filtered],
+  );
   const splitByCategory = !activeCategory && categoryRows.length > 1;
+  const atelierMarquee = atelier && !searchQuery;
 
   const plpHref = trBoutiqueProductsPath(boutiqueSlug, {
     ...(activeCategory === "sale" ? { indirim: true } : {}),
@@ -103,6 +112,38 @@ export function TrBoutiqueEditorialCatalog({
     ...(searchQuery ? { q: searchQuery } : {}),
     ...(sort !== "default" ? { sira: sort } : {}),
   });
+
+  if (atelierMarquee) {
+    return (
+      <section
+        ref={registerCatalogElement}
+        id="katalog"
+        aria-label="Kategorilere göre ürünler"
+        className="scroll-mt-20 border-t border-black/5 pb-12 md:pb-16"
+      >
+        {rootCategoryRows.length > 0 ? (
+          <div className="flex flex-col gap-y-10 pt-10 md:gap-y-14 md:pt-14">
+            {rootCategoryRows.map((group, groupIndex) => (
+              <TrBoutiqueAtelierCategoryMarquee
+                key={group.categoryId}
+                categoryId={group.categoryId}
+                label={group.label}
+                products={group.products}
+                boutiqueSlug={boutiqueSlug}
+                boutiqueName={boutiqueName}
+                reverse={groupIndex % 2 === 1}
+                priority={groupIndex === 0}
+              />
+            ))}
+          </div>
+        ) : (
+          <p className="px-5 py-12 text-center text-[13px] text-neutral-600 md:px-8">
+            Bu filtrede ürün bulunamadı.
+          </p>
+        )}
+      </section>
+    );
+  }
 
   return (
     <section

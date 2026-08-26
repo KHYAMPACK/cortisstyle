@@ -4,6 +4,7 @@ import {
   constructionCatalogFamily,
   isConstructionCatalogCategory,
 } from "@/lib/tr/catalog/garmentUploadTypes";
+import { isManualListing } from "@/lib/tr/catalog/productFeatures";
 import { isTakimCatalogProduct } from "@/lib/tr/catalog/takimUpload";
 import {
   describeModelPackageCredits,
@@ -52,6 +53,7 @@ export function isElbiseRestyleCandidate(
   product: Pick<TrProduct, "category" | "images" | "features">,
 ): boolean {
   if (isTakimCatalogProduct(product)) return false;
+  if (isManualListing(product)) return false;
   if (!isConstructionCatalogCategory(product.category)) return false;
   const { frontUrl, backUrl } = elbiseSourceUrls(product);
   return Boolean(frontUrl && backUrl);

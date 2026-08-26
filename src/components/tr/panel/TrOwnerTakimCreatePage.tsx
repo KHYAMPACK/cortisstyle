@@ -11,9 +11,15 @@ import { TrOwnerCreditsCostLine } from "@/components/tr/panel/TrOwnerCreditsInfo
 import { TrOwnerGuidedPhotoUpload } from "@/components/tr/panel/TrOwnerGuidedPhotoUpload";
 import { useRegisterLeaveBusy } from "@/components/tr/panel/TrOwnerLeaveGuard";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
+import { TrOwnerManualListingToggle } from "@/components/tr/panel/TrOwnerManualListingToggle";
+import {
+  hasManualGalleryPhoto,
+  TrOwnerManualPhotoGallery,
+} from "@/components/tr/panel/TrOwnerManualPhotoGallery";
 import { TrOwnerProductCreatedSuccess } from "@/components/tr/panel/TrOwnerProductCreatedSuccess";
 import { TrOwnerStorePreview } from "@/components/tr/panel/TrOwnerStorePreview";
 import { TrOwnerTakimChipsStep } from "@/components/tr/panel/TrOwnerTakimChipsStep";
+import { TrOwnerProductFeaturesFields } from "@/components/tr/panel/TrOwnerProductFeaturesFields";
 import { TrOwnerModelShotProgress } from "@/components/tr/panel/TrOwnerModelShotProgress";
 import { TrOwnerWizardPipelineStatus } from "@/components/tr/panel/TrOwnerWizardPipelineStatus";
 import { TrPanelFadeIn } from "@/components/tr/panel/TrPanelMotion";
@@ -42,6 +48,7 @@ import { TR_AI_CATALOG_CREDITS } from "@/lib/tr/aiCatalog/uploadCostHints";
 import { getElbiseTryOnPlates, listAiModelOptions } from "@/lib/tr/aiModel/registry";
 import { getCatalogBackground } from "@/lib/tr/catalogBackgrounds/registry";
 import { constructionCatalogFamily } from "@/lib/tr/catalog/garmentUploadTypes";
+import { withManualListing } from "@/lib/tr/catalog/productFeatures";
 import {
   assembleTakimProductImages,
   formatTakimProductTitle,
@@ -75,7 +82,7 @@ import {
 } from "@/lib/tr/productTakimCreateDraft";
 import { trPanelProductsPath } from "@/lib/tr/paths";
 import { parseSizeStockInputs, sumSizeStocks } from "@/lib/tr/sizeStocks";
-import type { TrProduct } from "@/types/tr-marketplace";
+import type { TrProduct, TrProductFeatures } from "@/types/tr-marketplace";
 
 const STEP_LABELS: Record<TakimCreateStepId, string> = {
   photos: "Fotoğraf",
@@ -86,6 +93,18 @@ const STEP_LABELS: Record<TakimCreateStepId, string> = {
   stock: "Stok",
   preview: "Önizleme",
 };
+
+const MANUAL_TAKIM_STEPS = [
+  "photos",
+  "listing",
+  "prices",
+  "stock",
+  "preview",
+] as const satisfies readonly TakimCreateStepId[];
+
+function stepsForTakim(manual: boolean): readonly TakimCreateStepId[] {
+  return manual ? MANUAL_TAKIM_STEPS : TAKIM_CREATE_STEPS;
+}
 
 function setSlotInList(list: string[], slotIndex: number, value: string): string[] {
   const next = [...list];
@@ -127,6 +146,8 @@ function TakimCreateFlow({
   );
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [features, setFeatures] = useState<TrProductFeatures>({});
+  const [manualMode, setManualMode] = useState(false);
   const [priceTry, setPriceTry] = useState("");
   const [discountEnabled, setDiscountEnabled] = useState(false);
   const [salePriceTry, setSalePriceTry] = useState("");
@@ -173,6 +194,8 @@ function TakimCreateFlow({
       setStepIndex(existing.stepIndex);
       setTitle(existing.title);
       setDescription(existing.description);
+      setFeatures(existing.features ?? {});
+      setManualMode(existing.manualMode === true);
       setPriceTry(existing.priceTry);
       setDiscountEnabled(existing.discountEnabled);
       setSalePriceTry(existing.salePriceTry);
@@ -192,7 +215,7 @@ function TakimCreateFlow({
       items,
       title,
       description,
-      features: {},
+      features,
       priceTry,
       discountEnabled,
       salePriceTry,
@@ -202,6 +225,7 @@ function TakimCreateFlow({
       lifestyleImages,
       catalogBackgroundId,
       selectedModelId,
+      manualMode,
     });
   }, [
     boutiqueId,
@@ -209,6 +233,7 @@ function TakimCreateFlow({
     items,
     title,
     description,
+    features,
     priceTry,
     discountEnabled,
     salePriceTry,
@@ -218,16 +243,19 @@ function TakimCreateFlow({
     lifestyleImages,
     catalogBackgroundId,
     selectedModelId,
+    manualMode,
   ]);
 
-  const step = TAKIM_CREATE_STEPS[stepIndex] ?? "photos";
+  const takimSteps = stepsForTakim(manualMode);
+  const step = takimSteps[Math.min(stepIndex, takimSteps.length - 1)] ?? "photos";
   const identifying = items.some(
     (item) => takimItemHasBothPhotos(item.images) && !item.frontAnalysisDone,
   );
-  const photosReady =
-    items.every((item) => takimItemHasBothPhotos(item.images)) &&
-    items.every((item) => item.frontAnalysisDone) &&
-    !identifying;
+  const photosReady = manualMode
+    ? hasManualGalleryPhoto(items[0]?.images ?? [])
+    : items.every((item) => takimItemHasBothPhotos(item.images)) &&
+      items.every((item) => item.frontAnalysisDone) &&
+      !identifying;
   const packingBusy = packing.some(Boolean);
   const photosBusy = photoJobs.some((jobs) =>
     jobs.some((job) => job.status === "running"),
@@ -456,7 +484,7 @@ function TakimCreateFlow({
       }
     }
     setStepIndex((current) =>
-      Math.min(current + 1, TAKIM_CREATE_STEPS.length - 1),
+      Math.min(current + 1, takimSteps.length - 1),
     );
   };
 
@@ -483,39 +511,49 @@ function TakimCreateFlow({
       } else {
         stockValue = Number.parseInt(stock, 10);
       }
-      if (!packshotsReady) {
+      if (!manualMode && !packshotsReady) {
         throw new Error("Önce her parçanın packshot’unu üretin.");
       }
       const color =
+        features.color?.trim() ||
         items.map((item) => item.features?.color?.trim()).find(Boolean) ||
         undefined;
       const payload: TrOwnerProductPayload = {
         boutiqueId,
         title: title.trim(),
         description: description.trim() || null,
-        features: {
-          ...(color ? { color } : {}),
-          uploadKind: "takim",
-          setItems: setItemsFromTakimDraft(items),
-          ...(selectedModelId
-            ? featuresWithLifestyleModels(
-                {
-                  ...(color ? { color } : {}),
-                  uploadKind: "takim",
-                  setItems: setItemsFromTakimDraft(items),
-                },
-                selectedModelId,
-                lifestyleImages.length,
-              )
-            : {}),
-        },
+        features: withManualListing(
+          {
+            ...features,
+            ...(color ? { color } : {}),
+            uploadKind: "takim",
+            setItems: manualMode ? undefined : setItemsFromTakimDraft(items),
+            ...(selectedModelId
+              ? featuresWithLifestyleModels(
+                  {
+                    ...features,
+                    ...(color ? { color } : {}),
+                    uploadKind: "takim",
+                    setItems: manualMode
+                      ? undefined
+                      : setItemsFromTakimDraft(items),
+                  },
+                  selectedModelId,
+                  lifestyleImages.length,
+                )
+              : {}),
+          },
+          manualMode,
+        ),
         priceTry: sellPrice,
         compareAtPriceTry,
         sizes,
         colors: [],
         category: TAKIM_SHOP_LEAF,
-        images: assembled.images,
-        marketplaceImages: assembled.marketplaceImages,
+        images: manualMode ? items[0]?.images ?? [] : assembled.images,
+        marketplaceImages: manualMode
+          ? []
+          : assembled.marketplaceImages,
         lifestyleImages: cleanedLifestyleImages(lifestyleImages),
         catalogBackgroundId,
         stock: stockValue,
@@ -567,6 +605,18 @@ function TakimCreateFlow({
     );
   }
 
+  const applyManualMode = (next: boolean) => {
+    setManualMode(next);
+    setFeatures((current) => withManualListing(current, next));
+    setStepIndex((current) => {
+      const from = stepsForTakim(!next);
+      const to = stepsForTakim(next);
+      const id = from[Math.min(current, from.length - 1)];
+      const idx = to.findIndex((entry) => entry === id);
+      return idx >= 0 ? idx : 0;
+    });
+  };
+
   const selectedReady = listAiModelOptions(boutiqueSlug).find(
     (option) => option.id === selectedModelId,
   )?.ready;
@@ -578,15 +628,21 @@ function TakimCreateFlow({
       </Link>
       <h1 className={panelPageTitleClass}>Takım yükle</h1>
       <p className={panelHintClass}>
-        İki parça, tek ürün. Önce her parçanın ön ve arka fotoğrafı — packshot
-        ve birlikte giydirme sonra.
+        {manualMode
+          ? "Kategori ve özellikleri sen seç — AI çalışmaz."
+          : "İki parça, tek ürün. Önce her parçanın ön ve arka fotoğrafı — packshot ve birlikte giydirme sonra."}
       </p>
+      <TrOwnerManualListingToggle
+        checked={manualMode}
+        onChange={applyManualMode}
+        disabled={saving}
+      />
       {draftBanner ? (
         <p className={panelHintClass}>Taslak geri yüklendi.</p>
       ) : null}
 
       <ol className="flex gap-1 overflow-x-auto pb-1 text-[12px] font-semibold uppercase tracking-wide text-neutral-500">
-        {TAKIM_CREATE_STEPS.map((id, index) => (
+        {takimSteps.map((id, index) => (
           <li
             key={id}
             className={
@@ -598,7 +654,7 @@ function TakimCreateFlow({
             }
           >
             {STEP_LABELS[id]}
-            {index < TAKIM_CREATE_STEPS.length - 1 ? (
+            {index < takimSteps.length - 1 ? (
               <span className="mx-1 text-neutral-300">·</span>
             ) : null}
           </li>
@@ -609,6 +665,17 @@ function TakimCreateFlow({
 
       {step === "photos" ? (
         <div className="space-y-8">
+          {manualMode ? (
+            <TrOwnerManualPhotoGallery
+              boutiqueId={boutiqueId}
+              images={items[0]?.images ?? []}
+              onImagesChange={(images) => patchItem(0, { images })}
+              onError={setError}
+              onLightbox={setLightbox}
+              disabled={saving}
+            />
+          ) : (
+            <>
           {identifying ? (
             <p className="rounded-xl border border-[color:var(--panel-accent-border)] bg-[color:var(--panel-accent-softer)] px-4 py-3 text-[15px] font-semibold text-neutral-900">
               Parçalar tanınıyor…
@@ -695,6 +762,8 @@ function TakimCreateFlow({
               />
             </section>
           ))}
+            </>
+          )}
         </div>
       ) : null}
 
@@ -769,6 +838,14 @@ function TakimCreateFlow({
               maxLength={TR_OWNER_PRODUCT_LIMITS.descriptionMax}
             />
           </label>
+          {manualMode ? (
+            <TrOwnerProductFeaturesFields
+              value={features}
+              onChange={setFeatures}
+              disabled={saving}
+              fieldClass={panelFieldClass}
+            />
+          ) : null}
         </div>
       ) : null}
 
@@ -898,8 +975,8 @@ function TakimCreateFlow({
           description={description}
           priceTry={discountEnabled ? salePriceTry : priceTry}
           compareAtPriceTry={discountEnabled ? priceTry : null}
-          images={assembled.images}
-          marketplaceImages={assembled.marketplaceImages}
+          images={manualMode ? items[0]?.images ?? [] : assembled.images}
+          marketplaceImages={manualMode ? [] : assembled.marketplaceImages}
           lifestyleImages={lifestyleImages}
           catalogBackgroundId={catalogBackgroundId}
           sizes={
@@ -949,14 +1026,17 @@ function TakimCreateFlow({
               <button
                 type="button"
                 className={`${panelPrimaryBtnClass} flex-1`}
-                disabled={saving || packingBusy || modelBusy || !packshotsReady}
+                disabled={
+                  saving ||
+                  (!manualMode && (packingBusy || modelBusy || !packshotsReady))
+                }
                 onClick={() => void save()}
               >
                 {saving
                   ? "Kaydediliyor…"
-                  : packingBusy
+                  : !manualMode && packingBusy
                     ? "Görseller bitince kaydedin"
-                    : !packshotsReady
+                    : !manualMode && !packshotsReady
                       ? "Packshot eksik"
                       : "Takımı kaydet"}
               </button>

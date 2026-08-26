@@ -46,6 +46,8 @@ export interface ProductCreateDraftV2 {
   uploadType?: string | null;
   /** Extra color photo pairs (linked SKUs). */
   colorVariants?: ColorVariantUploadDraft[];
+  /** Skip Gemini / FASHN / Photoroom — owner fills fields. */
+  manualMode?: boolean;
 }
 
 function storageKey(boutiqueId: string): string {

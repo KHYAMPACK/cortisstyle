@@ -14,6 +14,7 @@ import {
 import { TrOwnerBatchPhotoStep } from "@/components/tr/panel/TrOwnerBatchPhotoStep";
 import { TrOwnerBatchPricesStep } from "@/components/tr/panel/TrOwnerBatchPricesStep";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
+import { TrOwnerManualListingToggle } from "@/components/tr/panel/TrOwnerManualListingToggle";
 import {
   emptyStockInputsForChart,
   sizesFromStockInputs,
@@ -34,6 +35,8 @@ import {
 import type { PipelineJobItem } from "@/lib/tr/aiCatalog/pipelineProgress";
 import { applyConstructionListingTitle } from "@/lib/tr/aiCatalog/listingDraft";
 import { mergeElbiseRestyleFeatures } from "@/lib/tr/aiCatalog/elbiseRestyle";
+import { withManualListing } from "@/lib/tr/catalog/productFeatures";
+import { hasManualGalleryPhoto } from "@/components/tr/panel/TrOwnerManualPhotoGallery";
 import { runConstructionPackshot } from "@/lib/tr/aiCatalog/runConstructionPackshot";
 import { describeModelPackageShots } from "@/lib/tr/aiCatalog/uploadCostHints";
 import { emptyElbiseGateChips } from "@/components/tr/panel/TrOwnerElbiseConstructionGate";
@@ -54,6 +57,7 @@ import {
   writeProductBatchCreateDraft,
   type ProductBatchCreateDraftV2,
   type ProductBatchCreateRow,
+  type BatchCreateStepId,
 } from "@/lib/tr/productBatchCreateDraft";
 import {
   batchIdentifyCounts,
@@ -77,7 +81,19 @@ import {
 } from "@/lib/tr/paths";
 import { formatTryFromKurus, type TrProduct } from "@/types/tr-marketplace";
 
-const STEP_LABELS: Record<(typeof BATCH_CREATE_STEPS)[number], string> = {
+const MANUAL_BATCH_STEPS = [
+  "photos",
+  "listings",
+  "prices",
+  "stock",
+  "preview",
+] as const satisfies readonly BatchCreateStepId[];
+
+function stepsForBatch(manual: boolean): readonly BatchCreateStepId[] {
+  return manual ? MANUAL_BATCH_STEPS : BATCH_CREATE_STEPS;
+}
+
+const STEP_LABELS: Record<BatchCreateStepId, string> = {
   photos: "Fotoğraf",
   chips: "Özellikler",
   listings: "İsim",
@@ -175,6 +191,7 @@ function BatchCreateFlow({
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveErrors, setSaveErrors] = useState<Record<string, string>>({});
+  const [manualMode, setManualMode] = useState(false);
   const hydratedRef = useRef(false);
   const skipNextPersistRef = useRef(false);
   const rowsRef = useRef<ProductBatchCreateRow[]>([]);
@@ -207,10 +224,14 @@ function BatchCreateFlow({
     }
     if (draftBanner) return;
     const handle = window.setTimeout(() => {
-      writeProductBatchCreateDraft(boutiqueId, { stepIndex, rows });
+      writeProductBatchCreateDraft(boutiqueId, {
+        stepIndex,
+        rows,
+        manualMode,
+      });
     }, 400);
     return () => window.clearTimeout(handle);
-  }, [boutiqueId, draftBanner, rows, stepIndex]);
+  }, [boutiqueId, draftBanner, rows, stepIndex, manualMode]);
 
   const patchRow = useCallback(
     (clientId: string, patch: Partial<ProductBatchCreateRow>) => {
@@ -265,6 +286,7 @@ function BatchCreateFlow({
     setRows(restored);
     setActiveId(restored[0]?.clientId ?? null);
     setStepIndex(draftBanner.stepIndex);
+    setManualMode(draftBanner.manualMode === true);
     const withModel = restored.find((row) => row.selectedModelId);
     if (withModel?.selectedModelId) {
       setBatchModelId(withModel.selectedModelId);
@@ -313,7 +335,20 @@ function BatchCreateFlow({
     setError(null);
     const captured = capturedBatchRows(rows);
     if (captured.length === 0) {
-      setError("En az bir ürünün ön ve arka fotoğrafını ekleyin.");
+      setError(
+        manualMode
+          ? "En az bir ürünün fotoğrafını ekleyin."
+          : "En az bir ürünün ön ve arka fotoğrafını ekleyin.",
+      );
+      return;
+    }
+    if (manualMode) {
+      if (captured.some((row) => !hasManualGalleryPhoto(row.images))) {
+        setError("Her üründe en az bir fotoğraf gerekli.");
+        return;
+      }
+      setRows(captured);
+      setStepIndex(1);
       return;
     }
     if (captured.some((row) => !batchRowHasBothPhotos(row))) {
@@ -461,7 +496,7 @@ function BatchCreateFlow({
       }
     }
     setStepIndex((current) =>
-      Math.min(current + 1, BATCH_CREATE_STEPS.length - 1),
+      Math.min(current + 1, stepsForBatch(manualMode).length - 1),
     );
   };
 
@@ -489,13 +524,13 @@ function BatchCreateFlow({
 
   async function saveAll() {
     if (!rows) return;
-    if (jobsRunning(photoJobsById, modelStatusById, packingById)) {
+    if (!manualMode && jobsRunning(photoJobsById, modelStatusById, packingById)) {
       setError(
         "Katalog veya model görselleri hâlâ hazırlanıyor. Bitmesini bekleyin.",
       );
       return;
     }
-    if (rows.some((row) => !batchRowPackshotReady(row))) {
+    if (!manualMode && rows.some((row) => !batchRowPackshotReady(row))) {
       setError("Her üründe packshot gerekli. Özellikler adımından tekrar deneyin.");
       return;
     }
@@ -516,7 +551,7 @@ function BatchCreateFlow({
       async (clientId) => {
         const row = snapshot.find((item) => item.clientId === clientId);
         if (!row) throw new Error("Ürün bulunamadı.");
-        return createOwnerProduct(buildCreatePayload(boutiqueId, row));
+        return createOwnerProduct(buildCreatePayload(boutiqueId, row, manualMode));
       },
       { concurrency: 4 },
     );
@@ -537,9 +572,21 @@ function BatchCreateFlow({
     setSaving(false);
   }
 
-  const step = BATCH_CREATE_STEPS[stepIndex] ?? "photos";
+  const batchSteps = stepsForBatch(manualMode);
+  const step = batchSteps[stepIndex] ?? "photos";
   const packing = jobsRunning(photoJobsById, modelStatusById, packingById);
   useRegisterLeaveBusy("batch-create", packing || saving);
+
+  const applyManualMode = (next: boolean) => {
+    setManualMode(next);
+    setStepIndex((current) => {
+      const from = stepsForBatch(!next);
+      const to = stepsForBatch(next);
+      const id = from[Math.min(current, from.length - 1)];
+      const idx = to.findIndex((entry) => entry === id);
+      return idx >= 0 ? idx : 0;
+    });
+  };
 
   return (
     <TrPanelFadeIn>
@@ -590,13 +637,20 @@ function BatchCreateFlow({
           </Link>
           <h2 className={panelPageTitleClass}>Toplu ürün ekle</h2>
           <p className={`mt-2 ${panelHintClass}`}>
-            Önce fotoğrafları çekin. Sonra özellikleri onaylayın — packshot o
-            zaman üretilir. İsim ve fiyatı beklerken doldurabilirsiniz.
+            {manualMode
+              ? "Kategori ve özellikleri sen seç — AI çalışmaz."
+              : "Önce fotoğrafları çekin. Sonra özellikleri onaylayın — packshot o zaman üretilir. İsim ve fiyatı beklerken doldurabilirsiniz."}
           </p>
         </div>
 
+        <TrOwnerManualListingToggle
+          checked={manualMode}
+          onChange={applyManualMode}
+          disabled={saving}
+        />
+
         <p className="text-[14px] font-medium text-neutral-600">
-          Adım {stepIndex + 1} / {BATCH_CREATE_STEPS.length} · {STEP_LABELS[step]}
+          Adım {stepIndex + 1} / {batchSteps.length} · {STEP_LABELS[step]}
         </p>
 
         {saved.length > 0 ? (
@@ -627,6 +681,7 @@ function BatchCreateFlow({
                 onAddRow={addRow}
                 onRemoveRow={removeRow}
                 onContinue={continueFromPhotos}
+                manualMode={manualMode}
               />
             </div>
 
@@ -647,6 +702,7 @@ function BatchCreateFlow({
                 rows={rows}
                 packingById={packingById}
                 onPatchRow={patchRow}
+                manualMode={manualMode}
               />
             ) : null}
 
@@ -826,6 +882,7 @@ function BatchCreateFlow({
 function buildCreatePayload(
   boutiqueId: string,
   row: ProductBatchCreateRow,
+  manualMode = false,
 ): TrOwnerProductPayload {
   const listPrice = Number(row.priceTry.replace(",", "."));
   let sellPrice = listPrice;
@@ -850,7 +907,7 @@ function buildCreatePayload(
     boutiqueId,
     title: row.title.trim(),
     description: row.description.trim() || null,
-    features: row.features,
+    features: withManualListing(row.features, manualMode),
     priceTry: sellPrice,
     compareAtPriceTry,
     sizes,

@@ -12,6 +12,7 @@ export function TrBoutiqueEditorialHelpFab() {
   return (
     <button
       type="button"
+      data-atelier-chrome=""
       onClick={() => openPanel("help")}
       className="fixed right-4 bottom-4 z-40 flex items-center gap-2 bg-neutral-900 px-3.5 py-3 text-white shadow-lg transition-opacity hover:opacity-90 md:right-6 md:bottom-6"
       aria-label={`${boutiqueName} yardım asistanı`}

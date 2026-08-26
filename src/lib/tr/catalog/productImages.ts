@@ -4,6 +4,7 @@ import {
   deliverPublicAssetUrls,
 } from "@/lib/tr/assets/deliverPublicAssetUrl";
 import { ELBISE_PACKSHOT_SLOT } from "@/lib/tr/catalog/garmentUploadTypes";
+import { isManualListing } from "@/lib/tr/catalog/productFeatures";
 import { isTakimCatalogProduct, takimPackshotUrls } from "@/lib/tr/catalog/takimUpload";
 import { TR_OWNER_PRODUCT_LIMITS } from "@/lib/tr/ownerProductConstraints";
 import {
@@ -183,6 +184,20 @@ function galleryFromSlots(params: {
  * Owner manken / hanger originals stay in `images` (panel / orijinaller).
  */
 function shopperFacingGallery(product: CatalogImageProduct): string[] {
+  if (isManualListing(product)) {
+    const seen = new Set<string>();
+    const out: string[] = [];
+    const push = (url: string | undefined) => {
+      const trimmed = url?.trim();
+      if (!trimmed || seen.has(trimmed)) return;
+      seen.add(trimmed);
+      out.push(trimmed);
+    };
+    for (const url of nonEmpty(product.lifestyleImages)) push(url);
+    for (const url of nonEmpty(product.images)) push(url);
+    if (out.length > 0) return out;
+  }
+
   const lifestyle = nonEmpty(product.lifestyleImages);
   const packshots = isTakimCatalogProduct(product)
     ? takimPackshotUrls(product)
@@ -217,6 +232,11 @@ export function getProductCoverImageFor(
   surface: TrProductImageSurface,
   product: CatalogImageProduct,
 ): string | null {
+  if (isManualListing(product)) {
+    const gallery = shopperFacingGallery(product);
+    const cover = gallery[0];
+    return cover ? deliverPublicAssetUrl(cover, "full") : null;
+  }
   if (surface === "boutique") {
     const lifestyle = nonEmpty(product.lifestyleImages);
     const packshot = lifestyle.length > 0 ? catalogPackshotUrl(product) : undefined;
@@ -272,6 +292,10 @@ export function getMarketplaceGalleryImages(
 export function getPanelProductCover(
   product: CatalogImageProduct,
 ): string | null {
+  if (isManualListing(product)) {
+    const cover = shopperFacingGallery(product)[0];
+    return cover ? deliverPublicAssetUrl(cover, "plp") : null;
+  }
   const packshot = catalogPackshotUrl(product);
   const boutiqueCover =
     galleryFromSlots({ product, preferStorefront: false })[0] ??

@@ -21,6 +21,22 @@ export const FULFILLMENT_HINT: Record<TrFulfillmentStatus, string> = {
   cancelled: "İptal edildi; stok otomatik geri yüklendi.",
 };
 
+/** Live Basit kargo — etiket is the next step, not the manual status chip. */
+export function fulfillmentHintForBoutique(
+  status: TrFulfillmentStatus,
+  liveShipping: boolean,
+): string {
+  if (liveShipping) {
+    if (status === "created") {
+      return "Ödeme sonrası etiket otomatik üretilir. Yoksa “Etiket hazırla” ile tekrar deneyin.";
+    }
+    if (status === "ready") {
+      return "Etiket hazır. Yazdırın ve paketi kargo şubesine bırakın.";
+    }
+  }
+  return FULFILLMENT_HINT[status];
+}
+
 export const FULFILLMENT_TONE: Record<TrFulfillmentStatus, string> = {
   created: "bg-amber-50 text-amber-950",
   ready: "bg-sky-50 text-sky-950",

@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 import { useEffect, useId } from "react";
 import { createPortal } from "react-dom";
+import { TrBoutiqueSizeChartBodyGuide } from "@/components/tr/boutique/pdp/TrBoutiqueSizeChartBodyGuide";
 import type { TrSizeChartTable } from "@/lib/tr/catalog/sizeCharts";
 
 interface TrBoutiqueSizeChartModalProps {
@@ -82,6 +83,10 @@ export function TrBoutiqueSizeChartModal({
               <p className="mt-3 text-[12px] text-neutral-500">
                 Ölçü birimi: {chart.unit}
               </p>
+
+              {chart.measureKind === "body" && chart.measurePoints?.length ? (
+                <TrBoutiqueSizeChartBodyGuide points={chart.measurePoints} />
+              ) : null}
 
               <div className="-mx-1 mt-4 overflow-x-auto">
                 <table className="w-max min-w-full border-collapse text-left text-[12px] md:text-[13px]">

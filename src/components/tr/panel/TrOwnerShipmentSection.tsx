@@ -13,6 +13,7 @@ import {
   panelLabelClass,
   panelPrimaryBtnClass,
   panelSecondaryBtnClass,
+  panelSuccessClass,
 } from "@/components/tr/panel/panelUi";
 import { trPanelFadeTransition } from "@/components/tr/panel/TrPanelMotion";
 import {
@@ -233,6 +234,19 @@ export function TrOwnerShipmentSection({
           </div>
 
           {error ? <p className={panelErrorClass}>{error}</p> : null}
+
+          {hasBarcode && !error ? (
+            <motion.p
+              key="label-created"
+              role="status"
+              className={panelSuccessClass}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={trPanelFadeTransition}
+            >
+              Etiket başarıyla oluşturuldu. Yazdırabilirsiniz.
+            </motion.p>
+          ) : null}
 
           {hasBarcode ? (
             <div className="flex flex-wrap gap-2">

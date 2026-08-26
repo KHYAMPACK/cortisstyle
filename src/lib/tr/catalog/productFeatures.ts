@@ -91,6 +91,9 @@ const EMPTY: TrProductFeatures = {};
 
 const AI_MODEL_ID_RE = /^(studio|boutique):[a-z0-9-]+$/i;
 
+/** PDP “Modelin ölçüleri” for Elle ekle listings that have no try-on kaydı. */
+export const MANUAL_LISTING_DEFAULT_MODEL_ID = "studio:selin";
+
 export function sanitizeAiModelId(
   raw: string | null | undefined,
 ): string | undefined {
@@ -189,6 +192,37 @@ export function emptyProductFeatures(): TrProductFeatures {
   return { ...EMPTY };
 }
 
+export function isManualListing(
+  product:
+    | { features?: TrProductFeatures | null }
+    | TrProductFeatures
+    | null
+    | undefined,
+): boolean {
+  if (!product) return false;
+  const features =
+    "features" in product
+      ? product.features
+      : (product as TrProductFeatures);
+  return features?.manualListing === true;
+}
+
+export function withManualListing(
+  features: TrProductFeatures | null | undefined,
+  enabled: boolean,
+): TrProductFeatures {
+  const next: TrProductFeatures = { ...(features ?? {}) };
+  if (enabled) {
+    next.manualListing = true;
+    if (!sanitizeAiModelId(next.aiModelId)) {
+      next.aiModelId = MANUAL_LISTING_DEFAULT_MODEL_ID;
+    }
+  } else {
+    delete next.manualListing;
+  }
+  return next;
+}
+
 function clampFeature(
   key: TrProductFeatureKey,
   raw: string | null | undefined,
@@ -231,6 +265,9 @@ export function sanitizeProductFeatures(
     next.uploadKind = "takim";
     const setItems = sanitizeTakimSetItems(record.setItems);
     if (setItems) next.setItems = setItems;
+  }
+  if (record.manualListing === true) {
+    next.manualListing = true;
   }
   const colorGroupId = sanitizeColorGroupId(record.colorGroupId);
   const colorSiblingIds = sanitizeColorSiblingIds(record.colorSiblingIds);

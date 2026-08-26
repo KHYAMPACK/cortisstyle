@@ -689,6 +689,7 @@ export function TrBoutiqueEditorialHeader({
 
   return (
     <header
+      data-atelier-chrome=""
       className={`sticky top-0 z-50 backdrop-blur-md ${
         atelier
           ? "border-b border-black/[0.05] bg-[#FAFAF8]/90"

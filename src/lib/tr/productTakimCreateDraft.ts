@@ -65,6 +65,8 @@ export interface ProductTakimCreateDraftV1 {
   lifestyleImages: string[];
   catalogBackgroundId: string;
   selectedModelId: string | null;
+  /** Skip Gemini / FASHN / Photoroom — owner fills fields. */
+  manualMode?: boolean;
 }
 
 function storageKey(boutiqueId: string): string {

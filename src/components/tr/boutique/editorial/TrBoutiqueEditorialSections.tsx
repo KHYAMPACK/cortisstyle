@@ -111,7 +111,7 @@ export function TrBoutiqueEditorialSections({
   const accent = resolveBoutiqueThemeAccent(boutique);
 
   return (
-    <div className={atelier ? "w-full min-w-0 max-w-full overflow-x-clip bg-[#FAFAF8]" : "w-full min-w-0 max-w-full overflow-x-clip bg-white"}>
+    <div className={atelier ? "w-full min-w-0 max-w-full bg-[#FAFAF8]" : "w-full min-w-0 max-w-full overflow-x-clip bg-white"}>
       {!atelier ? (
         <motion.div
           initial={{ opacity: 0 }}
@@ -135,7 +135,7 @@ export function TrBoutiqueEditorialSections({
         </motion.div>
       ) : null}
 
-      <motion.div {...fadeUp} className={atelier ? "mt-0" : undefined}>
+      <motion.div {...fadeUp} className={atelier ? "mt-0 overflow-x-clip" : undefined}>
         <TrBoutiqueEditorialHeroCarousel
           boutiqueSlug={boutiqueSlug}
           brandTitle={brandTitle}

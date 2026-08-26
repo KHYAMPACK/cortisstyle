@@ -4,6 +4,8 @@
  */
 
 import {
+  isManualListing,
+  MANUAL_LISTING_DEFAULT_MODEL_ID,
   sanitizeAiModelId,
   sanitizeLifestyleModelIds,
 } from "@/lib/tr/catalog/productFeatures";
@@ -43,11 +45,11 @@ export const MODEL_SCALES: Record<string, TrModelScale> = {
   },
   "studio:selin": {
     modelId: "studio:selin",
-    heightCm: 165,
+    heightCm: 166,
     waistCm: 60,
     bustCm: 80,
     hipCm: 90,
-    weightKg: 48,
+    weightKg: 59,
     wearingSizeLetter: "S",
     wearingSizeNumeric: "36",
   },
@@ -104,6 +106,8 @@ function pickProductModelId(
   for (const id of lifestyle) {
     if (id && MODEL_SCALES[id]) return id;
   }
+
+  if (isManualListing(features)) return MANUAL_LISTING_DEFAULT_MODEL_ID;
 
   return isMensProduct(features)
     ? DEFAULT_MAN_MODEL_ID

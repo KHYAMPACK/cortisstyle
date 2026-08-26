@@ -53,6 +53,9 @@ export const panelPageTitleClass =
 export const panelErrorClass =
   "rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[14px] text-red-800";
 
+export const panelSuccessClass =
+  "rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-[14px] text-emerald-900";
+
 export const panelEmptyClass =
   "rounded-xl border border-neutral-200/80 bg-white px-5 py-10 text-center text-[14px] text-neutral-500";
 

@@ -27,13 +27,21 @@ interface TrBoutiqueEditorialProductCardProps {
   boutiqueSlug: string;
   boutiqueName: string;
   priority?: boolean;
+  /** Tighter title block — used in home category marquees. */
+  compact?: boolean;
+  sizes?: string;
 }
+
+const DEFAULT_CARD_SIZES =
+  "(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw";
 
 export function TrBoutiqueEditorialProductCard({
   product,
   boutiqueSlug,
   boutiqueName,
   priority = false,
+  compact = false,
+  sizes = DEFAULT_CARD_SIZES,
 }: TrBoutiqueEditorialProductCardProps) {
   const packshotImage = getProductCoverImageFor("boutique", product);
   const modelImage = getProductHoverImage(product);
@@ -97,7 +105,7 @@ export function TrBoutiqueEditorialProductCard({
                 alt=""
                 fill
                 priority={priority}
-                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                sizes={sizes}
                 className={`object-cover transition-opacity duration-500 group-hover:opacity-0 ${
                   isSold ? "opacity-60" : ""
                 }`}
@@ -106,7 +114,7 @@ export function TrBoutiqueEditorialProductCard({
                 src={packshotImage}
                 alt=""
                 fill
-                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                sizes={sizes}
                 className={`${
                   packshotIsCutout ? "object-contain p-3" : "object-cover"
                 } opacity-0 transition-opacity duration-500 group-hover:opacity-100 ${
@@ -120,7 +128,7 @@ export function TrBoutiqueEditorialProductCard({
               alt=""
               fill
               priority={priority}
-              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              sizes={sizes}
               className={`${
                 packshotIsCutout ? "object-contain p-3" : "object-cover"
               } transition-transform duration-700 group-hover:scale-[1.02] ${
@@ -195,7 +203,11 @@ export function TrBoutiqueEditorialProductCard({
         href={productHref}
         kind="product"
         className={`block text-left outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2 ${
-          atelier ? "px-0.5 pt-4 pb-8 md:px-1" : "px-1 pt-3 pb-5 md:px-1.5"
+          atelier
+            ? compact
+              ? "px-0.5 pt-3 pb-1 md:px-1"
+              : "px-0.5 pt-4 pb-8 md:px-1"
+            : "px-1 pt-3 pb-5 md:px-1.5"
         }`}
       >
         <h3

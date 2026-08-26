@@ -6,11 +6,11 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
 import {
-  FULFILLMENT_HINT,
   FULFILLMENT_LABEL,
   FULFILLMENT_TONE,
   PAYMENT_LABEL,
   formatOrderDateLong,
+  fulfillmentHintForBoutique,
 } from "@/components/tr/panel/orderFulfillmentUi";
 import {
   panelBackLinkClass,
@@ -243,7 +243,10 @@ function OrderDetail({
               Sipariş durumu
             </p>
             <p className={`mt-2 ${panelHintClass}`}>
-              {FULFILLMENT_HINT[order.fulfillmentStatus]}
+              {fulfillmentHintForBoutique(
+                order.fulfillmentStatus,
+                boutiqueHasLiveShipping(boutiqueSlug),
+              )}
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               {FULFILLMENT_OPTIONS.map((id) => (

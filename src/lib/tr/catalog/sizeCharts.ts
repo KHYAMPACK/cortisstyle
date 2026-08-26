@@ -14,15 +14,61 @@ export type TrSizeChartRow = {
   values: string[];
 };
 
+export type TrSizeChartMeasureKind = "body" | "garment";
+
+export type TrSizeChartMeasurePointId = "bust" | "waist" | "hip";
+
+export type TrSizeChartMeasurePoint = {
+  id: TrSizeChartMeasurePointId;
+  title: string;
+  hint: string;
+  /** Matches the dashed line on the size-guide figure. */
+  swatch: string;
+};
+
 export type TrSizeChartTable = {
   id: TrPdpSizeChartId;
   title: string;
   columns: string[];
   rows: TrSizeChartRow[];
   unit: "cm";
+  measureKind: TrSizeChartMeasureKind;
+  measurePoints?: TrSizeChartMeasurePoint[];
   howToMeasure: string;
   tolerance: string;
 };
+
+/**
+ * Letter body cm. S is the house anchor (göğüs 91 / bel 71 / basen 88).
+ * Grade vs S: XS −4, M +4, then +6 per size (L…3XL).
+ */
+const LETTER_S_BODY_CM = { bust: 91, waist: 71, hip: 88 } as const;
+const LETTER_GRADE_FROM_S = [-4, 0, 4, 10, 16, 22, 28] as const;
+
+function letterBodyValues(sValue: number): string[] {
+  return LETTER_GRADE_FROM_S.map((delta) => String(sValue + delta));
+}
+
+export const LETTER_BODY_MEASURE_POINTS: TrSizeChartMeasurePoint[] = [
+  {
+    id: "bust",
+    title: "Göğüs ölçüsü",
+    hint: "Göğüs hizasında, göğsün en geniş olduğu yerden alınır.",
+    swatch: "#E11D48",
+  },
+  {
+    id: "waist",
+    title: "Bel ölçüsü",
+    hint: "Belin en dar olduğu noktadan alınır.",
+    swatch: "#EC4899",
+  },
+  {
+    id: "hip",
+    title: "Kalça ölçüsü",
+    hint: "Basen çevresinin en geniş olduğu noktadan alınır.",
+    swatch: "#7C3AED",
+  },
+];
 
 /** Letter chart — body measurements (cm). */
 export const LETTER_SIZE_CHART: TrSizeChartTable = {
@@ -30,6 +76,8 @@ export const LETTER_SIZE_CHART: TrSizeChartTable = {
   title: "Beden Tablosu",
   columns: ["XS", "S", "M", "L", "XL", "2XL", "3XL"],
   unit: "cm",
+  measureKind: "body",
+  measurePoints: LETTER_BODY_MEASURE_POINTS,
   howToMeasure:
     "Göğüs, bel ve basen ölçülerini vücut üzerinden, mezura yatay ve sıkı olmadan alın.",
   tolerance: "Ölçülerde ± 2 cm fark tolerans dahilindedir.",
@@ -38,17 +86,17 @@ export const LETTER_SIZE_CHART: TrSizeChartTable = {
     {
       id: "bust",
       label: "Göğüs",
-      values: ["82", "86", "90", "96", "102", "108", "114"],
+      values: letterBodyValues(LETTER_S_BODY_CM.bust),
     },
     {
       id: "waist",
       label: "Bel",
-      values: ["64", "68", "72", "78", "84", "90", "96"],
+      values: letterBodyValues(LETTER_S_BODY_CM.waist),
     },
     {
       id: "hip",
       label: "Basen",
-      values: ["88", "92", "96", "102", "108", "114", "120"],
+      values: letterBodyValues(LETTER_S_BODY_CM.hip),
     },
   ],
 };
@@ -133,6 +181,7 @@ export const NUMERIC_SIZE_CHART: TrSizeChartTable = {
   title: "Beden Tablosu",
   columns: [...DEFAULT_NUMERIC_SIZES],
   unit: "cm",
+  measureKind: "garment",
   howToMeasure:
     "Bel ve basen, ürün düz yatırılıp kenardan kenara yarım ölçü (1/2) olarak alınır. Baldır ve iç boy, bacak dikişi üzerinden ölçülür.",
   tolerance: "Ölçülerde ± 2 cm fark tolerans dahilindedir.",

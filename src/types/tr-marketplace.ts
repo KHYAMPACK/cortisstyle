@@ -119,6 +119,11 @@ export type TrProductFeatures = {
   uploadKind?: "takim";
   setItems?: TrTakimSetItem[];
   /**
+   * Owner bypassed Gemini / FASHN / Photoroom. Photos in `images` are
+   * shopper-facing. Can combine with `uploadKind: "takim"`.
+   */
+  manualListing?: boolean;
+  /**
    * Linked color SKUs (one product per color). Same id on every sibling.
    * Restyle / slot-3 still belong to this product only.
    */

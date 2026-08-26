@@ -70,15 +70,16 @@ Seed `shopCategories` / tiles / trends point at these paths. Atelier homepage ca
 
 After the campaign hero, Lila home uses:
 
-1. Shop by category (horizontal row)  
-2. Product catalog (ürünler)  
-3. Trends 2×2  
-4. Mid campaign split  
-5. Join + benefits  
-6. Info strip (iade / kargo / değişim)  
-7. Dark footer  
+1. Twin color story (Espresso / Navy) — scroll in, both expand to fill the screen; keep scrolling with no tap and they shrink to two cards; tap a color and it fills the screen then goes to that PDP when `href` is set. While the pair fills the viewport, header / iyzico Alıcı Koruması / help FAB hide (`data-atelier-twin-immersive`). Not a vs-campaign. Content key `twinStory` is code-owned (`buildAtelierTwinStory`).
+2. Shop by category (horizontal row)  
+3. Product catalog (category marquees on home)  
+4. Trends 2×2  
+5. Mid campaign split  
+6. Join + benefits  
+7. Info strip (iade / kargo / değişim)  
+8. Dark footer  
 
-Content keys in `editorial_content`: `shopCategories`, `infoStrip`, `trends`, `midCampaign`, `join`.
+Content keys in `editorial_content`: `shopCategories`, `infoStrip`, `trends`, `midCampaign`, `join`. Twin story copy is **not** taken from DB (avoids drift). `image` / `href` are filled from catalog Midi Jean Elbise twins (Espresso / Navy) via `resolveAtelierTwinStory`.
 
 
 Hero slides in `editorial_content.heroPromotions[]` support a **campaign** layout (Paul Fredrick–style):

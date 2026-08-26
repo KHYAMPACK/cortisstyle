@@ -82,6 +82,8 @@ export interface ProductBatchCreateDraftV2 {
   updatedAt: number;
   stepIndex: number;
   rows: ProductBatchCreateRow[];
+  /** Skip Gemini / FASHN / Photoroom — owner fills fields. */
+  manualMode?: boolean;
 }
 
 function storageKey(boutiqueId: string): string {
@@ -185,7 +187,7 @@ export function readProductBatchCreateDraft(
           BATCH_CREATE_STEPS.length - 1,
         )
       : 0;
-    return { ...parsed, stepIndex };
+    return { ...parsed, stepIndex, manualMode: parsed.manualMode === true };
   } catch {
     return null;
   }
@@ -193,7 +195,11 @@ export function readProductBatchCreateDraft(
 
 export function writeProductBatchCreateDraft(
   boutiqueId: string,
-  input: { stepIndex: number; rows: ProductBatchCreateRow[] },
+  input: {
+    stepIndex: number;
+    rows: ProductBatchCreateRow[];
+    manualMode?: boolean;
+  },
 ): void {
   if (typeof window === "undefined") return;
   const payload: ProductBatchCreateDraftV2 = {
@@ -201,6 +207,7 @@ export function writeProductBatchCreateDraft(
     updatedAt: Date.now(),
     stepIndex: input.stepIndex,
     rows: input.rows,
+    manualMode: input.manualMode === true ? true : undefined,
   };
   if (!batchDraftHasProgress(payload)) {
     clearProductBatchCreateDraft(boutiqueId);

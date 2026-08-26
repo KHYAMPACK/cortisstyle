@@ -22,6 +22,11 @@ import {
   TrOwnerSizeChartStock,
 } from "@/components/tr/panel/TrOwnerSizeChartStock";
 import { TrOwnerCategoryPicker } from "@/components/tr/panel/TrOwnerCategoryPicker";
+import { TrOwnerManualListingToggle } from "@/components/tr/panel/TrOwnerManualListingToggle";
+import {
+  hasManualGalleryPhoto,
+  TrOwnerManualPhotoGallery,
+} from "@/components/tr/panel/TrOwnerManualPhotoGallery";
 import { TrOwnerProductFeaturesFields } from "@/components/tr/panel/TrOwnerProductFeaturesFields";
 import {
   panelFieldClass,
@@ -51,7 +56,10 @@ import {
   requiredPhotoSlotsForUploadType,
   type ConstructionCatalogFamily,
 } from "@/lib/tr/catalog/garmentUploadTypes";
-import { withLifestyleModelsAll } from "@/lib/tr/catalog/productFeatures";
+import {
+  withLifestyleModelsAll,
+  withManualListing,
+} from "@/lib/tr/catalog/productFeatures";
 import {
   LILA_DEFAULT_PHOTOGRAPHY_STYLE,
   parseLilaPhotographyStyle,
@@ -203,7 +211,12 @@ export function TrProductCreateWizard({
   onSaved,
 }: TrProductCreateWizardProps) {
   const [uploadType, setUploadType] = useState<string | null>(null);
-  const steps = ALL_STEPS;
+  const [manualMode, setManualMode] = useState(false);
+  const steps = useMemo(
+    () =>
+      manualMode ? ALL_STEPS.filter((entry) => entry.id !== "model") : ALL_STEPS,
+    [manualMode],
+  );
   const [stepIndex, setStepIndex] = useState(0);
   const step = steps[Math.min(stepIndex, steps.length - 1)]!;
 
@@ -300,6 +313,7 @@ export function TrProductCreateWizard({
         photographyStyle,
         uploadType,
         colorVariants,
+        manualMode,
       });
     }, 400);
     return () => window.clearTimeout(handle);
@@ -328,6 +342,7 @@ export function TrProductCreateWizard({
     title,
     uploadType,
     colorVariants,
+    manualMode,
   ]);
 
   const chartSizes = useMemo(
@@ -426,14 +441,19 @@ export function TrProductCreateWizard({
 
   const photoStepPhotosReady = useMemo(
     () =>
-      hasRequiredProductPhotosStarted(images, photoJobs, requiredSlots) &&
-      Boolean(images[0]?.trim()),
-    [images, photoJobs, requiredSlots],
+      manualMode
+        ? hasManualGalleryPhoto(images)
+        : hasRequiredProductPhotosStarted(images, photoJobs, requiredSlots) &&
+          Boolean(images[0]?.trim()),
+    [images, manualMode, photoJobs, requiredSlots],
   );
 
   /** Front AI prepare still running — Devam shows loading instead of an error. */
   const awaitingFrontAi =
-    step.id === "photo" && photoStepPhotosReady && !frontAnalysisDone;
+    !manualMode &&
+    step.id === "photo" &&
+    photoStepPhotosReady &&
+    !frontAnalysisDone;
 
   /** Hide Devam entirely until photos are confirmed on the first step. */
   const showContinueButton =
@@ -455,6 +475,7 @@ export function TrProductCreateWizard({
 
   const canContinue = useMemo(() => {
     if (step.id === "photo") {
+      if (manualMode) return photoStepPhotosReady;
       const draftReady =
         Boolean(listingDraft?.title?.trim()) || frontDraftFailed;
       const extrasReady = colorVariants.every(
@@ -517,6 +538,7 @@ export function TrProductCreateWizard({
     title,
     family,
     colorVariants,
+    manualMode,
   ]);
 
   const primaryPackshotUrl =
@@ -661,6 +683,23 @@ export function TrProductCreateWizard({
     title,
   ]);
 
+  const applyManualMode = (next: boolean) => {
+    setManualMode(next);
+    setFeatures((current) => withManualListing(current, next));
+    setConfirmSkipModel(false);
+    setStepIndex((current) => {
+      const from = next
+        ? ALL_STEPS
+        : ALL_STEPS.filter((entry) => entry.id !== "model");
+      const to = next
+        ? ALL_STEPS.filter((entry) => entry.id !== "model")
+        : ALL_STEPS;
+      const id = from[Math.min(current, from.length - 1)]?.id;
+      const idx = to.findIndex((entry) => entry.id === id);
+      return idx >= 0 ? idx : 0;
+    });
+  };
+
   const goNext = () => {
     setError(null);
     if (step.id === "photo" && (!photoStepPhotosReady || awaitingFrontAi)) {
@@ -721,6 +760,7 @@ export function TrProductCreateWizard({
     skipNextPersistRef.current = true;
     const restoredType = draft.uploadType ?? null;
     setUploadType(restoredType);
+    setManualMode(draft.manualMode === true);
     setStepIndex(
       Math.min(Math.max(0, draft.stepIndex), ALL_STEPS.length - 1),
     );
@@ -768,7 +808,7 @@ export function TrProductCreateWizard({
       }
       const listPrice = Number(priceTry.replace(",", "."));
       if (!title.trim()) throw new Error("Başlık zorunlu.");
-      if (!family) {
+      if (!manualMode && !family) {
         throw new Error("Fotoğraf adımında türü onaylayın.");
       }
       if (family === "ust-giyim" && !isUstGiyimShopLeaf(category)) {
@@ -781,7 +821,11 @@ export function TrProductCreateWizard({
           "Alt giyim için alt kategori seçin (etek, pantolon, eşofman).",
         );
       }
-      if (!hasRequiredProductPhotos(images, requiredSlots)) {
+      if (manualMode) {
+        if (!hasManualGalleryPhoto(images)) {
+          throw new Error("En az bir fotoğraf ekleyin.");
+        }
+      } else if (!hasRequiredProductPhotos(images, requiredSlots)) {
         throw new Error(
           uploading
             ? "Fotoğraflar hâlâ hazırlanıyor. Biraz bekleyip tekrar deneyin."
@@ -821,13 +865,16 @@ export function TrProductCreateWizard({
         compareAtPriceTryValue = listPrice;
       }
 
-      const listingFeatures = selectedModelId
-        ? withLifestyleModelsAll(
-            features,
-            selectedModelId,
-            Math.max(cleanedLifestyleImages(lifestyleImages).length, 1),
-          )
-        : features;
+      const listingFeatures = withManualListing(
+        selectedModelId
+          ? withLifestyleModelsAll(
+              features,
+              selectedModelId,
+              Math.max(cleanedLifestyleImages(lifestyleImages).length, 1),
+            )
+          : features,
+        manualMode,
+      );
 
       const product = await createOwnerProduct({
         boutiqueId,
@@ -850,26 +897,33 @@ export function TrProductCreateWizard({
         status: "available",
       });
 
-      const readyExtras = colorVariants.filter(
-        (variant) =>
-          colorVariantPhotosReady(variant) && variant.packshotUrl.trim(),
-      );
-      const incompleteExtras = colorVariants.filter(
-        (variant) =>
-          colorVariantPhotosReady(variant) && !variant.packshotUrl.trim(),
-      );
-      if (incompleteExtras.length > 0 || colorPackshotBusyIds.length > 0) {
+      const readyExtras = manualMode
+        ? []
+        : colorVariants.filter(
+            (variant) =>
+              colorVariantPhotosReady(variant) && variant.packshotUrl.trim(),
+          );
+      const incompleteExtras = manualMode
+        ? []
+        : colorVariants.filter(
+            (variant) =>
+              colorVariantPhotosReady(variant) && !variant.packshotUrl.trim(),
+          );
+      if (
+        !manualMode &&
+        (incompleteExtras.length > 0 || colorPackshotBusyIds.length > 0)
+      ) {
         throw new Error(
           "Ek renk packshot’ları hâlâ hazırlanıyor. Biraz bekleyip kaydedin.",
         );
       }
-      if (colorTryOnBusyIds.length > 0) {
+      if (!manualMode && colorTryOnBusyIds.length > 0) {
         throw new Error(
           "Ek renk model kareleri hâlâ hazırlanıyor. Biraz bekleyip kaydedin.",
         );
       }
 
-      if (elbise && family && readyExtras.length > 0) {
+      if (!manualMode && elbise && family && readyExtras.length > 0) {
         const extraProducts: TrProduct[] = [];
         for (const extra of readyExtras) {
           const colorName: string =
@@ -997,6 +1051,12 @@ export function TrProductCreateWizard({
         ) : null}
       </AnimatePresence>
 
+      <TrOwnerManualListingToggle
+        checked={manualMode}
+        onChange={applyManualMode}
+        disabled={saving}
+      />
+
       <div className="rounded-2xl border border-[color:var(--panel-accent-border)] bg-white p-5 shadow-sm sm:p-6">
         <div className="flex items-center justify-between gap-3">
           <p className="text-[16px] font-semibold text-neutral-700">
@@ -1019,11 +1079,13 @@ export function TrProductCreateWizard({
           />
         </div>
         <p className="mt-3 text-[18px] text-neutral-700">
-          {step.hint}
+          {manualMode
+            ? "Kategori ve özellikleri sen seç — AI çalışmaz."
+            : step.hint}
         </p>
       </div>
 
-      <TrOwnerWizardPipelineStatus jobs={pipelineJobs} />
+      {manualMode ? null : <TrOwnerWizardPipelineStatus jobs={pipelineJobs} />}
 
       {error ? (
         <p className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-[16px] text-red-800">
@@ -1037,6 +1099,19 @@ export function TrProductCreateWizard({
           step.id === "photo" ? "space-y-6" : "hidden"
         }`}
       >
+        {manualMode ? (
+          <TrOwnerManualPhotoGallery
+            boutiqueId={boutiqueId}
+            images={images}
+            onImagesChange={setImages}
+            onError={setError}
+            onLightbox={setLightbox}
+            disabled={saving}
+            uploading={uploading}
+            onUploadingChange={setUploading}
+          />
+        ) : (
+          <>
         <TrOwnerGuidedPhotoUpload
           boutiqueId={boutiqueId}
           images={images}
@@ -1119,6 +1194,8 @@ export function TrProductCreateWizard({
             yazabilirsiniz.
           </p>
         ) : null}
+          </>
+        )}
       </div>
 
       <AnimatePresence mode="wait">
@@ -1143,6 +1220,7 @@ export function TrProductCreateWizard({
                     her rengin kendi fotoğrafı ve stoğu olur.
                   </p>
                 ) : null}
+                {manualMode ? null : (
                 <TrOwnerAiFillListing
                   boutiqueId={boutiqueId}
                   sourceImageUrl={images[0]?.trim() || null}
@@ -1168,6 +1246,7 @@ export function TrProductCreateWizard({
                     setListingDraft(draft);
                   }}
                 />
+                )}
                 <label className="block space-y-2">
                   <span className="text-[17px] font-semibold text-neutral-800">
                     Ürün adı
@@ -1205,7 +1284,17 @@ export function TrProductCreateWizard({
                     {TR_OWNER_PRODUCT_LIMITS.descriptionMax}
                   </span>
                 </label>
-                {isElbiseUpload(uploadType) ? (
+                {manualMode ? (
+                  <div className="space-y-2">
+                    <p className="text-[17px] font-semibold text-neutral-800">
+                      Kategori
+                    </p>
+                    <TrOwnerCategoryPicker
+                      value={category}
+                      onChange={setCategory}
+                    />
+                  </div>
+                ) : isElbiseUpload(uploadType) ? (
                   <p className="rounded-xl bg-[color:var(--panel-accent-soft)] px-4 py-3 text-[15px] text-neutral-800">
                     Kategori: Elbise
                   </p>
@@ -1237,10 +1326,10 @@ export function TrProductCreateWizard({
                   onChange={setFeatures}
                   disabled={saving}
                   fieldClass={panelFieldClass}
-                  variant={elbise ? "dress" : "default"}
+                  variant={family ? "dress" : "default"}
                   family={family ?? "elbise"}
                   shopCategory={category}
-                  hideColorField={linkedColors}
+                  hideColorField={!manualMode && linkedColors}
                 />
                 {linkedColors && features.color?.trim() ? (
                   <p className={panelHintClass}>

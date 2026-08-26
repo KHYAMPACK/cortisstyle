@@ -30,6 +30,11 @@ import {
 import { TrProductImageLightbox } from "@/components/tr/panel/TrProductImageLightbox";
 import { TrOwnerCategoryPicker } from "@/components/tr/panel/TrOwnerCategoryPicker";
 import { TrOwnerColorGroupLinker } from "@/components/tr/panel/TrOwnerColorGroupLinker";
+import { TrOwnerManualListingToggle } from "@/components/tr/panel/TrOwnerManualListingToggle";
+import {
+  hasManualGalleryPhoto,
+  TrOwnerManualPhotoGallery,
+} from "@/components/tr/panel/TrOwnerManualPhotoGallery";
 import { TrOwnerProductFeaturesFields } from "@/components/tr/panel/TrOwnerProductFeaturesFields";
 import { TR_BOUTIQUE_CATEGORIES } from "@/lib/tr/categories";
 import {
@@ -40,6 +45,10 @@ import {
   requiredPhotoSlotsForUploadType,
 } from "@/lib/tr/catalog/garmentUploadTypes";
 import { isTakimCatalogProduct } from "@/lib/tr/catalog/takimUpload";
+import {
+  isManualListing,
+  withManualListing,
+} from "@/lib/tr/catalog/productFeatures";
 import {
   DEFAULT_CATALOG_BACKGROUND_ID,
   getCatalogBackground,
@@ -235,6 +244,9 @@ export function TrProductEditorForm({
   );
   const takim =
     isTakimCatalogProduct({ features }) || isTakimShopLeaf(category);
+  const [manualMode, setManualMode] = useState(() =>
+    isManualListing(initialProduct),
+  );
   const family = takim ? null : constructionCatalogFamily(null, category);
   const elbise = family != null;
   const requiredSlots = requiredPhotoSlotsForUploadType(family);
@@ -509,7 +521,11 @@ export function TrProductEditorForm({
         "Alt giyim için alt kategori seçin (etek, pantolon, eşofman).",
       );
     }
-    if (!hasRequiredProductPhotos(images, requiredSlots)) {
+    if (manualMode) {
+      if (!hasManualGalleryPhoto(images) && !takim) {
+        throw new Error("En az bir fotoğraf ekleyin.");
+      }
+    } else if (!takim && !hasRequiredProductPhotos(images, requiredSlots)) {
       throw new Error(
         elbise
           ? "Ön ve arka fotoğraf zorunlu. Dekolte / detay isteğe bağlı."
@@ -565,7 +581,7 @@ export function TrProductEditorForm({
       boutiqueId,
       title: title.trim(),
       description: description.trim() || null,
-      features,
+      features: withManualListing(features, manualMode),
       priceTry: sellPrice,
       compareAtPriceTry: compareAtPriceTryValue,
       sizes: activeSizes,
@@ -608,6 +624,7 @@ export function TrProductEditorForm({
     catalogBackgroundId,
     stock,
     status,
+    manualMode,
   ]);
 
   const persistProduct = async (options?: { manual?: boolean }) => {
@@ -797,11 +814,21 @@ export function TrProductEditorForm({
       <section
         className={`${panelSectionClass} ${showSection("photos") ? "" : "hidden"}`}
       >
+        <TrOwnerManualListingToggle
+          checked={manualMode}
+          onChange={(next) => {
+            setManualMode(next);
+            setFeatures((current) => withManualListing(current, next));
+          }}
+          disabled={saving}
+        />
         <div>
           <p className={panelLabelClass}>Fotoğraflar</p>
           <p className={`mt-1 ${panelHintClass}`}>
             {takim
               ? "Takım görselleri bu sihirbazda değiştirilmez. Yeni packshot / model için Takım yükle akışını kullanın."
+              : manualMode
+                ? "Fotoğraflar sitede bu sırayla görünür. En az bir kare."
               : elbise
               ? "Ön ve arka manken zorunlu; dekolte / detay isteğe bağlı. Packshot ön+arka tamamınca üretilir."
               : "Önce ön, sonra arka — her fotoğraf önizlenir."}
@@ -823,6 +850,17 @@ export function TrProductEditorForm({
                 </div>
               ))}
           </div>
+        ) : manualMode ? (
+          <TrOwnerManualPhotoGallery
+            boutiqueId={boutiqueId}
+            images={images}
+            onImagesChange={setImages}
+            onError={setError}
+            onLightbox={setLightbox}
+            disabled={saving}
+            uploading={uploading}
+            onUploadingChange={setUploading}
+          />
         ) : (
           <TrOwnerGuidedPhotoUpload
           boutiqueId={boutiqueId}
@@ -865,7 +903,7 @@ export function TrProductEditorForm({
         />
         )}
 
-        {takim ? null : hasRequiredProductPhotos(images, requiredSlots) ? (
+        {takim || manualMode ? null : hasRequiredProductPhotos(images, requiredSlots) ? (
           <div className="space-y-6 rounded-xl border border-[color:var(--panel-accent-border)] bg-[color:var(--panel-accent-soft)] p-4 sm:p-5">
             <TrOwnerAiCatalogEnhance
               boutiqueId={boutiqueId}
@@ -939,6 +977,7 @@ export function TrProductEditorForm({
       <section
         className={`${panelSectionClass} ${showSection("name") ? "" : "hidden"}`}
       >
+        {manualMode ? null : (
         <TrOwnerAiFillListing
           boutiqueId={boutiqueId}
           sourceImageUrl={images[0]?.trim() || null}
@@ -973,6 +1012,7 @@ export function TrProductEditorForm({
             setListingDraft(draft);
           }}
         />
+        )}
         <label className="block space-y-2">
           <span className={panelLabelClass}>Ürün adı</span>
           <input
@@ -1010,7 +1050,7 @@ export function TrProductEditorForm({
           fieldClass={fieldClass}
           labelClass={panelLabelClass}
           hintClass={panelHintClass}
-          variant={elbise ? "dress" : "default"}
+          variant={family ? "dress" : "default"}
           family={family ?? "elbise"}
           shopCategory={category}
         />

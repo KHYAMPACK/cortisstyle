@@ -33,7 +33,10 @@ export function TrBoutiqueCookieNotice({
   };
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-[70] border-t border-black/10 bg-white/95 px-4 py-4 shadow-[0_-8px_24px_rgba(0,0,0,0.06)] backdrop-blur-md md:px-8">
+    <div
+      data-atelier-chrome=""
+      className="fixed inset-x-0 bottom-0 z-[70] border-t border-black/10 bg-white/95 px-4 py-4 shadow-[0_-8px_24px_rgba(0,0,0,0.06)] backdrop-blur-md md:px-8"
+    >
       <div className="mx-auto flex max-w-7xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-[12px] leading-relaxed text-neutral-700">
           Bu sitede zorunlu çerezler kullanılır. Detaylar için{" "}

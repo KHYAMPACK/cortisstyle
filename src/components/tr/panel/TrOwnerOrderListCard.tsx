@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
 import {
   FULFILLMENT_LABEL,
@@ -15,7 +16,10 @@ import {
   panelPrimaryBtnClass,
   panelSecondaryBtnClass,
 } from "@/components/tr/panel/panelUi";
-import { TrPanelBusySpinner } from "@/components/tr/panel/TrPanelMotion";
+import {
+  TrPanelBusySpinner,
+  trPanelFadeTransition,
+} from "@/components/tr/panel/TrPanelMotion";
 import {
   fetchOwnerShipmentLabel,
   fulfillOwnerShipment,
@@ -86,7 +90,11 @@ export function TrOwnerOrderListCard({
     Boolean(nextLabel) &&
     paid &&
     !cancelled &&
-    !(live && order.fulfillmentStatus === "ready");
+    !(
+      live &&
+      (order.fulfillmentStatus === "created" ||
+        order.fulfillmentStatus === "ready")
+    );
   const showPrint = live && hasBarcode && !cancelled && !delivered;
   const showPrepareLabel =
     live &&
@@ -228,11 +236,33 @@ export function TrOwnerOrderListCard({
         </p>
       ) : null}
 
-      {error ? (
-        <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-[13px] text-red-800">
-          {error}
-        </p>
-      ) : null}
+      <AnimatePresence mode="wait">
+        {error ? (
+          <motion.p
+            key="order-error"
+            role="alert"
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={trPanelFadeTransition}
+            className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-[13px] text-red-800"
+          >
+            {error}
+          </motion.p>
+        ) : hasBarcode ? (
+          <motion.p
+            key="label-ready"
+            role="status"
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={trPanelFadeTransition}
+            className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-[13px] text-emerald-900"
+          >
+            Etiket başarıyla oluşturuldu. Yazdırabilirsiniz.
+          </motion.p>
+        ) : null}
+      </AnimatePresence>
 
       <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
         {needsManualPaid ? (

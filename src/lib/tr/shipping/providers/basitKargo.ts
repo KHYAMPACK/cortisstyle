@@ -195,7 +195,16 @@ async function bkJson<T>(
     throw new BasitKargoError(await parseErrorMessage(response), response.status);
   }
   if (response.status === 204) return undefined as T;
-  return (await response.json()) as T;
+  const text = await response.text();
+  if (!text.trim()) return undefined as T;
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    throw new BasitKargoError(
+      `Basit Kargo geçersiz JSON (HTTP ${response.status}).`,
+      response.status,
+    );
+  }
 }
 
 export type BasitKargoOrderPayload = {

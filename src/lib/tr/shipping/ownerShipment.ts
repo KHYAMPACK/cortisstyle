@@ -200,10 +200,14 @@ export async function cancelBoutiqueShipmentBarcode(
   if (!barcode) {
     throw new Error("İptal edilecek kargo kodu yok.");
   }
-  await basitKargoCancelBarcode(
-    requireBasitKargoToken(boutique.slug),
-    barcode,
-  );
+  try {
+    await basitKargoCancelBarcode(
+      requireBasitKargoToken(boutique.slug),
+      barcode,
+    );
+  } catch (error) {
+    if (!isBenignBasitCancelError(error)) throw error;
+  }
   await updateOrderShipmentAdmin(order.id, {
     barcode: null,
     trackingCode: null,
@@ -217,6 +221,9 @@ export async function cancelBoutiqueShipmentBarcode(
   });
   const fresh = await getOrderByIdAdmin(order.id);
   if (!fresh) throw new Error("Sipariş bulunamadı.");
+  if (fresh.shipment.externalId) {
+    return { order: await refreshBasitKargoOrder(boutique.slug, fresh) };
+  }
   return { order: fresh };
 }
 

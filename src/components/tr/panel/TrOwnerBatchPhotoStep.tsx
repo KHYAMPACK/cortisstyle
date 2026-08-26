@@ -4,6 +4,10 @@ import { useState } from "react";
 import {
   TrOwnerGuidedPhotoUpload,
 } from "@/components/tr/panel/TrOwnerGuidedPhotoUpload";
+import {
+  hasManualGalleryPhoto,
+  TrOwnerManualPhotoGallery,
+} from "@/components/tr/panel/TrOwnerManualPhotoGallery";
 import { TrOwnerWizardPipelineStatus } from "@/components/tr/panel/TrOwnerWizardPipelineStatus";
 import { TrProductImageLightbox } from "@/components/tr/panel/TrProductImageLightbox";
 import {
@@ -47,6 +51,7 @@ export function TrOwnerBatchPhotoStep({
   onAddRow,
   onRemoveRow,
   onContinue,
+  manualMode = false,
 }: {
   boutiqueId: string;
   rows: ProductBatchCreateRow[];
@@ -58,6 +63,7 @@ export function TrOwnerBatchPhotoStep({
   onAddRow: () => void;
   onRemoveRow: (clientId: string) => void;
   onContinue: (options?: { skipFailedIdentify?: boolean }) => void;
+  manualMode?: boolean;
 }) {
   const [lightbox, setLightbox] = useState<{
     src: string;
@@ -74,15 +80,21 @@ export function TrOwnerBatchPhotoStep({
   const identifiedCount = identifyingTotal - counts.identifying.length;
   const atCap = rows.length >= TR_OWNER_PRODUCT_LIMITS.maxBatchCreateRows;
   const active = rows.find((row) => row.clientId === activeId) ?? rows[0];
-  const activeHasBoth = active ? batchRowHasBothPhotos(active) : false;
+  const activeHasBoth = active
+    ? manualMode
+      ? hasManualGalleryPhoto(active.images)
+      : batchRowHasBothPhotos(active)
+    : false;
   const canAdd = activeHasBoth && !atCap;
-  const identifyBusy = counts.identifying.length > 0;
-  const photosIncomplete = counts.incomplete.length > 0;
+  const identifyBusy = !manualMode && counts.identifying.length > 0;
+  const photosIncomplete = manualMode
+    ? counts.captured.some((row) => !hasManualGalleryPhoto(row.images))
+    : counts.incomplete.length > 0;
   const canContinue =
     counts.captured.length > 0 &&
     !photosIncomplete &&
     !identifyBusy &&
-    counts.failed.length === 0;
+    (manualMode || counts.failed.length === 0);
 
   async function retryIdentify(row: ProductBatchCreateRow) {
     const source =
@@ -145,7 +157,7 @@ export function TrOwnerBatchPhotoStep({
 
   return (
     <div className="space-y-5">
-      {identifyBusy ? (
+      {manualMode || !identifyBusy ? null : (
         <div className="rounded-xl border border-[color:var(--panel-accent-border)] bg-[color:var(--panel-accent-softer)] px-4 py-4">
           <p className="text-[16px] font-semibold text-neutral-900">
             Ürün tanınıyor… {identifiedCount} / {identifyingTotal}
@@ -155,9 +167,9 @@ export function TrOwnerBatchPhotoStep({
             ediliyor. Packshot sonraki adımda, özellik onayından sonra.
           </p>
         </div>
-      ) : null}
+      )}
 
-      {counts.failed.length > 0 && !identifyBusy ? (
+      {manualMode || counts.failed.length === 0 || identifyBusy ? null : (
         <div className="space-y-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-4">
           <p className="text-[16px] font-semibold text-amber-950">
             {counts.failed.length} ürün tanınamadı
@@ -191,7 +203,7 @@ export function TrOwnerBatchPhotoStep({
             Yine de devam — elle yazacağım
           </button>
         </div>
-      ) : null}
+      )}
 
       <div className="flex gap-2 overflow-x-auto pb-1">
         {rows.map((row, index) => {
@@ -241,7 +253,7 @@ export function TrOwnerBatchPhotoStep({
 
       {error ? <p className={panelErrorClass}>{error}</p> : null}
 
-      {active ? (
+      {manualMode ? null : active ? (
         <TrOwnerWizardPipelineStatus
           jobs={photoJobsById[active.clientId] ?? []}
         />
@@ -252,6 +264,15 @@ export function TrOwnerBatchPhotoStep({
           key={row.clientId}
           className={row.clientId === active?.clientId ? "space-y-4" : "hidden"}
         >
+          {manualMode ? (
+            <TrOwnerManualPhotoGallery
+              boutiqueId={boutiqueId}
+              images={row.images}
+              onImagesChange={(images) => onPatchRow(row.clientId, { images })}
+              onError={setError}
+              onLightbox={setLightbox}
+            />
+          ) : (
           <TrOwnerGuidedPhotoUpload
             boutiqueId={boutiqueId}
             images={row.images}
@@ -319,6 +340,7 @@ export function TrOwnerBatchPhotoStep({
               onPhotoJobsChange(row.clientId, jobs)
             }
           />
+          )}
           {rows.length > 1 ? (
             <button
               type="button"
@@ -353,16 +375,22 @@ export function TrOwnerBatchPhotoStep({
       {!canContinue ? (
         <p className={panelHintClass}>
             {photosIncomplete
-            ? "Her üründe ön ve arka fotoğraf gerekli. Detay isteğe bağlı."
+            ? manualMode
+              ? "Her üründe en az bir fotoğraf gerekli."
+              : "Her üründe ön ve arka fotoğraf gerekli. Detay isteğe bağlı."
             : identifyBusy
               ? "Tanıma bitince devam edebilirsiniz — packshot sonraki adımda."
               : counts.captured.length === 0
-                ? "En az bir ürünün ön ve arka fotoğrafını ekleyin."
+                ? manualMode
+                  ? "En az bir ürünün fotoğrafını ekleyin."
+                  : "En az bir ürünün ön ve arka fotoğrafını ekleyin."
                 : counts.failed.length > 0
                   ? "Tanıma hatalarını tekrar deneyin veya elle devam edin."
                   : atCap
                     ? `En fazla ${TR_OWNER_PRODUCT_LIMITS.maxBatchCreateRows} ürün.`
-                    : "Ön ve arka çekildikten sonra sonraki ürünü ekleyebilirsiniz."}
+                    : manualMode
+                      ? "Fotoğraf ekledikten sonra sonraki ürünü ekleyebilirsiniz."
+                      : "Ön ve arka çekildikten sonra sonraki ürünü ekleyebilirsiniz."}
         </p>
       ) : null}
 

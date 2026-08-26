@@ -29,11 +29,13 @@ export function TrOwnerBatchListingsStep({
   rows,
   packingById,
   onPatchRow,
+  manualMode = false,
 }: {
   boutiqueId: string;
   rows: ProductBatchCreateRow[];
   packingById?: Record<string, boolean>;
   onPatchRow: (clientId: string, patch: Partial<ProductBatchCreateRow>) => void;
+  manualMode?: boolean;
 }) {
   const [filling, setFilling] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -79,6 +81,8 @@ export function TrOwnerBatchListingsStep({
 
   return (
     <div className="space-y-5">
+      {manualMode ? null : (
+        <>
       <button
         type="button"
         className={`${panelPrimaryBtnClass} w-full sm:w-auto`}
@@ -91,6 +95,8 @@ export function TrOwnerBatchListingsStep({
         İsim, açıklama, özellik ve kategori fotoğraftan AI ile gelir. İsterseniz
         elle düzeltin.
       </p>
+        </>
+      )}
       {error ? <p className={panelErrorClass}>{error}</p> : null}
 
       <div className="space-y-4">
@@ -165,7 +171,14 @@ export function TrOwnerBatchListingsStep({
                 <p className="text-[14px] font-semibold text-neutral-800">
                   Kategori
                 </p>
-                {family === "elbise" ? (
+                {manualMode || !family ? (
+                  <TrOwnerCategoryPicker
+                    value={row.category}
+                    onChange={(category) =>
+                      onPatchRow(row.clientId, { category })
+                    }
+                  />
+                ) : family === "elbise" ? (
                   <p className="rounded-xl bg-[color:var(--panel-accent-soft)] px-4 py-3 text-[15px] text-neutral-800">
                     Elbise
                   </p>
