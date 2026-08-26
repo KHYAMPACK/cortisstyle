@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { Truck } from "lucide-react";
 import {
   motion,
   useMotionValueEvent,
@@ -20,8 +21,10 @@ const PICK_EXPAND_MS = 420;
 /** No href yet: hold the fullscreen pick so the expand is visible, then release. */
 const PICK_HOLD_MS = 1100;
 const IMMERSIVE_ATTR = "data-atelier-twin-immersive";
-const PIN_ON = 0.06;
 const PIN_OFF = 0.03;
+/** Hide chrome once the panels visibly start expanding (not after full expand). */
+const IMMERSIVE_ON_EXPAND = 0.015;
+const IMMERSIVE_OFF_EXPAND = 0.006;
 /** Scroll progress zones — long plateau keeps the pair fullscreen while pinned. */
 const SCROLL_EXPAND_IN = 0.16;
 const SCROLL_HOLD_END = 0.78;
@@ -125,6 +128,42 @@ function TwinPanelCopy({ side }: { side: EditorialTwinStorySide }) {
   );
 }
 
+function TwinStoryPromoBadge({
+  label,
+  variant,
+}: {
+  label: string;
+  variant: "overlay" | "inline";
+}) {
+  const overlay = variant === "overlay";
+  return (
+    <p className="mt-3 flex justify-center md:mt-4">
+      <span
+        className={`inline-flex items-center gap-2.5 border px-3.5 py-1.5 ${
+          overlay
+            ? "border-white/35 bg-white/10 text-white/95 shadow-[0_8px_32px_rgba(0,0,0,0.12)] backdrop-blur-md"
+            : "border-neutral-900/10 bg-white text-neutral-800 shadow-[0_1px_0_rgba(255,255,255,0.9)_inset,0_12px_40px_rgba(0,0,0,0.04)]"
+        }`}
+      >
+        <span
+          className={`h-px w-3 shrink-0 ${overlay ? "bg-white/45" : "bg-neutral-900/20"}`}
+          aria-hidden
+        />
+        <Truck
+          className={`size-3 shrink-0 ${overlay ? "text-white/75" : "text-neutral-500"}`}
+          strokeWidth={1.5}
+          aria-hidden
+        />
+        <span className="text-[10px] tracking-[0.22em] uppercase">{label}</span>
+        <span
+          className={`h-px w-3 shrink-0 ${overlay ? "bg-white/45" : "bg-neutral-900/20"}`}
+          aria-hidden
+        />
+      </span>
+    </p>
+  );
+}
+
 function TwinStoryHeadline({
   story,
   variant,
@@ -162,6 +201,9 @@ function TwinStoryHeadline({
       >
         {story.question}
       </p>
+      {story.promo ? (
+        <TwinStoryPromoBadge label={story.promo} variant={overlay ? "overlay" : "inline"} />
+      ) : null}
     </motion.div>
   );
 }
@@ -197,14 +239,23 @@ export function TrBoutiqueAtelierTwinStory({
   const immersiveOn = useRef(false);
 
   const syncImmersive = useCallback((progress: number) => {
-    const enter = immersiveOn.current
-      ? SCROLL_EXPAND_IN - PIN_OFF
-      : SCROLL_EXPAND_IN + PIN_ON;
-    const exit = immersiveOn.current
-      ? SCROLL_COLLAPSE_END + PIN_OFF
-      : SCROLL_COLLAPSE_END - PIN_ON;
-    const inPin = progress > enter && progress < exit;
-    const next = Boolean(pickedRef.current) || inPin;
+    if (pickedRef.current) {
+      if (!immersiveOn.current) {
+        immersiveOn.current = true;
+        setTwinStoryImmersive(true);
+      }
+      return;
+    }
+
+    const expandAmount = twinExpandFromScroll(progress);
+    const inTrack =
+      progress > 0.001 && progress < SCROLL_COLLAPSE_END + PIN_OFF;
+    const next =
+      inTrack &&
+      (immersiveOn.current
+        ? expandAmount > IMMERSIVE_OFF_EXPAND
+        : expandAmount > IMMERSIVE_ON_EXPAND);
+
     if (next === immersiveOn.current) return;
     immersiveOn.current = next;
     setTwinStoryImmersive(next);
@@ -353,6 +404,11 @@ export function TrBoutiqueAtelierTwinStory({
           <p className="mt-2 text-[11px] tracking-[0.18em] text-neutral-500 uppercase">
             {story.question}
           </p>
+          {story.promo ? (
+            <div className="mt-4 flex justify-center">
+              <TwinStoryPromoBadge label={story.promo} variant="inline" />
+            </div>
+          ) : null}
         </div>
         <div className="relative min-h-[64vh] md:min-h-[72vh]">{stageInner}</div>
       </section>

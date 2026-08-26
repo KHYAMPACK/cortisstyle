@@ -522,6 +522,18 @@ html[data-iyzico-home] #iyzi-root {
     transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* Editorial help FAB — lift above fixed bottom bars (cart confirm, mobile buy bar, …). */
+[data-atelier-help-fab] {
+  bottom: calc(var(--atelier-fab-bottom-inset, 0px) + 1rem);
+  transition: bottom 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (min-width: 768px) {
+  [data-atelier-help-fab] {
+    bottom: calc(var(--atelier-fab-bottom-inset, 0px) + 1.5rem);
+  }
+}
+
 html[data-atelier-twin-immersive] #iyzi-root {
   display: none !important;
 }

@@ -19,6 +19,7 @@ import { getStorefrontGalleryImages } from "@/lib/tr/catalog/productImages";
 import { liveShippingHomeBody } from "@/lib/tr/catalog/pdpReturns";
 import { trBoutiqueLegalPath, trBoutiquePath, trBoutiqueProductPath } from "@/lib/tr/paths";
 import { boutiqueHasLiveShipping } from "@/lib/tr/shipping/registry";
+import { FREE_SHIPPING_MIN_ITEMS } from "@/lib/tr/shipping/types";
 import type { TrBoutiquePublic, TrProduct } from "@/types/tr-marketplace";
 
 const TEMPLATE_ASSET = (name: string) => `/tr/boutiques/demo-maya/${name}`;
@@ -422,6 +423,7 @@ function buildAtelierTwinStory(): EditorialTwinStory {
   return {
     title: "Aynı kalıp. İki karakter.",
     question: "Hangisi senin?",
+    promo: `${FREE_SHIPPING_MIN_ITEMS} parça · Kargo ücretsiz`,
     sides: [
       {
         id: "espresso",

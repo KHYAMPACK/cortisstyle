@@ -86,6 +86,8 @@ export type EditorialTwinStorySide = {
 export type EditorialTwinStory = {
   title: string;
   question: string;
+  /** Short promo, e.g. free kargo when both twins are in cart. */
+  promo?: string;
   sides: [EditorialTwinStorySide, EditorialTwinStorySide];
 };
 

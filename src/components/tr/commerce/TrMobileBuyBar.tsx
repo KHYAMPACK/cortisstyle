@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { useAtelierFabBottomInset } from "@/lib/tr/useAtelierFabBottomInset";
 
 interface TrMobileBuyBarProps {
   children: ReactNode;
@@ -12,8 +13,11 @@ interface TrMobileBuyBarProps {
  * always reachable while scrolling PDP content.
  */
 export function TrMobileBuyBar({ children, className = "" }: TrMobileBuyBarProps) {
+  const stickyBottomRef = useAtelierFabBottomInset();
+
   return (
     <div
+      ref={stickyBottomRef}
       className={`pointer-events-none fixed inset-x-0 bottom-0 z-[90] md:hidden ${className}`}
     >
       <div

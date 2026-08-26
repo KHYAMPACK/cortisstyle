@@ -1,7 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, Suspense, useEffect, useMemo, useState } from "react";
+import {
+  FormEvent,
+  Suspense,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   TrSandboxBanner,
@@ -12,6 +19,8 @@ import {
   TrTurkeyAddressFields,
   turkeyAddressClientError,
 } from "@/components/tr/commerce/TrTurkeyAddressFields";
+import { isValidCustomerPhone } from "@/lib/auth/customerProfileFields";
+import { useAtelierFabBottomInset } from "@/lib/tr/useAtelierFabBottomInset";
 import { useAuth } from "@/context/AuthContext";
 import {
   loadSavedCheckoutProfile,
@@ -57,7 +66,42 @@ const inputClassName =
 
 const labelClassName = "text-[10px] tracking-[0.16em] text-neutral-500 uppercase";
 
-type CheckoutStep = "phone" | "identity" | "address" | "review";
+type CheckoutStep = "contact" | "address" | "review";
+
+const stickyBackClassName =
+  "inline-flex min-h-12 shrink-0 items-center justify-center border border-black/15 px-5 py-3.5 text-[11px] tracking-[0.16em] uppercase";
+
+const stickyPrimaryClassName =
+  "btn-primary inline-flex min-h-12 min-w-0 flex-1 items-center justify-center px-6 py-3.5 text-[11px] tracking-[0.18em] disabled:opacity-60";
+
+function TrCheckoutStickyActions({
+  children,
+  onBack,
+}: {
+  children: ReactNode;
+  onBack?: () => void;
+}) {
+  const stickyBottomRef = useAtelierFabBottomInset();
+
+  return (
+    <div
+      ref={stickyBottomRef}
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-neutral-200/80 bg-white/95 backdrop-blur-sm"
+    >
+      <div
+        className="mx-auto flex max-w-3xl items-stretch gap-3 px-5 pt-3 md:px-10"
+        style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+      >
+        {onBack ? (
+          <button type="button" onClick={onBack} className={stickyBackClassName}>
+            Geri
+          </button>
+        ) : null}
+        {children}
+      </div>
+    </div>
+  );
+}
 
 function useCheckoutCart(boutiqueSlug: string | null): {
   items: TrCartLineItem[];
@@ -137,9 +181,7 @@ function useCheckoutCart(boutiqueSlug: string | null): {
 
 function stepTitle(step: CheckoutStep): string {
   switch (step) {
-    case "phone":
-      return "Telefon";
-    case "identity":
+    case "contact":
       return "İletişim";
     case "address":
       return "Adres";
@@ -153,18 +195,27 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
   const { user } = useAuth();
   const { items, clearCheckedOut, hydrated } = useCheckoutCart(boutiqueSlug);
   const [form, setForm] = useState<TrCheckoutFormData>(EMPTY_CHECKOUT_FORM);
-  const [step, setStep] = useState<CheckoutStep>("phone");
+  const [step, setStep] = useState<CheckoutStep | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [acceptedDistance, setAcceptedDistance] = useState(false);
   const [acceptedKvkk, setAcceptedKvkk] = useState(false);
   const [saveProfile, setSaveProfile] = useState(true);
   const [profileReady, setProfileReady] = useState(false);
+  const [contactFields, setContactFields] = useState({
+    needsPhone: true,
+    needsIdentity: true,
+  });
   const [discountCode, setDiscountCode] = useState("");
 
   const profileScope = boutiqueSlug?.trim() || "marketplace";
   const authEmail = user?.email?.trim() || "";
-  const authNameHint = getTrUserFirstName(user);
+  const authPhone = user?.phone?.trim() || "";
+  const authFullName = [user?.firstName, user?.lastName]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+  const authNameHint = authFullName || getTrUserFirstName(user);
   const authName =
     authNameHint
       ? authNameHint
@@ -172,30 +223,42 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
           .replace(/(^|\s)\S/g, (char) => char.toLocaleUpperCase("tr-TR"))
       : "";
 
-  const needsIdentity =
-    !form.customerName.trim() || !form.customerEmail.trim();
+  const needsContact = contactFields.needsPhone || contactFields.needsIdentity;
 
   const steps = useMemo(() => {
-    const list: CheckoutStep[] = ["phone"];
-    if (needsIdentity) list.push("identity");
+    const list: CheckoutStep[] = [];
+    if (needsContact) list.push("contact");
     list.push("address", "review");
     return list;
-  }, [needsIdentity]);
+  }, [needsContact]);
 
   useEffect(() => {
     const saved = loadSavedCheckoutProfile(profileScope);
-    setForm((current) => {
-      const next = { ...current, ...(saved ?? {}) };
-      if (authEmail && !next.customerEmail.trim()) {
-        next.customerEmail = authEmail;
-      }
-      if (authName && !next.customerName.trim()) {
-        next.customerName = authName;
-      }
-      return next;
+    const next = { ...EMPTY_CHECKOUT_FORM, ...(saved ?? {}) };
+    if (authEmail && !next.customerEmail.trim()) {
+      next.customerEmail = authEmail;
+    }
+    if (authName && !next.customerName.trim()) {
+      next.customerName = authName;
+    }
+    if (authPhone && !next.customerPhone.trim()) {
+      next.customerPhone = authPhone;
+    }
+    setForm(next);
+    setContactFields({
+      needsPhone: !isValidCustomerPhone(next.customerPhone),
+      needsIdentity: !next.customerName.trim() || !next.customerEmail.trim(),
     });
     setProfileReady(true);
-  }, [authEmail, authName, profileScope]);
+  }, [authEmail, authName, authPhone, profileScope]);
+
+  useEffect(() => {
+    if (!profileReady) return;
+    setStep((current) => {
+      if (current !== null && steps.includes(current)) return current;
+      return steps[0] ?? "address";
+    });
+  }, [profileReady, steps]);
 
   const grouped = groupCartItemsByBoutique(items);
   const totalKurus = cartTotalKurus(items);
@@ -212,7 +275,7 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
   const canSubmit =
     demoCart || boutiqueCheckout || isTrCheckoutEnabled();
 
-  if (!hydrated || !profileReady) {
+  if (!hydrated || !profileReady || step === null) {
     return (
       <div className="px-5 py-10 text-[13px] text-neutral-600 md:px-10">
         <span className="inline-block h-3 w-24 animate-pulse bg-neutral-200" />
@@ -257,14 +320,15 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
   };
 
   const validateCurrentStep = (): boolean => {
-    if (step === "phone") {
-      if (form.customerPhone.trim().length < 10) {
+    if (step === "contact") {
+      if (contactFields.needsPhone && !isValidCustomerPhone(form.customerPhone)) {
         setError("Geçerli bir telefon numarası girin.");
         return false;
       }
-    }
-    if (step === "identity") {
-      if (!form.customerName.trim() || !form.customerEmail.trim()) {
+      if (
+        contactFields.needsIdentity &&
+        (!form.customerName.trim() || !form.customerEmail.trim())
+      ) {
         setError("Ad soyad ve e-posta gerekli.");
         return false;
       }
@@ -309,7 +373,7 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
     }
       const addressError = turkeyAddressClientError(form);
       if (
-        !form.customerPhone.trim() ||
+        !isValidCustomerPhone(form.customerPhone) ||
         !form.customerName.trim() ||
         !form.customerEmail.trim() ||
         addressError
@@ -421,7 +485,7 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
   const stepIndex = steps.indexOf(step);
 
   return (
-    <div className="px-5 py-8 md:px-10 md:py-10">
+    <div className="px-5 py-8 pb-28 md:px-10 md:py-10 md:pb-32">
       <TrSandboxBanner
         className="mb-8"
         demo={demoCart}
@@ -454,96 +518,76 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
             </p>
           ) : null}
 
-          {step === "phone" ? (
+          {step === "contact" ? (
             <form
               onSubmit={handleStepContinue}
               className="space-y-5 border border-black/10 bg-white p-5"
             >
               <h2 className="font-serif text-xl tracking-tight text-neutral-950">
-                Telefon numaranız
+                {contactFields.needsPhone && !contactFields.needsIdentity
+                  ? "Telefon numaranız"
+                  : "İletişim bilgileri"}
               </h2>
               <p className="text-[13px] text-neutral-600">
-                Sipariş ve kargo bilgilendirmesi için kullanacağız.
+                {contactFields.needsPhone && !contactFields.needsIdentity
+                  ? "Sipariş ve kargo bilgilendirmesi için kullanacağız."
+                  : "Sipariş onayı ve kargo bilgilendirmesi için kullanacağız."}
               </p>
-              <label className="block">
-                <span className={labelClassName}>Telefon</span>
-                <input
-                  required
-                  value={form.customerPhone}
-                  onChange={(event) =>
-                    updateField("customerPhone", event.target.value)
-                  }
-                  className={`${inputClassName} mt-2`}
-                  autoComplete="tel"
-                  inputMode="tel"
-                  placeholder="05xx xxx xx xx"
-                  autoFocus
-                />
-              </label>
+              {contactFields.needsPhone ? (
+                <label className="block">
+                  <span className={labelClassName}>Telefon</span>
+                  <input
+                    required
+                    value={form.customerPhone}
+                    onChange={(event) =>
+                      updateField("customerPhone", event.target.value)
+                    }
+                    className={`${inputClassName} mt-2`}
+                    autoComplete="tel"
+                    inputMode="tel"
+                    placeholder="05xx xxx xx xx"
+                    autoFocus
+                  />
+                </label>
+              ) : null}
+              {contactFields.needsIdentity ? (
+                <>
+                  <label className="block">
+                    <span className={labelClassName}>Ad soyad</span>
+                    <input
+                      required
+                      value={form.customerName}
+                      onChange={(event) =>
+                        updateField("customerName", event.target.value)
+                      }
+                      className={`${inputClassName} mt-2`}
+                      autoComplete="name"
+                      autoFocus={!contactFields.needsPhone}
+                    />
+                  </label>
+                  <label className="block">
+                    <span className={labelClassName}>E-posta</span>
+                    <input
+                      required
+                      type="email"
+                      value={form.customerEmail}
+                      onChange={(event) =>
+                        updateField("customerEmail", event.target.value)
+                      }
+                      className={`${inputClassName} mt-2`}
+                      autoComplete="email"
+                    />
+                  </label>
+                </>
+              ) : null}
               {error ? (
                 <p className="text-[13px] text-red-700">{error}</p>
               ) : null}
-              <button
-                type="submit"
-                className="btn-primary inline-flex w-full items-center justify-center px-6 py-3.5 text-[11px] tracking-[0.18em] sm:max-w-xs"
-              >
-                Devam et
-              </button>
-            </form>
-          ) : null}
-
-          {step === "identity" ? (
-            <form
-              onSubmit={handleStepContinue}
-              className="space-y-5 border border-black/10 bg-white p-5"
-            >
-              <h2 className="font-serif text-xl tracking-tight text-neutral-950">
-                İletişim bilgileri
-              </h2>
-              <label className="block">
-                <span className={labelClassName}>Ad soyad</span>
-                <input
-                  required
-                  value={form.customerName}
-                  onChange={(event) =>
-                    updateField("customerName", event.target.value)
-                  }
-                  className={`${inputClassName} mt-2`}
-                  autoComplete="name"
-                  autoFocus
-                />
-              </label>
-              <label className="block">
-                <span className={labelClassName}>E-posta</span>
-                <input
-                  required
-                  type="email"
-                  value={form.customerEmail}
-                  onChange={(event) =>
-                    updateField("customerEmail", event.target.value)
-                  }
-                  className={`${inputClassName} mt-2`}
-                  autoComplete="email"
-                />
-              </label>
-              {error ? (
-                <p className="text-[13px] text-red-700">{error}</p>
-              ) : null}
-              <div className="flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={goBack}
-                  className="border border-black/15 px-5 py-3.5 text-[11px] tracking-[0.16em] uppercase"
-                >
-                  Geri
-                </button>
-                <button
-                  type="submit"
-                  className="btn-primary inline-flex items-center justify-center px-6 py-3.5 text-[11px] tracking-[0.18em]"
-                >
+              <TrCheckoutStickyActions>
+                <button type="submit" className={stickyPrimaryClassName}>
                   Devam et
                 </button>
-              </div>
+              </TrCheckoutStickyActions>
             </form>
           ) : null}
 
@@ -667,21 +711,13 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
               {error ? (
                 <p className="text-[13px] text-red-700">{error}</p>
               ) : null}
-              <div className="flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={goBack}
-                  className="border border-black/15 px-5 py-3.5 text-[11px] tracking-[0.16em] uppercase"
-                >
-                  Geri
-                </button>
-                <button
-                  type="submit"
-                  className="btn-primary inline-flex items-center justify-center px-6 py-3.5 text-[11px] tracking-[0.18em]"
-                >
+              <TrCheckoutStickyActions
+                onBack={stepIndex > 0 ? goBack : undefined}
+              >
+                <button type="submit" className={stickyPrimaryClassName}>
                   Devam et
                 </button>
-              </div>
+              </TrCheckoutStickyActions>
             </form>
           ) : null}
 
@@ -699,31 +735,14 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
                   <dt className="text-neutral-500">Telefon</dt>
                   <dd>{form.customerPhone}</dd>
                 </div>
-                <label className="block">
-                  <span className={labelClassName}>Ad soyad</span>
-                  <input
-                    required
-                    value={form.customerName}
-                    onChange={(event) =>
-                      updateField("customerName", event.target.value)
-                    }
-                    className={`${inputClassName} mt-2`}
-                    autoComplete="name"
-                  />
-                </label>
-                <label className="block">
-                  <span className={labelClassName}>E-posta</span>
-                  <input
-                    required
-                    type="email"
-                    value={form.customerEmail}
-                    onChange={(event) =>
-                      updateField("customerEmail", event.target.value)
-                    }
-                    className={`${inputClassName} mt-2`}
-                    autoComplete="email"
-                  />
-                </label>
+                <div className="flex justify-between gap-4">
+                  <dt className="text-neutral-500">Ad soyad</dt>
+                  <dd className="text-right">{form.customerName}</dd>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <dt className="text-neutral-500">E-posta</dt>
+                  <dd className="text-right break-all">{form.customerEmail}</dd>
+                </div>
                 <div className="flex justify-between gap-4 pt-1">
                   <dt className="text-neutral-500">Adres</dt>
                   <dd className="text-right">
@@ -849,19 +868,14 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
 
               <TrIyzicoCheckoutBadge className="border border-black/5 bg-neutral-50 px-4 py-3" />
 
-              <div className="flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={goBack}
-                  className="border border-black/15 px-5 py-3.5 text-[11px] tracking-[0.16em] uppercase"
-                >
-                  Geri
-                </button>
+              <TrCheckoutStickyActions
+                onBack={stepIndex > 0 ? goBack : undefined}
+              >
                 {canSubmit ? (
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="btn-primary inline-flex min-w-[12rem] items-center justify-center px-6 py-3.5 text-[11px] tracking-[0.18em] disabled:opacity-60"
+                    className={stickyPrimaryClassName}
                   >
                     {submitting
                       ? boutiqueOffersIyzicoCheckout(boutiqueSlug)
@@ -877,12 +891,12 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
                   <button
                     type="button"
                     disabled
-                    className="cursor-not-allowed border border-black/10 bg-neutral-100 px-6 py-3.5 text-[11px] tracking-[0.18em] text-neutral-400 uppercase"
+                    className="inline-flex min-h-12 flex-1 cursor-not-allowed items-center justify-center border border-black/10 bg-neutral-100 px-6 py-3.5 text-[11px] tracking-[0.18em] text-neutral-400 uppercase"
                   >
                     Ödeme yakında
                   </button>
                 )}
-              </div>
+              </TrCheckoutStickyActions>
             </form>
           ) : null}
         </div>

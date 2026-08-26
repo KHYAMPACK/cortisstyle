@@ -44,6 +44,7 @@ import {
   FREE_SHIPPING_NUDGE_COPY,
   FREE_SHIPPING_PROMO_COPY,
 } from "@/lib/tr/shipping/types";
+import { useAtelierFabBottomInset } from "@/lib/tr/useAtelierFabBottomInset";
 
 function CartCheckbox({
   checked,
@@ -231,6 +232,7 @@ export function TrBoutiqueCartPageContent({
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const knownIdsRef = useRef<Set<string>>(new Set());
+  const stickyBottomRef = useAtelierFabBottomInset();
 
   useLayoutEffect(() => {
     const currentIds = items.map((item) => cartLineKey(item));
@@ -380,7 +382,10 @@ export function TrBoutiqueCartPageContent({
       </div>
 
       {recommendations}
-      <div className="fixed right-0 bottom-0 left-0 z-40 border-t border-neutral-200/80 bg-white/95 backdrop-blur-sm">
+      <div
+        ref={stickyBottomRef}
+        className="fixed right-0 bottom-0 left-0 z-40 border-t border-neutral-200/80 bg-white/95 backdrop-blur-sm"
+      >
         <div className="mx-auto flex max-w-3xl flex-col items-stretch gap-3 px-5 py-4 sm:flex-row sm:items-end sm:justify-between sm:gap-8 md:px-10 md:py-5">
           <div className="text-center sm:text-left">
             <p className="text-[10px] tracking-[0.18em] text-neutral-500 uppercase">
