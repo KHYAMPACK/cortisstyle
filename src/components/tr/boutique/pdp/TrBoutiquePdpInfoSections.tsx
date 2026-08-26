@@ -36,6 +36,7 @@ export function TrBoutiquePdpInfoSections({
   const delivery = getPdpDeliverySummary(
     product.boutique.slug,
     product.boutique.name,
+    product,
   );
   const rule = branded ? "border-black/8" : "border-blueprint-border";
 

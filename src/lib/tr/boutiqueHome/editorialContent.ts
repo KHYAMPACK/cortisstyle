@@ -16,10 +16,14 @@ import {
 import { isAtelierEditorialSkin } from "@/lib/tr/boutiqueHome/editorialSkin";
 import { listTrCategoryRoots } from "@/lib/tr/categories";
 import { getStorefrontGalleryImages } from "@/lib/tr/catalog/productImages";
+import {
+  foldTrCatalogText,
+  isMidiJeanElbiseProduct,
+  midiJeanCatalogText,
+} from "@/lib/tr/catalog/midiJeanTwins";
 import { liveShippingHomeBody } from "@/lib/tr/catalog/pdpReturns";
 import { trBoutiqueLegalPath, trBoutiquePath, trBoutiqueProductPath } from "@/lib/tr/paths";
 import { boutiqueHasLiveShipping } from "@/lib/tr/shipping/registry";
-import { FREE_SHIPPING_MIN_ITEMS } from "@/lib/tr/shipping/types";
 import type { TrBoutiquePublic, TrProduct } from "@/types/tr-marketplace";
 
 const TEMPLATE_ASSET = (name: string) => `/tr/boutiques/demo-maya/${name}`;
@@ -423,7 +427,7 @@ function buildAtelierTwinStory(): EditorialTwinStory {
   return {
     title: "Aynı kalıp. İki karakter.",
     question: "Hangisi senin?",
-    promo: `${FREE_SHIPPING_MIN_ITEMS} parça · Kargo ücretsiz`,
+    promo: "Bu elbise · Kargo ücretsiz",
     sides: [
       {
         id: "espresso",
@@ -447,30 +451,9 @@ const TWIN_SIDE_TOKENS: Record<string, string[]> = {
   navy: ["navy", "lacivert"],
 };
 
-function foldTr(value: string): string {
-  return value.replaceAll("İ", "i").replaceAll("I", "ı").toLocaleLowerCase("tr");
-}
-
-function twinProductText(product: TrProduct): string {
-  return foldTr(
-    [
-      product.title,
-      product.features.color ?? "",
-      ...product.colors.map((color) => color.name),
-    ].join(" "),
-  );
-}
-
-function isMidiJeanElbise(product: TrProduct): boolean {
-  const text = twinProductText(product);
-  return (
-    text.includes("midi") && text.includes("jean") && text.includes("elbise")
-  );
-}
-
 function matchesTwinTokens(product: TrProduct, tokens: string[]): boolean {
-  const text = twinProductText(product);
-  return tokens.some((token) => text.includes(foldTr(token)));
+  const text = midiJeanCatalogText(product);
+  return tokens.some((token) => text.includes(foldTrCatalogText(token)));
 }
 
 function findMidiJeanTwin(
@@ -478,7 +461,8 @@ function findMidiJeanTwin(
   tokens: string[],
 ): TrProduct | undefined {
   return products.find(
-    (product) => isMidiJeanElbise(product) && matchesTwinTokens(product, tokens),
+    (product) =>
+      isMidiJeanElbiseProduct(product) && matchesTwinTokens(product, tokens),
   );
 }
 
@@ -489,7 +473,10 @@ function siblingTwin(
   const ids = product?.features.colorSiblingIds;
   if (!product || !ids?.length) return undefined;
   return products.find(
-    (row) => row.id !== product.id && ids.includes(row.id) && isMidiJeanElbise(row),
+    (row) =>
+      row.id !== product.id &&
+      ids.includes(row.id) &&
+      isMidiJeanElbiseProduct(row),
   );
 }
 

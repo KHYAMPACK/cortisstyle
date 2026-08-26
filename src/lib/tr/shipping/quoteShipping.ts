@@ -1,3 +1,4 @@
+import { isMidiJeanElbiseProduct } from "@/lib/tr/catalog/midiJeanTwins";
 import { boutiqueHasLiveShipping } from "@/lib/tr/shipping/registry";
 import {
   CHECKOUT_SHIPPING_HANDLER,
@@ -8,6 +9,22 @@ import {
 export type CheckoutShippingQuote = {
   feeKurus: number;
   handlerCode: typeof CHECKOUT_SHIPPING_HANDLER;
+};
+
+export type ShippingQuoteItem = {
+  title?: string | null;
+  quantity?: number;
+  features?: { color?: string | null };
+  colors?: Array<{ name?: string | null }>;
+};
+
+export type FreeShippingProgress = {
+  free: boolean;
+  current: number;
+  needed: number;
+  remaining: number;
+  /** Promo dress in the bag — 1 piece is enough. */
+  promoSolo: boolean;
 };
 
 function lineQuantity(item: unknown): number {
@@ -22,19 +39,63 @@ export function shippingItemCount(items: ReadonlyArray<unknown>): number {
   return items.reduce<number>((sum, item) => sum + lineQuantity(item), 0);
 }
 
+export function cartHasSoloFreeShippingProduct(
+  items: ReadonlyArray<ShippingQuoteItem> | undefined,
+): boolean {
+  return Boolean(items?.some((item) => isMidiJeanElbiseProduct(item)));
+}
+
+export function freeShippingProgress(
+  itemCount: number,
+  items?: ReadonlyArray<ShippingQuoteItem>,
+): FreeShippingProgress {
+  const count = items
+    ? shippingItemCount(items)
+    : Number.isFinite(itemCount)
+      ? Math.max(0, Math.floor(itemCount))
+      : 0;
+  const promoSolo = cartHasSoloFreeShippingProduct(items);
+  if (promoSolo) {
+    return {
+      free: true,
+      current: Math.max(count, 1),
+      needed: 1,
+      remaining: 0,
+      promoSolo: true,
+    };
+  }
+  if (count >= FREE_SHIPPING_MIN_ITEMS) {
+    return {
+      free: true,
+      current: count,
+      needed: FREE_SHIPPING_MIN_ITEMS,
+      remaining: 0,
+      promoSolo: false,
+    };
+  }
+  return {
+    free: false,
+    current: count,
+    needed: FREE_SHIPPING_MIN_ITEMS,
+    remaining: Math.max(0, FREE_SHIPPING_MIN_ITEMS - count),
+    promoSolo: false,
+  };
+}
+
 /**
- * Flat kargo for live boutiques, free at FREE_SHIPPING_MIN_ITEMS.
+ * Flat kargo for live boutiques.
+ * Free at FREE_SHIPPING_MIN_ITEMS, or when a Midi Jean Elbise twin is in the bag.
  * Not a Basit live quote — client cannot set this.
  */
 export function quoteCheckoutShippingFee(
   boutiqueSlug: string,
   itemCount: number,
+  items?: ReadonlyArray<ShippingQuoteItem>,
 ): CheckoutShippingQuote | null {
   if (!boutiqueHasLiveShipping(boutiqueSlug)) return null;
-  const count = Number.isFinite(itemCount) ? Math.max(0, Math.floor(itemCount)) : 0;
+  const progress = freeShippingProgress(itemCount, items);
   return {
-    feeKurus:
-      count >= FREE_SHIPPING_MIN_ITEMS ? 0 : FLAT_SHIPPING_FEE_KURUS,
+    feeKurus: progress.free ? 0 : FLAT_SHIPPING_FEE_KURUS,
     handlerCode: CHECKOUT_SHIPPING_HANDLER,
   };
 }

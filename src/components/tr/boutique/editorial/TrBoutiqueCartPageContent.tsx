@@ -39,12 +39,13 @@ import {
   type TrProductWithBoutique,
 } from "@/types/tr-marketplace";
 import { boutiqueHasLiveShipping } from "@/lib/tr/shipping/registry";
-import { quoteCheckoutShippingFee } from "@/lib/tr/shipping/quoteShipping";
 import {
-  FREE_SHIPPING_NUDGE_COPY,
-  FREE_SHIPPING_PROMO_COPY,
-} from "@/lib/tr/shipping/types";
+  freeShippingProgress,
+  quoteCheckoutShippingFee,
+} from "@/lib/tr/shipping/quoteShipping";
 import { useAtelierFabBottomInset } from "@/lib/tr/useAtelierFabBottomInset";
+import { isMidiJeanElbiseProduct } from "@/lib/tr/catalog/midiJeanTwins";
+import { TrFreeShippingNudge } from "@/components/tr/commerce/TrFreeShippingNudge";
 
 function CartCheckbox({
   checked,
@@ -260,8 +261,33 @@ export function TrBoutiqueCartPageContent({
   const liveShipping = boutiqueHasLiveShipping(boutique.slug) && !demoCart;
   const shippingFeeKurus =
     liveShipping && selectedCount > 0
-      ? (quoteCheckoutShippingFee(boutique.slug, selectedCount)?.feeKurus ?? 0)
+      ? (quoteCheckoutShippingFee(
+          boutique.slug,
+          selectedCount,
+          selectedItems,
+        )?.feeKurus ?? 0)
       : 0;
+  const shippingProgress =
+    liveShipping && selectedCount > 0
+      ? freeShippingProgress(selectedCount, selectedItems)
+      : null;
+  const shippingShopHref = shippingProgress && !shippingProgress.free
+    ? (() => {
+        const cartIds = new Set(
+          selectedItems
+            .filter((item) => isMidiJeanElbiseProduct(item))
+            .map((item) => item.productId),
+        );
+        if (cartIds.size > 0) {
+          const other = catalog.find(
+            (product) =>
+              isMidiJeanElbiseProduct(product) && !cartIds.has(product.id),
+          );
+          if (other) return trBoutiqueProductPath(boutique.slug, other.id);
+        }
+        return trBoutiqueProductsPath(boutique.slug);
+      })()
+    : undefined;
 
   const cartIds = useMemo(
     () => items.map((item) => item.productId),
@@ -294,7 +320,7 @@ export function TrBoutiqueCartPageContent({
   );
 
   const recommendations = (
-    <div className={count === 0 ? "pb-16" : "pb-44"}>
+    <div className={count === 0 ? "pb-16" : "pb-56"}>
       <TrBoutiqueYouMayAlsoLike
         boutique={boutique}
         products={favoriteProducts}
@@ -386,7 +412,14 @@ export function TrBoutiqueCartPageContent({
         ref={stickyBottomRef}
         className="fixed right-0 bottom-0 left-0 z-40 border-t border-neutral-200/80 bg-white/95 backdrop-blur-sm"
       >
-        <div className="mx-auto flex max-w-3xl flex-col items-stretch gap-3 px-5 py-4 sm:flex-row sm:items-end sm:justify-between sm:gap-8 md:px-10 md:py-5">
+        <div className="mx-auto flex max-w-3xl flex-col items-stretch gap-3 px-5 py-4 md:px-10 md:py-5">
+          {shippingProgress ? (
+            <TrFreeShippingNudge
+              progress={shippingProgress}
+              shopHref={shippingShopHref}
+            />
+          ) : null}
+          <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-8">
           <div className="text-center sm:text-left">
             <p className="text-[10px] tracking-[0.18em] text-neutral-500 uppercase">
               Sepet özeti
@@ -399,19 +432,15 @@ export function TrBoutiqueCartPageContent({
                 liveShipping ? selectedTotal + shippingFeeKurus : selectedTotal,
               )}
             </p>
-            {liveShipping ? (
-              <p className="mt-0.5 text-[9px] tracking-[0.12em] text-neutral-400">
-                {selectedCount === 0
-                  ? "Kargo seçili ürünlere göre"
-                  : shippingFeeKurus === 0
-                    ? `Kargo ücretsiz · ${FREE_SHIPPING_PROMO_COPY}`
-                    : `Kargo ${formatTryFromKurus(shippingFeeKurus)} · ${FREE_SHIPPING_NUDGE_COPY}`}
-              </p>
-            ) : (
+            {!liveShipping ? (
               <p className="mt-0.5 text-[9px] tracking-[0.12em] text-neutral-400">
                 * KDV dahil olmayabilir
               </p>
-            )}
+            ) : selectedCount === 0 ? (
+              <p className="mt-0.5 text-[9px] tracking-[0.12em] text-neutral-400">
+                Kargo seçili ürünlere göre
+              </p>
+            ) : null}
           </div>
           {selectedCount > 0 ? (
             <TrSoftNavLink
@@ -435,6 +464,7 @@ export function TrBoutiqueCartPageContent({
               Sepeti onayla (0)
             </button>
           )}
+          </div>
         </div>
       </div>
     </div>

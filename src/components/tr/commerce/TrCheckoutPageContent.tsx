@@ -15,6 +15,7 @@ import {
   cartHasDemoItems,
 } from "@/components/tr/TrSandboxBanner";
 import { TrIyzicoCheckoutBadge } from "@/components/tr/TrIyzicoPaymentBadges";
+import { TrFreeShippingNudge } from "@/components/tr/commerce/TrFreeShippingNudge";
 import {
   TrTurkeyAddressFields,
   turkeyAddressClientError,
@@ -34,17 +35,15 @@ import { isTrCheckoutEnabled } from "@/lib/tr/platform";
 import { boutiqueHasLiveShipping } from "@/lib/tr/shipping/registry";
 import { boutiqueOffersIyzicoCheckout } from "@/lib/tr/payments/registry";
 import {
+  freeShippingProgress,
   quoteCheckoutShippingFee,
   shippingItemCount,
 } from "@/lib/tr/shipping/quoteShipping";
 import {
-  FREE_SHIPPING_NUDGE_COPY,
-  FREE_SHIPPING_PROMO_COPY,
-} from "@/lib/tr/shipping/types";
-import {
   trBoutiqueCartPath,
   trBoutiqueLegalPath,
   trBoutiquePath,
+  trBoutiqueProductsPath,
   trCartPath,
   trOrderConfirmationPath,
 } from "@/lib/tr/paths";
@@ -77,9 +76,11 @@ const stickyPrimaryClassName =
 function TrCheckoutStickyActions({
   children,
   onBack,
+  shippingNudge,
 }: {
   children: ReactNode;
   onBack?: () => void;
+  shippingNudge?: ReactNode;
 }) {
   const stickyBottomRef = useAtelierFabBottomInset();
 
@@ -89,15 +90,18 @@ function TrCheckoutStickyActions({
       className="fixed inset-x-0 bottom-0 z-40 border-t border-neutral-200/80 bg-white/95 backdrop-blur-sm"
     >
       <div
-        className="mx-auto flex max-w-3xl items-stretch gap-3 px-5 pt-3 md:px-10"
+        className="mx-auto flex max-w-3xl flex-col gap-3 px-5 pt-3 md:px-10"
         style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
       >
-        {onBack ? (
-          <button type="button" onClick={onBack} className={stickyBackClassName}>
-            Geri
-          </button>
-        ) : null}
-        {children}
+        {shippingNudge}
+        <div className="flex items-stretch gap-3">
+          {onBack ? (
+            <button type="button" onClick={onBack} className={stickyBackClassName}>
+              Geri
+            </button>
+          ) : null}
+          {children}
+        </div>
       </div>
     </div>
   );
@@ -268,10 +272,24 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
     boutiqueSlug && boutiqueHasLiveShipping(boutiqueSlug) && !demoCart,
   );
   const itemCount = shippingItemCount(items);
+  const shippingProgress = liveShipping
+    ? freeShippingProgress(itemCount, items)
+    : null;
   const shippingFeeKurus = liveShipping
-    ? (quoteCheckoutShippingFee(boutiqueSlug!, itemCount)?.feeKurus ?? 0)
+    ? (quoteCheckoutShippingFee(boutiqueSlug!, itemCount, items)?.feeKurus ??
+      0)
     : 0;
   const payableKurus = totalKurus + shippingFeeKurus;
+  const shippingNudge = shippingProgress ? (
+    <TrFreeShippingNudge
+      progress={shippingProgress}
+      shopHref={
+        !shippingProgress.free && boutiqueSlug
+          ? trBoutiqueProductsPath(boutiqueSlug)
+          : undefined
+      }
+    />
+  ) : null;
   const canSubmit =
     demoCart || boutiqueCheckout || isTrCheckoutEnabled();
 
@@ -485,7 +503,7 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
   const stepIndex = steps.indexOf(step);
 
   return (
-    <div className="px-5 py-8 pb-28 md:px-10 md:py-10 md:pb-32">
+    <div className="px-5 py-8 pb-36 md:px-10 md:py-10 md:pb-40">
       <TrSandboxBanner
         className="mb-8"
         demo={demoCart}
@@ -583,7 +601,7 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
               {error ? (
                 <p className="text-[13px] text-red-700">{error}</p>
               ) : null}
-              <TrCheckoutStickyActions>
+              <TrCheckoutStickyActions shippingNudge={shippingNudge}>
                 <button type="submit" className={stickyPrimaryClassName}>
                   Devam et
                 </button>
@@ -610,13 +628,6 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
                   setForm((current) => ({ ...current, ...patch }))
                 }
               />
-              {liveShipping ? (
-                <p className="text-[13px] text-neutral-600">
-                  {shippingFeeKurus === 0
-                    ? `Kargo: Ücretsiz (${FREE_SHIPPING_PROMO_COPY})`
-                    : `Kargo: ${formatTryFromKurus(shippingFeeKurus)} · ${FREE_SHIPPING_NUDGE_COPY}`}
-                </p>
-              ) : null}
 
               <div className="space-y-4 border-t border-black/10 pt-5">
                 <h3 className="font-serif text-lg tracking-tight text-neutral-950">
@@ -713,6 +724,7 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
               ) : null}
               <TrCheckoutStickyActions
                 onBack={stepIndex > 0 ? goBack : undefined}
+                shippingNudge={shippingNudge}
               >
                 <button type="submit" className={stickyPrimaryClassName}>
                   Devam et
@@ -870,6 +882,7 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
 
               <TrCheckoutStickyActions
                 onBack={stepIndex > 0 ? goBack : undefined}
+                shippingNudge={shippingNudge}
               >
                 {canSubmit ? (
                   <button
@@ -952,15 +965,6 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
                       : formatTryFromKurus(shippingFeeKurus)}
                   </span>
                 </div>
-                {shippingFeeKurus > 0 ? (
-                  <p className="text-[12px] text-neutral-500">
-                    {FREE_SHIPPING_NUDGE_COPY}
-                  </p>
-                ) : (
-                  <p className="text-[12px] text-neutral-500">
-                    {FREE_SHIPPING_PROMO_COPY}
-                  </p>
-                )}
               </>
             ) : null}
             <div className="flex items-center justify-between">
