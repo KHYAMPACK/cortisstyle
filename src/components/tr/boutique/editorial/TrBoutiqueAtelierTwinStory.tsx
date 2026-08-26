@@ -20,8 +20,42 @@ const PICK_EXPAND_MS = 420;
 /** No href yet: hold the fullscreen pick so the expand is visible, then release. */
 const PICK_HOLD_MS = 1100;
 const IMMERSIVE_ATTR = "data-atelier-twin-immersive";
-const PIN_ON = 0.04;
-const PIN_OFF = 0.02;
+const PIN_ON = 0.06;
+const PIN_OFF = 0.03;
+/** Scroll progress zones — long plateau keeps the pair fullscreen while pinned. */
+const SCROLL_EXPAND_IN = 0.16;
+const SCROLL_HOLD_END = 0.78;
+const SCROLL_COLLAPSE_END = 0.92;
+
+function easeOutCubic(t: number) {
+  return 1 - (1 - t) ** 3;
+}
+
+function easeInCubic(t: number) {
+  return t ** 3;
+}
+
+/** 0 → 1 expand in, hold at 1, ease back to 0 — eased for smoother scrubbing. */
+function twinExpandFromScroll(scroll: number) {
+  if (scroll <= 0) return 0;
+  if (scroll >= 1) return 0;
+  if (scroll < SCROLL_EXPAND_IN) {
+    return easeOutCubic(scroll / SCROLL_EXPAND_IN);
+  }
+  if (scroll < SCROLL_HOLD_END) return 1;
+  if (scroll < SCROLL_COLLAPSE_END) {
+    const t = (scroll - SCROLL_HOLD_END) / (SCROLL_COLLAPSE_END - SCROLL_HOLD_END);
+    return 1 - easeInCubic(t);
+  }
+  return 0;
+}
+
+function twinOverlayOpacityFromScroll(scroll: number) {
+  const expand = twinExpandFromScroll(scroll);
+  if (expand < 0.72) return Math.max(0, (expand - 0.35) / 0.37);
+  if (expand > 0.88) return Math.max(0, (1 - expand) / 0.12);
+  return 1;
+}
 
 function setTwinStoryImmersive(on: boolean) {
   document.documentElement.toggleAttribute(IMMERSIVE_ATTR, on);
@@ -150,15 +184,11 @@ export function TrBoutiqueAtelierTwinStory({
     offset: ["start start", "end end"],
   });
 
-  const expand = useTransform(
-    scrollYProgress,
-    [0, 0.22, 0.4, 0.72, 1],
-    [0, 1, 1, 0, 0],
-  );
+  const expand = useTransform(scrollYProgress, twinExpandFromScroll);
   const padY = useTransform(expand, (value) => `${(1 - value) * 10}vh`);
   const padX = useTransform(expand, (value) => `${(1 - value) * 7}vw`);
   const gap = useTransform(expand, (value) => `${(1 - value) * 1.15}rem`);
-  const overlayOpacity = useTransform(expand, [0.55, 1], [0, 1]);
+  const overlayOpacity = useTransform(scrollYProgress, twinOverlayOpacityFromScroll);
 
   const pickedSide = story.sides.find((side) => side.id === pickedId) ?? null;
   const skipScrub = Boolean(reduceMotion);
@@ -167,7 +197,13 @@ export function TrBoutiqueAtelierTwinStory({
   const immersiveOn = useRef(false);
 
   const syncImmersive = useCallback((progress: number) => {
-    const inPin = progress > (immersiveOn.current ? PIN_OFF : PIN_ON) && progress < 1 - PIN_OFF;
+    const enter = immersiveOn.current
+      ? SCROLL_EXPAND_IN - PIN_OFF
+      : SCROLL_EXPAND_IN + PIN_ON;
+    const exit = immersiveOn.current
+      ? SCROLL_COLLAPSE_END + PIN_OFF
+      : SCROLL_COLLAPSE_END - PIN_ON;
+    const inPin = progress > enter && progress < exit;
     const next = Boolean(pickedRef.current) || inPin;
     if (next === immersiveOn.current) return;
     immersiveOn.current = next;
@@ -327,7 +363,7 @@ export function TrBoutiqueAtelierTwinStory({
     <section
       ref={trackRef}
       aria-label={story.title}
-      className="relative h-[165vh] bg-[#FAFAF8] md:h-[185vh]"
+      className="relative h-[240vh] bg-[#FAFAF8] md:h-[280vh]"
     >
       <div className="sticky top-0 h-dvh overflow-hidden">{stageInner}</div>
     </section>
