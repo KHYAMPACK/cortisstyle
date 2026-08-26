@@ -100,7 +100,7 @@ export function resolveAtelierPageId(
     return "cart";
   }
   if (normalized.includes("/favoriler")) return "favorites";
-  if (normalized.includes("/giris") || normalized.includes("/hesap")) {
+  if (normalized.includes("/giris") || normalized.includes("/hesap") || normalized.includes("/adresler")) {
     return "account";
   }
   if (normalized.includes("/urunler") || normalized.includes("/urun/")) {

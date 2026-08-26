@@ -213,6 +213,38 @@ export interface TrShippingAddress {
   country: string;
 }
 
+/** Saved shopper address book entry (platform account, all boutiques). */
+export interface TrCustomerAddress {
+  id: string;
+  label: string;
+  recipientName: string;
+  phone: string;
+  line1: string;
+  line2?: string;
+  district: string;
+  city: string;
+  postalCode: string;
+  country: string;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type TrCustomerAddressInput = {
+  label: string;
+  recipientName: string;
+  phone: string;
+  line1: string;
+  line2?: string;
+  district: string;
+  city: string;
+  postalCode: string;
+  country?: string;
+  isDefault?: boolean;
+};
+
+export type TrCustomerAddressPatch = Partial<TrCustomerAddressInput>;
+
 export interface TrOrder {
   id: string;
   customerEmail: string;

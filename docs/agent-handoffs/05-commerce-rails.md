@@ -14,6 +14,7 @@
 - Order line size + order discount columns (`patch_tr_order_items_size.sql`, `patch_tr_orders_discount.sql`)
 - Owner Web Push for new orders (`patch_tr_owner_push_subscriptions.sql`, `pushNotify.ts`, panel Ayarlar)
 - Customer profiles for storefront (`tr_customer_profiles` registration-source; `profiles.first_name` / `last_name` / `phone` from boutique signup + Hesabım edit — `patch_tr_customer_profile_fields.sql`; optional signup discovery — `patch_tr_customer_signup_discovery.sql`)
+- **Address book** (logged-in): `tr_customer_addresses` — platform account, shared across boutiques. Hesabım → `/adresler`; checkout picker + “Adres defterine kaydet”. Guests still use device `checkoutProfile` localStorage. Do **not** put addresses on `profiles`. SQL `supabase/patch_tr_customer_addresses.sql`. APIs `GET/POST /api/tr/customer/addresses`, `PATCH/DELETE /api/tr/customer/addresses/[id]` (Bearer shopper JWT; service role after `getCustomerUserFromRequest`). Cap 10; one default per user. Same TR il/ilçe validation as checkout.
 - **Demo shopper orders / tracking** (UI only, not `tr_orders`): `src/lib/tr/commerce/demoShopperOrders.ts` → `/siparisler`, `/siparisler/[id]`, `/siparisler/[id]/takip`. Live takip for UUID orders uses the boutique shipping provider (Lila = Basit Kargo).
 - **Per-boutique shipping** (`src/lib/tr/shipping/`): registry by slug. **Lila** = Basit Kargo (her token/balance). **Pervin / clones** = manual stub. Cortisstyle is not the carrier. SQL `supabase/patch_tr_order_shipments.sql`. Webhook `POST /api/tr/shipping/basitkargo/webhook` (Bearer `TR_SHIPPING_BASITKARGO_WEBHOOK_SECRET`).
 - **Locked TR address** (`src/lib/tr/geo/turkeyAddress.ts`, `src/data/tr/turkey-cities-districts.json`): checkout il/ilçe are selects; checkout POST rejects free-text junk. Street stays typed (min length).
@@ -42,7 +43,8 @@
 | Shipping | `src/lib/tr/shipping/` (registry + Basit Kargo for Lila) |
 | Payments | `src/lib/tr/payments/` (Lila iyzico Checkout Form; callback `/api/tr/checkout/iyzico/callback`) |
 | Address zones | `src/lib/tr/geo/turkeyAddress.ts` |
-| Schema | `patch_tr_marketplace.sql`, `patch_tr_order_fulfillment.sql`, `patch_tr_order_shipments.sql`, `patch_tr_order_shipping_block.sql`, `patch_tr_discount_codes.sql` |
+| Address book | `src/lib/tr/commerce/customerAddresses.ts`, `api/tr/customer/addresses` |
+| Schema | `patch_tr_marketplace.sql`, `patch_tr_order_fulfillment.sql`, `patch_tr_order_shipments.sql`, `patch_tr_order_shipping_block.sql`, `patch_tr_discount_codes.sql`, `patch_tr_customer_addresses.sql` |
 | Legal ops | `docs/pre-vergi-levhasi-checklist.md`, partnership draft |
 
 ## Agent rules of thumb

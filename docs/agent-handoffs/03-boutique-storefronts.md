@@ -4,7 +4,7 @@
 
 ## What we do today
 
-- Per-tenant storefront at `/tr/[boutiqueSlug]` (home, PLP, PDP, local cart, checkout, legal, login)
+- Per-tenant storefront at `/tr/[boutiqueSlug]` (home, PLP, PDP, local cart, checkout, legal, login, **adresler**)
 - **Custom domains** rewrite storefront paths into `/tr/{slug}/…` (`src/lib/tr/customDomain.ts` + middleware). **Origin crawler files** (`/sitemap.xml`, `/robots.txt`, `/.well-known/`, …) **passthrough** so Search Console works on every boutique host — do not add a per-tenant sitemap route. Cadde (`/tr`, other slugs) is not served on a white-label host.
 - **Storefront themes** — same panel/APIs for all; **unique UI per boutique** via theme packs / editorial skins (Pervin = `classic` editorial; Lila = `atelier` skin). See [lila-butik-e-ticaret-setup.md](../lila-butik-e-ticaret-setup.md). Do not skin with `if (slug)` inside one chrome tree.
 - **Editorial** home/PDP templates via registries (`src/lib/tr/boutiqueHome/`, `boutiquePdp/`) — moving toward `storefront/themes/{id}/`
@@ -30,7 +30,7 @@
 | UI | `src/components/tr/boutique/`, `src/components/tr/panel/` |
 | Data | `src/lib/tr/boutiques.ts`, `products.ts`, `storefront.ts`, `publicData.ts` |
 | Auth | `src/lib/tr/ownerAuth.ts`, `ownerClient.ts` |
-| URLs | `src/lib/tr/paths.ts` (`trBoutiquePath`, product paths) |
+| URLs | `src/lib/tr/paths.ts` (`trBoutiquePath`, `trBoutiqueAddressesPath`, product paths) |
 | Domain | `src/lib/tr/customDomain.ts` (`BOUTIQUE_DOMAIN_ORIGIN_PASSTHROUGH_PATHS` — sitemap/robots for all custom domains) |
 | Types | `src/types/tr-marketplace.ts` |
 | Schema | `supabase/patch_tr_marketplace.sql` + `patch_tr_boutique_*`, `patch_tr_product_*` (`patch_tr_product_features.sql` for PDP specs) |

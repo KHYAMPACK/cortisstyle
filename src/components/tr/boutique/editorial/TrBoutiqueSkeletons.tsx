@@ -210,7 +210,13 @@ export function resolveBoutiqueSkeletonKind(
   href: string,
 ): TrBoutiqueSkeletonKind {
   const path = (href.split("?")[0] ?? href).replace(/\/$/, "") || "/";
-  if (/\/giris$/.test(path) || /\/hesap$/.test(path) || path === "/giris") {
+  if (
+    /\/giris$/.test(path) ||
+    /\/hesap$/.test(path) ||
+    /\/adresler$/.test(path) ||
+    path === "/giris" ||
+    path === "/adresler"
+  ) {
     return "account";
   }
   if (/\/sepet$/.test(path) || /\/cart$/.test(path) || path === "/sepet") {

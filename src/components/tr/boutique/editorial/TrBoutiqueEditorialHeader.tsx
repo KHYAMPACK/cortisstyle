@@ -304,7 +304,9 @@ export function TrBoutiqueEditorialHeader({
   const content = getEditorialContent(boutique);
   const logoUrl = resolveBoutiqueLogoUrl(boutique);
   const atelier = isAtelierEditorialSkin(boutique.slug);
-  const showShippingPromo = atelier && boutiqueHasLiveShipping(boutique.slug);
+  const onCheckoutPage = /\/odeme(\/|$)/.test(pathname);
+  const showShippingPromo =
+    atelier && boutiqueHasLiveShipping(boutique.slug) && !onCheckoutPage;
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileDrillId, setMobileDrillId] = useState<string | null>(null);
   const [megaId, setMegaId] = useState<string | null>(null);
@@ -315,7 +317,7 @@ export function TrBoutiqueEditorialHeader({
   const productsPath = trBoutiqueProductsPath(boutique.slug);
   const onProductsPage = pathname.includes("/urunler");
   const hideCategoryNav =
-    atelier && /\/(giris|sepet|favoriler)(\/|$)/.test(pathname);
+    atelier && /\/(giris|hesap|adresler|sepet|favoriler)(\/|$)/.test(pathname);
   const brandTitle = resolveBoutiqueBrandLabel(boutique.slug, boutique.name);
   const accountLabel = getTrAccountChromeLabel(user, isAuthenticated);
   const openMegaItem =

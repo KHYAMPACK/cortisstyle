@@ -16,6 +16,7 @@ import {
 } from "@/components/tr/TrSandboxBanner";
 import { TrIyzicoCheckoutBadge } from "@/components/tr/TrIyzicoPaymentBadges";
 import { TrFreeShippingNudge } from "@/components/tr/commerce/TrFreeShippingNudge";
+import { TrCheckoutAddressPicker } from "@/components/tr/commerce/TrCheckoutAddressPicker";
 import {
   TrTurkeyAddressFields,
   turkeyAddressClientError,
@@ -23,6 +24,12 @@ import {
 import { isValidCustomerPhone } from "@/lib/auth/customerProfileFields";
 import { useAtelierFabBottomInset } from "@/lib/tr/useAtelierFabBottomInset";
 import { useAuth } from "@/context/AuthContext";
+import {
+  applyCustomerAddressToCheckoutForm,
+  createCustomerAddressRequest,
+  fetchCustomerAddresses,
+} from "@/lib/tr/commerce/customerAddressesClient";
+import { TR_CUSTOMER_ADDRESS_MAX } from "@/lib/tr/commerce/customerAddressLimits";
 import {
   loadSavedCheckoutProfile,
   saveCheckoutProfile,
@@ -58,7 +65,10 @@ import {
   type TrCartLineItem,
   type TrCheckoutFormData,
 } from "@/types/tr-cart";
-import { formatTryFromKurus } from "@/types/tr-marketplace";
+import {
+  formatTryFromKurus,
+  type TrCustomerAddress,
+} from "@/types/tr-marketplace";
 
 const inputClassName =
   "w-full border border-black/10 bg-white px-3 py-3 text-[13px] text-jet-black outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/30";
@@ -196,7 +206,7 @@ function stepTitle(step: CheckoutStep): string {
 
 function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, isAuthenticated, isInitializing } = useAuth();
   const { items, clearCheckedOut, hydrated } = useCheckoutCart(boutiqueSlug);
   const [form, setForm] = useState<TrCheckoutFormData>(EMPTY_CHECKOUT_FORM);
   const [step, setStep] = useState<CheckoutStep | null>(null);
@@ -205,7 +215,15 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
   const [acceptedDistance, setAcceptedDistance] = useState(false);
   const [acceptedKvkk, setAcceptedKvkk] = useState(false);
   const [saveProfile, setSaveProfile] = useState(true);
+  const [saveToBook, setSaveToBook] = useState(true);
+  const [saveToBookLabel, setSaveToBookLabel] = useState("Ev");
+  const [saveToBookDefault, setSaveToBookDefault] = useState(false);
   const [profileReady, setProfileReady] = useState(false);
+  const [savedAddresses, setSavedAddresses] = useState<TrCustomerAddress[]>([]);
+  const [addressesLoading, setAddressesLoading] = useState(false);
+  const [selectedAddressId, setSelectedAddressId] = useState<
+    string | "new" | null
+  >(null);
   const [contactFields, setContactFields] = useState({
     needsPhone: true,
     needsIdentity: true,
@@ -237,24 +255,72 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
   }, [needsContact]);
 
   useEffect(() => {
-    const saved = loadSavedCheckoutProfile(profileScope);
-    const next = { ...EMPTY_CHECKOUT_FORM, ...(saved ?? {}) };
-    if (authEmail && !next.customerEmail.trim()) {
-      next.customerEmail = authEmail;
+    if (isInitializing) return;
+    let cancelled = false;
+
+    async function hydrate() {
+      const saved = loadSavedCheckoutProfile(profileScope);
+      let next = { ...EMPTY_CHECKOUT_FORM, ...(saved ?? {}) };
+      if (authEmail && !next.customerEmail.trim()) {
+        next.customerEmail = authEmail;
+      }
+      if (authName && !next.customerName.trim()) {
+        next.customerName = authName;
+      }
+      if (authPhone && !next.customerPhone.trim()) {
+        next.customerPhone = authPhone;
+      }
+
+      let book: TrCustomerAddress[] = [];
+      let selected: string | "new" | null = null;
+      if (isAuthenticated) {
+        setAddressesLoading(true);
+        try {
+          const listed = await fetchCustomerAddresses();
+          if (cancelled) return;
+          if (listed.ok) {
+            book = listed.addresses;
+            const preferred =
+              book.find((address) => address.isDefault) ?? book[0] ?? null;
+            if (preferred) {
+              next = applyCustomerAddressToCheckoutForm(next, preferred);
+              selected = preferred.id;
+            } else {
+              selected = "new";
+            }
+          } else {
+            selected = "new";
+          }
+        } catch {
+          if (cancelled) return;
+          selected = "new";
+        }
+        setAddressesLoading(false);
+      }
+
+      if (cancelled) return;
+      setSavedAddresses(book);
+      setSelectedAddressId(selected);
+      setForm(next);
+      setContactFields({
+        needsPhone: !isValidCustomerPhone(next.customerPhone),
+        needsIdentity: !next.customerName.trim() || !next.customerEmail.trim(),
+      });
+      setProfileReady(true);
     }
-    if (authName && !next.customerName.trim()) {
-      next.customerName = authName;
-    }
-    if (authPhone && !next.customerPhone.trim()) {
-      next.customerPhone = authPhone;
-    }
-    setForm(next);
-    setContactFields({
-      needsPhone: !isValidCustomerPhone(next.customerPhone),
-      needsIdentity: !next.customerName.trim() || !next.customerEmail.trim(),
-    });
-    setProfileReady(true);
-  }, [authEmail, authName, authPhone, profileScope]);
+
+    void hydrate();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    authEmail,
+    authName,
+    authPhone,
+    profileScope,
+    isAuthenticated,
+    isInitializing,
+  ]);
 
   useEffect(() => {
     if (!profileReady) return;
@@ -321,6 +387,37 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
 
   const updateField = (field: keyof TrCheckoutFormData, value: string) => {
     setForm((current) => ({ ...current, [field]: value }));
+  };
+
+  const usingNewAddress =
+    !isAuthenticated ||
+    selectedAddressId === "new" ||
+    selectedAddressId === null ||
+    savedAddresses.length === 0;
+  const showAddressForm = usingNewAddress && !addressesLoading;
+  const canSaveToBook =
+    isAuthenticated &&
+    usingNewAddress &&
+    savedAddresses.length < TR_CUSTOMER_ADDRESS_MAX;
+
+  const pickSavedAddress = (id: string | "new") => {
+    setSelectedAddressId(id);
+    setError(null);
+    if (id === "new") {
+      setForm((current) => ({
+        ...current,
+        line1: "",
+        line2: "",
+        district: "",
+        city: "",
+        postalCode: "",
+      }));
+      return;
+    }
+    const found = savedAddresses.find((address) => address.id === id);
+    if (found) {
+      setForm((current) => applyCustomerAddressToCheckoutForm(current, found));
+    }
   };
 
   const goNext = () => {
@@ -404,8 +501,27 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
     setError(null);
 
     try {
-      if (saveProfile) {
+      if (saveProfile || isAuthenticated) {
         saveCheckoutProfile(profileScope, form);
+      }
+
+      if (canSaveToBook && saveToBook) {
+        try {
+          await createCustomerAddressRequest({
+            label: saveToBookLabel.trim() || "Ev",
+            recipientName: form.customerName,
+            phone: form.customerPhone,
+            line1: form.line1,
+            line2: form.line2 || undefined,
+            district: form.district,
+            city: form.city,
+            postalCode: form.postalCode,
+            country: form.country || "TR",
+            isDefault: saveToBookDefault || savedAddresses.length === 0,
+          });
+        } catch {
+          // Address book save is best-effort — do not block checkout.
+        }
       }
 
       if (demoCart) {
@@ -617,17 +733,27 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
               <h2 className="font-serif text-xl tracking-tight text-neutral-950">
                 Teslimat adresi
               </h2>
-              <TrTurkeyAddressFields
-                city={form.city}
-                district={form.district}
-                line1={form.line1}
-                line2={form.line2}
-                postalCode={form.postalCode}
-                autoFocusStreet
-                onChange={(patch) =>
-                  setForm((current) => ({ ...current, ...patch }))
-                }
-              />
+              {isAuthenticated ? (
+                <TrCheckoutAddressPicker
+                  addresses={savedAddresses}
+                  selectedId={selectedAddressId}
+                  loading={addressesLoading}
+                  onSelect={pickSavedAddress}
+                />
+              ) : null}
+              {showAddressForm ? (
+                <TrTurkeyAddressFields
+                  city={form.city}
+                  district={form.district}
+                  line1={form.line1}
+                  line2={form.line2}
+                  postalCode={form.postalCode}
+                  autoFocusStreet
+                  onChange={(patch) =>
+                    setForm((current) => ({ ...current, ...patch }))
+                  }
+                />
+              ) : null}
 
               <div className="space-y-4 border-t border-black/10 pt-5">
                 <h3 className="font-serif text-lg tracking-tight text-neutral-950">
@@ -791,20 +917,73 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
                 </label>
               ) : null}
 
-              <label className="flex items-start gap-3 border border-black/5 bg-neutral-50 px-3 py-3 text-[13px]">
-                <input
-                  type="checkbox"
-                  className="mt-1"
-                  checked={saveProfile}
-                  onChange={(event) => setSaveProfile(event.target.checked)}
-                />
-                <span>
-                  Bu bilgileri sonraki siparişler için kaydet
-                  <span className="mt-0.5 block text-[11px] text-neutral-500">
-                    Yalnızca bu cihazda saklanır.
+              {!isAuthenticated ? (
+                <label className="flex items-start gap-3 border border-black/5 bg-neutral-50 px-3 py-3 text-[13px]">
+                  <input
+                    type="checkbox"
+                    className="mt-1"
+                    checked={saveProfile}
+                    onChange={(event) => setSaveProfile(event.target.checked)}
+                  />
+                  <span>
+                    Bu bilgileri sonraki siparişler için kaydet
+                    <span className="mt-0.5 block text-[11px] text-neutral-500">
+                      Yalnızca bu cihazda saklanır.
+                    </span>
                   </span>
-                </span>
-              </label>
+                </label>
+              ) : canSaveToBook ? (
+                <div className="space-y-3 border border-black/5 bg-neutral-50 px-3 py-3">
+                  <label className="flex items-start gap-3 text-[13px]">
+                    <input
+                      type="checkbox"
+                      className="mt-1"
+                      checked={saveToBook}
+                      onChange={(event) => setSaveToBook(event.target.checked)}
+                    />
+                    <span>
+                      Adres defterine kaydet
+                      <span className="mt-0.5 block text-[11px] text-neutral-500">
+                        Sonraki siparişlerde seçebilirsiniz.
+                      </span>
+                    </span>
+                  </label>
+                  {saveToBook ? (
+                    <>
+                      <label className="block">
+                        <span className={labelClassName}>Adres adı</span>
+                        <input
+                          value={saveToBookLabel}
+                          onChange={(event) =>
+                            setSaveToBookLabel(event.target.value)
+                          }
+                          className={`${inputClassName} mt-2`}
+                          placeholder="Ev, İş…"
+                          autoComplete="off"
+                        />
+                      </label>
+                      <label className="flex min-h-11 items-start gap-3 text-[13px] text-neutral-800">
+                        <input
+                          type="checkbox"
+                          className="mt-1"
+                          checked={saveToBookDefault}
+                          onChange={(event) =>
+                            setSaveToBookDefault(event.target.checked)
+                          }
+                        />
+                        <span>Varsayılan teslimat adresi</span>
+                      </label>
+                    </>
+                  ) : null}
+                </div>
+              ) : isAuthenticated &&
+                usingNewAddress &&
+                savedAddresses.length >= TR_CUSTOMER_ADDRESS_MAX ? (
+                <p className="text-[12px] text-neutral-500">
+                  Adres defteri dolu ({TR_CUSTOMER_ADDRESS_MAX}). Hesabım’dan
+                  bir adres silebilirsiniz.
+                </p>
+              ) : null}
 
               <div className="space-y-3 text-[12px] leading-relaxed text-neutral-800">
                 <label className="flex items-start gap-3">

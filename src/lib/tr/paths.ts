@@ -159,6 +159,10 @@ export function trBoutiqueAuthPath(boutiqueSlug: string): string {
   return `/tr/${encodeURIComponent(boutiqueSlug)}/giris`;
 }
 
+export function trBoutiqueAddressesPath(boutiqueSlug: string): string {
+  return `/tr/${encodeURIComponent(boutiqueSlug)}/adresler`;
+}
+
 /** Boutique-scoped favorites page (local favorites store). */
 export function trBoutiqueFavoritesPath(boutiqueSlug: string): string {
   return `/tr/${encodeURIComponent(boutiqueSlug)}/favoriler`;

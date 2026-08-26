@@ -1,0 +1,2 @@
+export const TR_CUSTOMER_ADDRESS_MAX = 10;
+export const TR_CUSTOMER_ADDRESS_LABEL_MAX = 40;

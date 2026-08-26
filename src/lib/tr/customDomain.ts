@@ -140,6 +140,9 @@ export function rewriteBoutiqueDomainPath(
   if (pathname === "/giris" || pathname === "/hesap") {
     return `${base}/giris`;
   }
+  if (pathname === "/adresler") {
+    return `${base}/adresler`;
+  }
 
   // Fallback: nest under boutique
   return `${base}${pathname.startsWith("/") ? pathname : `/${pathname}`}`;

@@ -69,6 +69,7 @@ src/
 | Owner panel UI | `components/tr/panel/` |
 | Takım set upload | `lib/tr/catalog/takimUpload.ts`, `panel/TrOwnerTakimCreatePage.tsx`, route `/tr/panel/urun/takim` |
 | Checkout/orders logic | `lib/tr/commerce/` |
+| Shopper address book | `lib/tr/commerce/customerAddresses.ts`, `/tr/[slug]/adresler`, `api/tr/customer/addresses` |
 | Boutique catalog queries | `lib/tr/catalog/` |
 | Boutique PDP size charts / care / features | `lib/tr/catalog/sizeCharts.ts`, `modelMeasurements.ts`, `careInstructions.ts`, `productFeatures.ts`, `pdpReturns.ts` |
 | Owner auth / panel APIs helpers | `lib/tr/panel/` |

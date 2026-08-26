@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import {
   Heart,
   LogOut,
+  MapPin,
   Package,
   Settings,
   ShoppingBag,
@@ -26,6 +27,7 @@ import { useAuth } from "@/context/AuthContext";
 import { resolveBoutiqueBrandLabel, resolveBoutiqueLogoUrl, resolveBoutiqueThemeAccent } from "@/lib/tr/boutiqueBrand";
 import { getSupabaseClient } from "@/lib/supabaseClient";
 import {
+  trBoutiqueAddressesPath,
   trBoutiqueAuthPath,
   trBoutiqueCartPath,
   trBoutiqueFavoritesPath,
@@ -239,6 +241,12 @@ export function TrBoutiqueAuthPageContent({
                 <Package className="h-4 w-4 shrink-0" strokeWidth={1.5} />
                 <span className="text-[12px] tracking-[0.12em] uppercase">
                   Siparişler
+                </span>
+              </Link>
+              <Link href={trBoutiqueAddressesPath(boutique.slug)} className={ACTION}>
+                <MapPin className="h-4 w-4 shrink-0" strokeWidth={1.5} />
+                <span className="text-[12px] tracking-[0.12em] uppercase">
+                  Adreslerim
                 </span>
               </Link>
             </div>
