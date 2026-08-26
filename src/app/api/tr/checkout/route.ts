@@ -23,7 +23,7 @@ import {
   boutiqueOffersIyzicoCheckout,
   getIyzicoCredentials,
 } from "@/lib/tr/payments/registry";
-import { abandonUnpaidIyzicoOrder } from "@/lib/tr/payments/abandonUnpaid";
+import { abandonUnpaidIyzicoOrder, abandonStaleIyzicoHolds } from "@/lib/tr/payments/abandonUnpaid";
 import { startIyzicoCheckoutForm } from "@/lib/tr/payments/startCheckoutForm";
 import { autoFulfillPaidShipment } from "@/lib/tr/shipping/ownerShipment";
 import {
@@ -199,6 +199,14 @@ export async function POST(request: Request) {
       shippingProvider = "basitkargo";
     }
 
+    if (wantsIyzico && boutique) {
+      try {
+        await abandonStaleIyzicoHolds(boutique.id);
+      } catch (staleError) {
+        console.error("[tr/checkout] stale iyzico hold cleanup failed:", staleError);
+      }
+    }
+
     const order = await createOrderAdmin({
       customerEmail: body.customerEmail,
       customerName: body.customerName,
@@ -253,6 +261,7 @@ export async function POST(request: Request) {
     }
 
     let paymentPageUrl: string | null = null;
+    let checkoutToken: string | null = null;
     if (wantsIyzico && boutique) {
       try {
         const started = await startIyzicoCheckoutForm({
@@ -262,6 +271,7 @@ export async function POST(request: Request) {
           buyerIp: ip,
         });
         paymentPageUrl = started.paymentPageUrl;
+        checkoutToken = started.token;
       } catch (iyzicoError) {
         console.error("[tr/checkout] iyzico initialize failed:", iyzicoError);
         try {
@@ -269,6 +279,13 @@ export async function POST(request: Request) {
         } catch (abandonError) {
           console.error("[tr/checkout] abandon after init fail:", abandonError);
         }
+        return Response.json(
+          {
+            error:
+              "Kart ödemesi başlatılamadı. Sepetiniz duruyor — tekrar deneyin.",
+          },
+          { status: 502 },
+        );
       }
     }
 
@@ -280,6 +297,7 @@ export async function POST(request: Request) {
       totalKurus: order.totalKurus,
       discountKurus: order.discountKurus,
       paymentPageUrl,
+      checkoutToken,
     });
   } catch (error) {
     console.error("TR checkout failed:", error);

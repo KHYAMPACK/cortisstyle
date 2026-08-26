@@ -6,6 +6,7 @@ import {
   Suspense,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -35,12 +36,17 @@ import {
   saveCheckoutProfile,
 } from "@/lib/tr/checkoutProfile";
 import {
-  clearBoutiqueCheckoutSelection,
   loadBoutiqueCheckoutSelection,
+  removeBoutiqueCheckedOutCartLines,
 } from "@/lib/tr/checkoutSelection";
 import { isTrCheckoutEnabled } from "@/lib/tr/platform";
 import { boutiqueHasLiveShipping } from "@/lib/tr/shipping/registry";
 import { boutiqueOffersIyzicoCheckout } from "@/lib/tr/payments/registry";
+import {
+  isBackForwardNavigation,
+  releaseIyzicoCheckoutHold,
+  saveIyzicoCheckoutHold,
+} from "@/lib/tr/payments/iyzicoCheckoutHold";
 import {
   freeShippingProgress,
   quoteCheckoutShippingFee,
@@ -167,20 +173,7 @@ function useCheckoutCart(boutiqueSlug: string | null): {
     return {
       items: selected.length > 0 ? selected : localItems,
       allItems: localItems,
-      clearCheckedOut: () => {
-        const store = getTrBoutiqueLocalCartStore(boutiqueSlug);
-        const keys = new Set(
-          (selected.length > 0 ? selected : localItems).map((item) =>
-            cartLineKey(item),
-          ),
-        );
-        for (const item of store.getState().items) {
-          if (keys.has(cartLineKey(item))) {
-            store.getState().removeItem(item.productId, item.size);
-          }
-        }
-        clearBoutiqueCheckoutSelection(boutiqueSlug);
-      },
+      clearCheckedOut: () => removeBoutiqueCheckedOutCartLines(boutiqueSlug),
       hydrated,
     };
   }
@@ -211,6 +204,7 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
   const [form, setForm] = useState<TrCheckoutFormData>(EMPTY_CHECKOUT_FORM);
   const [step, setStep] = useState<CheckoutStep | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const submitLock = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [acceptedDistance, setAcceptedDistance] = useState(false);
   const [acceptedKvkk, setAcceptedKvkk] = useState(false);
@@ -321,6 +315,37 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
     isAuthenticated,
     isInitializing,
   ]);
+
+  useEffect(() => {
+    if (!boutiqueSlug || !boutiqueOffersIyzicoCheckout(boutiqueSlug)) return;
+
+    const unlockSubmit = () => {
+      submitLock.current = false;
+      setSubmitting(false);
+    };
+
+    const releaseHold = () => {
+      void releaseIyzicoCheckoutHold(boutiqueSlug).then((result) => {
+        if (result === "paid") {
+          removeBoutiqueCheckedOutCartLines(boutiqueSlug);
+        }
+        unlockSubmit();
+      });
+    };
+
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (event.persisted || isBackForwardNavigation()) {
+        releaseHold();
+        return;
+      }
+      unlockSubmit();
+    };
+    window.addEventListener("pageshow", onPageShow);
+    if (isBackForwardNavigation()) {
+      releaseHold();
+    }
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, [boutiqueSlug]);
 
   useEffect(() => {
     if (!profileReady) return;
@@ -481,7 +506,7 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!canSubmit || submitting) return;
+    if (!canSubmit || submitting || submitLock.current) return;
     if (!acceptedDistance || !acceptedKvkk) {
       setError("Sözleşmeleri onaylamanız gerekir.");
       return;
@@ -497,6 +522,7 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
         return;
       }
 
+    submitLock.current = true;
     setSubmitting(true);
     setError(null);
 
@@ -582,6 +608,7 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
         confirmToken?: string;
         sandbox?: boolean;
         paymentPageUrl?: string | null;
+        checkoutToken?: string | null;
         error?: string;
       };
 
@@ -589,11 +616,29 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
         throw new Error(data.error ?? "Sipariş oluşturulamadı.");
       }
 
-      clearCheckedOut();
       if (data.paymentPageUrl) {
+        if (boutiqueSlug && data.confirmToken) {
+          saveIyzicoCheckoutHold(boutiqueSlug, {
+            orderId: data.orderId,
+            confirmToken: data.confirmToken,
+            checkoutToken: data.checkoutToken?.trim() || undefined,
+          });
+        }
         window.location.assign(data.paymentPageUrl);
         return;
       }
+
+      if (
+        boutiqueSlug &&
+        boutiqueOffersIyzicoCheckout(boutiqueSlug) &&
+        !data.sandbox
+      ) {
+        throw new Error(
+          "Kart ödemesi başlatılamadı. Sepetiniz duruyor — tekrar deneyin.",
+        );
+      }
+
+      clearCheckedOut();
       const confirm = trOrderConfirmationPath(
         boutiqueSlug ? { boutique: boutiqueSlug } : undefined,
       );
@@ -611,6 +656,7 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
           ? submitError.message
           : "Sipariş oluşturulamadı.",
       );
+      submitLock.current = false;
       setSubmitting(false);
     }
   };

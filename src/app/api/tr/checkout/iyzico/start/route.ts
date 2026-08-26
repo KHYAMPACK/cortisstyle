@@ -130,6 +130,7 @@ export async function POST(request: Request) {
     return Response.json({
       ok: true,
       paymentPageUrl: started.paymentPageUrl,
+      checkoutToken: started.token,
     });
   } catch (error) {
     console.error("[tr/checkout/iyzico/start] failed:", error);

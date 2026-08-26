@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { trPanelEase } from "@/components/tr/panel/TrPanelMotion";
+import { saveIyzicoCheckoutHold } from "@/lib/tr/payments/iyzicoCheckoutHold";
 
 export function TrIyzicoResumePay({
   boutiqueSlug,
@@ -15,6 +16,12 @@ export function TrIyzicoResumePay({
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const onPageShow = () => setBusy(false);
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, []);
 
   async function startPay() {
     if (busy) return;
@@ -32,6 +39,7 @@ export function TrIyzicoResumePay({
       });
       const data = (await response.json()) as {
         paymentPageUrl?: string;
+        checkoutToken?: string;
         alreadyPaid?: boolean;
         error?: string;
       };
@@ -42,6 +50,11 @@ export function TrIyzicoResumePay({
       if (!response.ok || !data.paymentPageUrl) {
         throw new Error(data.error ?? "Ödeme sayfası açılamadı.");
       }
+      saveIyzicoCheckoutHold(boutiqueSlug, {
+        orderId,
+        confirmToken,
+        checkoutToken: data.checkoutToken?.trim() || undefined,
+      });
       window.location.assign(data.paymentPageUrl);
     } catch (startError) {
       setError(

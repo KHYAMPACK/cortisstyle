@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { TrIyzicoResumePay } from "@/components/tr/commerce/TrIyzicoResumePay";
+import { TrIyzicoCheckoutHoldEffects } from "@/components/tr/commerce/TrIyzicoCheckoutHoldEffects";
 import { resolveBoutiqueBrandLabel } from "@/lib/tr/boutiqueBrand";
 import { resolveBoutiqueHomeLayout } from "@/lib/tr/boutiqueHome";
 import { verifyOrderConfirmToken } from "@/lib/tr/orderConfirmToken";
@@ -66,9 +67,25 @@ export default async function BoutiqueOrderConfirmationPage({
   const boutiqueItems =
     order?.items.filter((item) => item.boutiqueId === boutique.id) ?? [];
   const orderBelongs = Boolean(order && boutiqueItems.length > 0);
+  const iyzicoHoldPhase =
+    orderBelongs && order && iyzicoCheckout && !order.isSandbox
+      ? order.paymentStatus === "paid"
+        ? "paid"
+        : order.paymentStatus === "pending" ||
+            order.paymentStatus === "failed" ||
+            unpaid
+          ? "unpaid"
+          : null
+      : null;
 
   return (
     <div className="mx-auto max-w-xl px-5 py-12 md:px-8 md:py-16">
+      {iyzicoHoldPhase ? (
+        <TrIyzicoCheckoutHoldEffects
+          boutiqueSlug={boutique.slug}
+          phase={iyzicoHoldPhase}
+        />
+      ) : null}
       <div className="text-center">
         <p className="text-[10px] tracking-[0.22em] text-neutral-500 uppercase">
           Sipariş

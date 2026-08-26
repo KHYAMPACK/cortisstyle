@@ -20,6 +20,7 @@ export const CHECKOUT_RATE_LIMITS = {
   perBoutique: { limit: 30, windowMs: 10 * 60 * 1000 },
   iyzicoStartPerIp: { limit: 12, windowMs: 10 * 60 * 1000 },
   iyzicoCallbackPerIp: { limit: 30, windowMs: 10 * 60 * 1000 },
+  iyzicoAbandonPerIp: { limit: 20, windowMs: 10 * 60 * 1000 },
 } as const;
 
 /** Live shipping quote (Basit) — display only; checkout re-quotes server-side. */

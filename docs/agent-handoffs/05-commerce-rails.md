@@ -7,7 +7,7 @@
 - Checkout API + client helpers (`src/app/api/tr/checkout`, `src/lib/tr/cartCheckout.ts`, `checkoutProfile.ts`, `checkoutValidate.ts`, `checkoutSelection.ts`)
 - Server reprice / ownership / stock / size / coupon apply on boutique checkout
 - Orders + line items (`src/lib/tr/orders.ts`, `inventory.ts`, owner orders API)
-- **Payment modes:** `TR_CHECKOUT_SANDBOX` → sandbox orders; default → **pending** hold (stock reserved). **Lila** iyzico Checkout Form: owner panel / push / ciro only after **SUCCESS**. Cancel/fail restores stock and never lists as a sipariş. Cadde / other boutiques still show pending until their keys exist.
+- **Payment modes:** `TR_CHECKOUT_SANDBOX` → sandbox orders; default → **pending** hold (stock reserved). **Lila** iyzico Checkout Form: owner panel / push / ciro only after **SUCCESS**. Cancel/fail **or browser-back / closed tab** restores stock and never lists as a sipariş. Cart stays until paid (`TrIyzicoCheckoutHoldEffects`). Stale unpaid holds (30 min) are released on the next checkout POST (`abandonStaleIyzicoHolds`). Cadde / other boutiques still show pending until their keys exist.
 - **Gated Cadde checkout:** `TR_CHECKOUT_ENABLED` — marketplace gating; does **not** equal iyzico live.
 - Discount codes (`discountCodes.ts`, `patch_tr_discount_codes.sql`, panel kampanyalar + checkout)
 - Fulfillment fields (`patch_tr_order_fulfillment.sql`)
@@ -51,6 +51,7 @@
 
 - Lila iyzico is **per-boutique env keys** + `boutiqueOffersIyzicoCheckout('lilabutik')`. Do not copy keys into git. Do not set `TR_IYZICO_ENABLED=true` until a live test charge succeeds (sandbox “kart yakında” banner already hides for Lila via the registry).
 - iyzico callback is `GET/POST /api/tr/checkout/iyzico/callback?boutique=&order=`. Retrieve `conversationId` is a **request echo**, not the initialize order id — resolve the order from `basketId` (initialize) or the `order` query. Do not treat a blank retrieve `conversationId` as a mismatch.
+- Do **not** clear the boutique cart when redirecting to iyzico. Clear **checked-out lines** on sipariş-onay after `paid` (leave other cart items). Browser-back calls `POST /api/tr/checkout/iyzico/abandon` (confirm token + checkout form token): if iyzico already SUCCESS, capture and drop those lines; otherwise restore size stock. If iyzico initialize fails, checkout POST returns 502 and keeps the cart.
 - Lila Alıcı Koruması overlay (`TrIyzicoBuyerProtection`) is **homepage only** — do not show the “iyzico ile öde” bar on PDP / PLP / cart. Footer payment logos stay on every storefront page.
 - Owner mutations often use **service role** after owner auth — don’t expose service key client-side.
 - Keep marketplace and boutique cart stores from writing into each other’s checkout blindly.
