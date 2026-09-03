@@ -51,6 +51,7 @@ function favoriteAsProduct(item: TrFavoriteItem): TrProductWithBoutique {
       whatsappPhone: null,
       instagramHandle: null,
       themeAccent: null,
+      catalogProfile: "fashion",
       shippingNote: null,
       exchangePolicy: null,
       physicalAddress: null,

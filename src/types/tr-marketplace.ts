@@ -50,6 +50,8 @@ export type TrGarmentCategory =
   | "accessory"
   | "other";
 
+export type TrCatalogProfileId = "fashion" | "custom_art";
+
 /** Public-safe boutique fields (no iban / commission). Vergi no is on künye by design. */
 export interface TrBoutiquePublic {
   id: string;
@@ -72,6 +74,8 @@ export interface TrBoutiquePublic {
   vergiNo: string | null;
   /** Editorial homepage JSON; null → code defaults for that boutique. */
   editorialContent: Record<string, unknown> | null;
+  /** Vertical: fashion catalog vs print-on-demand custom art. */
+  catalogProfile: TrCatalogProfileId;
   status: TrBoutiqueStatus;
   createdAt: string;
   updatedAt: string;
@@ -130,6 +134,15 @@ export type TrProductFeatures = {
   colorGroupId?: string;
   /** All product ids in the color group, including self. */
   colorSiblingIds?: string[];
+  /** Print-on-demand: per canvas size price (kuruş). Keys match `sizes`. */
+  sizePricesKurus?: Record<string, number>;
+  /** Print-on-demand: skip stock checks and inventory decrement. */
+  madeToOrder?: boolean;
+};
+
+export type TrOrderItemCustomization = {
+  styleOption?: string | null;
+  referenceId?: string | null;
 };
 
 export type TrTakimSetItem = {
@@ -331,6 +344,9 @@ export interface TrOrderItem {
   quantity: number;
   /** Selected beden at purchase; null when product has no sizes. */
   size: string | null;
+  /** Customer source photo for custom_art orders. */
+  referenceImageUrl: string | null;
+  customization: TrOrderItemCustomization | null;
   createdAt: string;
   /** Cover for packing UI — resolved from live product when available. */
   imageUrl: string | null;
@@ -355,6 +371,7 @@ export interface CreateTrBoutiqueInput {
   homeLayout?: "default" | "editorial" | null;
   customDomain?: string | null;
   editorialContent?: Record<string, unknown> | null;
+  catalogProfile?: TrCatalogProfileId;
   vergiNo?: string | null;
   iban?: string | null;
   commissionBps?: number;
@@ -438,6 +455,8 @@ export interface CreateTrOrderInput {
     priceKurus: number;
     quantity?: number;
     size?: string | null;
+    referenceImageUrl?: string | null;
+    customization?: TrOrderItemCustomization | null;
   }>;
 }
 

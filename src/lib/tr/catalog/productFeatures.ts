@@ -269,6 +269,24 @@ export function sanitizeProductFeatures(
   if (record.manualListing === true) {
     next.manualListing = true;
   }
+  if (record.madeToOrder === true) {
+    next.madeToOrder = true;
+  }
+  if (
+    record.sizePricesKurus &&
+    typeof record.sizePricesKurus === "object" &&
+    !Array.isArray(record.sizePricesKurus)
+  ) {
+    const prices: Record<string, number> = {};
+    for (const [key, value] of Object.entries(record.sizePricesKurus)) {
+      if (typeof value === "number" && value > 0) {
+        prices[key.trim()] = Math.floor(value);
+      }
+    }
+    if (Object.keys(prices).length > 0) {
+      next.sizePricesKurus = prices;
+    }
+  }
   const colorGroupId = sanitizeColorGroupId(record.colorGroupId);
   const colorSiblingIds = sanitizeColorSiblingIds(record.colorSiblingIds);
   if (colorGroupId && colorSiblingIds) {

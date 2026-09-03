@@ -271,19 +271,23 @@ function OrderDetail({
               Paketlenecek ürünler
             </p>
             <ul className="mt-4 divide-y divide-[color:var(--panel-accent-border)]">
-              {order.items.map((item) => (
+              {order.items.map((item) => {
+                const thumbUrl = item.referenceImageUrl ?? item.imageUrl;
+                const styleLabel = item.customization?.styleOption?.trim();
+                return (
                 <li
                   key={item.id}
-                  className="flex items-center gap-4 py-4 text-[17px]"
+                  className="flex flex-col gap-4 py-4 text-[17px] sm:flex-row sm:items-start"
                 >
-                  <div className="relative h-24 w-20 shrink-0 overflow-hidden rounded-xl bg-[color:var(--panel-accent-soft)]">
-                    {item.imageUrl ? (
+                  <div className="relative h-32 w-full shrink-0 overflow-hidden rounded-xl bg-[color:var(--panel-accent-soft)] sm:h-36 sm:w-28">
+                    {thumbUrl ? (
                       <Image
-                        src={item.imageUrl}
+                        src={thumbUrl}
                         alt={item.title}
                         fill
                         className="object-contain p-2"
-                        sizes="80px"
+                        sizes="(max-width: 640px) 100vw, 112px"
+                        unoptimized={Boolean(item.referenceImageUrl)}
                       />
                     ) : (
                       <span className="flex h-full w-full items-center justify-center text-[18px] font-semibold text-neutral-500">
@@ -293,16 +297,35 @@ function OrderDetail({
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-neutral-900">{item.title}</p>
+                    {item.referenceImageUrl ? (
+                      <p className="mt-1 text-[14px] font-medium text-[color:var(--panel-accent-deep)]">
+                        Müşteri fotoğrafı
+                      </p>
+                    ) : null}
                     <p className="mt-1 text-[15px] text-neutral-600">
-                      {item.size ? `Beden: ${item.size} · ` : null}
+                      {item.size ? `Boyut: ${item.size}` : null}
+                      {item.size && styleLabel ? " · " : null}
+                      {styleLabel ? `Stil: ${styleLabel}` : null}
+                      {(item.size || styleLabel) ? " · " : null}
                       Adet: {item.quantity}
                     </p>
+                    {item.referenceImageUrl ? (
+                      <a
+                        href={item.referenceImageUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-2 inline-flex min-h-11 items-center text-[14px] font-medium text-[color:var(--panel-accent-deep)] hover:underline"
+                      >
+                        Fotoğrafı aç / indir
+                      </a>
+                    ) : null}
                   </div>
                   <span className="shrink-0 tabular-nums text-neutral-800">
                     {formatTryFromKurus(item.priceKurus * item.quantity)}
                   </span>
                 </li>
-              ))}
+              );
+              })}
             </ul>
           </section>
 

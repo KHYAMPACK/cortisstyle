@@ -14,6 +14,7 @@ import {
 import { TrOwnerBatchPhotoStep } from "@/components/tr/panel/TrOwnerBatchPhotoStep";
 import { TrOwnerBatchPricesStep } from "@/components/tr/panel/TrOwnerBatchPricesStep";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
+import { TrOwnerProductRouteGate } from "@/components/tr/panel/TrOwnerProductRouteGate";
 import { TrOwnerManualListingToggle } from "@/components/tr/panel/TrOwnerManualListingToggle";
 import {
   emptyStockInputsForChart,
@@ -155,12 +156,14 @@ export function TrOwnerBatchCreatePage() {
   return (
     <TrOwnerPanelGate>
       {({ activeBoutique }) => (
+        <TrOwnerProductRouteGate activeBoutique={activeBoutique}>
         <TrOwnerAiJobQueueProvider>
           <BatchCreateFlow
             boutiqueId={activeBoutique.id}
             boutiqueSlug={activeBoutique.slug}
           />
         </TrOwnerAiJobQueueProvider>
+        </TrOwnerProductRouteGate>
       )}
     </TrOwnerPanelGate>
   );

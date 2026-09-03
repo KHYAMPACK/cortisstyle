@@ -285,6 +285,7 @@ function TrOwnerPanelGateBody({ children }: TrOwnerPanelGateProps) {
         {isAuthenticated && activeBoutique ? (
           <TrPanelMobileTabBar
             boutiqueId={activeBoutique.id}
+            catalogProfile={activeBoutique.catalogProfile ?? "fashion"}
             hasNewOrders={hasNewOrders}
           />
         ) : null}

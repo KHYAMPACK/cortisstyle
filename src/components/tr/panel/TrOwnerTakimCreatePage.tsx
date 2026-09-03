@@ -11,6 +11,7 @@ import { TrOwnerCreditsCostLine } from "@/components/tr/panel/TrOwnerCreditsInfo
 import { TrOwnerGuidedPhotoUpload } from "@/components/tr/panel/TrOwnerGuidedPhotoUpload";
 import { useRegisterLeaveBusy } from "@/components/tr/panel/TrOwnerLeaveGuard";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
+import { TrOwnerProductRouteGate } from "@/components/tr/panel/TrOwnerProductRouteGate";
 import { TrOwnerManualListingToggle } from "@/components/tr/panel/TrOwnerManualListingToggle";
 import {
   hasManualGalleryPhoto,
@@ -117,6 +118,7 @@ export function TrOwnerTakimCreatePage() {
   return (
     <TrOwnerPanelGate>
       {({ activeBoutique }) => (
+        <TrOwnerProductRouteGate activeBoutique={activeBoutique}>
         <TrOwnerAiJobQueueProvider>
           <TakimCreateFlow
             boutiqueId={activeBoutique.id}
@@ -124,6 +126,7 @@ export function TrOwnerTakimCreatePage() {
             boutiqueName={activeBoutique.name}
           />
         </TrOwnerAiJobQueueProvider>
+        </TrOwnerProductRouteGate>
       )}
     </TrOwnerPanelGate>
   );

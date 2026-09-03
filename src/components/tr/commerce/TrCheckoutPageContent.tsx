@@ -593,6 +593,9 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
             boutiqueId: item.boutiqueId,
             size: item.size,
             quantity: 1,
+            referenceImageUrl: item.referenceImageUrl ?? null,
+            referenceId: item.referenceId ?? null,
+            styleOption: item.styleOption ?? null,
           })),
           discountCode: boutiqueSlug
             ? discountCode.trim() || undefined

@@ -70,6 +70,7 @@ export function TrBoutiqueEditorialProductCard({
       whatsappPhone: null,
       instagramHandle: null,
       themeAccent: "#111111",
+      catalogProfile: "fashion",
       shippingNote: null,
       exchangePolicy: null,
       physicalAddress: null,

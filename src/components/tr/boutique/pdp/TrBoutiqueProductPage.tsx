@@ -1,6 +1,7 @@
 import { hasBoutiqueBrand } from "@/lib/tr/boutiqueBrand";
 import { resolveBoutiquePdpLayout } from "@/lib/tr/boutiquePdp";
 import { TrBoutiquePdpSplit } from "@/components/tr/boutique/pdp/TrBoutiquePdpSplit";
+import { TrCustomArtProductPanel } from "@/components/tr/boutique/pdp/TrCustomArtProductPanel";
 import type { TrProductWithBoutique } from "@/types/tr-marketplace";
 
 interface TrBoutiqueProductPageProps {
@@ -15,9 +16,17 @@ export function TrBoutiqueProductPage({
   colorSiblings = [],
 }: TrBoutiqueProductPageProps) {
   const branded = hasBoutiqueBrand(product.boutique);
-  const layout = resolveBoutiquePdpLayout(product.boutique.slug);
+  const layout = resolveBoutiquePdpLayout(product.boutique);
 
   switch (layout) {
+    case "custom_art":
+      return (
+        <TrCustomArtProductPanel
+          product={product}
+          branded={branded}
+          entry={entry}
+        />
+      );
     case "split":
     default:
       return (

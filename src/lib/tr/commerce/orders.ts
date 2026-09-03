@@ -41,9 +41,11 @@ async function withProductImages(
   );
   return items.map((item) => ({
     ...item,
-    imageUrl: item.productId
-      ? (coverById.get(item.productId) ?? null)
-      : null,
+    imageUrl: item.referenceImageUrl
+      ? item.referenceImageUrl
+      : item.productId
+        ? (coverById.get(item.productId) ?? null)
+        : null,
   }));
 }
 
@@ -147,6 +149,8 @@ export async function createOrderAdmin(
           price_kurus: item.priceKurus,
           quantity: item.quantity ?? 1,
           size: item.size?.trim() || null,
+          reference_image_url: item.referenceImageUrl?.trim() || null,
+          customization: item.customization ?? null,
         })),
       )
       .select("*");

@@ -9,6 +9,13 @@ import {
   trPanelSettingsPath,
   trPanelStockPath,
 } from "@/lib/tr/paths";
+import {
+  catalogProfileCapabilities,
+  normalizeCatalogProfile,
+  resolveCatalogProfile,
+  isCustomArtCatalogProfile,
+  type TrCatalogProfileId,
+} from "@/lib/tr/catalogProfiles";
 
 export interface TrPanelNavItem {
   href: string;
@@ -46,6 +53,21 @@ export const TR_PANEL_NAV: TrPanelNavItem[] = [
   { href: trPanelInvoicesPath(), label: "Faturalar", match: "prefix" },
 ];
 
+export function panelNavForProfile(
+  profile: TrCatalogProfileId = "fashion",
+): TrPanelNavItem[] {
+  const caps = catalogProfileCapabilities(profile);
+  return TR_PANEL_NAV.filter((item) => {
+    if (item.href === trPanelProductsPath() && !caps.showProductsNav) {
+      return false;
+    }
+    if (item.href === trPanelStockPath() && !caps.showStockNav) {
+      return false;
+    }
+    return true;
+  });
+}
+
 export function isTrPanelNavActive(
   pathname: string,
   item: TrPanelNavItem,
@@ -61,4 +83,22 @@ export function isTrPanelNavActive(
     );
   }
   return pathname === item.href || pathname.startsWith(`${item.href}/`);
+}
+
+export type { TrCatalogProfileId };
+export {
+  catalogProfileCapabilities,
+  isCustomArtCatalogProfile,
+  normalizeCatalogProfile,
+  resolveCatalogProfile,
+};
+
+export function isPanelProductRoute(pathname: string): boolean {
+  return (
+    pathname === trPanelProductsPath() ||
+    pathname.startsWith("/tr/panel/urunler") ||
+    pathname.startsWith("/tr/panel/urun/") ||
+    pathname === trPanelStockPath() ||
+    pathname.startsWith(`${trPanelStockPath()}/`)
+  );
 }

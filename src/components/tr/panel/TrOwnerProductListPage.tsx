@@ -15,6 +15,7 @@ import {
   useOpenElbiseRestyle,
 } from "@/components/tr/panel/TrOwnerElbiseRestyleSession";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
+import { TrOwnerProductRouteGate } from "@/components/tr/panel/TrOwnerProductRouteGate";
 import {
   panelDesktopBtnClass,
   panelDesktopDangerBtnClass,
@@ -915,7 +916,8 @@ export function TrOwnerProductListPage() {
   return (
     <TrOwnerPanelGate>
       {({ activeBoutique }) => (
-        <div className="space-y-5">
+        <TrOwnerProductRouteGate activeBoutique={activeBoutique}>
+          <div className="space-y-5">
           <div>
             <Link
               href={trPanelPath()}
@@ -930,6 +932,7 @@ export function TrOwnerProductListPage() {
             boutiqueSlug={activeBoutique.slug}
           />
         </div>
+        </TrOwnerProductRouteGate>
       )}
     </TrOwnerPanelGate>
   );

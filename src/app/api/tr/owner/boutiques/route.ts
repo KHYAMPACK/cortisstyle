@@ -19,6 +19,7 @@ export async function GET(request: Request) {
       logoUrl: boutique.logoUrl,
       themeAccent: boutique.themeAccent,
       status: boutique.status,
+      catalogProfile: boutique.catalogProfile,
     })),
   });
 }

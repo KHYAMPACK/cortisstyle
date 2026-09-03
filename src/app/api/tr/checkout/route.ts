@@ -227,13 +227,15 @@ export async function POST(request: Request) {
         priceKurus: line.priceKurus,
         quantity: line.quantity,
         size: line.size,
+        referenceImageUrl: line.referenceImageUrl,
+        customization: line.customization,
       })),
       discountCode: checkout.discountCode,
       discountKurus: checkout.discountKurus,
       shippingFeeKurus,
       shippingProvider,
       isSandbox: sandbox,
-      decrementInventory: true,
+      decrementInventory: !checkout.skipInventoryDecrement,
       notifyOwners: !wantsIyzico,
     });
 

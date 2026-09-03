@@ -4,6 +4,7 @@ import Link from "next/link";
 import { AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
+import { TrOwnerProductRouteGate } from "@/components/tr/panel/TrOwnerProductRouteGate";
 import { TrOwnerProductCreatedSuccess } from "@/components/tr/panel/TrOwnerProductCreatedSuccess";
 import {
   panelBackLinkClass,
@@ -18,11 +19,13 @@ export function TrOwnerNewProductPage() {
   return (
     <TrOwnerPanelGate>
       {({ activeBoutique }) => (
+        <TrOwnerProductRouteGate activeBoutique={activeBoutique}>
         <NewProductFlow
           boutiqueId={activeBoutique.id}
           boutiqueSlug={activeBoutique.slug}
           boutiqueName={activeBoutique.name}
         />
+        </TrOwnerProductRouteGate>
       )}
     </TrOwnerPanelGate>
   );

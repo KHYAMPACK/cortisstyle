@@ -5,6 +5,7 @@ import { AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
+import { TrOwnerProductRouteGate } from "@/components/tr/panel/TrOwnerProductRouteGate";
 import {
   panelBackLinkClass,
   panelErrorClass,
@@ -67,6 +68,7 @@ export function TrOwnerEditProductPage({ productId }: TrOwnerEditProductPageProp
   return (
     <TrOwnerPanelGate>
       {({ activeBoutique }) => (
+        <TrOwnerProductRouteGate activeBoutique={activeBoutique}>
         <div className="space-y-6">
           <div>
             <Link href={trPanelProductsPath()} className={panelBackLinkClass}>
@@ -100,6 +102,7 @@ export function TrOwnerEditProductPage({ productId }: TrOwnerEditProductPageProp
             ) : null}
           </AnimatePresence>
         </div>
+        </TrOwnerProductRouteGate>
       )}
     </TrOwnerPanelGate>
   );

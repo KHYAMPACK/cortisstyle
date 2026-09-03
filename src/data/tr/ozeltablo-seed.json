@@ -1,0 +1,95 @@
+{
+  "boutiques": [
+    {
+      "slug": "ozeltablo",
+      "name": "Özel Tablo Atölyesi",
+      "legalName": "Özel Tablo Atölyesi",
+      "description": "Fotoğrafınızdan kişiye özel tuval tablo — sipariş üzerine baskı.",
+      "logoUrl": "/tr/boutiques/ozeltablo/logo.png",
+      "whatsappPhone": "905000000000",
+      "instagramHandle": "ozeltablo",
+      "themeAccent": "#2C3E50",
+      "catalogProfile": "custom_art",
+      "shippingNote": "Tablolar özenle paketlenir; kargo süresi üretim + teslimat olarak sipariş sonrası paylaşılır.",
+      "exchangePolicy": "Kişiye özel üretim olduğu için cayma hakkı istisnaları saklı kalmak kaydıyla yalnızca üretim hatasında iade/değişim değerlendirilir.",
+      "physicalAddress": "Denizli",
+      "homeLayout": "editorial",
+      "customDomain": null,
+      "editorialContent": {
+        "nav": [
+          { "id": "home", "label": "Ana sayfa", "categoryId": null },
+          { "id": "order", "label": "Sipariş ver", "categoryId": "all" },
+          { "id": "how", "label": "Nasıl çalışır", "categoryId": null }
+        ],
+        "promoBar": {
+          "text": "Fotoğrafını tabloya dönüştür",
+          "cta": "Sipariş ver"
+        },
+        "heroPromotions": [
+          {
+            "id": "hero-order",
+            "template": "classic",
+            "backgroundColor": "#2C3E50",
+            "promoLine": "Kişiye özel",
+            "discountLine": "Fotoğrafından tablo",
+            "subText": "Tuval baskı",
+            "campaignName": "Fotoğrafından tablo",
+            "cta": "Tablo sipariş ver",
+            "target": "all",
+            "contentAlign": "center"
+          }
+        ],
+        "shopCategories": [],
+        "infoStrip": {
+          "items": [
+            {
+              "title": "1 · Fotoğraf yükle",
+              "body": "Beğendiğiniz kareyi yükleyin."
+            },
+            {
+              "title": "2 · Boyut seçin",
+              "body": "Tuval ölçüsünü ve stili seçin."
+            },
+            {
+              "title": "3 · Teslim alın",
+              "body": "Siparişiniz üretilip kargoya verilir."
+            }
+          ]
+        }
+      },
+      "status": "verified",
+      "products": [
+        {
+          "title": "Kişiye Özel Tablo",
+          "description": "Fotoğrafınızdan tuval baskı. Boyut ve çerçeve stilini seçin; sipariş sonrası üretilir.",
+          "priceTry": 899,
+          "sizes": ["30×40 cm", "50×70 cm", "70×100 cm"],
+          "sizeStocks": {
+            "30×40 cm": 999,
+            "50×70 cm": 999,
+            "70×100 cm": 999
+          },
+          "colors": [
+            { "name": "Çerçevesiz", "hex": "#FFFFFF" },
+            { "name": "Çerçeveli", "hex": "#1A1A1A" }
+          ],
+          "category": "ozel-tablo",
+          "images": [
+            "/tr/boutiques/ozeltablo/examples/sample-1.jpg",
+            "/tr/boutiques/ozeltablo/examples/sample-2.jpg"
+          ],
+          "stock": 999,
+          "features": {
+            "manualListing": true,
+            "madeToOrder": true,
+            "sizePricesKurus": {
+              "30×40 cm": 89900,
+              "50×70 cm": 129900,
+              "70×100 cm": 189900
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

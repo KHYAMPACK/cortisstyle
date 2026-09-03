@@ -10,6 +10,8 @@ const DEFAULT_DOMAIN_MAP: Record<string, string> = {
   "www.pervinsoysal.com": "pervinsoysalbutik",
   "lilaboutiquedenizli.com": "lilabutik",
   "www.lilaboutiquedenizli.com": "lilabutik",
+  "minimora.shop": "minimora",
+  "www.minimora.shop": "minimora",
 };
 
 function parseEnvDomainMap(): Record<string, string> {

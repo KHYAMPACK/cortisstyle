@@ -7,6 +7,7 @@ import { ChevronDown } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { TrPanelBulkBar } from "@/components/tr/panel/TrPanelBulkBar";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
+import { TrOwnerProductRouteGate } from "@/components/tr/panel/TrOwnerProductRouteGate";
 import {
   panelDesktopBtnClass,
   panelDesktopInputClass,
@@ -817,6 +818,7 @@ export function TrOwnerStockPage() {
   return (
     <TrOwnerPanelGate>
       {({ activeBoutique }) => (
+        <TrOwnerProductRouteGate activeBoutique={activeBoutique}>
         <div className="space-y-5">
           <div>
             <Link
@@ -832,6 +834,7 @@ export function TrOwnerStockPage() {
           </div>
           <StockBoard boutiqueId={activeBoutique.id} />
         </div>
+        </TrOwnerProductRouteGate>
       )}
     </TrOwnerPanelGate>
   );

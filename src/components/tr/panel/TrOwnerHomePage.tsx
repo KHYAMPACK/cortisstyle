@@ -34,13 +34,12 @@ import {
   type TrOwnerSummaryResponse,
 } from "@/lib/tr/ownerClient";
 import {
-  trPanelBatchNewProductsPath,
-  trPanelNewProductPath,
   trPanelOrderPath,
   trPanelOrdersPath,
   trPanelProductsPath,
-  trPanelTakimNewProductPath,
 } from "@/lib/tr/paths";
+import { isCustomArtCatalogProfile } from "@/lib/tr/catalogProfiles";
+import type { TrCatalogProfileId } from "@/lib/tr/panelNav";
 import { formatTryFromKurus } from "@/types/tr-marketplace";
 
 function KpiCell({
@@ -78,11 +77,14 @@ function HomeDashboard({
   boutiqueId,
   boutiqueName,
   boutiqueSlug,
+  catalogProfile,
 }: {
   boutiqueId: string;
   boutiqueName: string;
   boutiqueSlug: string;
+  catalogProfile: TrCatalogProfileId;
 }) {
+  const printOnDemand = isCustomArtCatalogProfile({ catalogProfile });
   const [range, setRange] = useState<TrPanelSummaryRange>("today");
   const cached = peekOwnerSummary(boutiqueId, range);
   const [summary, setSummary] = useState<TrOwnerSummaryResponse | null>(
@@ -141,30 +143,16 @@ function HomeDashboard({
         >
           Siparişler
         </Link>
-        <Link
-          href={trPanelProductsPath()}
-          className="rounded-lg bg-white px-3 py-2 text-[13px] font-medium text-neutral-700 ring-1 ring-neutral-200 hover:bg-neutral-50"
-        >
-          Ürünler
-        </Link>
-        <Link
-          href={trPanelNewProductPath()}
-          className="rounded-lg bg-white px-3 py-2 text-[13px] font-medium text-neutral-700 ring-1 ring-neutral-200 hover:bg-neutral-50"
-        >
-          + Yeni ürün
-        </Link>
-        <Link
-          href={trPanelTakimNewProductPath()}
-          className="rounded-lg bg-white px-3 py-2 text-[13px] font-medium text-neutral-700 ring-1 ring-neutral-200 hover:bg-neutral-50"
-        >
-          Takım yükle
-        </Link>
-        <Link
-          href={trPanelBatchNewProductsPath()}
-          className="rounded-lg bg-white px-3 py-2 text-[13px] font-medium text-neutral-700 ring-1 ring-neutral-200 hover:bg-neutral-50"
-        >
-          Toplu ekle
-        </Link>
+        {!printOnDemand ? (
+          <>
+            <Link
+              href={trPanelProductsPath()}
+              className="rounded-lg bg-white px-3 py-2 text-[13px] font-medium text-neutral-700 ring-1 ring-neutral-200 hover:bg-neutral-50"
+            >
+              Ürünler
+            </Link>
+          </>
+        ) : null}
       </div>
 
       {loading && !summary ? (
@@ -185,10 +173,12 @@ function HomeDashboard({
               label="Bekleyen kargo"
               value={String(period.pendingFulfillment)}
             />
-            <KpiCell
-              label="Düşük stok"
-              value={String(period.lowStock)}
-            />
+            {!printOnDemand ? (
+              <KpiCell
+                label="Düşük stok"
+                value={String(period.lowStock)}
+              />
+            ) : null}
           </div>
           {period.isEmpty ? (
             <p className="border-t border-neutral-100 px-5 py-3 text-[13px] text-neutral-500">
@@ -294,7 +284,9 @@ function HomeDashboard({
               </ul>
             )}
           </section>
-          <TrOwnerCreditsUsageCard boutiqueId={boutiqueId} />
+          {!printOnDemand ? (
+            <TrOwnerCreditsUsageCard boutiqueId={boutiqueId} />
+          ) : null}
         </div>
       </div>
     </div>
@@ -309,6 +301,7 @@ export function TrOwnerHomePage() {
           boutiqueId={activeBoutique.id}
           boutiqueName={activeBoutique.name}
           boutiqueSlug={activeBoutique.slug}
+          catalogProfile={activeBoutique.catalogProfile ?? "fashion"}
         />
       )}
     </TrOwnerPanelGate>

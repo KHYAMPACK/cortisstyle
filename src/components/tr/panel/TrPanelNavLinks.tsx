@@ -7,21 +7,28 @@ import {
   prefetchOwnerOrders,
   prefetchOwnerProducts,
 } from "@/lib/tr/ownerClient";
-import { isTrPanelNavActive, TR_PANEL_NAV } from "@/lib/tr/panelNav";
+import {
+  isTrPanelNavActive,
+  panelNavForProfile,
+  type TrCatalogProfileId,
+} from "@/lib/tr/panelNav";
 import { trPanelOrdersPath } from "@/lib/tr/paths";
 
 export function TrPanelNavLinks({
   boutiqueId,
+  catalogProfile = "fashion",
   hasNewOrders,
   onNavigate,
   variant,
 }: {
   boutiqueId: string;
+  catalogProfile?: TrCatalogProfileId;
   hasNewOrders: boolean;
   onNavigate?: () => void;
   variant: "dark" | "bottom";
 }) {
   const pathname = usePathname();
+  const navItems = panelNavForProfile(catalogProfile);
 
   const prefetchNav = (kind: "products" | "orders" | undefined) => {
     if (kind === "products") prefetchOwnerProducts(boutiqueId);
@@ -29,7 +36,7 @@ export function TrPanelNavLinks({
   };
 
   if (variant === "bottom") {
-    const primary = TR_PANEL_NAV.slice(0, 4);
+    const primary = navItems.slice(0, 4);
     return (
       <nav
         aria-label="Hızlı menü"
@@ -75,7 +82,7 @@ export function TrPanelNavLinks({
   return (
     <nav aria-label="Panel menüsü" className="flex-1 overflow-y-auto px-2 py-3">
       <ul className="space-y-0.5">
-        {TR_PANEL_NAV.map((item) => {
+        {navItems.map((item) => {
           const active = isTrPanelNavActive(pathname, item);
           const Icon = panelNavIcon(item.href);
           const showOrderDot =

@@ -2,10 +2,23 @@ import {
   getDiscountCodeForBoutiqueAdmin,
   incrementDiscountCodeUsageAdmin,
 } from "@/lib/tr/discountCodes";
+import { getBoutiqueByIdAdmin } from "@/lib/tr/boutiques";
+import { isCustomArtCatalogProfile } from "@/lib/tr/catalogProfiles";
+import {
+  isCustomerReferenceAssetUrl,
+} from "@/lib/tr/customArt/referenceAssets";
+import {
+  isMadeToOrderProduct,
+  resolveCustomArtPriceKurus,
+} from "@/lib/tr/customArt/pricing";
 import { resolveProductSizes } from "@/lib/tr/productOptions";
 import { listProductsByIdsAdmin } from "@/lib/tr/products";
 import { isProductSizeSellable } from "@/lib/tr/sizeStocks";
-import type { TrDiscountCode, TrProduct } from "@/types/tr-marketplace";
+import type {
+  TrDiscountCode,
+  TrOrderItemCustomization,
+  TrProduct,
+} from "@/types/tr-marketplace";
 
 export type CheckoutClientItem = {
   productId: string;
@@ -13,6 +26,9 @@ export type CheckoutClientItem = {
   boutiqueId: string;
   size?: string | null;
   quantity?: number;
+  referenceImageUrl?: string | null;
+  styleOption?: string | null;
+  referenceId?: string | null;
 };
 
 export type ResolvedCheckoutLine = {
@@ -22,6 +38,8 @@ export type ResolvedCheckoutLine = {
   priceKurus: number;
   quantity: number;
   size: string | null;
+  referenceImageUrl: string | null;
+  customization: TrOrderItemCustomization | null;
 };
 
 export type ResolvedCheckout = {
@@ -31,6 +49,8 @@ export type ResolvedCheckout = {
   discountKurus: number;
   totalKurus: number;
   discountRow: TrDiscountCode | null;
+  /** When true, skip inventory decrement for all lines. */
+  skipInventoryDecrement: boolean;
 };
 
 function normalizeSize(size: string | null | undefined): string | null {
@@ -41,6 +61,7 @@ function normalizeSize(size: string | null | undefined): string | null {
 function resolveLineFromProduct(
   product: TrProduct,
   item: CheckoutClientItem,
+  options: { customArt: boolean },
 ): ResolvedCheckoutLine | { error: string } {
   const quantity = Math.max(1, Math.floor(item.quantity ?? 1));
   if (quantity !== 1) {
@@ -61,19 +82,67 @@ function resolveLineFromProduct(
 
   const sizes = resolveProductSizes(product);
   const size = normalizeSize(item.size);
+  const madeToOrder = isMadeToOrderProduct(product.features);
+  const referenceImageUrl = item.referenceImageUrl?.trim() || null;
+  const styleOption = item.styleOption?.trim() || null;
+  const referenceId = item.referenceId?.trim() || null;
+
+  if (options.customArt) {
+    if (!referenceImageUrl) {
+      return { error: "Tablo için fotoğraf yükleyin." };
+    }
+    if (!isCustomerReferenceAssetUrl(referenceImageUrl, product.boutiqueId)) {
+      return { error: "Geçersiz referans fotoğrafı." };
+    }
+    if (product.colors.length > 0 && !styleOption) {
+      return { error: `"${product.title}" için stil seçin.` };
+    }
+    if (
+      styleOption &&
+      !product.colors.some(
+        (color) =>
+          color.name.toLocaleUpperCase("tr") ===
+          styleOption.toLocaleUpperCase("tr"),
+      )
+    ) {
+      return { error: `"${product.title}" için geçersiz stil.` };
+    }
+  }
+
+  let resolvedSize: string | null = null;
+  let priceKurus = product.priceKurus;
 
   if (sizes.length > 0) {
     if (!size) {
-      return { error: `"${product.title}" için beden seçin.` };
+      return {
+        error: options.customArt
+          ? `"${product.title}" için boyut seçin.`
+          : `"${product.title}" için beden seçin.`,
+      };
     }
     const match = sizes.find(
       (entry) =>
         entry.toLocaleUpperCase("en") === size.toLocaleUpperCase("en"),
     );
     if (!match) {
-      return { error: `"${product.title}" için geçersiz beden.` };
+      return {
+        error: options.customArt
+          ? `"${product.title}" için geçersiz boyut.`
+          : `"${product.title}" için geçersiz beden.`,
+      };
     }
+    resolvedSize = match;
+
+    if (options.customArt) {
+      const customPrice = resolveCustomArtPriceKurus(product, match);
+      if (customPrice == null || customPrice <= 0) {
+        return { error: `"${product.title}" için fiyat tanımlı değil.` };
+      }
+      priceKurus = customPrice;
+    }
+
     if (
+      !madeToOrder &&
       !isProductSizeSellable({
         sizes,
         size: match,
@@ -83,27 +152,27 @@ function resolveLineFromProduct(
     ) {
       return { error: `"${product.title}" (${match}) stokta yok.` };
     }
-    return {
-      productId: product.id,
-      boutiqueId: product.boutiqueId,
-      title: product.title,
-      priceKurus: product.priceKurus,
-      quantity,
-      size: match,
-    };
-  }
-
-  if (product.stock < quantity) {
+  } else if (!madeToOrder && product.stock < quantity) {
     return { error: `"${product.title}" stokta yok.` };
   }
+
+  const customization: TrOrderItemCustomization | null =
+    options.customArt && (styleOption || referenceId)
+      ? {
+          styleOption,
+          referenceId,
+        }
+      : null;
 
   return {
     productId: product.id,
     boutiqueId: product.boutiqueId,
     title: product.title,
-    priceKurus: product.priceKurus,
+    priceKurus,
     quantity,
-    size: null,
+    size: resolvedSize,
+    referenceImageUrl: options.customArt ? referenceImageUrl : null,
+    customization,
   };
 }
 
@@ -145,6 +214,18 @@ export async function resolveCheckoutFromCatalog(input: {
   );
   const byId = new Map(products.map((product) => [product.id, product]));
 
+  const boutiqueProfileCache = new Map<string, boolean>();
+
+  async function isCustomArtBoutique(boutiqueId: string): Promise<boolean> {
+    if (boutiqueProfileCache.has(boutiqueId)) {
+      return boutiqueProfileCache.get(boutiqueId)!;
+    }
+    const boutique = await getBoutiqueByIdAdmin(boutiqueId);
+    const customArt = boutique ? isCustomArtCatalogProfile(boutique) : false;
+    boutiqueProfileCache.set(boutiqueId, customArt);
+    return customArt;
+  }
+
   const lines: ResolvedCheckoutLine[] = [];
   for (const item of input.items) {
     const product = byId.get(item.productId.trim());
@@ -161,7 +242,8 @@ export async function resolveCheckoutFromCatalog(input: {
         status: 400,
       };
     }
-    const resolved = resolveLineFromProduct(product, item);
+    const customArt = await isCustomArtBoutique(product.boutiqueId);
+    const resolved = resolveLineFromProduct(product, item, { customArt });
     if ("error" in resolved) {
       return { ok: false, error: resolved.error, status: 400 };
     }
@@ -205,6 +287,10 @@ export async function resolveCheckoutFromCatalog(input: {
     discountKurus = computeDiscountKurus(subtotalKurus, discountRow);
   }
 
+  const skipInventoryDecrement = products.every((product) =>
+    isMadeToOrderProduct(product.features),
+  );
+
   return {
     ok: true,
     checkout: {
@@ -214,6 +300,7 @@ export async function resolveCheckoutFromCatalog(input: {
       discountKurus,
       totalKurus: Math.max(0, subtotalKurus - discountKurus),
       discountRow,
+      skipInventoryDecrement,
     },
   };
 }

@@ -7,19 +7,37 @@ export interface TrCartLineItem {
   priceKurus: number;
   image: string | null;
   size: string | null;
+  /** Customer reference photo for custom_art lines. */
+  referenceImageUrl?: string | null;
+  referenceId?: string | null;
+  styleOption?: string | null;
 }
 
 /** Stable identity for one cart row — same product + different beden = separate lines. */
 export function cartLineKey(
-  item: Pick<TrCartLineItem, "productId" | "size">,
+  item: Pick<
+    TrCartLineItem,
+    "productId" | "size" | "referenceImageUrl" | "styleOption"
+  >,
 ): string {
   const size = item.size?.trim().toLocaleUpperCase("en") ?? "";
-  return `${item.productId}::${size}`;
+  const ref = item.referenceImageUrl?.trim() ?? "";
+  if (!ref) {
+    return `${item.productId}::${size}`;
+  }
+  const style = item.styleOption?.trim() ?? "";
+  return `${item.productId}::${size}::${ref}::${style}`;
 }
 
 export function sameCartLine(
-  a: Pick<TrCartLineItem, "productId" | "size">,
-  b: Pick<TrCartLineItem, "productId" | "size">,
+  a: Pick<
+    TrCartLineItem,
+    "productId" | "size" | "referenceImageUrl" | "styleOption"
+  >,
+  b: Pick<
+    TrCartLineItem,
+    "productId" | "size" | "referenceImageUrl" | "styleOption"
+  >,
 ): boolean {
   return cartLineKey(a) === cartLineKey(b);
 }

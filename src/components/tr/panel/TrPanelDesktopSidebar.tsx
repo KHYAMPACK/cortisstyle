@@ -68,6 +68,7 @@ export function TrPanelDesktopSidebar({
 
       <TrPanelNavLinks
         boutiqueId={activeBoutique.id}
+        catalogProfile={activeBoutique.catalogProfile ?? "fashion"}
         hasNewOrders={hasNewOrders}
         variant="dark"
       />

@@ -10,7 +10,7 @@ import type {
 } from "@/types/tr-marketplace";
 
 export const PUBLIC_BOUTIQUE_COLUMNS =
-  "id, slug, name, legal_name, description, logo_url, whatsapp_phone, instagram_handle, theme_accent, shipping_note, exchange_policy, physical_address, home_layout, custom_domain, editorial_content, vergi_no, status, created_at, updated_at";
+  "id, slug, name, legal_name, description, logo_url, whatsapp_phone, instagram_handle, theme_accent, shipping_note, exchange_policy, physical_address, home_layout, custom_domain, editorial_content, catalog_profile, vergi_no, status, created_at, updated_at";
 
 /** Prefer this view once `patch_tr_boutiques_public_view.sql` is applied (anon-safe). */
 export const PUBLIC_BOUTIQUE_VIEW = "tr_boutiques_public";
@@ -31,6 +31,8 @@ function boutiqueInsertRow(input: CreateTrBoutiqueInput) {
     home_layout: input.homeLayout === "editorial" ? "editorial" : "default",
     custom_domain: input.customDomain?.trim().toLowerCase() || null,
     editorial_content: input.editorialContent ?? null,
+    catalog_profile:
+      input.catalogProfile === "custom_art" ? "custom_art" : "fashion",
     vergi_no: input.vergiNo?.trim() ?? null,
     iban: input.iban?.trim() ?? null,
     commission_bps: input.commissionBps ?? 1000,
@@ -221,6 +223,7 @@ export interface UpdateTrBoutiqueBrandInput {
   homeLayout?: "default" | "editorial" | null;
   customDomain?: string | null;
   editorialContent?: Record<string, unknown> | null;
+  catalogProfile?: "fashion" | "custom_art";
   /** Seller legal — owner panel only; not on public boutique. */
   legalName?: string | null;
   vergiNo?: string | null;
@@ -270,6 +273,10 @@ export async function updateBoutiqueBrandAdmin(
   }
   if (input.editorialContent !== undefined) {
     row.editorial_content = input.editorialContent;
+  }
+  if (input.catalogProfile !== undefined) {
+    row.catalog_profile =
+      input.catalogProfile === "custom_art" ? "custom_art" : "fashion";
   }
   if (input.legalName !== undefined) {
     row.legal_name = input.legalName?.trim() || null;

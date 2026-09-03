@@ -13,7 +13,17 @@ Run in Supabase SQL Editor:
 
 ## Link owner by email
 
-After the owner signs up on cortisstyle.com:
+After the owner signs up on cortisstyle.com (or the boutique login page):
+
+```bash
+npx tsx scripts/link-tr-boutique-owner.mts --email owner@example.com --domain minimora.shop
+# or by slug:
+npx tsx scripts/link-tr-boutique-owner.mts --email owner@example.com --slug minimora
+```
+
+List boutiques: `npx tsx scripts/link-tr-boutique-owner.mts --list`
+
+Or in Supabase SQL Editor:
 
 ```sql
 -- Find auth user id

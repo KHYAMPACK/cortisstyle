@@ -1,3 +1,4 @@
+import { normalizeCatalogProfile } from "@/lib/tr/catalogProfiles";
 import type {
   TrBoutique,
   TrBoutiquePublic,
@@ -5,6 +6,7 @@ import type {
   TrInvoiceType,
   TrOrder,
   TrOrderItem,
+  TrOrderItemCustomization,
   TrProduct,
   TrProductColor,
   TrShippingAddress,
@@ -103,6 +105,9 @@ export function mapBoutiqueRow(row: Record<string, unknown>): TrBoutique {
       !Array.isArray(row.editorial_content)
         ? (row.editorial_content as Record<string, unknown>)
         : null,
+    catalogProfile: normalizeCatalogProfile(
+      typeof row.catalog_profile === "string" ? row.catalog_profile : null,
+    ),
     vergiNo: (row.vergi_no as string | null) ?? null,
     iban: (row.iban as string | null) ?? null,
     commissionBps: (row.commission_bps as number) ?? 1000,
@@ -137,6 +142,7 @@ export function toPublicBoutique(boutique: TrBoutique): TrBoutiquePublic {
     customDomain: boutique.customDomain,
     vergiNo: boutique.vergiNo,
     editorialContent: boutique.editorialContent,
+    catalogProfile: boutique.catalogProfile,
     status: boutique.status,
     createdAt: boutique.createdAt,
     updatedAt: boutique.updatedAt,
@@ -315,9 +321,26 @@ export function mapDiscountCodeRow(row: Record<string, unknown>): TrDiscountCode
   };
 }
 
+function readOrderItemCustomization(
+  value: unknown,
+): TrOrderItemCustomization | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const record = value as Record<string, unknown>;
+  const styleOption =
+    typeof record.styleOption === "string" ? record.styleOption.trim() : null;
+  const referenceId =
+    typeof record.referenceId === "string" ? record.referenceId.trim() : null;
+  if (!styleOption && !referenceId) return null;
+  return {
+    styleOption: styleOption || null,
+    referenceId: referenceId || null,
+  };
+}
+
 export function mapOrderItemRow(row: Record<string, unknown>): TrOrderItem {
   const productIdRaw = row.product_id;
   const sizeRaw = row.size;
+  const referenceRaw = row.reference_image_url;
   return {
     id: row.id as string,
     orderId: row.order_id as string,
@@ -331,6 +354,11 @@ export function mapOrderItemRow(row: Record<string, unknown>): TrOrderItem {
     quantity: (row.quantity as number) ?? 1,
     size:
       typeof sizeRaw === "string" && sizeRaw.trim() ? sizeRaw.trim() : null,
+    referenceImageUrl:
+      typeof referenceRaw === "string" && referenceRaw.trim()
+        ? referenceRaw.trim()
+        : null,
+    customization: readOrderItemCustomization(row.customization),
     createdAt: row.created_at as string,
     imageUrl: null,
   };

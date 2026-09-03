@@ -32,6 +32,7 @@ interface SeedBoutiquePayload {
   homeLayout?: "default" | "editorial";
   customDomain?: string;
   editorialContent?: Record<string, unknown>;
+  catalogProfile?: "fashion" | "custom_art";
   status?: "draft" | "pending" | "verified" | "suspended";
   products?: Array<{
     title: string;
@@ -40,11 +41,13 @@ interface SeedBoutiquePayload {
     compareAtPriceTry?: number;
     size?: string;
     sizes?: string[];
+    sizeStocks?: Record<string, number>;
     colors?: Array<{ name: string; hex: string }>;
     conditionLabel?: string;
     category?: string;
     images?: string[];
     stock?: number;
+    features?: Record<string, unknown>;
   }>;
   sampleOrders?: Array<{
     daysAgo?: number;
@@ -110,6 +113,7 @@ export async function POST(request: Request) {
             homeLayout: boutiqueInput.homeLayout,
             customDomain: boutiqueInput.customDomain,
             editorialContent: boutiqueInput.editorialContent,
+            catalogProfile: boutiqueInput.catalogProfile,
             legalName: boutiqueInput.legalName,
             vergiNo: boutiqueInput.vergiNo,
           })
@@ -129,6 +133,7 @@ export async function POST(request: Request) {
             homeLayout: boutiqueInput.homeLayout,
             customDomain: boutiqueInput.customDomain,
             editorialContent: boutiqueInput.editorialContent,
+            catalogProfile: boutiqueInput.catalogProfile,
             status: desiredStatus,
           });
 
@@ -173,8 +178,10 @@ export async function POST(request: Request) {
           conditionLabel: productInput.conditionLabel,
           category: productInput.category,
           images: productInput.images ?? [],
+          features: productInput.features,
           status: "available",
           stock: productInput.stock ?? 1,
+          sizeStocks: productInput.sizeStocks,
         });
 
         productIds.push(product.id);

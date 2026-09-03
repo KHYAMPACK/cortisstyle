@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { TrPanelBoutiqueLogo } from "@/components/tr/panel/TrPanelBoutiqueLogo";
 import { TrPanelNavLinks } from "@/components/tr/panel/TrPanelNavLinks";
+import type { TrCatalogProfileId } from "@/lib/tr/panelNav";
 import type { TrOwnerBoutiqueSummary } from "@/lib/tr/ownerClient";
 import { panelBoutiqueLogoSrc } from "@/lib/tr/panel/panelLogo";
 import { trBoutiquePath, trPanelPath } from "@/lib/tr/paths";
@@ -146,6 +147,7 @@ export function TrPanelMobileChrome({
             </div>
             <TrPanelNavLinks
               boutiqueId={activeBoutique.id}
+              catalogProfile={activeBoutique.catalogProfile ?? "fashion"}
               hasNewOrders={hasNewOrders}
               onNavigate={() => setOpen(false)}
               variant="dark"
@@ -171,15 +173,18 @@ export function TrPanelMobileChrome({
 
 export function TrPanelMobileTabBar({
   boutiqueId,
+  catalogProfile = "fashion",
   hasNewOrders,
 }: {
   boutiqueId: string;
+  catalogProfile?: TrCatalogProfileId;
   hasNewOrders: boolean;
 }) {
   return (
     <div className="fixed right-0 bottom-0 left-0 z-30 pb-[env(safe-area-inset-bottom)] lg:hidden">
       <TrPanelNavLinks
         boutiqueId={boutiqueId}
+        catalogProfile={catalogProfile}
         hasNewOrders={hasNewOrders}
         variant="bottom"
       />

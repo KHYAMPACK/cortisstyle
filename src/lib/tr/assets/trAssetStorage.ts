@@ -1,4 +1,5 @@
 import { getServiceSupabase } from "@/lib/supabaseAdmin";
+import { buildCustomerReferenceAssetPath } from "@/lib/tr/customArt/referenceAssets";
 import { TR_ASSETS_BUCKET } from "@/lib/tr/trAssetUrls";
 
 export { TR_ASSETS_BUCKET, isTrMarketplaceAssetUrl } from "@/lib/tr/trAssetUrls";
@@ -84,5 +85,48 @@ export async function uploadTrProductAsset(params: {
   return {
     path,
     url: getTrAssetPublicUrl(path),
+  };
+}
+
+export async function uploadCustomerReferenceAsset(params: {
+  boutiqueId: string;
+  bytes: Buffer;
+  contentType: string;
+  fileId?: string;
+}): Promise<{ url: string; path: string; referenceId: string }> {
+  const admin = getServiceSupabase();
+
+  if (!admin) {
+    throw new Error(
+      "TR asset upload is not configured. Add SUPABASE_SERVICE_ROLE_KEY.",
+    );
+  }
+
+  if (params.bytes.byteLength > MAX_UPLOAD_BYTES) {
+    throw new Error("Dosya 10 MB sınırını aşıyor.");
+  }
+
+  const referenceId = params.fileId?.trim() || crypto.randomUUID();
+  const path = buildCustomerReferenceAssetPath(
+    params.boutiqueId,
+    params.contentType,
+    referenceId,
+  );
+
+  const { error } = await admin.storage
+    .from(TR_ASSETS_BUCKET)
+    .upload(path, params.bytes, {
+      contentType: params.contentType,
+      upsert: false,
+    });
+
+  if (error) {
+    throw error;
+  }
+
+  return {
+    path,
+    url: getTrAssetPublicUrl(path),
+    referenceId,
   };
 }

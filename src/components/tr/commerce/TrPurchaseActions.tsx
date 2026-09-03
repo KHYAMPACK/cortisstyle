@@ -36,6 +36,9 @@ interface TrPurchaseActionsProps {
   /** Selected beden is out of stock — show notify CTA instead of add. */
   sizeOutOfStock?: boolean;
   whatsappPhone?: string | null;
+  referenceImageUrl?: string | null;
+  referenceId?: string | null;
+  styleOption?: string | null;
   className?: string;
 }
 
@@ -49,6 +52,9 @@ function toCartLineItem(props: TrPurchaseActionsProps): TrCartLineItem {
     priceKurus: props.priceKurus,
     image: props.image,
     size: props.size,
+    referenceImageUrl: props.referenceImageUrl ?? null,
+    referenceId: props.referenceId ?? null,
+    styleOption: props.styleOption ?? null,
   };
 }
 
