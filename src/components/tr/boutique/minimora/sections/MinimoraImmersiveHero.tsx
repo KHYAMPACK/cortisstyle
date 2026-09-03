@@ -48,7 +48,7 @@ export function MinimoraImmersiveHero({
           </p>
           <Link
             href={howItWorksHref}
-            className="mt-6 inline-flex min-h-12 items-center justify-center rounded-full bg-[#3B71D8] px-8 py-3 text-[14px] font-semibold text-white transition-colors hover:bg-[#2F5FB8]"
+            className="mt-6 inline-flex min-h-12 items-center justify-center rounded-full bg-[#F3A575] px-8 py-3 text-[14px] font-semibold text-[#3D3D3D] transition-colors hover:bg-[#E08E5C]"
           >
             {minimoraHomeContent.immersiveCta}
           </Link>

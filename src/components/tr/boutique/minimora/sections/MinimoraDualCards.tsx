@@ -39,7 +39,7 @@ export function MinimoraDualCards({
             </h3>
             <Link
               href={galleryHref}
-              className="absolute right-4 bottom-4 flex h-11 w-11 items-center justify-center rounded-full bg-[#3B71D8] text-white shadow-md transition-opacity hover:opacity-90"
+              className="absolute right-4 bottom-4 flex h-11 w-11 items-center justify-center rounded-full bg-[#F3A575] text-[#3D3D3D] shadow-md transition-opacity hover:opacity-90"
               aria-label={minimoraHomeContent.galleryTitle}
             >
               <Plus className="h-5 w-5" />
@@ -67,7 +67,7 @@ export function MinimoraDualCards({
             </span>
             <Link
               href={orderHref}
-              className="absolute top-5 right-4 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-[#3B71D8] text-white shadow-md transition-opacity hover:opacity-90"
+              className="absolute top-5 right-4 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-[#F3A575] text-[#3D3D3D] shadow-md transition-opacity hover:opacity-90"
               aria-label={minimoraHomeContent.nav.order}
             >
               <Plus className="h-5 w-5" />

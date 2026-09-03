@@ -64,7 +64,7 @@ export function MinimoraGalleryCarousel({
               />
               <Link
                 href={orderHref}
-                className="absolute right-3 bottom-3 flex h-11 w-11 items-center justify-center rounded-full bg-[#3B71D8] text-white shadow-md transition-opacity hover:opacity-90"
+                className="absolute right-3 bottom-3 flex h-11 w-11 items-center justify-center rounded-full bg-[#F3A575] text-[#3D3D3D] shadow-md transition-opacity hover:opacity-90"
                 aria-label={minimoraHomeContent.galleryCta}
               >
                 <Plus className="h-5 w-5" />

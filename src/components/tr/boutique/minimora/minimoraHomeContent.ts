@@ -1,6 +1,6 @@
 export const MINIMORA_HOME_IMAGES = {
   heroProduct: "/tr/boutiques/minimora/home/hero-product.png",
-  heroLifestyle: "/tr/boutiques/minimora/home/hero-lifestyle.jpg",
+  heroLifestyle: "/tr/boutiques/minimora/home/hero-lifestyle.jpg?v=3",
   cardCapture: "/tr/boutiques/minimora/home/card-capture.jpg",
   cardConnected: "/tr/boutiques/minimora/home/card-connected.jpg",
   gallery: [

@@ -20,7 +20,7 @@ export function TrBoutiqueEditorialHelpFab() {
       data-atelier-help-fab=""
       className={
         minimora
-          ? "fixed right-4 z-40 flex items-center gap-2 rounded-full bg-[#3B71D8] px-4 py-3 text-white shadow-lg transition-colors hover:bg-[#2F5FB8] md:right-6"
+          ? "fixed right-4 z-40 flex items-center gap-2 rounded-full bg-[#F3A575] px-4 py-3 text-[#3D3D3D] shadow-lg transition-colors hover:bg-[#E08E5C] md:right-6"
           : "fixed right-4 z-40 flex items-center gap-2 bg-neutral-900 px-3.5 py-3 text-white shadow-lg transition-opacity hover:opacity-90 md:right-6"
       }
       aria-label={`${boutiqueName} yardım asistanı`}

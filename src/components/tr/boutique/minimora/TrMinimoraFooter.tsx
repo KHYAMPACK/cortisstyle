@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { InstagramIcon } from "@/components/icons/InstagramIcon";
-import { MinimoraWordmark } from "@/components/tr/boutique/minimora/MinimoraWordmark";
+import { MinimoraLogo } from "@/components/tr/boutique/minimora/MinimoraLogo";
 import { minimoraDisplay } from "@/components/tr/boutique/minimora/minimoraTheme";
 import { TrPlatformCredit } from "@/components/tr/TrPlatformCredit";
 import { TrIyzicoFooterPaymentBand } from "@/components/tr/TrIyzicoPaymentBadges";
@@ -35,7 +35,7 @@ export function TrMinimoraFooter({ boutique }: TrMinimoraFooterProps) {
       <div className="mx-auto max-w-6xl px-5 py-12 md:px-8 md:py-16">
         <div className="flex flex-col items-start gap-8 md:flex-row md:items-center md:justify-between">
           <Link href={trBoutiquePath(boutique.slug)} aria-label="Minimora">
-            <MinimoraWordmark />
+            <MinimoraLogo className="h-16 w-auto md:h-20" />
           </Link>
           <div className="flex flex-wrap gap-3">
             {instagramUrl ? (
@@ -43,7 +43,7 @@ export function TrMinimoraFooter({ boutique }: TrMinimoraFooterProps) {
                 href={instagramUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex min-h-11 items-center rounded-full border border-black/10 px-5 py-2 text-[13px] font-medium text-[#3D3D3D] transition-colors hover:border-[#3B71D8] hover:text-[#3B71D8]"
+                className="inline-flex min-h-11 items-center rounded-full border border-black/10 px-5 py-2 text-[13px] font-medium text-[#3D3D3D] transition-colors hover:border-[#F3A575] hover:text-[#E08E5C]"
               >
                 Instagram
               </a>
@@ -53,7 +53,7 @@ export function TrMinimoraFooter({ boutique }: TrMinimoraFooterProps) {
                 href={whatsappUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex min-h-11 items-center rounded-full bg-[#3B71D8] px-5 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-[#2F5FB8]"
+                className="inline-flex min-h-11 items-center rounded-full bg-[#F3A575] px-5 py-2 text-[13px] font-semibold text-[#3D3D3D] transition-colors hover:bg-[#E08E5C]"
               >
                 WhatsApp
               </a>
@@ -85,7 +85,7 @@ export function TrMinimoraFooter({ boutique }: TrMinimoraFooterProps) {
                   <li key={link.label}>
                     <Link
                       href={link.href}
-                      className="text-[13px] text-[#6B7280] transition-colors hover:text-[#3B71D8]"
+                      className="text-[13px] text-[#6B7280] transition-colors hover:text-[#E08E5C]"
                     >
                       {link.label}
                     </Link>

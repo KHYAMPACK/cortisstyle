@@ -28,7 +28,7 @@
 2. Seed via `scripts/seed-minimora.mts` or admin seed with `minimora-seed.json`.
 3. Link owner via `scripts/link-tr-boutique-owner.mts`.
 4. Home photos: `public/tr/boutiques/minimora/home/` (see `minimoraHomeContent.ts` paths).
-5. Brand registries in `boutiqueBrand.ts` (accent `#3B71D8`).
+5. Brand registries in `boutiqueBrand.ts` (accent `#F3A575`, logo `public/tr/boutiques/minimora/logo.png`).
 6. Contact: seed `whatsappPhone` / `physicalAddress` / `instagramHandle`; storefront email in `CONTACT_EMAIL_BY_SLUG` (`checkoutMode.ts`). Legal pages pull the same fields. Still need `legalName` (şahıs/şirket unvanı) + `vergiNo` before go-live.
 
 ## Panel behavior (`custom_art`)

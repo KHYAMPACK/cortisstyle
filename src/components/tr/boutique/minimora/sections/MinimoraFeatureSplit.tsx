@@ -30,7 +30,7 @@ export function MinimoraFeatureSplit() {
           >
             {minimoraHomeContent.featureSplitHeadline}
             <br />
-            <span className="text-[#3B71D8]">
+            <span className="text-[#E08E5C]">
               {minimoraHomeContent.featureSplitAccent}
             </span>
           </h2>

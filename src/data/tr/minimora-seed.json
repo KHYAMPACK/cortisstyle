@@ -8,7 +8,7 @@
       "logoUrl": "/tr/boutiques/minimora/logo.png",
       "whatsappPhone": "905541800453",
       "instagramHandle": "minimora.shop",
-      "themeAccent": "#3B71D8",
+      "themeAccent": "#F3A575",
       "catalogProfile": "custom_art",
       "shippingNote": "Figürler özenle paketlenir; üretim + kargo süresi sipariş sonrası paylaşılır.",
       "exchangePolicy": "Kişiye özel üretim olduğu için cayma hakkı istisnaları saklı kalmak kaydıyla yalnızca üretim hatasında iade/değişim değerlendirilir.",
@@ -36,7 +36,7 @@
           },
           "colors": [
             { "name": "Doğal renk", "hex": "#FFFFFF" },
-            { "name": "Boyalı", "hex": "#3B71D8" }
+            { "name": "Boyalı", "hex": "#F3A575" }
           ],
           "category": "ozel-figur",
           "images": [

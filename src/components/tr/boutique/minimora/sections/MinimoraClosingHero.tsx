@@ -38,7 +38,7 @@ export function MinimoraClosingHero({
         </h2>
         <Link
           href={howItWorksHref}
-          className={`${minimoraBtnPrimary} mt-8 bg-white text-[#3B71D8] hover:bg-white/90`}
+          className={`${minimoraBtnPrimary} mt-8 bg-white text-[#E08E5C] hover:bg-white/90`}
         >
           {minimoraHomeContent.closingCta}
         </Link>

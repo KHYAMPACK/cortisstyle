@@ -52,7 +52,7 @@ export function MinimoraSplitHero({ orderHref }: MinimoraSplitHeroProps) {
             <ul className="space-y-3 text-left">
               {minimoraHomeContent.heroBullets.map((bullet) => (
                 <li key={bullet} className="flex items-start gap-3">
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#3B71D8] text-white">
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#F3A575] text-[#3D3D3D]">
                     <Check className="h-3 w-3" strokeWidth={3} />
                   </span>
                   <span className="text-[14px] text-[#3D3D3D]">{bullet}</span>
@@ -75,13 +75,14 @@ export function MinimoraSplitHero({ orderHref }: MinimoraSplitHeroProps) {
           </MinimoraFadeIn>
         </div>
 
-        <div className="relative order-1 min-h-[46vh] sm:min-h-[52vh] lg:order-2 lg:min-h-full">
+        <div className="relative order-1 min-h-[46vh] bg-[#FDFBF7] sm:min-h-[52vh] lg:order-2 lg:min-h-full">
           <MinimoraMedia
             src={MINIMORA_HOME_IMAGES.heroLifestyle}
-            alt="Çocuk ve çizim anı"
+            alt="Çocuk çiziminden üretilmiş Minimora 3D figürler"
             tone={2}
-            label="Çizim Anı"
+            label="3D Figürler"
             priority
+            fit="contain"
             className="absolute inset-0"
             sizes="(max-width: 1024px) 100vw, 50vw"
           />

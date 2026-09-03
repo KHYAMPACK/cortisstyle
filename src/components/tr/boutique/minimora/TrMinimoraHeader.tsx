@@ -96,7 +96,7 @@ export function TrMinimoraHeader({
                   <Link
                     href={orderHref}
                     onClick={() => setMenuOpen(false)}
-                    className="block min-h-12 py-3 text-[15px] font-semibold text-[#3B71D8]"
+                    className="block min-h-12 py-3 text-[15px] font-semibold text-[#E08E5C]"
                   >
                     {minimoraHomeContent.nav.order}
                   </Link>
@@ -127,14 +127,14 @@ export function TrMinimoraHeader({
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="text-[14px] font-medium text-[#3D3D3D] transition-colors hover:text-[#3B71D8]"
+                  className="text-[14px] font-medium text-[#3D3D3D] transition-colors hover:text-[#E08E5C]"
                 >
                   {link.label}
                 </Link>
               ))}
               <Link
                 href={orderHref}
-                className="text-[14px] font-semibold text-[#3B71D8]"
+                className="text-[14px] font-semibold text-[#E08E5C]"
               >
                 {minimoraHomeContent.nav.order}
               </Link>

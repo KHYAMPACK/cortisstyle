@@ -10,11 +10,11 @@ interface MinimoraWordmarkProps {
   className?: string;
 }
 
-/** Lowercase rounded wordmark — Petit-style logotype, not an image mark. */
+/** Lowercase rounded wordmark in the logo pastel orange. */
 export function MinimoraWordmark({ className = "" }: MinimoraWordmarkProps) {
   return (
     <span
-      className={`${minimoraWordmarkFont.className} text-[1.6rem] leading-none font-extrabold tracking-[-0.04em] text-[#1a1a1a] lowercase md:text-[1.85rem] ${className}`}
+      className={`${minimoraWordmarkFont.className} text-[1.6rem] leading-none font-extrabold tracking-[-0.04em] text-[#F3A575] lowercase md:text-[1.85rem] ${className}`}
     >
       minimora
     </span>

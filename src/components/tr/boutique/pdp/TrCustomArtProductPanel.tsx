@@ -41,7 +41,7 @@ export function TrCustomArtProductPanel({
   const minimora = isMinimoraBoutique(product.boutique.slug);
   const pdpCopy = minimoraHomeContent.pdp;
   const chipActive = minimora
-    ? "border-[#3B71D8] bg-[#3B71D8] text-white"
+    ? "border-[#F3A575] bg-[#F3A575] text-[#3D3D3D]"
     : "border-neutral-900 bg-neutral-900 text-white";
   const chipIdle =
     "border-black/15 bg-white text-neutral-800 hover:border-black/30";
@@ -239,7 +239,7 @@ export function TrCustomArtProductPanel({
                   disabled={uploading}
                   className={`flex min-h-[140px] w-full flex-col items-center justify-center gap-2 border-2 border-dashed px-4 py-6 text-center transition-colors hover:border-black/30 ${
                     minimora
-                      ? "rounded-[24px] border-[#3B71D8]/30 bg-[#FDFBF7]"
+                      ? "rounded-[24px] border-[#F3A575]/40 bg-[#FDFBF7]"
                       : "rounded-2xl border-black/15 bg-neutral-50"
                   }`}
                 >
