@@ -21,7 +21,7 @@ export function MinimoraSplitHero({ orderHref }: MinimoraSplitHeroProps) {
   return (
     <section className="relative overflow-hidden">
       <div className="grid lg:min-h-[min(88vh,760px)] lg:grid-cols-2">
-        <div className="relative order-2 flex flex-col justify-center bg-gradient-to-br from-[#EEF3F8] via-[#F7F9FB] to-white px-6 py-12 sm:px-10 lg:order-1 lg:px-14 lg:py-16 xl:px-20">
+        <div className="relative flex flex-col justify-center bg-gradient-to-br from-[#EEF3F8] via-[#F7F9FB] to-white px-6 py-12 sm:px-10 lg:px-14 lg:py-16 xl:px-20">
           <MinimoraFadeIn className="mx-auto w-full max-w-lg space-y-6 text-center lg:mx-0 lg:text-left">
             <div className="flex flex-wrap items-center justify-center gap-2 lg:justify-start">
               <div className="flex gap-0.5">
@@ -75,7 +75,7 @@ export function MinimoraSplitHero({ orderHref }: MinimoraSplitHeroProps) {
           </MinimoraFadeIn>
         </div>
 
-        <div className="relative order-1 min-h-[46vh] bg-[#FDFBF7] sm:min-h-[52vh] lg:order-2 lg:min-h-full">
+        <div className="relative min-h-[42vh] bg-[#FDFBF7] sm:min-h-[48vh] lg:min-h-full">
           <MinimoraMedia
             src={MINIMORA_HOME_IMAGES.heroLifestyle}
             alt="Çocuk çiziminden üretilmiş Minimora 3D figürler"

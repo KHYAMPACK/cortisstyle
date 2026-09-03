@@ -16,7 +16,7 @@ export const MINIMORA_HOME_IMAGES = {
 
 export const minimoraHomeContent = {
   marquee: [
-    { id: "craft", label: "El Yapımı 3D Baskı" },
+    { id: "craft", label: "Özenli 3D Baskı" },
     { id: "safe", label: "Çocuk Dostu Malzeme" },
     { id: "ship", label: "Türkiye Geneli Kargo" },
     { id: "unique", label: "Her Çizim Özel Üretim" },
@@ -36,7 +36,7 @@ export const minimoraHomeContent = {
   trustAccentTan: "Binlerce",
   trustAccentBlue: "Figüre Dönüştürüldü",
   trustBody:
-    "Minimora ile çocukların çizdiği karakterler, hayvanlar ve dünyalar el yapımı 3D figürlere dönüşür — anılarınızı somut bir hediyeye çevirin.",
+    "Minimora ile çocukların çizdiği karakterler, hayvanlar ve dünyalar özenle, sevgi dolu 3D figürlere dönüşür — anılarınızı somut bir hediyeye çevirin.",
   cardCapture: {
     title: "Her Çizimi Ölümsüzleştirin",
   },
@@ -53,8 +53,8 @@ export const minimoraHomeContent = {
   immersiveFeatures: [
     {
       id: "craft",
-      title: "El Yapımı Üretim",
-      body: "Her model özenle işlenir. Çiziminizdeki kıvrımlar ve karakter, el işçiliğiyle 3D forma aktarılır.",
+      title: "Özenli Üretim",
+      body: "Her model özenle işlenir. Çiziminizdeki kıvrımlar ve karakter, sevgiyle 3D forma aktarılır.",
     },
     {
       id: "safe",
@@ -81,18 +81,29 @@ export const minimoraHomeContent = {
   howItWorks: {
     id: "nasil-calisir",
     title: "Nasıl Çalışır?",
+    eyebrow: "Nasıl Çalışır",
+    footer: "Her Adım Özenle. Hepsi Birlikte.",
     steps: [
       {
+        word: "Yükle",
         title: "Çizimi Yükle",
-        body: "Telefonunuzdan çocuğunuzun çiziminin fotoğrafını gönderin.",
+        body: "Çocuğunuzun çiziminin net bir fotoğrafını telefondan seçin veya sürükleyip bırakın. Kağıt, defter ya da tablo fark etmez — yüzü düz, ışığı yeterli bir kare yeterli. Sipariş sayfasında boyutu ve stili seçtikten sonra çizim sizin siparişinize bağlanır.",
+        imageAlt: "Çocuk çizimi yükleme",
+        image: "/tr/boutiques/minimora/home/gallery-2.jpg",
       },
       {
+        word: "Modelle",
         title: "Modelleme",
-        body: "Ekibimiz çizimi 3D modele dönüştürür ve onayınıza sunar.",
+        body: "Ekibimiz çizimdeki karakteri, oranları ve renkleri 3D forma aktarır. Taslak hazır olunca onayınıza sunarız; beğenmediğiniz bir detay varsa birlikte düzeltiriz. Onayınızdan sonra üretim başlar — her figür sizin çiziminize özeldir.",
+        imageAlt: "3D modelleme",
+        image: "/tr/boutiques/minimora/home/hero-product.png",
       },
       {
+        word: "Teslim",
         title: "Teslim Alın",
-        body: "Baskı tamamlanır, özenle paketlenir ve adresinize gönderilir.",
+        body: "Baskı tamamlanınca figür özenle paketlenir ve adresinize kargolanır. Takip bilgisi sipariş sonrası paylaşılır. Kapınıza geldiğinde çocuğunuzun çizimi, rafta duracak somut bir anıya dönüşmüş olur.",
+        imageAlt: "Figür teslimatı",
+        image: "/tr/boutiques/minimora/home/closing-hero.jpg",
       },
     ],
   },

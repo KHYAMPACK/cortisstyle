@@ -38,12 +38,12 @@ export function TrMinimoraHomePage({
       <MinimoraFeatureMarquee />
       <MinimoraTrustHeadline />
       <MinimoraDualCards orderHref={orderHref} galleryHref={galleryHref} />
+      <MinimoraHowItWorks />
       <MinimoraGalleryCarousel orderHref={orderHref} />
       <MinimoraImmersiveHero howItWorksHref={howItWorksHref} />
       <MinimoraCenterCta orderHref={orderHref} />
       <MinimoraFeatureSplit />
       <MinimoraClosingHero howItWorksHref={howItWorksHref} />
-      <MinimoraHowItWorks />
     </div>
   );
 }

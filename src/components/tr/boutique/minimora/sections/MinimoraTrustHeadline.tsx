@@ -13,10 +13,10 @@ export function MinimoraTrustHeadline() {
         >
           {minimoraHomeContent.trustTitle}
           <br />
-          <span className="text-[#F3A575]">
+          <span className="text-[#C45E2A]">
             {minimoraHomeContent.trustAccentTan}
           </span>{" "}
-          <span className="text-[#E08E5C]">
+          <span className="text-[#3D6B8A]">
             {minimoraHomeContent.trustAccentBlue}
           </span>
         </h2>

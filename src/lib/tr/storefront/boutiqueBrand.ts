@@ -56,7 +56,7 @@ const DOCUMENT_DESCRIPTIONS: Partial<Record<string, string>> = {
   ozeltablo:
     "Fotoğrafınızdan kişiye özel tuval tablo siparişi — boyut ve stil seçin, online ödeyin.",
   minimora:
-    "Çocuğunuzun çizimini el yapımı 3D figüre dönüştürün — boyut seçin, çizimi yükleyin, kapınıza teslim.",
+    "Çocuğunuzun çizimini özenle 3D figüre dönüştürün — boyut seçin, çizimi yükleyin, kapınıza teslim.",
 };
 
 /** Human-facing boutique label for auth/legal copy. */

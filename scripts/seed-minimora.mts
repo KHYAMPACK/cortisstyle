@@ -10,7 +10,7 @@ import {
   updateBoutiqueBrandAdmin,
   updateBoutiqueStatusAdmin,
 } from "../src/lib/tr/catalog/boutiques";
-import { createProductAdmin } from "../src/lib/tr/catalog/products";
+import { createProductAdmin, listProductsByBoutiqueIdAdmin, updateProductAdmin } from "../src/lib/tr/catalog/products";
 import { parseTryToKurus } from "../src/types/tr-marketplace";
 
 function loadEnvLocal() {
@@ -136,6 +136,15 @@ async function main() {
           status: "available",
         });
         console.log(`  + ${product.title} (${product.id})`);
+      }
+    } else {
+      const products = await listProductsByBoutiqueIdAdmin(boutique.id);
+      const nextDescription = boutiqueInput.products?.[0]?.description;
+      if (nextDescription && products[0]) {
+        await updateProductAdmin(products[0].id, {
+          description: nextDescription,
+        });
+        console.log(`  ~ ${products[0].title} description`);
       }
     }
   }
