@@ -8,7 +8,7 @@ const THEME_ACCENT_OVERRIDES: Partial<Record<string, string>> = {
   lilabutik: "#9B7EBD",
   pervinsoysalbutik: "#C2185B",
   ozeltablo: "#2C3E50",
-  minimora: "#2C3E50",
+  minimora: "#3B71D8",
 };
 
 /** Known storefront logo overrides (e.g. after recreating assets before DB re-seed). */
@@ -44,7 +44,7 @@ const DOCUMENT_TITLES: Partial<Record<string, string>> = {
   lilabutik: "Lila Butik | Kadın Giyim",
   pervinsoysalbutik: "Pervin Soysal | Shop Women's Fashion",
   ozeltablo: "Özel Tablo | Fotoğrafından tuval baskı",
-  minimora: "Minimora | Fotoğrafından tuval baskı",
+  minimora: "Minimora | Çiziminizden 3D Figür",
 };
 
 const DOCUMENT_DESCRIPTIONS: Partial<Record<string, string>> = {
@@ -55,7 +55,7 @@ const DOCUMENT_DESCRIPTIONS: Partial<Record<string, string>> = {
   ozeltablo:
     "Fotoğrafınızdan kişiye özel tuval tablo siparişi — boyut ve stil seçin, online ödeyin.",
   minimora:
-    "Fotoğrafınızdan kişiye özel tuval tablo siparişi — boyut ve stil seçin, online ödeyin.",
+    "Çocuğunuzun çizimini el yapımı 3D figüre dönüştürün — boyut seçin, çizimi yükleyin, kapınıza teslim.",
 };
 
 /** Human-facing boutique label for auth/legal copy. */

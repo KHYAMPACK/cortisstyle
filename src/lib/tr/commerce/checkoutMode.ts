@@ -23,6 +23,7 @@ export function isTrIyzicoCaptureEnabled(): boolean {
 /** Explicit storefront contact emails (overrides info@{customDomain}). */
 const CONTACT_EMAIL_BY_SLUG: Partial<Record<string, string>> = {
   lilabutik: "ncp20@outlook.com",
+  minimora: "oznur.ekiz45@icloud.com",
 };
 
 /** Prefer slug override → custom domain info@host → platform mailbox. */

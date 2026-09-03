@@ -4,15 +4,15 @@
       "slug": "minimora",
       "name": "Minimora",
       "legalName": "Minimora",
-      "description": "Fotoğrafınızdan kişiye özel tuval tablo — sipariş üzerine baskı.",
+      "description": "Çocuğunuzun çizimini el yapımı 3D modele dönüştürün — özel üretim, kapınıza teslim.",
       "logoUrl": "/tr/boutiques/minimora/logo.png",
-      "whatsappPhone": "905000000000",
-      "instagramHandle": "minimora",
-      "themeAccent": "#2C3E50",
+      "whatsappPhone": "905541800453",
+      "instagramHandle": "minimora.shop",
+      "themeAccent": "#3B71D8",
       "catalogProfile": "custom_art",
-      "shippingNote": "Tablolar özenle paketlenir; kargo süresi üretim + teslimat olarak sipariş sonrası paylaşılır.",
+      "shippingNote": "Figürler özenle paketlenir; üretim + kargo süresi sipariş sonrası paylaşılır.",
       "exchangePolicy": "Kişiye özel üretim olduğu için cayma hakkı istisnaları saklı kalmak kaydıyla yalnızca üretim hatasında iade/değişim değerlendirilir.",
-      "physicalAddress": "Denizli",
+      "physicalAddress": "Yenice Mah. 5 Eylül Caddesi No: 10 Daire 7 Alaşehir/Manisa",
       "homeLayout": "editorial",
       "customDomain": "minimora.shop",
       "editorialContent": {
@@ -20,60 +20,25 @@
           { "id": "home", "label": "Ana sayfa", "categoryId": null },
           { "id": "order", "label": "Sipariş ver", "categoryId": "all" },
           { "id": "how", "label": "Nasıl çalışır", "categoryId": null }
-        ],
-        "promoBar": {
-          "text": "Fotoğrafını tabloya dönüştür",
-          "cta": "Sipariş ver"
-        },
-        "heroPromotions": [
-          {
-            "id": "hero-order",
-            "template": "classic",
-            "backgroundColor": "#2C3E50",
-            "promoLine": "Kişiye özel",
-            "discountLine": "Fotoğrafından tablo",
-            "subText": "Tuval baskı",
-            "campaignName": "Fotoğrafından tablo",
-            "cta": "Tablo sipariş ver",
-            "target": "all",
-            "contentAlign": "center"
-          }
-        ],
-        "shopCategories": [],
-        "infoStrip": {
-          "items": [
-            {
-              "title": "1 · Fotoğraf yükle",
-              "body": "Beğendiğiniz kareyi yükleyin."
-            },
-            {
-              "title": "2 · Boyut seçin",
-              "body": "Tuval ölçüsünü ve stili seçin."
-            },
-            {
-              "title": "3 · Teslim alın",
-              "body": "Siparişiniz üretilip kargoya verilir."
-            }
-          ]
-        }
+        ]
       },
       "status": "verified",
       "products": [
         {
-          "title": "Kişiye Özel Tablo",
-          "description": "Fotoğrafınızdan tuval baskı. Boyut ve çerçeve stilini seçin; sipariş sonrası üretilir.",
+          "title": "Kişiye Özel 3D Figür",
+          "description": "Çocuğunuzun çiziminden el yapımı 3D baskı figür. Boyut seçin, çizimi yükleyin; sipariş sonrası üretilir.",
           "priceTry": 899,
-          "sizes": ["30×40 cm", "50×70 cm", "70×100 cm"],
+          "sizes": ["Küçük (10 cm)", "Orta (15 cm)", "Büyük (20 cm)"],
           "sizeStocks": {
-            "30×40 cm": 999,
-            "50×70 cm": 999,
-            "70×100 cm": 999
+            "Küçük (10 cm)": 999,
+            "Orta (15 cm)": 999,
+            "Büyük (20 cm)": 999
           },
           "colors": [
-            { "name": "Çerçevesiz", "hex": "#FFFFFF" },
-            { "name": "Çerçeveli", "hex": "#1A1A1A" }
+            { "name": "Doğal renk", "hex": "#FFFFFF" },
+            { "name": "Boyalı", "hex": "#3B71D8" }
           ],
-          "category": "ozel-tablo",
+          "category": "ozel-figur",
           "images": [
             "/tr/boutiques/minimora/examples/sample-1.jpg",
             "/tr/boutiques/minimora/examples/sample-2.jpg"
@@ -83,9 +48,9 @@
             "manualListing": true,
             "madeToOrder": true,
             "sizePricesKurus": {
-              "30×40 cm": 89900,
-              "50×70 cm": 129900,
-              "70×100 cm": 189900
+              "Küçük (10 cm)": 89900,
+              "Orta (15 cm)": 129900,
+              "Büyük (20 cm)": 189900
             }
           }
         }

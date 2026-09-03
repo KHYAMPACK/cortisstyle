@@ -163,6 +163,51 @@ html.intro-loading-cadde body::before {
     }
   }
 
+  @keyframes minimora-marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-\[minimora-marquee_28s_linear_infinite\] {
+      animation: none !important;
+    }
+  }
+
+  [data-boutique="minimora"] {
+    font-family: var(--font-minimora-body), Outfit, ui-sans-serif, sans-serif;
+    color: #3d3d3d;
+    background: #fdfbf7;
+  }
+
+  [data-boutique="minimora"] .minimora-display {
+    font-family: var(--font-minimora-display), Syne, ui-sans-serif, sans-serif;
+  }
+
+  [data-boutique="minimora"] .btn-primary {
+    border-radius: 9999px;
+    letter-spacing: 0;
+    text-transform: none;
+    font-weight: 600;
+    font-size: 14px;
+    background-color: #3b71d8;
+  }
+
+  [data-boutique="minimora"] button.btn-primary,
+  [data-boutique="minimora"] a.btn-primary {
+    min-height: 3rem;
+  }
+
+  [data-boutique="minimora"] h1,
+  [data-boutique="minimora"] h2,
+  [data-boutique="minimora"] h3 {
+    font-family: var(--font-minimora-display), Syne, ui-sans-serif, sans-serif;
+  }
+
   .boutique-announcement-track {
     animation: boutique-announcement-scroll 28s linear infinite;
   }
