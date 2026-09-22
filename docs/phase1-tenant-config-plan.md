@@ -73,13 +73,42 @@ Note these become **async** (DB read) where they were previously sync (in-memory
 
 **Dual-read for `lilabutik` only:** seed her row into `tr_boutique_integrations` with her current iyzico credentials (moved out of the env vars `TR_LILABUTIK_IYZICO_API_KEY` etc. into the encrypted column) as part of this migration, verify in sandbox that checkout still starts correctly, then remove the hardcoded `lilabutik` entries from the registry file. No fallback path needed given every other boutique is allowed to break.
 
+## 3b. Seller verification (KYC) — research only, no implementation yet
+
+_Added 2026-09-22. Mert walked through ikas's own "Satıcı Doğrulama" (seller verification) onboarding flow in a live ikas store to see what a real, working competitor asks for, rather than guessing. This is reference material for the eventual "connect your own payment provider" UI (Phase 3) — **not** something to build in Phase 1. It's recorded here because it directly shapes what `tr_boutique_integrations` (and a likely future `tr_boutique_verification` table) will eventually need to store per boutique owner._
+
+ikas's flow starts with a business-type picker with three options, each requesting progressively more:
+
+**Şirketim Yok (no company — selling as an individual):**
+- Genel Bilgiler: Ad, Soyad, TC Kimlik No, Doğum Tarihi, Adres (ikametgah address), Ülke, Posta Kodu, Şehir, İlçe
+- Gerekli Belgeler: Kimlik belgesi (TC kimlik ön/arka), İkametgah Belgesi (barkodlu, from e-Devlet, current-dated), optional "Vergi muafiyetim var" toggle (tax-exemption doc, skippable)
+- Banka IBAN Bilgisi: IBAN, IBAN Sahibinin Adı/Ünvanı, Kur (currency, defaults TRY)
+- Review screen → "Onaya Gönder" (submit for approval); a "Taslak Olarak Kaydet" draft option exists at every step
+
+**Şahıs Şirketim Var (has a sole proprietorship / şahıs şirketi):**
+- Same Genel Bilgiler fields, but the address is now framed as the vergi levhası (tax certificate) address, not personal ikametgah, and labeled "İş Adresi" in the summary
+- Gerekli Belgeler adds **Vergi Levhası** (tax certificate) on top of Kimlik belgesi + İkametgah Belgesi + optional muafiyet toggle
+- Same IBAN step and review flow
+
+**Kurumsal Şirketim Var (Ltd./A.Ş.):**
+- Genel Bilgiler is materially different: Şirket Türü (Limited Şirket / Anonim Şirketi radio), Ticari Ünvan, Vergi Dairesi, Vergi Kimlik No, plus the same address block (vergi levhası address)
+- Gerekli Belgeler is the largest set: "Kimlik Belgesi ve İkametgah Belgesi" for **company partners holding >25% equity** (a modal collects per-partner TC Kimlik No, Ad, Soyad, Doğum Tarihi, E-Posta, Telefon, then up to 3 file uploads — ID front/back + ikametgah; explicitly rejects under-18 applicants and requires the uploaded doc to match the typed identity fields), **Vergi Levhası**, **İmza Sirküsü** (signature circular), **Ticaret Sicil Gazetesi** (trade registry gazette), plus the same optional muafiyet toggle
+- IBAN step asks for "IBAN'a ait Şirket Ünvanı" instead of a personal name
+- Review screen labels it "Kurumsal Şirketim Var" and groups partner documents under "Şirket Ortaklarına ait Belgeler"
+
+**What this tells us, mapped to our schema:**
+- ikas ties verification identity/documents to the *business type*, not the payment provider — this is a KYC/onboarding concern that sits above `tr_boutique_integrations` (which is about provider credentials once verified), not inside it. Likely needs its own table later, e.g. `tr_boutique_verification` (business_type enum: `none` | `sahis` | `kurumsal`; personal/company fields; document references; IBAN; a `status` field mirroring ikas's draft → pending-approval states).
+- The >25% equity partner rule for kurumsal is a real regulatory detail (KVKK/MASAK-adjacent beneficial-ownership disclosure) worth keeping if we ever build a company-type onboarding path — not something to invent from scratch later.
+- Document storage here is sensitive (kimlik, ikametgah, imza sirküsü) — whatever table eventually holds this needs the same service-role-only RLS treatment as `tr_boutique_integrations`, plus actual file storage (Supabase Storage bucket, private) rather than embedding documents in the table.
+- **Still unverified/unknown:** which PSP ikas actually routes to per business type behind this form, exact approval turnaround, and whether verification is manual review or automated — none of that was visible from the form itself. Not blocking for now since Phase 1 doesn't build this UI.
+- **Explicitly not decided yet:** how *our* platform will handle verification (manual review by Mert vs. an automated KYC vendor vs. relying entirely on the underlying PSP's own KYC and not building our own layer at all — the last option may be simplest, since iyzico/Param likely already do this verification themselves when a merchant connects their own account). This needs a real decision before Phase 3, not now.
+
 ## 4. Domain map — make the DB column the actual source of truth
 
 - `src/middleware.ts` runs on the edge and currently reads `customDomain.ts`'s in-memory map (env JSON or the hardcoded default) because edge middleware can't easily do a per-request DB round trip.
-- Fix: at build/deploy time or via a short-TTL cache, resolve `customDomain` from `tr_boutiques` into the same map shape `getBoutiqueDomainMap()` already returns. Two reasonable approaches, agent should pick one and say why:
-  1. **Vercel Edge Config** — write the domain→slug map to Edge Config whenever a boutique's `customDomain` changes (via the owner/admin route that updates it), middleware reads Edge Config instead of the hardcoded object.
-  2. **Short-TTL in-memory cache at the edge** — middleware calls a lightweight internal endpoint or does a direct fetch to Supabase with a 60–300s cache, accepting slight propagation delay.
-- Either way: delete `DEFAULT_DOMAIN_MAP`'s hardcoded entries once the DB-backed path is verified working for `lilabutik`'s domain (`lilaboutiquedenizli.com`). Other domains (Pervin, Minimora) can be dropped entirely if those boutiques are being deleted per Mert's go-ahead — check with Phase 0 follow-up whether that's already happened before touching this.
+- **Decided (2026-09-22): short-TTL in-memory cache, not Edge Config.** At the current scale (4 boutiques, Mert-driven onboarding, no public self-serve yet), Edge Config's always-instant sync isn't worth the extra moving part (a second place to write to on every domain change, another thing that can drift). A cache with a short delay before a new/changed domain takes effect is a non-issue here. Revisit Edge Config later if this becomes public self-serve at real scale (Track B).
+- Implementation: middleware resolves `customDomain` → slug via a lightweight internal lookup (either a direct Supabase fetch from the edge runtime, or a tiny internal API route middleware calls) with an in-memory cache, TTL 60–300s (agent picks within that range). No new Vercel product/service to configure.
+- Delete `DEFAULT_DOMAIN_MAP`'s hardcoded entries once the DB-backed path is verified working for `lilabutik`'s domain (`lilaboutiquedenizli.com`). Other domains (Pervin, Minimora) can be dropped entirely if those boutiques are being deleted per Mert's go-ahead — check with Phase 0 follow-up whether that's already happened before touching this.
 
 ## 5. Layout/theme overrides — let the DB column win
 
@@ -110,5 +139,6 @@ Note these become **async** (DB read) where they were previously sync (in-memory
 
 - Public self-serve signup (Phase 1B internal tool, then Phase 2 later).
 - Actually building the connect-your-own-iyzico-keys UI (Phase 3) — this phase only builds the storage and the read path.
+- Seller/KYC verification UI and the `tr_boutique_verification`-shaped table described in §3b — captured as research only; needs its own design pass before Phase 3.
 - Theme editor UI, billing, domains-from-panel — later phases per the roadmap.
 - Don't touch `lilabutik`'s live iyzico credentials in a way that risks an outage — migrate her into the new table, verify with a sandbox charge, and only then remove the env-var path. If anything is uncertain, stop and ask rather than experimenting against her live keys.
