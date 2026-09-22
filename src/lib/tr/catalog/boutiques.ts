@@ -10,7 +10,7 @@ import type {
 } from "@/types/tr-marketplace";
 
 export const PUBLIC_BOUTIQUE_COLUMNS =
-  "id, slug, name, legal_name, description, logo_url, whatsapp_phone, instagram_handle, theme_accent, shipping_note, exchange_policy, physical_address, home_layout, custom_domain, editorial_content, catalog_profile, vergi_no, status, created_at, updated_at";
+  "id, slug, name, legal_name, description, logo_url, whatsapp_phone, instagram_handle, theme_accent, shipping_note, exchange_policy, physical_address, home_layout, custom_domain, editorial_content, catalog_profile, vergi_no, contact_email, status, created_at, updated_at";
 
 /** Prefer this view once `patch_tr_boutiques_public_view.sql` is applied (anon-safe). */
 export const PUBLIC_BOUTIQUE_VIEW = "tr_boutiques_public";
