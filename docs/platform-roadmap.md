@@ -159,7 +159,7 @@ Not for agents to do; agents may draft documents for review.
 - **Two existing clients are the regression suite.** Every change must leave both stores rendering and checking out the same way.
 
 - **Apply to iyzico Marketplace now** via their Contact Us form: registered company, store-builder platform with a marketplace on top, existing sellers. The reply time is outside your control, so send it before any Phase 3 marketplace code.
-- **Legal documents:** platform terms of use, seller agreement (with commission/plan terms), privacy policy and KVKK text, distance-sales/pre-information templates for stores (start from `docs/tr-boutique-legal-templates.md`, `docs/boutique-partnership-agreement-draft.md`, `docs/legal-and-affiliate-compliance.md`). Have a lawyer review.
+- **Legal documents:** platform terms of use, seller agreement (with commission/plan terms), privacy policy and KVKK text, distance-sales/pre-information templates for stores (start from `docs/tr-boutique-legal-templates.md`, `docs/boutique-partnership-agreement-draft.md`). Have a lawyer review.
 - **Accountant/lawyer questions:** whether the platform needs registration or a licence as an intermediary service provider (aracı hizmet sağlayıcı) and ETBİS obligations; how to invoice plan fees; GİB e-invoice (currently offline-only in `tr_invoices`).
 - **Vercel and Supabase plan capacity** for many tenants and domains (check limits before Phase 6).
 

@@ -45,7 +45,7 @@
 | Address zones | `src/lib/tr/geo/turkeyAddress.ts` |
 | Address book | `src/lib/tr/commerce/customerAddresses.ts`, `api/tr/customer/addresses` |
 | Schema | `patch_tr_marketplace.sql`, `patch_tr_order_fulfillment.sql`, `patch_tr_order_shipments.sql`, `patch_tr_order_shipping_block.sql`, `patch_tr_discount_codes.sql`, `patch_tr_customer_addresses.sql` |
-| Legal ops | `docs/pre-vergi-levhasi-checklist.md`, partnership draft |
+| Legal ops | `docs/boutique-partnership-agreement-draft.md` |
 
 ## Agent rules of thumb
 

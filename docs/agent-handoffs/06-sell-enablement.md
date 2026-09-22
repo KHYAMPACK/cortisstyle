@@ -93,7 +93,6 @@ Boutique owners generate Instagram-ready **İçerik** packs from catalog product
 
 - Owner discount codes / **Kampanyalar** (merchant promos — not an ad network)
 - International affiliate monetization (Phase 3-adjacent traffic)
-- TikTok / social playbooks: `docs/tiktok-content-ruleset.md`, `docs/social-account-setup.md`
 - WhatsApp CTA as interim conversion when checkout is off
 
 ## What we will do / direction

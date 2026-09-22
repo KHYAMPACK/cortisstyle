@@ -36,7 +36,6 @@
 | Catalog | `src/lib/tr/products.ts`, `boutiques.ts`, `mappers.ts` |
 | Platform flags | `src/lib/tr/platform.ts` |
 | Types | `src/types/tr-marketplace.ts`, `tr-look.ts`, `tr-cart.ts` |
-| Concept | `docs/turkey-marketplace-concept.md` |
 | Cadde intro | `CaddeIntroStack`, `lib/platform/caddeIntro.ts`, gated in `lib/platform/introLoader.ts` |
 | Cadde hero | `CaddeSplitHero`, `lib/tr/marketplace/caddeHero.ts` (2 try-on poses) |
 | Cadde page curtain | `CaddePageTransition`, `lib/platform/caddeTransition.ts` (Cadde marketplace only) |

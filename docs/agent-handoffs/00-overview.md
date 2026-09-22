@@ -62,7 +62,6 @@ International (archived)   → cortisstyle-international
 
 ## Related deep docs
 
-- Vision: `docs/turkey-marketplace-concept.md`
-- Ops roadmap: `docs/turkey-shop-roadmap.md`
+- Roadmap: `docs/platform-roadmap.md`
 - Boutique themes: `docs/lila-butik-e-ticaret-setup.md`
 - Cleanup debt: `docs/codebase-cleanup-audit.md`

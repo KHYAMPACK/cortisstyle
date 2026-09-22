@@ -24,6 +24,4 @@ Start here when picking up this repo. Read **[00-overview.md](./00-overview.md)*
 | [lila-butik-e-ticaret-setup.md](../lila-butik-e-ticaret-setup.md) | Phase 1 architecture | Shared rails + editorial skins |
 | [tr-boutique-legal-templates.md](../tr-boutique-legal-templates.md) | Phase 1 legal | Yasal templates |
 
-Deeper vision/roadmap: `docs/turkey-marketplace-concept.md`, `docs/turkey-shop-roadmap.md`.
-
 **Agents:** after structural changes, update the matching doc (see `.cursor/rules/document-structural-changes.mdc`).

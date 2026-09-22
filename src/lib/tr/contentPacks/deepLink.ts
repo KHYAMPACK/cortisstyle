@@ -10,10 +10,7 @@ export type BuildContentPackDeepLinkInput = {
   content?: string;
 };
 
-/**
- * Absolute product PDP URL with Instagram content-pack UTMs.
- * Matches patterns in docs/social-account-setup.md.
- */
+/** Absolute product PDP URL with Instagram content-pack UTMs. */
 export function buildContentPackDeepLink(
   input: BuildContentPackDeepLinkInput,
 ): string {
