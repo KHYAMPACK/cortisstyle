@@ -45,7 +45,7 @@ import {
   getTrCategoryLabel,
   listCategoriesForProducts,
   TR_BOUTIQUE_CATEGORIES,
-} from "@/lib/tr/categories";
+} from "@/lib/tr/fashion/categories";
 import { runOwnerPatches } from "@/lib/tr/ownerBulk";
 import { getPanelProductCover } from "@/lib/tr/productImages";
 import { isElbiseRestyleCandidate } from "@/lib/tr/aiCatalog/elbiseRestyle";

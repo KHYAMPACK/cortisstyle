@@ -8,7 +8,7 @@ import { useEffect } from "react";
 import { TrDemoGarmentVisual } from "@/components/tr/demo/TrDemoGarmentVisual";
 import { TrFavoriteButton } from "@/components/tr/TrFavoriteButton";
 import { TrPurchaseActions } from "@/components/tr/TrPurchaseActions";
-import { getTrCategoryLabel } from "@/lib/tr/categories";
+import { getTrCategoryLabel } from "@/lib/tr/fashion/categories";
 import { isTrDemoIconSrc } from "@/lib/tr/demoIcons";
 import { isTrDemoProduct } from "@/lib/tr/looks/demoCatalog";
 import {

@@ -7,7 +7,7 @@ import { Search } from "lucide-react";
 import { TrBoutiqueAtelierPlp } from "@/components/tr/boutique/editorial/TrBoutiqueAtelierPlp";
 import { TrBoutiqueEditorialProductCard } from "@/components/tr/boutique/editorial/TrBoutiqueEditorialProductCard";
 import { isAtelierEditorialSkin } from "@/lib/tr/boutiqueHome";
-import { getTrCategoryLabel, isTrCategoryMatch } from "@/lib/tr/categories";
+import { getTrCategoryLabel, isTrCategoryMatch } from "@/lib/tr/fashion/categories";
 import { trBoutiquePath, trBoutiqueProductsPath } from "@/lib/tr/paths";
 import { resolveProductColors } from "@/lib/tr/productOptions";
 import type { TrBoutiquePublic, TrProduct } from "@/types/tr-marketplace";

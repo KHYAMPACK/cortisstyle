@@ -23,7 +23,7 @@ import { TrAddedToCartSheet } from "@/components/tr/TrAddedToCartSheet";
 import { resolveBoutiqueThemeAccent } from "@/lib/tr/boutiqueBrand";
 import { resolveEditorialSkin } from "@/lib/tr/boutiqueHome";
 import { isMinimoraBoutique } from "@/lib/tr/boutique/minimora/isMinimoraBoutique";
-import { listCategoriesForProducts } from "@/lib/tr/categories";
+import { listCategoriesForProducts } from "@/lib/tr/fashion/categories";
 import { trBoutiqueLegalPath } from "@/lib/tr/paths";
 import type { TrBoutiquePublic, TrProduct } from "@/types/tr-marketplace";
 

@@ -32,7 +32,7 @@ import {
   getTrCategoryShopAllLabel,
   listTrCategoryRoots,
   resolveTrCategoryDisplayLabel,
-} from "@/lib/tr/categories";
+} from "@/lib/tr/fashion/categories";
 import { DEMO_SHOPPER_SHIPPED_ORDER_ID } from "@/lib/tr/commerce/demoShopperOrders";
 import {
   trBoutiqueAuthPath,

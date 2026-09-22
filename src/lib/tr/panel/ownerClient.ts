@@ -1,7 +1,7 @@
 import { getSupabaseClient } from "@/lib/supabaseClient";
 import { prepareOwnerUploadFile } from "@/lib/tr/prepareOwnerUploadFile";
 import { sanitizeProductFeatures } from "@/lib/tr/catalog/productFeatures";
-import { parseAiCategoryId } from "@/lib/tr/catalog/categories";
+import { parseAiCategoryId } from "@/lib/tr/fashion/categories";
 import type { TrOwnerProductOriginals } from "@/lib/tr/catalog/products";
 import {
   cachedOwnerFetch,

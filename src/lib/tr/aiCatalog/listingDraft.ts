@@ -8,7 +8,7 @@ import {
   getTrCategoryNavChildren,
   listAssignableTrCategories,
   parseAiCategoryId,
-} from "@/lib/tr/catalog/categories";
+} from "@/lib/tr/fashion/categories";
 import { TR_OWNER_PRODUCT_LIMITS } from "@/lib/tr/ownerProductConstraints";
 import {
   dressFeatureOptionId,

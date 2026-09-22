@@ -1,4 +1,4 @@
-import { isTrCategoryMatch } from "@/lib/tr/categories";
+import { isTrCategoryMatch } from "@/lib/tr/fashion/categories";
 import type { TrLookWithProducts } from "@/types/tr-look";
 import type { TrProductWithBoutique } from "@/types/tr-marketplace";
 

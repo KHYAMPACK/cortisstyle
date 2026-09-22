@@ -1,7 +1,7 @@
 import {
   isTrCategoryMatch,
   parseAiCategoryId,
-} from "@/lib/tr/catalog/categories";
+} from "@/lib/tr/fashion/categories";
 
 /** Garment-specific product upload pipelines. Elbise + üst giyim + alt giyim are live. */
 

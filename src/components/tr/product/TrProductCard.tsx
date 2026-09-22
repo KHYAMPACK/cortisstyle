@@ -6,7 +6,7 @@ import { TrDemoGarmentVisual } from "@/components/tr/demo/TrDemoGarmentVisual";
 import { TrFavoriteButton } from "@/components/tr/TrFavoriteButton";
 import { TrQuickAddToCartButton } from "@/components/tr/TrQuickAddToCartButton";
 import { TrSoftNavLink } from "@/components/tr/TrSoftNavLink";
-import { getTrCategoryLabel } from "@/lib/tr/categories";
+import { getTrCategoryLabel } from "@/lib/tr/fashion/categories";
 import { isTrDemoIconSrc } from "@/lib/tr/demoIcons";
 import {
   getProductCoverImageFor,

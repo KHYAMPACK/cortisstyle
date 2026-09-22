@@ -1,6 +1,6 @@
 import { buildElbiseTryOnConstructionLock } from "@/lib/tr/aiCatalog/elbiseConstructionLock";
 import { TR_OWNER_PRODUCT_LIMITS } from "@/lib/tr/ownerProductConstraints";
-import { getTrCategoryLabel } from "@/lib/tr/catalog/categories";
+import { getTrCategoryLabel } from "@/lib/tr/fashion/categories";
 import {
   altGiyimUsesPaca,
   TAKIM_SHOP_LEAF,

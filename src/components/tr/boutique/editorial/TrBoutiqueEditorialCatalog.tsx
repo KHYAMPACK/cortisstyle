@@ -10,7 +10,7 @@ import {
   groupProductsForHomeCategoryRows,
   groupProductsForHomeRootCategoryRows,
 } from "@/lib/tr/catalog/homeCategoryRows";
-import { getTrCategoryLabel, isTrCategoryMatch } from "@/lib/tr/categories";
+import { getTrCategoryLabel, isTrCategoryMatch } from "@/lib/tr/fashion/categories";
 import { trBoutiqueProductsPath } from "@/lib/tr/paths";
 import type { TrProduct } from "@/types/tr-marketplace";
 

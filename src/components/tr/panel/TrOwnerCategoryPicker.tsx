@@ -5,7 +5,7 @@ import {
   getTrCategoryNavChildren,
   listTrCategoriesGrouped,
   type TrCategoryDefinition,
-} from "@/lib/tr/categories";
+} from "@/lib/tr/fashion/categories";
 
 interface TrOwnerCategoryPickerProps {
   value: string | null;

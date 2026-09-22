@@ -12,7 +12,7 @@ import {
   type EditorialTwinStory,
 } from "@/lib/tr/boutiqueHome/editorialDemoContent";
 import { isAtelierEditorialSkin } from "@/lib/tr/boutiqueHome/editorialSkin";
-import { listTrCategoryRoots } from "@/lib/tr/categories";
+import { listTrCategoryRoots } from "@/lib/tr/fashion/categories";
 import { getStorefrontGalleryImages } from "@/lib/tr/catalog/productImages";
 import {
   foldTrCatalogText,

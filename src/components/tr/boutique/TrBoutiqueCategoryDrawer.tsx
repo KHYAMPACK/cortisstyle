@@ -3,7 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronRight, X } from "lucide-react";
 import { useEffect } from "react";
-import { TR_BOUTIQUE_CATEGORIES } from "@/lib/tr/categories";
+import { TR_BOUTIQUE_CATEGORIES } from "@/lib/tr/fashion/categories";
 import { resolveBoutiqueThemeAccent } from "@/lib/tr/boutiqueBrand";
 import { useTrBoutiqueCatalog } from "@/components/tr/boutique/TrBoutiqueCatalogContext";
 import type { TrBoutiquePublic } from "@/types/tr-marketplace";

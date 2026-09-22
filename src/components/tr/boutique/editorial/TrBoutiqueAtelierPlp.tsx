@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { TrBoutiqueEditorialProductCard } from "@/components/tr/boutique/editorial/TrBoutiqueEditorialProductCard";
 import { getEditorialContent } from "@/lib/tr/boutiqueHome";
-import { getTrCategoryLabel, isTrCategoryMatch } from "@/lib/tr/categories";
+import { getTrCategoryLabel, isTrCategoryMatch } from "@/lib/tr/fashion/categories";
 import { trBoutiquePath, trBoutiqueProductsPath } from "@/lib/tr/paths";
 import {
   resolveProductColors,

@@ -32,7 +32,7 @@ import {
   trPanelStaggerItem,
 } from "@/components/tr/panel/TrPanelMotion";
 import { runOwnerPatches } from "@/lib/tr/ownerBulk";
-import { listCategoriesForProducts } from "@/lib/tr/categories";
+import { listCategoriesForProducts } from "@/lib/tr/fashion/categories";
 import { getPanelProductCover } from "@/lib/tr/productImages";
 import { fetchOwnerProducts, peekOwnerProducts, updateOwnerProduct } from "@/lib/tr/ownerClient";
 import { PanelSelectCheckbox } from "@/components/tr/panel/PanelSelectCheckbox";

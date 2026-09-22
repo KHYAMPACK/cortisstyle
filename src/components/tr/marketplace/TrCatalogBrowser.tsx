@@ -11,7 +11,7 @@ import {
 import { motion } from "framer-motion";
 import { Search } from "lucide-react";
 import { TrProductCard } from "@/components/tr/TrProductCard";
-import { TR_BOUTIQUE_CATEGORIES } from "@/lib/tr/categories";
+import { TR_BOUTIQUE_CATEGORIES } from "@/lib/tr/fashion/categories";
 import { trProductsPath } from "@/lib/tr/paths";
 import { trPanelFadeTransition } from "@/components/tr/panel/TrPanelMotion";
 import type { TrProductWithBoutique } from "@/types/tr-marketplace";

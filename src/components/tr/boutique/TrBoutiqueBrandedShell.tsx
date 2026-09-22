@@ -6,7 +6,7 @@ import { TrBoutiqueCategoryDrawer } from "@/components/tr/boutique/TrBoutiqueCat
 import { TrBoutiqueFooter } from "@/components/tr/boutique/TrBoutiqueFooter";
 import { TrBoutiqueHeader } from "@/components/tr/boutique/TrBoutiqueHeader";
 import { TrAddedToCartSheet } from "@/components/tr/TrAddedToCartSheet";
-import { listCategoriesForProducts } from "@/lib/tr/categories";
+import { listCategoriesForProducts } from "@/lib/tr/fashion/categories";
 import {
   hasBoutiqueBrand,
   resolveBoutiqueBackground,

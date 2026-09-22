@@ -36,7 +36,7 @@ import {
   TrOwnerManualPhotoGallery,
 } from "@/components/tr/panel/TrOwnerManualPhotoGallery";
 import { TrOwnerProductFeaturesFields } from "@/components/tr/panel/TrOwnerProductFeaturesFields";
-import { TR_BOUTIQUE_CATEGORIES } from "@/lib/tr/categories";
+import { TR_BOUTIQUE_CATEGORIES } from "@/lib/tr/fashion/categories";
 import {
   constructionCatalogFamily,
   isAltGiyimShopLeaf,

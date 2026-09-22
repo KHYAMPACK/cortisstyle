@@ -4,7 +4,7 @@ import {
   getTrCategoryRootId,
   listAssignableTrCategories,
   listTrCategoryRoots,
-} from "@/lib/tr/catalog/categories";
+} from "@/lib/tr/fashion/categories";
 
 export type HomeCategoryProductGroup<
   T extends { category: string | null; sortOrder: number },

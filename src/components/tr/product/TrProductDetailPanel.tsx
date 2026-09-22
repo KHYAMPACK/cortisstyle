@@ -18,7 +18,7 @@ import { TrProductSizePicker } from "@/components/tr/TrProductSizePicker";
 import { TrPurchaseActions } from "@/components/tr/TrPurchaseActions";
 import { TrSizeGateSheet } from "@/components/tr/TrSizeGateSheet";
 import { TrSoftNavLink } from "@/components/tr/TrSoftNavLink";
-import { getTrCategoryLabel } from "@/lib/tr/categories";
+import { getTrCategoryLabel } from "@/lib/tr/fashion/categories";
 import { isProductCartCheckoutEnabled } from "@/lib/tr/cartCheckout";
 import { EDITORIAL_SALE_RED, isAtelierEditorialSkin } from "@/lib/tr/boutiqueHome";
 import { beginBuyNowCheckout, type TrPurchaseIntent } from "@/lib/tr/buyNow";

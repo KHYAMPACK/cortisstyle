@@ -16,7 +16,7 @@ import { TrSizeGateSheet } from "@/components/tr/TrSizeGateSheet";
 import { TrSoftNavLink } from "@/components/tr/TrSoftNavLink";
 import { TrYouMayAlsoLike } from "@/components/tr/TrYouMayAlsoLike";
 import { beginBuyNowCheckout, type TrPurchaseIntent } from "@/lib/tr/buyNow";
-import { getTrCategoryLabel } from "@/lib/tr/categories";
+import { getTrCategoryLabel } from "@/lib/tr/fashion/categories";
 import { isTrDemoIconSrc } from "@/lib/tr/demoIcons";
 import { isTrDemoProduct } from "@/lib/tr/looks/demoCatalog";
 import { isTrCheckoutEnabled } from "@/lib/tr/platform";

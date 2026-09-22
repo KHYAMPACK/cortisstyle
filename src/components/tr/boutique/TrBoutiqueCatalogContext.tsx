@@ -9,7 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { TrCategoryDefinition } from "@/lib/tr/categories";
+import type { TrCategoryDefinition } from "@/lib/tr/fashion/categories";
 
 interface TrBoutiqueCatalogContextValue {
   categories: TrCategoryDefinition[];

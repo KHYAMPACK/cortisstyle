@@ -2,7 +2,7 @@ import {
   isTrCategoryMatch,
   listTrCategoryRoots,
   type TrCategoryDefinition,
-} from "@/lib/tr/categories";
+} from "@/lib/tr/fashion/categories";
 import { getProductCoverImage } from "@/lib/tr/paths";
 import type { TrProduct } from "@/types/tr-marketplace";
 

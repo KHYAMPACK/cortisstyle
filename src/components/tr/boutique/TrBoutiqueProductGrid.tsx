@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { TrProductCard } from "@/components/tr/TrProductCard";
 import { useTrBoutiqueCatalog } from "@/components/tr/boutique/TrBoutiqueCatalogContext";
 import { groupProductsForHomeCategoryRows } from "@/lib/tr/catalog/homeCategoryRows";
-import { getTrCategoryLabel, isTrCategoryMatch } from "@/lib/tr/categories";
+import { getTrCategoryLabel, isTrCategoryMatch } from "@/lib/tr/fashion/categories";
 import type { TrProduct } from "@/types/tr-marketplace";
 
 interface TrBoutiqueProductGridProps {

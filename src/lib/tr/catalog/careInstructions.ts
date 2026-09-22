@@ -1,7 +1,7 @@
 import {
   canonicalizeTrCategoryId,
   getTrCategoryAncestors,
-} from "@/lib/tr/catalog/categories";
+} from "@/lib/tr/fashion/categories";
 
 export type TrCareGuide = {
   wash: string;
