@@ -1,6 +1,6 @@
 # 17 — Generic foundation + fashion module extraction
 
-**Status (2026-09-22):** In progress. Phases 1–4 done, phase 5 next. This doc is the living reference for the effort — update it as phases land, per the repo's own convention (`.cursor/rules/document-structural-changes.mdc`).
+**Status (2026-09-23):** In progress. Phases 1–5 done, phase 6 next. This doc is the living reference for the effort — update it as phases land, per the repo's own convention (`.cursor/rules/document-structural-changes.mdc`).
 
 ## Why
 
@@ -57,7 +57,7 @@ This is not a request for new features — the opposite: strip the core down to 
 2. ✅ Doc cleanup — deleted 9 docs confirmed stale for this repo (see commit `6aca0d5`), fixed dangling references.
 3. ✅ **Purged non-lilabutik, non-architectural boutique code** (see commit `217eca9`). newtenant and pervinsoysalbutik got full teardown — code *and* their `tr_boutiques` rows deleted (Pervin had 6 sandbox-only test orders, confirmed zero real invoices before deleting those too). demo-maya's demo-content code was removed, but its shared types (`EditorialDemoContent` etc.) and stock-photo asset paths turned out to be load-bearing for every editorial-skin boutique including lilabutik — kept those. Only `lilabutik` and `minimora` (the `custom_art` reference module) remain in `tr_boutiques`.
 4. ✅ **Relocated the category taxonomy into `src/lib/tr/fashion/categories.ts`** (see commit `3381b69`). Course-corrected from a "per-catalog_profile registry" — checked first and found `custom_art` has zero category usage today (one seeded product, no Ürünler/Stok panel), so a multi-vertical registry would have been an unused abstraction. Just moved the file and updated all 29 importers to the direct path instead (deleted the old shim) — makes the fashion-coupling visible without inventing a mechanism nothing uses yet. Verified every importer is catalog-browsing/panel UI, none of it touches checkout/payments/shipping/tenant management.
-5. ⬜ Split `TrProductFeatures` by vertical (types only, no DB migration).
+5. ✅ **Split `TrProductFeatures` by vertical** (see commit `e950ac8`). Core `TrProductFeatures` is now `TrFashionProductFeatures & TrCustomArtProductFeatures`, composed via `import type` from two new module-owned files: `src/lib/tr/fashion/types.ts` (all garment fields + `TrTakimSetItem`) and `src/lib/tr/customArt/types.ts` (`sizePricesKurus`, `madeToOrder`). Course-corrected from a full discriminated-union split (core as `Record<string, unknown>` + narrowing at ~18 call sites) after finding `productFeatures.ts`'s `sanitizeProductFeatures()` is genuinely cross-vertical and 16 of 18 `TrProductFeatures` consumers need zero changes either way — an intersection type gets the same field-ownership clarity with zero runtime cost and zero breakage. Only `productFeatures.ts` and `takimUpload.ts` needed an import-path update for `TrTakimSetItem` (now from `@/lib/tr/fashion/types` directly, same "no shim" precedent as the categories.ts move).
 6. ⬜ Physically relocate fashion-specific files into `src/lib/tr/fashion/`, in small batches.
 7. ⬜ Add the ESLint import-boundary rule.
 
