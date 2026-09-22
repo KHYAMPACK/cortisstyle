@@ -2,19 +2,10 @@ import type { TrBoutiqueHomeLayoutId } from "@/lib/tr/boutiqueHome/types";
 
 const DEFAULT_LAYOUT: TrBoutiqueHomeLayoutId = "default";
 
-/** Hard overrides (client / demo templates that must stay editorial even without DB). */
-const SLUG_OVERRIDES: Partial<Record<string, TrBoutiqueHomeLayoutId>> = {
-  "demo-maya": "editorial",
-  pervinsoysalbutik: "editorial",
-  lilabutik: "editorial",
-};
-
+/** Storefront template — DB `home_layout` column is the source of truth. */
 export function resolveBoutiqueHomeLayout(
-  boutiqueSlug: string,
+  _boutiqueSlug: string,
   homeLayout?: "default" | "editorial" | null,
 ): TrBoutiqueHomeLayoutId {
-  const override = SLUG_OVERRIDES[boutiqueSlug];
-  if (override) return override;
-  if (homeLayout === "editorial") return "editorial";
-  return DEFAULT_LAYOUT;
+  return homeLayout === "editorial" ? "editorial" : DEFAULT_LAYOUT;
 }
