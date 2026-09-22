@@ -19,7 +19,7 @@ import {
   chipsFromProductFeatures,
 } from "@/lib/tr/aiModel/elbiseTryOn";
 import { listAiModelOptions } from "@/lib/tr/aiModel/registry";
-import { ELBISE_PACKSHOT_SLOT } from "@/lib/tr/catalog/garmentUploadTypes";
+import { ELBISE_PACKSHOT_SLOT } from "@/lib/tr/fashion/garmentUploadTypes";
 import { requestOwnerAiModelGenerate } from "@/lib/tr/ownerClient";
 import type { ProductBatchCreateRow } from "@/lib/tr/productBatchCreateDraft";
 import {

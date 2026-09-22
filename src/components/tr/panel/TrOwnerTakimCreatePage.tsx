@@ -48,7 +48,7 @@ import { runTakimSequentialTryOn } from "@/lib/tr/fashion/aiCatalog/runTakimSequ
 import { TR_AI_CATALOG_CREDITS } from "@/lib/tr/fashion/aiCatalog/uploadCostHints";
 import { getElbiseTryOnPlates, listAiModelOptions } from "@/lib/tr/aiModel/registry";
 import { getCatalogBackground } from "@/lib/tr/catalogBackgrounds/registry";
-import { constructionCatalogFamily } from "@/lib/tr/catalog/garmentUploadTypes";
+import { constructionCatalogFamily } from "@/lib/tr/fashion/garmentUploadTypes";
 import { withManualListing } from "@/lib/tr/catalog/productFeatures";
 import {
   assembleTakimProductImages,
@@ -58,7 +58,7 @@ import {
   takimItemChipsReady,
   takimItemHasBothPhotos,
   takimItemPackshotUrl,
-} from "@/lib/tr/catalog/takimUpload";
+} from "@/lib/tr/fashion/takimUpload";
 import { createOwnerProduct, type TrOwnerProductPayload } from "@/lib/tr/ownerClient";
 import {
   clampDescription,

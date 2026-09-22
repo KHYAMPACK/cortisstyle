@@ -2,11 +2,11 @@ import {
   decolleteNoneLabel,
   dressFeatureOptionId,
   resolveDressFeatureValue,
-} from "@/lib/tr/catalog/dressFeatures";
+} from "@/lib/tr/fashion/dressFeatures";
 import {
   altGiyimUsesPaca,
   type ConstructionCatalogFamily,
-} from "@/lib/tr/catalog/garmentUploadTypes";
+} from "@/lib/tr/fashion/garmentUploadTypes";
 
 export interface ElbiseConstructionChips {
   neckline?: string | null;

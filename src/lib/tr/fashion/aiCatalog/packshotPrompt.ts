@@ -10,7 +10,7 @@ import {
   buildElbiseConstructionLock,
   type ElbiseConstructionChips,
 } from "@/lib/tr/fashion/aiCatalog/elbiseConstructionLock";
-import type { ConstructionCatalogFamily } from "@/lib/tr/catalog/garmentUploadTypes";
+import type { ConstructionCatalogFamily } from "@/lib/tr/fashion/garmentUploadTypes";
 import type { TrProductPhotoRole } from "@/lib/tr/ownerProductConstraints";
 
 export type PackshotView = TrProductPhotoRole;

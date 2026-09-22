@@ -10,7 +10,7 @@ import {
   mergeElbiseRestyleFeatures,
 } from "@/lib/tr/fashion/aiCatalog/elbiseRestyle";
 import { buildElbiseTryOnShots } from "@/lib/tr/aiModel/elbiseTryOn";
-import { resolveDressFeatureValue, withDefaultSleeves } from "@/lib/tr/catalog/dressFeatures";
+import { resolveDressFeatureValue, withDefaultSleeves } from "@/lib/tr/fashion/dressFeatures";
 import { applyConstructionListingTitle } from "@/lib/tr/fashion/aiCatalog/listingDraft";
 import { buildElbisePackshotPrompt } from "@/lib/tr/fashion/aiCatalog/packshotPrompt";
 import {
@@ -18,7 +18,7 @@ import {
   constructionCatalogFamily,
   parseConstructionShopCategory,
   type ConstructionCatalogFamily,
-} from "@/lib/tr/catalog/garmentUploadTypes";
+} from "@/lib/tr/fashion/garmentUploadTypes";
 import {
   runAiJobImmediately,
   type ScheduleAiJob,

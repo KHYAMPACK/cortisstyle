@@ -1,4 +1,4 @@
-import type { TrResolvedModelScale } from "@/lib/tr/catalog/modelMeasurements";
+import type { TrResolvedModelScale } from "@/lib/tr/fashion/modelMeasurements";
 
 interface TrBoutiqueModelMeasurementsProps {
   scale: TrResolvedModelScale;

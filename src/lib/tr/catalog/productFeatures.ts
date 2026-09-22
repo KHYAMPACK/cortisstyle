@@ -2,7 +2,7 @@
 
 import type {
   ConstructionCatalogFamily,
-} from "@/lib/tr/catalog/garmentUploadTypes";
+} from "@/lib/tr/fashion/garmentUploadTypes";
 import {
   sanitizeColorGroupId,
   sanitizeColorSiblingIds,
@@ -12,7 +12,7 @@ import type { TrTakimSetItem } from "@/lib/tr/fashion/types";
 import {
   resolveDressFeatureValue,
   type DressFeatureKey,
-} from "@/lib/tr/catalog/dressFeatures";
+} from "@/lib/tr/fashion/dressFeatures";
 
 export type { TrProductFeatures };
 

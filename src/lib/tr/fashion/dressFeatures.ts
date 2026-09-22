@@ -1,7 +1,7 @@
 import {
   altGiyimUsesPaca,
   type ConstructionCatalogFamily,
-} from "@/lib/tr/catalog/garmentUploadTypes";
+} from "@/lib/tr/fashion/garmentUploadTypes";
 
 /** Structured elbise / üst giyim PDP chips — Gemini suggests ids, we store Turkish labels. */
 

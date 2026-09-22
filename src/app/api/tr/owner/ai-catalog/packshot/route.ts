@@ -1,6 +1,6 @@
 import { generateOwnerPackshot } from "@/lib/tr/fashion/aiCatalog/generatePackshot";
 import { sanitizeListingDraft } from "@/lib/tr/fashion/aiCatalog/listingDraft";
-import { constructionCatalogFamily } from "@/lib/tr/catalog/garmentUploadTypes";
+import { constructionCatalogFamily } from "@/lib/tr/fashion/garmentUploadTypes";
 import { getBoutiqueByIdAdmin } from "@/lib/tr/boutiques";
 import {
   requireOwnedBoutique,

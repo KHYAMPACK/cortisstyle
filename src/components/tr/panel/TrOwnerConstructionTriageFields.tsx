@@ -13,7 +13,7 @@ import {
   familyStillMatchesCategory,
   GARMENT_UPLOAD_TYPES,
   type ConstructionCatalogFamily,
-} from "@/lib/tr/catalog/garmentUploadTypes";
+} from "@/lib/tr/fashion/garmentUploadTypes";
 
 const FAMILIES = GARMENT_UPLOAD_TYPES.filter(
   (entry) =>

@@ -5,7 +5,7 @@ import {
 } from "@/lib/tr/aiCatalog/ownerAiJobQueue";
 import type { ElbiseConstructionChips } from "@/lib/tr/fashion/aiCatalog/elbiseConstructionLock";
 import { hexFromTurkishColorName } from "@/lib/tr/catalog/colorSiblings";
-import type { ConstructionCatalogFamily } from "@/lib/tr/catalog/garmentUploadTypes";
+import type { ConstructionCatalogFamily } from "@/lib/tr/fashion/garmentUploadTypes";
 import { buildElbiseTryOnShots } from "@/lib/tr/aiModel/elbiseTryOn";
 import {
   requestOwnerAiModelGenerate,

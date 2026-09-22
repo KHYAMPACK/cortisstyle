@@ -1,12 +1,12 @@
 import { NATURAL_TRYON_PROMPT, NATURAL_TRYON_PROMPT_BACK } from "@/lib/tr/aiModel/prompts";
 import { getElbiseTryOnPlates } from "@/lib/tr/aiModel/registry";
-import type { ConstructionCatalogFamily } from "@/lib/tr/catalog/garmentUploadTypes";
+import type { ConstructionCatalogFamily } from "@/lib/tr/fashion/garmentUploadTypes";
 import {
   orderTakimItemsForTryOn,
   takimItemPackshotUrl,
   takimTryOnPrompt,
   type TakimGateChips,
-} from "@/lib/tr/catalog/takimUpload";
+} from "@/lib/tr/fashion/takimUpload";
 import { requestOwnerAiModelGenerate } from "@/lib/tr/ownerClient";
 import type { ScheduleAiJob } from "@/lib/tr/aiCatalog/ownerAiJobQueue";
 import { runAiJobImmediately } from "@/lib/tr/aiCatalog/ownerAiJobQueue";

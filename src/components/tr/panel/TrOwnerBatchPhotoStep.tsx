@@ -22,7 +22,7 @@ import type { PipelineJobItem } from "@/lib/tr/aiCatalog/pipelineProgress";
 import { proposedConstructionChipsFromDraft } from "@/lib/tr/fashion/aiCatalog/runConstructionPackshot";
 import { emptyElbiseGateChips } from "@/components/tr/panel/TrOwnerElbiseConstructionGate";
 import { getCatalogBackground } from "@/lib/tr/catalogBackgrounds/registry";
-import { constructionCatalogFamily } from "@/lib/tr/catalog/garmentUploadTypes";
+import { constructionCatalogFamily } from "@/lib/tr/fashion/garmentUploadTypes";
 import { requestOwnerListingDraft } from "@/lib/tr/ownerClient";
 import { TR_OWNER_PRODUCT_LIMITS } from "@/lib/tr/ownerProductConstraints";
 import {

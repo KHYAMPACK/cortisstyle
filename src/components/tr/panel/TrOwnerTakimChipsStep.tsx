@@ -26,11 +26,11 @@ import {
   isUstGiyimShopLeaf,
   TAKIM_SHOP_LEAF,
   type ConstructionCatalogFamily,
-} from "@/lib/tr/catalog/garmentUploadTypes";
+} from "@/lib/tr/fashion/garmentUploadTypes";
 import {
   takimItemChipsReady,
   takimItemPackshotUrl,
-} from "@/lib/tr/catalog/takimUpload";
+} from "@/lib/tr/fashion/takimUpload";
 import type { TakimItemDraft } from "@/lib/tr/productTakimCreateDraft";
 
 const FAMILIES = GARMENT_UPLOAD_TYPES.filter(

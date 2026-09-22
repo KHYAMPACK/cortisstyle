@@ -15,7 +15,7 @@ import {
   clampTitle,
 } from "@/lib/tr/ownerProductConstraints";
 import { sizesForChart, type TrSizeChartId } from "@/lib/tr/productOptions";
-import type { ConstructionCatalogFamily } from "@/lib/tr/catalog/garmentUploadTypes";
+import type { ConstructionCatalogFamily } from "@/lib/tr/fashion/garmentUploadTypes";
 import type { TrProductFeatures } from "@/types/tr-marketplace";
 
 export const PRODUCT_BATCH_CREATE_DRAFT_VERSION = 3 as const;

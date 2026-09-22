@@ -3,15 +3,15 @@ import {
   ELBISE_PACKSHOT_SLOT,
   constructionCatalogFamily,
   isConstructionCatalogCategory,
-} from "@/lib/tr/catalog/garmentUploadTypes";
+} from "@/lib/tr/fashion/garmentUploadTypes";
 import { isManualListing } from "@/lib/tr/catalog/productFeatures";
-import { isTakimCatalogProduct } from "@/lib/tr/catalog/takimUpload";
+import { isTakimCatalogProduct } from "@/lib/tr/fashion/takimUpload";
 import {
   describeModelPackageCredits,
   TR_AI_CATALOG_CREDITS,
 } from "@/lib/tr/fashion/aiCatalog/uploadCostHints";
 import { chipsFromProductFeatures } from "@/lib/tr/aiModel/elbiseTryOn";
-import { dressFeatureOptionId } from "@/lib/tr/catalog/dressFeatures";
+import { dressFeatureOptionId } from "@/lib/tr/fashion/dressFeatures";
 import { withLifestyleModelsAll } from "@/lib/tr/catalog/productFeatures";
 import { alignMarketplaceSlots } from "@/lib/tr/catalog/productImages";
 import type { TrProduct, TrProductFeatures } from "@/types/tr-marketplace";

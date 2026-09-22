@@ -7,13 +7,13 @@ import {
   getConstructionGateGroup,
   getConstructionPackshotGateGroups,
   withDefaultSleeves,
-} from "@/lib/tr/catalog/dressFeatures";
+} from "@/lib/tr/fashion/dressFeatures";
 import {
   altGiyimUsesPaca,
   type ConstructionCatalogFamily,
-} from "@/lib/tr/catalog/garmentUploadTypes";
+} from "@/lib/tr/fashion/garmentUploadTypes";
 
-export { constructionGateRequiredCopy } from "@/lib/tr/catalog/dressFeatures";
+export { constructionGateRequiredCopy } from "@/lib/tr/fashion/dressFeatures";
 
 export interface ElbiseGateChipState {
   neckline: string;

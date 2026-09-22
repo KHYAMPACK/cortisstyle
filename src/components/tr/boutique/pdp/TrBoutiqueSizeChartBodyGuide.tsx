@@ -1,5 +1,5 @@
 import Image from "next/image";
-import type { TrSizeChartMeasurePoint } from "@/lib/tr/catalog/sizeCharts";
+import type { TrSizeChartMeasurePoint } from "@/lib/tr/fashion/sizeCharts";
 
 interface TrBoutiqueSizeChartBodyGuideProps {
   points: TrSizeChartMeasurePoint[];

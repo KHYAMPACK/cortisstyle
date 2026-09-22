@@ -47,7 +47,7 @@ import {
 } from "@/lib/tr/fashion/aiCatalog/uploadCostHints";
 import { constructionChipsForFamily } from "@/lib/tr/fashion/aiCatalog/elbiseConstructionLock";
 import { chipsFromProductFeatures } from "@/lib/tr/aiModel/elbiseTryOn";
-import { constructionGateRequiredCopy } from "@/lib/tr/catalog/dressFeatures";
+import { constructionGateRequiredCopy } from "@/lib/tr/fashion/dressFeatures";
 import {
   constructionCatalogFamily,
   isAltGiyimShopLeaf,
@@ -55,7 +55,7 @@ import {
   isUstGiyimShopLeaf,
   requiredPhotoSlotsForUploadType,
   type ConstructionCatalogFamily,
-} from "@/lib/tr/catalog/garmentUploadTypes";
+} from "@/lib/tr/fashion/garmentUploadTypes";
 import {
   withLifestyleModelsAll,
   withManualListing,

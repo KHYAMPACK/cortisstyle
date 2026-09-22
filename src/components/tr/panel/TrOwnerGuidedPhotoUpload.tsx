@@ -43,8 +43,8 @@ import {
   parseConstructionShopCategory,
   requiredPhotoSlotsForUploadType,
   type ConstructionCatalogFamily,
-} from "@/lib/tr/catalog/garmentUploadTypes";
-import { resolveDressFeatureValue } from "@/lib/tr/catalog/dressFeatures";
+} from "@/lib/tr/fashion/garmentUploadTypes";
+import { resolveDressFeatureValue } from "@/lib/tr/fashion/dressFeatures";
 import {
   constructionGateErrorCopy,
   constructionGateRequiredCopy,

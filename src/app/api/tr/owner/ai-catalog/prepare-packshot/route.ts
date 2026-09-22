@@ -2,7 +2,7 @@ import { hasElbiseLockedConstruction } from "@/lib/tr/fashion/aiCatalog/elbiseCo
 import { draftProductListingFromImage } from "@/lib/tr/fashion/aiCatalog/listingDraft";
 import { buildElbisePackshotPrompt } from "@/lib/tr/fashion/aiCatalog/packshotPrompt";
 import { resolvePackshotPrompt } from "@/lib/tr/fashion/aiCatalog/resolvePackshotPrompt";
-import { constructionCatalogFamily } from "@/lib/tr/catalog/garmentUploadTypes";
+import { constructionCatalogFamily } from "@/lib/tr/fashion/garmentUploadTypes";
 import { constructionPackshotBasePrompt } from "@/lib/tr/fashion/fashn/packshot";
 import { getBoutiqueByIdAdmin } from "@/lib/tr/boutiques";
 import {

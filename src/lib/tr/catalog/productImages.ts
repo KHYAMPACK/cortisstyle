@@ -3,9 +3,9 @@ import {
   deliverPublicAssetUrl,
   deliverPublicAssetUrls,
 } from "@/lib/tr/assets/deliverPublicAssetUrl";
-import { ELBISE_PACKSHOT_SLOT } from "@/lib/tr/catalog/garmentUploadTypes";
+import { ELBISE_PACKSHOT_SLOT } from "@/lib/tr/fashion/garmentUploadTypes";
 import { isManualListing } from "@/lib/tr/catalog/productFeatures";
-import { isTakimCatalogProduct, takimPackshotUrls } from "@/lib/tr/catalog/takimUpload";
+import { isTakimCatalogProduct, takimPackshotUrls } from "@/lib/tr/fashion/takimUpload";
 import { TR_OWNER_PRODUCT_LIMITS } from "@/lib/tr/ownerProductConstraints";
 import {
   isTrMarketplaceAssetUrl,

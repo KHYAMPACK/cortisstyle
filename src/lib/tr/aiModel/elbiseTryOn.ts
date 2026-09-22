@@ -15,8 +15,8 @@ import type {
 import {
   dressFeatureOptionId,
   resolveDressFeatureValue,
-} from "@/lib/tr/catalog/dressFeatures";
-import type { ConstructionCatalogFamily } from "@/lib/tr/catalog/garmentUploadTypes";
+} from "@/lib/tr/fashion/dressFeatures";
+import type { ConstructionCatalogFamily } from "@/lib/tr/fashion/garmentUploadTypes";
 
 export type { ElbiseConstructionChips };
 

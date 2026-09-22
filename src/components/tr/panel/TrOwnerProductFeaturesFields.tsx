@@ -3,8 +3,8 @@
 import { panelChipClass } from "@/components/tr/panel/panelUi";
 import {
   getConstructionFeatureGroups,
-} from "@/lib/tr/catalog/dressFeatures";
-import type { ConstructionCatalogFamily } from "@/lib/tr/catalog/garmentUploadTypes";
+} from "@/lib/tr/fashion/dressFeatures";
+import type { ConstructionCatalogFamily } from "@/lib/tr/fashion/garmentUploadTypes";
 import {
   TR_PRODUCT_FEATURE_KEYS,
   TR_PRODUCT_FEATURE_LABELS,

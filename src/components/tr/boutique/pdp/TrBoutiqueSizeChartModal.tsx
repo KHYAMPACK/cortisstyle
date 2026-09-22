@@ -5,7 +5,7 @@ import { X } from "lucide-react";
 import { useEffect, useId } from "react";
 import { createPortal } from "react-dom";
 import { TrBoutiqueSizeChartBodyGuide } from "@/components/tr/boutique/pdp/TrBoutiqueSizeChartBodyGuide";
-import type { TrSizeChartTable } from "@/lib/tr/catalog/sizeCharts";
+import type { TrSizeChartTable } from "@/lib/tr/fashion/sizeCharts";
 
 interface TrBoutiqueSizeChartModalProps {
   open: boolean;

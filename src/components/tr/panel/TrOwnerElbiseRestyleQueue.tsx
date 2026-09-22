@@ -43,7 +43,7 @@ import {
   getAiModelOptionById,
   resolveReadyAiModelId,
 } from "@/lib/tr/aiModel/registry";
-import { constructionCatalogFamily } from "@/lib/tr/catalog/garmentUploadTypes";
+import { constructionCatalogFamily } from "@/lib/tr/fashion/garmentUploadTypes";
 import { getPanelProductCover } from "@/lib/tr/productImages";
 import type { TrProduct } from "@/types/tr-marketplace";
 

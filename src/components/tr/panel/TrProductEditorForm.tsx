@@ -43,8 +43,8 @@ import {
   isTakimShopLeaf,
   isUstGiyimShopLeaf,
   requiredPhotoSlotsForUploadType,
-} from "@/lib/tr/catalog/garmentUploadTypes";
-import { isTakimCatalogProduct } from "@/lib/tr/catalog/takimUpload";
+} from "@/lib/tr/fashion/garmentUploadTypes";
+import { isTakimCatalogProduct } from "@/lib/tr/fashion/takimUpload";
 import {
   isManualListing,
   withManualListing,

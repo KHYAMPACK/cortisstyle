@@ -27,8 +27,8 @@ import {
   resolveProductColors,
   resolveProductSizes,
 } from "@/lib/tr/productOptions";
-import { resolveProductModelScale } from "@/lib/tr/catalog/modelMeasurements";
-import { resolveProductSizeChart } from "@/lib/tr/catalog/sizeCharts";
+import { resolveProductModelScale } from "@/lib/tr/fashion/modelMeasurements";
+import { resolveProductSizeChart } from "@/lib/tr/fashion/sizeCharts";
 import { isSizeInStock } from "@/lib/tr/sizeStocks";
 import { trBoutiquePath, trHomePath } from "@/lib/tr/paths";
 import { resolveBoutiqueThemeAccent } from "@/lib/tr/boutiqueBrand";

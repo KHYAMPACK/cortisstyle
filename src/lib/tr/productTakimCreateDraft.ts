@@ -12,8 +12,8 @@ import { sizesForChart, type TrSizeChartId } from "@/lib/tr/productOptions";
 import {
   isTakimShopLeaf,
   type ConstructionCatalogFamily,
-} from "@/lib/tr/catalog/garmentUploadTypes";
-import type { TakimGateChips } from "@/lib/tr/catalog/takimUpload";
+} from "@/lib/tr/fashion/garmentUploadTypes";
+import type { TakimGateChips } from "@/lib/tr/fashion/takimUpload";
 import type { TrProductFeatures } from "@/types/tr-marketplace";
 
 export const PRODUCT_TAKIM_CREATE_DRAFT_VERSION = 1 as const;

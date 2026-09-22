@@ -41,7 +41,7 @@ import { hasManualGalleryPhoto } from "@/components/tr/panel/TrOwnerManualPhotoG
 import { runConstructionPackshot } from "@/lib/tr/fashion/aiCatalog/runConstructionPackshot";
 import { describeModelPackageShots } from "@/lib/tr/fashion/aiCatalog/uploadCostHints";
 import { emptyElbiseGateChips } from "@/components/tr/panel/TrOwnerElbiseConstructionGate";
-import { ELBISE_PACKSHOT_SLOT } from "@/lib/tr/catalog/garmentUploadTypes";
+import { ELBISE_PACKSHOT_SLOT } from "@/lib/tr/fashion/garmentUploadTypes";
 import { runOwnerPatches } from "@/lib/tr/ownerBulk";
 import { createOwnerProduct, type TrOwnerProductPayload } from "@/lib/tr/ownerClient";
 import {

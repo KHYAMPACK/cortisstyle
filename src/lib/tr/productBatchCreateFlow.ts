@@ -6,7 +6,7 @@ import {
   constructionFamilyLeafReady,
   ELBISE_PACKSHOT_SLOT,
   type ConstructionCatalogFamily,
-} from "@/lib/tr/catalog/garmentUploadTypes";
+} from "@/lib/tr/fashion/garmentUploadTypes";
 
 export type BatchPhotoTileKind =
   | "empty"

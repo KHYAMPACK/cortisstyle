@@ -7,7 +7,7 @@ import {
   CARE_ROW_LABELS,
   getCareInstructions,
   type TrCareGuide,
-} from "@/lib/tr/catalog/careInstructions";
+} from "@/lib/tr/fashion/careInstructions";
 import { listProductFeatureRows } from "@/lib/tr/catalog/productFeatures";
 import {
   getPdpDeliverySummary,

@@ -34,7 +34,7 @@ import {
 import {
   constructionCatalogFamily,
   isConstructionCatalogUpload,
-} from "@/lib/tr/catalog/garmentUploadTypes";
+} from "@/lib/tr/fashion/garmentUploadTypes";
 import { replaceLifestyleShot } from "@/lib/tr/catalog/productImages";
 import {
   lifestyleModelIdAt,

@@ -10,11 +10,11 @@ import {
   runAiJobImmediately,
   type ScheduleAiJob,
 } from "@/lib/tr/aiCatalog/ownerAiJobQueue";
-import { resolveDressFeatureValue, withDefaultSleeves } from "@/lib/tr/catalog/dressFeatures";
+import { resolveDressFeatureValue, withDefaultSleeves } from "@/lib/tr/fashion/dressFeatures";
 import {
   constructionCatalogFamily,
   type ConstructionCatalogFamily,
-} from "@/lib/tr/catalog/garmentUploadTypes";
+} from "@/lib/tr/fashion/garmentUploadTypes";
 import {
   requestOwnerPackshot,
   requestOwnerPackshotPrepare,

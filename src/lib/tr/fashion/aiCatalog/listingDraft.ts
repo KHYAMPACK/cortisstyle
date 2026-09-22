@@ -15,14 +15,14 @@ import {
   dressGeminiEnumHint,
   decolleteNoneLabel,
   resolveDressFeatureValue,
-} from "@/lib/tr/catalog/dressFeatures";
+} from "@/lib/tr/fashion/dressFeatures";
 import { hasElbiseLockedConstruction } from "@/lib/tr/fashion/aiCatalog/elbiseConstructionLock";
 import {
   constructionCatalogFamily,
   isAltGiyimSkirtLeaf,
   parseConstructionShopCategory,
   type ConstructionCatalogFamily,
-} from "@/lib/tr/catalog/garmentUploadTypes";
+} from "@/lib/tr/fashion/garmentUploadTypes";
 import { constructionPackshotBasePrompt } from "@/lib/tr/fashion/fashn/packshot";
 
 const GEMINI_MODELS = [
