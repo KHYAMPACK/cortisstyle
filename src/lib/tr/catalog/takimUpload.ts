@@ -7,7 +7,8 @@ import {
   type ConstructionCatalogFamily,
 } from "@/lib/tr/catalog/garmentUploadTypes";
 import { isTrMarketplaceAssetUrl } from "@/lib/tr/trAssetUrls";
-import type { TrProduct, TrProductFeatures, TrTakimSetItem } from "@/types/tr-marketplace";
+import type { TrProduct, TrProductFeatures } from "@/types/tr-marketplace";
+import type { TrTakimSetItem } from "@/lib/tr/fashion/types";
 
 export { TAKIM_SHOP_LEAF };
 

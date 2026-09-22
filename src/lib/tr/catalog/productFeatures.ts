@@ -7,10 +7,8 @@ import {
   sanitizeColorGroupId,
   sanitizeColorSiblingIds,
 } from "@/lib/tr/catalog/colorSiblings";
-import type {
-  TrProductFeatures,
-  TrTakimSetItem,
-} from "@/types/tr-marketplace";
+import type { TrProductFeatures } from "@/types/tr-marketplace";
+import type { TrTakimSetItem } from "@/lib/tr/fashion/types";
 import {
   resolveDressFeatureValue,
   type DressFeatureKey,
