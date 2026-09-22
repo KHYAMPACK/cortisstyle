@@ -8,6 +8,7 @@ import {
   safeListPublicCatalogProducts,
 } from "@/lib/tr/publicData";
 import { excludeColorSiblingIds } from "@/lib/tr/catalog/colorSiblings";
+import { boutiqueOffersIyzicoCheckout } from "@/lib/tr/payments/registry";
 import { pickRelatedProducts } from "@/lib/tr/recommendations";
 
 interface TrParcaPageProps {
@@ -43,12 +44,16 @@ export default async function TrParcaPage({ params }: TrParcaPageProps) {
     category: product.category,
     limit: 8,
   });
+  const iyzicoCheckout = await boutiqueOffersIyzicoCheckout(
+    product.boutique.slug,
+  );
 
   return (
     <TrClothPage
       product={product}
       relatedProducts={relatedProducts}
       colorSiblings={colorSiblings}
+      iyzicoCheckout={iyzicoCheckout}
     />
   );
 }

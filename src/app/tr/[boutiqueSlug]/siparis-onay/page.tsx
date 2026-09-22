@@ -57,7 +57,7 @@ export default async function BoutiqueOrderConfirmationPage({
   const tokenOk =
     orderId && verifyOrderConfirmToken(orderId, query.token ?? null);
   const brandTitle = resolveBoutiqueBrandLabel(boutique.slug, boutique.name);
-  const iyzicoCheckout = boutiqueOffersIyzicoCheckout(boutique.slug);
+  const iyzicoCheckout = await boutiqueOffersIyzicoCheckout(boutique.slug);
 
   const order =
     !demo && orderId && tokenOk

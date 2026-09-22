@@ -76,13 +76,13 @@ function resolvePeriod(summary: TrOwnerSummaryResponse) {
 function HomeDashboard({
   boutiqueId,
   boutiqueName,
-  boutiqueSlug,
   catalogProfile,
+  offersIyzicoCheckout,
 }: {
   boutiqueId: string;
   boutiqueName: string;
-  boutiqueSlug: string;
   catalogProfile: TrCatalogProfileId;
+  offersIyzicoCheckout: boolean;
 }) {
   const printOnDemand = isCustomArtCatalogProfile({ catalogProfile });
   const [range, setRange] = useState<TrPanelSummaryRange>("today");
@@ -94,7 +94,7 @@ function HomeDashboard({
   const [error, setError] = useState<string | null>(null);
   const { recentOrders, loading: ordersLoading } = useOwnerOrderAlerts(
     boutiqueId,
-    boutiqueSlug,
+    offersIyzicoCheckout,
   );
 
   useEffect(() => {
@@ -300,8 +300,8 @@ export function TrOwnerHomePage() {
         <HomeDashboard
           boutiqueId={activeBoutique.id}
           boutiqueName={activeBoutique.name}
-          boutiqueSlug={activeBoutique.slug}
           catalogProfile={activeBoutique.catalogProfile ?? "fashion"}
+          offersIyzicoCheckout={Boolean(activeBoutique.offersIyzicoCheckout)}
         />
       )}
     </TrOwnerPanelGate>

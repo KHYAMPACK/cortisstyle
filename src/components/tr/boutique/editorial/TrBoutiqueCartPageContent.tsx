@@ -211,6 +211,7 @@ function CartLineRow({
 interface TrBoutiqueCartPageContentProps {
   boutique: TrBoutiquePublic;
   catalog?: TrProductWithBoutique[];
+  iyzicoCheckout?: boolean;
 }
 
 /**
@@ -219,6 +220,7 @@ interface TrBoutiqueCartPageContentProps {
 export function TrBoutiqueCartPageContent({
   boutique,
   catalog: catalogProp,
+  iyzicoCheckout = false,
 }: TrBoutiqueCartPageContentProps) {
   const cart = useTrScopedCart();
   const favorites = useTrScopedFavorites();
@@ -377,7 +379,7 @@ export function TrBoutiqueCartPageContent({
   return (
     <div className="flex min-h-[70dvh] flex-col pt-6 md:pt-8">
       <div className="mx-auto w-full max-w-3xl flex-1 px-5 md:px-10">
-        <TrSandboxBanner className="mb-6" demo={demoCart} boutiqueSlug={boutique.slug} />
+        <TrSandboxBanner className="mb-6" demo={demoCart} iyzicoCheckout={iyzicoCheckout} />
 
         <p className="mb-4 text-center text-[10px] tracking-[0.22em] text-neutral-500 uppercase">
           {brandTitle} · Sepet · {count} ürün

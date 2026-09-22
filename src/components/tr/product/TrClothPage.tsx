@@ -40,12 +40,14 @@ interface TrClothPageProps {
   product: TrProductWithBoutique;
   relatedProducts: TrProductWithBoutique[];
   colorSiblings?: TrProductWithBoutique[];
+  iyzicoCheckout?: boolean;
 }
 
 export function TrClothPage({
   product,
   relatedProducts,
   colorSiblings = [],
+  iyzicoCheckout = false,
 }: TrClothPageProps) {
   const images = getMarketplaceGalleryImages(product);
   const cover = images[0] ?? null;
@@ -292,6 +294,7 @@ export function TrClothPage({
             sizeOutOfStock={sizeOutOfStock}
             onRequestSelection={openSizeGate}
             className="hidden md:block"
+            iyzicoCheckout={iyzicoCheckout}
           />
 
           {/* Mobile: banners / WhatsApp only — actions in sticky bar */}
@@ -306,6 +309,7 @@ export function TrClothPage({
               onRequestSelection={openSizeGate}
               hideActions
               className="md:hidden"
+              iyzicoCheckout={iyzicoCheckout}
             />
           ) : null}
 

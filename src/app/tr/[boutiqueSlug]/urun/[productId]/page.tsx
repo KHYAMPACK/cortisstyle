@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { TrBoutiqueProductPage } from "@/components/tr/boutique/pdp/TrBoutiqueProductPage";
 import { TR_PDP_FROM_CADDE } from "@/lib/tr/paths";
+import { boutiqueOffersIyzicoCheckout } from "@/lib/tr/payments/registry";
 import {
   safeGetPublicColorSiblings,
   safeGetPublicProductByBoutiqueSlugAndId,
@@ -49,12 +50,16 @@ export default async function BoutiqueProductPage({
 
   const entry = from === TR_PDP_FROM_CADDE ? "cadde" : "store";
   const colorSiblings = await safeGetPublicColorSiblings(product);
+  const iyzicoCheckout = await boutiqueOffersIyzicoCheckout(
+    product.boutique.slug,
+  );
 
   return (
     <TrBoutiqueProductPage
       product={product}
       entry={entry}
       colorSiblings={colorSiblings}
+      iyzicoCheckout={iyzicoCheckout}
     />
   );
 }

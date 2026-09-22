@@ -31,7 +31,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const cardCheckout = boutiqueOffersIyzicoCheckout(boutique.slug);
+    const cardCheckout = await boutiqueOffersIyzicoCheckout(boutique.slug);
     const listed = (await listOrdersByBoutiqueIdAdmin(boutique.id)).filter(
       (order) => isOwnerListedOrder(order, { cardCheckout }),
     );

@@ -8,7 +8,6 @@ import {
   isActionableOwnerOrder,
   ORDERS_SEEN_EVENT,
 } from "@/lib/tr/orderNotifications";
-import { boutiqueOffersIyzicoCheckout } from "@/lib/tr/payments/registry";
 import type { TrOrderWithItems } from "@/types/tr-marketplace";
 
 /**
@@ -16,13 +15,12 @@ import type { TrOrderWithItems } from "@/types/tr-marketplace";
  */
 export function useOwnerOrderAlerts(
   boutiqueId: string | null | undefined,
-  boutiqueSlug?: string | null,
+  cardCheckout = false,
 ) {
   const cached = boutiqueId ? peekOwnerOrders(boutiqueId) : undefined;
   const [orders, setOrders] = useState<TrOrderWithItems[]>(cached ?? []);
   const [loading, setLoading] = useState(Boolean(boutiqueId) && !cached);
   const [hasNewOrders, setHasNewOrders] = useState(false);
-  const cardCheckout = boutiqueOffersIyzicoCheckout(boutiqueSlug);
 
   useEffect(() => {
     if (!boutiqueId) {

@@ -34,7 +34,6 @@ import {
   updateOwnerOrderPaymentPaid,
 } from "@/lib/tr/ownerClient";
 import { boutiqueHasLiveShipping } from "@/lib/tr/shipping/registry";
-import { boutiqueOffersIyzicoCheckout } from "@/lib/tr/payments/registry";
 import { trPanelOrdersPath, trPanelPath } from "@/lib/tr/paths";
 import {
   formatTryFromKurus,
@@ -52,10 +51,12 @@ const FULFILLMENT_OPTIONS: TrFulfillmentStatus[] = [
 function OrderDetail({
   boutiqueId,
   boutiqueSlug,
+  offersIyzicoCheckout,
   orderId,
 }: {
   boutiqueId: string;
   boutiqueSlug: string;
+  offersIyzicoCheckout: boolean;
   orderId: string;
 }) {
   const [order, setOrder] = useState<TrOrderWithItems | null>(null);
@@ -213,7 +214,7 @@ function OrderDetail({
             </div>
             {order.paymentStatus === "pending" &&
             !order.isSandbox &&
-            !boutiqueOffersIyzicoCheckout(boutiqueSlug) ? (
+            !offersIyzicoCheckout ? (
               <div className="mt-4 space-y-2">
                 <p className={panelHintClass}>
                   Kart ödemesi henüz açık değil. Havale / WhatsApp ile tahsil
@@ -451,6 +452,7 @@ export function TrOwnerOrderDetailPage({ orderId }: { orderId: string }) {
           <OrderDetail
             boutiqueId={activeBoutique.id}
             boutiqueSlug={activeBoutique.slug}
+            offersIyzicoCheckout={Boolean(activeBoutique.offersIyzicoCheckout)}
             orderId={orderId}
           />
         </div>

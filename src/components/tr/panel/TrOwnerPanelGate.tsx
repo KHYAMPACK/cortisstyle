@@ -123,7 +123,7 @@ function TrOwnerPanelGateBody({ children }: TrOwnerPanelGateProps) {
 
   const { hasNewOrders } = useOwnerOrderAlerts(
     isAuthenticated && activeBoutique ? activeBoutique.id : null,
-    activeBoutique?.slug,
+    activeBoutique?.offersIyzicoCheckout,
   );
 
   const accentStyle = panelAccentCssVars(

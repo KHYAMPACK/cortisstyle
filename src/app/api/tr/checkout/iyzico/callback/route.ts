@@ -80,7 +80,7 @@ async function handleCallback(request: Request): Promise<Response> {
   }
 
   const boutique = await getPublicBoutiqueBySlug(boutiqueSlug);
-  const creds = getIyzicoCredentials(boutiqueSlug);
+  const creds = await getIyzicoCredentials(boutiqueSlug);
   if (!boutique || !creds) {
     return new Response("Ödeme yapılandırması yok.", { status: 404 });
   }

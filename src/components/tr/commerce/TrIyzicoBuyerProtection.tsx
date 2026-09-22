@@ -4,8 +4,8 @@ import Script from "next/script";
 import { usePathname } from "next/navigation";
 import { useLayoutEffect } from "react";
 import {
-  getIyzicoBuyerProtection,
   IYZICO_BUYER_PROTECTION_HEADER_MAX_PX,
+  type TrIyzicoBuyerProtection as TrIyzicoBuyerProtectionConfig,
 } from "@/lib/tr/payments/registry";
 import { isBoutiqueHomePath } from "@/lib/tr/paths";
 
@@ -26,11 +26,12 @@ function syncIyzicoHomeChrome(onHome: boolean) {
 /** iyzico Alıcı Koruması overlay — boutique homepage only. */
 export function TrIyzicoBuyerProtection({
   boutiqueSlug,
+  config,
 }: {
   boutiqueSlug: string;
+  config: TrIyzicoBuyerProtectionConfig | null;
 }) {
   const pathname = usePathname();
-  const config = getIyzicoBuyerProtection(boutiqueSlug);
   const onHome = Boolean(config) && isBoutiqueHomePath(pathname, boutiqueSlug);
 
   useLayoutEffect(() => {

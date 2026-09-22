@@ -24,6 +24,7 @@ interface TrProductPurchasePanelProps {
   /** Hide primary purchase CTAs (e.g. moved to mobile sticky bar). */
   hideActions?: boolean;
   className?: string;
+  iyzicoCheckout?: boolean;
 }
 
 export function TrProductPurchasePanel({
@@ -36,6 +37,7 @@ export function TrProductPurchasePanel({
   sizeOutOfStock = false,
   hideActions = false,
   className = "",
+  iyzicoCheckout = false,
 }: TrProductPurchasePanelProps) {
   const checkoutEnabled = isProductCartCheckoutEnabled(product);
   const orderProduct = {
@@ -77,7 +79,7 @@ export function TrProductPurchasePanel({
   if (checkoutEnabled) {
     return (
       <div className={`mt-8 space-y-4 ${className}`}>
-        <TrSandboxBanner demo={isTrDemoProduct(product)} boutiqueSlug={product.boutique.slug} />
+        <TrSandboxBanner demo={isTrDemoProduct(product)} iyzicoCheckout={iyzicoCheckout} />
 
         {actions}
 

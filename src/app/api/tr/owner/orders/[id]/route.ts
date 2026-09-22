@@ -67,7 +67,7 @@ export async function GET(request: Request, context: RouteContext) {
   }
 
   if (
-    boutiqueOffersIyzicoCheckout(boutique.slug) &&
+    (await boutiqueOffersIyzicoCheckout(boutique.slug)) &&
     !order.isSandbox &&
     (order.paymentStatus === "pending" || order.paymentStatus === "failed")
   ) {
@@ -127,7 +127,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     return Response.json({ error: "Sipariş bulunamadı." }, { status: 404 });
   }
 
-  const cardCheckout = boutiqueOffersIyzicoCheckout(boutique.slug);
+  const cardCheckout = await boutiqueOffersIyzicoCheckout(boutique.slug);
   if (
     cardCheckout &&
     !existing.isSandbox &&

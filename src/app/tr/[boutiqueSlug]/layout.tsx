@@ -5,6 +5,7 @@ import { TrBoutiqueBrandedShell } from "@/components/tr/boutique/TrBoutiqueBrand
 import { TrBoutiqueEditorialShell } from "@/components/tr/boutique/editorial/TrBoutiqueEditorialShell";
 import { TrIyzicoBuyerProtection } from "@/components/tr/commerce/TrIyzicoBuyerProtection";
 import { TrMarketplaceChrome } from "@/components/tr/TrMarketplaceChrome";
+import { getIyzicoBuyerProtection } from "@/lib/tr/payments/registry";
 import {
   hasBoutiqueBrand,
   resolveBoutiqueBrandLabel,
@@ -181,9 +182,14 @@ export default async function BoutiqueLayout({
     shell = <TrMarketplaceChrome>{children}</TrMarketplaceChrome>;
   }
 
+  const buyerProtection = await getIyzicoBuyerProtection(boutique.slug);
+
   return (
     <>
-      <TrIyzicoBuyerProtection boutiqueSlug={boutique.slug} />
+      <TrIyzicoBuyerProtection
+        boutiqueSlug={boutique.slug}
+        config={buyerProtection}
+      />
       {shell}
     </>
   );

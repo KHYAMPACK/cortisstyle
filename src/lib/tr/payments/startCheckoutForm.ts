@@ -99,7 +99,7 @@ export async function startIyzicoCheckoutForm(input: {
   order: TrOrderWithItems;
   buyerIp: string;
 }): Promise<{ paymentPageUrl: string; token: string }> {
-  const creds = getIyzicoCredentials(input.boutiqueSlug);
+  const creds = await getIyzicoCredentials(input.boutiqueSlug);
   if (!creds) {
     throw new IyzicoError("Bu butik için iyzico anahtarı yok.", 503);
   }

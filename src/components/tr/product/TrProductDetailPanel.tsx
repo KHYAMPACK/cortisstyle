@@ -44,6 +44,7 @@ interface TrProductDetailPanelProps {
   /** When `"cadde"`, back falls back to /tr; otherwise boutique storefront. */
   entry?: "cadde" | "store";
   colorSiblings?: TrProductWithBoutique[];
+  iyzicoCheckout?: boolean;
 }
 
 export function TrProductDetailPanel({
@@ -51,6 +52,7 @@ export function TrProductDetailPanel({
   branded,
   entry = "store",
   colorSiblings = [],
+  iyzicoCheckout = false,
 }: TrProductDetailPanelProps) {
   const sizes = useMemo(() => resolveProductSizes(product), [product]);
   const inStockSizes = useMemo(
@@ -354,6 +356,7 @@ export function TrProductDetailPanel({
           sizeOutOfStock={sizeOutOfStock}
           onRequestSelection={openSizeGate}
           className="hidden md:block"
+          iyzicoCheckout={iyzicoCheckout}
         />
 
         {checkoutEnabled ? (
@@ -367,6 +370,7 @@ export function TrProductDetailPanel({
             onRequestSelection={openSizeGate}
             hideActions
             className="md:hidden"
+            iyzicoCheckout={iyzicoCheckout}
           />
         ) : null}
 

@@ -39,9 +39,11 @@ import {
 function OrdersList({
   boutiqueId,
   boutiqueSlug,
+  offersIyzicoCheckout,
 }: {
   boutiqueId: string;
   boutiqueSlug: string;
+  offersIyzicoCheckout: boolean;
 }) {
   const cached = peekOwnerOrders(boutiqueId);
   const [orders, setOrders] = useState<TrOrderWithItems[]>(cached ?? []);
@@ -145,6 +147,7 @@ function OrdersList({
                   <TrOwnerOrderListCard
                     boutiqueId={boutiqueId}
                     boutiqueSlug={boutiqueSlug}
+                    offersIyzicoCheckout={offersIyzicoCheckout}
                     order={order}
                     onUpdated={(updated) =>
                       setOrders((current) =>
@@ -182,6 +185,7 @@ export function TrOwnerOrdersPage() {
           <OrdersList
             boutiqueId={activeBoutique.id}
             boutiqueSlug={activeBoutique.slug}
+            offersIyzicoCheckout={Boolean(activeBoutique.offersIyzicoCheckout)}
           />
         </div>
       )}

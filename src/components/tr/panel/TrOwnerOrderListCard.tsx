@@ -28,7 +28,6 @@ import {
   updateOwnerOrderFulfillment,
   updateOwnerOrderPaymentPaid,
 } from "@/lib/tr/ownerClient";
-import { boutiqueOffersIyzicoCheckout } from "@/lib/tr/payments/registry";
 import { boutiqueHasLiveShipping } from "@/lib/tr/shipping/registry";
 import {
   SHIPPING_BLOCK_ADDRESS_REJECTED,
@@ -59,11 +58,13 @@ function locationLine(order: TrOrderWithItems): string | null {
 export function TrOwnerOrderListCard({
   boutiqueId,
   boutiqueSlug,
+  offersIyzicoCheckout,
   order,
   onUpdated,
 }: {
   boutiqueId: string;
   boutiqueSlug: string;
+  offersIyzicoCheckout: boolean;
   order: TrOrderWithItems;
   onUpdated: (order: TrOrderWithItems) => void;
 }) {
@@ -71,7 +72,7 @@ export function TrOwnerOrderListCard({
   const [error, setError] = useState<string | null>(null);
 
   const live = boutiqueHasLiveShipping(boutiqueSlug);
-  const cardCheckout = boutiqueOffersIyzicoCheckout(boutiqueSlug);
+  const cardCheckout = offersIyzicoCheckout;
   const paid =
     order.paymentStatus === "paid" ||
     order.paymentStatus === "sandbox" ||

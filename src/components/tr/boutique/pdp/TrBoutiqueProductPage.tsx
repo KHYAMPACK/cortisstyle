@@ -11,12 +11,14 @@ interface TrBoutiqueProductPageProps {
   product: TrProductWithBoutique;
   entry?: "cadde" | "store";
   colorSiblings?: TrProductWithBoutique[];
+  iyzicoCheckout?: boolean;
 }
 
 export function TrBoutiqueProductPage({
   product,
   entry = "store",
   colorSiblings = [],
+  iyzicoCheckout = false,
 }: TrBoutiqueProductPageProps) {
   const branded = hasBoutiqueBrand(product.boutique);
   const layout = resolveBoutiquePdpLayout(product.boutique);
@@ -49,6 +51,7 @@ export function TrBoutiqueProductPage({
           branded={branded}
           entry={entry}
           colorSiblings={colorSiblings}
+          iyzicoCheckout={iyzicoCheckout}
         />
       );
   }

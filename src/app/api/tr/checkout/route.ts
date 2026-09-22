@@ -169,8 +169,8 @@ export async function POST(request: Request) {
     const wantsIyzico =
       Boolean(boutiqueSlug) &&
       !sandbox &&
-      boutiqueOffersIyzicoCheckout(boutiqueSlug);
-    if (wantsIyzico && !getIyzicoCredentials(boutiqueSlug!)) {
+      (await boutiqueOffersIyzicoCheckout(boutiqueSlug));
+    if (wantsIyzico && !(await getIyzicoCredentials(boutiqueSlug!))) {
       return Response.json(
         { error: "Kart ödemesi şu an alınamıyor. Biraz sonra tekrar deneyin." },
         { status: 503 },

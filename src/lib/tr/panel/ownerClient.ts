@@ -29,6 +29,7 @@ export interface TrOwnerBoutiqueSummary {
   themeAccent?: string | null;
   status?: string;
   catalogProfile?: "fashion" | "custom_art";
+  offersIyzicoCheckout?: boolean;
 }
 
 async function getAccessToken(): Promise<string | null> {

@@ -35,6 +35,8 @@ export default async function BoutiqueCheckoutPage({
     notFound();
   }
 
+  const iyzicoCheckout = await boutiqueOffersIyzicoCheckout(boutique.slug);
+
   return (
     <div className="px-5 py-8 md:px-10 md:py-10">
       <header className="mx-auto mb-8 max-w-3xl text-center">
@@ -45,13 +47,13 @@ export default async function BoutiqueCheckoutPage({
           Siparişi tamamla
         </h1>
         <p className="mt-3 text-[14px] text-neutral-600">
-          Teslimat bilgilerinizi girin
-          {boutiqueOffersIyzicoCheckout(boutique.slug)
-            ? " ve kart ile ödeyin."
-            : "."}
+          Teslimat bilgilerinizi girin{iyzicoCheckout ? " ve kart ile ödeyin." : "."}
         </p>
       </header>
-      <TrCheckoutPageContent boutiqueSlug={boutique.slug} />
+      <TrCheckoutPageContent
+        boutiqueSlug={boutique.slug}
+        iyzicoCheckout={iyzicoCheckout}
+      />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { requireTrOwner } from "@/lib/tr/ownerAuth";
+import { boutiqueOffersIyzicoCheckout } from "@/lib/tr/payments/registry";
 
 export const runtime = "nodejs";
 
@@ -10,9 +11,8 @@ export async function GET(request: Request) {
   const authResult = await requireTrOwner(request);
   if (!authResult.ok) return authResult.response;
 
-  return Response.json({
-    isStaff: authResult.auth.isStaff,
-    boutiques: authResult.auth.boutiques.map((boutique) => ({
+  const boutiques = await Promise.all(
+    authResult.auth.boutiques.map(async (boutique) => ({
       id: boutique.id,
       slug: boutique.slug,
       name: boutique.name,
@@ -20,6 +20,12 @@ export async function GET(request: Request) {
       themeAccent: boutique.themeAccent,
       status: boutique.status,
       catalogProfile: boutique.catalogProfile,
+      offersIyzicoCheckout: await boutiqueOffersIyzicoCheckout(boutique.slug),
     })),
+  );
+
+  return Response.json({
+    isStaff: authResult.auth.isStaff,
+    boutiques,
   });
 }

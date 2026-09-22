@@ -41,7 +41,6 @@ import {
 } from "@/lib/tr/checkoutSelection";
 import { isTrCheckoutEnabled } from "@/lib/tr/platform";
 import { boutiqueHasLiveShipping } from "@/lib/tr/shipping/registry";
-import { boutiqueOffersIyzicoCheckout } from "@/lib/tr/payments/registry";
 import {
   isBackForwardNavigation,
   releaseIyzicoCheckoutHold,
@@ -197,7 +196,13 @@ function stepTitle(step: CheckoutStep): string {
   }
 }
 
-function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
+function TrCheckoutForm({
+  boutiqueSlug,
+  iyzicoCheckout,
+}: {
+  boutiqueSlug: string | null;
+  iyzicoCheckout: boolean;
+}) {
   const router = useRouter();
   const { user, isAuthenticated, isInitializing } = useAuth();
   const { items, clearCheckedOut, hydrated } = useCheckoutCart(boutiqueSlug);
@@ -317,7 +322,7 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
   ]);
 
   useEffect(() => {
-    if (!boutiqueSlug || !boutiqueOffersIyzicoCheckout(boutiqueSlug)) return;
+    if (!boutiqueSlug || !iyzicoCheckout) return;
 
     const unlockSubmit = () => {
       submitLock.current = false;
@@ -345,7 +350,7 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
       releaseHold();
     }
     return () => window.removeEventListener("pageshow", onPageShow);
-  }, [boutiqueSlug]);
+  }, [boutiqueSlug, iyzicoCheckout]);
 
   useEffect(() => {
     if (!profileReady) return;
@@ -396,7 +401,7 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
   if (items.length === 0) {
     return (
       <div className="space-y-6 px-5 py-10 md:px-10">
-        <TrSandboxBanner demo={demoCart} boutiqueSlug={boutiqueSlug} />
+        <TrSandboxBanner demo={demoCart} iyzicoCheckout={iyzicoCheckout} />
         <p className="max-w-xl text-[12px] leading-relaxed text-neutral-600">
           Ödeme için önce sepetinize ürün ekleyin.
         </p>
@@ -631,11 +636,7 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
         return;
       }
 
-      if (
-        boutiqueSlug &&
-        boutiqueOffersIyzicoCheckout(boutiqueSlug) &&
-        !data.sandbox
-      ) {
+      if (boutiqueSlug && iyzicoCheckout && !data.sandbox) {
         throw new Error(
           "Kart ödemesi başlatılamadı. Sepetiniz duruyor — tekrar deneyin.",
         );
@@ -672,7 +673,7 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
       <TrSandboxBanner
         className="mb-8"
         demo={demoCart}
-        boutiqueSlug={boutiqueSlug}
+        iyzicoCheckout={iyzicoCheckout}
       />
 
       <div className="grid gap-10 lg:grid-cols-[1fr_360px] lg:items-start">
@@ -1119,12 +1120,12 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
                     className={stickyPrimaryClassName}
                   >
                     {submitting
-                      ? boutiqueOffersIyzicoCheckout(boutiqueSlug)
+                      ? iyzicoCheckout
                         ? "Yönlendiriliyor…"
                         : "Tamamlanıyor…"
                       : demoCart && !boutiqueCheckout
                         ? "Demo siparişi tamamla"
-                        : boutiqueOffersIyzicoCheckout(boutiqueSlug)
+                        : iyzicoCheckout
                           ? "Kart ile öde"
                           : "Siparişi tamamla"}
                   </button>
@@ -1220,21 +1221,28 @@ function TrCheckoutForm({ boutiqueSlug }: { boutiqueSlug: string | null }) {
 
 function TrCheckoutPageInner({
   boutiqueSlug: boutiqueSlugProp = null,
+  iyzicoCheckout = false,
 }: {
   boutiqueSlug?: string | null;
+  iyzicoCheckout?: boolean;
 }) {
   const searchParams = useSearchParams();
   const boutiqueSlug =
     boutiqueSlugProp?.trim() ||
     searchParams.get("boutique")?.trim() ||
     null;
-  return <TrCheckoutForm boutiqueSlug={boutiqueSlug} />;
+  return (
+    <TrCheckoutForm boutiqueSlug={boutiqueSlug} iyzicoCheckout={iyzicoCheckout} />
+  );
 }
 
 export function TrCheckoutPageContent({
   boutiqueSlug = null,
+  iyzicoCheckout = false,
 }: {
   boutiqueSlug?: string | null;
+  /** Resolved server-side (registry.ts is DB-backed and can't run client-side). Defaults false when unknown, e.g. the marketplace-wide checkout which doesn't offer card payment. */
+  iyzicoCheckout?: boolean;
 } = {}) {
   return (
     <Suspense
@@ -1244,7 +1252,10 @@ export function TrCheckoutPageContent({
         </div>
       }
     >
-      <TrCheckoutPageInner boutiqueSlug={boutiqueSlug} />
+      <TrCheckoutPageInner
+        boutiqueSlug={boutiqueSlug}
+        iyzicoCheckout={iyzicoCheckout}
+      />
     </Suspense>
   );
 }

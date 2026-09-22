@@ -32,7 +32,7 @@ async function captureIfAlreadyPaid(input: {
   checkoutToken?: string;
 }): Promise<boolean> {
   const token = input.checkoutToken?.trim();
-  const creds = getIyzicoCredentials(input.boutique.slug);
+  const creds = await getIyzicoCredentials(input.boutique.slug);
   if (!token || !creds) return false;
   try {
     const retrieve = await iyzicoRetrieveCheckoutForm(creds, {
@@ -78,7 +78,7 @@ export async function POST(request: Request) {
   if (!boutiqueSlug || !orderId) {
     return Response.json({ error: "Eksik sipariş bilgisi." }, { status: 400 });
   }
-  if (!boutiqueOffersIyzicoCheckout(boutiqueSlug)) {
+  if (!(await boutiqueOffersIyzicoCheckout(boutiqueSlug))) {
     return Response.json({ error: "Bu butikte kart ödemesi yok." }, { status: 404 });
   }
   if (!verifyOrderConfirmToken(orderId, body.confirmToken ?? null)) {
