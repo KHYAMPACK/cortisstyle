@@ -27,6 +27,12 @@
 # local raw cutouts for TR hero import (npm run tr:import-hero)
 /tmp/tr-hero-raw/
 
+# scratch/debug artifacts (untracked from git; kept on disk)
+/.tmp-chrome-analysis/
+/.tmp-chrome-recovered-meta.txt
+/.tmp-chrome-recovery-notes.txt
+/tmp/
+
 # misc
 .DS_Store
 *.pem
