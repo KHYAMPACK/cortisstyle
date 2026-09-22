@@ -6,14 +6,12 @@ const DEFAULT_BOUTIQUE_BG = "#FFFBFC";
 /** Known accents when DB row is not loaded (auth pages, emails). */
 const THEME_ACCENT_OVERRIDES: Partial<Record<string, string>> = {
   lilabutik: "#9B7EBD",
-  pervinsoysalbutik: "#C2185B",
   ozeltablo: "#2C3E50",
   minimora: "#F3A575",
 };
 
 /** Known storefront logo overrides (e.g. after recreating assets before DB re-seed). */
 const LOGO_OVERRIDES: Partial<Record<string, string>> = {
-  pervinsoysalbutik: "/tr/boutiques/pervinsoysalbutik/logo.png",
   lilabutik: "/tr/boutiques/lilabutik/logo.png?v=4",
   ozeltablo: "/tr/boutiques/ozeltablo/logo.png",
   minimora: "/tr/boutiques/minimora/logo.png?v=3",
@@ -27,14 +25,12 @@ const LOGO_ON_DARK_OVERRIDES: Partial<Record<string, string>> = {
 
 /** High-contrast favicons (tab icons) — prefer readable marks over dark-on-dark logos. */
 const FAVICON_OVERRIDES: Partial<Record<string, string>> = {
-  pervinsoysalbutik: "/tr/boutiques/pervinsoysalbutik/logo-accent.png",
   lilabutik: "/tr/boutiques/lilabutik/favicon.png?v=2",
   ozeltablo: "/tr/boutiques/ozeltablo/favicon.png",
   minimora: "/tr/boutiques/minimora/favicon.png?v=3",
 };
 
 const INTRO_BRAND_LABELS: Partial<Record<string, string>> = {
-  pervinsoysalbutik: "Pervin Soysal",
   lilabutik: "Lila Boutique",
   ozeltablo: "Özel Tablo",
   minimora: "Minimora",
@@ -43,7 +39,6 @@ const INTRO_BRAND_LABELS: Partial<Record<string, string>> = {
 /** Browser / SEO document titles (home). Keep UI labels shorter via `resolveBoutiqueBrandLabel`. */
 const DOCUMENT_TITLES: Partial<Record<string, string>> = {
   lilabutik: "Lila Butik | Kadın Giyim",
-  pervinsoysalbutik: "Pervin Soysal | Shop Women's Fashion",
   ozeltablo: "Özel Tablo | Fotoğrafından tuval baskı",
   minimora: "Minimora | Çiziminizden 3D Figür",
 };
@@ -51,8 +46,6 @@ const DOCUMENT_TITLES: Partial<Record<string, string>> = {
 const DOCUMENT_DESCRIPTIONS: Partial<Record<string, string>> = {
   lilabutik:
     "Lila Butik’te kadın giyim — elbise, üst giyim, çanta ve aksesuar. Denizli’den online butik.",
-  pervinsoysalbutik:
-    "Shop women's fashion at Pervin Soysal Butik — dresses, tops and seasonal pieces with shipping across Turkey.",
   ozeltablo:
     "Fotoğrafınızdan kişiye özel tuval tablo siparişi — boyut ve stil seçin, online ödeyin.",
   minimora:

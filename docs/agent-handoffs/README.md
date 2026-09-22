@@ -14,7 +14,6 @@ Start here when picking up this repo. Read **[00-overview.md](./00-overview.md)*
 | [06-sell-enablement.md](./06-sell-enablement.md) | **Phase 3** — help them sell | AI catalog, campaigns, content |
 | [15-boutique-storefront-image-formats.md](./15-boutique-storefront-image-formats.md) | Phase 1+3 | Boutique PNG packshots (same as Cadde); originals/lifestyle WebP q95 |
 | [07-platform-ops.md](./07-platform-ops.md) | Cross-cutting | Env, Supabase patches, auth, security notes |
-| [08-boutique-audit-pervin.md](./08-boutique-audit-pervin.md) | Phase 1 health check | Pervin Soysal Butik |
 | [09-boutique-clone-playbook.md](./09-boutique-clone-playbook.md) | Phase 1 onboarding | Copy the **system** for the next boutique |
 | [10-boutique-design-inspiration.md](./10-boutique-design-inspiration.md) | Phase 1 visual direction | Boutique templates |
 | [11-cortisstyle-design-inspiration.md](./11-cortisstyle-design-inspiration.md) | Archive design refs | Lookbook UX (not boutiques) |

@@ -6,9 +6,7 @@ export {
   type TrEditorialSkinId,
 } from "@/lib/tr/boutiqueHome/editorialSkin";
 export {
-  EDITORIAL_DEMO_SLUG,
   EDITORIAL_SALE_RED,
-  getEditorialDemoContent,
   type EditorialCampaignAction,
   type EditorialDemoContent,
   type EditorialHeroPromotion,

@@ -1,10 +1,8 @@
 import { TrBoutiqueEditorialCatalog } from "@/components/tr/boutique/editorial/TrBoutiqueEditorialCatalog";
 import { TrBoutiqueEditorialSections } from "@/components/tr/boutique/editorial/TrBoutiqueEditorialSections";
 import { TrMinimoraHomePage } from "@/components/tr/boutique/minimora/TrMinimoraHomePage";
-import { TrNewTenantHomePage } from "@/components/tr/boutique/newtenant/TrNewTenantHomePage";
 import { isAtelierEditorialSkin } from "@/lib/tr/boutiqueHome";
 import { isMinimoraBoutique } from "@/lib/tr/boutique/minimora/isMinimoraBoutique";
-import { isNewTenantBoutique } from "@/lib/tr/boutique/newtenant/isNewTenantBoutique";
 import type { TrBoutiquePublic, TrProduct } from "@/types/tr-marketplace";
 
 interface TrBoutiqueEditorialHomeProps {
@@ -18,10 +16,6 @@ export function TrBoutiqueEditorialHome({
 }: TrBoutiqueEditorialHomeProps) {
   if (isMinimoraBoutique(boutique.slug)) {
     return <TrMinimoraHomePage boutique={boutique} products={products} />;
-  }
-
-  if (isNewTenantBoutique(boutique.slug)) {
-    return <TrNewTenantHomePage boutique={boutique} products={products} />;
   }
 
   const atelier = isAtelierEditorialSkin(boutique.slug);

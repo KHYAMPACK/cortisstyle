@@ -6,8 +6,6 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Search } from "lucide-react";
 import { TrBoutiqueAtelierPlp } from "@/components/tr/boutique/editorial/TrBoutiqueAtelierPlp";
 import { TrBoutiqueEditorialProductCard } from "@/components/tr/boutique/editorial/TrBoutiqueEditorialProductCard";
-import { TrNewTenantPlp } from "@/components/tr/boutique/newtenant/TrNewTenantPlp";
-import { isNewTenantBoutique } from "@/lib/tr/boutique/newtenant/isNewTenantBoutique";
 import { isAtelierEditorialSkin } from "@/lib/tr/boutiqueHome";
 import { getTrCategoryLabel, isTrCategoryMatch } from "@/lib/tr/categories";
 import { trBoutiquePath, trBoutiqueProductsPath } from "@/lib/tr/paths";
@@ -38,10 +36,6 @@ export function TrBoutiqueEditorialPlp({
   boutique,
   products,
 }: TrBoutiqueEditorialPlpProps) {
-  if (isNewTenantBoutique(boutique.slug)) {
-    return <TrNewTenantPlp boutique={boutique} products={products} />;
-  }
-
   if (isAtelierEditorialSkin(boutique.slug)) {
     return <TrBoutiqueAtelierPlp boutique={boutique} products={products} />;
   }

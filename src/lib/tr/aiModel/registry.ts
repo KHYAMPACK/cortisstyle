@@ -192,15 +192,6 @@ const BOUTIQUE_AI_MODELS: Record<string, TrAiModelIdentity> = {
     notes:
       "House model for Lila Butik only. Owners pick blinds (default) or flash; try-on picks one random pose from that style’s three plates.",
   },
-  pervinsoysalbutik: {
-    boutiqueSlug: "pervinsoysalbutik",
-    displayName: "Pervin Soysal",
-    referenceImageUrls: [],
-    faceReferenceUrls: [],
-    defaultPose: "standing-front",
-    notes:
-      "Fill referenceImageUrls after portrait shoot at the boutique. Used for on-model AI.",
-  },
 };
 
 type StudioModelDef = {

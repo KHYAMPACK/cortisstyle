@@ -1,7 +1,6 @@
 /** Panel chrome logos — prefer SVG over PNG. Packshot cutouts are unrelated. */
 
 const PANEL_LOGO_SVG: Record<string, string> = {
-  pervinsoysalbutik: "/tr/boutiques/pervinsoysalbutik/logo.svg",
   lilabutik: "/tr/boutiques/lilabutik/logo.svg",
 };
 

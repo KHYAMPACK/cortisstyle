@@ -73,16 +73,6 @@ export const MODEL_SCALES: Record<string, TrModelScale> = {
     wearingSizeLetter: "M",
     wearingSizeNumeric: "38",
   },
-  "boutique:pervinsoysalbutik": {
-    modelId: "boutique:pervinsoysalbutik",
-    heightCm: 165,
-    waistCm: 64,
-    bustCm: 84,
-    hipCm: 94,
-    weightKg: 54,
-    wearingSizeLetter: "M",
-    wearingSizeNumeric: "38",
-  },
 };
 
 function isMensProduct(features: TrProductFeatures | null | undefined): boolean {

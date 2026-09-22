@@ -97,7 +97,6 @@ export async function GET(request: Request) {
 
   const productProbes = {
     lilabutik: await probeProducts("lilabutik"),
-    pervinsoysalbutik: await probeProducts("pervinsoysalbutik"),
   };
 
   let tableStatuses: Array<{ slug: string; status: string }> = [];

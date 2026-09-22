@@ -1,12 +1,10 @@
 /**
  * Resolve editorial homepage/footer content for a boutique.
- * Code defaults (Maya demo or brand-derived) + optional DB `editorial_content` merge.
+ * Brand-derived code defaults + optional DB `editorial_content` merge.
  */
 
 import { resolveBoutiqueContactEmail } from "@/lib/tr/checkoutMode";
 import {
-  EDITORIAL_DEMO_SLUG,
-  getEditorialDemoContent,
   type EditorialCampaignAction,
   type EditorialDemoContent,
   type EditorialHeroPromotion,
@@ -235,19 +233,7 @@ export function buildBoutiqueEditorialDefaults(
 export function getEditorialContent(
   boutique: TrBoutiquePublic,
 ): EditorialDemoContent {
-  const defaults =
-    boutique.slug === EDITORIAL_DEMO_SLUG
-      ? (() => {
-          const demo = getEditorialDemoContent();
-          return {
-            ...demo,
-            footer: {
-              ...demo.footer,
-              columns: legalFooterColumns(boutique.slug),
-            },
-          };
-        })()
-      : buildBoutiqueEditorialDefaults(boutique);
+  const defaults = buildBoutiqueEditorialDefaults(boutique);
 
   const merged = mergeEditorial(defaults, boutique.editorialContent);
 

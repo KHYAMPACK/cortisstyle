@@ -9,16 +9,10 @@ import { TrBoutiqueEditorialFooter } from "@/components/tr/boutique/editorial/Tr
 import { TrBoutiqueEditorialHeader } from "@/components/tr/boutique/editorial/TrBoutiqueEditorialHeader";
 import { TrMinimoraFooter } from "@/components/tr/boutique/minimora/TrMinimoraFooter";
 import { TrMinimoraHeader } from "@/components/tr/boutique/minimora/TrMinimoraHeader";
-import { TrNewTenantFooter } from "@/components/tr/boutique/newtenant/TrNewTenantFooter";
-import { TrNewTenantHeader } from "@/components/tr/boutique/newtenant/TrNewTenantHeader";
 import {
   minimoraBodyFont,
   minimoraDisplayFont,
 } from "@/components/tr/boutique/minimora/minimoraFonts";
-import {
-  newtenantBodyFont,
-  newtenantDisplayFont,
-} from "@/components/tr/boutique/newtenant/newtenantFonts";
 import { TrBoutiqueEditorialHelpFab } from "@/components/tr/boutique/editorial/TrBoutiqueEditorialHelpFab";
 import {
   TrBoutiqueNavPendingProvider,
@@ -29,7 +23,6 @@ import { TrAddedToCartSheet } from "@/components/tr/TrAddedToCartSheet";
 import { resolveBoutiqueThemeAccent } from "@/lib/tr/boutiqueBrand";
 import { resolveEditorialSkin } from "@/lib/tr/boutiqueHome";
 import { isMinimoraBoutique } from "@/lib/tr/boutique/minimora/isMinimoraBoutique";
-import { isNewTenantBoutique } from "@/lib/tr/boutique/newtenant/isNewTenantBoutique";
 import { listCategoriesForProducts } from "@/lib/tr/categories";
 import { trBoutiqueLegalPath } from "@/lib/tr/paths";
 import type { TrBoutiquePublic, TrProduct } from "@/types/tr-marketplace";
@@ -49,7 +42,6 @@ export function TrBoutiqueEditorialShell({
   const accent = resolveBoutiqueThemeAccent(boutique);
   const skin = resolveEditorialSkin(boutique.slug);
   const minimora = isMinimoraBoutique(boutique.slug);
-  const newTenant = isNewTenantBoutique(boutique.slug);
 
   // Portaled sheets (size gate, etc.) render outside the shell — sync brand vars on <html>.
   useEffect(() => {
@@ -87,17 +79,13 @@ export function TrBoutiqueEditorialShell({
         <TrBoutiqueCatalogProvider categories={categories}>
           <div
             data-editorial-skin={skin}
-            data-boutique={
-              minimora ? "minimora" : newTenant ? "newtenant" : undefined
-            }
+            data-boutique={minimora ? "minimora" : undefined}
             className={`flex min-h-full w-full min-w-0 max-w-full flex-col overflow-x-clip text-neutral-900 ${
               minimora
                 ? `${minimoraBodyFont.variable} ${minimoraDisplayFont.variable} ${minimoraBodyFont.className} bg-[#FDFBF7]`
-                : newTenant
-                  ? `${newtenantBodyFont.variable} ${newtenantDisplayFont.variable} ${newtenantBodyFont.className} bg-[#FAFAFA]`
-                  : skin === "atelier"
-                    ? "bg-[#FAFAF8]"
-                    : "bg-white"
+                : skin === "atelier"
+                  ? "bg-[#FAFAF8]"
+                  : "bg-white"
             }`}
             style={
               {
@@ -113,8 +101,6 @@ export function TrBoutiqueEditorialShell({
             <TrBoutiqueNavPendingProvider>
               {minimora ? (
                 <TrMinimoraHeader boutique={boutique} products={products} />
-              ) : newTenant ? (
-                <TrNewTenantHeader boutique={boutique} products={products} />
               ) : (
                 <TrBoutiqueEditorialHeader boutique={boutique} />
               )}
@@ -124,8 +110,6 @@ export function TrBoutiqueEditorialShell({
             </TrBoutiqueNavPendingProvider>
             {minimora ? (
               <TrMinimoraFooter boutique={boutique} />
-            ) : newTenant ? (
-              <TrNewTenantFooter boutique={boutique} />
             ) : (
               <TrBoutiqueEditorialFooter boutique={boutique} />
             )}

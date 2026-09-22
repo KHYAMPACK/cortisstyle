@@ -29,7 +29,6 @@ function resolveEmailAssetBaseUrl(): string {
  * Paths are under /public.
  */
 const EMAIL_LOGO_PATHS: Partial<Record<string, string>> = {
-  pervinsoysalbutik: "/tr/boutiques/pervinsoysalbutik/logo.png",
   lilabutik: "/tr/boutiques/lilabutik/logo.png",
   minimora: "/tr/boutiques/minimora/logo.png",
 };
