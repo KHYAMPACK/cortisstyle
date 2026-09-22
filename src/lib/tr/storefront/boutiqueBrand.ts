@@ -6,14 +6,12 @@ const DEFAULT_BOUTIQUE_BG = "#FFFBFC";
 /** Known accents when DB row is not loaded (auth pages, emails). */
 const THEME_ACCENT_OVERRIDES: Partial<Record<string, string>> = {
   lilabutik: "#9B7EBD",
-  ozeltablo: "#2C3E50",
   minimora: "#F3A575",
 };
 
 /** Known storefront logo overrides (e.g. after recreating assets before DB re-seed). */
 const LOGO_OVERRIDES: Partial<Record<string, string>> = {
   lilabutik: "/tr/boutiques/lilabutik/logo.png?v=4",
-  ozeltablo: "/tr/boutiques/ozeltablo/logo.png",
   minimora: "/tr/boutiques/minimora/logo.png?v=3",
 };
 
@@ -26,28 +24,23 @@ const LOGO_ON_DARK_OVERRIDES: Partial<Record<string, string>> = {
 /** High-contrast favicons (tab icons) — prefer readable marks over dark-on-dark logos. */
 const FAVICON_OVERRIDES: Partial<Record<string, string>> = {
   lilabutik: "/tr/boutiques/lilabutik/favicon.png?v=2",
-  ozeltablo: "/tr/boutiques/ozeltablo/favicon.png",
   minimora: "/tr/boutiques/minimora/favicon.png?v=3",
 };
 
 const INTRO_BRAND_LABELS: Partial<Record<string, string>> = {
   lilabutik: "Lila Boutique",
-  ozeltablo: "Özel Tablo",
   minimora: "Minimora",
 };
 
 /** Browser / SEO document titles (home). Keep UI labels shorter via `resolveBoutiqueBrandLabel`. */
 const DOCUMENT_TITLES: Partial<Record<string, string>> = {
   lilabutik: "Lila Butik | Kadın Giyim",
-  ozeltablo: "Özel Tablo | Fotoğrafından tuval baskı",
   minimora: "Minimora | Çiziminizden 3D Figür",
 };
 
 const DOCUMENT_DESCRIPTIONS: Partial<Record<string, string>> = {
   lilabutik:
     "Lila Butik’te kadın giyim — elbise, üst giyim, çanta ve aksesuar. Denizli’den online butik.",
-  ozeltablo:
-    "Fotoğrafınızdan kişiye özel tuval tablo siparişi — boyut ve stil seçin, online ödeyin.",
   minimora:
     "Çocuğunuzun çizimini özenle 3D figüre dönüştürün — boyut seçin, çizimi yükleyin, kapınıza teslim.",
 };

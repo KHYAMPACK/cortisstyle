@@ -190,7 +190,7 @@ function SettingsForm({ boutiqueId }: { boutiqueId: string }) {
             value={instagramHandle}
             onChange={(event) => setInstagramHandle(event.target.value)}
             className={panelFieldClass}
-            placeholder="pervinsoysalbutik"
+            placeholder="lilabutik"
           />
         </label>
 

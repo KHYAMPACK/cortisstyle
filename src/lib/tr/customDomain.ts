@@ -8,7 +8,7 @@
  * header/context instead of re-deriving it, so there is exactly one source
  * of truth and no hardcoded per-tenant domain list in source.
  *
- * Example: TR_BOUTIQUE_DOMAINS={"pervinsoysal.com":"pervinsoysalbutik","www.pervinsoysal.com":"pervinsoysalbutik"}
+ * Example: TR_BOUTIQUE_DOMAINS={"example.com":"lilabutik","www.example.com":"lilabutik"}
  */
 
 /** Normalize host (strip port). */

@@ -92,7 +92,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL(MAINTENANCE_PATH, request.url));
   }
 
-  // White-label custom domains (e.g. pervinsoysal.com → /tr/pervinsoysalbutik/…)
+  // White-label custom domains (e.g. example.com → /tr/lilabutik/…)
   const host =
     request.headers.get("x-forwarded-host") ??
     request.headers.get("host") ??
