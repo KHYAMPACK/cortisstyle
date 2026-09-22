@@ -1,185 +1,141 @@
-# 09 — Boutique clone playbook (system, not UI)
+# 09 — Boutique onboarding playbook
 
-**Goal:** Spin up another Instagram boutique on the **same rails** as Pervin Soysal Butik — shared Next/Supabase stack, **new tenant row**, own slug/domain/branding — without inventing a parallel shop **or** forking panel/checkout.
+**Status (2026-09-23):** Rewritten to match the current DB-first architecture. The previous version predated the tenant-config-to-DB migration (`docs/phase1-tenant-config-plan.md`) and the generic-foundation/fashion-module extraction (`docs/agent-handoffs/17-generic-foundation-fashion-module.md`) — it described a "copy Pervin's files" workflow and a schema-migration checklist that no longer apply. `pervinsoysalbutik`, `newtenant`, and `ozeltablo` (all referenced in the old version) have been fully purged; only `lilabutik` (fashion) and `minimora` (custom_art) exist in `tr_boutiques` today.
 
-**UI:** Unique per boutique via **editorial skins** / theme packs (`classic` vs `atelier`), not `if (slug)` inside Pervin’s chrome. See [lila-butik-e-ticaret-setup.md](../lila-butik-e-ticaret-setup.md).
+## The short version
 
-**Day-of ops:** use **[13-boutique-wire-in-and-go-live.md](./13-boutique-wire-in-and-go-live.md)** — wire-in registry + pre-live checklist (includes Lila 2026-08 learnings).
+Onboarding a new boutique is mostly a **database operation**, not a code change: one `tr_boutiques` row (created via `POST /api/tr/admin/seed`), an optional `tr_boutique_integrations` row for payments, and an owner linked via `PATCH /api/tr/admin/boutiques/[id]/owner`. The schema already has every column a boutique needs — there is no "apply these migrations" step anymore. A handful of small per-slug code maps still exist for cosmetic overrides (see "What still needs a code touch" below), but none of them block a boutique from going live.
 
-**Read first:** [08-boutique-audit-pervin.md](./08-boutique-audit-pervin.md) (known holes). Do not promise real card pay, live cargo, e-invoice, or working coupons until those are fixed.
+Never fork panel/checkout/storefront components per boutique, and never write `if (slug === "...")` anywhere — every one of those checks was deleted at least once already during the newtenant/pervinsoysalbutik/ozeltablo purges. Differences between boutiques belong in DB rows or the fashion/customArt module split, not in conditionals.
 
-**Product stance:** Phase 1 = **standalone boutique site**. Cadde marketplace cart (`trCartStore`, `/tr/sepet`) is out of scope for this playbook. New boutiques should use **editorial** home layout so local sepet/odeme/favoriler apply.
-
----
-
-## Architecture to copy (the “system”)
+## Architecture
 
 ```text
 ┌─────────────────────────────────────────────────────────────┐
 │  Custom domain (optional)                                   │
-│  TR_BOUTIQUE_DOMAINS / customDomain.ts → rewrite to         │
-│  /tr/{slug}/…  (origin sitemap/robots passthrough — all     │
-│  hosts; do not add a per-boutique sitemap route)            │
+│  DB tr_boutiques.custom_domain is the source of truth.       │
+│  src/lib/tr/customDomain.ts + src/proxy.ts resolve host →    │
+│  slug and rewrite to /tr/{slug}/…  TR_BOUTIQUE_DOMAINS env   │
+│  only covers hosts not yet in the DB.                        │
 └───────────────────────────┬─────────────────────────────────┘
                             ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  Storefront  /tr/[boutiqueSlug]                             │
-│  editorial shell → TrBoutiqueCommerceScope                  │
-│  local cart / favorites (per-slug localStorage)             │
-│  giris · sepet · odeme · siparis-onay · yasal               │
+│  Storefront  /tr/[boutiqueSlug]                              │
+│  home_layout (DB): "default" (Cadde-style) or "editorial"    │
+│  (standalone shell, local cart/favorites, own giris/sepet/   │
+│  odeme/siparis-onay/yasal). New boutiques should use          │
+│  "editorial" unless they're meant to sell inside Cadde.       │
 └───────────────────────────┬─────────────────────────────────┘
                             ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  APIs                                                       │
-│  POST /api/tr/checkout (sandbox order)                      │
-│  /api/tr/customer/auth/* (branded OTP/reset)                │
-│  /api/tr/owner/* (Bearer + owner_user_id)                   │
+│  APIs                                                        │
+│  POST /api/tr/checkout · /api/tr/customer/auth/* (branded)   │
+│  /api/tr/owner/* (Bearer + owner_user_id)                     │
 └───────────────────────────┬─────────────────────────────────┘
                             ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  Owner panel  /tr/panel  (shared UI, switch boutique)       │
-│  products · stock · orders · customers · settings · …       │
+│  Owner panel  /tr/panel  (shared UI, switch boutique)        │
+│  products · stock · orders · customers · settings · …        │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-**Tenant key:** one `tr_boutiques` row (`slug`, `owner_user_id`, brand fields). Products/orders scoped by `boutique_id`. Never hardcode the new boutique’s prices or product IDs in components.
-
----
-
-## What NOT to copy
-
-| Don’t copy | Why |
-|------------|-----|
-| Pervin editorial **pixels** (hero copy, Instagram grid layout quirks, Denizli address in code) | Brand-specific; prefer DB `editorial_content` / settings |
-| `slug === "pervinsoysalbutik"` conditionals | Clone tax; use `resolveBoutiqueBrandLabel` / DB fields |
-| Cadde marketplace cart / looks feed | Different product surface |
-| Demo invoices, demo cargo labels, demo dashboard KPIs | Ops theater — don’t train the next owner on fakes |
-| Assuming coupons / iyzico / stock deduction work | See audit |
-
-UI reuse is intentional: **same components**, different `slug` + brand assets + seed data.
-
-**UI template (visual direction):** when creating the boutique’s look, pick a storefront **standard** from [10-boutique-design-inspiration.md](./10-boutique-design-inspiration.md) based on **what the boutique sells** (1 Balmoral · 2 Cecilie · 3 Marine Layer — numbers are IDs, not priority). Do not copy Pervin’s pixels.
-
----
+**Tenant key:** one `tr_boutiques` row (`slug`, `owner_user_id`, brand fields). Products/orders scoped by `boutique_id`. `catalog_profile` (`"fashion"` or `"custom_art"`) picks which vertical module's product logic applies — see `src/lib/tr/catalogProfiles/registry.ts`.
 
 ## Checklist — new boutique
 
-### A. Ops / legal (outside code)
+### A. Decide the vertical
 
-- [ ] Vergi levhası / contract (see roadmap + partnership draft)
-- [ ] Owner email that will sign up on Cortisstyle (or custom domain `/giris`)
-- [ ] WhatsApp number, Instagram handle, shipping/iade text, legal contact email
-- [ ] Legal fields for shared yasal templates (`legalName`, address, vergi) — pack: [tr-boutique-legal-templates.md](../tr-boutique-legal-templates.md)
-- [ ] Logo (PNG) + optional favicon/accent mark under `public/tr/boutiques/{slug}/`
+Is this another **fashion** boutique (garments, sizes, the Turkish category tree) or another **custom_art** boutique (print-on-demand, no categories, no sizing)? Set `catalogProfile` accordingly in the seed payload. A genuinely new third vertical is real engineering work — see "When you actually need to write code" below — not something this checklist covers.
 
-### B. Schema (once per environment)
+### B. Ops / legal (outside code)
 
-Apply patches in order (same list as `scripts/seed-pervinsoysalbutik.md`):
+- Vergi levhası / contract (see `docs/boutique-partnership-agreement-draft.md`)
+- Owner email that will sign up on Cortisstyle
+- WhatsApp number, Instagram handle, shipping/iade text, legal contact + `contact_email`
+- Legal fields for shared yasal templates (`legalName`, address, vergi) — pack: `docs/tr-boutique-legal-templates.md`
+- Logo/favicon files. There's no image-upload widget yet — drop the PNG/SVG under `public/tr/boutiques/{slug}/` and reference that path from the seed payload's `logoUrl` (or paste it into Ayarlar → Logo later). This is a repo content change, not a code change.
 
-- boutique brand / storefront / owner
-- product options, stock, compare-at, marketplace images, catalog background
-- order fulfillment, discount codes, option presets, owner push (if using)
+### C. Create the boutique
 
-### C. Data — seed template
+One call: `POST /api/tr/admin/seed` with `Authorization: Bearer {TR_ADMIN_SECRET}` and a JSON body — see `src/app/api/tr/admin/seed/route.ts` for the full `SeedBoutiquePayload` shape (slug, name, brand fields, `homeLayout`, `customDomain`, `catalogProfile`, optional starter `products`/`sampleOrders`/`discountCodes`). No file needs to be committed to the repo for this — the payload is just a request body. Keep a local copy for your own records if you want one, but don't recreate the old `src/data/tr/{slug}-seed.json` pattern; those files were deleted as dead weight once the seed API stopped reading from disk.
 
-1. Copy `src/data/tr/pervinsoysalbutik-seed.json` → `src/data/tr/{slug}-seed.json`.
-2. Change: `slug`, `name`, logos, WhatsApp, IG, `customDomain`, theme, products (real SKUs), drop Pervin sample orders/coupons or replace.
-3. Set `home_layout` / seed field so layout resolves to **`editorial`** (required for local cart checkout routes).
-4. `POST /api/tr/admin/seed` with `TR_ADMIN_SECRET` (see seed script).
+Payments: if the boutique will take real iyzico payments, add a row to `tr_boutique_integrations` (`provider: "iyzico"`, encrypted credentials) — see `src/lib/tr/payments/registry.ts` for how it's read. Until then, checkout creates **pending** orders and the owner marks them paid manually (`TR_CHECKOUT_SANDBOX` for staging).
 
 ### D. Owner link
 
-1. Owner signs up (panel AuthPopup or storefront).
-2. SQL or `PATCH /api/tr/admin/boutiques/{id}/owner` — see `scripts/link-tr-boutique-owner.md`.
+1. Owner signs up (panel AuthPopup or storefront `/giris`).
+2. `PATCH /api/tr/admin/boutiques/{id}/owner` with `{ "ownerUserId": "..." }` (Bearer `TR_ADMIN_SECRET`) — see `scripts/link-tr-boutique-owner.md`/`.mts` for a scripted version of the same call.
 3. Smoke `/tr/panel` → boutique appears; create one product; confirm on `/tr/{slug}`.
 
-### E. Registries / env (until DB covers everything)
-
-Prefer **DB + env** over new hardcodes. Today you still may need:
-
-| Concern | Where |
-|---------|--------|
-| Custom domain map | Env `TR_BOUTIQUE_DOMAINS` JSON (preferred). Avoid growing `DEFAULT_DOMAIN_MAP` in `customDomain.ts` forever. |
-| Home layout | DB `home_layout` + optional entry in `boutiqueHome/registry.ts` |
-| Brand label / logo override | Prefer DB `name` / `logo_url`. Only use `boutiqueBrand.ts` maps if assets must override stale DB. Prefer `resolveBoutiqueBrandLabel(slug, name)` everywhere instead of new `if (slug === …)`. |
-| Auth email logo | `authMail/templates.ts` logo map (or generalize to DB logo URL) |
-| AI on-model identity | `aiModel/registry.ts` only if using that feature |
-| Resend | Platform `AUTH_EMAIL_FROM` / Resend key — don’t add another `*_PERVIN_*` env alias per boutique |
-
-### F. White-label domain
+### E. White-label domain (optional)
 
 1. DNS → app host.
-2. `TR_BOUTIQUE_DOMAINS={"shop.example.com":"{slug}","www.shop.example.com":"{slug}"}`.
-3. Middleware rewrites short paths (`/`, `/urunler`, `/sepet`, `/odeme`, `/giris`, …).
-4. Know the **auth cookie gap**: session on custom host ≠ `.cortisstyle.com` until fixed (audit #7).
+2. Set `tr_boutiques.custom_domain` (via the seed payload or a direct update) — that's the only step that matters. `TR_BOUTIQUE_DOMAINS` env is only needed to serve a host *before* it's in the DB (e.g. testing DNS propagation).
+3. `src/proxy.ts` handles the rewrite automatically; short paths (`/`, `/urunler`, `/sepet`, `/odeme`, `/giris`, …) are already generic per `rewriteBoutiqueDomainPath()` in `src/lib/tr/customDomain.ts`.
 
-### G. Smoke test (minimum)
+### F. Smoke test (minimum)
 
-Storefront:
+Storefront: `/tr/{slug}` loads · add a sized product to sepet · favoriler scoped to this slug only · `/giris` branded OTP path · checkout creates a **pending** order (unless sandboxed) → panel Siparişler + badge · legal pages + WhatsApp link · owner can mark pending → ödendi until iyzico is wired.
 
-1. `/tr/{slug}` loads editorial home  
-2. Add sized product → sepet (line shows beden)  
-3. Favoriler scoped to this slug only  
-4. `/giris` branded OTP path  
-5. Checkout creates **pending** order (unless `TR_CHECKOUT_SANDBOX`) → panel Siparişler + badge  
-6. Legal pages + WhatsApp link  
-7. Owner can mark pending → ödendi until iyzico  
+Panel: owner login only sees this boutique · ürün oluştur / stok / gizle · sipariş fulfillment status change · Ayarlar save reflects on storefront.
 
-Panel:
+## What still needs a code touch
 
-1. Login as owner only sees this boutique (or switcher if multi)  
-2. Ürün oluştur / stok / gizle  
-3. Sipariş fulfillment status change  
-4. Ayarlar WhatsApp save reflects on storefront  
+Everything below is optional cosmetic polish, not a blocker for going live — but if you want it, it's a real code change (a PR), not a settings toggle:
 
----
+| Concern | File | What happens if you skip it |
+|---|---|---|
+| Editorial visual skin (`classic` vs `atelier`) | `src/lib/tr/boutiqueHome/editorialSkin.ts` — `SLUG_SKINS` map, no DB equivalent | Boutique gets the `classic` skin by default |
+| Branded auth-email logo | `src/lib/tr/authMail/templates.ts` — `EMAIL_LOGO_PATHS` map | Auth emails send with no logo |
+| Brand color/logo/favicon/title fallback overrides | `src/lib/tr/storefront/boutiqueBrand.ts` | DB `theme_accent`/`logo_url`/`name` are used directly — only add an override if you need to show a different asset than what's in the DB |
+| Custom AI try-on house-model persona (fashion only) | `src/lib/tr/aiModel/registry.ts` | Boutique uses the shared/default AI models |
 
-## Code map (extend, don’t fork)
+Prefer `resolveBoutiqueBrandLabel(slug, name)` / DB fields over adding new hardcodes anywhere else. If you find yourself writing `if (slug === "...")` outside these four files, stop — that's very likely something that belongs in a DB column instead.
+
+## When you actually need to write real code
+
+- **A third product vertical** (not fashion, not custom_art): a new `catalog_profile` value, a capabilities struct in `src/lib/tr/catalogProfiles/registry.ts`, and a new module mirroring `src/lib/tr/fashion/`/`src/lib/tr/customArt/`. See `docs/agent-handoffs/17-generic-foundation-fashion-module.md` for the module-boundary pattern to follow.
+- **A new home-page layout** beyond `default`/`editorial`, or a new editorial skin beyond `classic`/`atelier`.
+- **A new payment provider** beyond iyzico.
+
+## Code map
 
 | Concern | Path |
-|---------|------|
+|---|---|
 | Paths | `src/lib/tr/paths.ts` |
-| Domain rewrite | `src/lib/tr/customDomain.ts`, `src/middleware.ts` |
-| Brand helpers | `src/lib/tr/boutiqueBrand.ts` |
+| Domain rewrite | `src/lib/tr/customDomain.ts`, `src/proxy.ts` |
+| Brand helpers | `src/lib/tr/storefront/boutiqueBrand.ts` |
 | Home layout | `src/lib/tr/boutiqueHome/` |
+| Catalog profile / vertical capabilities | `src/lib/tr/catalogProfiles/` |
+| Fashion module | `src/lib/tr/fashion/`, `src/components/tr/fashion/` |
+| Custom-art module | `src/lib/tr/customArt/` |
 | Commerce scope | `src/components/tr/boutique/TrBoutiqueCommerceScope.tsx` |
 | Local cart / fav | `src/store/trBoutiqueLocalCartStore.ts`, `trBoutiqueLocalFavoritesStore.ts` |
-| Owner auth | `src/lib/tr/ownerAuth.ts`, `ownerClient.ts` |
+| Owner auth | `src/lib/tr/ownerAuth.ts`, `src/lib/tr/panel/ownerClient.ts` |
 | Panel nav | `src/lib/tr/panelNav.ts` |
 | Checkout | `src/app/api/tr/checkout/route.ts`, `TrCheckoutPageContent.tsx` |
+| Payments registry | `src/lib/tr/payments/registry.ts` |
+| Admin boutique APIs | `src/app/api/tr/admin/seed/route.ts`, `src/app/api/tr/admin/boutiques/` |
 | Types | `src/types/tr-marketplace.ts` |
 
----
+## Still open before real money at scale
 
-## Recommended hardening before the next paid boutique
-
-Shipped in the 2026-08-08 fix pass (verify patches applied):
-
-1. ~~Server-side reprice + product ownership + availability in checkout~~
-2. ~~Persist **size** on `tr_order_items` and send it from checkout~~
-3. ~~Decrement stock / size_stocks on successful order create~~
-4. ~~Honor cart line selection~~
-5. ~~Real customer order confirmation (load by `orderId`)~~
-6. ~~Apply discount codes in checkout~~
-7. ~~Custom-domain auth reset redirect when Origin maps to boutique~~
-8. ~~Kill demo KPIs; label demo cargo/fatura~~
-
-Still open before real money (see also [12-boutique-go-live.md](./12-boutique-go-live.md)):
-
-1. iyzico card capture → then `TR_IYZICO_ENABLED=true`
-2. Full SSO cookie strategy custom-domain ↔ platform
-3. Carrier API + tracking
-4. Prefer DB brand fields over slug hardcodes
-5. Lawyer-approved legal + real catalog photos
-
-Until iyzico: checkout creates **pending** orders; owner marks paid manually. Staging only uses `TR_CHECKOUT_SANDBOX=true`.
-
----
+- iyzico card capture is per-boutique via `tr_boutique_integrations`, but full SSO cookie strategy across custom domains isn't solved — session on a custom host isn't shared with `.cortisstyle.com` yet.
+- No carrier API/tracking integration.
+- No image-upload widget for boutique branding — logos are still a manual file-drop + path paste (see checklist B above).
 
 ## Agent rules
 
-- One boutique = one slug. Never leak another boutique’s products in owner APIs.
-- New boutique ≠ new layout fork — register editorial (or add one registry template).
-- Prefer settings/DB for contact email, brand name, domain; delete leftover Pervin `if`s when you touch those files.
-- Keep boutique local cart separate from Cadde platform cart.
-- Update this playbook when checkout/stock/auth gaps close so the next clone doesn’t re-learn them.
+- One boutique = one slug. Never leak another boutique's products in owner APIs.
+- A new boutique is a new DB row, not a new layout fork or a new `if (slug)`.
+- Prefer DB/settings for contact email, brand name, domain, home layout, payments. If you touch a file with a leftover per-slug conditional or a stale boutique name, delete it.
+- Keep boutique local cart separate from the Cadde platform cart.
+- Update this playbook whenever the checklist above stops matching reality — it's meant to be re-derivable from the code, so don't let it silently drift again.
+
+## Related
+
+- Tenant-config-to-DB migration background: `docs/phase1-tenant-config-plan.md`
+- Generic foundation + fashion module: `docs/agent-handoffs/17-generic-foundation-fashion-module.md`
+- Custom-art vertical reference: `docs/agent-handoffs/16-custom-art-boutique.md`
+- Visual direction for a new boutique's storefront: `docs/agent-handoffs/10-boutique-design-inspiration.md`
+- Legal templates: `docs/tr-boutique-legal-templates.md`
