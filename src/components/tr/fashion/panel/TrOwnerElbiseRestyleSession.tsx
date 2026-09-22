@@ -10,7 +10,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { TrOwnerElbiseRestyleQueue } from "@/components/tr/panel/TrOwnerElbiseRestyleQueue";
+import { TrOwnerElbiseRestyleQueue } from "@/components/tr/fashion/panel/TrOwnerElbiseRestyleQueue";
 import type { TrProduct } from "@/types/tr-marketplace";
 
 export interface OpenElbiseRestyleArgs {

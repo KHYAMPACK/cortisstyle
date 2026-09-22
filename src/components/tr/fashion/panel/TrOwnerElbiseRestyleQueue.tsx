@@ -11,8 +11,8 @@ import {
   elbiseGateReady,
   TrOwnerElbiseConstructionGateFields,
   type ElbiseGateChipState,
-} from "@/components/tr/panel/TrOwnerElbiseConstructionGate";
-import { TrOwnerAiModelPicker } from "@/components/tr/panel/TrOwnerAiModelPicker";
+} from "@/components/tr/fashion/panel/TrOwnerElbiseConstructionGate";
+import { TrOwnerAiModelPicker } from "@/components/tr/fashion/panel/TrOwnerAiModelPicker";
 import { useRegisterLeaveBusy } from "@/components/tr/panel/TrOwnerLeaveGuard";
 import { useScheduleAiJob } from "@/components/tr/panel/TrOwnerAiJobQueue";
 import { trPanelEase } from "@/components/tr/panel/TrPanelMotion";

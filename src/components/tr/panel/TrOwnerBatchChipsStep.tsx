@@ -2,8 +2,8 @@
 
 import {
   emptyElbiseGateChips,
-} from "@/components/tr/panel/TrOwnerElbiseConstructionGate";
-import { TrOwnerConstructionTriageFields } from "@/components/tr/panel/TrOwnerConstructionTriageFields";
+} from "@/components/tr/fashion/panel/TrOwnerElbiseConstructionGate";
+import { TrOwnerConstructionTriageFields } from "@/components/tr/fashion/panel/TrOwnerConstructionTriageFields";
 import {
   TrOwnerCreditsCostLine,
   TrOwnerCreditsMoreInfoLink,

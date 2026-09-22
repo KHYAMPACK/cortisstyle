@@ -40,7 +40,7 @@ import { withManualListing } from "@/lib/tr/catalog/productFeatures";
 import { hasManualGalleryPhoto } from "@/components/tr/panel/TrOwnerManualPhotoGallery";
 import { runConstructionPackshot } from "@/lib/tr/fashion/aiCatalog/runConstructionPackshot";
 import { describeModelPackageShots } from "@/lib/tr/fashion/aiCatalog/uploadCostHints";
-import { emptyElbiseGateChips } from "@/components/tr/panel/TrOwnerElbiseConstructionGate";
+import { emptyElbiseGateChips } from "@/components/tr/fashion/panel/TrOwnerElbiseConstructionGate";
 import { ELBISE_PACKSHOT_SLOT } from "@/lib/tr/fashion/garmentUploadTypes";
 import { runOwnerPatches } from "@/lib/tr/ownerBulk";
 import { createOwnerProduct, type TrOwnerProductPayload } from "@/lib/tr/ownerClient";

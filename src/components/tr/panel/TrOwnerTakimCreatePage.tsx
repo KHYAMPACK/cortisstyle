@@ -6,7 +6,7 @@ import {
   TrOwnerAiJobQueueProvider,
   useScheduleAiJob,
 } from "@/components/tr/panel/TrOwnerAiJobQueue";
-import { TrOwnerAiModelPicker } from "@/components/tr/panel/TrOwnerAiModelPicker";
+import { TrOwnerAiModelPicker } from "@/components/tr/fashion/panel/TrOwnerAiModelPicker";
 import { TrOwnerCreditsCostLine } from "@/components/tr/panel/TrOwnerCreditsInfo";
 import { TrOwnerGuidedPhotoUpload } from "@/components/tr/panel/TrOwnerGuidedPhotoUpload";
 import { useRegisterLeaveBusy } from "@/components/tr/panel/TrOwnerLeaveGuard";
@@ -19,7 +19,7 @@ import {
 } from "@/components/tr/panel/TrOwnerManualPhotoGallery";
 import { TrOwnerProductCreatedSuccess } from "@/components/tr/panel/TrOwnerProductCreatedSuccess";
 import { TrOwnerStorePreview } from "@/components/tr/panel/TrOwnerStorePreview";
-import { TrOwnerTakimChipsStep } from "@/components/tr/panel/TrOwnerTakimChipsStep";
+import { TrOwnerTakimChipsStep } from "@/components/tr/fashion/panel/TrOwnerTakimChipsStep";
 import { TrOwnerProductFeaturesFields } from "@/components/tr/panel/TrOwnerProductFeaturesFields";
 import { TrOwnerModelShotProgress } from "@/components/tr/panel/TrOwnerModelShotProgress";
 import { TrOwnerWizardPipelineStatus } from "@/components/tr/panel/TrOwnerWizardPipelineStatus";

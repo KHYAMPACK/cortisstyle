@@ -5,7 +5,7 @@ import {
   emptyElbiseGateChips,
   TrOwnerElbiseConstructionGateFields,
   type ElbiseGateChipState,
-} from "@/components/tr/panel/TrOwnerElbiseConstructionGate";
+} from "@/components/tr/fashion/panel/TrOwnerElbiseConstructionGate";
 import {
   TrOwnerCreditsCostLine,
   TrOwnerCreditsMoreInfoLink,

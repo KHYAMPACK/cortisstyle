@@ -50,11 +50,11 @@ import {
   constructionGateRequiredCopy,
   emptyElbiseGateChips,
   elbiseGateReady,
-} from "@/components/tr/panel/TrOwnerElbiseConstructionGate";
+} from "@/components/tr/fashion/panel/TrOwnerElbiseConstructionGate";
 import {
   constructionTriageReady,
   TrOwnerConstructionTriageFields,
-} from "@/components/tr/panel/TrOwnerConstructionTriageFields";
+} from "@/components/tr/fashion/panel/TrOwnerConstructionTriageFields";
 import {
   panelPrimaryBtnClass,
   panelSecondaryBtnClass,

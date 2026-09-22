@@ -13,7 +13,7 @@ import {
 import {
   useElbiseRestyleSaved,
   useOpenElbiseRestyle,
-} from "@/components/tr/panel/TrOwnerElbiseRestyleSession";
+} from "@/components/tr/fashion/panel/TrOwnerElbiseRestyleSession";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
 import { TrOwnerProductRouteGate } from "@/components/tr/panel/TrOwnerProductRouteGate";
 import {

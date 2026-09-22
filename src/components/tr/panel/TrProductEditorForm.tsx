@@ -15,7 +15,7 @@ import {
   useElbiseRestyleModelLocked,
   useElbiseRestyleSaved,
   useOpenElbiseRestyle,
-} from "@/components/tr/panel/TrOwnerElbiseRestyleSession";
+} from "@/components/tr/fashion/panel/TrOwnerElbiseRestyleSession";
 import { TrOwnerAiFillListing } from "@/components/tr/panel/TrOwnerAiFillListing";
 import {
   emptyStockInputsForChart,

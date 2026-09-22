@@ -6,7 +6,7 @@ import {
   elbiseGateReady,
   TrOwnerElbiseConstructionGateFields,
   type ElbiseGateChipState,
-} from "@/components/tr/panel/TrOwnerElbiseConstructionGate";
+} from "@/components/tr/fashion/panel/TrOwnerElbiseConstructionGate";
 import { panelHintClass } from "@/components/tr/panel/panelUi";
 import {
   constructionFamilyLeafReady,

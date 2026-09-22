@@ -3,7 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useId, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { TrOwnerAiModelPicker } from "@/components/tr/panel/TrOwnerAiModelPicker";
+import { TrOwnerAiModelPicker } from "@/components/tr/fashion/panel/TrOwnerAiModelPicker";
 import { trPanelEase } from "@/components/tr/panel/TrPanelMotion";
 import {
   panelPrimaryBtnClass,

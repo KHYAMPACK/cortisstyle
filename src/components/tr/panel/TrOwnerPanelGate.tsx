@@ -4,7 +4,7 @@ import { AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type CSSProperties } from "react";
 import { AuthPopup } from "@/components/AuthPopup";
-import { TrOwnerElbiseRestyleProvider } from "@/components/tr/panel/TrOwnerElbiseRestyleSession";
+import { TrOwnerElbiseRestyleProvider } from "@/components/tr/fashion/panel/TrOwnerElbiseRestyleSession";
 import {
   TrOwnerLeaveGuardProvider,
   useRequestBusyLeave,

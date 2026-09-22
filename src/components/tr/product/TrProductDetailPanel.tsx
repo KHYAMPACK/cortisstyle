@@ -1,9 +1,9 @@
 "use client";
 
 import { useTrScopedCart } from "@/components/tr/boutique/TrBoutiqueCommerceScope";
-import { TrBoutiqueModelMeasurements } from "@/components/tr/boutique/pdp/TrBoutiqueModelMeasurements";
+import { TrBoutiqueModelMeasurements } from "@/components/tr/fashion/pdp/TrBoutiqueModelMeasurements";
 import { TrBoutiquePdpInfoSections } from "@/components/tr/boutique/pdp/TrBoutiquePdpInfoSections";
-import { TrBoutiqueSizeChartModal } from "@/components/tr/boutique/pdp/TrBoutiqueSizeChartModal";
+import { TrBoutiqueSizeChartModal } from "@/components/tr/fashion/pdp/TrBoutiqueSizeChartModal";
 import { TrBackButton } from "@/components/tr/TrBackButton";
 import {
   TrEditorialSaleBadge,

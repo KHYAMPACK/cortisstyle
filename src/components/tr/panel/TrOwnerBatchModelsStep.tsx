@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { TrOwnerAiModelPicker } from "@/components/tr/panel/TrOwnerAiModelPicker";
+import { TrOwnerAiModelPicker } from "@/components/tr/fashion/panel/TrOwnerAiModelPicker";
 import { useScheduleAiJob } from "@/components/tr/panel/TrOwnerAiJobQueue";
 import { TrOwnerCreditsCostLine } from "@/components/tr/panel/TrOwnerCreditsInfo";
 import {

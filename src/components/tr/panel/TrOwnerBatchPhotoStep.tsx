@@ -20,7 +20,7 @@ import {
 } from "@/components/tr/panel/panelUi";
 import type { PipelineJobItem } from "@/lib/tr/aiCatalog/pipelineProgress";
 import { proposedConstructionChipsFromDraft } from "@/lib/tr/fashion/aiCatalog/runConstructionPackshot";
-import { emptyElbiseGateChips } from "@/components/tr/panel/TrOwnerElbiseConstructionGate";
+import { emptyElbiseGateChips } from "@/components/tr/fashion/panel/TrOwnerElbiseConstructionGate";
 import { getCatalogBackground } from "@/lib/tr/catalogBackgrounds/registry";
 import { constructionCatalogFamily } from "@/lib/tr/fashion/garmentUploadTypes";
 import { requestOwnerListingDraft } from "@/lib/tr/ownerClient";
