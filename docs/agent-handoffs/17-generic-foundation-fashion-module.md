@@ -1,6 +1,6 @@
 # 17 — Generic foundation + fashion module extraction
 
-**Status (2026-09-22):** In progress. Phases 1–3 done, phase 4 next. This doc is the living reference for the effort — update it as phases land, per the repo's own convention (`.cursor/rules/document-structural-changes.mdc`).
+**Status (2026-09-22):** In progress. Phases 1–4 done, phase 5 next. This doc is the living reference for the effort — update it as phases land, per the repo's own convention (`.cursor/rules/document-structural-changes.mdc`).
 
 ## Why
 
@@ -56,7 +56,7 @@ This is not a request for new features — the opposite: strip the core down to 
 1. ✅ Finish in-flight Phase-1 payments async refactor (unrelated to this effort, just needed closing out first).
 2. ✅ Doc cleanup — deleted 9 docs confirmed stale for this repo (see commit `6aca0d5`), fixed dangling references.
 3. ✅ **Purged non-lilabutik, non-architectural boutique code** (see commit `217eca9`). newtenant and pervinsoysalbutik got full teardown — code *and* their `tr_boutiques` rows deleted (Pervin had 6 sandbox-only test orders, confirmed zero real invoices before deleting those too). demo-maya's demo-content code was removed, but its shared types (`EditorialDemoContent` etc.) and stock-photo asset paths turned out to be load-bearing for every editorial-skin boutique including lilabutik — kept those. Only `lilabutik` and `minimora` (the `custom_art` reference module) remain in `tr_boutiques`.
-4. ⬜ Generic category-tree registry (per-`catalog_profile`, mirroring `catalogProfiles`); move Turkish taxonomy into the fashion module as its default.
+4. ✅ **Relocated the category taxonomy into `src/lib/tr/fashion/categories.ts`** (see commit `3381b69`). Course-corrected from a "per-catalog_profile registry" — checked first and found `custom_art` has zero category usage today (one seeded product, no Ürünler/Stok panel), so a multi-vertical registry would have been an unused abstraction. Just moved the file and updated all 29 importers to the direct path instead (deleted the old shim) — makes the fashion-coupling visible without inventing a mechanism nothing uses yet. Verified every importer is catalog-browsing/panel UI, none of it touches checkout/payments/shipping/tenant management.
 5. ⬜ Split `TrProductFeatures` by vertical (types only, no DB migration).
 6. ⬜ Physically relocate fashion-specific files into `src/lib/tr/fashion/`, in small batches.
 7. ⬜ Add the ESLint import-boundary rule.
