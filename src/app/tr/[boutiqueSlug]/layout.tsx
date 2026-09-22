@@ -13,15 +13,15 @@ import {
   resolveBoutiqueFaviconUrl,
 } from "@/lib/tr/boutiqueBrand";
 import { resolveBoutiqueHomeLayout } from "@/lib/tr/boutiqueHome";
+import { BOUTIQUE_SLUG_HEADER } from "@/lib/introLoader";
 import { withEditorialDemoProducts } from "@/lib/tr/looks/editorialDemoProducts";
 import {
   safeGetBoutiqueStorefront,
   safeGetPublicBoutique,
 } from "@/lib/tr/publicData";
-import { preferredBoutiqueOrigin } from "@/lib/tr/seo/storefrontSeo";
 import { siteLegal } from "@/lib/siteLegal";
 import { resolveStorefrontTheme } from "@/lib/tr/storefrontTheme";
-import { normalizeBoutiqueHost, resolveBoutiqueSlugFromHost } from "@/lib/tr/customDomain";
+import { normalizeBoutiqueHost } from "@/lib/tr/customDomain";
 import { trBoutiquePath } from "@/lib/tr/paths";
 
 /** Static marketplace segments — must not be captured by [boutiqueSlug]. */
@@ -87,14 +87,12 @@ export async function generateMetadata({
       headerList.get("host") ||
       "",
   );
-  const hostSlug = requestHost
-    ? resolveBoutiqueSlugFromHost(requestHost)
-    : null;
+  const hostSlug = headerList.get(BOUTIQUE_SLUG_HEADER)?.trim() || null;
   const onBoutiqueDomain = hostSlug === boutique.slug;
   const metadataBase = new URL(
     onBoutiqueDomain && requestHost
       ? `https://${requestHost}`
-      : preferredBoutiqueOrigin(boutique.slug) || siteLegal.siteUrl,
+      : siteLegal.siteUrl,
   );
   const canonicalPath = onBoutiqueDomain
     ? "/"

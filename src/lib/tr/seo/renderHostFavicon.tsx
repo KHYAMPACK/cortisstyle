@@ -3,22 +3,11 @@ import { join } from "node:path";
 import { ImageResponse } from "next/og";
 import { headers } from "next/headers";
 import { BOUTIQUE_SLUG_HEADER } from "@/lib/introLoader";
-import {
-  normalizeBoutiqueHost,
-  resolveBoutiqueSlugFromHost,
-} from "@/lib/tr/customDomain";
 import { resolveHostFaviconPublicPath } from "@/lib/tr/seo/hostFavicon";
 
 async function boutiqueSlugFromRequest(): Promise<string | null> {
   const headerList = await headers();
-  const fromMiddleware = headerList.get(BOUTIQUE_SLUG_HEADER)?.trim();
-  if (fromMiddleware) return fromMiddleware;
-  const host = normalizeBoutiqueHost(
-    headerList.get("x-forwarded-host")?.split(",")[0]?.trim() ||
-      headerList.get("host") ||
-      "",
-  );
-  return host ? resolveBoutiqueSlugFromHost(host) : null;
+  return headerList.get(BOUTIQUE_SLUG_HEADER)?.trim() || null;
 }
 
 export async function renderHostFavicon(px: number): Promise<ImageResponse> {

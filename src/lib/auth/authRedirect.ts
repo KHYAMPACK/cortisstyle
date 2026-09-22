@@ -1,8 +1,4 @@
-import {
-  getBoutiqueDomainMap,
-  normalizeBoutiqueHost,
-  resolveBoutiqueSlugFromHost,
-} from "@/lib/tr/customDomain";
+import { normalizeBoutiqueHost } from "@/lib/tr/customDomain";
 
 const DEFAULT_SITE_URL = "https://www.cortisstyle.com";
 /** Default post-auth landing for the Turkey-first product. */
@@ -21,24 +17,22 @@ export function getSiteUrl(): string {
 }
 
 /**
- * Prefer a boutique custom-domain origin when the host maps to `boutiqueSlug`,
- * or when the boutique has a known custom domain. Falls back to platform site URL.
+ * Prefer a boutique custom-domain origin when the request's host matches the
+ * boutique's own DB `custom_domain`. Falls back to platform site URL.
  */
 export function resolveAuthRedirectOrigin(options?: {
-  boutiqueSlug?: string | null;
   requestOrigin?: string | null;
-  /** DB / seed custom domain host (e.g. lilaboutiquedenizli.com). */
+  /** DB custom domain host (e.g. lilaboutiquedenizli.com). */
   customDomain?: string | null;
 }): string {
-  const slug = options?.boutiqueSlug?.trim().toLowerCase() || null;
+  const customHost = normalizePublicHost(options?.customDomain);
   const originRaw = options?.requestOrigin?.trim() || "";
 
-  if (slug && originRaw) {
+  if (customHost && originRaw) {
     try {
       const url = new URL(originRaw);
       const host = normalizeBoutiqueHost(url.host);
-      const mapped = resolveBoutiqueSlugFromHost(host);
-      if (mapped === slug) {
+      if (host === customHost) {
         return url.origin.replace(/\/$/, "");
       }
     } catch {
@@ -46,17 +40,8 @@ export function resolveAuthRedirectOrigin(options?: {
     }
   }
 
-  if (slug) {
-    const fromRecord = normalizePublicHost(options?.customDomain);
-    if (fromRecord && resolveBoutiqueSlugFromHost(fromRecord) === slug) {
-      return `https://${fromRecord}`;
-    }
-    const fromMap = Object.entries(getBoutiqueDomainMap()).find(
-      ([, mappedSlug]) => mappedSlug === slug,
-    )?.[0];
-    if (fromMap) {
-      return `https://${normalizeBoutiqueHost(fromMap)}`;
-    }
+  if (customHost) {
+    return `https://${customHost}`;
   }
 
   return getSiteUrl();

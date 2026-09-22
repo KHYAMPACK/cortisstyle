@@ -10,7 +10,6 @@ import {
   absoluteUrl,
   boutiqueCustomerPath,
   boutiqueProductPlatformPath,
-  preferredBoutiqueOrigin,
 } from "@/lib/tr/seo/storefrontSeo";
 import { sumSizeStocks } from "@/lib/tr/sizeStocks";
 import { siteLegal } from "@/lib/siteLegal";
@@ -97,10 +96,6 @@ export function resolveMerchantStoreOrigin(
     .replace(/^www\./, "");
   if (custom && custom.includes(".")) {
     return { origin: `https://${custom}`, mode: "boutique-domain" };
-  }
-  const preferred = preferredBoutiqueOrigin(boutique.slug);
-  if (preferred) {
-    return { origin: preferred, mode: "boutique-domain" };
   }
   return { origin: requestOrigin, mode: "platform" };
 }

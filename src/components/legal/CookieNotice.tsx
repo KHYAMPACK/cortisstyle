@@ -9,16 +9,12 @@ import {
 } from "@/lib/cookieConsent";
 import { isAuthCallbackPath } from "@/lib/authRedirect";
 import { isMaintenancePath } from "@/lib/launchGates";
-import { useBoutiqueHostSlug } from "@/lib/tr/boutiqueStorefrontContext";
+import { useBoutiqueSlug } from "@/lib/tr/boutiqueStorefrontContext";
 import { isTrMarketPath } from "@/lib/marketPreference";
 
-export function CookieNotice({
-  boutiqueSlug = null,
-}: {
-  boutiqueSlug?: string | null;
-}) {
+export function CookieNotice() {
   const pathname = usePathname();
-  const hostBoutiqueSlug = useBoutiqueHostSlug(boutiqueSlug);
+  const hostBoutiqueSlug = useBoutiqueSlug();
   const [visible, setVisible] = useState(false);
 
   const shouldHideRoute =

@@ -12,7 +12,7 @@ import {
   resolveBoutiqueLogoUrl,
   resolveBoutiqueThemeAccentBySlug,
 } from "@/lib/tr/boutiqueBrand";
-import { resolveBoutiqueSlugFromHost } from "@/lib/tr/customDomain";
+import { useBoutiqueSlug } from "@/lib/tr/boutiqueStorefrontContext";
 
 const monoInputClass =
   "w-full border border-neutral-900 bg-white px-4 py-4 text-center font-mono text-[11px] tracking-[0.12em] text-neutral-900 outline-none transition-colors placeholder:text-neutral-400 focus:border-neutral-900 disabled:opacity-60";
@@ -66,11 +66,6 @@ function resolveBoutiqueSlug(
   const fromEmbedded = boutiqueSlugFromEmbeddedQuery(searchParams.get("next"));
   if (fromEmbedded) return fromEmbedded;
 
-  if (typeof window !== "undefined") {
-    const fromHost = resolveBoutiqueSlugFromHost(window.location.host);
-    if (fromHost) return fromHost;
-  }
-
   return null;
 }
 
@@ -78,11 +73,7 @@ export default function ResetPasswordPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const returnTo = safeNextPath(searchParams.get("next"));
-  const [hostSlug, setHostSlug] = useState<string | null>(null);
-
-  useEffect(() => {
-    setHostSlug(resolveBoutiqueSlugFromHost(window.location.host));
-  }, []);
+  const hostSlug = useBoutiqueSlug();
 
   const boutiqueSlug = useMemo(() => {
     return (

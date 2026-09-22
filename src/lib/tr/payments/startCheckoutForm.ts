@@ -1,4 +1,3 @@
-import { preferredBoutiqueOrigin } from "@/lib/tr/seo/storefrontSeo";
 import { trOrderConfirmationPath } from "@/lib/tr/paths";
 import {
   formatIyzicoGsm,
@@ -30,12 +29,6 @@ function callbackOrigin(boutique: {
     .toLowerCase()
     .replace(/^www\./, "");
   if (custom?.includes(".")) return `https://${custom}`;
-
-  const mapped = preferredBoutiqueOrigin(boutique.slug)?.replace(
-    "://www.",
-    "://",
-  );
-  if (mapped) return mapped;
 
   const site = process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/$/, "");
   if (site) return site;

@@ -4,10 +4,7 @@ import {
   renderGoogleMerchantRssXml,
 } from "@/lib/tr/googleMerchant/feed";
 import { listPublicProductsByBoutiqueId } from "@/lib/tr/products";
-import {
-  preferredBoutiqueOrigin,
-  resolveSeoHostContext,
-} from "@/lib/tr/seo/storefrontSeo";
+import { resolveSeoHostContext } from "@/lib/tr/seo/storefrontSeo";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -32,8 +29,7 @@ export async function GET(_request: Request, { params }: RouteParams) {
 
   const products = await listPublicProductsByBoutiqueId(boutique.id, boutique);
   const ctx = await resolveSeoHostContext();
-  const requestOrigin =
-    preferredBoutiqueOrigin(boutique.slug) ?? ctx.origin;
+  const requestOrigin = ctx.origin;
 
   const items = buildGoogleMerchantFeedItems({
     boutique,

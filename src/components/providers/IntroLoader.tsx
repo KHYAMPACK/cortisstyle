@@ -8,7 +8,7 @@ import { createPortal } from "react-dom";
 import { BrandLogo } from "@/components/BrandLogo";
 import { CaddeIntroStack } from "@/components/tr/marketplace/CaddeIntroStack";
 import { resolveBoutiqueIntroBrand } from "@/lib/tr/boutiqueBrand";
-import { resolveBoutiqueSlugFromHost } from "@/lib/tr/customDomain";
+import { useBoutiqueSlug } from "@/lib/tr/boutiqueStorefrontContext";
 import {
   emitCaddeHeroReady,
   hasCaddeIntroPlayed,
@@ -50,14 +50,11 @@ interface IntroLoaderProps {
   /** Keeps the mask visible until the parent unmounts (auth callback bridge). */
   forceActive?: boolean;
   statusLabel?: string;
-  /** White-label boutique slug (custom domain) — shows boutique logo instead of Cortis. */
-  boutiqueSlug?: string | null;
 }
 
 export function IntroLoader({
   forceActive = false,
   statusLabel,
-  boutiqueSlug = null,
 }: IntroLoaderProps) {
   const pathname = usePathname();
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -66,13 +63,7 @@ export function IntroLoader({
   const [isMounted, setIsMounted] = useState(false);
   const [phase, setPhase] = useState<IntroPhase>("visible");
   const [caddeLift, setCaddeLift] = useState(false);
-  const [resolvedSlug, setResolvedSlug] = useState<string | null>(() => {
-    if (boutiqueSlug?.trim()) return boutiqueSlug.trim();
-    if (typeof window !== "undefined") {
-      return resolveBoutiqueSlugFromHost(window.location.host);
-    }
-    return null;
-  });
+  const resolvedSlug = useBoutiqueSlug();
 
   const introBrand = resolvedSlug
     ? resolveBoutiqueIntroBrand(resolvedSlug)
@@ -85,13 +76,7 @@ export function IntroLoader({
 
   useEffect(() => {
     setIsMounted(true);
-    if (boutiqueSlug?.trim()) {
-      setResolvedSlug(boutiqueSlug.trim());
-      return;
-    }
-    const fromHost = resolveBoutiqueSlugFromHost(window.location.host);
-    if (fromHost) setResolvedSlug(fromHost);
-  }, [boutiqueSlug]);
+  }, []);
 
   useEffect(() => {
     if (!isMounted || forceActive) return;

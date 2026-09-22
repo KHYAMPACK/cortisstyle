@@ -1,67 +1,25 @@
 /**
- * Custom-domain → boutique slug map for white-label storefronts.
- * Env JSON wins for Edge middleware; DB custom_domain is source of truth for admin/panel.
+ * Custom-domain → boutique slug resolution for white-label storefronts.
+ *
+ * `resolveBoutiqueSlugFromHostAtEdge()` in src/proxy.ts is the only place
+ * that ever resolves a request's host to a boutique slug — it stamps the
+ * result onto the `x-boutique-slug` request header. Everything downstream
+ * (SEO, favicon, auth redirect, the boutique-slug React context) reads that
+ * header/context instead of re-deriving it, so there is exactly one source
+ * of truth and no hardcoded per-tenant domain list in source.
  *
  * Example: TR_BOUTIQUE_DOMAINS={"pervinsoysal.com":"pervinsoysalbutik","www.pervinsoysal.com":"pervinsoysalbutik"}
  */
-
-const DEFAULT_DOMAIN_MAP: Record<string, string> = {
-  "pervinsoysal.com": "pervinsoysalbutik",
-  "www.pervinsoysal.com": "pervinsoysalbutik",
-  "lilaboutiquedenizli.com": "lilabutik",
-  "www.lilaboutiquedenizli.com": "lilabutik",
-  "minimora.shop": "minimora",
-  "www.minimora.shop": "minimora",
-};
-
-function parseEnvDomainMap(): Record<string, string> {
-  const raw = process.env.TR_BOUTIQUE_DOMAINS?.trim();
-  if (!raw) return { ...DEFAULT_DOMAIN_MAP };
-  try {
-    const parsed = JSON.parse(raw) as Record<string, string>;
-    const out: Record<string, string> = { ...DEFAULT_DOMAIN_MAP };
-    for (const [host, slug] of Object.entries(parsed)) {
-      const h = host.trim().toLowerCase();
-      const s = slug.trim().toLowerCase();
-      if (h && s) out[h] = s;
-    }
-    return out;
-  } catch {
-    return { ...DEFAULT_DOMAIN_MAP };
-  }
-}
-
-let cachedMap: Record<string, string> | null = null;
-
-export function getBoutiqueDomainMap(): Record<string, string> {
-  if (!cachedMap) cachedMap = parseEnvDomainMap();
-  return cachedMap;
-}
 
 /** Normalize host (strip port). */
 export function normalizeBoutiqueHost(host: string): string {
   return host.trim().toLowerCase().replace(/:\d+$/, "");
 }
 
-export function resolveBoutiqueSlugFromHost(host: string): string | null {
-  const normalized = normalizeBoutiqueHost(host);
-  return getBoutiqueDomainMap()[normalized] ?? null;
-}
-
-// --- DB-backed resolution for src/proxy.ts only ---
-//
-// Proxy (formerly middleware) is the one place that decides whether a custom
-// domain actually renders its boutique's storefront, so it's the one place
-// where DB drift (the bug this section fixes) matters. Everything else in
-// this file above is still read by 7 other call sites (SEO, favicon, auth
-// redirect, and 3 browser components) that haven't been migrated off the
-// hardcoded/env map yet — see the "propagate boutique-slug via header"
-// follow-up task.
-
 const EDGE_DOMAIN_MAP_TTL_MS = 120_000;
 
-/** Env override only — no hardcoded fallback (that's the whole point here). */
-function parseEnvDomainMapOnly(): Record<string, string> {
+/** `TR_BOUTIQUE_DOMAINS` env override — ops-controlled, no hardcoded fallback. */
+function parseEnvDomainMap(): Record<string, string> {
   const raw = process.env.TR_BOUTIQUE_DOMAINS?.trim();
   if (!raw) return {};
   try {
@@ -123,7 +81,7 @@ async function refreshEdgeDomainMap(): Promise<void> {
   // than wiping a working cache — a transient Supabase blip shouldn't take
   // every white-label domain down until the next refresh window.
   if (Object.keys(dbMap).length > 0 || Object.keys(edgeCachedMap).length === 0) {
-    edgeCachedMap = { ...parseEnvDomainMapOnly(), ...dbMap };
+    edgeCachedMap = { ...parseEnvDomainMap(), ...dbMap };
   }
   edgeCachedAt = Date.now();
 }

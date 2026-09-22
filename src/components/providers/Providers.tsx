@@ -8,7 +8,7 @@ import { AuthRedirectBridge } from "@/components/AuthRedirectBridge";
 import { CookieNotice } from "@/components/legal/CookieNotice";
 import { IntroLoader } from "@/components/IntroLoader";
 import { clearIntroLoadingLock, shouldMountIntroLoader } from "@/lib/introLoader";
-import { useBoutiqueHostSlug } from "@/lib/tr/boutiqueStorefrontContext";
+import { BoutiqueSlugProvider } from "@/lib/tr/boutiqueStorefrontContext";
 
 export function Providers({
   children,
@@ -18,11 +18,7 @@ export function Providers({
   boutiqueSlug?: string | null;
 }) {
   const pathname = usePathname();
-  const resolvedBoutiqueSlug = useBoutiqueHostSlug(boutiqueSlug);
-  const showIntroLoader = shouldMountIntroLoader(
-    pathname,
-    resolvedBoutiqueSlug,
-  );
+  const showIntroLoader = shouldMountIntroLoader(pathname, boutiqueSlug);
 
   useEffect(() => {
     if (showIntroLoader) return;
@@ -30,13 +26,13 @@ export function Providers({
   }, [showIntroLoader]);
 
   return (
-    <AuthProvider>
-      {showIntroLoader ? (
-        <IntroLoader boutiqueSlug={resolvedBoutiqueSlug} />
-      ) : null}
-      <AuthRedirectBridge />
-      <AppShell boutiqueSlug={resolvedBoutiqueSlug}>{children}</AppShell>
-      <CookieNotice boutiqueSlug={resolvedBoutiqueSlug} />
-    </AuthProvider>
+    <BoutiqueSlugProvider value={boutiqueSlug}>
+      <AuthProvider>
+        {showIntroLoader ? <IntroLoader /> : null}
+        <AuthRedirectBridge />
+        <AppShell boutiqueSlug={boutiqueSlug}>{children}</AppShell>
+        <CookieNotice />
+      </AuthProvider>
+    </BoutiqueSlugProvider>
   );
 }

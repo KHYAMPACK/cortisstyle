@@ -134,7 +134,6 @@ export async function sendBoutiquePasswordReset(input: {
 
   const brand = resolveBoutiqueAuthMailBrand(boutique);
   const siteOrigin = resolveAuthRedirectOrigin({
-    boutiqueSlug,
     requestOrigin: input.requestOrigin,
     customDomain: boutique.customDomain,
   });

@@ -4,12 +4,9 @@
  */
 
 import { headers } from "next/headers";
+import { BOUTIQUE_SLUG_HEADER } from "@/lib/introLoader";
 import { siteLegal } from "@/lib/siteLegal";
-import {
-  getBoutiqueDomainMap,
-  normalizeBoutiqueHost,
-  resolveBoutiqueSlugFromHost,
-} from "@/lib/tr/customDomain";
+import { normalizeBoutiqueHost } from "@/lib/tr/customDomain";
 import { TR_LEGAL_DOC_IDS } from "@/lib/tr/legal/docs";
 import {
   trBoutiqueLegalPath,
@@ -50,7 +47,7 @@ export async function resolveSeoHostContext(): Promise<SeoHostContext> {
   const headerList = await headers();
   const host = requestHost(headerList);
   const protocol = requestProtocol(headerList);
-  const boutiqueSlug = host ? resolveBoutiqueSlugFromHost(host) : null;
+  const boutiqueSlug = headerList.get(BOUTIQUE_SLUG_HEADER)?.trim() || null;
 
   if (host && boutiqueSlug) {
     return {
@@ -69,17 +66,6 @@ export async function resolveSeoHostContext(): Promise<SeoHostContext> {
     host: host || platformHost,
     origin: host ? `${protocol}://${host}` : siteLegal.siteUrl,
   };
-}
-
-/** Preferred public https origin for a boutique (www first). */
-export function preferredBoutiqueOrigin(slug: string): string | null {
-  const key = slug.trim().toLowerCase();
-  const hosts = Object.entries(getBoutiqueDomainMap())
-    .filter(([, mapped]) => mapped === key)
-    .map(([host]) => host);
-  if (hosts.length === 0) return null;
-  const www = hosts.find((h) => h.startsWith("www."));
-  return `https://${www ?? hosts[0]!}`;
 }
 
 export function absoluteUrl(origin: string, path: string): string {
