@@ -76,6 +76,8 @@ export interface TrBoutiquePublic {
   editorialContent: Record<string, unknown> | null;
   /** Vertical: fashion catalog vs print-on-demand custom art. */
   catalogProfile: TrCatalogProfileId;
+  /** Public storefront contact email override. Null → info@{customDomain} or platform mailbox. */
+  contactEmail: string | null;
   status: TrBoutiqueStatus;
   createdAt: string;
   updatedAt: string;

@@ -108,6 +108,7 @@ export function mapBoutiqueRow(row: Record<string, unknown>): TrBoutique {
     catalogProfile: normalizeCatalogProfile(
       typeof row.catalog_profile === "string" ? row.catalog_profile : null,
     ),
+    contactEmail: (row.contact_email as string | null) ?? null,
     vergiNo: (row.vergi_no as string | null) ?? null,
     iban: (row.iban as string | null) ?? null,
     commissionBps: (row.commission_bps as number) ?? 1000,
@@ -143,6 +144,7 @@ export function toPublicBoutique(boutique: TrBoutique): TrBoutiquePublic {
     vergiNo: boutique.vergiNo,
     editorialContent: boutique.editorialContent,
     catalogProfile: boutique.catalogProfile,
+    contactEmail: boutique.contactEmail,
     status: boutique.status,
     createdAt: boutique.createdAt,
     updatedAt: boutique.updatedAt,

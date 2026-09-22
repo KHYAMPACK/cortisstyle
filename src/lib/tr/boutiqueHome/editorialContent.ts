@@ -102,6 +102,7 @@ export function buildBoutiqueEditorialDefaults(
     | "instagramHandle"
     | "shippingNote"
     | "customDomain"
+    | "contactEmail"
   >,
 ): EditorialDemoContent {
   const phoneDisplay = boutique.whatsappPhone

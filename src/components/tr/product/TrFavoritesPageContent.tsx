@@ -59,6 +59,7 @@ function favoriteAsProduct(item: TrFavoriteItem): TrProductWithBoutique {
       customDomain: null,
       vergiNo: null,
       editorialContent: null,
+      contactEmail: null,
       status: "verified",
       createdAt: "",
       updatedAt: "",
