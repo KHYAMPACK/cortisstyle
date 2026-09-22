@@ -21,6 +21,7 @@ Start here when picking up this repo. Read **[00-overview.md](./00-overview.md)*
 | [12-boutique-go-live.md](./12-boutique-go-live.md) | Phase 1 launch | Payment modes, secrets |
 | [13-boutique-wire-in-and-go-live.md](./13-boutique-wire-in-and-go-live.md) | Phase 1 onboarding | Wire-in registry + pre-live checklist |
 | [16-custom-art-boutique.md](./16-custom-art-boutique.md) | Phase 1 vertical | Print-on-demand tablo (`catalog_profile = custom_art`) |
+| [17-generic-foundation-fashion-module.md](./17-generic-foundation-fashion-module.md) | **In progress** — architecture | Generic core + fashion module extraction; what's clothing-specific vs generic today |
 | [lila-butik-e-ticaret-setup.md](../lila-butik-e-ticaret-setup.md) | Phase 1 architecture | Shared rails + editorial skins |
 | [tr-boutique-legal-templates.md](../tr-boutique-legal-templates.md) | Phase 1 legal | Yasal templates |
 
