@@ -1,9 +1,9 @@
-import { buildElbisePackshotPrompt } from "@/lib/tr/aiCatalog/packshotPrompt";
+import { buildElbisePackshotPrompt } from "@/lib/tr/fashion/aiCatalog/packshotPrompt";
 import {
   runAiJobImmediately,
   type ScheduleAiJob,
 } from "@/lib/tr/aiCatalog/ownerAiJobQueue";
-import type { ElbiseConstructionChips } from "@/lib/tr/aiCatalog/elbiseConstructionLock";
+import type { ElbiseConstructionChips } from "@/lib/tr/fashion/aiCatalog/elbiseConstructionLock";
 import { hexFromTurkishColorName } from "@/lib/tr/catalog/colorSiblings";
 import type { ConstructionCatalogFamily } from "@/lib/tr/catalog/garmentUploadTypes";
 import { buildElbiseTryOnShots } from "@/lib/tr/aiModel/elbiseTryOn";

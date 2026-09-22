@@ -1,7 +1,7 @@
 import {
   draftGarmentColorFromImage,
   draftProductListingFromImage,
-} from "@/lib/tr/aiCatalog/listingDraft";
+} from "@/lib/tr/fashion/aiCatalog/listingDraft";
 import { getBoutiqueByIdAdmin } from "@/lib/tr/boutiques";
 import {
   requireOwnedBoutique,

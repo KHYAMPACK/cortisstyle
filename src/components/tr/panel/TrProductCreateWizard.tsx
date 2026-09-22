@@ -37,15 +37,15 @@ import {
   panelStickyActionsSpacerClass,
 } from "@/components/tr/panel/panelUi";
 import type { PipelineJobItem } from "@/lib/tr/aiCatalog/pipelineProgress";
-import { formatConstructionProductTitle } from "@/lib/tr/aiCatalog/listingDraft";
+import { formatConstructionProductTitle } from "@/lib/tr/fashion/aiCatalog/listingDraft";
 import {
   runColorVariantPackshot,
   runColorVariantTryOn,
-} from "@/lib/tr/aiCatalog/runColorVariantCatalog";
+} from "@/lib/tr/fashion/aiCatalog/runColorVariantCatalog";
 import {
   describeModelPackageShots,
-} from "@/lib/tr/aiCatalog/uploadCostHints";
-import { constructionChipsForFamily } from "@/lib/tr/aiCatalog/elbiseConstructionLock";
+} from "@/lib/tr/fashion/aiCatalog/uploadCostHints";
+import { constructionChipsForFamily } from "@/lib/tr/fashion/aiCatalog/elbiseConstructionLock";
 import { chipsFromProductFeatures } from "@/lib/tr/aiModel/elbiseTryOn";
 import { constructionGateRequiredCopy } from "@/lib/tr/catalog/dressFeatures";
 import {

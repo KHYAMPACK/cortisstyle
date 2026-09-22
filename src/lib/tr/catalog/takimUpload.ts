@@ -1,4 +1,4 @@
-import { buildElbiseTryOnConstructionLock } from "@/lib/tr/aiCatalog/elbiseConstructionLock";
+import { buildElbiseTryOnConstructionLock } from "@/lib/tr/fashion/aiCatalog/elbiseConstructionLock";
 import { TR_OWNER_PRODUCT_LIMITS } from "@/lib/tr/ownerProductConstraints";
 import { getTrCategoryLabel } from "@/lib/tr/fashion/categories";
 import {

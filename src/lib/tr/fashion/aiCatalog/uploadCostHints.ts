@@ -7,7 +7,7 @@
  */
 
 import { elbiseModelShotCount } from "@/lib/tr/aiModel/elbiseTryOn";
-import type { ElbiseConstructionChips } from "@/lib/tr/aiCatalog/elbiseConstructionLock";
+import type { ElbiseConstructionChips } from "@/lib/tr/fashion/aiCatalog/elbiseConstructionLock";
 import { constructionCatalogFamily, isConstructionCatalogUpload } from "@/lib/tr/catalog/garmentUploadTypes";
 
 export const TR_AI_CATALOG_CREDITS = {

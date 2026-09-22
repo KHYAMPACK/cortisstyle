@@ -16,7 +16,7 @@ import {
   panelStickyActionsClass,
   panelStickyActionsSpacerClass,
 } from "@/components/tr/panel/panelUi";
-import { TR_AI_CATALOG_CREDITS } from "@/lib/tr/aiCatalog/uploadCostHints";
+import { TR_AI_CATALOG_CREDITS } from "@/lib/tr/fashion/aiCatalog/uploadCostHints";
 import type { ProductBatchCreateRow } from "@/lib/tr/productBatchCreateDraft";
 import {
   batchRowChipsReady,

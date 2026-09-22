@@ -13,7 +13,7 @@ import {
   describeModelPackageCredits,
   describeModelPackageShots,
   TR_AI_CATALOG_CREDITS,
-} from "@/lib/tr/aiCatalog/uploadCostHints";
+} from "@/lib/tr/fashion/aiCatalog/uploadCostHints";
 import {
   TrOwnerCreditsCostLine,
   TrOwnerCreditsMoreInfoLink,

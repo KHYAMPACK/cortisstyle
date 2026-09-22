@@ -1,5 +1,5 @@
-import { generateOwnerPackshot } from "@/lib/tr/aiCatalog/generatePackshot";
-import { sanitizeListingDraft } from "@/lib/tr/aiCatalog/listingDraft";
+import { generateOwnerPackshot } from "@/lib/tr/fashion/aiCatalog/generatePackshot";
+import { sanitizeListingDraft } from "@/lib/tr/fashion/aiCatalog/listingDraft";
 import { constructionCatalogFamily } from "@/lib/tr/catalog/garmentUploadTypes";
 import { getBoutiqueByIdAdmin } from "@/lib/tr/boutiques";
 import {

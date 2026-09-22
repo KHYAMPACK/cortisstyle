@@ -1,6 +1,6 @@
-import { resolvePackshotPrompt } from "@/lib/tr/aiCatalog/resolvePackshotPrompt";
-import type { PackshotView } from "@/lib/tr/aiCatalog/packshotPrompt";
-import type { ProductListingDraft } from "@/lib/tr/aiCatalog/listingDraft";
+import { resolvePackshotPrompt } from "@/lib/tr/fashion/aiCatalog/resolvePackshotPrompt";
+import type { PackshotView } from "@/lib/tr/fashion/aiCatalog/packshotPrompt";
+import type { ProductListingDraft } from "@/lib/tr/fashion/aiCatalog/listingDraft";
 import { generateFashnPackshot } from "@/lib/tr/fashion/fashn/packshot";
 import { logTrAiUsageEvent } from "@/lib/tr/aiUsage";
 

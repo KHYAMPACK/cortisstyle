@@ -2,7 +2,7 @@ import {
   buildElbiseTryOnConstructionLock,
   constructionChipsForFamily,
   type ElbiseConstructionChips,
-} from "@/lib/tr/aiCatalog/elbiseConstructionLock";
+} from "@/lib/tr/fashion/aiCatalog/elbiseConstructionLock";
 import {
   NATURAL_TRYON_PROMPT,
   NATURAL_TRYON_PROMPT_BACK,

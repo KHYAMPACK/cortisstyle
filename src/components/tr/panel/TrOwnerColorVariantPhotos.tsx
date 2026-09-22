@@ -13,7 +13,7 @@ import {
   emptyColorVariantDraft,
   type ColorVariantUploadDraft,
 } from "@/lib/tr/catalog/colorSiblings";
-import { TR_AI_CATALOG_CREDITS } from "@/lib/tr/aiCatalog/uploadCostHints";
+import { TR_AI_CATALOG_CREDITS } from "@/lib/tr/fashion/aiCatalog/uploadCostHints";
 import {
   panelAddChipClass,
   panelHintClass,

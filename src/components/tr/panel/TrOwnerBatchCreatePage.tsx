@@ -34,12 +34,12 @@ import {
   panelStickyActionsSpacerClass,
 } from "@/components/tr/panel/panelUi";
 import type { PipelineJobItem } from "@/lib/tr/aiCatalog/pipelineProgress";
-import { applyConstructionListingTitle } from "@/lib/tr/aiCatalog/listingDraft";
-import { mergeElbiseRestyleFeatures } from "@/lib/tr/aiCatalog/elbiseRestyle";
+import { applyConstructionListingTitle } from "@/lib/tr/fashion/aiCatalog/listingDraft";
+import { mergeElbiseRestyleFeatures } from "@/lib/tr/fashion/aiCatalog/elbiseRestyle";
 import { withManualListing } from "@/lib/tr/catalog/productFeatures";
 import { hasManualGalleryPhoto } from "@/components/tr/panel/TrOwnerManualPhotoGallery";
-import { runConstructionPackshot } from "@/lib/tr/aiCatalog/runConstructionPackshot";
-import { describeModelPackageShots } from "@/lib/tr/aiCatalog/uploadCostHints";
+import { runConstructionPackshot } from "@/lib/tr/fashion/aiCatalog/runConstructionPackshot";
+import { describeModelPackageShots } from "@/lib/tr/fashion/aiCatalog/uploadCostHints";
 import { emptyElbiseGateChips } from "@/components/tr/panel/TrOwnerElbiseConstructionGate";
 import { ELBISE_PACKSHOT_SLOT } from "@/lib/tr/catalog/garmentUploadTypes";
 import { runOwnerPatches } from "@/lib/tr/ownerBulk";

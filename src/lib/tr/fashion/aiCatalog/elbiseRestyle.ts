@@ -9,7 +9,7 @@ import { isTakimCatalogProduct } from "@/lib/tr/catalog/takimUpload";
 import {
   describeModelPackageCredits,
   TR_AI_CATALOG_CREDITS,
-} from "@/lib/tr/aiCatalog/uploadCostHints";
+} from "@/lib/tr/fashion/aiCatalog/uploadCostHints";
 import { chipsFromProductFeatures } from "@/lib/tr/aiModel/elbiseTryOn";
 import { dressFeatureOptionId } from "@/lib/tr/catalog/dressFeatures";
 import { withLifestyleModelsAll } from "@/lib/tr/catalog/productFeatures";

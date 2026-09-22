@@ -28,13 +28,13 @@ import {
 import {
   estimateElbiseRestyleCredits,
   isSameIstanbulDay,
-} from "@/lib/tr/aiCatalog/elbiseRestyle";
+} from "@/lib/tr/fashion/aiCatalog/elbiseRestyle";
 import {
   commitElbiseCatalogRestyle,
   prepareElbiseCatalogRestyle,
   type ElbiseCatalogPrepareResult,
   type ElbiseRestyleProgressPhase,
-} from "@/lib/tr/aiCatalog/runElbiseCatalogPipeline";
+} from "@/lib/tr/fashion/aiCatalog/runElbiseCatalogPipeline";
 import {
   chipsFromProductFeatures,
   elbiseModelShotCount,

@@ -48,7 +48,7 @@ import {
 } from "@/lib/tr/fashion/categories";
 import { runOwnerPatches } from "@/lib/tr/ownerBulk";
 import { getPanelProductCover } from "@/lib/tr/productImages";
-import { isElbiseRestyleCandidate } from "@/lib/tr/aiCatalog/elbiseRestyle";
+import { isElbiseRestyleCandidate } from "@/lib/tr/fashion/aiCatalog/elbiseRestyle";
 import {
   deleteOwnerProduct,
   fetchOwnerProducts,

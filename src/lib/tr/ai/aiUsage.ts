@@ -3,7 +3,7 @@ import {
   boutiqueCreditsForUsageKind,
   creditsToTry,
   creditsToUsd,
-} from "@/lib/tr/aiCatalog/uploadCostHints";
+} from "@/lib/tr/fashion/aiCatalog/uploadCostHints";
 
 export type TrAiUsageKind = "packshot" | "tryon" | "bg_removal";
 export type TrAiUsageProvider = "fashn" | "photoroom";

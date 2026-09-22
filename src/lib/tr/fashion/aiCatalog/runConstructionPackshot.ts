@@ -2,10 +2,10 @@ import {
   constructionChipsEqual,
   constructionChipsForFamily,
   type ElbiseConstructionChips,
-} from "@/lib/tr/aiCatalog/elbiseConstructionLock";
-import { mergeElbiseRestyleFeatures } from "@/lib/tr/aiCatalog/elbiseRestyle";
-import { applyConstructionListingTitle } from "@/lib/tr/aiCatalog/listingDraft";
-import { buildElbisePackshotPrompt } from "@/lib/tr/aiCatalog/packshotPrompt";
+} from "@/lib/tr/fashion/aiCatalog/elbiseConstructionLock";
+import { mergeElbiseRestyleFeatures } from "@/lib/tr/fashion/aiCatalog/elbiseRestyle";
+import { applyConstructionListingTitle } from "@/lib/tr/fashion/aiCatalog/listingDraft";
+import { buildElbisePackshotPrompt } from "@/lib/tr/fashion/aiCatalog/packshotPrompt";
 import {
   runAiJobImmediately,
   type ScheduleAiJob,

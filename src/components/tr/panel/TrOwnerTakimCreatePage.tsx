@@ -41,11 +41,11 @@ import {
   panelStickyActionsClass,
   panelStickyActionsSpacerClass,
 } from "@/components/tr/panel/panelUi";
-import { featuresWithLifestyleModels } from "@/lib/tr/aiCatalog/elbiseRestyle";
+import { featuresWithLifestyleModels } from "@/lib/tr/fashion/aiCatalog/elbiseRestyle";
 import type { PipelineJobItem } from "@/lib/tr/aiCatalog/pipelineProgress";
-import { runConstructionPackshot } from "@/lib/tr/aiCatalog/runConstructionPackshot";
-import { runTakimSequentialTryOn } from "@/lib/tr/aiCatalog/runTakimSequentialTryOn";
-import { TR_AI_CATALOG_CREDITS } from "@/lib/tr/aiCatalog/uploadCostHints";
+import { runConstructionPackshot } from "@/lib/tr/fashion/aiCatalog/runConstructionPackshot";
+import { runTakimSequentialTryOn } from "@/lib/tr/fashion/aiCatalog/runTakimSequentialTryOn";
+import { TR_AI_CATALOG_CREDITS } from "@/lib/tr/fashion/aiCatalog/uploadCostHints";
 import { getElbiseTryOnPlates, listAiModelOptions } from "@/lib/tr/aiModel/registry";
 import { getCatalogBackground } from "@/lib/tr/catalogBackgrounds/registry";
 import { constructionCatalogFamily } from "@/lib/tr/catalog/garmentUploadTypes";

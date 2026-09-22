@@ -16,7 +16,7 @@ import {
   decolleteNoneLabel,
   resolveDressFeatureValue,
 } from "@/lib/tr/catalog/dressFeatures";
-import { hasElbiseLockedConstruction } from "@/lib/tr/aiCatalog/elbiseConstructionLock";
+import { hasElbiseLockedConstruction } from "@/lib/tr/fashion/aiCatalog/elbiseConstructionLock";
 import {
   constructionCatalogFamily,
   isAltGiyimSkirtLeaf,

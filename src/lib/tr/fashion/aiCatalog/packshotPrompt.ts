@@ -9,7 +9,7 @@ import {
 import {
   buildElbiseConstructionLock,
   type ElbiseConstructionChips,
-} from "@/lib/tr/aiCatalog/elbiseConstructionLock";
+} from "@/lib/tr/fashion/aiCatalog/elbiseConstructionLock";
 import type { ConstructionCatalogFamily } from "@/lib/tr/catalog/garmentUploadTypes";
 import type { TrProductPhotoRole } from "@/lib/tr/ownerProductConstraints";
 

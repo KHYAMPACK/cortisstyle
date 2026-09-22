@@ -2,17 +2,17 @@ import {
   constructionChipsEqual,
   constructionChipsForFamily,
   type ElbiseConstructionChips,
-} from "@/lib/tr/aiCatalog/elbiseConstructionLock";
+} from "@/lib/tr/fashion/aiCatalog/elbiseConstructionLock";
 import {
   applyElbisePipelineImages,
   elbiseSourceUrls,
   featuresWithLifestyleModels,
   mergeElbiseRestyleFeatures,
-} from "@/lib/tr/aiCatalog/elbiseRestyle";
+} from "@/lib/tr/fashion/aiCatalog/elbiseRestyle";
 import { buildElbiseTryOnShots } from "@/lib/tr/aiModel/elbiseTryOn";
 import { resolveDressFeatureValue, withDefaultSleeves } from "@/lib/tr/catalog/dressFeatures";
-import { applyConstructionListingTitle } from "@/lib/tr/aiCatalog/listingDraft";
-import { buildElbisePackshotPrompt } from "@/lib/tr/aiCatalog/packshotPrompt";
+import { applyConstructionListingTitle } from "@/lib/tr/fashion/aiCatalog/listingDraft";
+import { buildElbisePackshotPrompt } from "@/lib/tr/fashion/aiCatalog/packshotPrompt";
 import {
   altGiyimUsesPaca,
   constructionCatalogFamily,

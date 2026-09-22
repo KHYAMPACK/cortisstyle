@@ -4,14 +4,14 @@ import {
   buildPackshotPrompt,
   PACKSHOT_VIEW_PROMPT,
   type PackshotView,
-} from "@/lib/tr/aiCatalog/packshotPrompt";
+} from "@/lib/tr/fashion/aiCatalog/packshotPrompt";
 import {
   callGeminiJsonVision,
   fetchImageAsBase64ForVision,
   listingDraftSystemPrompt,
   sanitizeListingDraft,
   type ProductListingDraft,
-} from "@/lib/tr/aiCatalog/listingDraft";
+} from "@/lib/tr/fashion/aiCatalog/listingDraft";
 
 const GEMINI_MODELS = [
   "gemini-2.5-flash",

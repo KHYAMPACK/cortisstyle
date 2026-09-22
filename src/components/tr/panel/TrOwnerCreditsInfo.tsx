@@ -9,7 +9,7 @@ import {
   priceTryPerCredit,
   TR_AI_CATALOG_CREDITS,
   TR_AI_CREDITS_INFO_LINES,
-} from "@/lib/tr/aiCatalog/uploadCostHints";
+} from "@/lib/tr/fashion/aiCatalog/uploadCostHints";
 import { panelPrimaryBtnClass } from "@/components/tr/panel/panelUi";
 import {
   fetchOwnerAiCredits,

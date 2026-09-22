@@ -10,10 +10,10 @@ import {
   panelPrimaryBtnClass,
   panelSecondaryBtnClass,
 } from "@/components/tr/panel/panelUi";
-import { featuresWithLifestyleModels } from "@/lib/tr/aiCatalog/elbiseRestyle";
+import { featuresWithLifestyleModels } from "@/lib/tr/fashion/aiCatalog/elbiseRestyle";
 import {
   describeModelPackageCredits,
-} from "@/lib/tr/aiCatalog/uploadCostHints";
+} from "@/lib/tr/fashion/aiCatalog/uploadCostHints";
 import {
   buildElbiseTryOnShots,
   chipsFromProductFeatures,

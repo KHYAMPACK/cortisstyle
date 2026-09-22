@@ -15,15 +15,15 @@ import {
 import {
   describePhotoSlotCost,
   TR_AI_CATALOG_CREDITS,
-} from "@/lib/tr/aiCatalog/uploadCostHints";
+} from "@/lib/tr/fashion/aiCatalog/uploadCostHints";
+import { type PipelineJobItem } from "@/lib/tr/aiCatalog/pipelineProgress";
 import {
   pipelineJobKindForSlot,
   pipelineLabelForSlot,
-  type PipelineJobItem,
-} from "@/lib/tr/aiCatalog/pipelineProgress";
-import { constructionChipsEqual, constructionChipsForFamily } from "@/lib/tr/aiCatalog/elbiseConstructionLock";
-import { applyConstructionListingTitle } from "@/lib/tr/aiCatalog/listingDraft";
-import { buildElbisePackshotPrompt } from "@/lib/tr/aiCatalog/packshotPrompt";
+} from "@/lib/tr/fashion/aiCatalog/pipelineSlotLabels";
+import { constructionChipsEqual, constructionChipsForFamily } from "@/lib/tr/fashion/aiCatalog/elbiseConstructionLock";
+import { applyConstructionListingTitle } from "@/lib/tr/fashion/aiCatalog/listingDraft";
+import { buildElbisePackshotPrompt } from "@/lib/tr/fashion/aiCatalog/packshotPrompt";
 import { chipsFromProductFeatures } from "@/lib/tr/aiModel/elbiseTryOn";
 import {
   TrOwnerCreditsCostLine,
