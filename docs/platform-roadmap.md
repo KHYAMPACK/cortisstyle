@@ -12,21 +12,23 @@ Mert now has a registered company, which removes the earlier legal blocker to se
 
 **Scope of what the platform offers clients:** the storefront, payments, invoices, and shipping working reliably. Marketing/traffic is not part of the offer (see §5 for a light "launch kit" that protects retention without becoming a marketing service).
 
-## 2. Where the project is today (audit, 2026-09-21)
+## 2. Where the project is today (audit, 2026-09-21; **updated 2026-09-23** — Phase 0 and Phase 1 below are now done, see §4)
 
-Built and working: multi-tenant storefronts at `/tr/[boutiqueSlug]` and custom domains; owner panel (`/tr/panel/*`: products, stock, orders, discounts, customers, invoices, reports, settings); checkout with Turkish tax/consent fields; iyzico Checkout Form (live for one boutique, `lilabutik`); Basit Kargo shipping (live for `lilabutik`); AI catalog tools; Supabase schema as manual SQL patches in `supabase/patch_*.sql`. 54 pages, 44 API routes.
+Built and working: multi-tenant storefronts at `/tr/[boutiqueSlug]` and custom domains; owner panel (`/tr/panel/*`: products, stock, orders, discounts, customers, invoices, reports, settings); checkout with Turkish tax/consent fields; iyzico Checkout Form (live for one boutique, `lilabutik`); Basit Kargo shipping (live for `lilabutik`); AI catalog tools; a fashion/custom_art vertical split (`docs/agent-handoffs/06-fashion-module.md`, `07-custom-art-module.md`); Supabase schema as manual SQL patches in `supabase/patch_*.sql`.
 
-Not platform-ready (the work in this roadmap):
+**Exactly two boutiques exist today: `lilabutik` and `minimora`.** `pervinsoysalbutik`, `newtenant`, and `ozeltablo` — all referenced below and elsewhere in this doc as one-off stores needing migration — have been deleted outright (code, DB rows, and assets), not migrated. Any task below that assumed they'd need pixel-identical migration can drop them from scope entirely.
 
-| Gap | Evidence in the repo |
+Remaining gaps (the work still in this roadmap):
+
+| Gap | Current state |
 |---|---|
-| No self-serve signup | Boutiques are created via `/api/tr/admin/seed` (admin secret); `owner_user_id` linked by hand via `/api/tr/admin/boutiques/[id]/owner`. `/api/tr/owner/boutiques` has only GET. |
-| Tenants hardcoded in code | `src/lib/tr/payments/registry.ts` (`IYZICO_CHECKOUT_SLUGS = new Set(["lilabutik"])`, buyer-protection token by slug); `src/lib/tr/customDomain.ts` (static domain→slug map plus env `TR_BOUTIQUE_DOMAINS`); `src/lib/tr/commerce/checkoutMode.ts` (`CONTACT_EMAIL_BY_SLUG`); `src/lib/tr/boutiqueHome/registry.ts` (`SLUG_OVERRIDES`); `src/lib/tr/storefrontTheme/registry.ts`; `src/lib/tr/aiModel/registry.ts`; `src/lib/tr/boutique/minimora/isMinimoraBoutique.ts` and `.../newtenant/isNewTenantBoutique.ts`; `src/lib/tr/boutiqueHome/editorialContent.ts` (~l.340); `src/components/tr/boutique/editorial/TrBoutiqueAtelierHomeSections.tsx` (~l.216); `src/app/api/tr/admin/boutique-health/route.ts`. |
-| Per-tenant secrets in env vars | iyzico and Basit Kargo credentials are per-boutique env keys (see `docs/agent-handoffs/05-owner-panel-commerce.md`, `11-platform-ops.md`). |
-| No theme system | Two layouts (`default`, `editorial`) plus one-off skins (`src/components/tr/boutique/minimora/*`, `.../newtenant/*`). |
-| No billing/plans | Nothing for subscriptions or plan limits. `TrBoutique.commissionBps` exists as a field but no logic computes commission. |
-| No refunds | `payment_status` has `refunded` but no iyzico refund flow exists. |
-| Repo hygiene | ~198 uncommitted files, commit messages like "fas"/"asf", dead lookbook/funnel code listed in `docs/codebase-cleanup-audit.md`. |
+| No self-serve signup | Unchanged. Boutiques are created via `/api/tr/admin/seed` (admin secret); `owner_user_id` linked by hand via `/api/tr/admin/boutiques/[id]/owner`. `/api/tr/owner/boutiques` has only GET. This is Phase 2 (Track B, deferred). |
+| Tenants still hardcoded in a few places | Phase 1 moved the big ones to DB (payments, custom domains, contact email, home layout — see §4). What's left, all small and optional per `docs/agent-handoffs/03-multi-tenant-boutiques.md`: `src/lib/tr/authMail/templates.ts` (email logo per slug), `src/lib/tr/storefront/boutiqueBrand.ts` (brand fallback overrides), `src/lib/tr/boutiqueHome/editorialSkin.ts` (`classic`/`atelier` skin choice, no DB equivalent), `src/lib/tr/aiModel/registry.ts` (AI house-model identity), `src/app/api/tr/admin/boutique-health/route.ts` (probes `lilabutik` by name), and `src/lib/tr/boutique/minimora/isMinimoraBoutique.ts` (a slug check that should really be a `catalog_profile` capability check — see `docs/agent-handoffs/07-custom-art-module.md`). |
+| Per-tenant secrets: DB now, env is the fallback | `tr_boutique_integrations` (encrypted, DB-first) exists and is read before env keys — see `docs/agent-handoffs/05-owner-panel-commerce.md`. The env-var path (`TR_LILABUTIK_IYZICO_*`) is legacy, kept only until every live boutique has a verified integrations row (P1-T6 below is still open). |
+| No theme system | Unchanged. Two layouts (`default`, `editorial`) plus `minimora`'s one-off components (`src/components/tr/boutique/minimora/*`). `newtenant`'s equivalent no longer exists (deleted, not migrated). |
+| No billing/plans | Unchanged. Nothing for subscriptions or plan limits. `TrBoutique.commissionBps` exists as a field but no logic computes commission. |
+| No refunds | Unchanged. `payment_status` has `refunded` but no iyzico refund flow exists. |
+| Repo hygiene | Resolved. `git status` is clean; the dead-system removal from `docs/codebase-cleanup-audit.md` and several later cleanup passes have landed. |
 
 ## 3. Rules for every agent working on this roadmap
 
@@ -71,27 +73,25 @@ Not platform-ready (the work in this roadmap):
 
 Estimates assume one agent-assisted developer at roughly 15–25 hours/week. Ranges are wide on purpose.
 
-### Phase 0 — Clean base (2–4 days)
+### Phase 0 — Clean base (2–4 days) — ✅ done (2026-09)
 
 **Goal:** a repo where agents can work safely and history is readable.
 
-- **P0-T1 Fix repo state.** Remove the stale `.git/index.lock` (empty file, Sep 20) if it still exists. Investigate the ~198 modified files with `git diff --stat`; many (`.gitkeep`, `.webmanifest`, `.cursor/rules/*`) look like line-ending noise (CRLF vs LF). Fix via `.gitattributes`/`core.autocrlf` rather than committing noise. Commit real changes in logical commits; do not commit `.tmp-chrome-analysis/`, `tmp/`, or `.tmp-*` scratch files (add to `.gitignore` or delete).
-  _Accept:_ `git status` clean; `git log` shows meaningful messages from here on.
-- **P0-T2 Remove dead systems.** Execute the "delete" items in `docs/codebase-cleanup-audit.md` that Mert approves (email funnel, `wardrobe-notify`, checkout-coming-soon, unused `uuid` dependency, archived lookbook remnants). Ask Mert before deleting anything the audit marks optional.
-  _Accept:_ build passes, no route in the TR app removed.
-- **P0-T3 Decide naming.** Confirm platform brand/domain (Cortisstyle vs Lookbook rebrand) before Phase 2 UI copy is written. _(Mert decision, not an agent task.)_
+- **P0-T1 Fix repo state.** ✅ `git status` is clean; commits since have real messages.
+- **P0-T2 Remove dead systems.** ✅ Done, and then some — beyond the original `docs/codebase-cleanup-audit.md` list, a much larger pass also purged `newtenant`, `pervinsoysalbutik`, and `ozeltablo` entirely (code, DB rows, assets, seed scripts) and extracted the fashion-specific code into its own module (`docs/agent-handoffs/06-fashion-module.md`).
+- **P0-T3 Decide naming.** Still open — Mert decision, not an agent task. Nothing in the repo currently blocks on this.
 
-### Phase 1 — Tenant config moves from code to database (1–2 weeks) — highest priority
+### Phase 1 — Tenant config moves from code to database (1–2 weeks) — ✅ done (2026-09), P1-T6 still open
 
 **Goal:** onboarding a store requires zero code changes or deploys.
 
-- **P1-T1 Inventory and design.** List every hardcoded slug (start with the table in §2, then `grep -rIn` for each known slug). Write a short design note in `docs/` deciding what becomes a column on `tr_boutiques` and what becomes a new table. Get Mert's approval before implementing.
-- **P1-T2 Encrypted integration credentials.** New table (suggested `tr_boutique_integrations`: `boutique_id`, `provider`, `mode` sandbox/live, `credentials_encrypted`, `status`, timestamps) readable only via service role. Encrypt with AES-256-GCM using a server-only key env var. Provide `getBoutiqueIntegration(boutiqueId, provider)` in `src/lib/tr/`. Dual-read: DB first, then legacy env keys.
-- **P1-T3 Payment capability from DB.** Replace `IYZICO_CHECKOUT_SLUGS` and slug-keyed buyer-protection config in `src/lib/tr/payments/registry.ts` with per-boutique DB state (`boutiqueOffersIyzicoCheckout` reads the DB, falls back to legacy for `lilabutik`).
-- **P1-T4 Contact email, domain map, layout/theme overrides from DB.** Move `CONTACT_EMAIL_BY_SLUG`, `customDomain.ts` static map, `SLUG_OVERRIDES` in `boutiqueHome/registry.ts`, and `storefrontTheme/registry.ts` overrides into boutique columns. **Design note required for domains:** `src/middleware.ts` runs on the edge, so per-request DB lookups need caching (options: Vercel Edge Config, a cached internal lookup route, or short-TTL memo). Mert approves the approach first.
-- **P1-T5 One-off skins become data.** Remove `isMinimoraBoutique` / `isNewTenantBoutique` branching by expressing those boutiques through the theme mechanism (fully finished in Phase 5; here, just stop keying behaviour on slug where a config field will do).
-- **P1-T6 Legacy removal.** After Lila is verified end to end in production on DB-driven config, delete the legacy fallbacks in a separate PR.
-  _Accept for phase:_ a brand-new boutique row with DB config can offer iyzico checkout, custom contact email, and a domain with no code edits. Lila's checkout, payment callback, abandon flow, and shipping label creation behave exactly as before (verified in sandbox and by Mert on one real order).
+- **P1-T1 Inventory and design.** ✅ Done as part of the work below.
+- **P1-T2 Encrypted integration credentials.** ✅ `tr_boutique_integrations` exists (`boutique_id`, `provider`, `mode`, `enabled`, `credentials_encrypted` — AES-256-GCM, `metadata`, timestamps), read via `src/lib/tr/payments/registry.ts`.
+- **P1-T3 Payment capability from DB.** ✅ `boutiqueOffersIyzicoCheckout()`, `getIyzicoBuyerProtection()`, `getIyzicoCredentials()` are all DB-first now, falling back to the legacy `IYZICO_CHECKOUT_SLUGS`/`IYZICO_BUYER_PROTECTION_BY_SLUG`/`CREDENTIAL_ENV_BY_SLUG` constants (still present in `registry.ts`, but only reached when a boutique has no integrations row).
+- **P1-T4 Contact email, domain map, layout/theme overrides from DB.** ✅ All four done: `contact_email` and `home_layout` are `tr_boutiques` columns; `custom_domain` is resolved DB-first at the edge with a short-TTL cache (`src/lib/tr/customDomain.ts`, `EDGE_DOMAIN_MAP_TTL_MS`) — the domain-lookup-caching design question this task flagged was resolved with an in-memory cache per warm edge instance, not Edge Config; `storefrontTheme/registry.ts` no longer has any per-slug overrides at all. Note: the edge file is `src/proxy.ts` in this fork, not `middleware.ts`.
+- **P1-T5 One-off skins become data.** Partially superseded rather than completed as scoped: `isNewTenantBoutique.ts` no longer exists (the boutique was deleted, not migrated to the theme mechanism). `isMinimoraBoutique()` still exists and is still a slug check in a few storefront components — see `docs/agent-handoffs/07-custom-art-module.md` for the specific call sites. Still open if you want it gone before Phase 5.
+- **P1-T6 Legacy removal.** Still open. The env-var payment fallback is intentionally still there until every live boutique has a verified `tr_boutique_integrations` row — this is the one piece of Phase 1 not yet finished.
+  _Phase accept criteria met:_ a brand-new boutique row with DB config can offer iyzico checkout, custom contact email, and a domain with no code edits (verified via `POST /api/tr/admin/seed`). Lila's live checkout/payment/shipping behavior was verified unchanged throughout.
 
 ### Phase 2 — Self-serve signup and store creation (1.5–2.5 weeks) — TRACK B (deferred)
 
@@ -118,7 +118,7 @@ Estimates assume one agent-assisted developer at roughly 15–25 hours/week. Ran
 
 ### Phase 4 — Shipping (about 1 week) — Track A: P4-T1 and P4-T3; P4-T2 optional per client
 
-- **P4-T1 Per-store shipping settings.** Replace the hardcoded fee rules in `quoteShipping.ts` (flat 120 TL for one item, free for 2+, "Midi Jean Elbise" exception) with per-store settings (flat fee, free-shipping threshold, disabled). Keep the server as the only source of the fee. Preserve Lila's current numbers as her stored config.
+- **P4-T1 Per-store shipping settings.** Replace the hardcoded fee rules in `quoteShipping.ts` (flat fee, free at a fixed item threshold) with per-store settings (flat fee, free-shipping threshold, disabled). Keep the server as the only source of the fee. Preserve Lila's current numbers as her stored config. (The one-off "Midi Jean Elbise" free-shipping exception this task used to reference is gone — deleted outright as a boundary violation, not migrated; see `docs/agent-handoffs/04-storefront-editorial-home.md`.)
 - **P4-T2 Connect Basit Kargo in the panel.** Same pattern as P3-T2 (encrypted token, validate, sandbox/live). Keep the provider registry in `src/lib/tr/shipping/registry.ts` generic.
 - **P4-T3 Manual fallback.** For stores without a carrier integration: owner enters carrier name and tracking code, order moves to `shipped`, customer gets notified. This must be the default for new stores.
 
@@ -126,9 +126,9 @@ Estimates assume one agent-assisted developer at roughly 15–25 hours/week. Ran
 
 - **P5-T0 Scope decision (Mert):** (a) 2–3 fixed themes with editable colors, fonts, logo, and section toggles (~2 weeks), or (b) a section-based editor closer to ikas (~5+ weeks). Default to (a) and ship it before considering (b).
 - **P5-T1 Theme registry from data.** Consolidate `boutiqueHome/registry.ts` and `storefrontTheme/registry.ts` into one theme model keyed by a `theme_id` and `theme_settings` (jsonb) on the boutique, rendered by shared components. Move current `editorialContent` into this structure.
-- **P5-T2 Migrate one-offs.** Express Minimora and NewTenant as theme configuration, or retire their bespoke component folders if they are demos. Check with Mert which are client sites that must remain pixel-identical.
+- **P5-T2 Migrate one-offs.** NewTenant no longer exists (deleted, not migrated — drop it from scope). Express Minimora as theme configuration, or leave its bespoke component folder as-is if it's staying a real client site rather than becoming a template.
 - **P5-T3 Theme settings UI** in `/tr/panel/ayarlar`: pick theme, set brand color and fonts, upload logo and hero, edit home sections, live preview.
-  _Accept:_ a new store can change its look from the panel with no code; existing stores (Lila, Pervin) render identically before and after (screenshot comparison).
+  _Accept:_ a new store can change its look from the panel with no code; existing stores (Lila, Minimora) render identically before and after (screenshot comparison).
 
 ### Phase 6 — Custom domains from the panel (3–5 days) — Track B (Track A adds domains via the create-store tool/Vercel dashboard)
 
@@ -167,7 +167,7 @@ Not for agents to do; agents may draft documents for review.
 
 | Milestone | Contents | Target |
 |---|---|---|
-| **A1 — Clean and DB-driven** | Phase 0, Phase 1 complete; Lila and the second client verified unchanged | ~2–3 weeks |
+| **A1 — Clean and DB-driven** | ✅ **Reached (2026-09).** Phase 0, Phase 1 complete (P1-T6 legacy removal still open); Lila and the second client verified unchanged | done |
 | **A2 — Fast onboarding** | Phase 1B; P3-T1–T3; P4-T1, P4-T3; fixed themes (P5 option a); P8-T1/T2/T4. Target: new client live in ≤ 2 days | ~5–7 weeks total |
 | **B1 — Self-serve MVP** _(deferred)_ | Phase 2 public signup on top of P1B-T1's creation service, owner theme UI, owner domain UI | after A2, ~3–4 weeks |
 | **B2 — Full v1** _(deferred)_ | Refunds, iyzico marketplace mode (if approved), plans and billing, rest of Phase 8 | ~3–5 months from start |
@@ -187,7 +187,7 @@ Not for agents to do; agents may draft documents for review.
 1. Platform brand and domain (Cortisstyle vs Lookbook).
 2. Theme scope: fixed themes (recommended) or a section editor.
 3. Pricing model: plans only, or plans plus commission in marketplace mode.
-4. Which existing one-off stores (Minimora, NewTenant, Ozeltablo, Pervin) must stay pixel-identical during migration.
+4. ~~Which existing one-off stores (Minimora, NewTenant, Ozeltablo, Pervin) must stay pixel-identical during migration.~~ Moot for three of the four — NewTenant, Ozeltablo, and Pervin were deleted outright rather than migrated. Only Minimora remains, and it's the reference `custom_art` vertical implementation (`docs/agent-handoffs/07-custom-art-module.md`), not really a "one-off" to migrate away from.
 5. Whether stores keep the `/tr/[slug]` path or move to platform subdomains (e.g. `slug.<platform-domain>`) as the default free address.
 6. Time-to-live target and how to log it (proposed: ≤ 2 days from "yes" to live, logged in `docs/onboarding-time-log.md`).
 7. Pricing structure for clients (setup fee plus monthly fee), decided before the next client conversation.
