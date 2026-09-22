@@ -35,7 +35,7 @@ export function TrFreeShippingNudge({
           </p>
         </div>
         <p className="ml-auto max-w-[9rem] text-right text-[10px] leading-snug tracking-[0.12em] text-neutral-500 uppercase">
-          {progress.promoSolo ? "Bu elbise ile" : "Bu siparişte"}
+          Bu siparişte
         </p>
       </div>
     );

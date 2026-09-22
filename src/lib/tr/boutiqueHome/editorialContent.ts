@@ -9,20 +9,13 @@ import {
   type EditorialDemoContent,
   type EditorialHeroPromotion,
   type EditorialNavItem,
-  type EditorialTwinStory,
 } from "@/lib/tr/boutiqueHome/editorialDemoContent";
 import { isAtelierEditorialSkin } from "@/lib/tr/boutiqueHome/editorialSkin";
 import { listTrCategoryRoots } from "@/lib/tr/fashion/categories";
-import { getStorefrontGalleryImages } from "@/lib/tr/catalog/productImages";
-import {
-  foldTrCatalogText,
-  isMidiJeanElbiseProduct,
-  midiJeanCatalogText,
-} from "@/lib/tr/catalog/midiJeanTwins";
 import { liveShippingHomeBody } from "@/lib/tr/catalog/pdpReturns";
-import { trBoutiqueLegalPath, trBoutiquePath, trBoutiqueProductPath } from "@/lib/tr/paths";
+import { trBoutiqueLegalPath, trBoutiquePath } from "@/lib/tr/paths";
 import { boutiqueHasLiveShipping } from "@/lib/tr/shipping/registry";
-import type { TrBoutiquePublic, TrProduct } from "@/types/tr-marketplace";
+import type { TrBoutiquePublic } from "@/types/tr-marketplace";
 
 const TEMPLATE_ASSET = (name: string) => `/tr/boutiques/demo-maya/${name}`;
 
@@ -330,7 +323,6 @@ export function getEditorialContent(
           image: atelierHomeImage(boutique.slug, "join-club"),
         }
       : merged.join,
-    twinStory: atelier ? buildAtelierTwinStory() : undefined,
   };
 }
 
@@ -407,100 +399,6 @@ function buildAtelierShopCategories(slug: string) {
     label: root.label,
     image: atelierCategoryImage(slug, root.id),
   }));
-}
-
-/** Lila twin color story — copy-owned; catalog fills image/href. */
-function buildAtelierTwinStory(): EditorialTwinStory {
-  return {
-    title: "Aynı kalıp. İki karakter.",
-    question: "Hangisi senin?",
-    promo: "Bu elbise · Kargo ücretsiz",
-    sides: [
-      {
-        id: "espresso",
-        label: "Espresso",
-        line: "Sıcak. Kahve. Sonbahar.",
-        tone: "#3D2A22",
-      },
-      {
-        id: "navy",
-        label: "Navy",
-        line: "Lacivert. Klas. Her gün.",
-        tone: "#152036",
-        imageShiftY: "0%",
-      },
-    ],
-  };
-}
-
-const TWIN_SIDE_TOKENS: Record<string, string[]> = {
-  espresso: ["espresso"],
-  navy: ["navy", "lacivert"],
-};
-
-function matchesTwinTokens(product: TrProduct, tokens: string[]): boolean {
-  const text = midiJeanCatalogText(product);
-  return tokens.some((token) => text.includes(foldTrCatalogText(token)));
-}
-
-function findMidiJeanTwin(
-  products: TrProduct[],
-  tokens: string[],
-): TrProduct | undefined {
-  return products.find(
-    (product) =>
-      isMidiJeanElbiseProduct(product) && matchesTwinTokens(product, tokens),
-  );
-}
-
-function siblingTwin(
-  product: TrProduct | undefined,
-  products: TrProduct[],
-): TrProduct | undefined {
-  const ids = product?.features.colorSiblingIds;
-  if (!product || !ids?.length) return undefined;
-  return products.find(
-    (row) =>
-      row.id !== product.id &&
-      ids.includes(row.id) &&
-      isMidiJeanElbiseProduct(row),
-  );
-}
-
-function bindTwinSide(
-  side: EditorialTwinStory["sides"][number],
-  boutiqueSlug: string,
-  product: TrProduct | undefined,
-): EditorialTwinStory["sides"][number] {
-  if (!product) return side;
-  const image = getStorefrontGalleryImages(product)[0]?.trim();
-  return {
-    ...side,
-    href: trBoutiqueProductPath(boutiqueSlug, product.id),
-    ...(image ? { image } : {}),
-  };
-}
-
-/** Attach live Midi Jean Elbise twins (Espresso / Navy) when they are in catalog. */
-export function resolveAtelierTwinStory(
-  story: EditorialTwinStory,
-  boutiqueSlug: string,
-  products: TrProduct[],
-): EditorialTwinStory {
-  const espressoTokens = TWIN_SIDE_TOKENS.espresso;
-  const navyTokens = TWIN_SIDE_TOKENS.navy;
-  let espresso = findMidiJeanTwin(products, espressoTokens);
-  let navy = findMidiJeanTwin(products, navyTokens);
-  if (!navy) navy = siblingTwin(espresso, products);
-  if (!espresso) espresso = siblingTwin(navy, products);
-
-  return {
-    ...story,
-    sides: [
-      bindTwinSide(story.sides[0], boutiqueSlug, espresso),
-      bindTwinSide(story.sides[1], boutiqueSlug, navy),
-    ],
-  };
 }
 
 function buildAtelierFeaturedPair(slug: string) {

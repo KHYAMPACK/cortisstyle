@@ -44,7 +44,6 @@ import {
   quoteCheckoutShippingFee,
 } from "@/lib/tr/shipping/quoteShipping";
 import { useAtelierFabBottomInset } from "@/lib/tr/useAtelierFabBottomInset";
-import { isMidiJeanElbiseProduct } from "@/lib/tr/catalog/midiJeanTwins";
 import { TrFreeShippingNudge } from "@/components/tr/commerce/TrFreeShippingNudge";
 
 function CartCheckbox({
@@ -274,21 +273,7 @@ export function TrBoutiqueCartPageContent({
       ? freeShippingProgress(selectedCount, selectedItems)
       : null;
   const shippingShopHref = shippingProgress && !shippingProgress.free
-    ? (() => {
-        const cartIds = new Set(
-          selectedItems
-            .filter((item) => isMidiJeanElbiseProduct(item))
-            .map((item) => item.productId),
-        );
-        if (cartIds.size > 0) {
-          const other = catalog.find(
-            (product) =>
-              isMidiJeanElbiseProduct(product) && !cartIds.has(product.id),
-          );
-          if (other) return trBoutiqueProductPath(boutique.slug, other.id);
-        }
-        return trBoutiqueProductsPath(boutique.slug);
-      })()
+    ? trBoutiqueProductsPath(boutique.slug)
     : undefined;
 
   const cartIds = useMemo(

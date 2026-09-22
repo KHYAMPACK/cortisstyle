@@ -63,31 +63,6 @@ export type EditorialHeroPromotion = {
   target?: "sale" | "all" | string;
 };
 
-export type EditorialTwinStorySide = {
-  id: string;
-  label: string;
-  /** One-line character, e.g. "Sıcak. Kahve. Sonbahar." */
-  line: string;
-  /** Matching-corner photo. Omit for a tone plate until the twin is shot. */
-  image?: string;
-  /** CSS object-position for the campaign crop. Default `center 20%`. */
-  objectPosition?: string;
-  /** Shift the photo down (e.g. `"7%"`) so twins line up. */
-  imageShiftY?: string;
-  /** Product page. Empty = expand only, no navigation. */
-  href?: string;
-  /** CSS fill when `image` is missing. */
-  tone: string;
-};
-
-export type EditorialTwinStory = {
-  title: string;
-  question: string;
-  /** Short promo, e.g. free kargo on a campaign piece. */
-  promo?: string;
-  sides: [EditorialTwinStorySide, EditorialTwinStorySide];
-};
-
 export type EditorialDemoContent = {
   nav: EditorialNavItem[];
   /** Slim top strip above the category hero. */
@@ -184,11 +159,6 @@ export type EditorialDemoContent = {
       icon?: "points" | "early" | "promo" | "shipping" | "support" | "heart";
     }>;
   };
-  /**
-   * Atelier home: Espresso / Navy twin story (Lila). Classic ignores.
-   * Optional href per side — tap expands then routes when set.
-   */
-  twinStory?: EditorialTwinStory;
   footer: {
     newsletterTitle: string;
     newsletterBody: string;

@@ -1,4 +1,3 @@
-import { isMidiJeanElbiseProduct } from "@/lib/tr/catalog/midiJeanTwins";
 import { boutiqueHasLiveShipping } from "@/lib/tr/shipping/registry";
 import {
   CHECKOUT_SHIPPING_HANDLER,
@@ -23,8 +22,6 @@ export type FreeShippingProgress = {
   current: number;
   needed: number;
   remaining: number;
-  /** Promo dress in the bag — 1 piece is enough. */
-  promoSolo: boolean;
 };
 
 function lineQuantity(item: unknown): number {
@@ -39,12 +36,6 @@ export function shippingItemCount(items: ReadonlyArray<unknown>): number {
   return items.reduce<number>((sum, item) => sum + lineQuantity(item), 0);
 }
 
-export function cartHasSoloFreeShippingProduct(
-  items: ReadonlyArray<ShippingQuoteItem> | undefined,
-): boolean {
-  return Boolean(items?.some((item) => isMidiJeanElbiseProduct(item)));
-}
-
 export function freeShippingProgress(
   itemCount: number,
   items?: ReadonlyArray<ShippingQuoteItem>,
@@ -54,23 +45,12 @@ export function freeShippingProgress(
     : Number.isFinite(itemCount)
       ? Math.max(0, Math.floor(itemCount))
       : 0;
-  const promoSolo = cartHasSoloFreeShippingProduct(items);
-  if (promoSolo) {
-    return {
-      free: true,
-      current: Math.max(count, 1),
-      needed: 1,
-      remaining: 0,
-      promoSolo: true,
-    };
-  }
   if (count >= FREE_SHIPPING_MIN_ITEMS) {
     return {
       free: true,
       current: count,
       needed: FREE_SHIPPING_MIN_ITEMS,
       remaining: 0,
-      promoSolo: false,
     };
   }
   return {
@@ -78,13 +58,12 @@ export function freeShippingProgress(
     current: count,
     needed: FREE_SHIPPING_MIN_ITEMS,
     remaining: Math.max(0, FREE_SHIPPING_MIN_ITEMS - count),
-    promoSolo: false,
   };
 }
 
 /**
  * Flat kargo for live boutiques.
- * Free at FREE_SHIPPING_MIN_ITEMS, or when a Midi Jean Elbise twin is in the bag.
+ * Free at FREE_SHIPPING_MIN_ITEMS.
  * Not a Basit live quote — client cannot set this.
  */
 export function quoteCheckoutShippingFee(

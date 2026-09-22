@@ -1,4 +1,3 @@
-import { isMidiJeanElbiseProduct } from "@/lib/tr/catalog/midiJeanTwins";
 import { boutiqueHasLiveShipping } from "@/lib/tr/shipping/registry";
 import { trBoutiqueLegalPath } from "@/lib/tr/paths";
 import {
@@ -43,11 +42,6 @@ export function liveShippingHomeBody(): string {
 export function getPdpDeliverySummary(
   boutiqueSlug?: string | null,
   boutiqueName?: string | null,
-  product?: {
-    title?: string | null;
-    features?: { color?: string | null };
-    colors?: Array<{ name?: string | null }>;
-  },
 ): TrPdpDeliverySummary {
   const legalHref = boutiqueSlug
     ? trBoutiqueLegalPath(boutiqueSlug, "iade")
@@ -75,24 +69,16 @@ export function getPdpDeliverySummary(
     };
   }
 
-  const soloFree = Boolean(product && isMidiJeanElbiseProduct(product));
-
   return {
     legalHref,
     paragraphs: [
-      soloFree
-        ? paragraph(
-            "Bu elbisede kargo ",
-            strong("ücretsiz"),
-            ". Tek parça yeter.",
-          )
-        : paragraph(
-            `${brand} üzerinden verilen siparişlerde kargo ücreti `,
-            strong(tryLabel(FLAT_SHIPPING_FEE_KURUS)),
-            "’dir. ",
-            strong(`${FREE_SHIPPING_MIN_ITEMS} ürün`),
-            " ve üzeri alışverişlerde kargo ücretsizdir.",
-          ),
+      paragraph(
+        `${brand} üzerinden verilen siparişlerde kargo ücreti `,
+        strong(tryLabel(FLAT_SHIPPING_FEE_KURUS)),
+        "’dir. ",
+        strong(`${FREE_SHIPPING_MIN_ITEMS} ürün`),
+        " ve üzeri alışverişlerde kargo ücretsizdir.",
+      ),
       paragraph(
         "Siparişler ödeme onayından sonra ",
         strong("1–5 iş günü"),

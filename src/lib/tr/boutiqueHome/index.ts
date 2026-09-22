@@ -11,8 +11,6 @@ export {
   type EditorialDemoContent,
   type EditorialHeroPromotion,
   type EditorialNavItem,
-  type EditorialTwinStory,
-  type EditorialTwinStorySide,
 } from "@/lib/tr/boutiqueHome/editorialDemoContent";
 export {
   buildBoutiqueEditorialDefaults,
@@ -20,7 +18,6 @@ export {
   getEditorialContent,
   isBrandHeroTemplate,
   isCampaignHeroTemplate,
-  resolveAtelierTwinStory,
   resolveCampaignActions,
   resolveCampaignName,
   resolveCampaignSubText,

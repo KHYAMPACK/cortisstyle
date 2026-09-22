@@ -14,12 +14,8 @@ import {
   Truck,
   type LucideIcon,
 } from "lucide-react";
-import { TrBoutiqueAtelierTwinStory } from "@/components/tr/boutique/editorial/TrBoutiqueAtelierTwinStory";
 import { TrBoutiqueEditorialCatalog } from "@/components/tr/boutique/editorial/TrBoutiqueEditorialCatalog";
-import {
-  resolveAtelierTwinStory,
-  type EditorialDemoContent,
-} from "@/lib/tr/boutiqueHome";
+import { type EditorialDemoContent } from "@/lib/tr/boutiqueHome";
 import { liveShippingHomeBody } from "@/lib/tr/catalog/pdpReturns";
 import {
   trBoutiqueAuthPath,
@@ -227,14 +223,8 @@ export function TrBoutiqueAtelierHomeSections({
     ],
   };
 
-  const twinStory = content.twinStory
-    ? resolveAtelierTwinStory(content.twinStory, slug, products)
-    : undefined;
-
   return (
     <div className="bg-[#FAFAF8]">
-      {twinStory ? <TrBoutiqueAtelierTwinStory story={twinStory} /> : null}
-
       <div className="overflow-x-clip">
       {/* Shop by category */}
       <motion.section
