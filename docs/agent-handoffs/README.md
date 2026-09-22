@@ -1,27 +1,21 @@
 # Agent handoffs — Cortisstyle
 
-Start here when picking up this repo. Read **[00-overview.md](./00-overview.md)** and **[14-tr-codemap.md](./14-tr-codemap.md)** first, then only the section that matches your task.
+Start here when picking up this repo. One doc per subsystem — open the one that matches your task, not the whole set. Each doc's "Related" section points to its neighbors, so you rarely need to read more than 1-2 to get oriented.
 
-| Doc | Business phase | When to open |
-|-----|----------------|--------------|
-| [00-overview.md](./00-overview.md) | All | Every new agent session that touches product work |
-| [14-tr-codemap.md](./14-tr-codemap.md) | All | **Where files live** after TR-first reorg |
-| [01-international-lookbook.md](./01-international-lookbook.md) | Archived | Pointer → `cortisstyle-international` |
-| [02-lookbook-studio.md](./02-lookbook-studio.md) | Archived | Pointer → archive; rmbg kept in this repo |
-| [03-boutique-storefronts.md](./03-boutique-storefronts.md) | **Phase 1** — boutique sites | `/tr/[slug]`, custom domains, owner panel catalog |
-| [04-tr-marketplace.md](./04-tr-marketplace.md) | **Phase 2** — multi-tenant pazaryeri | `/tr` Cadde, looks, platform cart |
-| [05-commerce-rails.md](./05-commerce-rails.md) | Shared by 1+2 | Checkout, orders, WhatsApp interim, payments |
-| [06-sell-enablement.md](./06-sell-enablement.md) | **Phase 3** — help them sell | AI catalog, campaigns, content |
-| [15-boutique-storefront-image-formats.md](./15-boutique-storefront-image-formats.md) | Phase 1+3 | Boutique PNG packshots (same as Cadde); originals/lifestyle WebP q95 |
-| [07-platform-ops.md](./07-platform-ops.md) | Cross-cutting | Env, Supabase patches, auth, security notes |
-| [09-boutique-clone-playbook.md](./09-boutique-clone-playbook.md) | Phase 1 onboarding | Copy the **system** for the next boutique |
-| [10-boutique-design-inspiration.md](./10-boutique-design-inspiration.md) | Phase 1 visual direction | Boutique templates |
-| [11-cortisstyle-design-inspiration.md](./11-cortisstyle-design-inspiration.md) | Archive design refs | Lookbook UX (not boutiques) |
-| [12-boutique-go-live.md](./12-boutique-go-live.md) | Phase 1 launch | Payment modes, secrets |
-| [13-boutique-wire-in-and-go-live.md](./13-boutique-wire-in-and-go-live.md) | Phase 1 onboarding | Wire-in registry + pre-live checklist |
-| [16-custom-art-boutique.md](./16-custom-art-boutique.md) | Phase 1 vertical | Print-on-demand tablo (`catalog_profile = custom_art`) |
-| [17-generic-foundation-fashion-module.md](./17-generic-foundation-fashion-module.md) | **In progress** — architecture | Generic core + fashion module extraction; what's clothing-specific vs generic today |
-| [lila-butik-e-ticaret-setup.md](../lila-butik-e-ticaret-setup.md) | Phase 1 architecture | Shared rails + editorial skins |
-| [tr-boutique-legal-templates.md](../tr-boutique-legal-templates.md) | Phase 1 legal | Yasal templates |
+| Doc | Subsystem |
+|---|---|
+| [03-multi-tenant-boutiques.md](./03-multi-tenant-boutiques.md) | Tenant model, domain routing, onboarding a new boutique |
+| [04-storefront-editorial-home.md](./04-storefront-editorial-home.md) | Public boutique storefront — home layouts, editorial skins, category browsing, PDP |
+| [05-owner-panel-commerce.md](./05-owner-panel-commerce.md) | Owner panel, checkout, orders, shipping, payments |
+| [06-fashion-module.md](./06-fashion-module.md) | The garment/apparel vertical (`catalog_profile = "fashion"`) and the core/module boundary rule |
+| [07-custom-art-module.md](./07-custom-art-module.md) | The print-on-demand vertical (`catalog_profile = "custom_art"`) and the capability-flag pattern |
+| [08-ai-catalog-pipeline.md](./08-ai-catalog-pipeline.md) | AI-assisted listing creation — Gemini drafts, FASHN try-on/packshot, Photoroom bg removal |
+| [09-cadde-marketplace.md](./09-cadde-marketplace.md) | The cross-boutique "Cadde" marketplace surface (distinct from a single boutique's storefront) |
+| [10-boutique-design-inspiration.md](./10-boutique-design-inspiration.md) | External reference sites for boutique visual direction |
+| [11-platform-ops.md](./11-platform-ops.md) | Edge proxy, auth, scripts, env vars, Supabase, the fashion/core lint boundary |
+| [01-international-lookbook.md](./01-international-lookbook.md) | **Archived** — this surface now ships from sibling repo `cortisstyle-international` |
+| [02-lookbook-studio.md](./02-lookbook-studio.md) | **Archived** — same as above; one file (`photoroomRemoveBg.ts`) stayed in this repo |
 
-**Agents:** after structural changes, update the matching doc (see `.cursor/rules/document-structural-changes.mdc`).
+Also relevant, outside this directory: [../lila-butik-e-ticaret-setup.md](../lila-butik-e-ticaret-setup.md) (shared commerce rails + editorial skins background), [../tr-boutique-legal-templates.md](../tr-boutique-legal-templates.md) (yasal template pack).
+
+**Agents:** these docs are meant to be true, not historical — when you change something a doc describes, update that doc in the same change, not as a follow-up. If a doc no longer matches the code, fix it or delete it; don't leave it to rot as the next reader's problem.

@@ -5,35 +5,31 @@ alwaysApply: true
 
 # Cortisstyle — agent orientation
 
-**Live product:** Turkey-first boutique storefronts + Cadde marketplace + sell enablement.
+**Live product:** Turkey-first boutique storefronts + Cadde marketplace, two product verticals (fashion, custom_art).
 **Archived elsewhere:** international lookbook / wardrobe / Lookbook Studio → sibling `cortisstyle-international`.
 
-Before non-trivial work, read `docs/agent-handoffs/00-overview.md` and `docs/agent-handoffs/14-tr-codemap.md`, then the matching section under `docs/agent-handoffs/`.
+Before non-trivial work, read `docs/agent-handoffs/README.md`, then only the one subsystem doc that matches your task.
 
 | Task area | Handoff |
 |-----------|---------|
-| **Folder map / where to put code** | `14-tr-codemap.md` |
+| Tenant model, domains, onboarding a new boutique | `03-multi-tenant-boutiques.md` |
+| Custom-domain sitemap/robots (all tenants) | `03` + `.cursor/rules/boutique-custom-domain.mdc` · `src/lib/tr/customDomain.ts` |
+| `/tr/[slug]` storefront, editorial home, category browsing, PDP | `04-storefront-editorial-home.md` |
+| `/tr/panel`, checkout, orders, shipping, payments | `05-owner-panel-commerce.md` |
+| Fashion vertical (garments, sizes, categories) + core/module boundary | `06-fashion-module.md` |
+| Custom-art vertical (print-on-demand) + capability-flag pattern | `07-custom-art-module.md` |
+| AI catalog pipeline (listing drafts, packshots, try-on) | `08-ai-catalog-pipeline.md` |
+| Takım (two-piece set upload) | `08` + `src/lib/tr/fashion/takimUpload.ts` · `/tr/panel/urun/takim` |
+| `/tr` Cadde marketplace, looks, platform cart | `09-cadde-marketplace.md` |
+| Boutique UI / visual direction | `10-boutique-design-inspiration.md` |
+| Env, Supabase, auth, edge proxy, the fashion/core lint boundary | `11-platform-ops.md` |
 | International lookbook (archived) | `01-international-lookbook.md` → `cortisstyle-international` |
 | Lookbook Studio (archived) | `02-lookbook-studio.md` → archive; **rmbg stays** at `src/lib/tr/ai/photoroomRemoveBg.ts` |
-| `/tr/[slug]`, `/tr/panel`, custom domains | `03-boutique-storefronts.md` |
-| Custom-domain sitemap/robots (all tenants) | `03` + `.cursor/rules/boutique-custom-domain.mdc` · `src/lib/tr/customDomain.ts` |
-| `/tr` Cadde, looks, platform cart | `04-tr-marketplace.md` |
-| Checkout, orders, WhatsApp, iyzico | `05-commerce-rails.md` |
-| AI catalog, campaigns, growth | `06-sell-enablement.md` |
-| Takım (two-piece set upload) | `06` + `takimUpload.ts` · `/tr/panel/urun/takim` |
-| Boutique PNG packshots vs Cadde PNG | `15-boutique-storefront-image-formats.md` |
-| Env, Supabase, auth | `07-platform-ops.md` |
-| Pervin health / holes | `08-boutique-audit-pervin.md` |
-| Clone next boutique (system) | `09-boutique-clone-playbook.md` |
-| Boutique UI / visual direction | `10-boutique-design-inspiration.md` — standards **1 Balmoral · 2 Cecilie · 3 Marine Layer** |
-| Cortisstyle lookbook UX (archive design refs) | `11-cortisstyle-design-inspiration.md` |
-| Boutique go-live | `12-boutique-go-live.md` |
-| **Next boutique wire-in + checklist** | `13-boutique-wire-in-and-go-live.md` |
 | Boutique themes (shared system, unique UI) | `docs/lila-butik-e-ticaret-setup.md` |
 | Boutique legal templates (yasal) | `docs/tr-boutique-legal-templates.md` |
 
-**Structural changes:** update the matching handoff (or focused ops doc) — see `.cursor/rules/document-structural-changes.mdc`. Do not leave architecture only in chat.
+**Structural changes:** update the matching handoff in the same change — see `.cursor/rules/document-structural-changes.mdc`. Do not leave architecture only in chat, and do not let a doc drift from the code it describes.
 
-Quick anchors: TR URLs `src/lib/tr/paths.ts` · types `src/types/tr-marketplace.ts` · edge `src/middleware.ts` · custom-domain origin SEO (sitemap/robots passthrough, all boutiques) `src/lib/tr/customDomain.ts` · principles `.cursor/rules/implementation-principles.mdc`.
+Quick anchors: TR URLs `src/lib/tr/paths.ts` · types `src/types/tr-marketplace.ts` · edge proxy `src/proxy.ts` (not `middleware.ts` — this fork renamed it) · custom-domain origin SEO (sitemap/robots passthrough, all boutiques) `src/lib/tr/customDomain.ts` · principles `.cursor/rules/implementation-principles.mdc`.
 
 Next.js 16 differs from training data — check `node_modules/next/dist/docs/` (`AGENTS.md`).

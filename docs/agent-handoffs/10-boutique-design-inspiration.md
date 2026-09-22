@@ -1,6 +1,6 @@
 # 10 — Boutique design inspiration + storefront templates
 
-**Purpose:** External reference sites for Phase 1 boutique storefront UI/UX. Use when designing or refining `/tr/[slug]` editorial homes, PLPs, PDPs, and brand presence — not when cloning system/onboarding rails (that’s [09](./09-boutique-clone-playbook.md)).
+**Purpose:** External reference sites for boutique storefront UI/UX. Use when designing or refining `/tr/[slug]` editorial homes, PLPs, PDPs, and brand presence — not when onboarding a new boutique (that's [03-multi-tenant-boutiques.md](./03-multi-tenant-boutiques.md)).
 
 ## Storefront templates (standards)
 

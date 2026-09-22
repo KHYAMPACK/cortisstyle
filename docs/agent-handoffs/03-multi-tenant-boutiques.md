@@ -1,0 +1,70 @@
+# 03 — Multi-tenant boutiques
+
+**What this is:** the tenant model underneath the whole TR marketplace — how a "boutique" (a store like Lila Butik) is represented, how a request gets routed to the right one, and how a new one gets created. Read this before touching anything in `src/lib/tr/` that takes a `boutiqueSlug`/`boutiqueId`.
+
+## The tenant model
+
+One row in `tr_boutiques` = one boutique. Every product, order, and integration is scoped by `boutique_id`. There is no other tenancy mechanism (no subdomains-as-code, no per-tenant repo forks, no `if (slug === "...")` — every one of those got deleted at least once as dead weight during cleanup passes, most recently `pervinsoysalbutik`, `newtenant`, and `ozeltablo`).
+
+Key columns on `tr_boutiques` (not exhaustive — check the live schema for the full list): `slug`, `name`, `owner_user_id`, `status`, `catalog_profile` (`"fashion"` | `"custom_art"` — see [06-fashion-module.md](./06-fashion-module.md) / [07-custom-art-module.md](./07-custom-art-module.md)), `home_layout` (`"default"` | `"editorial"` — see [04-storefront-editorial-home.md](./04-storefront-editorial-home.md)), `custom_domain`, `contact_email`, `theme_accent`, `logo_url`, `whatsapp_phone`, `instagram_handle`, `size_presets`/`color_presets` (jsonb), `editorial_content` (jsonb).
+
+**As of 2026-09**, exactly two boutiques exist: `lilabutik` (fashion, live/verified) and `minimora` (custom_art, live/verified). Every other slug you might see referenced in older docs or code comments (`pervinsoysalbutik`, `newtenant`, `ozeltablo`, `demo-maya`) has been purged — `demo-maya` is the one partial exception: it's not a real tenant, but its stock photography is still served as shared template assets for every editorial-skin boutique (see doc 04).
+
+Payments live in a separate table, `tr_boutique_integrations` (`boutique_id`, `provider`, `mode`, `enabled`, `credentials_encrypted` — AES-256-GCM via Node's `crypto`, `metadata`). One boutique can have zero or more integration rows; today the only provider is `"iyzico"`.
+
+## Request → boutique resolution
+
+Two paths reach a boutique:
+
+1. **Platform path** — `/tr/{slug}/...`. The slug is just a URL param; no special resolution needed.
+2. **Custom domain** — `src/proxy.ts` (this is a customized Next.js fork; the file that would be `middleware.ts` elsewhere is `proxy.ts` here) calls `resolveBoutiqueSlugFromHostAtEdge(host)` in `src/lib/tr/customDomain.ts`, which resolves the request's `Host` header to a slug and rewrites the path to `/tr/{slug}/...` via `rewriteBoutiqueDomainPath()`.
+
+**`tr_boutiques.custom_domain` is the source of truth** for domain resolution, read through `tr_boutiques_public` with a short-TTL in-memory cache per warm edge instance (`EDGE_DOMAIN_MAP_TTL_MS`, `src/lib/tr/customDomain.ts`). The `TR_BOUTIQUE_DOMAINS` env var (a JSON host→slug map) is only an ops override for a host that isn't in the DB yet — e.g. while testing DNS before the row is set. Nothing about domain routing requires a code change.
+
+`resolveBoutiqueSlugFromHostAtEdge()` is the *only* place that ever derives a slug from a host — everything downstream (SEO, favicon, auth redirect, the boutique-slug React context) reads the `x-boutique-slug` header it stamps, rather than re-deriving it.
+
+## Onboarding a new boutique
+
+Mostly a database operation:
+
+1. **Decide the vertical** — `catalogProfile: "fashion"` or `"custom_art"`. A genuinely new third vertical is real engineering work (see doc 06's "when you actually need to write code" section), not covered here.
+2. **Create the row**: `POST /api/tr/admin/seed` with `Authorization: Bearer {TR_ADMIN_SECRET}` and a JSON body — see `src/app/api/tr/admin/seed/route.ts` for the full payload shape (brand fields, `homeLayout`, `customDomain`, `catalogProfile`, optional starter `products`/`sampleOrders`/`discountCodes`). Nothing needs to be committed to the repo for this — the payload is just a request body, not a file (the old `src/data/tr/{slug}-seed.json` pattern is gone; the seed API doesn't read from disk).
+3. **Payments** (if taking real money): insert a row into `tr_boutique_integrations` with encrypted iyzico credentials — see `src/lib/tr/payments/registry.ts`. Until then, checkout creates **pending** orders and the owner marks them paid manually.
+4. **Link an owner**: owner signs up via `/giris`, then `PATCH /api/tr/admin/boutiques/{id}/owner` with `{ "ownerUserId": "..." }` (Bearer `TR_ADMIN_SECRET`) — scripted version at `scripts/link-tr-boutique-owner.mts`.
+5. **Logo/favicon**: no upload widget exists yet. Drop the file under `public/tr/boutiques/{slug}/` and reference that path from `logoUrl` in the seed payload (or paste it into Ayarlar → Logo later). This is a repo-content change, not a code change.
+6. **Custom domain** (optional): point DNS at the app host, set `tr_boutiques.custom_domain`. That's it — `src/proxy.ts` handles the rewrite automatically.
+
+Smoke test after onboarding: storefront loads at `/tr/{slug}`, a sized product can be added to cart, `/giris` shows branded auth, checkout creates a pending order that shows up in the owner panel, owner can create/hide a product.
+
+## The few remaining per-slug code touches
+
+All optional cosmetic polish, not blockers — everything else is DB-driven:
+
+| Concern | File | If you skip it |
+|---|---|---|
+| Editorial visual skin (`classic` vs `atelier`) | `src/lib/tr/boutiqueHome/editorialSkin.ts` (`SLUG_SKINS` map — no DB equivalent) | Boutique gets `classic` |
+| Branded auth-email logo | `src/lib/tr/authMail/templates.ts` (`EMAIL_LOGO_PATHS`) | Emails send with no logo |
+| Brand color/logo/favicon/title fallback | `src/lib/tr/storefront/boutiqueBrand.ts` | DB `theme_accent`/`logo_url`/`name` are read directly — only add an override here if you need to show something *different* from the DB |
+| Custom AI try-on house-model persona (fashion only) | `src/lib/tr/aiModel/registry.ts` | Boutique uses the shared/default AI models |
+
+If you find yourself writing a new `if (slug === "...")` anywhere outside these four files, stop — it almost certainly belongs in a DB column instead. This exact pattern (a hardcoded per-slug check leaking into otherwise-generic code) has been deleted from checkout, shipping, and homepage code at least twice already.
+
+## Code map
+
+| Concern | Path |
+|---|---|
+| Boutique CRUD (admin) | `src/lib/tr/boutiques.ts`, `src/app/api/tr/admin/boutiques/`, `src/app/api/tr/admin/seed/` |
+| Domain routing | `src/lib/tr/customDomain.ts`, `src/proxy.ts` |
+| Brand helpers | `src/lib/tr/storefront/boutiqueBrand.ts` |
+| Catalog profile / vertical capabilities | `src/lib/tr/catalogProfiles/` |
+| Owner auth | `src/lib/tr/ownerAuth.ts`, `src/lib/tr/panel/ownerClient.ts` |
+| Payments registry | `src/lib/tr/payments/registry.ts` |
+| Paths | `src/lib/tr/paths.ts` |
+
+## Related
+
+- Storefront rendering once a boutique is resolved: [04-storefront-editorial-home.md](./04-storefront-editorial-home.md)
+- Owner panel and commerce: [05-owner-panel-commerce.md](./05-owner-panel-commerce.md)
+- Fashion vertical: [06-fashion-module.md](./06-fashion-module.md)
+- Custom-art vertical: [07-custom-art-module.md](./07-custom-art-module.md)
+- Platform env/ops: [11-platform-ops.md](./11-platform-ops.md)

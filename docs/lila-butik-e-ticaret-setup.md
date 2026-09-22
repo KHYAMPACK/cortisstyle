@@ -128,7 +128,7 @@ Owners will eventually edit these in panel; seed JSON mirrors the pack.
 | `robots.txt` | Host-aware `src/app/robots.ts` — **passthrough on every custom domain** (`BOUTIQUE_DOMAIN_ORIGIN_PASSTHROUGH_PATHS`). Allows storefront; blocks panel/cart/checkout/auth/api; `Sitemap:` at same host |
 | `sitemap.xml` | Host-aware `src/app/sitemap.ts` — same passthrough. On boutique domain: `/`, `/urunler`, `/urun/{id}`, `/yasal/*`; on platform: marketing + `/tr/{slug}/…` for verified boutiques. **Do not** add a Lila-only sitemap route. |
 | SEO helpers | `src/lib/tr/seo/storefrontSeo.ts` |
-| Google Merchant Center | Ops checklist in [13-boutique-wire-in-and-go-live.md](./agent-handoffs/13-boutique-wire-in-and-go-live.md) § C2 |
+| Google Merchant Center | Ops checklist in [05-owner-panel-commerce.md](./agent-handoffs/05-owner-panel-commerce.md) |
 | Merchant product feed | `https://lilaboutiquedenizli.com/feeds/google-merchant.xml` (also `/tr/lilabutik/feeds/google-merchant.xml`) — lib `src/lib/tr/googleMerchant/feed.ts` |
 
 **Google Merchant feed (automatic catalog):**
@@ -150,7 +150,7 @@ Verify in Search Console **after deploy** (token must be live on the custom doma
 
 ## Auth (branded)
 
-- Reset emails: `token_hash` callback + boutique domain preference — see [07-platform-ops.md](./agent-handoffs/07-platform-ops.md) and [13-boutique-wire-in-and-go-live.md](./agent-handoffs/13-boutique-wire-in-and-go-live.md)
+- Reset emails: `token_hash` callback + boutique domain preference — see [11-platform-ops.md](./agent-handoffs/11-platform-ops.md)
 
 ## Legal pages
 
@@ -189,4 +189,4 @@ Lila seller snapshot (fill Ayarlar / re-seed to sync DB):
    - [ ] iyzico Alıcı Koruması overlay (`TrIyzicoBuyerProtection` · Lila token in `src/lib/tr/payments/registry.ts` · homepage only)
    - [ ] HTTPS on custom domain
 10. **Ekiz Yazılım** footer watermark (`TrPlatformCredit`) live on storefront — shared for every boutique
-11. Full pre-live list: [13-boutique-wire-in-and-go-live.md](./agent-handoffs/13-boutique-wire-in-and-go-live.md)
+11. Onboarding checklist: [03-multi-tenant-boutiques.md](./agent-handoffs/03-multi-tenant-boutiques.md)

@@ -22,7 +22,7 @@ Not platform-ready (the work in this roadmap):
 |---|---|
 | No self-serve signup | Boutiques are created via `/api/tr/admin/seed` (admin secret); `owner_user_id` linked by hand via `/api/tr/admin/boutiques/[id]/owner`. `/api/tr/owner/boutiques` has only GET. |
 | Tenants hardcoded in code | `src/lib/tr/payments/registry.ts` (`IYZICO_CHECKOUT_SLUGS = new Set(["lilabutik"])`, buyer-protection token by slug); `src/lib/tr/customDomain.ts` (static domain→slug map plus env `TR_BOUTIQUE_DOMAINS`); `src/lib/tr/commerce/checkoutMode.ts` (`CONTACT_EMAIL_BY_SLUG`); `src/lib/tr/boutiqueHome/registry.ts` (`SLUG_OVERRIDES`); `src/lib/tr/storefrontTheme/registry.ts`; `src/lib/tr/aiModel/registry.ts`; `src/lib/tr/boutique/minimora/isMinimoraBoutique.ts` and `.../newtenant/isNewTenantBoutique.ts`; `src/lib/tr/boutiqueHome/editorialContent.ts` (~l.340); `src/components/tr/boutique/editorial/TrBoutiqueAtelierHomeSections.tsx` (~l.216); `src/app/api/tr/admin/boutique-health/route.ts`. |
-| Per-tenant secrets in env vars | iyzico and Basit Kargo credentials are per-boutique env keys (see `docs/agent-handoffs/12-*.md`, `13-*.md`). |
+| Per-tenant secrets in env vars | iyzico and Basit Kargo credentials are per-boutique env keys (see `docs/agent-handoffs/05-owner-panel-commerce.md`, `11-platform-ops.md`). |
 | No theme system | Two layouts (`default`, `editorial`) plus one-off skins (`src/components/tr/boutique/minimora/*`, `.../newtenant/*`). |
 | No billing/plans | Nothing for subscriptions or plan limits. `TrBoutique.commissionBps` exists as a field but no logic computes commission. |
 | No refunds | `payment_status` has `refunded` but no iyzico refund flow exists. |
@@ -30,9 +30,9 @@ Not platform-ready (the work in this roadmap):
 
 ## 3. Rules for every agent working on this roadmap
 
-1. **Start here:** read `AGENTS.md` (Next.js 16 differs from older versions — check `node_modules/next/dist/docs/` before using framework APIs), then `docs/agent-handoffs/README.md`, `00-overview.md`, `14-tr-codemap.md`, then only the handoff doc for your area.
+1. **Start here:** read `AGENTS.md` (Next.js 16 differs from older versions — check `node_modules/next/dist/docs/` before using framework APIs), then `docs/agent-handoffs/README.md`, then only the handoff doc for your area.
 2. **Lila is live.** `lilabutik` takes real card payments and real shipments. No change may alter its checkout, payment, or shipping behaviour unless the task says so. Prefer **dual-read** migrations: read new DB config first, fall back to the legacy hardcoded value, remove the legacy path only in a later, separate task after Lila is verified.
-3. **Money is integer kuruş.** Never floats. Never trust client-sent prices or shipping fees; the server re-prices (see `docs/agent-handoffs/05-commerce-rails.md`).
+3. **Money is integer kuruş.** Never floats. Never trust client-sent prices or shipping fees; the server re-prices (see `docs/agent-handoffs/05-owner-panel-commerce.md`).
 4. **Schema changes are additive SQL patch files** named `supabase/patch_<name>.sql` (`add column if not exists`, `create table if not exists`), referenced from the matching `docs/agent-handoffs/*.md`. **Never run a patch against the production Supabase project.** Write the file, state the manual apply steps, and let Mert apply it.
 5. **RLS is real only for public tables.** Owner/order/invoice/discount routes run on the service role after an app-layer owner check. Any new tenant-scoped route must filter by the caller's authorized boutique.
 6. **Secrets:** never commit `.env*`, keys, tokens, or credentials, and never log them. Anything stored per tenant is encrypted at rest.
@@ -64,7 +64,7 @@ Not platform-ready (the work in this roadmap):
 - **P1B-T2 Client intake template.** A single checklist/form (Markdown + JSON schema) of everything needed from a client: brand name, logo, colors, legal name, vergi no and office, IBAN, contact info, addresses, policies, first products. The create-store tool accepts this JSON directly.
 - **P1B-T3 Bulk product import.** Inspect the existing `src/app/tr/panel/urun/toplu` batch flow and `src/lib/tr/productBatchCreateFlow.ts`; extend to CSV/spreadsheet import (title, price, sizes, stock, category, image URLs). Product entry is a likely time sink; **measure first** using the time log before over-building.
 - **P1B-T4 Go-live check.** Extend `/api/tr/admin/boutique-health` (currently probes two hardcoded slugs) into a per-boutique check that reports: has products, storefront renders, contact email set, legal pages present, payment mode set, shipping mode set, domain resolves (if any), Google Merchant feed valid. Output a plain pass/fail list Mert can read before telling a client "you're live".
-- **P1B-T5 Onboarding playbook rewrite.** Rewrite `docs/agent-handoffs/09-boutique-clone-playbook.md` and `13-boutique-wire-in-and-go-live.md` into one short step-by-step that matches the new tool, including the time log.
+- **P1B-T5 Onboarding playbook rewrite.** Rewrite `docs/agent-handoffs/03-multi-tenant-boutiques.md` into one short step-by-step that matches the new tool, including the time log.
   _Accept:_ Mert onboards a test boutique end to end using only the tool and playbook, in under one working day, with no code edits, and the go-live check passes.
 
 ## 4. Phases
@@ -112,7 +112,7 @@ Estimates assume one agent-assisted developer at roughly 15–25 hours/week. Ran
 - **P3-T1 Provider interface.** Put payments behind a provider interface in `src/lib/tr/payments/` with iyzico as the first implementation, so PayTR or others can be added later. The checkout route and callbacks call the interface, not iyzico directly.
 - **P3-T2 Connect-your-own-keys (iyzico).** Panel settings page where an owner enters their own iyzico API and secret key. Validate with a harmless provider call before saving, store via P1-T2, support sandbox vs live mode. Never return stored secrets to the client.
 - **P3-T3 Manual payment options.** Bank transfer (havale/EFT) and pay-on-delivery/WhatsApp as per-store options, using existing interim order flow as a base.
-- **P3-T4 Refunds.** iyzico refund/cancel flow: owner triggers from the order detail page, `payment_status` moves to `refunded`, stock and shipment handling defined, all in sandbox first. This also closes the "shipping failed, order just cancels" gap noted in `05-commerce-rails.md`.
+- **P3-T4 Refunds.** iyzico refund/cancel flow: owner triggers from the order detail page, `payment_status` moves to `refunded`, stock and shipment handling defined, all in sandbox first. This also closes the "shipping failed, order just cancels" gap noted in `05-owner-panel-commerce.md`.
 - **P3-T5 iyzico Marketplace mode (blocked on approval).** Only start once iyzico approves Mert's marketplace application (docs: https://docs.iyzico.com/en/products/marketplace). Scope: create sub-merchants via API (PERSONAL / PRIVATE COMPANY / LIMITED-or-JOINT-STOCK types; TCKN or vergi no, tax office, legal title, address, IBAN), store `subMerchantKey` per boutique, send it at checkout so commission is deducted automatically (use the existing `commissionBps` field), handle payout approvals. Behind a per-store feature flag so own-keys stores are unaffected. **Ask iyzico before building:** who bears chargeback/refund liability, settlement timing, fee schedule, and whether a store-builder (not only a single marketplace) qualifies.
   _Accept for T1–T4:_ a fresh store owner connects their own sandbox iyzico keys, a test order pays and marks `paid`, an abandoned redirect restores stock, a refund works, and Lila's live flow is unchanged.
 
