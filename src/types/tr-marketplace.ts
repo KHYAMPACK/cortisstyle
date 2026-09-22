@@ -128,6 +128,15 @@ export type TrProductFeatures = {
    */
   manualListing?: boolean;
   /**
+   * Newtenant (phone-grip) placeholder: this product is the
+   * "Kendi Tasarımını Yap" custom-photo/text grip. Dispatches to
+   * TrNewTenantCustomGripPanel instead of the standard split PDP —
+   * see TrBoutiqueProductPage. Real upload/preview/print pipeline is
+   * intentionally not built yet (scaffold only); the panel shows a
+   * client-side-only preview and keeps checkout disabled.
+   */
+  customDesign?: boolean;
+  /**
    * Linked color SKUs (one product per color). Same id on every sibling.
    * Restyle / slot-3 still belong to this product only.
    */

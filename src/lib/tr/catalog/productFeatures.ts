@@ -272,6 +272,9 @@ export function sanitizeProductFeatures(
   if (record.madeToOrder === true) {
     next.madeToOrder = true;
   }
+  if (record.customDesign === true) {
+    next.customDesign = true;
+  }
   if (
     record.sizePricesKurus &&
     typeof record.sizePricesKurus === "object" &&
