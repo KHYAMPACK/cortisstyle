@@ -23,7 +23,7 @@ import {
   parseConstructionShopCategory,
   type ConstructionCatalogFamily,
 } from "@/lib/tr/catalog/garmentUploadTypes";
-import { constructionPackshotBasePrompt } from "@/lib/tr/fashn/packshot";
+import { constructionPackshotBasePrompt } from "@/lib/tr/fashion/fashn/packshot";
 
 const GEMINI_MODELS = [
   "gemini-2.5-flash",

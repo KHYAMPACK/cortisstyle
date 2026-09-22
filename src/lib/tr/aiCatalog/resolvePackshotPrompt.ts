@@ -1,5 +1,5 @@
 import { resolveLlmProvider } from "@/lib/tr/ai/resolveLlmProvider";
-import { DEFAULT_PACKSHOT_PROMPT } from "@/lib/tr/fashn/packshot";
+import { DEFAULT_PACKSHOT_PROMPT } from "@/lib/tr/fashion/fashn/packshot";
 import {
   buildPackshotPrompt,
   PACKSHOT_VIEW_PROMPT,

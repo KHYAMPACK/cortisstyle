@@ -3,7 +3,7 @@ import { draftProductListingFromImage } from "@/lib/tr/aiCatalog/listingDraft";
 import { buildElbisePackshotPrompt } from "@/lib/tr/aiCatalog/packshotPrompt";
 import { resolvePackshotPrompt } from "@/lib/tr/aiCatalog/resolvePackshotPrompt";
 import { constructionCatalogFamily } from "@/lib/tr/catalog/garmentUploadTypes";
-import { constructionPackshotBasePrompt } from "@/lib/tr/fashn/packshot";
+import { constructionPackshotBasePrompt } from "@/lib/tr/fashion/fashn/packshot";
 import { getBoutiqueByIdAdmin } from "@/lib/tr/boutiques";
 import {
   requireOwnedBoutique,

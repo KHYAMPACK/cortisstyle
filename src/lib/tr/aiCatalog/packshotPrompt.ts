@@ -5,7 +5,7 @@ import {
   isFlatLayPackshotFamily,
   stripConflictingFlatLayPresentation,
   stripConflictingPackshotPresentation,
-} from "@/lib/tr/fashn/packshot";
+} from "@/lib/tr/fashion/fashn/packshot";
 import {
   buildElbiseConstructionLock,
   type ElbiseConstructionChips,

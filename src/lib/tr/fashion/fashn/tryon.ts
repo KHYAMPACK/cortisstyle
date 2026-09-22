@@ -5,8 +5,8 @@ import {
   isFashnConfigured,
   type FashnGenerationMode,
   type FashnResolution,
-} from "@/lib/tr/fashn/client";
-import { rehostRemoteImageToTrAssets } from "@/lib/tr/fashn/rehost";
+} from "@/lib/tr/fashion/fashn/client";
+import { rehostRemoteImageToTrAssets } from "@/lib/tr/fashion/fashn/rehost";
 
 export interface FashnTryOnParams {
   productImageUrl: string;

@@ -1,7 +1,7 @@
 import { tryOnPromptForPose } from "@/lib/tr/aiModel/prompts";
 import { resolveModelImageForRemoteApi } from "@/lib/tr/aiModel/resolveModelImage";
-import { isFashnConfigured } from "@/lib/tr/fashn/client";
-import { generateFashnTryOn } from "@/lib/tr/fashn/tryon";
+import { isFashnConfigured } from "@/lib/tr/fashion/fashn/client";
+import { generateFashnTryOn } from "@/lib/tr/fashion/fashn/tryon";
 import { logTrAiUsageEvent } from "@/lib/tr/aiUsage";
 import type {
   TrAiModelGenerateRequest,

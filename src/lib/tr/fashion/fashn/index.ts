@@ -9,12 +9,12 @@ export {
   getFashnDefaultMode,
   getFashnDefaultResolution,
   isFashnConfigured,
-} from "@/lib/tr/fashn/client";
+} from "@/lib/tr/fashion/fashn/client";
 export {
   DEFAULT_PACKSHOT_PROMPT,
   ELBISE_PACKSHOT_PROMPT,
   generateFashnPackshot,
-} from "@/lib/tr/fashn/packshot";
-export { generateFashnTryOn } from "@/lib/tr/fashn/tryon";
+} from "@/lib/tr/fashion/fashn/packshot";
+export { generateFashnTryOn } from "@/lib/tr/fashion/fashn/tryon";
 // model-create is not part of the live catalog — do not re-export for product code.
-export { rehostRemoteImageToTrAssets } from "@/lib/tr/fashn/rehost";
+export { rehostRemoteImageToTrAssets } from "@/lib/tr/fashion/fashn/rehost";

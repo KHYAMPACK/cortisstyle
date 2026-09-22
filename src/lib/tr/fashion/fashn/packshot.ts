@@ -5,7 +5,7 @@ import {
   isFashnConfigured,
   type FashnGenerationMode,
   type FashnResolution,
-} from "@/lib/tr/fashn/client";
+} from "@/lib/tr/fashion/fashn/client";
 import {
   isPhotoroomConfigured,
   removeGarmentBackground,
