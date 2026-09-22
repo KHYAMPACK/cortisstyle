@@ -4,7 +4,7 @@ import { PATHNAME_HEADER, BOUTIQUE_SLUG_HEADER } from "@/lib/introLoader";
 import { MAINTENANCE_PATH } from "@/lib/launchGates";
 import {
   isBoutiqueDomainPassthroughPath,
-  resolveBoutiqueSlugFromHost,
+  resolveBoutiqueSlugFromHostAtEdge,
   rewriteBoutiqueDomainPath,
 } from "@/lib/tr/customDomain";
 import {
@@ -51,33 +51,38 @@ function isAllowedDuringMaintenance(pathname: string): boolean {
   return /\.(?:png|jpe?g|webp|svg|ico|gif|woff2?)$/i.test(pathname);
 }
 
-function withPathnameRequest(request: NextRequest): Headers {
+function withPathnameRequest(
+  request: NextRequest,
+  boutiqueSlug: string | null,
+): Headers {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set(PATHNAME_HEADER, request.nextUrl.pathname);
-  const host =
-    request.headers.get("x-forwarded-host") ??
-    request.headers.get("host") ??
-    "";
-  const boutiqueSlug = resolveBoutiqueSlugFromHost(host);
   if (boutiqueSlug) {
     requestHeaders.set(BOUTIQUE_SLUG_HEADER, boutiqueSlug);
   }
   return requestHeaders;
 }
 
-function nextWithPathname(request: NextRequest): NextResponse {
+function nextWithPathname(
+  request: NextRequest,
+  boutiqueSlug: string | null,
+): NextResponse {
   return NextResponse.next({
-    request: { headers: withPathnameRequest(request) },
+    request: { headers: withPathnameRequest(request, boutiqueSlug) },
   });
 }
 
-function rewriteWithPathname(request: NextRequest, url: URL): NextResponse {
+function rewriteWithPathname(
+  request: NextRequest,
+  url: URL,
+  boutiqueSlug: string | null,
+): NextResponse {
   return NextResponse.rewrite(url, {
-    request: { headers: withPathnameRequest(request) },
+    request: { headers: withPathnameRequest(request, boutiqueSlug) },
   });
 }
 
-export function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (
@@ -92,13 +97,13 @@ export function middleware(request: NextRequest) {
     request.headers.get("x-forwarded-host") ??
     request.headers.get("host") ??
     "";
-  const boutiqueSlug = resolveBoutiqueSlugFromHost(host);
+  const boutiqueSlug = await resolveBoutiqueSlugFromHostAtEdge(host);
   if (boutiqueSlug && BOUTIQUE_WELL_KNOWN_ICON_PATHS.has(pathname)) {
     const iconPath = resolveHostFaviconPublicPath(boutiqueSlug);
     const url = request.nextUrl.clone();
     url.pathname = iconPath;
     url.search = "";
-    return rewriteWithPathname(request, url);
+    return rewriteWithPathname(request, url, boutiqueSlug);
   }
   // Origin SEO (/sitemap.xml, /robots.txt, /.well-known) must passthrough —
   // see BOUTIQUE_DOMAIN_ORIGIN_PASSTHROUGH_PATHS. Do not nest under /tr/{slug}.
@@ -113,7 +118,7 @@ export function middleware(request: NextRequest) {
       } else {
         url.pathname = rewritten;
       }
-      return rewriteWithPathname(request, url);
+      return rewriteWithPathname(request, url, boutiqueSlug);
     }
   }
 
@@ -122,7 +127,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/tr", request.url));
   }
 
-  return nextWithPathname(request);
+  return nextWithPathname(request, boutiqueSlug);
 }
 
 export const config = {
