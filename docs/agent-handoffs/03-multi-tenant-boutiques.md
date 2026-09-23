@@ -25,14 +25,17 @@ Two paths reach a boutique:
 
 ## Onboarding a new boutique
 
-Mostly a database operation:
+Mostly a database operation, and there's a tool for it now (Phase 1B, `docs/phase1b-onboarding-tooling-plan.md`):
 
 1. **Decide the vertical** — `catalogProfile: "fashion"` or `"custom_art"`. A genuinely new third vertical is real engineering work (see doc 06's "when you actually need to write code" section), not covered here.
-2. **Create the row**: `POST /api/tr/admin/seed` with `Authorization: Bearer {TR_ADMIN_SECRET}` and a JSON body — see `src/app/api/tr/admin/seed/route.ts` for the full payload shape (brand fields, `homeLayout`, `customDomain`, `catalogProfile`, optional starter `products`/`sampleOrders`/`discountCodes`). Nothing needs to be committed to the repo for this — the payload is just a request body, not a file (the old `src/data/tr/{slug}-seed.json` pattern is gone; the seed API doesn't read from disk).
-3. **Payments** (if taking real money): insert a row into `tr_boutique_integrations` with encrypted iyzico credentials — see `src/lib/tr/payments/registry.ts`. Until then, checkout creates **pending** orders and the owner marks them paid manually.
-4. **Link an owner**: owner signs up via `/giris`, then `PATCH /api/tr/admin/boutiques/{id}/owner` with `{ "ownerUserId": "..." }` (Bearer `TR_ADMIN_SECRET`) — scripted version at `scripts/link-tr-boutique-owner.mts`.
-5. **Logo/favicon**: no upload widget exists yet. Drop the file under `public/tr/boutiques/{slug}/` and reference that path from `logoUrl` in the seed payload (or paste it into Ayarlar → Logo later). This is a repo-content change, not a code change.
-6. **Custom domain** (optional): point DNS at the app host, set `tr_boutiques.custom_domain`. That's it — `src/proxy.ts` handles the rewrite automatically.
+2. **Fill in the intake** (`docs/tr-boutique-intake-template.md`) with the client, save it as a JSON file.
+3. **Create the row**: `npx tsx scripts/create-boutique.mts --intake path/to/client.json`. Wraps `POST /api/tr/admin/seed` (`src/app/api/tr/admin/seed/route.ts` has the full payload shape if you need to call it directly) — idempotent, safe to re-run. Nothing gets committed to the repo for this; the intake JSON stays local, and the seed API doesn't read from disk (the old `src/data/tr/{slug}-seed.json` pattern is gone).
+4. **Payments** (if taking real money): insert a row into `tr_boutique_integrations` with encrypted iyzico credentials — see `src/lib/tr/payments/registry.ts`. Until then, checkout creates **pending** orders and the owner marks them paid manually. No owner-facing "connect your own keys" UI exists yet (Phase 3).
+5. **Link an owner**: owner signs up via `/giris` themselves — there's no invite-email flow (a deliberate Phase 1B decision, not an oversight; see the plan doc). Then `npx tsx scripts/link-tr-boutique-owner.mts --email <theirs> --slug <slug>` (or `PATCH /api/tr/admin/boutiques/{id}/owner` directly).
+6. **Logo/favicon**: no upload widget exists yet. Drop the file under `public/tr/boutiques/{slug}/` and reference that path from `logoUrl` in the intake (or paste it into Ayarlar → Logo later). This is a repo-content change, not a code change.
+7. **Custom domain** (optional): point DNS at the app host, set `tr_boutiques.custom_domain` (via the intake or later). That's it — `src/proxy.ts` handles the rewrite automatically.
+8. **Go-live check**: `GET /api/tr/admin/boutiques/{id}/go-live-check` (Bearer `TR_ADMIN_SECRET`) — a real pass/fail readiness list (products exist, storefront renders, contact email set, legal fields populated, payment/shipping mode, domain resolves if set, Merchant feed valid). Run this before telling the client they're live, not the older `boutique-health` route — that one checks Supabase/RLS infra health, a different concern.
+9. **Log the time** from "yes" to live in `docs/onboarding-time-log.md` — that log is what decides whether anything here is worth automating further.
 
 Smoke test after onboarding: storefront loads at `/tr/{slug}`, a sized product can be added to cart, `/giris` shows branded auth, checkout creates a pending order that shows up in the owner panel, owner can create/hide a product.
 
@@ -68,3 +71,5 @@ If you find yourself writing a new `if (slug === "...")` anywhere outside these 
 - Fashion vertical: [06-fashion-module.md](./06-fashion-module.md)
 - Custom-art vertical: [07-custom-art-module.md](./07-custom-art-module.md)
 - Platform env/ops: [11-platform-ops.md](./11-platform-ops.md)
+- Onboarding tooling background/decisions: `docs/phase1b-onboarding-tooling-plan.md`
+- Client intake checklist: `docs/tr-boutique-intake-template.md`
