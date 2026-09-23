@@ -24,7 +24,7 @@ Without a live payment integration, checkout creates a **pending** order and the
 
 ## Payments (iyzico)
 
-`src/lib/tr/payments/registry.ts` is the read path for "does this boutique take card payments and with what credentials" — `boutiqueOffersIyzicoCheckout()`, `getIyzicoBuyerProtection()`, `getIyzicoCredentials()`. **DB-first**: reads `tr_boutique_integrations` (credentials AES-256-GCM encrypted) before falling back to hardcoded `TR_LILABUTIK_IYZICO_*` env vars. The env-var fallback exists only until every live boutique has a verified integrations row — treat it as scaffolding being phased out, not the primary mechanism, when reading or writing this file.
+`src/lib/tr/payments/registry.ts` is the read path for "does this boutique take card payments and with what credentials" — `boutiqueOffersIyzicoCheckout()`, `getIyzicoBuyerProtection()`, `getIyzicoCredentials()`. Purely DB-backed: reads `tr_boutique_integrations` (credentials AES-256-GCM encrypted via `credentialEncryption.ts`) and returns `null`/`false` if no row exists. There is no env-var fallback — that legacy path (`IYZICO_CHECKOUT_SLUGS`, `IYZICO_BUYER_PROTECTION_BY_SLUG`, `CREDENTIAL_ENV_BY_SLUG`) was removed once lilabutik's real credentials were migrated into the table and verified against live production checkout (2026-09-23). A boutique with no `tr_boutique_integrations` row simply doesn't offer iyzico checkout — that's not a bug to route around, it's the correct state until someone adds a row (`scripts/migrate-lilabutik-iyzico-credentials.mts` is a worked example of how, though it's slug-specific and would need generalizing for a second boutique).
 
 Checkout iyzico flow: `src/app/api/tr/checkout/iyzico/{start,abandon,callback}/route.ts`.
 

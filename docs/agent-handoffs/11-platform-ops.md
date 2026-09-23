@@ -38,7 +38,7 @@ Note: there is no Vite "studio" app, dev server, or item-draft CLI in this repo 
 - `TR_ADMIN_SECRET` — admin API bearer token.
 - `TR_BOUTIQUE_DOMAINS` — JSON host→slug override map, used only for hosts not yet in `tr_boutiques.custom_domain` (see doc 03). Not the primary domain-resolution mechanism.
 - `TR_CHECKOUT_SANDBOX` — forces pending-order checkout even with a live payment integration (staging).
-- `TR_LILABUTIK_IYZICO_API_KEY` / `SECURITY_KEY` — legacy iyzico credential fallback, being phased out in favor of DB-stored `tr_boutique_integrations` rows (doc 05).
+- `TR_INTEGRATION_ENCRYPTION_KEY` — AES-256-GCM key for `tr_boutique_integrations.credentials_encrypted` (payment/shipping credentials at rest). Server-only, Vercel "sensitive" type. Rotation requires decrypting every row with the old key and re-encrypting with the new one in one pass — see `src/lib/tr/payments/credentialEncryption.ts`.
 
 ## Supabase
 
