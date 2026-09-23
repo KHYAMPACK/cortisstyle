@@ -30,7 +30,6 @@ function resolveEmailAssetBaseUrl(): string {
  */
 const EMAIL_LOGO_PATHS: Partial<Record<string, string>> = {
   lilabutik: "/tr/boutiques/lilabutik/logo.png",
-  minimora: "/tr/boutiques/minimora/logo.png",
 };
 
 export function resolveBoutiqueAuthMailBrand(

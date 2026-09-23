@@ -1,7 +1,7 @@
 /**
  * Link a boutique owner by email + custom domain or slug.
- * Usage: npx tsx scripts/link-tr-boutique-owner.mts --email owner@example.com --domain minimora.shop
- *    or: npx tsx scripts/link-tr-boutique-owner.mts --email owner@example.com --slug ozeltablo
+ * Usage: npx tsx scripts/link-tr-boutique-owner.mts --email owner@example.com --domain example.com
+ *    or: npx tsx scripts/link-tr-boutique-owner.mts --email owner@example.com --slug lilabutik
  */
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";

@@ -1,8 +1,8 @@
 /**
  * Fashion-module category taxonomy. Garment-specific — not a generic
- * "category system." `custom_art` boutiques (e.g. minimora) have no
- * category concept at all today; if a future vertical needs one, it
- * registers its own tree rather than extending this one.
+ * "category system." `custom_art` boutiques have no category concept
+ * at all today; if a future vertical needs one, it registers its own
+ * tree rather than extending this one.
  */
 
 export interface TrCategoryDefinition {

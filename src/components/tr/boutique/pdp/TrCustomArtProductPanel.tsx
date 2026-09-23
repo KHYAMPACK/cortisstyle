@@ -17,9 +17,6 @@ import { beginBuyNowCheckout, type TrPurchaseIntent } from "@/lib/tr/buyNow";
 import { getStorefrontGalleryImages } from "@/lib/tr/productImages";
 import { resolveProductColors, resolveProductSizes } from "@/lib/tr/productOptions";
 import { trBoutiquePath, trHomePath } from "@/lib/tr/paths";
-import { isMinimoraBoutique } from "@/lib/tr/boutique/minimora/isMinimoraBoutique";
-import { minimoraHomeContent } from "@/components/tr/boutique/minimora/minimoraHomeContent";
-import { minimoraDisplay } from "@/components/tr/boutique/minimora/minimoraTheme";
 import { useTrAddedToCartStore } from "@/store/trAddedToCartStore";
 import { formatTryFromKurus } from "@/types/tr-marketplace";
 import type { TrProductWithBoutique } from "@/types/tr-marketplace";
@@ -38,11 +35,7 @@ export function TrCustomArtProductPanel({
   const sizes = useMemo(() => resolveProductSizes(product), [product]);
   const colors = useMemo(() => resolveProductColors(product), [product]);
   const checkoutEnabled = isProductCartCheckoutEnabled(product);
-  const minimora = isMinimoraBoutique(product.boutique.slug);
-  const pdpCopy = minimoraHomeContent.pdp;
-  const chipActive = minimora
-    ? "border-[#F3A575] bg-[#F3A575] text-[#3D3D3D]"
-    : "border-neutral-900 bg-neutral-900 text-white";
+  const chipActive = "border-neutral-900 bg-neutral-900 text-white";
   const chipIdle =
     "border-black/15 bg-white text-neutral-800 hover:border-black/30";
   const cart = useTrScopedCart();
@@ -162,24 +155,16 @@ export function TrCustomArtProductPanel({
           <div>
             <TrProductGallery product={galleryProduct} />
             <p className="mt-3 text-[12px] text-neutral-500">
-              {minimora
-                ? pdpCopy.galleryHint
-                : "Örnek tablo görselleri — sizin baskınız seçtiğiniz fotoğraftan üretilir."}
+              Örnek tablo görselleri — sizin baskınız seçtiğiniz fotoğraftan üretilir.
             </p>
           </div>
 
           <div className="space-y-6">
             <div>
               <p className="text-[10px] tracking-[0.22em] text-neutral-500 uppercase">
-                {minimora ? pdpCopy.eyebrow : "Kişiye özel tablo"}
+                Kişiye özel tablo
               </p>
-              <h1
-                className={
-                  minimora
-                    ? `${minimoraDisplay} mt-2 text-3xl font-bold tracking-tight text-[#3D3D3D] md:text-4xl`
-                    : "mt-2 font-serif text-3xl tracking-tight text-neutral-950 md:text-4xl"
-                }
-              >
+              <h1 className="mt-2 font-serif text-3xl tracking-tight text-neutral-950 md:text-4xl">
                 {product.title}
               </h1>
               {product.description ? (
@@ -193,14 +178,8 @@ export function TrCustomArtProductPanel({
             </div>
 
             <section className="space-y-3">
-              <h2
-                className={
-                  minimora
-                    ? `${minimoraDisplay} text-[15px] font-bold text-[#3D3D3D]`
-                    : "text-[11px] font-semibold tracking-[0.18em] text-neutral-800 uppercase"
-                }
-              >
-                {minimora ? pdpCopy.uploadTitle : "1 · Fotoğrafını yükle"}
+              <h2 className="text-[11px] font-semibold tracking-[0.18em] text-neutral-800 uppercase">
+                1 · Fotoğrafını yükle
               </h2>
               <input
                 ref={fileInputRef}
@@ -214,7 +193,7 @@ export function TrCustomArtProductPanel({
                 }}
               />
               {referenceImageUrl ? (
-                <div className={`relative aspect-[4/3] overflow-hidden border border-black/10 bg-neutral-50 ${minimora ? "rounded-[24px]" : "rounded-2xl"}`}>
+                <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-black/10 bg-neutral-50">
                   <Image
                     src={referenceImageUrl}
                     alt="Yüklediğiniz fotoğraf"
@@ -229,7 +208,7 @@ export function TrCustomArtProductPanel({
                     disabled={uploading}
                     className="absolute right-3 bottom-3 min-h-11 rounded-full bg-white/95 px-4 py-2 text-[12px] font-medium text-neutral-800 shadow-sm"
                   >
-                    {minimora ? pdpCopy.changePhoto : "Değiştir"}
+                    Değiştir
                   </button>
                 </div>
               ) : (
@@ -237,25 +216,13 @@ export function TrCustomArtProductPanel({
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploading}
-                  className={`flex min-h-[140px] w-full flex-col items-center justify-center gap-2 border-2 border-dashed px-4 py-6 text-center transition-colors hover:border-black/30 ${
-                    minimora
-                      ? "rounded-[24px] border-[#F3A575]/40 bg-[#FDFBF7]"
-                      : "rounded-2xl border-black/15 bg-neutral-50"
-                  }`}
+                  className="flex min-h-[140px] w-full flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-black/15 bg-neutral-50 px-4 py-6 text-center transition-colors hover:border-black/30"
                 >
                   <span className="text-[14px] font-medium text-neutral-800">
-                    {uploading
-                      ? minimora
-                        ? pdpCopy.uploading
-                        : "Yükleniyor…"
-                      : minimora
-                        ? pdpCopy.uploadCta
-                        : "Fotoğraf seç veya sürükle"}
+                    {uploading ? "Yükleniyor…" : "Fotoğraf seç veya sürükle"}
                   </span>
                   <span className="text-[12px] text-neutral-500">
-                    {minimora
-                      ? pdpCopy.uploadHint
-                      : "JPG, PNG veya WebP · en fazla 10 MB"}
+                    JPG, PNG veya WebP · en fazla 10 MB
                   </span>
                 </button>
               )}
@@ -266,14 +233,8 @@ export function TrCustomArtProductPanel({
 
             {sizes.length > 0 ? (
               <section className="space-y-3">
-                <h2
-                  className={
-                    minimora
-                      ? `${minimoraDisplay} text-[15px] font-bold text-[#3D3D3D]`
-                      : "text-[11px] font-semibold tracking-[0.18em] text-neutral-800 uppercase"
-                  }
-                >
-                  {minimora ? pdpCopy.sizeTitle : "2 · Boyut seç"}
+                <h2 className="text-[11px] font-semibold tracking-[0.18em] text-neutral-800 uppercase">
+                  2 · Boyut seç
                 </h2>
                 <div className="flex flex-wrap gap-2">
                   {sizes.map((size) => {
@@ -303,16 +264,8 @@ export function TrCustomArtProductPanel({
 
             {colors.length > 0 ? (
               <section className="space-y-3">
-                <h2
-                  className={
-                    minimora
-                      ? `${minimoraDisplay} text-[15px] font-bold text-[#3D3D3D]`
-                      : "text-[11px] font-semibold tracking-[0.18em] text-neutral-800 uppercase"
-                  }
-                >
-                  {minimora
-                    ? `${sizes.length > 0 ? "3" : "2"} · ${pdpCopy.styleTitle}`
-                    : `${sizes.length > 0 ? "3" : "2"} · Stil seç`}
+                <h2 className="text-[11px] font-semibold tracking-[0.18em] text-neutral-800 uppercase">
+                  {`${sizes.length > 0 ? "3" : "2"} · Stil seç`}
                 </h2>
                 <div className="flex flex-wrap gap-2">
                   {colors.map((color) => {
@@ -365,7 +318,7 @@ export function TrCustomArtProductPanel({
 
             {selectionRequired ? (
               <p className="text-[13px] text-neutral-500">
-                {minimora ? pdpCopy.needSelection : "Sipariş vermek için fotoğraf"}
+                Sipariş vermek için fotoğraf
                 {sizeRequired ? ", boyut" : ""}
                 {styleRequired ? " ve stil" : ""} seçin.
               </p>

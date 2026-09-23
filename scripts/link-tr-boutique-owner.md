@@ -16,9 +16,9 @@ Run in Supabase SQL Editor:
 After the owner signs up on cortisstyle.com (or the boutique login page):
 
 ```bash
-npx tsx scripts/link-tr-boutique-owner.mts --email owner@example.com --domain minimora.shop
+npx tsx scripts/link-tr-boutique-owner.mts --email owner@example.com --domain example.com
 # or by slug:
-npx tsx scripts/link-tr-boutique-owner.mts --email owner@example.com --slug minimora
+npx tsx scripts/link-tr-boutique-owner.mts --email owner@example.com --slug lilabutik
 ```
 
 List boutiques: `npx tsx scripts/link-tr-boutique-owner.mts --list`
