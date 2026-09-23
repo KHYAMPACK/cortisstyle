@@ -11,7 +11,7 @@
 | `{{BRAND}}` | Boutique display name |
 | `{{SELLER}}` | `legalName` (else brand) |
 | `{{ADDRESS}}` | `physicalAddress` |
-| `{{EMAIL}}` | Contact email (`CONTACT_EMAIL_BY_SLUG` or `info@{domain}`) |
+| `{{EMAIL}}` | Contact email (DB `contact_email`, else `info@{domain}`) |
 | `{{PHONE}}` | `whatsappPhone` |
 | `{{SITE_URL}}` | `https://{customDomain}` or platform boutique URL |
 | `{{VERGI_NO}}` | `vergiNo` |
