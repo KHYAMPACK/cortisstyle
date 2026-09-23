@@ -98,11 +98,32 @@ async function main() {
   console.log(`  secretKey: ${mask(secretKey)}`);
   console.log(`  baseUrl:   ${baseUrl}`);
 
-  // NEXT_PUBLIC_* is shipped in the browser bundle by Next.js convention — not a secret, safe to print in full.
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() ?? "";
+  const supabaseUrlRaw = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+  const supabaseUrl = supabaseUrlRaw.trim();
   const hasServiceRoleKey = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY?.trim());
-  console.log(`  supabaseUrl (public):        ${JSON.stringify(supabaseUrl)}`);
+  let urlValid = false;
+  let urlParseError = "";
+  try {
+    const parsed = new URL(supabaseUrl);
+    urlValid = parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch (error) {
+    urlParseError = error instanceof Error ? error.message : String(error);
+  }
+  console.log("  NEXT_PUBLIC_SUPABASE_URL diagnostics (structure only, no content):");
+  console.log(`    raw length:        ${supabaseUrlRaw.length}`);
+  console.log(`    trimmed length:    ${supabaseUrl.length}`);
+  console.log(`    starts with http:  ${supabaseUrl.startsWith("http")}`);
+  console.log(`    char codes (first 6): [${[...supabaseUrl.slice(0, 6)].map((c) => c.charCodeAt(0)).join(", ")}]`);
+  console.log(`    char codes (last 6):  [${[...supabaseUrl.slice(-6)].map((c) => c.charCodeAt(0)).join(", ")}]`);
+  console.log(`    parses as URL:     ${urlValid}${urlParseError ? ` (${urlParseError})` : ""}`);
   console.log(`  SUPABASE_SERVICE_ROLE_KEY:   ${hasServiceRoleKey ? "present" : "MISSING"}`);
+
+  if (!urlValid) {
+    console.error(
+      "NEXT_PUBLIC_SUPABASE_URL did not parse as a valid http(s) URL — see diagnostics above. Not attempting to create the Supabase client.",
+    );
+    process.exit(1);
+  }
 
   const supabase = getServerServiceSupabase();
   if (!supabase) {
