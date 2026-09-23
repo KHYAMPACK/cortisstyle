@@ -17,7 +17,7 @@
 
 ## Category browsing
 
-There is currently **no generic category-tree system** — every category-browsing component (`TrBoutiqueCategoryDrawer`, `TrBoutiqueProductGrid`, `TrBoutiqueCatalogContext`, the `TrBoutiqueAtelier*`/`TrBoutiqueEditorial*` PLP components under `src/components/tr/boutique/`) reads directly from the fashion module's Turkish garment taxonomy (`src/lib/tr/fashion/categories.ts`). This is intentional debt, not an oversight: `custom_art` (minimora) has zero category concept today, so building an unused multi-vertical category registry would be premature. If a second vertical ever needs real categories, that's when the registry gets built — see [06-fashion-module.md](./06-fashion-module.md) for the module-boundary reasoning.
+There is currently **no generic category-tree system** — every category-browsing component (`TrBoutiqueCategoryDrawer`, `TrBoutiqueProductGrid`, `TrBoutiqueCatalogContext`, the `TrBoutiqueAtelier*`/`TrBoutiqueEditorial*` PLP components under `src/components/tr/boutique/`) reads directly from the fashion module's Turkish garment taxonomy (`src/lib/tr/fashion/categories.ts`). This is intentional debt, not an oversight: `custom_art` has zero category concept and, as of 2026-09, zero live boutiques, so building an unused multi-vertical category registry would be premature. If a second vertical ever needs real categories, that's when the registry gets built — see [06-fashion-module.md](./06-fashion-module.md) for the module-boundary reasoning.
 
 ## Product detail page (PDP)
 

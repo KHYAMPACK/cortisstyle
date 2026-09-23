@@ -1,6 +1,6 @@
 # 07 — Custom-art module (print-on-demand)
 
-**What this is:** the second product vertical — custom canvas-print items (minimora: "turn your child's drawing into a 3D figure"/canvas prints), and the **reference implementation** for the module-boundary pattern that the fashion module ([06-fashion-module.md](./06-fashion-module.md)) was extracted to match. If you're building a third vertical, copy this module's shape, not fashion's — it's smaller and cleaner precisely because it was designed as a module from the start, rather than extracted after the fact.
+**What this is:** the second product vertical — custom canvas-print items (upload a photo/drawing, get it printed). As of 2026-09 there is **no live `custom_art` boutique** — the one that existed (`minimora`) was deleted (see the deviation note below) — but the module stays as the **reference implementation** for the module-boundary pattern that the fashion module ([06-fashion-module.md](./06-fashion-module.md)) was extracted to match. If you're building a third vertical, copy this module's shape, not fashion's — it's smaller and cleaner precisely because it was designed as a module from the start, rather than extracted after the fact.
 
 ## The capability-flag pattern (read this first)
 
@@ -20,9 +20,13 @@ This is a **capability-flags pattern, not a full plugin architecture** — one e
 - `src/components/tr/boutique/pdp/TrCustomArtProductPanel.tsx` — the custom_art PDP layout (upload widget instead of a size/color picker).
 - No category concept at all — `custom_art` products aren't organized into a taxonomy the way fashion's are. If you add categories to this vertical, that's the trigger to finally build the generic category registry mentioned in doc 06.
 
-## A known deviation worth knowing about
+## What happened to minimora
 
-Despite the capability-flag pattern existing precisely to avoid slug checks, a few storefront components still branch on an explicit `isMinimoraBoutique()` check rather than the `catalog_profile` capability flags: `TrBoutiqueEditorialHome`, `TrBoutiqueEditorialShell`, `TrCustomArtProductPanel`, `TrBoutiqueEditorialHelpFab`. This works today because minimora is the only `custom_art` boutique, but it's the same anti-pattern the rest of this docs set warns against — if a second `custom_art` boutique is ever onboarded, these branch points need to move to capability flags instead of the boutique's specific slug.
+`minimora` was the one `custom_art` boutique. Beyond the genuine vertical differences (upload flow, no sizes/categories), it also had a fully bespoke visual identity baked into component code: its own home page, header, footer, fonts, and brand color hardcoded behind an `isMinimoraBoutique()` slug check in four storefront components — the same "hardcoded per-slug branch" anti-pattern this docs set warns about elsewhere, just for visuals instead of tenant config.
+
+When minimora's home page needed to render through the generic editorial shell instead (to avoid maintaining a second bespoke shell for one boutique), the generic home defaults turned out to be fashion-flavored — garment category tiles make no sense on a canvas-print shop with one product. Rather than build a `custom_art`-aware generic home variant for a boutique with zero orders, it was deleted outright: the `tr_boutiques` row, its product, the entire bespoke component tree, and every leftover per-slug entry in `boutiqueBrand.ts`/`authMail/templates.ts`.
+
+**The lesson for whoever onboards the next `custom_art` boutique:** don't give it a bespoke header/footer/home-page component tree gated by a slug check. If it needs to look meaningfully different from a fashion boutique's home page, that's a sign the generic editorial home builder needs a `catalog_profile`-aware variant (skip category tiles, etc.) — a real capability, not a one-off component swap.
 
 ## Code map
 
@@ -33,11 +37,10 @@ Despite the capability-flag pattern existing precisely to avoid slug checks, a f
 | Reference upload | `src/lib/tr/customArt/{referenceAssets,uploadClient,uploadRateLimit}.ts`, `src/app/api/tr/customer/upload-reference/` |
 | Feature types | `src/lib/tr/customArt/types.ts` |
 | PDP | `src/components/tr/boutique/pdp/TrCustomArtProductPanel.tsx` |
-| Minimora-specific components | `src/components/tr/boutique/minimora/` |
 | Panel nav gating | `src/lib/tr/panelNav.ts` (`panelNavForProfile()`) |
 | Route gating | `TrOwnerProductRouteGate` |
 | Schema | `supabase/patch_tr_custom_art_vertical.sql` |
-| Onboarding scripts (historical minimora setup) | `scripts/seed-minimora.mts`, `scripts/link-tr-boutique-owner.mts` |
+| Onboarding script | `scripts/link-tr-boutique-owner.mts` |
 
 ## Related
 
