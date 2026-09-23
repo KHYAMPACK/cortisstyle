@@ -36,36 +36,6 @@ export const IYZICO_BUYER_PROTECTION_HEADER_MAX_PX = 767;
 
 const DEFAULT_LIVE_BASE = "https://api.iyzipay.com";
 
-/**
- * Fallback maps, read only when a boutique has no `tr_boutique_integrations`
- * row yet. Once lilabutik's row is seeded and verified (Phase 1 §3 dual-read
- * step), these — and this whole fallback path — get deleted; no other
- * boutique needs to keep working through this transition.
- */
-const IYZICO_CHECKOUT_SLUGS = new Set(["lilabutik"]);
-
-const IYZICO_BUYER_PROTECTION_BY_SLUG: Record<string, TrIyzicoBuyerProtection> =
-  {
-    lilabutik: {
-      token: "649afd5a-7bd3-4529-8d26-3c6f6247c984",
-      position: "bottomLeft",
-      mobilePosition: "header",
-      ideaSoft: false,
-      pwi: true,
-    },
-  };
-
-const CREDENTIAL_ENV_BY_SLUG: Record<
-  string,
-  { apiKey: string; secretKey: string; baseUrl: string }
-> = {
-  lilabutik: {
-    apiKey: "TR_LILABUTIK_IYZICO_API_KEY",
-    secretKey: "TR_LILABUTIK_IYZICO_SECURITY_KEY",
-    baseUrl: "TR_LILABUTIK_IYZICO_BASE_URL",
-  },
-};
-
 type TrBoutiqueIyzicoIntegrationRow = {
   enabled: boolean;
   credentials_encrypted: string | null;
@@ -121,8 +91,7 @@ export async function boutiqueOffersIyzicoCheckout(
   if (!boutiqueSlug) return false;
   const slug = boutiqueSlug.trim().toLowerCase();
   const integration = await getIyzicoIntegration(slug);
-  if (integration) return integration.enabled;
-  return IYZICO_CHECKOUT_SLUGS.has(slug);
+  return integration?.enabled ?? false;
 }
 
 export async function getIyzicoBuyerProtection(
@@ -134,7 +103,7 @@ export async function getIyzicoBuyerProtection(
   if (integration && isIyzicoBuyerProtectionMetadata(integration.metadata)) {
     return integration.metadata;
   }
-  return IYZICO_BUYER_PROTECTION_BY_SLUG[slug] ?? null;
+  return null;
 }
 
 export async function getIyzicoCredentials(
@@ -142,34 +111,23 @@ export async function getIyzicoCredentials(
 ): Promise<TrIyzicoCredentials | null> {
   const slug = boutiqueSlug.trim().toLowerCase();
   const integration = await getIyzicoIntegration(slug);
-  if (integration?.credentials_encrypted) {
-    try {
-      const stored = decryptIntegrationCredentials<TrIyzicoStoredCredentials>(
-        integration.credentials_encrypted,
-      );
-      if (stored.apiKey && stored.secretKey) {
-        return {
-          apiKey: stored.apiKey,
-          secretKey: stored.secretKey,
-          baseUrl:
-            stored.baseUrl?.trim().replace(/\/$/, "") || DEFAULT_LIVE_BASE,
-        };
-      }
-    } catch (error) {
-      console.error(
-        `[payments/registry] failed to decrypt iyzico credentials for ${slug}:`,
-        error,
-      );
-    }
-  }
+  if (!integration?.credentials_encrypted) return null;
 
-  if (!IYZICO_CHECKOUT_SLUGS.has(slug)) return null;
-  const names = CREDENTIAL_ENV_BY_SLUG[slug];
-  if (!names) return null;
-  const apiKey = process.env[names.apiKey]?.trim() ?? "";
-  const secretKey = process.env[names.secretKey]?.trim() ?? "";
-  if (!apiKey || !secretKey) return null;
-  const baseUrl =
-    process.env[names.baseUrl]?.trim().replace(/\/$/, "") || DEFAULT_LIVE_BASE;
-  return { apiKey, secretKey, baseUrl };
+  try {
+    const stored = decryptIntegrationCredentials<TrIyzicoStoredCredentials>(
+      integration.credentials_encrypted,
+    );
+    if (!stored.apiKey || !stored.secretKey) return null;
+    return {
+      apiKey: stored.apiKey,
+      secretKey: stored.secretKey,
+      baseUrl: stored.baseUrl?.trim().replace(/\/$/, "") || DEFAULT_LIVE_BASE,
+    };
+  } catch (error) {
+    console.error(
+      `[payments/registry] failed to decrypt iyzico credentials for ${slug}:`,
+      error,
+    );
+    return null;
+  }
 }
