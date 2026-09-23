@@ -29,10 +29,10 @@ Or in Supabase SQL Editor:
 -- Find auth user id
 select id, email from auth.users where email = 'owner@example.com';
 
--- Link to Pervin boutique
+-- Link to a boutique by slug
 update public.tr_boutiques
 set owner_user_id = '<auth-user-uuid>'
-where slug = 'pervinsoysalbutik';
+where slug = 'lilabutik';
 ```
 
 Or via admin API (Bearer `TR_ADMIN_SECRET`):
@@ -52,7 +52,7 @@ Authorization: Bearer <TR_ADMIN_SECRET>
 3. **Stok** → adjust quantities inline
 4. **Siparişler** → open a seeded order → change fulfillment status
 5. **Müşteriler** / **Kampanyalar** / **Raporlar** → confirm data
-6. Confirm products appear on `/tr/pervinsoysalbutik`
+6. Confirm products appear on `/tr/lilabutik`
 7. **Ayarlar** → save WhatsApp / kargo notu → confirm storefront reflects
 8. Edit → mark **Gizli** → confirm it leaves public available listings
 6. Mark **Satıldı** → sold badge on storefront
