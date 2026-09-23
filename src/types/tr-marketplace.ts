@@ -321,6 +321,7 @@ export interface CreateTrBoutiqueInput {
   commissionBps?: number;
   contactName?: string | null;
   contactPhone?: string | null;
+  contactEmail?: string | null;
   shippingAddress?: string | null;
   returnAddress?: string | null;
   status?: TrBoutiqueStatus;

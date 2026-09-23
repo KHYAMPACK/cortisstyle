@@ -21,6 +21,8 @@ interface SeedBoutiquePayload {
   name: string;
   legalName?: string;
   vergiNo?: string;
+  iban?: string;
+  contactEmail?: string;
   description?: string;
   logoUrl?: string;
   whatsappPhone?: string;
@@ -116,12 +118,16 @@ export async function POST(request: Request) {
             catalogProfile: boutiqueInput.catalogProfile,
             legalName: boutiqueInput.legalName,
             vergiNo: boutiqueInput.vergiNo,
+            iban: boutiqueInput.iban,
+            contactEmail: boutiqueInput.contactEmail,
           })
         : await createBoutiqueAdmin({
             slug: boutiqueInput.slug,
             name: boutiqueInput.name,
             legalName: boutiqueInput.legalName,
             vergiNo: boutiqueInput.vergiNo,
+            iban: boutiqueInput.iban,
+            contactEmail: boutiqueInput.contactEmail,
             description: boutiqueInput.description,
             logoUrl: boutiqueInput.logoUrl,
             whatsappPhone: boutiqueInput.whatsappPhone,

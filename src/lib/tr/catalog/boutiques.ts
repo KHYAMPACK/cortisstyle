@@ -38,6 +38,7 @@ function boutiqueInsertRow(input: CreateTrBoutiqueInput) {
     commission_bps: input.commissionBps ?? 1000,
     contact_name: input.contactName?.trim() ?? null,
     contact_phone: input.contactPhone?.trim() ?? null,
+    contact_email: input.contactEmail?.trim() ?? null,
     shipping_address: input.shippingAddress?.trim() ?? null,
     return_address: input.returnAddress?.trim() ?? null,
     status: input.status ?? "draft",
@@ -228,6 +229,7 @@ export interface UpdateTrBoutiqueBrandInput {
   legalName?: string | null;
   vergiNo?: string | null;
   iban?: string | null;
+  contactEmail?: string | null;
 }
 
 export async function updateBoutiqueBrandAdmin(
@@ -286,6 +288,9 @@ export async function updateBoutiqueBrandAdmin(
   }
   if (input.iban !== undefined) {
     row.iban = input.iban?.replace(/\s/g, "").toUpperCase().trim() || null;
+  }
+  if (input.contactEmail !== undefined) {
+    row.contact_email = input.contactEmail?.trim().toLowerCase() || null;
   }
 
   if (Object.keys(row).length === 0) {
