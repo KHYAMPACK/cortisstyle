@@ -171,7 +171,7 @@ Not for agents to do; agents may draft documents for review.
 | **A2 — Fast onboarding** | Phase 1B; P3-T1–T3; P4-T1, P4-T3; fixed themes (P5 option a); P8-T1/T2/T4. Target: new client live in ≤ 2 days | ~5–7 weeks total |
 | **B1 — Self-serve MVP** _(deferred)_ | Phase 2 public signup on top of P1B-T1's creation service, owner theme UI, owner domain UI | after A2, ~3–4 weeks |
 | **B2 — Full v1** _(deferred)_ | Refunds, iyzico marketplace mode (if approved), plans and billing, rest of Phase 8 | ~3–5 months from start |
-| **Later** | Cadde cross-boutique split checkout (needs marketplace mode, roughly 4–8 extra weeks), more payment providers | after B2 |
+| **Later** | Cross-boutique split checkout — a single cart spanning multiple boutiques (needs iyzico marketplace mode, roughly 4–8 extra weeks; not a revival of the old Cadde UI, which was fully retired in 2026-09), more payment providers | after B2 |
 
 ## 7. Dependencies (what blocks what)
 

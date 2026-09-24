@@ -10,7 +10,6 @@ Start here when picking up this repo. One doc per subsystem — open the one tha
 | [06-fashion-module.md](./06-fashion-module.md) | The garment/apparel vertical (`catalog_profile = "fashion"`) and the core/module boundary rule |
 | [07-custom-art-module.md](./07-custom-art-module.md) | The print-on-demand vertical (`catalog_profile = "custom_art"`) and the capability-flag pattern |
 | [08-ai-catalog-pipeline.md](./08-ai-catalog-pipeline.md) | AI-assisted listing creation — Gemini drafts, FASHN try-on/packshot, Photoroom bg removal |
-| [09-cadde-marketplace.md](./09-cadde-marketplace.md) | The cross-boutique "Cadde" marketplace surface (distinct from a single boutique's storefront) |
 | [10-boutique-design-inspiration.md](./10-boutique-design-inspiration.md) | External reference sites for boutique visual direction |
 | [11-platform-ops.md](./11-platform-ops.md) | Edge proxy, auth, scripts, env vars, Supabase, the fashion/core lint boundary |
 | [01-international-lookbook.md](./01-international-lookbook.md) | **Archived** — this surface now ships from sibling repo `cortisstyle-international` |

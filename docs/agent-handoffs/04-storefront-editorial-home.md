@@ -2,9 +2,10 @@
 
 **What this is:** how a resolved boutique (see [03-multi-tenant-boutiques.md](./03-multi-tenant-boutiques.md)) actually renders as a public storefront — home page, category browsing, PDP, cart/favorites. This is UI-shell concern, not tenant resolution or commerce logic (checkout/orders live in [05-owner-panel-commerce.md](./05-owner-panel-commerce.md)).
 
-## Two layout axes, don't confuse them
+## Every boutique is the editorial shell now
 
-- **`home_layout`** (DB column on `tr_boutiques`, `"default"` | `"editorial"`) — picks the whole storefront shell. `"default"` is the Cadde-marketplace-style layout (shared cross-boutique cart/browse — see [09-cadde-marketplace.md](./09-cadde-marketplace.md)). `"editorial"` is a standalone boutique shell with its own local cart/favorites, own `giris`/`sepet`/`odeme`/`siparis-onay`/`yasal` routes. New boutiques should almost always use `"editorial"` unless they're meant to sell inside Cadde. Resolved by `resolveBoutiqueHomeLayout()` in `src/lib/tr/boutiqueHome/registry.ts` — the function itself says the DB column is the source of truth.
+The cross-boutique "Cadde" marketplace (shared browse/cart across boutiques) was retired along with its whole route tree. Every boutique now renders through the standalone editorial shell — its own local cart/favorites, own `giris`/`sepet`/`odeme`/`siparis-onay`/`yasal` routes. `resolveBoutiqueHomeLayout()` / `resolveStorefrontTheme()` (`src/lib/tr/boutiqueHome/registry.ts`, `src/lib/tr/storefrontTheme/registry.ts`) are kept as functions — always returning `"editorial"` — only so the ~9 call sites across boutique routes don't need touching if a real second layout ever returns. The `home_layout` DB column still exists but is no longer read for branching.
+
 - **Editorial skin** (`"classic"` | `"atelier"`, `src/lib/tr/boutiqueHome/editorialSkin.ts`) — a *visual* choice within the editorial layout, resolved by a hardcoded `SLUG_SKINS` map with no DB equivalent. `lilabutik` is `"atelier"`; everything else defaults to `"classic"`. This is one of the few remaining per-slug code touches (see doc 03).
 
 ## Editorial home content
@@ -25,7 +26,7 @@ There is currently **no generic category-tree system** — every category-browsi
 
 ## Local cart & favorites
 
-Editorial-layout boutiques keep cart/favorites in `localStorage`, scoped per boutique slug — `src/store/trBoutiqueLocalCartStore.ts`, `trBoutiqueLocalFavoritesStore.ts`. This is deliberately separate from the Cadde platform cart (`trCartStore.ts`) — never merge them. `TrBoutiqueCommerceScope.tsx` wraps the editorial shell to provide this scoping.
+Every boutique keeps cart/favorites in `localStorage`, scoped per boutique slug — `src/store/trBoutiqueLocalCartStore.ts`, `trBoutiqueLocalFavoritesStore.ts`. `TrBoutiqueCommerceScope.tsx` wraps the editorial shell to provide this scoping via `useTrScopedCart()`/`useTrScopedFavorites()`; every boutique route renders inside this provider, so there is no other cart/favorites path to keep in sync with.
 
 ## Contact email & delivery copy
 
@@ -54,4 +55,3 @@ Editorial-layout boutiques keep cart/favorites in `localStorage`, scoped per bou
 - Checkout/orders/shipping: [05-owner-panel-commerce.md](./05-owner-panel-commerce.md)
 - Fashion vertical (category taxonomy owner): [06-fashion-module.md](./06-fashion-module.md)
 - Custom-art vertical: [07-custom-art-module.md](./07-custom-art-module.md)
-- The separate Cadde marketplace surface: [09-cadde-marketplace.md](./09-cadde-marketplace.md)

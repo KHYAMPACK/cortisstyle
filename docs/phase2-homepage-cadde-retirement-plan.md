@@ -1,6 +1,8 @@
 # Homepage rebuild + Cadde retirement — plan
 
-_Prepared 2026-09-23, verified against the live repo and production Supabase schema. Planning only — nothing built yet._
+_Prepared 2026-09-23, verified against the live repo and production Supabase schema._
+
+**Status: built and verified (2026-09-24).** New root homepage is live, the whole Cadde route/component/store tree is deleted, and lilabutik's storefront/PDP/cart/checkout/favorites were re-verified end to end in the browser after the teardown. See `docs/agent-handoffs/04-storefront-editorial-home.md` and `11-platform-ops.md` for the resulting state.
 
 ## Confirmed scope (from Mert)
 

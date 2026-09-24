@@ -4,7 +4,7 @@
 
 ## Edge proxy
 
-`src/proxy.ts` — **not** `middleware.ts` (this is a customized Next.js fork; check `node_modules/next/dist/docs/` before assuming standard Next.js conventions). Handles, in order: maintenance-mode gate (`isMaintenanceModeEnabled()`), custom-domain resolution/rewrite (`resolveBoutiqueSlugFromHostAtEdge()` — see [03-multi-tenant-boutiques.md](./03-multi-tenant-boutiques.md)), and root `/` → `/tr` redirect. Its matcher skips `/api/*`.
+`src/proxy.ts` — **not** `middleware.ts` (this is a customized Next.js fork; check `node_modules/next/dist/docs/` before assuming standard Next.js conventions). Handles, in order: maintenance-mode gate (`isMaintenanceModeEnabled()`) and custom-domain resolution/rewrite (`resolveBoutiqueSlugFromHostAtEdge()` — see [03-multi-tenant-boutiques.md](./03-multi-tenant-boutiques.md)). Its matcher skips `/api/*`. Root `/` renders its own page (`src/app/page.tsx`, the platform marketing homepage) — it is no longer redirected to `/tr`, which has no page since the Cadde marketplace was retired.
 
 ## Auth
 
@@ -26,10 +26,8 @@ Every table that holds boutique-scoped data carries a `boutique_id` foreign key;
 | `build` / `start` | Production build/serve |
 | `lint` | ESLint (flat config, `eslint.config.mjs`) |
 | `favicon:generate` | `scripts/generate-favicon.mts` |
-| `tr:import-hero` | `scripts/import-tr-hero-slots.mts` — hero image import |
 | `tr:generate-studio-models` | `scripts/generate-studio-ai-models.mts` — AI house-model reference plates (feeds `aiModel/registry.ts`, doc 08) |
 | `tr:generate-lila-review` | `scripts/generate-lila-model-review.mts` |
-| `tr:generate-cadde-hero` / `tr:prepare-cadde-hero` | Cadde marketplace hero generation (doc 09) |
 
 Note: there is no Vite "studio" app, dev server, or item-draft CLI in this repo — those belong to the sibling `cortisstyle-international` repo (see `02-lookbook-studio.md`). If you see a doc or comment referencing `dev:studio` or an item-draft script, it's stale — check `package.json` directly rather than trusting the doc.
 
