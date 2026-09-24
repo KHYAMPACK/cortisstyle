@@ -10,6 +10,7 @@ import {
   peekOwnerCache,
 } from "@/lib/tr/panel/ownerCache";
 import { wrapShipmentLabelHtml } from "@/lib/tr/shipping/labelHtml";
+import type { TrSeo } from "@/lib/tr/seo/seoFields";
 import type { TrShippingRate } from "@/lib/tr/shipping/types";
 import type {
   TrInvoice,
@@ -35,6 +36,8 @@ export interface TrOwnerBoutiqueSummary {
   /** Address shown on the storefront (Ayarlar → Adres). */
   physicalAddress?: string | null;
   shippingAddress?: string | null;
+  /** Own domain, when connected (`tr_boutiques.custom_domain`). */
+  customDomain?: string | null;
   offersIyzicoCheckout?: boolean;
 }
 
@@ -245,6 +248,9 @@ export interface TrOwnerProductPayload {
   fulfillmentType?: TrFulfillmentType;
   /** Owner-only. `null` clears it. */
   costPriceTry?: number | string | null;
+  /** URL slug; on create, omitted = the server derives one from the title (Basit ürün). */
+  slug?: string | null;
+  seo?: TrSeo;
 }
 
 /**

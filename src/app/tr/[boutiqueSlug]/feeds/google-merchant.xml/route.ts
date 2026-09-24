@@ -4,6 +4,7 @@ import {
   renderGoogleMerchantRssXml,
 } from "@/lib/tr/googleMerchant/feed";
 import { listPublicProductsByBoutiqueId } from "@/lib/tr/products";
+import { listProductSlugInfo } from "@/lib/tr/catalog/productSlug";
 import { resolveSeoHostContext } from "@/lib/tr/seo/storefrontSeo";
 
 export const runtime = "nodejs";
@@ -35,6 +36,7 @@ export async function GET(_request: Request, { params }: RouteParams) {
     boutique,
     products,
     requestOrigin,
+    slugInfo: await listProductSlugInfo(boutique.id),
   });
 
   const xml = renderGoogleMerchantRssXml({

@@ -21,6 +21,7 @@ export async function GET(request: Request) {
       status: boutique.status,
       catalogProfile: boutique.catalogProfile,
       physicalAddress: boutique.physicalAddress,
+      customDomain: boutique.customDomain,
       shippingAddress: boutique.shippingAddress,
       offersIyzicoCheckout: await boutiqueOffersIyzicoCheckout(boutique.slug),
     })),

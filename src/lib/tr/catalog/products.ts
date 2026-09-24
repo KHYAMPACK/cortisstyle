@@ -121,6 +121,10 @@ function productInsertRow(
     product_type: input.productType ?? "fashion",
     fulfillment_type: input.fulfillmentType ?? "physical",
   };
+  // Only sent when there is something to store, so creating a garment product
+  // never touches (or depends on) the SEO columns.
+  if (input.slug) row.slug = input.slug;
+  if (input.seo && Object.keys(input.seo).length > 0) row.seo = input.seo;
   for (const column of omitColumns) {
     delete row[column];
   }
@@ -597,6 +601,7 @@ function productUpdateRow(input: UpdateTrProductInput): Record<string, unknown> 
   if (input.fulfillmentType !== undefined) {
     row.fulfillment_type = input.fulfillmentType;
   }
+  if (input.seo !== undefined) row.seo = input.seo;
 
   return row;
 }

@@ -1,5 +1,6 @@
 import type { TrFashionProductFeatures } from "@/lib/tr/fashion/types";
 import type { TrCustomArtProductFeatures } from "@/lib/tr/customArt/types";
+import type { TrSeo } from "@/lib/tr/seo/seoFields";
 
 export type TrBoutiqueStatus = "draft" | "pending" | "verified" | "suspended";
 export type TrProductStatus = "available" | "sold" | "hidden";
@@ -165,6 +166,9 @@ export interface TrProduct {
    */
   productType?: TrProductType;
   fulfillmentType?: TrFulfillmentType;
+  /** Owner/admin reads only (the storefront reads slug and SEO through `productSlug.ts`). */
+  slug?: string | null;
+  seo?: TrSeo;
   createdAt: string;
   updatedAt: string;
 }
@@ -378,6 +382,9 @@ export interface CreateTrProductInput {
   /** Defaults to `fashion` (every programmatic caller is a garment flow). */
   productType?: TrProductType;
   fulfillmentType?: TrFulfillmentType;
+  /** A valid, already-unique slug (see `generateUniqueProductSlug`). */
+  slug?: string | null;
+  seo?: TrSeo;
 }
 
 export interface UpdateTrProductInput {
@@ -401,6 +408,8 @@ export interface UpdateTrProductInput {
   sizeStocks?: Record<string, number>;
   sortOrder?: number;
   fulfillmentType?: TrFulfillmentType;
+  /** The slug itself changes through `setProductSlugAdmin`, which also records the redirect. */
+  seo?: TrSeo;
 }
 
 export interface CreateTrOrderInput {

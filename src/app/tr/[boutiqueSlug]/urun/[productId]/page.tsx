@@ -1,33 +1,66 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
+import { cache } from "react";
 import { TrBoutiqueProductPage } from "@/components/tr/boutique/pdp/TrBoutiqueProductPage";
+import { getProductSlugSeo } from "@/lib/tr/catalog/productSlug";
 import { boutiqueOffersIyzicoCheckout } from "@/lib/tr/payments/registry";
 import {
   safeGetPublicColorSiblings,
-  safeGetPublicProductByBoutiqueSlugAndId,
+  safeResolvePublicProduct,
 } from "@/lib/tr/publicData";
+import { isSeoEmpty } from "@/lib/tr/seo/seoFields";
+import {
+  storeAddress,
+  storeCustomerPath,
+  storeProductUrl,
+} from "@/lib/tr/seo/storeAddress";
+import { resolveSeoHostContext } from "@/lib/tr/seo/storefrontSeo";
+import { trBoutiqueProductPath } from "@/lib/tr/paths";
 
 interface BoutiqueProductPageProps {
   params: Promise<{ boutiqueSlug: string; productId: string }>;
 }
 
+// The page and its metadata both need the product: resolve it once per request.
+const resolveProduct = cache(safeResolvePublicProduct);
+const loadSlugSeo = cache(getProductSlugSeo);
+
 export async function generateMetadata({
   params,
 }: BoutiqueProductPageProps): Promise<Metadata> {
   const { boutiqueSlug, productId } = await params;
-  const product = await safeGetPublicProductByBoutiqueSlugAndId(
-    boutiqueSlug,
-    productId,
-  );
+  const result = await resolveProduct(boutiqueSlug, productId);
 
-  if (!product) {
+  if (result.kind !== "found") {
     return { title: "Ürün bulunamadı" };
   }
+  const { product } = result;
 
-  return {
+  const fallback: Metadata = {
     title: product.title,
     description:
       product.description ?? `${product.title} — ${product.boutique.name}`,
+  };
+
+  // Products with no slug and no SEO overrides (every product that predates the
+  // SEO card) keep exactly the metadata they always had.
+  const { slug, seo } = await loadSlugSeo(product.id);
+  if (!slug && isSeoEmpty(seo)) return fallback;
+
+  const address = {
+    boutiqueSlug: product.boutique.slug,
+    customDomain: product.boutique.customDomain,
+  };
+  const canonical = seo.canonical
+    ? `${storeAddress(address).origin}${seo.canonical}`
+    : storeProductUrl({ ...address, slugOrId: slug ?? product.id });
+
+  return {
+    ...fallback,
+    title: seo.title || fallback.title,
+    description: seo.description || fallback.description,
+    alternates: { canonical },
+    ...(seo.noindex ? { robots: { index: false, follow: true } } : {}),
   };
 }
 
@@ -35,15 +68,25 @@ export default async function BoutiqueProductPage({
   params,
 }: BoutiqueProductPageProps) {
   const { boutiqueSlug, productId } = await params;
-  const product = await safeGetPublicProductByBoutiqueSlugAndId(
-    boutiqueSlug,
-    productId,
-  );
+  const result = await resolveProduct(boutiqueSlug, productId);
 
-  if (!product) {
+  if (result.kind === "missing") {
     notFound();
   }
 
+  // An old slug: send the visitor (and search engines) to the product's current address.
+  if (result.kind === "redirect") {
+    const host = await resolveSeoHostContext();
+    permanentRedirect(
+      storeCustomerPath(
+        boutiqueSlug,
+        trBoutiqueProductPath(boutiqueSlug, result.toParam),
+        host.kind === "boutique" ? "boutique-domain" : "platform",
+      ),
+    );
+  }
+
+  const { product } = result;
   const colorSiblings = await safeGetPublicColorSiblings(product);
   const iyzicoCheckout = await boutiqueOffersIyzicoCheckout(
     product.boutique.slug,

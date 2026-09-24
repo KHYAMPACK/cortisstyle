@@ -23,6 +23,13 @@ import type {
 import { sanitizeProductFeatures } from "@/lib/tr/catalog/productFeatures";
 import { readFulfillmentType } from "@/lib/tr/catalog/mappers";
 import {
+  assertProductSlugFree,
+  ProductSlugTakenError,
+  setProductSlugAdmin,
+} from "@/lib/tr/catalog/productSlug";
+import { sanitizeSeo } from "@/lib/tr/seo/seoFields";
+import { isValidSlug } from "@/lib/tr/seo/slug";
+import {
   getProductPrivateAdmin,
   readCostPriceKurus,
   saveProductPrivateAdmin,
@@ -267,6 +274,20 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
   const fulfillmentType = readFulfillmentType(body.fulfillmentType);
   if (fulfillmentType) patch.fulfillmentType = fulfillmentType;
+  if (body.seo !== undefined) patch.seo = sanitizeSeo(body.seo);
+
+  // `undefined`: not sent. `null`: clear the slug (the product is then addressed by id only).
+  let slugChange: string | null | undefined;
+  if (body.slug !== undefined) {
+    const raw = typeof body.slug === "string" ? body.slug.trim() : "";
+    if (raw && !isValidSlug(raw)) {
+      return Response.json(
+        { error: "Geçersiz slug: küçük harf, rakam ve tek tire kullanın." },
+        { status: 400 },
+      );
+    }
+    slugChange = raw || null;
+  }
 
   let costPriceKurus: number | null | undefined;
   try {
@@ -279,7 +300,19 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 
   try {
+    // Check the slug first so a taken one rejects the whole save instead of half of it.
+    if (typeof slugChange === "string") {
+      await assertProductSlugFree(owned.productBoutiqueId, slugChange, id);
+    }
     const product = await updateProductAdmin(id, patch);
+    if (slugChange !== undefined) {
+      await setProductSlugAdmin({
+        productId: id,
+        boutiqueId: owned.productBoutiqueId,
+        slug: slugChange,
+      });
+      product.slug = slugChange;
+    }
     if (costPriceKurus !== undefined) {
       await saveProductPrivateAdmin({
         productId: id,
@@ -289,6 +322,9 @@ export async function PATCH(request: Request, context: RouteContext) {
     }
     return Response.json({ product });
   } catch (error) {
+    if (error instanceof ProductSlugTakenError) {
+      return Response.json({ error: error.message }, { status: 409 });
+    }
     console.error("[tr/owner/products/[id]] patch failed:", error);
     return Response.json(
       {

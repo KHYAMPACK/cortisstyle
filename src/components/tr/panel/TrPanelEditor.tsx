@@ -333,14 +333,15 @@ export function TrPanelEditorCard({
         >
           {title}
         </h2>
-        {hint ? <InfoTip text={hint} /> : null}
+        {hint ? <TrPanelInfoTip text={hint} /> : null}
       </header>
       <div className="space-y-6 p-4 sm:p-6">{children}</div>
     </section>
   );
 }
 
-function InfoTip({ text }: { text: string }) {
+/** The (i) next to a card title, with its hint on hover / focus. */
+export function TrPanelInfoTip({ text }: { text: string }) {
   return (
     <span className="group relative inline-flex">
       <button

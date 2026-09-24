@@ -15,6 +15,16 @@ _Prepared 2026-09-24 on branch `panel-products`. Facts below were checked agains
 
 Apply `supabase/patch_product_types.sql` **before** trying Basit ürün on a real database. The app tolerates the patch being absent (products read as `fashion`, and the cost price save reports a clear error), but a Basit ürün created before the patch would lose its type.
 
+## Store URLs (decided 2026-09-24, built after M2)
+
+SEO is URL-heavy, so the addresses themselves need a structure. Today a store on a custom domain (lilabutik → `lilaboutiquedenizli.com`) is served at clean paths, but a store without one exists only at `www.cortisstyle.com/tr/<slug>`; the proxy resolves hosts by an exact-match map from `tr_boutiques.custom_domain` (2-minute cache), connecting a domain is a manual ops step (DNS + the column, no self-serve screen or verification), and a custom-domain host also answers at `/tr/<slug>/…` (duplicate addresses). The direction:
+
+- **Every store gets a default subdomain** `<slug>.<stores-domain>` (wildcard DNS and certificate; the proxy resolves it like a custom domain; unknown subdomains 404). Mert prefers a **separate stores domain** (recommended over a subdomain of `cortisstyle.com`: cookies, email reputation and SEO authority stay apart from the panel and brand site). **The domain itself is undecided.**
+- **One canonical host per store:** the custom domain if connected, otherwise the subdomain. Other variants (`/tr/<slug>/…`, the subdomain once a custom domain exists, www vs apex) permanently redirect to it; canonical tags, sitemap and the Google feed name that host.
+- **Clean paths on every store host:** `/urun/<slug>`, `/kategori/<slug>`, `/urunler`. `/tr/<slug>/…` stays internal; only the panel keeps a public `/tr/` prefix.
+- **Custom-domain connection stays ops-managed** until there are enough stores to justify a self-serve flow (owner enters the domain, we show DNS records and verify via the hosting provider's API).
+- **Order:** after M2 (Mert's call). M2 is written against one helper for "the store's public address" (`src/lib/tr/seo/storeAddress.ts`) so this work only changes that helper and the proxy. Touching `lilaboutiquedenizli.com` (redirecting its `/tr/lilabutik/…` duplicates, www/apex) needs Mert's explicit go-ahead.
+
 ## 0. Goal and rules
 
 Every store gets two generic product types, **Basit ürün** and **Gelişmiş ürün**. A vertical adds its own types on top (fashion adds a third, **Moda ürünü**, which opens Takım / Tek parça / Toplu). The panel copies ikas's *structure* (pages, fields, flows), not its colors or logo.

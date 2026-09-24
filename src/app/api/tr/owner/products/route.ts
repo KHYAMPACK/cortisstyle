@@ -20,6 +20,14 @@ import {
   saveProductPrivateAdmin,
 } from "@/lib/tr/catalog/productPrivate";
 import {
+  assertProductSlugFree,
+  generateUniqueProductSlug,
+  isProductSlugConflict,
+  ProductSlugTakenError,
+} from "@/lib/tr/catalog/productSlug";
+import { sanitizeSeo } from "@/lib/tr/seo/seoFields";
+import { isValidSlug } from "@/lib/tr/seo/slug";
+import {
   alignMarketplaceSlots,
   cleanedLifestyleImages,
 } from "@/lib/tr/productImages";
@@ -182,6 +190,19 @@ export async function POST(request: Request) {
     );
   }
 
+  // A Basit ürün gets a slug from its title unless the owner chose one; a chosen
+  // slug must be valid and free. Garment products only get one when asked.
+  const productType = readProductType(body.productType);
+  const requestedSlug =
+    typeof body.slug === "string" && body.slug.trim() ? body.slug.trim() : null;
+  if (requestedSlug && !isValidSlug(requestedSlug)) {
+    return Response.json(
+      { error: "Geçersiz slug: küçük harf, rakam ve tek tire kullanın." },
+      { status: 400 },
+    );
+  }
+  const seo = body.seo !== undefined ? sanitizeSeo(body.seo) : undefined;
+
   let compareAtPriceKurus: number | null | undefined;
   if (
     body.compareAtPriceKurus !== undefined ||
@@ -227,7 +248,7 @@ export async function POST(request: Request) {
         ? body.catalogBackgroundId.trim() || null
         : null;
 
-    const product = await createProductAdmin({
+    const input = {
       boutiqueId: boutique.id,
       title,
       description:
@@ -250,9 +271,32 @@ export async function POST(request: Request) {
       status,
       stock,
       sizeStocks,
-      productType: readProductType(body.productType),
+      productType,
       fulfillmentType: readFulfillmentType(body.fulfillmentType),
-    });
+      seo,
+    };
+
+    if (requestedSlug) await assertProductSlugFree(boutique.id, requestedSlug);
+    const autoSlug = !requestedSlug && productType === "simple";
+    const lostRaces = new Set<string>();
+    let slug: string | undefined = requestedSlug ?? undefined;
+    let product: Awaited<ReturnType<typeof createProductAdmin>> | null = null;
+    for (let attempt = 0; product === null; attempt += 1) {
+      if (autoSlug) {
+        slug = await generateUniqueProductSlug(boutique.id, title, lostRaces);
+      }
+      try {
+        product = await createProductAdmin({ ...input, slug });
+      } catch (createError) {
+        // Two products created at once can pick the same slug; the unique index
+        // rejects the second, which then takes the next free one.
+        if (autoSlug && slug && attempt < 2 && isProductSlugConflict(createError)) {
+          lostRaces.add(slug);
+          continue;
+        }
+        throw createError;
+      }
+    }
 
     // The product exists at this point, so a failure to store the cost is reported
     // as a warning instead of an error (a retry would create a duplicate).
@@ -275,6 +319,9 @@ export async function POST(request: Request) {
 
     return Response.json({ product, warning }, { status: 201 });
   } catch (error) {
+    if (error instanceof ProductSlugTakenError) {
+      return Response.json({ error: error.message }, { status: 409 });
+    }
     console.error("[tr/owner/products] create failed:", error);
     return Response.json(
       {

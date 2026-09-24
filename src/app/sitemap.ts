@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { getPublicBoutiqueBySlug, listPublicBoutiques } from "@/lib/tr/boutiques";
 import { listPublicProductsByBoutiqueId } from "@/lib/tr/products";
+import { listProductSlugInfo } from "@/lib/tr/catalog/productSlug";
 import {
   absoluteUrl,
   boutiqueCustomerPath,
@@ -39,11 +40,15 @@ async function boutiqueSitemapEntries(input: {
       boutique.id,
       boutique,
     );
+    // Slug and noindex per product (empty until the SEO patch is applied).
+    const slugInfo = await listProductSlugInfo(boutique.id);
     for (const product of products) {
       if (product.status !== "available") continue;
+      const info = slugInfo.get(product.id);
+      if (info?.noindex) continue;
       const platformPath = boutiqueProductPlatformPath(
         boutiqueSlug,
-        product.id,
+        info?.slug ?? product.id,
       );
       const path = boutiqueCustomerPath(boutiqueSlug, platformPath, mode);
       entries.push({

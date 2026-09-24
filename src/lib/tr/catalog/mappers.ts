@@ -15,6 +15,7 @@ import type {
   TrShippingProviderId,
 } from "@/types/tr-marketplace";
 import { sanitizeProductFeatures } from "@/lib/tr/catalog/productFeatures";
+import { sanitizeSeo } from "@/lib/tr/seo/seoFields";
 import { readSizeStocks } from "@/lib/tr/sizeStocks";
 import {
   EMPTY_ORDER_SHIPMENT,
@@ -203,6 +204,14 @@ export function mapProductRow(row: Record<string, unknown>): TrProduct {
     sortOrder: (row.sort_order as number) ?? 0,
     productType: readProductType(row.product_type),
     fulfillmentType: readFulfillmentType(row.fulfillment_type),
+    // Present only on `select *` reads; the storefront's column lists omit them.
+    slug:
+      "slug" in row
+        ? typeof row.slug === "string"
+          ? row.slug
+          : null
+        : undefined,
+    seo: "seo" in row ? sanitizeSeo(row.seo) : undefined,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   };

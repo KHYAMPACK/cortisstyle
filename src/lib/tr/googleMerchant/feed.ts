@@ -104,8 +104,10 @@ export function buildGoogleMerchantFeedItems(input: {
   boutique: TrBoutiquePublic;
   products: TrProduct[];
   requestOrigin: string;
+  /** Slug and noindex per product id (`listProductSlugInfo`); products not in it use their id. */
+  slugInfo?: ReadonlyMap<string, { slug: string | null; noindex: boolean }>;
 }): GoogleMerchantFeedItem[] {
-  const { boutique, products, requestOrigin } = input;
+  const { boutique, products, requestOrigin, slugInfo } = input;
   const { origin, mode } = resolveMerchantStoreOrigin(boutique, requestOrigin);
   const assetOrigin = siteLegal.siteUrl;
   const brand = resolveBoutiqueBrandLabel(boutique.slug, boutique.name);
@@ -114,6 +116,9 @@ export function buildGoogleMerchantFeedItems(input: {
 
   for (const product of products) {
     if (product.status !== "available") continue;
+    const info = slugInfo?.get(product.id);
+    // Merchant Center needs a crawlable landing page.
+    if (info?.noindex) continue;
 
     const cover = getProductCoverImageFor("boutique", product);
     if (!cover) continue;
@@ -121,7 +126,10 @@ export function buildGoogleMerchantFeedItems(input: {
     const imageLink = absolutizeAssetUrl(cover, assetOrigin);
     if (!imageLink) continue;
 
-    const platformPath = boutiqueProductPlatformPath(boutique.slug, product.id);
+    const platformPath = boutiqueProductPlatformPath(
+      boutique.slug,
+      info?.slug ?? product.id,
+    );
     const link = absoluteUrl(
       origin,
       boutiqueCustomerPath(boutique.slug, platformPath, mode),

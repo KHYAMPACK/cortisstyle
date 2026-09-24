@@ -7,6 +7,15 @@ import {
 } from "@/lib/tr";
 import { colorSiblingIdsOf } from "@/lib/tr/catalog/colorSiblings";
 import { listProductsByIdsAdmin } from "@/lib/tr/catalog/products";
+import {
+  resolveProductParam,
+  type ProductRouteResult,
+} from "@/lib/tr/catalog/productRoute";
+import {
+  findPublicProductIdBySlug,
+  findRedirectedProductId,
+  getProductSlugSeo,
+} from "@/lib/tr/catalog/productSlug";
 import { mapProductsWithLookbookImages } from "@/lib/tr/lookbookImages";
 import type {
   TrBoutiquePublic,
@@ -108,6 +117,40 @@ export async function safeGetPublicProductByBoutiqueSlugAndId(
   if (!product) return null;
   if (product.boutique.slug !== boutiqueSlug) return null;
   return product;
+}
+
+/**
+ * The product page's last URL segment is a product id or, when the owner set one, a
+ * slug (an old slug redirects). Wraps the lookups in the same "log and treat as
+ * missing" behavior as the other `safe*` readers.
+ */
+export async function safeResolvePublicProduct(
+  boutiqueSlug: string,
+  param: string,
+): Promise<ProductRouteResult<TrProductWithBoutique>> {
+  try {
+    const boutique = await safeGetPublicBoutique(boutiqueSlug);
+    if (!boutique) return { kind: "missing" };
+
+    return await resolveProductParam<TrProductWithBoutique>(param, {
+      getById: async (id) => {
+        const product = await safeGetPublicProduct(id);
+        return product && product.boutique.slug === boutiqueSlug
+          ? product
+          : null;
+      },
+      getIdBySlug: (slug) => findPublicProductIdBySlug(boutique.id, slug),
+      getRedirectedProductId: (oldSlug) =>
+        findRedirectedProductId(boutique.id, oldSlug),
+      getCurrentSlug: async (id) => (await getProductSlugSeo(id)).slug,
+    });
+  } catch (error) {
+    console.error(
+      `Failed to resolve TR product (${boutiqueSlug}/${param}):`,
+      formatTrDataError(error),
+    );
+    return { kind: "missing" };
+  }
 }
 
 const FEATURED_CATEGORY_RANK: Record<string, number> = {
