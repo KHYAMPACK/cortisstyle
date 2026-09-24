@@ -11,7 +11,10 @@ import {
 } from "@/lib/tr/panel/ownerCache";
 import type { TrOwnerDashboard } from "@/lib/tr/panel/dashboardMetrics";
 import type { TrDashboardRangeId } from "@/lib/tr/panel/dashboardRange";
-import { wrapShipmentLabelHtml } from "@/lib/tr/shipping/labelHtml";
+import {
+  wrapShipmentLabelHtml,
+  wrapShipmentLabelsHtml,
+} from "@/lib/tr/shipping/labelHtml";
 import type { TrShippingRate } from "@/lib/tr/shipping/types";
 import type {
   TrInvoice,
@@ -1028,6 +1031,35 @@ export function openOwnerShipmentLabel(svg: string) {
   );
   window.open(url, "_blank", "noopener,noreferrer");
   setTimeout(() => URL.revokeObjectURL(url), 60_000);
+}
+
+/**
+ * Opens the print tab straight away — inside the click that asked for it — and
+ * fills it once every etiket has been fetched. A tab opened after awaiting network
+ * calls is blocked by browsers, and a batch takes a while. Null when blocked.
+ */
+export function beginOwnerLabelPrint(): {
+  show: (svgs: string[]) => void;
+  abort: () => void;
+} | null {
+  const printWindow = window.open("", "_blank");
+  if (!printWindow) return null;
+  printWindow.document.title = "Etiketler hazırlanıyor…";
+  printWindow.document.body.textContent = "Etiketler hazırlanıyor…";
+  return {
+    show(svgs) {
+      const url = URL.createObjectURL(
+        new Blob([wrapShipmentLabelsHtml(svgs)], {
+          type: "text/html;charset=utf-8",
+        }),
+      );
+      printWindow.location.href = url;
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    },
+    abort() {
+      printWindow.close();
+    },
+  };
 }
 
 async function parseShipmentResponse(

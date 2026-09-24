@@ -1,8 +1,12 @@
 "use client";
 
-import { Search, Upload } from "lucide-react";
+import { Search, Upload, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { downloadOrdersCsv } from "@/components/tr/panel/orders/orderExport";
+import {
+  TrOrderBulkMenu,
+  type OrderBulkMenuItem,
+} from "@/components/tr/panel/orders/TrOrderBulkMenu";
 import { TrOrderFilterPopover } from "@/components/tr/panel/orders/TrOrderFilterPopover";
 import {
   TrOrderListTable,
@@ -15,6 +19,7 @@ import {
   panelErrorClass,
   panelFieldClass,
   panelSecondaryBtnClass,
+  panelSuccessClass,
 } from "@/components/tr/panel/panelUi";
 import {
   PANEL_PAGE_SIZES,
@@ -24,8 +29,25 @@ import {
   TrPanelFadeIn,
   TrPanelListSkeleton,
 } from "@/components/tr/panel/TrPanelMotion";
-import { fetchOwnerOrders, peekOwnerOrders } from "@/lib/tr/ownerClient";
+import { usePanelRowSelection } from "@/hooks/usePanelRowSelection";
+import {
+  beginOwnerLabelPrint,
+  fetchOwnerOrders,
+  fetchOwnerShipmentLabel,
+  peekOwnerOrders,
+  updateOwnerOrderFulfillment,
+  updateOwnerOrderPaymentPaid,
+} from "@/lib/tr/ownerClient";
+import { runOwnerPatches } from "@/lib/tr/ownerBulk";
 import { markOrdersSeen } from "@/lib/tr/orderNotifications";
+import {
+  BULK_STATUS_OF,
+  eligibleOrders,
+  summarizeBulkRun,
+  type OrderBulkAction,
+  type OrderBulkContext,
+  type OrderBulkResultSummary,
+} from "@/lib/tr/panel/orderBulk";
 import {
   filterOrders,
   NO_ORDER_FILTERS,
@@ -35,6 +57,7 @@ import {
   type OrderSortKey,
 } from "@/lib/tr/panel/orderList";
 import { orderPaymentKey } from "@/lib/tr/panel/orderView";
+import { boutiqueHasCarrierIntegration } from "@/lib/tr/shipping/registry";
 import type { TrOrderWithItems, TrPaymentStatus } from "@/types/tr-marketplace";
 
 /** Order the payment statuses appear in the Filtre popover. */
@@ -46,13 +69,30 @@ const PAYMENT_ORDER: TrPaymentStatus[] = [
   "sandbox",
 ];
 
+const NOTICE_CLASS: Record<OrderBulkResultSummary["tone"], string> = {
+  success: panelSuccessClass,
+  warning:
+    "rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[14px] text-amber-950",
+  error: panelErrorClass,
+};
+
+type BulkMenuId = OrderBulkAction | "export";
+
 function OrdersList({
   boutiqueId,
   boutiqueName,
+  hasCarrierIntegration,
+  offersCardPayments,
 }: {
   boutiqueId: string;
   boutiqueName: string;
+  hasCarrierIntegration: boolean;
+  offersCardPayments: boolean;
 }) {
+  const bulkContext = useMemo<OrderBulkContext>(
+    () => ({ hasCarrierIntegration, offersCardPayments }),
+    [hasCarrierIntegration, offersCardPayments],
+  );
   const cached = peekOwnerOrders(boutiqueId);
   const [orders, setOrders] = useState<TrOrderWithItems[]>(cached ?? []);
   const [loading, setLoading] = useState(!cached);
@@ -61,6 +101,8 @@ function OrdersList({
   const [sort, setSort] = useState<OrderSort>({ key: "date", direction: "desc" });
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<number>(PANEL_PAGE_SIZES[0]);
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [notice, setNotice] = useState<OrderBulkResultSummary | null>(null);
   // "Bugün" / "Dün" in the date column are relative to when the page was opened.
   const [nowMs] = useState(() => Date.now());
 
@@ -109,6 +151,127 @@ function OrdersList({
     () => visible.slice((currentPage - 1) * pageSize, currentPage * pageSize),
     [visible, currentPage, pageSize],
   );
+
+  // Selection only ever holds orders on screen, so a bulk action can't reach an
+  // order you can't see (the hook drops ids that leave the page).
+  const orderedIds = useMemo(() => pageItems.map((order) => order.id), [pageItems]);
+  const selection = usePanelRowSelection(orderedIds);
+  const selectedOrders = useMemo(
+    () => pageItems.filter((order) => selection.selectedIds.has(order.id)),
+    [pageItems, selection.selectedIds],
+  );
+
+  const menuItems = useMemo<OrderBulkMenuItem<BulkMenuId>[]>(() => {
+    const count = (action: OrderBulkAction) =>
+      eligibleOrders(action, selectedOrders, bulkContext).length;
+    const items: OrderBulkMenuItem<BulkMenuId>[] = [
+      { id: "ready", label: "Kargoya hazır yap", count: count("ready") },
+      { id: "shipped", label: "Kargoda yap", count: count("shipped") },
+      { id: "delivered", label: "Teslim edildi yap", count: count("delivered") },
+    ];
+    if (!bulkContext.offersCardPayments) {
+      items.push({
+        id: "paid",
+        label: "Ödendi olarak işaretle",
+        count: count("paid"),
+      });
+    }
+    if (bulkContext.hasCarrierIntegration) {
+      items.push({
+        id: "print-labels",
+        label: "Kargo etiketi bastır",
+        count: count("print-labels"),
+      });
+    }
+    items.push({
+      id: "export",
+      label: "Seçilenleri dışa aktar",
+      count: selectedOrders.length,
+      dividerBefore: true,
+    });
+    return items;
+  }, [selectedOrders, bulkContext]);
+
+  async function runBulk(id: BulkMenuId) {
+    if (id === "export") {
+      downloadOrdersCsv(selectedOrders);
+      return;
+    }
+    const targets = eligibleOrders(id, selectedOrders, bulkContext);
+    if (targets.length === 0 || bulkBusy) return;
+
+    // The print tab has to open inside this click, before anything is awaited,
+    // or the browser blocks it.
+    const printTab = id === "print-labels" ? beginOwnerLabelPrint() : null;
+    if (id === "print-labels" && !printTab) {
+      setNotice({
+        tone: "error",
+        lines: [
+          "Tarayıcı yazdırma sekmesini engelledi. Bu site için açılır pencerelere izin verin.",
+        ],
+      });
+      return;
+    }
+
+    setBulkBusy(true);
+    setNotice(null);
+    const targetIds = targets.map((order) => order.id);
+    try {
+      let done = 0;
+      let failed: Array<{ id: string; error: string }> = [];
+
+      if (id === "print-labels") {
+        const result = await runOwnerPatches(
+          targetIds,
+          async (orderId) => ({
+            id: orderId,
+            svg: await fetchOwnerShipmentLabel(boutiqueId, orderId),
+          }),
+          { concurrency: 3 },
+        );
+        const svgById = new Map(result.ok.map((entry) => [entry.id, entry.svg]));
+        // Print in the order the orders are listed, not the order they finished.
+        const svgs = targetIds.flatMap((orderId) => svgById.get(orderId) ?? []);
+        if (svgs.length > 0) printTab?.show(svgs);
+        else printTab?.abort();
+        done = svgs.length;
+        failed = result.failed;
+      } else {
+        const result = await runOwnerPatches(targetIds, (orderId) =>
+          id === "paid"
+            ? updateOwnerOrderPaymentPaid(boutiqueId, orderId)
+            : updateOwnerOrderFulfillment(boutiqueId, orderId, BULK_STATUS_OF[id]!),
+        );
+        const updated = new Map(result.ok.map((order) => [order.id, order]));
+        setOrders((current) =>
+          current.map((order) => updated.get(order.id) ?? order),
+        );
+        done = result.ok.length;
+        failed = result.failed;
+      }
+
+      setNotice(
+        summarizeBulkRun({
+          action: id,
+          done,
+          failed,
+          skipped: selectedOrders.length - targets.length,
+        }),
+      );
+      // Pick up anything that changed on the server (a label cancelled elsewhere, …).
+      fetchOwnerOrders(boutiqueId).then(setOrders, () => {});
+    } catch (bulkError) {
+      printTab?.abort();
+      setNotice({
+        tone: "error",
+        lines: [
+          bulkError instanceof Error ? bulkError.message : "İşlem tamamlanamadı.",
+        ],
+      });
+    } finally {
+      setBulkBusy(false);
+    }
+  }
 
   const filterCount = orderFilterCount(filters);
   const narrowed = filterCount > 0 || filters.search.trim() !== "";
@@ -176,8 +339,39 @@ function OrdersList({
           <TrOwnerPushPromptBanner boutiqueId={boutiqueId} />
           {error ? <p className={panelErrorClass}>{error}</p> : null}
 
+          {notice ? (
+            <div
+              role="status"
+              className={`${NOTICE_CLASS[notice.tone]} flex items-start justify-between gap-3`}
+            >
+              <div className="space-y-0.5">
+                {notice.lines.map((line) => (
+                  <p key={line}>{line}</p>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => setNotice(null)}
+                aria-label="Bildirimi kapat"
+                className="grid h-6 w-6 shrink-0 place-items-center rounded-md opacity-70 transition-opacity hover:opacity-100"
+              >
+                <X className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+              </button>
+            </div>
+          ) : null}
+
           {orders.length > 0 ? (
             <div className="flex flex-wrap items-center gap-2">
+              {selection.selectedCount > 0 ? (
+                <div className="hidden lg:block">
+                  <TrOrderBulkMenu
+                    selectedCount={selection.selectedCount}
+                    items={menuItems}
+                    busy={bulkBusy}
+                    onRun={(id) => void runBulk(id)}
+                  />
+                </div>
+              ) : null}
               <div className="relative min-w-0 flex-1 sm:max-w-sm">
                 <Search
                   className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-neutral-400"
@@ -232,6 +426,8 @@ function OrdersList({
               boutiqueName={boutiqueName}
               sort={sort}
               onSort={changeSort}
+              selection={selection}
+              selectionDisabled={bulkBusy}
               footer={pager}
             />
           )}
@@ -249,6 +445,8 @@ export function TrOwnerOrdersPage() {
           key={activeBoutique.id}
           boutiqueId={activeBoutique.id}
           boutiqueName={activeBoutique.name}
+          hasCarrierIntegration={boutiqueHasCarrierIntegration(activeBoutique.slug)}
+          offersCardPayments={Boolean(activeBoutique.offersIyzicoCheckout)}
         />
       )}
     </TrOwnerPanelGate>

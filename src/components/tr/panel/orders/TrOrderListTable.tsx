@@ -7,6 +7,7 @@ import {
   TrOrderFulfillmentOutlineChip,
   TrOrderPaymentOutlineChip,
 } from "@/components/tr/panel/orders/TrOrderBadges";
+import { PanelSelectCheckbox } from "@/components/tr/panel/PanelSelectCheckbox";
 import {
   TrPanelDataTable,
   TrPanelDataTableCell,
@@ -17,6 +18,7 @@ import {
   TrPanelStagger,
   trPanelStaggerItem,
 } from "@/components/tr/panel/TrPanelMotion";
+import type { PanelRowSelection } from "@/hooks/usePanelRowSelection";
 import { orderReference } from "@/lib/tr/orderReference";
 import {
   orderListDate,
@@ -80,8 +82,9 @@ function ChannelCell({ name }: { name: string }) {
 }
 
 /**
- * The order list: a table on desktop (whole row opens the order) and cards on
- * phones. Read-only — everything you do to an order is on its page.
+ * The order list: a table on desktop (whole row opens the order, checkboxes pick
+ * orders for bulk actions) and cards on phones. Everything you do to one order is
+ * on its page.
  */
 export function TrOrderListTable({
   orders,
@@ -89,6 +92,8 @@ export function TrOrderListTable({
   boutiqueName,
   sort,
   onSort,
+  selection,
+  selectionDisabled,
   footer,
 }: {
   orders: TrOrderWithItems[];
@@ -96,6 +101,9 @@ export function TrOrderListTable({
   boutiqueName: string;
   sort: OrderSort;
   onSort: (column: OrderSortKey) => void;
+  selection: PanelRowSelection;
+  /** A bulk action is running: the selection can't change under it. */
+  selectionDisabled: boolean;
   footer: React.ReactNode;
 }) {
   const router = useRouter();
@@ -148,6 +156,14 @@ export function TrOrderListTable({
       <div className="hidden lg:block">
         <TrPanelDataTable
           contained={false}
+          onKeyDown={selection.onKeyDown}
+          selectAll={{
+            checked: selection.allVisibleSelected,
+            indeterminate:
+              selection.someVisibleSelected && !selection.allVisibleSelected,
+            onChange: selection.setAllVisible,
+            disabled: selectionDisabled,
+          }}
           headers={[
             "Sipariş",
             <SortHeader key="date" label="Tarih" column="date" sort={sort} onSort={onSort} />,
@@ -165,9 +181,19 @@ export function TrOrderListTable({
             return (
               <TrPanelDataTableRow
                 key={order.id}
+                selected={selection.isSelected(order.id)}
                 onActivate={() => router.push(href)}
                 onPointerEnter={() => router.prefetch(href)}
               >
+                <TrPanelDataTableCell className="w-10">
+                  <PanelSelectCheckbox
+                    id={order.id}
+                    checked={selection.isSelected(order.id)}
+                    disabled={selectionDisabled}
+                    label={`Sipariş ${orderReference(order.id)} seç`}
+                    onItemClick={selection.onItemClick}
+                  />
+                </TrPanelDataTableCell>
                 <TrPanelDataTableCell>
                   <Link
                     href={href}
