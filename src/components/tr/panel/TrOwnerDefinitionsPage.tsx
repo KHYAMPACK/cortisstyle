@@ -1,15 +1,15 @@
 "use client";
 
-import { LayoutGrid } from "lucide-react";
+import { Layers, LayoutGrid } from "lucide-react";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
 import { TrOwnerProductRouteGate } from "@/components/tr/panel/TrOwnerProductRouteGate";
 import { TrPanelChoiceCard } from "@/components/tr/panel/TrPanelChoiceCard";
-import { trPanelCategoriesPath } from "@/lib/tr/paths";
+import { trPanelCategoriesPath, trPanelVariantTypesPath } from "@/lib/tr/paths";
 
 /**
- * Tanımlamalar: the hub for the named lists products draw on. Only Kategoriler for
- * now — Markalar, Etiketler, Varyant Türleri and the rest are added when something
- * needs them (add a card here and a page under /tr/panel/tanimlamalar).
+ * Tanımlamalar: the hub for the named lists products draw on. Kategoriler and Varyant
+ * Türleri for now — Markalar, Etiketler and the rest are added when something needs
+ * them (add a card here and a page under /tr/panel/tanimlamalar).
  */
 export function TrOwnerDefinitionsPage() {
   return (
@@ -26,6 +26,12 @@ export function TrOwnerDefinitionsPage() {
                 icon={<LayoutGrid className="h-5 w-5" strokeWidth={1.75} aria-hidden />}
                 title="Kategoriler"
                 description="Ürünlerinizi kategorilere ayırarak ziyaretçilerinizin aradıkları ürünü daha hızlı bulmasını sağlayın."
+              />
+              <TrPanelChoiceCard
+                href={trPanelVariantTypesPath()}
+                icon={<Layers className="h-5 w-5" strokeWidth={1.75} aria-hidden />}
+                title="Varyant Türleri"
+                description="Renk, beden gibi seçenekleri bir kez tanımlayın; ürünlerinizin varyantlarında kullanın."
               />
             </div>
           </div>

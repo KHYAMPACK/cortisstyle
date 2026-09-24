@@ -114,6 +114,9 @@ describe("categories routes", () => {
     const group = productsGroup("fashion")!;
     const definitions = group.children[2]!;
     assert.equal(isTrPanelNavActive("/tr/panel/tanimlamalar/kategoriler", definitions), true);
+    // Varyant Türleri edits in a drawer, so it keeps the normal panel chrome.
+    assert.equal(isPanelEditorRoute("/tr/panel/tanimlamalar/varyant-turleri"), false);
+    assert.equal(isTrPanelNavActive("/tr/panel/tanimlamalar/varyant-turleri", definitions), true);
     assert.equal(isTrPanelNavGroupActive("/tr/panel/tanimlamalar", group), true);
     assert.equal(isTrPanelNavActive("/tr/panel/tanimlamalar", group.children[0]!), false);
   });

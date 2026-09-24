@@ -213,6 +213,10 @@ export function trPanelCategoriesPath(): string {
   return "/tr/panel/tanimlamalar/kategoriler";
 }
 
+export function trPanelVariantTypesPath(): string {
+  return "/tr/panel/tanimlamalar/varyant-turleri";
+}
+
 export function trPanelNewCategoryPath(): string {
   return "/tr/panel/tanimlamalar/kategoriler/yeni";
 }

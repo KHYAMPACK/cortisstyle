@@ -48,7 +48,7 @@ function readStringArray(value: unknown): string[] {
   return value.filter((entry): entry is string => typeof entry === "string");
 }
 
-function readProductColors(value: unknown): TrProductColor[] {
+export function readProductColors(value: unknown): TrProductColor[] {
   if (!Array.isArray(value)) return [];
 
   return value
