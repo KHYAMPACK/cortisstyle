@@ -19,7 +19,6 @@ import { TrPurchaseActions } from "@/components/tr/TrPurchaseActions";
 import { TrSizeGateSheet } from "@/components/tr/TrSizeGateSheet";
 import { TrSoftNavLink } from "@/components/tr/TrSoftNavLink";
 import { getTrCategoryLabel } from "@/lib/tr/fashion/categories";
-import { isProductCartCheckoutEnabled } from "@/lib/tr/cartCheckout";
 import { EDITORIAL_SALE_RED, isAtelierEditorialSkin } from "@/lib/tr/boutiqueHome";
 import { beginBuyNowCheckout, type TrPurchaseIntent } from "@/lib/tr/buyNow";
 import { getProductCoverImageFor } from "@/lib/tr/productImages";
@@ -30,7 +29,7 @@ import {
 import { resolveProductModelScale } from "@/lib/tr/fashion/modelMeasurements";
 import { resolveProductSizeChart } from "@/lib/tr/fashion/sizeCharts";
 import { isSizeInStock } from "@/lib/tr/sizeStocks";
-import { trBoutiquePath, trHomePath } from "@/lib/tr/paths";
+import { trBoutiquePath } from "@/lib/tr/paths";
 import { resolveBoutiqueThemeAccent } from "@/lib/tr/boutiqueBrand";
 import { useTrAddedToCartStore } from "@/store/trAddedToCartStore";
 import { formatTryFromKurus } from "@/types/tr-marketplace";
@@ -41,8 +40,6 @@ import { useMemo, useState } from "react";
 interface TrProductDetailPanelProps {
   product: TrProductWithBoutique;
   branded: boolean;
-  /** When `"cadde"`, back falls back to /tr; otherwise boutique storefront. */
-  entry?: "cadde" | "store";
   colorSiblings?: TrProductWithBoutique[];
   iyzicoCheckout?: boolean;
 }
@@ -50,7 +47,6 @@ interface TrProductDetailPanelProps {
 export function TrProductDetailPanel({
   product,
   branded,
-  entry = "store",
   colorSiblings = [],
   iyzicoCheckout = false,
 }: TrProductDetailPanelProps) {
@@ -64,7 +60,6 @@ export function TrProductDetailPanel({
   const atelier = isAtelierEditorialSkin(product.boutique.slug);
   const categoryLabel = getTrCategoryLabel(product.category);
   const isAvailable = product.status === "available";
-  const checkoutEnabled = isProductCartCheckoutEnabled(product);
   const cart = useTrScopedCart();
   const router = useRouter();
 
@@ -102,10 +97,7 @@ export function TrProductDetailPanel({
     (!sizeRequired ||
       (Boolean(selectedSize) && !sizeOutOfStock));
 
-  const fromCadde = entry === "cadde";
-  const backFallback = fromCadde
-    ? trHomePath()
-    : trBoutiquePath(product.boutique.slug);
+  const backFallback = trBoutiquePath(product.boutique.slug);
   const backClass = branded
     ? "text-[11px] tracking-[0.12em] text-neutral-600 uppercase transition-colors hover:text-neutral-900"
     : "text-meta text-[10px] tracking-[0.22em] uppercase transition-colors hover:text-jet-black";
@@ -226,7 +218,6 @@ export function TrProductDetailPanel({
           <TrProductColorSiblings
             product={product}
             siblings={colorSiblings}
-            fromCadde={entry === "cadde"}
             accentColor={accent}
           />
         ) : (
@@ -358,25 +349,23 @@ export function TrProductDetailPanel({
           iyzicoCheckout={iyzicoCheckout}
         />
 
-        {checkoutEnabled ? (
-          <TrProductPurchasePanel
-            product={product}
-            selectedSize={selectedSize}
-            selectedColor={selectedColor?.name ?? null}
-            canOrder={canOrder}
-            selectionRequired={selectionRequired}
-            sizeOutOfStock={sizeOutOfStock}
-            onRequestSelection={openSizeGate}
-            hideActions
-            className="md:hidden"
-            iyzicoCheckout={iyzicoCheckout}
-          />
-        ) : null}
+        <TrProductPurchasePanel
+          product={product}
+          selectedSize={selectedSize}
+          selectedColor={selectedColor?.name ?? null}
+          canOrder={canOrder}
+          selectionRequired={selectionRequired}
+          sizeOutOfStock={sizeOutOfStock}
+          onRequestSelection={openSizeGate}
+          hideActions
+          className="md:hidden"
+          iyzicoCheckout={iyzicoCheckout}
+        />
 
         <TrBoutiquePdpInfoSections product={product} branded={branded} />
       </div>
 
-      {checkoutEnabled && isAvailable ? (
+      {isAvailable ? (
         <TrMobileBuyBar>
           <TrPurchaseActions
             productId={product.id}

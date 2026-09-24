@@ -123,7 +123,7 @@ export function resolveProductImagesPerIndex(
 
 /**
  * Marketplace / catalog cutouts with per-index fallback to boutique originals.
- * Cadde and try-on must keep these transparent PNGs.
+ * Try-on must keep these transparent PNGs.
  */
 export function getMarketplaceProductImages(
   product: Pick<TrProduct, "images" | "marketplaceImages">,
@@ -278,7 +278,7 @@ export function getStorefrontGalleryImages(
 }
 
 /**
- * Cadde `/tr/parca` gallery: transparent packshot PNGs + lifestyle.
+ * Marketplace-surface gallery: transparent packshot PNGs + lifestyle.
  */
 export function getMarketplaceGalleryImages(
   product: CatalogImageProduct,

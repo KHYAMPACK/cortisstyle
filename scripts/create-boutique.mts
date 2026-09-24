@@ -68,7 +68,6 @@ interface BoutiqueIntake {
   shippingNote?: string;
   exchangePolicy?: string;
   physicalAddress?: string;
-  homeLayout?: "default" | "editorial";
   customDomain?: string;
   catalogProfile?: "fashion" | "custom_art";
   status?: "draft" | "pending" | "verified" | "suspended";

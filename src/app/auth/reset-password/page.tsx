@@ -7,6 +7,7 @@ import { BrandLogo } from "@/components/BrandLogo";
 import { useAuth } from "@/context/AuthContext";
 import { localizeAuthError } from "@/lib/auth/authErrorMessage";
 import { DEFAULT_AUTH_NEXT_PATH } from "@/lib/authRedirect";
+import { trPanelPath } from "@/lib/tr/paths";
 import {
   resolveBoutiqueBrandLabel,
   resolveBoutiqueLogoUrl,
@@ -159,7 +160,7 @@ export default function ResetPasswordPage() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#FAFAF8] px-4">
         <p className="text-center font-mono text-[10px] tracking-[0.35em] text-neutral-500 uppercase">
-          {boutiqueFlow ? "Oturum hazırlanıyor…" : "Loading archive session..."}
+          Oturum hazırlanıyor…
         </p>
       </div>
     );
@@ -171,16 +172,16 @@ export default function ResetPasswordPage() {
         <div className="w-full max-w-md border border-black/10 bg-white p-8 text-center shadow-sm">
           {brandMark}
           <h1 className="font-serif text-2xl text-neutral-950">
-            {boutiqueFlow ? "Bağlantı süresi doldu" : "Link expired"}
+            Bağlantı süresi doldu
           </h1>
           <p className="mt-4 text-sm text-neutral-600">
             {boutiqueFlow
               ? "Şifre sıfırlama bağlantısı geçersiz veya süresi dolmuş. Giriş ekranından yeniden talep edin."
-              : "This password reset link is invalid or has expired. Request a new one from the sign-in screen."}
+              : "Şifre sıfırlama bağlantısı geçersiz veya süresi dolmuş. Panel giriş ekranından yeniden talep edin."}
           </p>
           <button
             type="button"
-            onClick={() => router.push(boutiqueFlow ? returnTo : "/")}
+            onClick={() => router.push(boutiqueFlow ? returnTo : trPanelPath())}
             className={`${primaryButtonClass} mt-8`}
             style={
               accentColor
@@ -188,7 +189,7 @@ export default function ResetPasswordPage() {
                 : undefined
             }
           >
-            {boutiqueFlow ? "Girişe dön" : "Back to lookbook"}
+            {boutiqueFlow ? "Girişe dön" : "Panele dön"}
           </button>
         </div>
       </div>
@@ -202,27 +203,21 @@ export default function ResetPasswordPage() {
           {brandMark}
 
           <p className="mb-3 text-center text-[9px] tracking-[0.4em] text-neutral-500 uppercase">
-            {boutiqueFlow ? "Hesap güvenliği" : "Archive Security"}
+            Hesap güvenliği
           </p>
 
           <h1 className="text-center font-serif text-2xl text-neutral-950">
-            {isComplete
-              ? boutiqueFlow
-                ? "Şifre güncellendi"
-                : "Password updated"
-              : boutiqueFlow
-                ? "Yeni şifre belirleyin"
-                : "Set a new password"}
+            {isComplete ? "Şifre güncellendi" : "Yeni şifre belirleyin"}
           </h1>
 
           <p className="mt-4 text-center text-sm leading-relaxed text-neutral-600">
             {isComplete
               ? boutiqueFlow
                 ? `${brandTitle ?? "Mağaza"} girişine yönlendiriliyorsunuz…`
-                : "Redirecting you..."
+                : "Panele yönlendiriliyorsunuz…"
               : boutiqueFlow
                 ? "Yeni şifreniz bu platformdaki tüm mağazalarda geçerlidir."
-                : "Choose a new curator password for your archive profile."}
+                : "Butik paneliniz için yeni bir şifre belirleyin."}
           </p>
 
           {!isComplete ? (
@@ -236,7 +231,7 @@ export default function ResetPasswordPage() {
                 onChange={(event) => setPassword(event.target.value)}
                 disabled={isAuthenticating}
                 className={monoInputClass}
-                placeholder={boutiqueFlow ? "YENİ ŞİFRE…" : "NEW PASSWORD..."}
+                placeholder="YENİ ŞİFRE…"
               />
               <input
                 type="password"
@@ -247,27 +242,20 @@ export default function ResetPasswordPage() {
                 onChange={(event) => setConfirmPassword(event.target.value)}
                 disabled={isAuthenticating}
                 className={monoInputClass}
-                placeholder={
-                  boutiqueFlow ? "ŞİFREYİ TEKRARLA…" : "CONFIRM PASSWORD..."
-                }
+                placeholder="ŞİFREYİ TEKRARLA…"
               />
 
               {password.length >= 6 &&
               confirmPassword.length >= 6 &&
               password !== confirmPassword ? (
                 <p className="text-center text-[11px] text-red-600">
-                  {boutiqueFlow
-                    ? "Şifreler eşleşmiyor."
-                    : "Passwords do not match."}
+                  Şifreler eşleşmiyor.
                 </p>
               ) : null}
 
               {authError ? (
                 <p className="text-center text-[12px] leading-relaxed text-red-700">
-                  {localizeAuthError(
-                    authError,
-                    boutiqueFlow ? "tr" : "en",
-                  )}
+                  {localizeAuthError(authError, "tr")}
                 </p>
               ) : null}
 
@@ -285,13 +273,7 @@ export default function ResetPasswordPage() {
                     : undefined
                 }
               >
-                {isAuthenticating
-                  ? boutiqueFlow
-                    ? "KAYDEDİLİYOR…"
-                    : "SAVING..."
-                  : boutiqueFlow
-                    ? "ŞİFREYİ GÜNCELLE"
-                    : "UPDATE PASSWORD"}
+                {isAuthenticating ? "KAYDEDİLİYOR…" : "ŞİFREYİ GÜNCELLE"}
               </button>
             </form>
           ) : null}

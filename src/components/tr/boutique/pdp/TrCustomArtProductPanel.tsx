@@ -8,15 +8,13 @@ import { TrFavoriteButton } from "@/components/tr/TrFavoriteButton";
 import { TrMobileBuyBar } from "@/components/tr/TrMobileBuyBar";
 import { TrProductGallery } from "@/components/tr/TrProductGallery";
 import { TrPurchaseActions } from "@/components/tr/TrPurchaseActions";
-import { TrSoftNavLink } from "@/components/tr/TrSoftNavLink";
 import { useTrScopedCart } from "@/components/tr/boutique/TrBoutiqueCommerceScope";
-import { isProductCartCheckoutEnabled } from "@/lib/tr/cartCheckout";
 import { resolveCustomArtPriceKurus } from "@/lib/tr/customArt/pricing";
 import { uploadCustomerReferencePhoto } from "@/lib/tr/customArt/uploadClient";
 import { beginBuyNowCheckout, type TrPurchaseIntent } from "@/lib/tr/buyNow";
 import { getStorefrontGalleryImages } from "@/lib/tr/productImages";
 import { resolveProductColors, resolveProductSizes } from "@/lib/tr/productOptions";
-import { trBoutiquePath, trHomePath } from "@/lib/tr/paths";
+import { trBoutiquePath } from "@/lib/tr/paths";
 import { useTrAddedToCartStore } from "@/store/trAddedToCartStore";
 import { formatTryFromKurus } from "@/types/tr-marketplace";
 import type { TrProductWithBoutique } from "@/types/tr-marketplace";
@@ -24,17 +22,14 @@ import type { TrProductWithBoutique } from "@/types/tr-marketplace";
 interface TrCustomArtProductPanelProps {
   product: TrProductWithBoutique;
   branded: boolean;
-  entry?: "cadde" | "store";
 }
 
 export function TrCustomArtProductPanel({
   product,
   branded,
-  entry = "store",
 }: TrCustomArtProductPanelProps) {
   const sizes = useMemo(() => resolveProductSizes(product), [product]);
   const colors = useMemo(() => resolveProductColors(product), [product]);
-  const checkoutEnabled = isProductCartCheckoutEnabled(product);
   const chipActive = "border-neutral-900 bg-neutral-900 text-white";
   const chipIdle =
     "border-black/15 bg-white text-neutral-800 hover:border-black/30";
@@ -136,8 +131,7 @@ export function TrCustomArtProductPanel({
     });
   };
 
-  const backHref =
-    entry === "cadde" ? trHomePath() : trBoutiquePath(product.boutique.slug);
+  const backHref = trBoutiquePath(product.boutique.slug);
 
   const wrapperClass = branded
     ? "mx-auto max-w-6xl px-5 py-8 md:px-8 md:py-10"
@@ -287,34 +281,25 @@ export function TrCustomArtProductPanel({
               </section>
             ) : null}
 
-            {checkoutEnabled ? (
-              <TrPurchaseActions
-                productId={product.id}
-                boutiqueId={product.boutiqueId}
-                boutiqueName={product.boutique.name}
-                boutiqueSlug={product.boutique.slug}
-                title={product.title}
-                priceKurus={priceKurus}
-                image={referenceImageUrl ?? galleryProduct.images[0] ?? null}
-                size={selectedSize}
-                color={selectedStyle?.name ?? null}
-                referenceImageUrl={referenceImageUrl}
-                referenceId={referenceId}
-                styleOption={selectedStyle?.name ?? null}
-                status={product.status}
-                selectionRequired={selectionRequired}
-                onRequestSelection={handlePurchaseIntent}
-                whatsappPhone={product.boutique.whatsappPhone}
-                className="hidden lg:flex"
-              />
-            ) : (
-              <TrSoftNavLink
-                href={trBoutiquePath(product.boutique.slug)}
-                className="btn-primary inline-flex min-h-12 w-full items-center justify-center px-6 py-3.5 text-[11px] tracking-[0.18em]"
-              >
-                Mağazaya dön
-              </TrSoftNavLink>
-            )}
+            <TrPurchaseActions
+              productId={product.id}
+              boutiqueId={product.boutiqueId}
+              boutiqueName={product.boutique.name}
+              boutiqueSlug={product.boutique.slug}
+              title={product.title}
+              priceKurus={priceKurus}
+              image={referenceImageUrl ?? galleryProduct.images[0] ?? null}
+              size={selectedSize}
+              color={selectedStyle?.name ?? null}
+              referenceImageUrl={referenceImageUrl}
+              referenceId={referenceId}
+              styleOption={selectedStyle?.name ?? null}
+              status={product.status}
+              selectionRequired={selectionRequired}
+              onRequestSelection={handlePurchaseIntent}
+              whatsappPhone={product.boutique.whatsappPhone}
+              className="hidden lg:flex"
+            />
 
             {selectionRequired ? (
               <p className="text-[13px] text-neutral-500">
@@ -327,28 +312,26 @@ export function TrCustomArtProductPanel({
         </div>
       </div>
 
-      {checkoutEnabled ? (
-        <TrMobileBuyBar>
-          <TrPurchaseActions
-            productId={product.id}
-            boutiqueId={product.boutiqueId}
-            boutiqueName={product.boutique.name}
-            boutiqueSlug={product.boutique.slug}
-            title={product.title}
-            priceKurus={priceKurus}
-            image={referenceImageUrl ?? galleryProduct.images[0] ?? null}
-            size={selectedSize}
-            color={selectedStyle?.name ?? null}
-            referenceImageUrl={referenceImageUrl}
-            referenceId={referenceId}
-            styleOption={selectedStyle?.name ?? null}
-            status={product.status}
-            selectionRequired={selectionRequired}
-            onRequestSelection={handlePurchaseIntent}
-            whatsappPhone={product.boutique.whatsappPhone}
-          />
-        </TrMobileBuyBar>
-      ) : null}
+      <TrMobileBuyBar>
+        <TrPurchaseActions
+          productId={product.id}
+          boutiqueId={product.boutiqueId}
+          boutiqueName={product.boutique.name}
+          boutiqueSlug={product.boutique.slug}
+          title={product.title}
+          priceKurus={priceKurus}
+          image={referenceImageUrl ?? galleryProduct.images[0] ?? null}
+          size={selectedSize}
+          color={selectedStyle?.name ?? null}
+          referenceImageUrl={referenceImageUrl}
+          referenceId={referenceId}
+          styleOption={selectedStyle?.name ?? null}
+          status={product.status}
+          selectionRequired={selectionRequired}
+          onRequestSelection={handlePurchaseIntent}
+          whatsappPhone={product.boutique.whatsappPhone}
+        />
+      </TrMobileBuyBar>
     </div>
   );
 }

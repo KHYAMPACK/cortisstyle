@@ -15,7 +15,7 @@ import {
   getProductCoverImageFor,
   isCatalogCutoutImage,
 } from "@/lib/tr/productImages";
-import { trBoutiquePath, trBoutiqueProductPath, TR_PDP_FROM_CADDE } from "@/lib/tr/paths";
+import { trBoutiquePath, trBoutiqueProductPath } from "@/lib/tr/paths";
 import { resolveProductColors } from "@/lib/tr/productOptions";
 import { TrProductColorDots } from "@/components/tr/TrProductColorDots";
 import { formatTryFromKurus } from "@/types/tr-marketplace";
@@ -205,7 +205,6 @@ export function TrProductQuickSheet({
                     href={trBoutiqueProductPath(
                       product.boutique.slug,
                       product.id,
-                      { from: TR_PDP_FROM_CADDE },
                     )}
                     onClick={leave}
                     className="inline-flex w-full items-center justify-center border border-blueprint-border bg-white px-6 py-3.5 text-[11px] tracking-[0.2em] text-neutral-900 uppercase transition-colors hover:bg-ice-floor"

@@ -94,10 +94,6 @@ export function mapBoutiqueRow(row: Record<string, unknown>): TrBoutique {
     shippingNote: (row.shipping_note as string | null) ?? null,
     exchangePolicy: (row.exchange_policy as string | null) ?? null,
     physicalAddress: (row.physical_address as string | null) ?? null,
-    homeLayout:
-      row.home_layout === "editorial" || row.home_layout === "default"
-        ? row.home_layout
-        : null,
     customDomain: (row.custom_domain as string | null) ?? null,
     editorialContent:
       row.editorial_content &&
@@ -139,7 +135,6 @@ export function toPublicBoutique(boutique: TrBoutique): TrBoutiquePublic {
     shippingNote: boutique.shippingNote,
     exchangePolicy: boutique.exchangePolicy,
     physicalAddress: boutique.physicalAddress,
-    homeLayout: boutique.homeLayout,
     customDomain: boutique.customDomain,
     vergiNo: boutique.vergiNo,
     editorialContent: boutique.editorialContent,

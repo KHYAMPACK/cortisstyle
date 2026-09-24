@@ -1,9 +1,5 @@
 import type { TrProduct } from "@/types/tr-marketplace";
 
-export function trHomePath(): string {
-  return "/tr";
-}
-
 export function trBoutiquePath(slug: string): string {
   return `/tr/${encodeURIComponent(slug)}`;
 }
@@ -45,29 +41,20 @@ export function trBoutiqueProductsPath(
   return qs ? `${base}?${qs}` : base;
 }
 
-/** Set on PDP links from marketplace home / looks so “back” returns to Cadde. */
-export const TR_PDP_FROM_CADDE = "cadde";
-
 export function trBoutiqueProductPath(
   boutiqueSlug: string,
   productId: string,
-  options?: { from?: typeof TR_PDP_FROM_CADDE },
 ): string {
-  const path = `/tr/${encodeURIComponent(boutiqueSlug)}/urun/${encodeURIComponent(productId)}`;
-  if (options?.from === TR_PDP_FROM_CADDE) {
-    return `${path}?from=${TR_PDP_FROM_CADDE}`;
-  }
-  return path;
+  return `/tr/${encodeURIComponent(boutiqueSlug)}/urun/${encodeURIComponent(productId)}`;
 }
 
 /** Canonical boutique PDP when slug is known; legacy `/tr/shop/id` fallback otherwise. */
 export function trProductPath(
   productId: string,
   boutiqueSlug?: string,
-  options?: { from?: typeof TR_PDP_FROM_CADDE },
 ): string {
   if (boutiqueSlug?.trim()) {
-    return trBoutiqueProductPath(boutiqueSlug.trim(), productId, options);
+    return trBoutiqueProductPath(boutiqueSlug.trim(), productId);
   }
   return `/tr/shop/${encodeURIComponent(productId)}`;
 }

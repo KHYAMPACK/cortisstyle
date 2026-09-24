@@ -128,7 +128,7 @@ function PendingSlot({ label }: { label: string }) {
 }
 
 /**
- * Generic Cadde-style storefront preview (not boutique-themed).
+ * Generic storefront preview (not boutique-themed).
  * Catalog slots use packshot/marketplace only — never raw uploads while processing.
  */
 export function TrOwnerStorePreview({

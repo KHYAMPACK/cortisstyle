@@ -3,7 +3,6 @@
 import { useState, type MouseEvent } from "react";
 import { useTrScopedCart } from "@/components/tr/boutique/TrBoutiqueCommerceScope";
 import { TrSizeGateSheet } from "@/components/tr/TrSizeGateSheet";
-import { isProductCartCheckoutEnabled } from "@/lib/tr/cartCheckout";
 import { getProductCoverImageFor } from "@/lib/tr/productImages";
 import { resolveProductSizes } from "@/lib/tr/productOptions";
 import { isProductSizeSellable } from "@/lib/tr/sizeStocks";
@@ -29,12 +28,11 @@ export function TrQuickAddToCartButton({
   compact = false,
   iconOnly = false,
 }: TrQuickAddToCartButtonProps) {
-  const checkoutEnabled = isProductCartCheckoutEnabled(product);
   const cart = useTrScopedCart();
   const openAddedSheet = useTrAddedToCartStore((state) => state.open);
   const [sizeSheetOpen, setSizeSheetOpen] = useState(false);
 
-  if (!checkoutEnabled || product.status !== "available") {
+  if (product.status !== "available") {
     return null;
   }
 

@@ -214,7 +214,7 @@ interface TrBoutiqueCartPageContentProps {
 }
 
 /**
- * Editorial / white-label cart — Cadde sepet structure, single-boutique scope.
+ * Editorial / white-label cart — single-boutique scope.
  */
 export function TrBoutiqueCartPageContent({
   boutique,

@@ -31,7 +31,6 @@ interface SeedBoutiquePayload {
   shippingNote?: string;
   exchangePolicy?: string;
   physicalAddress?: string;
-  homeLayout?: "default" | "editorial";
   customDomain?: string;
   editorialContent?: Record<string, unknown>;
   catalogProfile?: "fashion" | "custom_art";
@@ -112,7 +111,6 @@ export async function POST(request: Request) {
             shippingNote: boutiqueInput.shippingNote,
             exchangePolicy: boutiqueInput.exchangePolicy,
             physicalAddress: boutiqueInput.physicalAddress,
-            homeLayout: boutiqueInput.homeLayout,
             customDomain: boutiqueInput.customDomain,
             editorialContent: boutiqueInput.editorialContent,
             catalogProfile: boutiqueInput.catalogProfile,
@@ -136,7 +134,6 @@ export async function POST(request: Request) {
             shippingNote: boutiqueInput.shippingNote,
             exchangePolicy: boutiqueInput.exchangePolicy,
             physicalAddress: boutiqueInput.physicalAddress,
-            homeLayout: boutiqueInput.homeLayout,
             customDomain: boutiqueInput.customDomain,
             editorialContent: boutiqueInput.editorialContent,
             catalogProfile: boutiqueInput.catalogProfile,

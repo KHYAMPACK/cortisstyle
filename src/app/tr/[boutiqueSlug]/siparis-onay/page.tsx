@@ -5,7 +5,6 @@ import { notFound } from "next/navigation";
 import { TrIyzicoResumePay } from "@/components/tr/commerce/TrIyzicoResumePay";
 import { TrIyzicoCheckoutHoldEffects } from "@/components/tr/commerce/TrIyzicoCheckoutHoldEffects";
 import { resolveBoutiqueBrandLabel } from "@/lib/tr/boutiqueBrand";
-import { resolveBoutiqueHomeLayout } from "@/lib/tr/boutiqueHome";
 import { verifyOrderConfirmToken } from "@/lib/tr/orderConfirmToken";
 import { getOrderByIdAdmin } from "@/lib/tr/orders";
 import { boutiqueOffersIyzicoCheckout } from "@/lib/tr/payments/registry";
@@ -44,12 +43,6 @@ export default async function BoutiqueOrderConfirmationPage({
   const boutique = await safeGetPublicBoutique(boutiqueSlug);
 
   if (!boutique) notFound();
-
-  if (
-    resolveBoutiqueHomeLayout(boutiqueSlug, boutique.homeLayout) !== "editorial"
-  ) {
-    notFound();
-  }
 
   const demo = query.demo === "1";
   const unpaid = query.unpaid === "1";

@@ -74,7 +74,6 @@ export function TrBoutiqueEditorialProductCard({
       shippingNote: null,
       exchangePolicy: null,
       physicalAddress: null,
-      homeLayout: "editorial",
       customDomain: null,
       vergiNo: null,
       editorialContent: null,

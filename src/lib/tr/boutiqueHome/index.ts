@@ -1,5 +1,3 @@
-export type { TrBoutiqueHomeLayoutId } from "@/lib/tr/boutiqueHome/types";
-export { resolveBoutiqueHomeLayout } from "@/lib/tr/boutiqueHome/registry";
 export {
   isAtelierEditorialSkin,
   resolveEditorialSkin,

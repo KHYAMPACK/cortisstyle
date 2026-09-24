@@ -10,7 +10,7 @@ import type {
 } from "@/types/tr-marketplace";
 
 export const PUBLIC_BOUTIQUE_COLUMNS =
-  "id, slug, name, legal_name, description, logo_url, whatsapp_phone, instagram_handle, theme_accent, shipping_note, exchange_policy, physical_address, home_layout, custom_domain, editorial_content, catalog_profile, vergi_no, contact_email, status, created_at, updated_at";
+  "id, slug, name, legal_name, description, logo_url, whatsapp_phone, instagram_handle, theme_accent, shipping_note, exchange_policy, physical_address, custom_domain, editorial_content, catalog_profile, vergi_no, contact_email, status, created_at, updated_at";
 
 /** Prefer this view once `patch_tr_boutiques_public_view.sql` is applied (anon-safe). */
 export const PUBLIC_BOUTIQUE_VIEW = "tr_boutiques_public";
@@ -28,7 +28,6 @@ function boutiqueInsertRow(input: CreateTrBoutiqueInput) {
     shipping_note: input.shippingNote?.trim() ?? null,
     exchange_policy: input.exchangePolicy?.trim() ?? null,
     physical_address: input.physicalAddress?.trim() ?? null,
-    home_layout: input.homeLayout === "editorial" ? "editorial" : "default",
     custom_domain: input.customDomain?.trim().toLowerCase() || null,
     editorial_content: input.editorialContent ?? null,
     catalog_profile:
@@ -221,7 +220,6 @@ export interface UpdateTrBoutiqueBrandInput {
   exchangePolicy?: string | null;
   physicalAddress?: string | null;
   themeAccent?: string | null;
-  homeLayout?: "default" | "editorial" | null;
   customDomain?: string | null;
   editorialContent?: Record<string, unknown> | null;
   catalogProfile?: "fashion" | "custom_art";
@@ -265,10 +263,6 @@ export async function updateBoutiqueBrandAdmin(
   }
   if (input.themeAccent !== undefined) {
     row.theme_accent = input.themeAccent?.trim() ?? null;
-  }
-  if (input.homeLayout !== undefined) {
-    row.home_layout =
-      input.homeLayout === "editorial" ? "editorial" : "default";
   }
   if (input.customDomain !== undefined) {
     row.custom_domain = input.customDomain?.trim().toLowerCase() || null;

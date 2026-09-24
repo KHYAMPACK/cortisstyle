@@ -17,6 +17,7 @@ import {
   type ResolveEmailAuthOptions,
 } from "@/lib/authTypes";
 import { getPasswordResetRedirectUrl } from "@/lib/authRedirect";
+import { trPanelPath } from "@/lib/tr/paths";
 import {
   normalizeAccountProfilePatch,
   parseCustomerProfileFields,
@@ -579,8 +580,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         const supabase = getSupabaseClient();
+        // No boutique slug means the owner-panel login — send them back to the panel.
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: getPasswordResetRedirectUrl(),
+          redirectTo: getPasswordResetRedirectUrl({ nextPath: trPanelPath() }),
         });
 
         if (error) throw error;

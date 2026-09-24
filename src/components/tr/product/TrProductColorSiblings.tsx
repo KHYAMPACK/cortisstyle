@@ -7,20 +7,18 @@ import {
   getProductHoverImage,
   isCatalogCutoutImage,
 } from "@/lib/tr/productImages";
-import { trBoutiqueProductPath, TR_PDP_FROM_CADDE } from "@/lib/tr/paths";
+import { trBoutiqueProductPath } from "@/lib/tr/paths";
 import type { TrProductWithBoutique } from "@/types/tr-marketplace";
 
 interface TrProductColorSiblingsProps {
   product: TrProductWithBoutique;
   siblings: TrProductWithBoutique[];
-  fromCadde?: boolean;
   accentColor?: string;
 }
 
 export function TrProductColorSiblings({
   product,
   siblings,
-  fromCadde = false,
   accentColor,
 }: TrProductColorSiblingsProps) {
   if (siblings.length < 2) return null;
@@ -38,11 +36,7 @@ export function TrProductColorSiblings({
           const cover = getProductCoverImageFor("boutique", sibling);
           const thumbSrc = getProductHoverImage(sibling) ?? cover;
           const cutout = isCatalogCutoutImage(thumbSrc);
-          const href = trBoutiqueProductPath(
-            sibling.boutique.slug,
-            sibling.id,
-            fromCadde ? { from: TR_PDP_FROM_CADDE } : undefined,
-          );
+          const href = trBoutiqueProductPath(sibling.boutique.slug, sibling.id);
           const label =
             sibling.features.color?.trim() ||
             sibling.colors[0]?.name ||

@@ -69,8 +69,6 @@ export interface TrBoutiquePublic {
   shippingNote: string | null;
   exchangePolicy: string | null;
   physicalAddress: string | null;
-  /** Storefront template — from DB; demo slugs may override. */
-  homeLayout: "default" | "editorial" | null;
   /** Custom host e.g. pervinsoysal.com */
   customDomain: string | null;
   /** Tax id for künye / legal pages (not IBAN). */
@@ -312,7 +310,6 @@ export interface CreateTrBoutiqueInput {
   shippingNote?: string | null;
   exchangePolicy?: string | null;
   physicalAddress?: string | null;
-  homeLayout?: "default" | "editorial" | null;
   customDomain?: string | null;
   editorialContent?: Record<string, unknown> | null;
   catalogProfile?: TrCatalogProfileId;

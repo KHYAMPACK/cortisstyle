@@ -6,14 +6,12 @@ import type { TrProductWithBoutique } from "@/types/tr-marketplace";
 
 interface TrBoutiqueProductPageProps {
   product: TrProductWithBoutique;
-  entry?: "cadde" | "store";
   colorSiblings?: TrProductWithBoutique[];
   iyzicoCheckout?: boolean;
 }
 
 export function TrBoutiqueProductPage({
   product,
-  entry = "store",
   colorSiblings = [],
   iyzicoCheckout = false,
 }: TrBoutiqueProductPageProps) {
@@ -26,7 +24,6 @@ export function TrBoutiqueProductPage({
         <TrCustomArtProductPanel
           product={product}
           branded={branded}
-          entry={entry}
         />
       );
     case "split":
@@ -35,7 +32,6 @@ export function TrBoutiqueProductPage({
         <TrBoutiquePdpSplit
           product={product}
           branded={branded}
-          entry={entry}
           colorSiblings={colorSiblings}
           iyzicoCheckout={iyzicoCheckout}
         />

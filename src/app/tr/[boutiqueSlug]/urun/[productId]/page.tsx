@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { TrBoutiqueProductPage } from "@/components/tr/boutique/pdp/TrBoutiqueProductPage";
-import { TR_PDP_FROM_CADDE } from "@/lib/tr/paths";
 import { boutiqueOffersIyzicoCheckout } from "@/lib/tr/payments/registry";
 import {
   safeGetPublicColorSiblings,
@@ -10,7 +9,6 @@ import {
 
 interface BoutiqueProductPageProps {
   params: Promise<{ boutiqueSlug: string; productId: string }>;
-  searchParams: Promise<{ from?: string }>;
 }
 
 export async function generateMetadata({
@@ -35,10 +33,8 @@ export async function generateMetadata({
 
 export default async function BoutiqueProductPage({
   params,
-  searchParams,
 }: BoutiqueProductPageProps) {
   const { boutiqueSlug, productId } = await params;
-  const { from } = await searchParams;
   const product = await safeGetPublicProductByBoutiqueSlugAndId(
     boutiqueSlug,
     productId,
@@ -48,7 +44,6 @@ export default async function BoutiqueProductPage({
     notFound();
   }
 
-  const entry = from === TR_PDP_FROM_CADDE ? "cadde" : "store";
   const colorSiblings = await safeGetPublicColorSiblings(product);
   const iyzicoCheckout = await boutiqueOffersIyzicoCheckout(
     product.boutique.slug,
@@ -57,7 +52,6 @@ export default async function BoutiqueProductPage({
   return (
     <TrBoutiqueProductPage
       product={product}
-      entry={entry}
       colorSiblings={colorSiblings}
       iyzicoCheckout={iyzicoCheckout}
     />

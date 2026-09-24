@@ -157,7 +157,7 @@ export function rewriteBoutiqueDomainPath(
 
   if (pathname === "/" || pathname === "") return base;
 
-  // Own tenant URLs and owner panel stay. Do not serve Cadde (`/tr`, `/tr/kombinler`, …)
+  // Own tenant URLs and owner panel stay. Do not serve platform `/tr/*` routes
   // on a white-label host.
   if (pathname === base || pathname.startsWith(`${base}/`)) {
     return pathname;

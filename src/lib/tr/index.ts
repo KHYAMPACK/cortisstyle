@@ -54,8 +54,6 @@ export {
   trBoutiquePath,
   trBoutiqueProductPath,
   trCartPath,
-  trHomePath,
-  TR_PDP_FROM_CADDE,
   trOrderConfirmationPath,
   trPanelCustomersPath,
   trPanelDiscountsPath,

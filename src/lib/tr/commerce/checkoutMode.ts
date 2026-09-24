@@ -10,7 +10,7 @@ export function isTrCheckoutSandboxMode(): boolean {
 }
 
 /**
- * True only when the global iyzico flag is on (Cadde / all tenants).
+ * True only when the global iyzico flag is on (all tenants).
  * Lila card capture is registry-gated via `boutiqueOffersIyzicoCheckout`
  * even when this stays false — flip the flag after a live test charge.
  */

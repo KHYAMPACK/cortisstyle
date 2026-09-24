@@ -8,7 +8,6 @@ import type { TrProductWithBoutique } from "@/types/tr-marketplace";
 interface TrBoutiquePdpSplitProps {
   product: TrProductWithBoutique;
   branded: boolean;
-  entry?: "cadde" | "store";
   colorSiblings?: TrProductWithBoutique[];
   iyzicoCheckout?: boolean;
 }
@@ -20,7 +19,6 @@ interface TrBoutiquePdpSplitProps {
 export function TrBoutiquePdpSplit({
   product,
   branded,
-  entry = "store",
   colorSiblings = [],
   iyzicoCheckout = false,
 }: TrBoutiquePdpSplitProps) {
@@ -72,7 +70,6 @@ export function TrBoutiquePdpSplit({
             <TrProductDetailPanel
               product={product}
               branded={branded}
-              entry={entry}
               colorSiblings={colorSiblings}
               iyzicoCheckout={iyzicoCheckout}
             />
