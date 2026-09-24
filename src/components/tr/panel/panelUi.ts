@@ -24,8 +24,11 @@ export const panelLabelClass =
 
 export const panelHintClass = "text-[13px] leading-relaxed text-neutral-500";
 
-export const panelSectionClass =
-  "space-y-4 rounded-xl border border-neutral-200/80 bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)] sm:p-5";
+/** White card surface; lay out the inside yourself. */
+export const panelCardClass =
+  "rounded-xl border border-neutral-200/80 bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)] sm:p-5";
+
+export const panelSectionClass = `space-y-4 ${panelCardClass}`;
 
 export const panelPrimaryBtnClass =
   `inline-flex min-h-11 items-center justify-center rounded-lg bg-[color:var(--panel-accent)] px-4 py-2.5 text-[15px] font-semibold text-white hover:bg-[color:var(--panel-accent-hover)] active:bg-[color:var(--panel-accent-active)] disabled:pointer-events-none disabled:opacity-50 lg:min-h-9 lg:text-[13px] ${panelBtnMotion} ${panelFocusRing}`;

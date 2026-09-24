@@ -73,6 +73,8 @@ export const ownerCacheKeys = {
   orders: (boutiqueId: string) => `orders:${boutiqueId}`,
   summary: (boutiqueId: string, range: string) =>
     `summary:${boutiqueId}:${range}`,
+  dashboard: (boutiqueId: string, range: string, from = "", to = "") =>
+    `dashboard:${boutiqueId}:${range}:${from}:${to}`,
   credits: (boutiqueId: string) => `credits:${boutiqueId}`,
   customers: (boutiqueId: string) => `customers:${boutiqueId}`,
   discounts: (boutiqueId: string) => `discounts:${boutiqueId}`,

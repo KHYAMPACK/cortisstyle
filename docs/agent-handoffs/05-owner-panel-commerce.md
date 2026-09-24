@@ -23,9 +23,21 @@ Product management pages: `urun/yeni` (create wizard), `urun/[id]` (edit form), 
 4. **Instant fallback.** `app/tr/panel/loading.tsx` shows a skeleton in the page slot the moment a navigation starts if the route wasn't prefetched; the shell stays put.
 5. **Data is cached separately** in `src/lib/tr/panel/ownerCache.ts` (20 s, in-flight de-duplication, prefix invalidation). Fetch through `cachedOwnerFetch` so a revisit renders immediately.
 
-**Sidebar.** Collapses to a 64 px icon rail (state remembered in `localStorage` via `panelSidebarState.ts`, read with `useSyncExternalStore` so hydration stays clean). The active pill and accent bar slide between items (framer-motion `layoutId`, scoped per instance). Nav rows and footer actions share `panelSidebarRowClass` in `panelUi.ts`, so hover/focus/spacing can't drift. The shell publishes the current width as `--panel-sidebar-w`; anything positioned against the sidebar (the wizard's sticky action bar) must use that variable, never a hard-coded 232 px.
+**Sidebar.** Collapses to a 64 px icon rail (state remembered in `localStorage` via `panelSidebarState.ts` → `usePanelStoredFlag` in `panelStoredFlag.ts`, read with `useSyncExternalStore` so hydration stays clean; reuse that hook for any other remembered on/off preference). The active pill and accent bar slide between items (framer-motion `layoutId`, scoped per instance). Nav rows and footer actions share `panelSidebarRowClass` in `panelUi.ts`, so hover/focus/spacing can't drift. The shell publishes the current width as `--panel-sidebar-w`; anything positioned against the sidebar (the wizard's sticky action bar) must use that variable, never a hard-coded 232 px.
 
 **Panel-wide state that persists across pages** (because it lives in the shell): the leave guard and the AI restyle session (`TrOwnerElbiseRestyleSession`). Pages release their leave-guard registration on unmount (`useRegisterLeaveBusy` cleans up), so a persistent guard is safe.
+
+## Home dashboard (Giriş)
+
+`TrOwnerHomePage.tsx` composes the panel home from `src/components/tr/panel/dashboard/`: a sticky toolbar (date-range menu, "Önceki döneme göre" compare switch, Raporlar link, "Mağazayı aç"), a KPI strip whose selected KPI drives the trend chart, payment-method cards, best sellers (products / categories), growth metrics, recent orders, and a floating action pill (orders to ship, manual payments awaiting approval, low stock — dismissible, cycles when there are several). The structure follows the reference admin; colours and the accent are ours. There is no visitor/session analytics in the schema, so those widgets are deliberately absent — Yeni Müşteri, Ödeme Tamamlama Oranı and İptaller stand in for them.
+
+**Data flow.** `GET /api/tr/owner/dashboard?boutiqueId&range[&from&to]` → `ownerDashboard.ts` loads the boutique's orders and products and calls the pure `computeOwnerDashboard` (`dashboardMetrics.ts`). The client reads it through `fetchOwnerDashboard` / `peekOwnerDashboard` in `ownerClient.ts` (cached under `dashboard:` keys, invalidated with the order and product lists). Aggregation is in memory — fine for a boutique's order volume; at tens of thousands of orders replace `ownerDashboard.ts` with SQL aggregation returning the same `TrOwnerDashboard` and the UI does not change.
+
+**Definitions live in one place — the header of `dashboardMetrics.ts` (tests in `dashboardMetrics.test.ts`).** Revenue and order count are paid, non-cancelled, non-test orders; revenue is the boutique's own line total minus its share of the order discount, shipping excluded (the same rule as the Raporlar summary — both use `orderRevenue.ts`). A new customer is one whose first paid order overall (lower-cased email) falls in the window. İptal is an order that was paid and then cancelled. Payment completion exists only for card-enabled boutiques: card-paid ÷ (card-paid + failed + pending checkouts). Card vs manual is decided by whether the order has an iyzico payment id.
+
+**Date ranges** (`dashboardRange.ts`, tests in `dashboardRange.test.ts`) use Europe/Istanbul as a constant UTC+3. Calendar ranges (Bu Hafta / Bu Ay / Bu Yıl…) compare against the same elapsed span of the previous unit; rolling ranges (Son 7 Gün…) compare against the equal-length window before. Bucket size (hour / day / week / month) follows the span. Custom ranges are validated server-side (real dates, not in the future, at most a year).
+
+**Adding a KPI:** add the field to `TrDashboardKpis` and its computation in `dashboardMetrics.ts` (with a test), then add a row to `TR_DASHBOARD_METRICS` in `dashboard/dashboardFormat.ts` if it should drive the chart. Raporlar (`TrOwnerReportsPage.tsx`) still uses the older `ownerSummary.ts`.
 
 ## Checkout & orders
 
@@ -51,6 +63,7 @@ Checkout iyzico flow: `src/app/api/tr/checkout/iyzico/{start,abandon,callback}/r
 |---|---|
 | Owner auth | `src/lib/tr/ownerAuth.ts`, `src/lib/tr/panel/ownerClient.ts` |
 | Panel nav / capability gating | `src/lib/tr/panelNav.ts`, `src/lib/tr/catalogProfiles/registry.ts` |
+| Home dashboard | `src/components/tr/panel/TrOwnerHomePage.tsx`, `src/components/tr/panel/dashboard/`, `src/lib/tr/panel/dashboardMetrics.ts`, `dashboardRange.ts`, `ownerDashboard.ts`, `src/app/api/tr/owner/dashboard/route.ts` |
 | Panel shell / navigation | `src/app/tr/panel/layout.tsx`, `template.tsx`, `loading.tsx`, `src/components/tr/panel/TrPanelShell.tsx`, `TrPanelNavLinks.tsx`, `TrPanelDesktopSidebar.tsx`, `TrPanelLink.tsx`, `panelUi.ts` |
 | Product create/edit | `src/components/tr/panel/TrProductCreateWizard.tsx`, `TrProductEditorForm.tsx` |
 | Batch / takım upload | `src/components/tr/panel/TrOwnerBatchCreatePage.tsx`, `TrOwnerTakimCreatePage.tsx` |

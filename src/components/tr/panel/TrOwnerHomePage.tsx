@@ -1,294 +1,160 @@
 "use client";
 
-import { TrPanelLink as Link } from "@/components/tr/panel/TrPanelLink";
-import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
-import { TrOrderItemThumbs } from "@/components/tr/panel/TrOrderItemThumbs";
+import { TrDashboardActionPill } from "@/components/tr/panel/dashboard/TrDashboardActionPill";
+import {
+  TrDashboardBreakdown,
+  TrDashboardGrowth,
+} from "@/components/tr/panel/dashboard/TrDashboardBreakdown";
+import { TrDashboardRecentOrders } from "@/components/tr/panel/dashboard/TrDashboardRecentOrders";
+import { TrDashboardSkeleton } from "@/components/tr/panel/dashboard/TrDashboardSkeleton";
+import { TrDashboardToolbar } from "@/components/tr/panel/dashboard/TrDashboardToolbar";
+import { TrDashboardTopSellers } from "@/components/tr/panel/dashboard/TrDashboardTopSellers";
+import { TrDashboardTrendCard } from "@/components/tr/panel/dashboard/TrDashboardTrendCard";
+import type { TrDashboardMetricId } from "@/components/tr/panel/dashboard/dashboardFormat";
 import { TrOwnerCreditsUsageCard } from "@/components/tr/panel/TrOwnerCreditsInfo";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
-import {
-  FULFILLMENT_LABEL,
-  FULFILLMENT_TONE,
-  formatOrderDateShort,
-} from "@/components/tr/panel/orderFulfillmentUi";
-import {
-  panelEmptyClass,
-  panelHintClass,
-  panelSectionClass,
-} from "@/components/tr/panel/panelUi";
-import {
-  TrPanelFadeIn,
-  TrPanelListSkeleton,
-  TrPanelMetricSkeleton,
-  TrPanelStagger,
-  trPanelStaggerItem,
-} from "@/components/tr/panel/TrPanelMotion";
-import {
-  TrPanelRangeTabs,
-  type TrPanelSummaryRange,
-} from "@/components/tr/panel/TrPanelRangeTabs";
-import { useOwnerOrderAlerts } from "@/hooks/useOwnerOrderAlerts";
-import {
-  fetchOwnerSummary,
-  peekOwnerSummary,
-  type TrOwnerSummaryResponse,
-} from "@/lib/tr/ownerClient";
-import {
-  trPanelOrderPath,
-  trPanelOrdersPath,
-  trPanelProductsPath,
-} from "@/lib/tr/paths";
+import { panelErrorClass, panelSecondaryBtnClass } from "@/components/tr/panel/panelUi";
+import { usePanelStoredFlag } from "@/components/tr/panel/panelStoredFlag";
+import { TrPanelFadeIn } from "@/components/tr/panel/TrPanelMotion";
 import { isCustomArtCatalogProfile } from "@/lib/tr/catalogProfiles";
 import type { TrCatalogProfileId } from "@/lib/tr/panelNav";
-import { formatTryFromKurus } from "@/types/tr-marketplace";
-
-function KpiCell({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="min-w-[140px] flex-1 px-4 py-3 sm:px-5 sm:py-4">
-      <p className="text-[12px] font-medium text-neutral-500">{label}</p>
-      <p className="mt-1 text-[1.35rem] font-semibold tracking-tight tabular-nums text-neutral-900 sm:text-[1.5rem]">
-        {value}
-      </p>
-    </div>
-  );
-}
-
-function resolvePeriod(summary: TrOwnerSummaryResponse) {
-  const orderCount = summary.period?.orderCount ?? summary.today?.orderCount ?? 0;
-  const revenueKurus =
-    summary.period?.revenueKurus ?? summary.today?.revenueKurus ?? 0;
-  return {
-    orderCount,
-    revenueKurus,
-    pendingFulfillment: summary.period?.pendingFulfillment ?? 0,
-    topProducts: summary.period?.topProducts ?? [],
-    lowStock: summary.inventory?.lowStock ?? 0,
-    isEmpty: orderCount === 0 && revenueKurus === 0,
-  };
-}
+import { DEFAULT_DASHBOARD_RANGE } from "@/lib/tr/panel/dashboardRange";
+import {
+  fetchOwnerDashboard,
+  peekOwnerDashboard,
+  type TrOwnerDashboard,
+  type TrOwnerDashboardQuery,
+} from "@/lib/tr/ownerClient";
+import { trBoutiquePath } from "@/lib/tr/paths";
 
 function HomeDashboard({
   boutiqueId,
-  boutiqueName,
+  boutiqueSlug,
   catalogProfile,
   offersIyzicoCheckout,
 }: {
   boutiqueId: string;
-  boutiqueName: string;
+  boutiqueSlug: string;
   catalogProfile: TrCatalogProfileId;
   offersIyzicoCheckout: boolean;
 }) {
   const printOnDemand = isCustomArtCatalogProfile({ catalogProfile });
-  const [range, setRange] = useState<TrPanelSummaryRange>("today");
-  const cached = peekOwnerSummary(boutiqueId, range);
-  const [summary, setSummary] = useState<TrOwnerSummaryResponse | null>(
-    cached ?? null,
+  const [query, setQuery] = useState<TrOwnerDashboardQuery>({
+    range: DEFAULT_DASHBOARD_RANGE,
+  });
+  const [metricId, setMetricId] = useState<TrDashboardMetricId>("revenue");
+  const [compare, setCompare] = usePanelStoredFlag(
+    "tr-panel-dashboard-compare",
+    true,
   );
-  const [loading, setLoading] = useState(!cached);
-  const [error, setError] = useState<string | null>(null);
-  const { recentOrders, loading: ordersLoading } = useOwnerOrderAlerts(
-    boutiqueId,
-    offersIyzicoCheckout,
-  );
+  const [retry, setRetry] = useState(0);
+  const [loaded, setLoaded] = useState<{
+    key: string;
+    dashboard: TrOwnerDashboard;
+  } | null>(null);
+  const [failure, setFailure] = useState<{
+    key: string;
+    message: string;
+  } | null>(null);
+
+  const queryKey = `${query.range}|${query.from ?? ""}|${query.to ?? ""}`;
 
   useEffect(() => {
     let cancelled = false;
-    async function load() {
-      setError(null);
-      try {
-        const result = await fetchOwnerSummary(boutiqueId, range);
-        if (!cancelled) setSummary(result);
-      } catch (loadError) {
-        if (!cancelled) {
-          setError(
-            loadError instanceof Error
-              ? loadError.message
-              : "Özet yüklenemedi.",
-          );
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-    void load();
+    fetchOwnerDashboard(boutiqueId, query).then(
+      (dashboard) => {
+        if (!cancelled) setLoaded({ key: queryKey, dashboard });
+      },
+      (error: unknown) => {
+        if (cancelled) return;
+        setFailure({
+          key: queryKey,
+          message: error instanceof Error ? error.message : "Özet yüklenemedi.",
+        });
+      },
+    );
     return () => {
       cancelled = true;
     };
-  }, [boutiqueId, range]);
+  }, [boutiqueId, query, queryKey, retry]);
 
-  const period = summary ? resolvePeriod(summary) : null;
+  // The freshest data for this range: a completed load, or the client cache.
+  // While a new range loads, the previous range's numbers stay on screen (dimmed).
+  const fresh =
+    loaded?.key === queryKey ? loaded.dashboard : peekOwnerDashboard(boutiqueId, query);
+  const dashboard = fresh ?? loaded?.dashboard ?? null;
+  const refreshing = !fresh;
+  const error = failure?.key === queryKey && !fresh ? failure.message : null;
+
+  function retryLoad() {
+    setFailure(null);
+    setRetry((count) => count + 1);
+  }
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-[1.25rem] font-semibold text-neutral-900">
-            Genel özet
-          </h1>
-          <p className={`mt-0.5 ${panelHintClass}`}>{boutiqueName}</p>
+      <TrDashboardToolbar
+        query={query}
+        onQueryChange={setQuery}
+        compare={compare}
+        onCompareChange={setCompare}
+        storeHref={trBoutiquePath(boutiqueSlug)}
+      />
+
+      {error ? (
+        <div className={`${panelErrorClass} flex flex-wrap items-center justify-between gap-3`}>
+          <p>{error}</p>
+          <button type="button" onClick={retryLoad} className={panelSecondaryBtnClass}>
+            Tekrar dene
+          </button>
         </div>
-        <TrPanelRangeTabs value={range} onChange={setRange} />
-      </div>
-
-      <div className="flex flex-wrap gap-2">
-        <Link
-          href={trPanelOrdersPath()}
-          className="rounded-lg bg-white px-3 py-2 text-[13px] font-medium text-neutral-700 ring-1 ring-neutral-200 hover:bg-neutral-50"
+      ) : !dashboard ? (
+        <TrDashboardSkeleton />
+      ) : (
+        <div
+          className={`space-y-4 transition-opacity duration-200 ${
+            refreshing ? "opacity-60" : "opacity-100"
+          }`}
+          aria-busy={refreshing}
         >
-          Siparişler
-        </Link>
-        {!printOnDemand ? (
-          <>
-            <Link
-              href={trPanelProductsPath()}
-              className="rounded-lg bg-white px-3 py-2 text-[13px] font-medium text-neutral-700 ring-1 ring-neutral-200 hover:bg-neutral-50"
-            >
-              Ürünler
-            </Link>
-          </>
-        ) : null}
-      </div>
-
-      {loading && !summary ? (
-        <TrPanelMetricSkeleton count={4} />
-      ) : error && !summary ? (
-        <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[14px] text-red-800">
-          {error}
-        </p>
-      ) : period ? (
-        <section className="overflow-hidden rounded-xl border border-neutral-200/80 bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
-          <div className="flex divide-x divide-neutral-100 overflow-x-auto">
-            <KpiCell
-              label="Ciro"
-              value={formatTryFromKurus(period.revenueKurus)}
+          <TrPanelFadeIn>
+            <TrDashboardTrendCard
+              dashboard={dashboard}
+              compare={compare}
+              metricId={metricId}
+              onMetricChange={setMetricId}
             />
-            <KpiCell label="Sipariş" value={String(period.orderCount)} />
-            <KpiCell
-              label="Bekleyen kargo"
-              value={String(period.pendingFulfillment)}
+          </TrPanelFadeIn>
+          <TrDashboardBreakdown dashboard={dashboard} compare={compare} />
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+            <TrDashboardTopSellers dashboard={dashboard} compare={compare} />
+            <TrDashboardGrowth dashboard={dashboard} compare={compare} />
+          </div>
+          <div
+            className={`grid gap-4 ${
+              printOnDemand ? "" : "lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]"
+            }`}
+          >
+            <TrDashboardRecentOrders
+              boutiqueId={boutiqueId}
+              offersIyzicoCheckout={offersIyzicoCheckout}
             />
             {!printOnDemand ? (
-              <KpiCell
-                label="Düşük stok"
-                value={String(period.lowStock)}
-              />
+              <TrOwnerCreditsUsageCard boutiqueId={boutiqueId} />
             ) : null}
           </div>
-          {period.isEmpty ? (
-            <p className="border-t border-neutral-100 px-5 py-3 text-[13px] text-neutral-500">
-              Bu dönemde henüz sipariş yok.
-            </p>
-          ) : null}
-        </section>
-      ) : null}
-
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-        <section className={panelSectionClass}>
-          <div className="flex items-end justify-between gap-3">
-            <div>
-              <h2 className="text-[14px] font-semibold text-neutral-900">
-                Yeni siparişler
-              </h2>
-              <p className={`mt-0.5 ${panelHintClass}`}>Detay için dokunun.</p>
-            </div>
-            <Link
-              href={trPanelOrdersPath()}
-              className="text-[13px] font-medium text-[color:var(--panel-accent-deep)] hover:underline"
-            >
-              Tümü
-            </Link>
-          </div>
-          {ordersLoading && recentOrders.length === 0 ? (
-            <TrPanelListSkeleton rows={3} label="Siparişler yükleniyor" />
-          ) : recentOrders.length === 0 ? (
-            <p className={panelEmptyClass}>Henüz yeni sipariş yok.</p>
-          ) : (
-            <TrPanelStagger className="space-y-2">
-              {recentOrders.map((order) => {
-                const itemCount = order.items.reduce(
-                  (sum, item) => sum + item.quantity,
-                  0,
-                );
-                return (
-                  <motion.div key={order.id} variants={trPanelStaggerItem}>
-                    <Link
-                      href={trPanelOrderPath(order.id)}
-                      className="block rounded-lg px-2 py-2.5 transition-colors hover:bg-neutral-50"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0 flex-1 space-y-1.5">
-                          <p className="truncate text-[14px] font-semibold text-neutral-900">
-                            {order.customerName}
-                          </p>
-                          <p className="text-[12px] text-neutral-500">
-                            {formatOrderDateShort(order.createdAt)} · {itemCount}{" "}
-                            ürün
-                          </p>
-                          <TrOrderItemThumbs
-                            items={order.items}
-                            size="sm"
-                            max={3}
-                          />
-                          <span
-                            className={`inline-block rounded-md px-2 py-0.5 text-[12px] font-semibold ${FULFILLMENT_TONE[order.fulfillmentStatus]}`}
-                          >
-                            {FULFILLMENT_LABEL[order.fulfillmentStatus]}
-                          </span>
-                        </div>
-                        <p className="shrink-0 text-[14px] font-semibold tabular-nums text-neutral-950">
-                          {formatTryFromKurus(order.totalKurus)}
-                        </p>
-                      </div>
-                    </Link>
-                  </motion.div>
-                );
-              })}
-            </TrPanelStagger>
-          )}
-        </section>
-
-        <div className="space-y-4">
-          <section className={panelSectionClass}>
-            <h2 className="text-[14px] font-semibold text-neutral-900">
-              En çok satanlar
-            </h2>
-            {!period || period.topProducts.length === 0 ? (
-              <p className="text-[13px] text-neutral-500">
-                Bu dönemde satış yok.
-              </p>
-            ) : (
-              <ul className="divide-y divide-neutral-100">
-                {period.topProducts.map((product) => (
-                  <li
-                    key={product.title}
-                    className="flex items-center justify-between gap-3 py-3 text-[13px]"
-                  >
-                    <span className="min-w-0 truncate">
-                      {product.title}
-                      <span className="text-neutral-400">
-                        {" "}
-                        · {product.quantity} adet
-                      </span>
-                    </span>
-                    <span className="shrink-0 font-semibold tabular-nums">
-                      {formatTryFromKurus(product.revenueKurus)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-          {!printOnDemand ? (
-            <TrOwnerCreditsUsageCard boutiqueId={boutiqueId} />
-          ) : null}
+          {/* Keeps the last card clear of the floating action bar. */}
+          <div className="h-14" aria-hidden />
         </div>
-      </div>
+      )}
+
+      {dashboard ? (
+        <TrDashboardActionPill
+          actions={dashboard.actions}
+          trackStock={!printOnDemand}
+        />
+      ) : null}
     </div>
   );
 }
@@ -298,8 +164,9 @@ export function TrOwnerHomePage() {
     <TrOwnerPanelGate>
       {({ activeBoutique }) => (
         <HomeDashboard
+          key={activeBoutique.id}
           boutiqueId={activeBoutique.id}
-          boutiqueName={activeBoutique.name}
+          boutiqueSlug={activeBoutique.slug}
           catalogProfile={activeBoutique.catalogProfile ?? "fashion"}
           offersIyzicoCheckout={Boolean(activeBoutique.offersIyzicoCheckout)}
         />

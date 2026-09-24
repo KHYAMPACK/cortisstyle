@@ -1,6 +1,7 @@
 import { listOrdersByBoutiqueIdAdmin } from "@/lib/tr/orders";
 import { isTrCheckoutEnabled } from "@/lib/tr/platform";
 import { listOwnerProductInventoryAdmin } from "@/lib/tr/products";
+import { boutiqueLineRevenue, isActiveOrder } from "@/lib/tr/panel/orderRevenue";
 
 export type TrOwnerSummaryRange = "today" | "7d" | "30d" | "all";
 
@@ -54,49 +55,6 @@ function rangeStartIso(
   if (range === "today") return istanbulDayBounds(now).startIso;
   const days = range === "7d" ? 7 : 30;
   return new Date(now.getTime() - days * 24 * 60 * 60 * 1000).toISOString();
-}
-
-function isActiveOrder(order: {
-  fulfillmentStatus: string;
-  paymentStatus: string;
-}): boolean {
-  if (order.fulfillmentStatus === "cancelled") return false;
-  if (order.paymentStatus === "pending" || order.paymentStatus === "failed") {
-    return false;
-  }
-  return (
-    order.paymentStatus === "paid" || order.paymentStatus === "sandbox"
-  );
-}
-
-function boutiqueLineRevenue(
-  order: {
-    items: Array<{
-      boutiqueId: string;
-      priceKurus: number;
-      quantity: number;
-      productId: string | null;
-      title: string;
-    }>;
-    discountKurus: number;
-    totalKurus: number;
-  },
-  boutiqueId: string,
-): number {
-  const lines = order.items.filter((item) => item.boutiqueId === boutiqueId);
-  const subtotal = lines.reduce(
-    (sum, item) => sum + item.priceKurus * item.quantity,
-    0,
-  );
-  if (subtotal <= 0) return 0;
-  // Allocate order-level discount proportionally across this boutique's lines.
-  const orderSubtotal = order.items.reduce(
-    (sum, item) => sum + item.priceKurus * item.quantity,
-    0,
-  );
-  if (orderSubtotal <= 0) return subtotal;
-  const share = subtotal / orderSubtotal;
-  return Math.max(0, Math.round(subtotal - order.discountKurus * share));
 }
 
 export async function getOwnerBoutiqueSummary(
