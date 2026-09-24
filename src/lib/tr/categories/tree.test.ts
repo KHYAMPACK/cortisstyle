@@ -8,6 +8,7 @@ import {
   descendantIds,
   flattenCategoryTree,
   parentOptions,
+  slugsInScope,
   wouldCreateCycle,
   type TrCategoryNode,
 } from "./tree";
@@ -87,5 +88,23 @@ describe("parentOptions", () => {
       parentOptions(cats, "ust").map((o) => o.id),
       ["aksesuar", "giyim", "alt"],
     );
+  });
+});
+
+describe("slugsInScope", () => {
+  const withSlugs = cats.map((c) => ({ ...c, slug: `s-${c.id}` }));
+
+  it("is the category's slug plus every descendant's", () => {
+    assert.deepEqual([...slugsInScope(withSlugs, "s-giyim")].sort(), [
+      "s-alt",
+      "s-giyim",
+      "s-gomlek",
+      "s-ust",
+    ]);
+    assert.deepEqual([...slugsInScope(withSlugs, "s-gomlek")], ["s-gomlek"]);
+  });
+
+  it("falls back to the slug itself when it is not a known category", () => {
+    assert.deepEqual([...slugsInScope(withSlugs, "bilinmeyen")], ["bilinmeyen"]);
   });
 });

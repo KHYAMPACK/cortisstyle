@@ -96,6 +96,7 @@ async function parseOwnerJson(response: Response): Promise<unknown> {
 
 function invalidateProductLists(): void {
   invalidateOwnerCache("products:");
+  invalidateOwnerCache("categories:");
   invalidateOwnerCache("product-originals:");
   invalidateOwnerCache("summary:");
   invalidateOwnerCache("dashboard:");

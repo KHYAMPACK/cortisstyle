@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useUnsavedChangesGuard } from "@/components/tr/panel/TrOwnerLeaveGuard";
 import { TrOwnerManualPhotoGallery } from "@/components/tr/panel/TrOwnerManualPhotoGallery";
 import {
@@ -9,8 +9,10 @@ import {
   TrPanelEditorSave,
   TrPanelEditorTabs,
 } from "@/components/tr/panel/TrPanelEditor";
+import { TrPanelCategoryPicker } from "@/components/tr/panel/TrPanelCategoryPicker";
 import { TrPanelLink as Link } from "@/components/tr/panel/TrPanelLink";
 import { TrPanelSeoCard } from "@/components/tr/panel/TrPanelSeoCard";
+import { useOwnerCategories } from "@/components/tr/panel/useOwnerCategories";
 import { TrPanelBusySpinner } from "@/components/tr/panel/TrPanelMotion";
 import { TrProductImageLightbox } from "@/components/tr/panel/TrProductImageLightbox";
 import {
@@ -43,6 +45,7 @@ import {
   type SimpleProductFormState,
 } from "@/lib/tr/panel/simpleProductForm";
 import { trBoutiqueProductPath, trPanelSettingsPath } from "@/lib/tr/paths";
+import type { TrProductCategories } from "@/lib/tr/categories/types";
 import type { TrSeoFormValue } from "@/lib/tr/seo/seoFields";
 import { slugify } from "@/lib/tr/seo/slug";
 import { storeProductUrlPrefix } from "@/lib/tr/seo/storeAddress";
@@ -64,9 +67,12 @@ export function boutiqueLocationAddress(
   );
 }
 
-const TABS = [
+const TABS_BEFORE_CATEGORIES = [
   { id: "editor-temel", label: "Temel bilgi" },
   { id: "editor-medya", label: "Medya" },
+] as const;
+
+const TABS_AFTER_CATEGORIES = [
   { id: "editor-stok", label: "Stok" },
   { id: "editor-lokasyon", label: "Lokasyon" },
   { id: "editor-seo", label: "SEO" },
@@ -126,6 +132,8 @@ export function TrSimpleProductEditor({
   address,
   product,
   ownerOnly,
+  categoryMode = "legacy",
+  initialCategories,
   onCreated,
   onSaved,
   onDeleted,
@@ -138,15 +146,27 @@ export function TrSimpleProductEditor({
   address: string | null;
   product?: TrProduct;
   ownerOnly?: TrProductPrivate;
+  /** `custom`: the boutique manages its own categories and the editor shows the picker. */
+  categoryMode?: "legacy" | "custom";
+  /** The saved product's categories (edit). */
+  initialCategories?: TrProductCategories;
   onCreated?: (product: TrProduct, warning?: string) => void;
   onSaved?: (product: TrProduct) => void;
   onDeleted?: () => void;
 }) {
-  const [form, setForm] = useState<SimpleProductFormState>(() =>
-    product
-      ? simpleFormFromProduct(product, ownerOnly ?? { costPriceKurus: null })
-      : emptySimpleProductForm(),
+  const managesCategories = categoryMode === "custom";
+  const { categories, loaded: categoriesLoaded } = useOwnerCategories(
+    boutiqueId,
+    managesCategories,
   );
+  const [form, setForm] = useState<SimpleProductFormState>(() => {
+    const own = managesCategories
+      ? (initialCategories ?? { ids: [], primaryId: null })
+      : null;
+    return product
+      ? simpleFormFromProduct(product, ownerOnly ?? { costPriceKurus: null }, own)
+      : emptySimpleProductForm(own);
+  });
   const [baseline, setBaseline] = useState(() => JSON.stringify(form));
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -254,6 +274,14 @@ export function TrSimpleProductEditor({
   };
 
   const zeroStock = form.stock.trim() !== "" && Number(form.stock) === 0;
+  const tabs = useMemo(
+    () => [
+      ...TABS_BEFORE_CATEGORIES,
+      ...(managesCategories ? [{ id: "editor-kategori", label: "Kategori" }] : []),
+      ...TABS_AFTER_CATEGORIES,
+    ],
+    [managesCategories],
+  );
   const changeSeo = (patch: Partial<TrSeoFormValue>) =>
     change({ seo: { ...form.seo, ...patch } });
 
@@ -286,7 +314,7 @@ export function TrSimpleProductEditor({
         onSave={() => void save()}
       />
 
-      <TrPanelEditorTabs tabs={TABS} />
+      <TrPanelEditorTabs tabs={tabs} />
 
       {notice ? (
         <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[14px] text-amber-950">
@@ -409,6 +437,25 @@ export function TrSimpleProductEditor({
             onUploadingChange={setUploading}
           />
         </TrPanelEditorCard>
+
+        {managesCategories && form.categories ? (
+          <TrPanelEditorCard
+            id="editor-kategori"
+            title="Kategori"
+            hint="Ürünün listelendiği kategoriler; biri ana kategoridir."
+          >
+            {categoriesLoaded ? (
+              <TrPanelCategoryPicker
+                categories={categories}
+                value={form.categories}
+                onChange={(next) => change({ categories: next })}
+                disabled={saving}
+              />
+            ) : (
+              <p className={panelHintClass}>Kategoriler yükleniyor…</p>
+            )}
+          </TrPanelEditorCard>
+        ) : null}
 
         <TrPanelEditorCard
           id="editor-stok"

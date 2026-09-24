@@ -137,3 +137,20 @@ export function parentOptions<T extends TrCategoryNode>(
       label: `${"— ".repeat(depth)}${category.name}`,
     }));
 }
+
+/**
+ * The slugs that count as "in this category": its own and every descendant's. The
+ * Ürünler list filters on a product's primary-category slug, so a parent category
+ * shows the products of its subcategories too.
+ */
+export function slugsInScope<T extends TrCategoryNode & { slug: string }>(
+  categories: readonly T[],
+  slug: string,
+): Set<string> {
+  const start = categories.find((entry) => entry.slug === slug);
+  if (!start) return new Set([slug]);
+  const scope = new Set(categoryAndDescendantIds(categories, start.id));
+  return new Set(
+    categories.filter((entry) => scope.has(entry.id)).map((entry) => entry.slug),
+  );
+}

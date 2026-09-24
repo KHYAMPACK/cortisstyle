@@ -223,3 +223,31 @@ describe("slug and SEO in the form", () => {
     });
   });
 });
+
+describe("categories in the form", () => {
+  it("are left out when the boutique uses the built-in tree", () => {
+    assert.equal("categories" in simpleProductPayload(form(), "b1"), false);
+    assert.equal("categories" in simpleProductPatch(form()), false);
+  });
+
+  it("are sent with the product when the boutique manages its own", () => {
+    const categories = { ids: ["c1", "c2"], primaryId: "c2" };
+    assert.deepEqual(simpleProductPayload(form({ categories }), "b1").categories, categories);
+    assert.deepEqual(simpleProductPatch(form({ categories })).categories, categories);
+  });
+
+  it("start empty on a new product and load a saved product's on edit", () => {
+    assert.equal(emptySimpleProductForm().categories, null);
+    assert.deepEqual(emptySimpleProductForm({ ids: [], primaryId: null }).categories, {
+      ids: [],
+      primaryId: null,
+    });
+    const saved = { ids: ["c1"], primaryId: "c1" };
+    const state = simpleFormFromProduct(
+      { title: "x", priceKurus: 100, compareAtPriceKurus: null, status: "available", stock: 1, images: ["a"] } as TrProduct,
+      { costPriceKurus: null },
+      saved,
+    );
+    assert.deepEqual(state.categories, saved);
+  });
+});

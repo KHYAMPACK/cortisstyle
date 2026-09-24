@@ -9,9 +9,14 @@ _Prepared 2026-09-24 on branch `panel-products`. Facts below were checked agains
 - The **moda sub-chooser (part of M5) landed in M1**: `/urun/yeni` became the type chooser, so the existing wizard needed its new home (`/urun/yeni/moda/tek-parca`) and the chooser needed a fashion path in the same change. `/urun/takim` and `/urun/toplu` are unchanged.
 - **Birim fiyat moved to M4** with the other product-page additions (it is only useful once the product page shows it).
 - **Lokasyon's "Ana adres"** reads `physical_address` (the field Ayarlar → Adres edits), falling back to `shipping_address`.
-- The Basit ürün has **no category card until M3** (its category stays empty) and **requires at least one photo** (the storefront has not been checked with photo-less products).
+- The Basit ürün has **no category card unless the boutique's `category_mode` is `custom`** (M3a; otherwise its category stays empty) and **requires at least one photo** (the storefront has not been checked with photo-less products).
 - **Gelişmiş is not in the chooser** until its editor exists (no placeholders).
 - **M2 (SEO) built on `panel-products`** (`supabase/patch_product_seo.sql`): the shared `TrPanelSeoCard`, product slugs with auto-generation for Basit ürün, old-slug redirects, canonical/noindex metadata, sitemap and Google feed. Deviations: the id URL is **not** redirected to the slug URL (both serve the page; the canonical link names the slug URL) — a redirect from inside the page would only be a client-side one because of the route's loading boundary, so real 308s wait for the Store URLs work; the storefront reads slug/SEO through separate tolerant queries instead of extending the public column lists (safe before the SQL, at the cost of an extra query for slugged products; extending the lists later is a possible follow-up).
+- **M3a (categories, panel + backend + category pages) built on `panel-products`** (`supabase/patch_categories.sql`): `tr_categories` / `tr_product_categories`, the Tanımlamalar hub with the Kategoriler pages, `TrPanelCategoryPicker` in the Basit editor, the bulk "Kategori ekle" in the Ürünler list, `/tr/<slug>/kategori/<slug>` pages with slug redirects, category URLs in the sitemap. Deviations from §7, all deliberate:
+  - **No seeding or backfill of the fashion tree.** A boutique has a `category_mode` (`legacy` = the built-in fashion code tree, the default for every existing boutique; `custom` = its own `tr_categories`). Nothing changes for lilabutik; a boutique is switched to `custom` explicitly (SQL for now, `update public.tr_boutiques set category_mode = 'custom' where slug = 'deneme-butik';`). The Basit editor shows its Kategori card only in `custom` mode.
+  - **The storefront switch is split off as M3b** (menu, mega-menu, category drawer, PLP filters and labels, home category tiles for `custom` boutiques). It touches ~26 files on the live lilabutik code paths and needs a go/no-go. Until it lands, a `custom` boutique's navigation still shows the fashion tree and its PLP chips humanize slugs.
+  - **A category's description is plain text** until the rich-text editor exists (M4); it is stored in `description_html` and rendered as text.
+  - **The category page has its own layout** (breadcrumb, image, description, subcategory chips, product grid); it does not go through the fashion PLP.
 - **Shared components merged for other agents:** the editor layout, `TrPanelPopover`, `TrPanelChoiceCard`, the data table options, the save model pieces and `TrPanelDrawer` (M7a's drawer was pulled forward).
 
 Apply `supabase/patch_product_types.sql` **before** trying Basit ürün on a real database. The app tolerates the patch being absent (products read as `fashion`, and the cost price save reports a clear error), but a Basit ürün created before the patch would lose its type.
@@ -148,8 +153,8 @@ tr_product_categories (product_id, category_id, is_primary,
 - `sort_criterion` has exactly six values (confirmed by Mert): `best_selling`, `discount_desc`, `discount_asc`, `price_desc`, `price_asc`, `newest`; null = the store's default order. "En çok satanlar" needs sales counts from `tr_order_items` (grouped query, cached).
 - **`tr_products.category` stays** as a copy of the primary category's slug, written in one place, so filters, the feed and the ~14 storefront files keep working during the switch.
 - **Rules:** unlimited depth, no cycles (server check), deleting a category moves its children up one level and unassigns products; if a product's primary is removed, the next category becomes primary (or none).
-- **Seed and backfill (SQL patch):** every boutique with `catalog_profile = 'fashion'` gets the current code tree as its categories (slug = existing id, so `elbise`, `pantolon`… match), and every product with a `category` gets one primary row. Style variants (`kase-kaban`, `kot-pantolon`, …) are seeded too and marked hidden from the menu so old products keep matching.
-- **Storefront switch:** menu and category pages read `tr_categories`; until a boutique has rows, the code tree is the fallback. The menu shows two levels; deeper categories are reached via category pages and breadcrumbs (menu design for deep trees is out of scope).
+- **No seed or backfill (changed in M3a):** rather than copying the fashion code tree into `tr_categories`, each boutique has `category_mode` (`legacy` | `custom`). `legacy` boutiques keep the code tree and `tr_products.category` as today; `custom` boutiques use only their own rows. Moving fashion onto real categories is part of the later fashion migration.
+- **Storefront switch (M3b):** menu and category pages read `tr_categories` for `custom` boutiques; `legacy` boutiques keep the code tree. The menu shows two levels; deeper categories are reached via category pages and breadcrumbs (menu design for deep trees is out of scope). M3a already serves `/kategori/<slug>` pages for `custom` boutiques.
 
 **Panel**
 
@@ -222,7 +227,8 @@ Fashion keeps its size-with-stock model and its color-group linking (separate pr
 |---|---|---|---|
 | M1 | Types + Basit v1 | registry, chooser, dispatcher, route patterns; Basit editor with Temel bilgi, Medya (images), Stok, Lokasyon; private table for cost | patch 1: `product_type` + backfill, new columns, `tr_product_private` |
 | M2 | SEO | slug module, `TrPanelSeoCard`, product slug routing, redirects, metadata, sitemap/noindex | patch 2: `slug`, `seo`, `tr_slug_redirects` |
-| M3 | Categories | tables, seed/backfill, Tanımlamalar + Kategoriler pages, category picker in the product editor, storefront switch, bulk action | patch 3 |
+| M3a | Categories (panel + pages) | tables + `category_mode`, Tanımlamalar + Kategoriler pages, category picker in the product editor, bulk action, category pages, sitemap | patch 3 (`patch_categories.sql`) |
+| M3b | Categories in the storefront | menu, mega-menu, category drawer, PLP filters/labels, home tiles read `tr_categories` for `custom` boutiques (needs go/no-go) | – |
 | M4 | Detay + Envanter | Marka/Etiket/Google kategorisi/Tedarikçi, rich text (editor + sanitizer + product page section), SKU/barkod/desi/HS kodu, continue-selling wiring, feed fields | patch 4 (if not folded into 1) |
 | M5 | Fashion re-home | moda chooser, `tek-parca` route for today's wizard, nav/route patterns | – |
 | M6 | Media v2 | video + HEIC (client-side HEIC conversion; direct-to-storage upload for video because of request-size limits) | storage policy |
@@ -234,7 +240,7 @@ Every milestone: unit tests for the pure logic (registry per profile, route patt
 
 ## 10. Risks
 
-- **Storefront regressions** are the main danger (category switch in M3, slug routing in M2). Mitigation: null-slug and code-tree fallbacks; switch behind parity checks on lilabutik.
+- **Storefront regressions** are the main danger (category switch in M3b, slug routing in M2). Mitigation: null-slug and code-tree fallbacks; switch behind parity checks on lilabutik.
 - **HTML rendering** needs a real sanitizer on write and render (XSS otherwise).
 - **HEIC and video** are not supported by the current upload path; HEIC decoding is not in sharp's prebuilt binaries, so it is done in the browser.
 - **Dijital** is stored-only: such a product still goes through normal checkout and shipping until delivery exists.
@@ -246,7 +252,7 @@ Every milestone: unit tests for the pure logic (registry per profile, route patt
 2. Basit/Gelişmiş use explicit Kaydet; the fashion editor keeps autosave.
 3. Existing products keep a null slug so lilabutik's indexed URLs don't change.
 4. Lokasyon's "Ana adres" reads `physical_address` (what Ayarlar edits), falling back to `shipping_address`.
-5. Flat category slugs (`/kategori/<slug>`), storefront menu shows two levels.
+5. Flat category slugs (`/kategori/<slug>`), storefront menu shows two levels. A category description is plain text until rich text lands (M4).
 6. Ürünler list's Filtre and search stay as built in `059c175`; a "Tür" column is not added (only one category type).
 
 ## 12. Still open

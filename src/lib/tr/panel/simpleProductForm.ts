@@ -16,6 +16,7 @@ import {
   type TrSeoFormValue,
 } from "@/lib/tr/seo/seoFields";
 import { isValidSlug } from "@/lib/tr/seo/slug";
+import type { TrProductCategories } from "@/lib/tr/categories/types";
 import type {
   TrFulfillmentType,
   TrProduct,
@@ -43,9 +44,16 @@ export interface SimpleProductFormState {
   images: string[];
   /** Slug and the SEO card's fields. */
   seo: TrSeoFormValue;
+  /**
+   * The product's categories when the boutique manages its own; `null` when it uses
+   * the built-in tree (nothing is sent, nothing is shown).
+   */
+  categories: TrProductCategories | null;
 }
 
-export function emptySimpleProductForm(): SimpleProductFormState {
+export function emptySimpleProductForm(
+  categories: TrProductCategories | null = null,
+): SimpleProductFormState {
   return {
     title: "",
     fulfillmentType: "physical",
@@ -56,6 +64,7 @@ export function emptySimpleProductForm(): SimpleProductFormState {
     stock: "1",
     images: [],
     seo: { ...EMPTY_SEO_FORM },
+    categories,
   };
 }
 
@@ -67,6 +76,7 @@ function kurusToInput(kurus: number): string {
 export function simpleFormFromProduct(
   product: TrProduct,
   ownerOnly: TrProductPrivate,
+  categories: TrProductCategories | null = null,
 ): SimpleProductFormState {
   const onSale =
     typeof product.compareAtPriceKurus === "number" &&
@@ -86,6 +96,7 @@ export function simpleFormFromProduct(
     stock: String(product.stock),
     images: product.images,
     seo: seoToForm(product.slug, product.seo),
+    categories,
   };
 }
 
@@ -174,6 +185,7 @@ export function simpleProductPayload(
     // Empty = the server derives it from the title.
     slug: form.seo.slug.replace(/-+$/, "") || undefined,
     seo: seoFromForm(form.seo),
+    ...(form.categories ? { categories: form.categories } : {}),
   };
 }
 
@@ -194,6 +206,7 @@ export function simpleProductPatch(
     status,
     images,
     seo,
+    categories,
   } = simpleProductPayload(form, "");
   return {
     title,
@@ -207,5 +220,6 @@ export function simpleProductPatch(
     seo,
     // An emptied slug clears it; the old address then redirects to the id URL.
     slug: form.seo.slug.replace(/-+$/, "") || null,
+    ...(categories ? { categories } : {}),
   };
 }

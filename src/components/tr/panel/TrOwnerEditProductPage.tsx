@@ -19,6 +19,7 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { fetchOwnerProduct } from "@/lib/tr/ownerClient";
 import { trPanelProductsPath } from "@/lib/tr/paths";
+import type { TrProductCategories } from "@/lib/tr/categories/types";
 import type { TrProduct, TrProductPrivate } from "@/types/tr-marketplace";
 
 interface TrOwnerEditProductPageProps {
@@ -32,6 +33,8 @@ export function TrOwnerEditProductPage({ productId }: TrOwnerEditProductPageProp
   const [ownerOnly, setOwnerOnly] = useState<TrProductPrivate>({
     costPriceKurus: null,
   });
+  const [productCategories, setProductCategories] =
+    useState<TrProductCategories>({ ids: [], primaryId: null });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -51,6 +54,7 @@ export function TrOwnerEditProductPage({ productId }: TrOwnerEditProductPageProp
         if (!cancelled) {
           setProduct(result.product);
           setOwnerOnly(result.ownerOnly);
+          setProductCategories(result.categories);
         }
       } catch (loadError) {
         if (!cancelled) {
@@ -103,6 +107,8 @@ export function TrOwnerEditProductPage({ productId }: TrOwnerEditProductPageProp
                     address={boutiqueLocationAddress(activeBoutique)}
                     product={product}
                     ownerOnly={ownerOnly}
+                    categoryMode={activeBoutique.categoryMode}
+                    initialCategories={productCategories}
                     onSaved={(saved) => {
                       setProduct(saved);
                     }}
