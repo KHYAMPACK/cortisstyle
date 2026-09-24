@@ -33,31 +33,28 @@ function Chip({
   );
 }
 
-function toneFor(sign: number, { invert, neutral }: { invert: boolean; neutral: boolean }): Tone {
-  if (sign === 0 || neutral) return "flat";
+function toneFor(sign: number, invert: boolean): Tone {
+  if (sign === 0) return "flat";
   return (sign > 0) !== invert ? "good" : "bad";
 }
 
 /**
  * Change versus the previous period. `invert` flips the colours for numbers where
- * more is worse (cancellations); `neutral` drops colour when neither direction is
- * good or bad (discounts).
+ * more is worse (cancellations).
  */
 export function TrDashboardDelta({
   delta,
   invert = false,
-  neutral = false,
 }: {
   delta: TrDelta;
   invert?: boolean;
-  neutral?: boolean;
 }) {
   if (delta.kind === "none") {
     return <span className="text-[11.5px] text-neutral-400">—</span>;
   }
   if (delta.kind === "new") {
     return (
-      <Chip tone={toneFor(1, { invert, neutral })} arrow="up">
+      <Chip tone={toneFor(1, invert)} arrow="up">
         Yeni
       </Chip>
     );
@@ -65,7 +62,7 @@ export function TrDashboardDelta({
   const { percent } = delta;
   return (
     <Chip
-      tone={toneFor(percent, { invert, neutral })}
+      tone={toneFor(percent, invert)}
       arrow={percent > 0 ? "up" : percent < 0 ? "down" : undefined}
     >
       %{formatDecimal(Math.abs(percent))}
@@ -87,7 +84,7 @@ export function TrDashboardRateDelta({
   const points = Math.round((current - previous) * 1000) / 10;
   return (
     <Chip
-      tone={toneFor(points, { invert: false, neutral: false })}
+      tone={toneFor(points, false)}
       arrow={points > 0 ? "up" : points < 0 ? "down" : undefined}
     >
       {formatDecimal(Math.abs(points))} puan

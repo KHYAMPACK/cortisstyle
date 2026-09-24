@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { TrDashboardChart } from "@/components/tr/panel/dashboard/TrDashboardChart";
 import { TrDashboardDelta } from "@/components/tr/panel/dashboard/TrDashboardDelta";
+import { TrDashboardSegmentFooter } from "@/components/tr/panel/dashboard/TrDashboardSegmentFooter";
 import {
   formatWindowSpan,
   TR_DASHBOARD_METRICS,
@@ -100,34 +101,41 @@ export function TrDashboardTrendCard({
         })}
       </div>
 
-      <div role="tabpanel" className="px-3 pt-4 pb-3 sm:px-5 sm:pb-4">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-1 sm:px-0">
-          <p className="text-[13px] text-neutral-500">
-            <span className="font-medium text-neutral-800">{metric.label}</span>
-            {" · "}
-            {span}
-          </p>
-          {compare ? (
-            <p className="flex items-center gap-3 text-[12px] text-neutral-500">
-              <span className="flex items-center gap-1.5">
-                <span className="h-0.5 w-4 rounded-full bg-[color:var(--panel-accent)]" />
-                Bu dönem
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="h-0 w-4 border-t-2 border-dashed border-neutral-400" />
-                Önceki dönem ({previousSpan})
-              </span>
+      <div role="tabpanel">
+        <div className="px-3 pt-4 pb-3 sm:px-5 sm:pb-4">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-1 sm:px-0">
+            <p className="text-[13px] text-neutral-500">
+              <span className="font-medium text-neutral-800">{metric.label}</span>
+              {" · "}
+              {span}
             </p>
-          ) : null}
+            {compare ? (
+              <p className="flex items-center gap-3 text-[12px] text-neutral-500">
+                <span className="flex items-center gap-1.5">
+                  <span className="h-0.5 w-4 rounded-full bg-[color:var(--panel-accent)]" />
+                  Bu dönem
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="h-0 w-4 border-t-2 border-dashed border-neutral-400" />
+                  Önceki dönem ({previousSpan})
+                </span>
+              </p>
+            ) : null}
+          </div>
+          <TrDashboardChart
+            current={current}
+            previous={previous}
+            money={metric.money}
+            formatValue={metric.format}
+            seriesKey={`${metric.id}:${range.id}:${range.startMs}`}
+            empty={current.values.every((value) => value === 0)}
+            ariaLabel={`${metric.label} grafiği, ${span}`}
+          />
         </div>
-        <TrDashboardChart
-          current={current}
-          previous={previous}
-          money={metric.money}
-          formatValue={metric.format}
-          seriesKey={`${metric.id}:${range.id}:${range.startMs}`}
-          empty={current.values.every((value) => value === 0)}
-          ariaLabel={`${metric.label} grafiği, ${span}`}
+        <TrDashboardSegmentFooter
+          dashboard={dashboard}
+          metric={metric}
+          compare={compare}
         />
       </div>
     </section>

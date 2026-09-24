@@ -1,5 +1,5 @@
 import type {
-  TrDashboardKpis,
+  TrDashboardSegmentKpis,
   TrDashboardSeriesPoint,
 } from "@/lib/tr/panel/dashboardMetrics";
 import { formatTryFromKurus } from "@/types/tr-marketplace";
@@ -77,7 +77,10 @@ export interface TrDashboardMetric {
   money: boolean;
   /** More of this is bad (cancellations), so an increase is shown in red. */
   invertDelta: boolean;
-  total: (kpis: TrDashboardKpis) => number;
+  /** Noun shown after a count ("sipariş"); money metrics have none. */
+  unit?: string;
+  /** Works on the overall KPIs and on any slice of them (payment method, discounted). */
+  total: (kpis: TrDashboardSegmentKpis) => number;
   point: (point: TrDashboardSeriesPoint) => number;
   format: (value: number) => string;
 }
@@ -97,6 +100,7 @@ export const TR_DASHBOARD_METRICS: ReadonlyArray<TrDashboardMetric> = [
     label: "Sipariş Sayısı",
     money: false,
     invertDelta: false,
+    unit: "sipariş",
     total: (kpis) => kpis.orderCount,
     point: (point) => point.orderCount,
     format: formatCount,
@@ -118,6 +122,7 @@ export const TR_DASHBOARD_METRICS: ReadonlyArray<TrDashboardMetric> = [
     label: "Yeni Müşteri",
     money: false,
     invertDelta: false,
+    unit: "müşteri",
     total: (kpis) => kpis.newCustomers,
     point: (point) => point.newCustomers,
     format: formatCount,
@@ -127,6 +132,7 @@ export const TR_DASHBOARD_METRICS: ReadonlyArray<TrDashboardMetric> = [
     label: "İptaller",
     money: false,
     invertDelta: true,
+    unit: "iptal",
     total: (kpis) => kpis.cancelledCount,
     point: (point) => point.cancelledCount,
     format: formatCount,

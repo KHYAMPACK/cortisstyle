@@ -140,13 +140,54 @@ describe("computeOwnerDashboard", () => {
     assert.equal(current.cancelledKurus, 70_000);
   });
 
-  it("splits card and manual payments and totals discounts", () => {
-    assert.equal(current.cardOrderCount, 2);
-    assert.equal(current.cardRevenueKurus, 180_000);
-    assert.equal(current.manualOrderCount, 1);
-    assert.equal(current.manualRevenueKurus, 90_000);
-    assert.equal(current.discountedOrderCount, 1);
+  it("totals the discount given", () => {
     assert.equal(current.discountKurus, 10_000);
+  });
+
+  it("splits every chart KPI by payment method and for discounted orders", () => {
+    const { card, manual, discounted } = current.segments;
+    assert.deepEqual(card, {
+      revenueKurus: 180_000,
+      orderCount: 2,
+      averageOrderKurus: 90_000,
+      newCustomers: 1,
+      cancelledCount: 0,
+    });
+    // The cancelled order o4 was paid manually.
+    assert.deepEqual(manual, {
+      revenueKurus: 90_000,
+      orderCount: 1,
+      averageOrderKurus: 90_000,
+      newCustomers: 1,
+      cancelledCount: 1,
+    });
+    assert.deepEqual(discounted, {
+      revenueKurus: 90_000,
+      orderCount: 1,
+      averageOrderKurus: 90_000,
+      newCustomers: 1,
+      cancelledCount: 0,
+    });
+  });
+
+  it("makes card and manual add up to the totals", () => {
+    const { card, manual } = current.segments;
+    assert.equal(card.revenueKurus + manual.revenueKurus, current.revenueKurus);
+    assert.equal(card.orderCount + manual.orderCount, current.orderCount);
+    assert.equal(card.newCustomers + manual.newCustomers, current.newCustomers);
+    assert.equal(card.cancelledCount + manual.cancelledCount, current.cancelledCount);
+  });
+
+  it("computes the same slices for the previous period", () => {
+    assert.equal(previous.segments.card.orderCount, 0);
+    assert.equal(previous.segments.manual.revenueKurus, 60_000);
+    assert.equal(previous.segments.discounted.orderCount, 0);
+  });
+
+  it("has empty slices, not missing ones, when nothing happened", () => {
+    const empty = dashboard(true).previous.segments.card;
+    assert.equal(empty.averageOrderKurus, 0);
+    assert.equal(empty.revenueKurus, 0);
   });
 
   it("computes payment completion from card checkouts (paid + failed + pending)", () => {

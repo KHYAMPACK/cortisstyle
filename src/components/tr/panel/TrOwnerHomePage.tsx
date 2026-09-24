@@ -2,10 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { TrDashboardActionPill } from "@/components/tr/panel/dashboard/TrDashboardActionPill";
-import {
-  TrDashboardBreakdown,
-  TrDashboardGrowth,
-} from "@/components/tr/panel/dashboard/TrDashboardBreakdown";
+import { TrDashboardGrowth } from "@/components/tr/panel/dashboard/TrDashboardGrowth";
 import { TrDashboardRecentOrders } from "@/components/tr/panel/dashboard/TrDashboardRecentOrders";
 import { TrDashboardSkeleton } from "@/components/tr/panel/dashboard/TrDashboardSkeleton";
 import { TrDashboardToolbar } from "@/components/tr/panel/dashboard/TrDashboardToolbar";
@@ -126,7 +123,6 @@ function HomeDashboard({
               onMetricChange={setMetricId}
             />
           </TrPanelFadeIn>
-          <TrDashboardBreakdown dashboard={dashboard} compare={compare} />
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
             <TrDashboardTopSellers dashboard={dashboard} compare={compare} />
             <TrDashboardGrowth dashboard={dashboard} compare={compare} />

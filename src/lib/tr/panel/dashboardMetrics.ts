@@ -29,29 +29,36 @@ import {
   isActiveOrder,
 } from "@/lib/tr/panel/orderRevenue";
 
-export interface TrDashboardKpis {
+/** The headline numbers the chart can plot — for all orders, or for one slice of them. */
+export interface TrDashboardSegmentKpis {
   revenueKurus: number;
   orderCount: number;
-  itemCount: number;
   averageOrderKurus: number;
+  newCustomers: number;
+  cancelledCount: number;
+}
+
+/**
+ * Fixed slices shown under the chart. Card and manual split every order in two;
+ * discounted orders cut across both.
+ */
+export type TrDashboardSegmentId = "card" | "manual" | "discounted";
+
+export interface TrDashboardKpis extends TrDashboardSegmentKpis {
+  itemCount: number;
   itemsPerOrder: number;
   averageItemPriceKurus: number;
-  newCustomers: number;
   customerCount: number;
   /** Share of this window's customers who had ordered before it. Null with no customers. */
   repeatRate: number | null;
-  cancelledCount: number;
   cancelledKurus: number;
   /** Card checkouts started (paid by card + failed + pending). 0 without card payments. */
   paymentAttempts: number;
   /** Null when the boutique has no card payments or there were no attempts. */
   paymentCompletionRate: number | null;
-  cardOrderCount: number;
-  cardRevenueKurus: number;
-  manualOrderCount: number;
-  manualRevenueKurus: number;
-  discountedOrderCount: number;
+  /** Total discount given on this window's paid orders. */
   discountKurus: number;
+  segments: Record<TrDashboardSegmentId, TrDashboardSegmentKpis>;
 }
 
 export interface TrDashboardSeriesPoint {
@@ -181,6 +188,23 @@ function inWindow(order: PreparedOrder, startMs: number, endMs: number): boolean
   return order.createdMs >= startMs && order.createdMs < endMs;
 }
 
+/** Chart KPIs for a set of paid orders and the cancelled-after-paid ones in the same slice. */
+function summarize(
+  paid: PreparedOrder[],
+  cancelled: PreparedOrder[],
+  firstOrderIds: Set<string>,
+): TrDashboardSegmentKpis {
+  const revenueKurus = paid.reduce((sum, order) => sum + order.netKurus, 0);
+  return {
+    revenueKurus,
+    orderCount: paid.length,
+    averageOrderKurus:
+      paid.length > 0 ? Math.round(revenueKurus / paid.length) : 0,
+    newCustomers: paid.filter((order) => firstOrderIds.has(order.id)).length,
+    cancelledCount: cancelled.length,
+  };
+}
+
 function computeKpis(
   prepared: PreparedOrder[],
   firstOrderIds: Set<string>,
@@ -196,19 +220,16 @@ function computeKpis(
     (order) => order.status === "cancelledPaid",
   );
 
-  const revenueKurus = paid.reduce((sum, order) => sum + order.netKurus, 0);
+  const totals = summarize(paid, cancelled, firstOrderIds);
   const itemCount = paid.reduce((sum, order) => sum + order.itemCount, 0);
   const grossKurus = paid.reduce((sum, order) => sum + order.grossKurus, 0);
-  const orderCount = paid.length;
 
   const customers = new Set(paid.map((order) => order.email));
-  const newCustomers = paid.filter((order) =>
-    firstOrderIds.has(order.id),
-  ).length;
 
   const cardPaid = paid.filter((order) => order.card);
-  const manualPaid = paid.filter((order) => !order.card);
   const discounted = paid.filter((order) => order.discountKurus > 0);
+  const slice = (keep: (order: PreparedOrder) => boolean) =>
+    summarize(paid.filter(keep), cancelled.filter(keep), firstOrderIds);
 
   const paymentAttempts = offersCardPayments
     ? cardPaid.length +
@@ -218,27 +239,25 @@ function computeKpis(
     : 0;
 
   return {
-    revenueKurus,
-    orderCount,
+    ...totals,
     itemCount,
-    averageOrderKurus: orderCount > 0 ? Math.round(revenueKurus / orderCount) : 0,
-    itemsPerOrder: orderCount > 0 ? itemCount / orderCount : 0,
+    itemsPerOrder: totals.orderCount > 0 ? itemCount / totals.orderCount : 0,
     averageItemPriceKurus: itemCount > 0 ? Math.round(grossKurus / itemCount) : 0,
-    newCustomers,
     customerCount: customers.size,
     repeatRate:
-      customers.size > 0 ? (customers.size - newCustomers) / customers.size : null,
-    cancelledCount: cancelled.length,
+      customers.size > 0
+        ? (customers.size - totals.newCustomers) / customers.size
+        : null,
     cancelledKurus: cancelled.reduce((sum, order) => sum + order.netKurus, 0),
     paymentAttempts,
     paymentCompletionRate:
       paymentAttempts > 0 ? cardPaid.length / paymentAttempts : null,
-    cardOrderCount: cardPaid.length,
-    cardRevenueKurus: cardPaid.reduce((sum, order) => sum + order.netKurus, 0),
-    manualOrderCount: manualPaid.length,
-    manualRevenueKurus: manualPaid.reduce((sum, order) => sum + order.netKurus, 0),
-    discountedOrderCount: discounted.length,
     discountKurus: discounted.reduce((sum, order) => sum + order.discountKurus, 0),
+    segments: {
+      card: slice((order) => order.card),
+      manual: slice((order) => !order.card),
+      discounted: slice((order) => order.discountKurus > 0),
+    },
   };
 }
 
