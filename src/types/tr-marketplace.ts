@@ -319,6 +319,8 @@ export interface TrOrderItem {
   createdAt: string;
   /** Cover for packing UI — resolved from live product when available. */
   imageUrl: string | null;
+  /** Category of the live product; null when unknown or the product was deleted. */
+  category?: string | null;
 }
 
 export interface TrOrderWithItems extends TrOrder {

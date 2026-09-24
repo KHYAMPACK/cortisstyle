@@ -75,6 +75,13 @@ describe("isPanelEditorRoute", () => {
     assert.equal(isPanelEditorRoute("/tr/panel/urun/abc-123/"), true);
   });
 
+  it("is true for a single order, but not for the order list", () => {
+    assert.equal(isPanelEditorRoute("/tr/panel/siparisler/abc-123"), true);
+    assert.equal(isPanelEditorRoute("/tr/panel/siparisler/abc-123/"), true);
+    assert.equal(isPanelEditorRoute("/tr/panel/siparisler"), false);
+    assert.equal(isPanelEditorRoute("/tr/panel/siparisler/abc/baska"), false);
+  });
+
   it("is true for every step of the create flow", () => {
     for (const path of [
       "/tr/panel/urun/yeni",
@@ -95,7 +102,7 @@ describe("isPanelEditorRoute", () => {
       "/tr/panel/stok",
       "/tr/panel/urun/takim",
       "/tr/panel/urun/toplu",
-      "/tr/panel/siparisler/abc",
+      "/tr/panel/siparisler",
     ]) {
       assert.equal(isPanelEditorRoute(path), false, path);
     }

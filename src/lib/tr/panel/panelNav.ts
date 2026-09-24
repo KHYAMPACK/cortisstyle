@@ -151,6 +151,8 @@ const PANEL_EDITOR_ROUTES: RegExp[] = [
   /^\/tr\/panel\/urun\/yeni(\/basit|\/moda(\/tek-parca)?)?\/?$/,
   // Editing an existing product (any type).
   /^\/tr\/panel\/urun\/(?!yeni\/?$|takim\/?$|toplu\/?$)[^/]+\/?$/,
+  // One order (the list, /siparisler, keeps the normal chrome).
+  /^\/tr\/panel\/siparisler\/[^/]+\/?$/,
 ];
 
 export function isPanelEditorRoute(pathname: string): boolean {

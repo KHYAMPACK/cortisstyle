@@ -37,6 +37,8 @@ export function TrPanelEditor({
   parentLabel,
   title,
   subject,
+  badges,
+  width = "default",
   children,
 }: {
   backHref: string;
@@ -46,6 +48,10 @@ export function TrPanelEditor({
   title: string;
   /** The thing being edited, shown centred in the bar on wide screens. */
   subject?: string | null;
+  /** Small status chips shown right after the title (hidden on phones). */
+  badges?: ReactNode;
+  /** "wide" gives pages that need a side column room for it. */
+  width?: "default" | "wide";
   children: ReactNode;
 }) {
   const [slot, setSlot] = useState<HTMLElement | null>(null);
@@ -76,6 +82,11 @@ export function TrPanelEditor({
             aria-hidden
           />
           <h1 className="min-w-0 truncate font-semibold">{title}</h1>
+          {badges ? (
+            <div className="hidden shrink-0 items-center gap-2 md:flex">
+              {badges}
+            </div>
+          ) : null}
         </nav>
 
         {subject ? (
@@ -91,7 +102,11 @@ export function TrPanelEditor({
       </header>
 
       <ActionsSlotContext.Provider value={slot}>
-        <main className="mx-auto w-full max-w-4xl px-4 pt-3 pb-[calc(2.5rem+env(safe-area-inset-bottom))] sm:px-5 lg:pt-4">
+        <main
+          className={`mx-auto w-full px-4 pt-3 pb-[calc(2.5rem+env(safe-area-inset-bottom))] sm:px-5 lg:pt-4 ${
+            width === "wide" ? "max-w-6xl" : "max-w-4xl"
+          }`}
+        >
           {children}
         </main>
       </ActionsSlotContext.Provider>

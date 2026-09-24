@@ -24,6 +24,7 @@ export function TrPanelConfirmPopover({
   confirmLabel = "Evet",
   cancelLabel = "Hayır",
   align = "start",
+  side = "top",
   children,
 }: {
   open: boolean;
@@ -34,6 +35,8 @@ export function TrPanelConfirmPopover({
   cancelLabel?: string;
   /** Which edge of the trigger the popover lines up with. */
   align?: "start" | "end";
+  /** Open above the trigger (default) or below it, for triggers near the top of the screen. */
+  side?: "top" | "bottom";
   children: ReactNode;
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -58,9 +61,9 @@ export function TrPanelConfirmPopover({
         <div
           role="alertdialog"
           aria-label={message}
-          className={`tr-panel-enter absolute bottom-full z-10 mb-3 w-[18.5rem] rounded-lg border border-neutral-200 bg-white text-neutral-800 shadow-xl ${
-            align === "end" ? "right-0" : "left-0"
-          }`}
+          className={`tr-panel-enter absolute z-10 w-[18.5rem] rounded-lg border border-neutral-200 bg-white text-neutral-800 shadow-xl ${
+            side === "bottom" ? "top-full mt-3" : "bottom-full mb-3"
+          } ${align === "end" ? "right-0" : "left-0"}`}
         >
           <div className="flex items-start gap-3 px-4 py-4">
             <AlertCircle
@@ -89,9 +92,11 @@ export function TrPanelConfirmPopover({
           </div>
           <span
             aria-hidden
-            className={`absolute -bottom-1.5 h-3 w-3 rotate-45 border-r border-b border-neutral-200 bg-white ${
-              align === "end" ? "right-6" : "left-6"
-            }`}
+            className={`absolute h-3 w-3 rotate-45 border-neutral-200 bg-white ${
+              side === "bottom"
+                ? "-top-1.5 border-t border-l"
+                : "-bottom-1.5 border-r border-b"
+            } ${align === "end" ? "right-6" : "left-6"}`}
           />
         </div>
       ) : null}

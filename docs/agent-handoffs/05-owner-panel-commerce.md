@@ -47,6 +47,23 @@ Product management pages: `urun/yeni` (type chooser), `urun/yeni/basit` (Basit �
 
 **Panel-wide state that persists across pages** (because it lives in the shell): the leave guard and the AI restyle session (`TrOwnerElbiseRestyleSession`). Pages release their leave-guard registration on unmount (`useRegisterLeaveBusy` cleans up), so a persistent guard is safe.
 
+## Order page (Sipariş #…)
+
+`/tr/panel/siparisler/[id]` is an **editor page** (listed in `PANEL_EDITOR_ROUTES`, so the shell drops its chrome): `TrOwnerOrderDetailPage.tsx` puts `TrPanelEditor` (`width="wide"`, status chips through its `badges` slot) over two columns built from `src/components/tr/panel/orders/`. Left: `TrOrderFulfillmentCard` (products table, status menu, the shipping step) and `TrOrderCustomerCard`. Right: `TrOrderSummaryCard` and `TrOrderPaymentCard`. The top bar carries **Önceki / Sonraki** and a ⋯ menu with **İptal Et** (asks first through `TrPanelConfirmPopover`; `side="bottom"` opens it under the button). The list, `/siparisler`, is still the older card list.
+
+**Number shown.** `#` + `orderReference(id)` (`src/lib/tr/orderReference.ts`): the first 8 characters of the order id in capitals — the same code shoppers see on their tracking page, so owner and shopper can quote it to each other. There are no sequential per-boutique numbers (that would need a column, a backfill and shopper-page changes).
+
+**Önceki / Sonraki** walk the boutique's order list newest-first (`adjacentOrders` in `src/lib/tr/panel/orderView.ts`): Önceki is the order just above in the list, Sonraki the one below. The list is cached with every order's items, so the neighbour renders at once from the cache and is refreshed underneath; after any action the page refetches the list in the background so the next move is instant too. They ignore whatever filter the list had.
+
+**Money.** Orders don't store the shopper's shipping fee as its own number, so the summary derives it: `total − (subtotal − discount)` (`orderShippingKurus`). There is no KDV line.
+
+**Shipping step (fulfilment card footer).** Two paths, chosen by `boutiqueHasCarrierIntegration`:
+- *Live carrier (Basit Kargo, Lila):* `TrOwnerShipmentSection` — Etiket hazırla / yazdır / kargo kodunu iptal et, unchanged rules. Correcting a rejected address is a form, so it is a `TrPanelDrawer` (must confirm the WhatsApp conversation first, one correction only).
+- *No carrier integration:* `TrOrderManualShipment` — **Kargoya ver** opens a drawer for the carrier name (quick picks in `COMMON_CARRIERS`) and an optional tracking code and moves the order to Kargoda; Kargoda shows **Teslim edildi** and **Kargo bilgisini düzenle**. The API is `POST …/orders/[id]/shipment` with `action: "manual-ship"`, refused for boutiques that have an integration; the rules live in `src/lib/tr/shipping/manualShipment.ts` (carrier required, code optional, length limits). This is roadmap P4-T3 minus the customer notification, and shoppers don't yet see the carrier or code on their tracking page.
+- *Status changes* (Durumu değiştir, Kargoya hazır, Teslim edildi, mark paid) are actions: they apply at once, no guard.
+
+**Products.** Clicking a line opens a popover (`TrOrderProducts`): Ürüne Git (or "silinmiş" when the product is gone), name, category, size, style, and the customer's photo for custom-art orders. The category comes from `TrOrderItem.category`, resolved next to `imageUrl` in `withProductImages`.
+
 ## Home dashboard (Giriş)
 
 `TrOwnerHomePage.tsx` composes the panel home from `src/components/tr/panel/dashboard/`: a sticky toolbar (date-range menu, "Önceki döneme göre" compare switch, Raporlar link, "Mağazayı aç"), a KPI strip whose selected KPI drives the trend chart and a footer under it that splits that same KPI into fixed slices (Kart ile ödeme, Havale / manuel ödeme, İndirimli siparişler — `TrDashboardKpis.segments`; card and manual add up to the total, discounted orders overlap both), best sellers (products / categories), growth metrics, recent orders, and a floating action pill (orders to ship, manual payments awaiting approval, low stock — dismissible, cycles when there are several). The structure follows the reference admin; colours and the accent are ours. There is no visitor/session analytics in the schema, so those widgets are deliberately absent — Yeni Müşteri, Ödeme Tamamlama Oranı and İptaller stand in for them.
@@ -83,6 +100,7 @@ Checkout iyzico flow: `src/app/api/tr/checkout/iyzico/{start,abandon,callback}/r
 |---|---|
 | Owner auth | `src/lib/tr/ownerAuth.ts`, `src/lib/tr/panel/ownerClient.ts` |
 | Panel nav / capability gating | `src/lib/tr/panelNav.ts`, `src/lib/tr/catalogProfiles/registry.ts` |
+| Order page | `src/components/tr/panel/TrOwnerOrderDetailPage.tsx`, `orders/`, `TrOwnerShipmentSection.tsx`, `src/lib/tr/panel/orderView.ts`, `src/lib/tr/shipping/manualShipment.ts`, `src/lib/tr/orderReference.ts` |
 | Home dashboard | `src/components/tr/panel/TrOwnerHomePage.tsx`, `src/components/tr/panel/dashboard/`, `src/lib/tr/panel/dashboardMetrics.ts`, `dashboardRange.ts`, `ownerDashboard.ts`, `src/app/api/tr/owner/dashboard/route.ts` |
 | Panel shell / navigation | `src/app/tr/panel/layout.tsx`, `template.tsx`, `loading.tsx`, `src/components/tr/panel/TrPanelShell.tsx`, `TrPanelNavLinks.tsx`, `TrPanelNavGroup.tsx`, `src/lib/tr/panel/panelNav.ts`, `TrPanelDesktopSidebar.tsx`, `TrPanelLink.tsx`, `panelUi.ts` |
 | Editor layout | `src/components/tr/panel/TrPanelEditor.tsx` (incl. `TrPanelEditorSave`), `TrPanelPopover.tsx`, `src/lib/tr/panel/editorScrollSpy.ts` |

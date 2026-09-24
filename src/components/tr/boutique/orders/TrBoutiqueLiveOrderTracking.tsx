@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { TrBoutiquePendingLink } from "@/components/tr/boutique/editorial/TrBoutiqueNavPending";
 import { trPanelEase } from "@/components/tr/panel/TrPanelMotion";
 import { resolveBoutiqueThemeAccent } from "@/lib/tr/boutiqueBrand";
+import { orderReference } from "@/lib/tr/orderReference";
 import { LIVE_TRACKING_STEPS } from "@/lib/tr/shipping/mapFulfillment";
 import { trBoutiqueOrderDetailPath } from "@/lib/tr/paths";
 import type { TrBoutiquePublic } from "@/types/tr-marketplace";
@@ -179,7 +180,7 @@ export function TrBoutiqueTrackingGate({
         </button>
       </form>
       <p className="mt-6 text-[12px] text-neutral-500">
-        {boutique.name} siparişi {orderId.slice(0, 8).toUpperCase()}
+        {boutique.name} siparişi {orderReference(orderId)}
       </p>
     </div>
   );

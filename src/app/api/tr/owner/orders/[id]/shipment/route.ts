@@ -2,7 +2,9 @@ import {
   requireOwnedBoutique,
   requireTrOwner,
 } from "@/lib/tr/ownerAuth";
-import { getOrderByIdAdmin } from "@/lib/tr/orders";
+import { getOrderByIdAdmin, updateOrderShipmentAdmin } from "@/lib/tr/orders";
+import { boutiqueOffersIyzicoCheckout } from "@/lib/tr/payments/registry";
+import { validateManualShipment } from "@/lib/tr/shipping/manualShipment";
 import { getShippingProviderId } from "@/lib/tr/shipping/registry";
 import {
   BasitKargoError,
@@ -41,7 +43,10 @@ function jsonError(error: unknown, fallback: string, status = 500) {
 
 /**
  * GET /api/tr/owner/orders/[id]/shipment?boutiqueId=
- * POST { boutiqueId, action: create | rates | fulfill | retry-address | cancel }
+ * POST { boutiqueId, action: create | rates | fulfill | retry-address | cancel | manual-ship }
+ *
+ * `manual-ship` is for boutiques with no carrier integration: the owner records the
+ * carrier and (optionally) a tracking code and the order moves to "shipped".
  */
 export async function GET(request: Request, context: RouteContext) {
   const authResult = await requireTrOwner(request);
@@ -176,6 +181,66 @@ export async function POST(request: Request, context: RouteContext) {
     if (action === "cancel") {
       const result = await cancelBoutiqueShipmentBarcode(boutique, id);
       return Response.json({ order: result.order });
+    }
+    if (action === "manual-ship") {
+      if (getShippingProviderId(boutique.slug)) {
+        return Response.json(
+          {
+            error:
+              "Bu butikte kargo entegrasyonu var; etiketi Kargo bölümünden oluşturun.",
+          },
+          { status: 409 },
+        );
+      }
+      const checked = validateManualShipment({
+        carrierName: body.carrierName,
+        trackingCode: body.trackingCode,
+      });
+      if (!checked.ok) {
+        return Response.json({ error: checked.error }, { status: 400 });
+      }
+      const existing = await getOrderByIdAdmin(id);
+      if (
+        !existing ||
+        !existing.items.some((item) => item.boutiqueId === boutique.id)
+      ) {
+        return Response.json({ error: "Sipariş bulunamadı." }, { status: 404 });
+      }
+      // Same visibility rule as the order PATCH: an unpaid or failed card checkout
+      // is not an order the owner can act on.
+      if (
+        (await boutiqueOffersIyzicoCheckout(boutique.slug)) &&
+        !existing.isSandbox &&
+        (existing.paymentStatus === "pending" ||
+          existing.paymentStatus === "failed")
+      ) {
+        return Response.json({ error: "Sipariş bulunamadı." }, { status: 404 });
+      }
+      if (
+        existing.fulfillmentStatus !== "created" &&
+        existing.fulfillmentStatus !== "ready" &&
+        existing.fulfillmentStatus !== "shipped"
+      ) {
+        return Response.json(
+          { error: "Bu durumdaki siparişin kargo bilgisi değiştirilemez." },
+          { status: 409 },
+        );
+      }
+      await updateOrderShipmentAdmin(id, {
+        carrierName: checked.carrierName,
+        trackingCode: checked.trackingCode,
+        fulfillmentStatus: "shipped",
+      });
+      const order = await getOrderByIdAdmin(id);
+      if (!order) {
+        return Response.json({ error: "Sipariş bulunamadı." }, { status: 404 });
+      }
+      return Response.json({
+        order: {
+          ...order,
+          items: order.items.filter((item) => item.boutiqueId === boutique.id),
+        },
+      });
     }
     return Response.json({ error: "Geçersiz işlem." }, { status: 400 });
   } catch (error) {

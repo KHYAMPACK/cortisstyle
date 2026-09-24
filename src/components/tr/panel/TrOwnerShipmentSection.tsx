@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { useState } from "react";
 import {
   TrTurkeyAddressFields,
@@ -15,6 +15,7 @@ import {
   panelSecondaryBtnClass,
   panelSuccessClass,
 } from "@/components/tr/panel/panelUi";
+import { TrPanelDrawer } from "@/components/tr/panel/TrPanelDrawer";
 import { trPanelFadeTransition } from "@/components/tr/panel/TrPanelMotion";
 import {
   cancelOwnerShipmentBarcode,
@@ -28,10 +29,9 @@ import {
   buildAddressCorrectionWhatsAppMessage,
   buildWhatsAppOrderUrl,
 } from "@/lib/tr/whatsapp";
-import { boutiqueHasCarrierIntegration } from "@/lib/tr/shipping/registry";
 import { tlLabel } from "@/lib/tr/shipping/shippingCopy";
-import { AUTO_BUY_FEE_CAP_KURUS } from "@/lib/tr/shipping/types";
 import {
+  AUTO_BUY_FEE_CAP_KURUS,
   SHIPPING_BLOCK_ADDRESS_REJECTED,
   SHIPPING_BLOCK_INSUFFICIENT_BALANCE,
   SHIPPING_BLOCK_PROVIDER_ERROR,
@@ -57,22 +57,28 @@ function statusLabel(status: string | null): string {
   return STATUS_TR[status] ?? status;
 }
 
+const noticeClass = "space-y-3 rounded-lg border border-amber-200 bg-amber-50 p-4";
+
+/**
+ * Carrier label and tracking for boutiques with a live carrier integration
+ * (Basit Kargo). Sits inside the order's fulfilment card. Correcting a rejected
+ * address is a form, so it opens in a drawer.
+ */
 export function TrOwnerShipmentSection({
   boutiqueId,
-  boutiqueSlug,
   order,
   onOrder,
 }: {
   boutiqueId: string;
-  boutiqueSlug: string;
   order: TrOrderWithItems;
   onOrder: (order: TrOrderWithItems) => void;
 }) {
-  const live = boutiqueHasCarrierIntegration(boutiqueSlug);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [trackingPath, setTrackingPath] = useState<string | null>(null);
   const [whatsappConfirmed, setWhatsappConfirmed] = useState(false);
+  const [addressOpen, setAddressOpen] = useState(false);
+  const [addressError, setAddressError] = useState<string | null>(null);
   const [draft, setDraft] = useState({
     city: order.shippingAddress.city,
     district: order.shippingAddress.district,
@@ -85,7 +91,6 @@ export function TrOwnerShipmentSection({
     order.paymentStatus === "paid" ||
     order.paymentStatus === "sandbox" ||
     order.isSandbox;
-  const cancelled = order.fulfillmentStatus === "cancelled";
   const shipment = order.shipment;
   const hasBarcode = hasPurchasedShippingLabel(shipment);
   const lastErrorLooksLikeBalance = (shipment.lastError ?? "")
@@ -104,14 +109,24 @@ export function TrOwnerShipmentSection({
   const providerError =
     shipment.block === SHIPPING_BLOCK_PROVIDER_ERROR && !hasBarcode;
 
-  const run = async (fn: () => Promise<void>) => {
-    if (busy) return;
+  const addressDirty =
+    draft.city !== order.shippingAddress.city ||
+    draft.district !== order.shippingAddress.district ||
+    draft.line1 !== order.shippingAddress.line1 ||
+    draft.line2 !== (order.shippingAddress.line2 ?? "") ||
+    draft.postalCode !== order.shippingAddress.postalCode;
+
+  /** Runs a carrier call; returns whether it worked (failures land in `error`). */
+  const run = async (fn: () => Promise<void>): Promise<boolean> => {
+    if (busy) return false;
     setBusy(true);
     setError(null);
     try {
       await fn();
+      return true;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Kargo işlemi başarısız.");
+      return false;
     } finally {
       setBusy(false);
     }
@@ -148,13 +163,28 @@ export function TrOwnerShipmentSection({
       }
     });
 
-  const saveAddressAndRetry = () => {
+  const openAddressDrawer = () => {
+    // Every open starts from the address on the order, not from abandoned edits.
+    setDraft({
+      city: order.shippingAddress.city,
+      district: order.shippingAddress.district,
+      line1: order.shippingAddress.line1,
+      line2: order.shippingAddress.line2 ?? "",
+      postalCode: order.shippingAddress.postalCode,
+    });
+    setAddressError(null);
+    setWhatsappConfirmed(false);
+    setAddressOpen(true);
+  };
+
+  const saveAddressAndRetry = async () => {
     const clientError = turkeyAddressClientError(draft);
     if (clientError) {
-      setError(clientError);
+      setAddressError(clientError);
       return;
     }
-    void run(async () => {
+    setAddressError(null);
+    const worked = await run(async () => {
       const result = await retryOwnerShipmentAddress(boutiqueId, order.id, {
         line1: draft.line1,
         line2: draft.line2.trim() || undefined,
@@ -165,8 +195,9 @@ export function TrOwnerShipmentSection({
       });
       onOrder(result.order);
       setTrackingPath(result.trackingPath ?? null);
-      setWhatsappConfirmed(false);
     });
+    // On a failure the drawer stays open and shows the reason (`error`).
+    if (worked) setAddressOpen(false);
   };
 
   const customerWhatsAppUrl = order.customerPhone
@@ -176,21 +207,8 @@ export function TrOwnerShipmentSection({
       )
     : null;
 
-  if (!live) {
-    return (
-      <section className="space-y-4 rounded-2xl border border-[color:var(--panel-accent-border)] bg-white p-5 shadow-sm sm:p-6">
-        <p className="text-[19px] font-semibold text-neutral-900">Kargo</p>
-        <p className={panelHintClass}>
-          Bu butik için kargo API’si yok. Kendi kargo panelinizden gönderi
-          oluşturun; durumu aşağıdan güncelleyin.
-        </p>
-      </section>
-    );
-  }
-
   return (
-    <section className="space-y-4 rounded-2xl border border-[color:var(--panel-accent-border)] bg-white p-5 shadow-sm sm:p-6">
-      <p className="text-[19px] font-semibold text-neutral-900">Kargo</p>
+    <div className="space-y-4">
       <p className={panelHintClass}>
         {shipment.feeKurus === 0
           ? `Alıcı kargo ödemedi (ücretsiz kargo). En uygun firma otomatik seçilir (en fazla ${tlLabel(AUTO_BUY_FEE_CAP_KURUS)}). Siz paketi hazırlayıp etiketi yazdırın. Adresi normalde değiştiremezsiniz.`
@@ -199,41 +217,49 @@ export function TrOwnerShipmentSection({
             : `Alıcı kargo ücreti siparişte kayıtlıdır; en uygun firma otomatik seçilir (en fazla ${tlLabel(AUTO_BUY_FEE_CAP_KURUS)}). Siz paketi hazırlayıp etiketi yazdırın. Adresi normalde değiştiremezsiniz.`}
       </p>
 
-      {cancelled ? (
-        <p className={panelHintClass}>İptal siparişte kargo oluşturulmaz.</p>
-      ) : !paid ? (
+      {!paid ? (
         <p className={panelHintClass}>
           Tahsilatı “Ödendi” yapınca etiket otomatik üretilir.
         </p>
       ) : (
         <div className="space-y-4">
-          <div className="space-y-1 text-[16px] text-neutral-800">
-            <p>
-              Durum:{" "}
-              <span className="font-semibold">
+          <dl className="grid gap-x-8 gap-y-2 text-[13.5px] sm:grid-cols-2">
+            <div>
+              <dt className="text-neutral-500">Kargo durumu</dt>
+              <dd className="font-medium text-neutral-900">
                 {statusLabel(shipment.status)}
-              </span>
-            </p>
+              </dd>
+            </div>
             {shipment.carrierName ? (
-              <p>Firma: {shipment.carrierName}</p>
+              <div>
+                <dt className="text-neutral-500">Kargo firması</dt>
+                <dd className="font-medium text-neutral-900">
+                  {shipment.carrierName}
+                </dd>
+              </div>
             ) : null}
             {hasBarcode && shipment.barcode ? (
-              <p className="font-mono text-[15px]">Barkod: {shipment.barcode}</p>
+              <div>
+                <dt className="text-neutral-500">Barkod</dt>
+                <dd className="font-mono font-medium text-neutral-900">
+                  {shipment.barcode}
+                </dd>
+              </div>
             ) : null}
             {shipment.trackingCode ? (
-              <p className="font-mono text-[15px]">
-                Takip no: {shipment.trackingCode}
-              </p>
+              <div>
+                <dt className="text-neutral-500">Takip numarası</dt>
+                <dd className="font-mono font-medium text-neutral-900">
+                  {shipment.trackingCode}
+                </dd>
+              </div>
             ) : null}
-            {shipment.feeKurus != null ? (
-              <p>Alıcı ödedi: {formatTryFromKurus(shipment.feeKurus)}</p>
-            ) : null}
-            {shipment.lastError && !hasBarcode ? (
-              <p className="text-[15px] text-neutral-600">
-                Son kargo notu: {shipment.lastError}
-              </p>
-            ) : null}
-          </div>
+          </dl>
+          {shipment.lastError && !hasBarcode ? (
+            <p className="text-[13px] text-neutral-600">
+              Son kargo notu: {shipment.lastError}
+            </p>
+          ) : null}
 
           {error ? <p className={panelErrorClass}>{error}</p> : null}
 
@@ -257,7 +283,6 @@ export function TrOwnerShipmentSection({
                 disabled={busy}
                 onClick={printLabel}
                 className={panelPrimaryBtnClass}
-                style={{ backgroundColor: "var(--panel-accent-deep)" }}
               >
                 {busy ? "Açılıyor…" : "Etiket yazdır"}
               </button>
@@ -274,19 +299,19 @@ export function TrOwnerShipmentSection({
               ) : null}
             </div>
           ) : addressRejected && retryUsed ? (
-            <div className="space-y-3 rounded-2xl border-2 border-amber-200 bg-amber-50 p-4">
-              <p className="text-[17px] font-semibold text-amber-950">
+            <div className={noticeClass}>
+              <p className="text-[14.5px] font-semibold text-amber-950">
                 Adres bir kez düzeltildi; kargo yine reddetti
               </p>
               <p className={panelHintClass}>
-                Tekrar deneme yok. Aşağıdan siparişi iptal edin. Kart iadesi
-                henüz yok — müşteriye havale / WhatsApp ile iade siz
-                aktarırsınız.
+                Tekrar deneme yok. Siparişi sağ üstteki ⋯ menüsünden iptal
+                edin. Kart iadesi henüz yok — müşteriye havale / WhatsApp ile
+                iade siz aktarırsınız.
               </p>
             </div>
           ) : addressRejected ? (
-            <div className="space-y-4 rounded-2xl border-2 border-amber-200 bg-amber-50 p-4">
-              <p className="text-[17px] font-semibold text-amber-950">
+            <div className={noticeClass}>
+              <p className="text-[14.5px] font-semibold text-amber-950">
                 Hiçbir kargo firması bu adresi kabul etmedi
               </p>
               <p className={panelHintClass}>
@@ -294,70 +319,18 @@ export function TrOwnerShipmentSection({
                 sonra bir kez düzeltebilirsiniz; kaydetmek kargoyu otomatik
                 tekrar dener.
               </p>
-              {customerWhatsAppUrl ? (
-                <a
-                  href={customerWhatsAppUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className={panelPrimaryBtnClass}
-                  style={{ backgroundColor: "var(--panel-accent-deep)" }}
-                >
-                  Müşteriyi WhatsApp’tan yaz
-                </a>
-              ) : (
-                <p className={panelHintClass}>
-                  Müşteri telefonu yok; paneldaki numarayı kontrol edin.
-                </p>
-              )}
-              <label className="flex min-h-12 cursor-pointer items-start gap-3 text-[16px] text-neutral-800">
-                <input
-                  type="checkbox"
-                  checked={whatsappConfirmed}
-                  onChange={(event) =>
-                    setWhatsappConfirmed(event.target.checked)
-                  }
-                  className="mt-1 h-5 w-5 shrink-0"
-                />
-                <span>Müşteriyle WhatsApp’tan konuştum, doğru adresi aldım.</span>
-              </label>
-              <AnimatePresence>
-                {whatsappConfirmed ? (
-                  <motion.div
-                    key="address-edit"
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -6 }}
-                    transition={trPanelFadeTransition}
-                    className="space-y-4"
-                  >
-                    <TrTurkeyAddressFields
-                      city={draft.city}
-                      district={draft.district}
-                      line1={draft.line1}
-                      line2={draft.line2}
-                      postalCode={draft.postalCode}
-                      fieldClassName={panelFieldClass}
-                      labelClassName={panelLabelClass}
-                      onChange={(patch) =>
-                        setDraft((current) => ({ ...current, ...patch }))
-                      }
-                    />
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={saveAddressAndRetry}
-                      className={panelPrimaryBtnClass}
-                      style={{ backgroundColor: "var(--panel-accent-deep)" }}
-                    >
-                      {busy ? "Kargo deneniyor…" : "Adresi kaydet ve kargoyu dene"}
-                    </button>
-                  </motion.div>
-                ) : null}
-              </AnimatePresence>
+              <button
+                type="button"
+                onClick={openAddressDrawer}
+                disabled={busy}
+                className={panelPrimaryBtnClass}
+              >
+                Adresi düzelt
+              </button>
             </div>
           ) : insufficientBalance || providerError ? (
-            <div className="space-y-4 rounded-2xl border-2 border-amber-200 bg-amber-50 p-4">
-              <p className="text-[17px] font-semibold text-amber-950">
+            <div className={noticeClass}>
+              <p className="text-[14.5px] font-semibold text-amber-950">
                 {insufficientBalance
                   ? "Basit Kargo bakiyesi yetersiz"
                   : "Kargo etiketi üretilemedi"}
@@ -373,7 +346,6 @@ export function TrOwnerShipmentSection({
                 disabled={busy}
                 onClick={fulfill}
                 className={panelPrimaryBtnClass}
-                style={{ backgroundColor: "var(--panel-accent-deep)" }}
               >
                 {busy ? "Hazırlanıyor…" : "Etiket hazırla"}
               </button>
@@ -384,7 +356,6 @@ export function TrOwnerShipmentSection({
               disabled={busy}
               onClick={fulfill}
               className={panelPrimaryBtnClass}
-              style={{ backgroundColor: "var(--panel-accent-deep)" }}
             >
               {busy ? "Hazırlanıyor…" : "Etiket hazırla"}
             </button>
@@ -405,6 +376,62 @@ export function TrOwnerShipmentSection({
           ) : null}
         </div>
       )}
-    </section>
+
+      <TrPanelDrawer
+        open={addressOpen}
+        onClose={() => setAddressOpen(false)}
+        title="Teslimat adresini düzelt"
+        dirty={addressDirty}
+        saving={busy}
+        saveDisabled={!whatsappConfirmed || !addressDirty}
+        saveLabel="Adresi kaydet ve kargoyu dene"
+        onSave={() => void saveAddressAndRetry()}
+      >
+        <div className="space-y-5">
+          <p className={panelHintClass}>
+            Adres yalnızca bir kez düzeltilebilir. Önce müşteriyle konuşun,
+            doğru adresi aldığınızı işaretleyin.
+          </p>
+          {customerWhatsAppUrl ? (
+            <a
+              href={customerWhatsAppUrl}
+              target="_blank"
+              rel="noreferrer"
+              className={`${panelSecondaryBtnClass} w-full`}
+            >
+              Müşteriyi WhatsApp’tan yaz
+            </a>
+          ) : (
+            <p className={panelHintClass}>
+              Müşteri telefonu yok; müşteri kartındaki numarayı kontrol edin.
+            </p>
+          )}
+          <label className="flex min-h-11 cursor-pointer items-start gap-3 text-[14px] text-neutral-800">
+            <input
+              type="checkbox"
+              checked={whatsappConfirmed}
+              onChange={(event) => setWhatsappConfirmed(event.target.checked)}
+              className="mt-0.5 h-5 w-5 shrink-0"
+            />
+            <span>Müşteriyle konuştum, doğru adresi aldım.</span>
+          </label>
+          <TrTurkeyAddressFields
+            city={draft.city}
+            district={draft.district}
+            line1={draft.line1}
+            line2={draft.line2}
+            postalCode={draft.postalCode}
+            fieldClassName={panelFieldClass}
+            labelClassName={panelLabelClass}
+            onChange={(patch) =>
+              setDraft((current) => ({ ...current, ...patch }))
+            }
+          />
+          {addressError ?? error ? (
+            <p className={panelErrorClass}>{addressError ?? error}</p>
+          ) : null}
+        </div>
+      </TrPanelDrawer>
+    </div>
   );
 }

@@ -922,6 +922,27 @@ export async function retryOwnerShipmentAddress(
   return parseShipmentResponse(response, "Adres kaydedilemedi.");
 }
 
+/** Boutiques without a carrier integration: record the carrier and tracking code, mark shipped. */
+export async function saveOwnerManualShipment(
+  boutiqueId: string,
+  orderId: string,
+  input: { carrierName: string; trackingCode: string },
+) {
+  const response = await ownerFetch(
+    `/api/tr/owner/orders/${encodeURIComponent(orderId)}/shipment`,
+    {
+      method: "POST",
+      body: JSON.stringify({ boutiqueId, action: "manual-ship", ...input }),
+    },
+  );
+  const result = await parseShipmentResponse(
+    response,
+    "Kargo bilgisi kaydedilemedi.",
+  );
+  invalidateOrderLists();
+  return result;
+}
+
 export async function createOwnerShipment(boutiqueId: string, orderId: string) {
   const response = await ownerFetch(
     `/api/tr/owner/orders/${encodeURIComponent(orderId)}/shipment`,

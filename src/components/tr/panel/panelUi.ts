@@ -24,9 +24,12 @@ export const panelLabelClass =
 
 export const panelHintClass = "text-[13px] leading-relaxed text-neutral-500";
 
+/** White card surface with no padding, for cards whose sections run edge to edge. */
+export const panelCardShellClass =
+  "rounded-xl border border-neutral-200/80 bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04)]";
+
 /** White card surface; lay out the inside yourself. */
-export const panelCardClass =
-  "rounded-xl border border-neutral-200/80 bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)] sm:p-5";
+export const panelCardClass = `${panelCardShellClass} p-4 sm:p-5`;
 
 export const panelSectionClass = `space-y-4 ${panelCardClass}`;
 

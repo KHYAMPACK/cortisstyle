@@ -39,6 +39,9 @@ async function withProductImages(
       getProductCoverImageFor("boutique", product),
     ]),
   );
+  const categoryById = new Map(
+    products.map((product) => [product.id, product.category ?? null]),
+  );
   return items.map((item) => ({
     ...item,
     imageUrl: item.referenceImageUrl
@@ -46,6 +49,7 @@ async function withProductImages(
       : item.productId
         ? (coverById.get(item.productId) ?? null)
         : null,
+    category: item.productId ? (categoryById.get(item.productId) ?? null) : null,
   }));
 }
 
@@ -296,13 +300,14 @@ export async function listOrdersByBoutiqueIdAdmin(
 
   const allItems = mapped.flatMap((order) => order.items);
   const withImages = await withProductImages(allItems);
-  const imageByItemId = new Map(withImages.map((item) => [item.id, item.imageUrl]));
+  const resolvedByItemId = new Map(withImages.map((item) => [item.id, item]));
 
   return mapped.map((order) => ({
     ...order,
     items: order.items.map((item) => ({
       ...item,
-      imageUrl: imageByItemId.get(item.id) ?? null,
+      imageUrl: resolvedByItemId.get(item.id)?.imageUrl ?? null,
+      category: resolvedByItemId.get(item.id)?.category ?? null,
     })),
   }));
 }
