@@ -10,6 +10,7 @@ import {
   TrPanelEditorTabs,
 } from "@/components/tr/panel/TrPanelEditor";
 import { TrPanelLink as Link } from "@/components/tr/panel/TrPanelLink";
+import { TrPanelSeoCard } from "@/components/tr/panel/TrPanelSeoCard";
 import { TrPanelBusySpinner } from "@/components/tr/panel/TrPanelMotion";
 import { TrProductImageLightbox } from "@/components/tr/panel/TrProductImageLightbox";
 import {
@@ -42,6 +43,9 @@ import {
   type SimpleProductFormState,
 } from "@/lib/tr/panel/simpleProductForm";
 import { trBoutiqueProductPath, trPanelSettingsPath } from "@/lib/tr/paths";
+import type { TrSeoFormValue } from "@/lib/tr/seo/seoFields";
+import { slugify } from "@/lib/tr/seo/slug";
+import { storeProductUrlPrefix } from "@/lib/tr/seo/storeAddress";
 import type {
   TrFulfillmentType,
   TrProduct,
@@ -65,6 +69,7 @@ const TABS = [
   { id: "editor-medya", label: "Medya" },
   { id: "editor-stok", label: "Stok" },
   { id: "editor-lokasyon", label: "Lokasyon" },
+  { id: "editor-seo", label: "SEO" },
 ] as const;
 
 const FULFILLMENT_OPTIONS: Array<{ id: TrFulfillmentType; label: string }> = [
@@ -117,6 +122,7 @@ function PriceField({
 export function TrSimpleProductEditor({
   boutiqueId,
   boutiqueSlug,
+  customDomain = null,
   address,
   product,
   ownerOnly,
@@ -126,6 +132,8 @@ export function TrSimpleProductEditor({
 }: {
   boutiqueId: string;
   boutiqueSlug: string;
+  /** The store's own domain, for the SEO preview. */
+  customDomain?: string | null;
   /** "Ana adres" shown in the Lokasyon card. */
   address: string | null;
   product?: TrProduct;
@@ -180,7 +188,9 @@ export function TrSimpleProductEditor({
 
   const save = async () => {
     if (saving || uploading) return;
-    const problem = validateSimpleProductForm(form);
+    const problem = validateSimpleProductForm(form, {
+      requireSlug: Boolean(product?.slug),
+    });
     if (problem) {
       setError(problem);
       return;
@@ -244,6 +254,8 @@ export function TrSimpleProductEditor({
   };
 
   const zeroStock = form.stock.trim() !== "" && Number(form.stock) === 0;
+  const changeSeo = (patch: Partial<TrSeoFormValue>) =>
+    change({ seo: { ...form.seo, ...patch } });
 
   return (
     <form
@@ -443,6 +455,15 @@ export function TrSimpleProductEditor({
             </Link>
           </p>
         </TrPanelEditorCard>
+
+        <TrPanelSeoCard
+          id="editor-seo"
+          value={form.seo}
+          onChange={changeSeo}
+          entityName={form.title}
+          urlPrefix={storeProductUrlPrefix({ boutiqueSlug, customDomain })}
+          suggestedSlug={product ? "" : slugify(form.title)}
+        />
 
         {product ? (
           <TrPanelEditorCard id="editor-sil" title="Ürünü sil" tone="danger">

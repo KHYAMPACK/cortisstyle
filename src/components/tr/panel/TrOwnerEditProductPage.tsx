@@ -99,6 +99,7 @@ export function TrOwnerEditProductPage({ productId }: TrOwnerEditProductPageProp
                   <TrSimpleProductEditor
                     boutiqueId={product.boutiqueId}
                     boutiqueSlug={activeBoutique.slug}
+                    customDomain={activeBoutique.customDomain}
                     address={boutiqueLocationAddress(activeBoutique)}
                     product={product}
                     ownerOnly={ownerOnly}

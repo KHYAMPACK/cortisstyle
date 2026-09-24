@@ -8,6 +8,14 @@ import type {
   TrOwnerProductPatch,
   TrOwnerProductPayload,
 } from "@/lib/tr/panel/ownerClient";
+import {
+  EMPTY_SEO_FORM,
+  isValidCanonicalPath,
+  seoFromForm,
+  seoToForm,
+  type TrSeoFormValue,
+} from "@/lib/tr/seo/seoFields";
+import { isValidSlug } from "@/lib/tr/seo/slug";
 import type {
   TrFulfillmentType,
   TrProduct,
@@ -33,6 +41,8 @@ export interface SimpleProductFormState {
   hidden: boolean;
   stock: string;
   images: string[];
+  /** Slug and the SEO card's fields. */
+  seo: TrSeoFormValue;
 }
 
 export function emptySimpleProductForm(): SimpleProductFormState {
@@ -45,6 +55,7 @@ export function emptySimpleProductForm(): SimpleProductFormState {
     hidden: false,
     stock: "1",
     images: [],
+    seo: { ...EMPTY_SEO_FORM },
   };
 }
 
@@ -74,12 +85,14 @@ export function simpleFormFromProduct(
     hidden: product.status === "hidden",
     stock: String(product.stock),
     images: product.images,
+    seo: seoToForm(product.slug, product.seo),
   };
 }
 
 /** First problem in the form as a sentence for the owner, or null when it can be saved. */
 export function validateSimpleProductForm(
   form: SimpleProductFormState,
+  options: { requireSlug?: boolean } = {},
 ): string | null {
   if (!form.title.trim()) return "Ürün adı zorunlu.";
   if (!isValidTryPrice(form.priceTry)) {
@@ -108,6 +121,15 @@ export function validateSimpleProductForm(
   }
   if (form.images.filter((url) => url.trim()).length === 0) {
     return "En az bir fotoğraf ekleyin.";
+  }
+  const slug = form.seo.slug.replace(/-+$/, "");
+  if (slug ? !isValidSlug(slug) : options.requireSlug) {
+    return slug
+      ? "Slug yalnızca küçük harf, rakam ve tek tire içermeli."
+      : "Slug boş olamaz.";
+  }
+  if (form.seo.canonical && !isValidCanonicalPath(`/${form.seo.canonical}`)) {
+    return "Canonical URL geçersiz.";
   }
   return null;
 }
@@ -149,6 +171,9 @@ export function simpleProductPayload(
     sizes: [],
     colors: [],
     category: null,
+    // Empty = the server derives it from the title.
+    slug: form.seo.slug.replace(/-+$/, "") || undefined,
+    seo: seoFromForm(form.seo),
   };
 }
 
@@ -168,6 +193,7 @@ export function simpleProductPatch(
     stock,
     status,
     images,
+    seo,
   } = simpleProductPayload(form, "");
   return {
     title,
@@ -178,5 +204,8 @@ export function simpleProductPatch(
     stock,
     status,
     images,
+    seo,
+    // An emptied slug clears it; the old address then redirects to the id URL.
+    slug: form.seo.slug.replace(/-+$/, "") || null,
   };
 }

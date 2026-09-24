@@ -27,6 +27,7 @@ export function TrOwnerNewSimpleProductPage() {
               key={activeBoutique.id}
               boutiqueId={activeBoutique.id}
               boutiqueSlug={activeBoutique.slug}
+              customDomain={activeBoutique.customDomain}
               address={boutiqueLocationAddress(activeBoutique)}
               onCreated={(created, warning) => {
                 if (warning) {

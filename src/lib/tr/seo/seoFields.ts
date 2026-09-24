@@ -66,6 +66,45 @@ export function sanitizeSeo(value: unknown): TrSeo {
   return seo;
 }
 
+/** What the SEO card edits, as the owner typed it (the card lives in `TrPanelSeoCard.tsx`). */
+export interface TrSeoFormValue {
+  slug: string;
+  title: string;
+  description: string;
+  noindex: boolean;
+  /** The part after the fixed "/" (so "urun/keten-gomlek"). */
+  canonical: string;
+}
+
+export const EMPTY_SEO_FORM: TrSeoFormValue = {
+  slug: "",
+  title: "",
+  description: "",
+  noindex: false,
+  canonical: "",
+};
+
+/** The SEO overrides (not the slug) of a form value, cleaned for sending. */
+export function seoFromForm(value: TrSeoFormValue): TrSeo {
+  return sanitizeSeo({
+    title: value.title,
+    description: value.description,
+    noindex: value.noindex,
+    canonical: value.canonical ? `/${value.canonical}` : undefined,
+  });
+}
+
+/** The reverse, for loading a saved product into the card. */
+export function seoToForm(slug: string | null | undefined, seo: TrSeo | undefined): TrSeoFormValue {
+  return {
+    slug: slug ?? "",
+    title: seo?.title ?? "",
+    description: seo?.description ?? "",
+    noindex: seo?.noindex === true,
+    canonical: (seo?.canonical ?? "").replace(/^\/+/, ""),
+  };
+}
+
 export function isSeoEmpty(seo: TrSeo): boolean {
   return Object.keys(seo).length === 0;
 }

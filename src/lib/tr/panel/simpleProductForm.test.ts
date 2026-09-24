@@ -105,6 +105,8 @@ describe("simpleProductPatch", () => {
       "fulfillmentType",
       "images",
       "priceTry",
+      "seo",
+      "slug",
       "status",
       "stock",
       "title",
@@ -150,5 +152,74 @@ describe("simpleFormFromProduct", () => {
     const payload = simpleProductPayload(state, "b1");
     assert.equal(Math.round(payload.priceTry * 100), 39990);
     assert.equal(Math.round(payload.compareAtPriceTry! * 100), 45000);
+  });
+});
+
+describe("slug and SEO in the form", () => {
+  it("leaves the slug out on create when it is empty, so the server derives it", () => {
+    assert.equal(simpleProductPayload(form(), "b1").slug, undefined);
+    assert.deepEqual(simpleProductPayload(form(), "b1").seo, {});
+  });
+
+  it("sends a chosen slug and the SEO overrides", () => {
+    const payload = simpleProductPayload(
+      form({
+        seo: {
+          slug: "deri-cuzdan-",
+          title: " Deri Cüzdan ",
+          description: "El yapımı",
+          noindex: true,
+          canonical: "urun/deri-cuzdan",
+        },
+      }),
+      "b1",
+    );
+    assert.equal(payload.slug, "deri-cuzdan");
+    assert.deepEqual(payload.seo, {
+      title: "Deri Cüzdan",
+      description: "El yapımı",
+      noindex: true,
+      canonical: "/urun/deri-cuzdan",
+    });
+  });
+
+  it("clears the slug on an edit when the field is emptied", () => {
+    assert.equal(simpleProductPatch(form()).slug, null);
+  });
+
+  it("validates the slug and the canonical path", () => {
+    const withSeo = (seo: Partial<SimpleProductFormState["seo"]>) =>
+      form({ seo: { ...emptySimpleProductForm().seo, ...seo } });
+    assert.equal(validateSimpleProductForm(withSeo({ slug: "deri-cuzdan" })), null);
+    assert.match(validateSimpleProductForm(withSeo({ slug: "Deri Cüzdan" }))!, /Slug/);
+    assert.match(
+      validateSimpleProductForm(withSeo({ slug: "" }), { requireSlug: true })!,
+      /boş/,
+    );
+    assert.equal(validateSimpleProductForm(withSeo({ slug: "" })), null);
+    assert.match(validateSimpleProductForm(withSeo({ canonical: "a//b c" }))!, /Canonical/);
+  });
+
+  it("loads a saved product's slug and SEO back into the card", () => {
+    const state = simpleFormFromProduct(
+      {
+        title: "Deri cüzdan",
+        priceKurus: 45000,
+        compareAtPriceKurus: null,
+        status: "available",
+        stock: 1,
+        images: ["a"],
+        slug: "deri-cuzdan",
+        seo: { title: "Cüzdan", noindex: true, canonical: "/urun/x" },
+      } as TrProduct,
+      { costPriceKurus: null },
+    );
+    assert.deepEqual(state.seo, {
+      slug: "deri-cuzdan",
+      title: "Cüzdan",
+      description: "",
+      noindex: true,
+      canonical: "urun/x",
+    });
   });
 });

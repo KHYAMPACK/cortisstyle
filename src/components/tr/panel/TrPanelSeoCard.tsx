@@ -11,26 +11,9 @@ import {
 import {
   normalizeCanonicalInput,
   SEO_LIMITS,
+  type TrSeoFormValue,
 } from "@/lib/tr/seo/seoFields";
 import { sanitizeSlugInput, SLUG_MAX_LENGTH } from "@/lib/tr/seo/slug";
-
-/** What the SEO card edits, as the owner typed it. */
-export interface TrSeoFormValue {
-  slug: string;
-  title: string;
-  description: string;
-  noindex: boolean;
-  /** The part after the fixed "/" (so "urun/keten-gomlek"). */
-  canonical: string;
-}
-
-export const EMPTY_SEO_FORM: TrSeoFormValue = {
-  slug: "",
-  title: "",
-  description: "",
-  noindex: false,
-  canonical: "",
-};
 
 /**
  * The SEO card every editor shares (products now, categories and pages next):
