@@ -62,6 +62,7 @@ function NeighbourButton({
 export function TrOrderTopActions({
   previousId,
   nextId,
+  closeHref,
   cancellable,
   cancelling,
   cancelMessage,
@@ -69,6 +70,11 @@ export function TrOrderTopActions({
 }: {
   previousId: string | null;
   nextId: string | null;
+  /**
+   * Set when the order was opened from another page (a customer, the dashboard):
+   * Önceki / Sonraki walk the order list, so they give way to Kapat, which returns there.
+   */
+  closeHref: string | null;
   cancellable: boolean;
   cancelling: boolean;
   cancelMessage: string;
@@ -78,8 +84,12 @@ export function TrOrderTopActions({
 
   return (
     <TrPanelEditorActions>
-      <NeighbourButton direction="previous" orderId={previousId} />
-      <NeighbourButton direction="next" orderId={nextId} />
+      {closeHref ? null : (
+        <>
+          <NeighbourButton direction="previous" orderId={previousId} />
+          <NeighbourButton direction="next" orderId={nextId} />
+        </>
+      )}
       {cancellable ? (
         <TrPanelConfirmPopover
           open={confirmOpen}
@@ -126,6 +136,11 @@ export function TrOrderTopActions({
             )}
           </TrPanelPopover>
         </TrPanelConfirmPopover>
+      ) : null}
+      {closeHref ? (
+        <Link href={closeHref} className={`${navButtonClass} sm:px-4`}>
+          Kapat
+        </Link>
       ) : null}
     </TrPanelEditorActions>
   );

@@ -19,7 +19,12 @@ import {
   trPanelStaggerItem,
 } from "@/components/tr/panel/TrPanelMotion";
 import { useOwnerOrderAlerts } from "@/hooks/useOwnerOrderAlerts";
-import { trPanelOrderPath, trPanelOrdersPath } from "@/lib/tr/paths";
+import { withPanelOrigin } from "@/lib/tr/panel/panelOrigin";
+import {
+  trPanelOrderPath,
+  trPanelOrdersPath,
+  trPanelPath,
+} from "@/lib/tr/paths";
 import { formatTryFromKurus } from "@/types/tr-marketplace";
 
 /** The latest orders waiting on the owner, as tappable rows. */
@@ -65,7 +70,7 @@ export function TrDashboardRecentOrders({
             return (
               <motion.div key={order.id} variants={trPanelStaggerItem}>
                 <Link
-                  href={trPanelOrderPath(order.id)}
+                  href={withPanelOrigin(trPanelOrderPath(order.id), trPanelPath())}
                   className="block rounded-lg px-2 py-2.5 transition-colors hover:bg-neutral-50"
                 >
                   <div className="flex items-start justify-between gap-3">

@@ -14,6 +14,10 @@ import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
 import { panelErrorClass, panelSuccessClass } from "@/components/tr/panel/panelUi";
 import { TrPanelEditor } from "@/components/tr/panel/TrPanelEditor";
 import {
+  usePanelBackTarget,
+  usePanelSelfPath,
+} from "@/components/tr/panel/usePanelOrigin";
+import {
   TrPanelPulse,
   trPanelFadeTransition,
 } from "@/components/tr/panel/TrPanelMotion";
@@ -32,7 +36,12 @@ import {
   orderPaymentMethod,
 } from "@/lib/tr/panel/orderView";
 import { boutiqueHasCarrierIntegration } from "@/lib/tr/shipping/registry";
-import { trBoutiquePath, trPanelOrdersPath } from "@/lib/tr/paths";
+import { withPanelOrigin } from "@/lib/tr/panel/panelOrigin";
+import {
+  trBoutiquePath,
+  trPanelCustomerPath,
+  trPanelOrdersPath,
+} from "@/lib/tr/paths";
 import type {
   TrFulfillmentStatus,
   TrOrderWithItems,
@@ -70,6 +79,11 @@ function OrderPage({
   orderId: string;
 }) {
   const boutiqueId = boutique.id;
+  const back = usePanelBackTarget({
+    href: trPanelOrdersPath(),
+    label: "Siparişler",
+  });
+  const selfPath = usePanelSelfPath();
   const cachedList = peekOwnerOrders(boutiqueId);
   const [list, setList] = useState<TrOrderWithItems[]>(cachedList ?? []);
   const [order, setOrder] = useState<TrOrderWithItems | null>(
@@ -175,8 +189,8 @@ function OrderPage({
 
   return (
     <TrPanelEditor
-      backHref={trPanelOrdersPath()}
-      parentLabel="Siparişler"
+      backHref={back.href}
+      parentLabel={back.label}
       title={`Sipariş #${orderReference(orderId)}`}
       subject={order?.customerName}
       badges={order ? <TrOrderTopBadges order={order} /> : null}
@@ -186,6 +200,7 @@ function OrderPage({
         <TrOrderTopActions
           previousId={neighbours.newer?.id ?? null}
           nextId={neighbours.older?.id ?? null}
+          closeHref={back.fromElsewhere ? back.href : null}
           cancellable={order.fulfillmentStatus !== "cancelled"}
           cancelling={saving}
           cancelMessage={cancelMessage}
@@ -228,6 +243,10 @@ function OrderPage({
             <TrOrderCustomerCard
               order={order}
               customerOrderNumber={customerOrderNumber(list, order)}
+              customerHref={withPanelOrigin(
+                trPanelCustomerPath(order.customerEmail),
+                selfPath,
+              )}
             />
           </div>
 

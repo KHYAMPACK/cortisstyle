@@ -1,7 +1,6 @@
 import { Mail, MapPin, Phone, User } from "lucide-react";
 import { panelCardShellClass } from "@/components/tr/panel/panelUi";
 import { TrPanelLink as Link } from "@/components/tr/panel/TrPanelLink";
-import { trPanelCustomerPath } from "@/lib/tr/paths";
 import type { TrOrder } from "@/types/tr-marketplace";
 
 function Block({
@@ -34,6 +33,7 @@ function countryName(country: string): string {
 export function TrOrderCustomerCard({
   order,
   customerOrderNumber,
+  customerHref,
 }: {
   order: Pick<
     TrOrder,
@@ -48,6 +48,8 @@ export function TrOrderCustomerCard({
   >;
   /** "N. sipariş" — how many orders this customer has placed, counting this one. */
   customerOrderNumber: number;
+  /** The customer's page — the caller adds where to come back to. */
+  customerHref: string;
 }) {
   const address = order.shippingAddress;
   const corporate = order.invoiceType === "corporate";
@@ -62,7 +64,7 @@ export function TrOrderCustomerCard({
       <div className="grid gap-5 px-4 py-5 sm:px-6 md:grid-cols-3 md:gap-0 md:divide-x md:divide-neutral-100">
         <Block title="İletişim">
           <Link
-            href={trPanelCustomerPath(order.customerEmail)}
+            href={customerHref}
             className="block truncate font-medium text-[color:var(--panel-accent-deep)] hover:underline"
           >
             {order.customerName}
