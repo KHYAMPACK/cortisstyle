@@ -7,8 +7,10 @@ import type {
   TrOrder,
   TrOrderItem,
   TrOrderItemCustomization,
+  TrFulfillmentType,
   TrProduct,
   TrProductColor,
+  TrProductType,
   TrShippingAddress,
   TrShippingProviderId,
 } from "@/types/tr-marketplace";
@@ -22,6 +24,16 @@ import {
   type TrOrderShipment,
   type TrShippingTrace,
 } from "@/lib/tr/shipping/types";
+
+export function readProductType(value: unknown): TrProductType | undefined {
+  return value === "simple" || value === "advanced" || value === "fashion"
+    ? value
+    : undefined;
+}
+
+export function readFulfillmentType(value: unknown): TrFulfillmentType | undefined {
+  return value === "physical" || value === "digital" ? value : undefined;
+}
 
 function readInvoiceType(value: unknown): TrInvoiceType {
   return value === "corporate" ? "corporate" : "individual";
@@ -189,6 +201,8 @@ export function mapProductRow(row: Record<string, unknown>): TrProduct {
     stock: typeof row.stock === "number" ? row.stock : 1,
     sizeStocks: readSizeStocks(row.size_stocks),
     sortOrder: (row.sort_order as number) ?? 0,
+    productType: readProductType(row.product_type),
+    fulfillmentType: readFulfillmentType(row.fulfillment_type),
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   };

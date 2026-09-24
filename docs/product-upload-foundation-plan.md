@@ -2,6 +2,18 @@
 
 _Prepared 2026-09-24 on branch `panel-products`. Facts below were checked against the repo and the live Supabase project (`qjxclaggqzhfaqihwdle`, read-only) the same day. This is a **plan**, not built yet. Inputs: Mert's ikas screenshots (Basit ürün, Kategoriler, Tanımlamalar) and his decisions in §1._
 
+## Status
+
+**M1 built on `panel-products` (not yet merged or deployed).** Deviations from the plan below, all deliberate:
+
+- The **moda sub-chooser (part of M5) landed in M1**: `/urun/yeni` became the type chooser, so the existing wizard needed its new home (`/urun/yeni/moda/tek-parca`) and the chooser needed a fashion path in the same change. `/urun/takim` and `/urun/toplu` are unchanged.
+- **Birim fiyat moved to M4** with the other product-page additions (it is only useful once the product page shows it).
+- **Lokasyon's "Ana adres"** reads `physical_address` (the field Ayarlar → Adres edits), falling back to `shipping_address`.
+- The Basit ürün has **no category card until M3** (its category stays empty) and **requires at least one photo** (the storefront has not been checked with photo-less products).
+- **Gelişmiş is not in the chooser** until its editor exists (no placeholders).
+
+Apply `supabase/patch_product_types.sql` **before** trying Basit ürün on a real database. The app tolerates the patch being absent (products read as `fashion`, and the cost price save reports a clear error), but a Basit ürün created before the patch would lose its type.
+
 ## 0. Goal and rules
 
 Every store gets two generic product types, **Basit ürün** and **Gelişmiş ürün**. A vertical adds its own types on top (fashion adds a third, **Moda ürünü**, which opens Takım / Tek parça / Toplu). The panel copies ikas's *structure* (pages, fields, flows), not its colors or logo.
@@ -219,7 +231,7 @@ Every milestone: unit tests for the pure logic (registry per profile, route patt
 1. Marka / Etiket / Google kategorisi / Tedarikçi are free-text creatable fields now, promoted to Tanımlamalar lists later.
 2. Basit/Gelişmiş use explicit Kaydet; the fashion editor keeps autosave.
 3. Existing products keep a null slug so lilabutik's indexed URLs don't change.
-4. Lokasyon's "Ana adres" reads `shipping_address`, falling back to `physical_address`.
+4. Lokasyon's "Ana adres" reads `physical_address` (what Ayarlar edits), falling back to `shipping_address`.
 5. Flat category slugs (`/kategori/<slug>`), storefront menu shows two levels.
 6. Ürünler list's Filtre and search stay as built in `059c175`; a "Tür" column is not added (only one category type).
 

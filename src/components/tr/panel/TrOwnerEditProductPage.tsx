@@ -12,10 +12,14 @@ import {
   TrPanelLoading,
 } from "@/components/tr/panel/TrPanelMotion";
 import { TrProductEditorForm } from "@/components/tr/panel/TrProductEditorForm";
+import {
+  boutiqueLocationAddress,
+  TrSimpleProductEditor,
+} from "@/components/tr/panel/TrSimpleProductEditor";
 import { useAuth } from "@/context/AuthContext";
 import { fetchOwnerProduct } from "@/lib/tr/ownerClient";
 import { trPanelProductsPath } from "@/lib/tr/paths";
-import type { TrProduct } from "@/types/tr-marketplace";
+import type { TrProduct, TrProductPrivate } from "@/types/tr-marketplace";
 
 interface TrOwnerEditProductPageProps {
   productId: string;
@@ -25,6 +29,9 @@ export function TrOwnerEditProductPage({ productId }: TrOwnerEditProductPageProp
   const router = useRouter();
   const { isAuthenticated, isInitializing } = useAuth();
   const [product, setProduct] = useState<TrProduct | null>(null);
+  const [ownerOnly, setOwnerOnly] = useState<TrProductPrivate>({
+    costPriceKurus: null,
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,7 +48,10 @@ export function TrOwnerEditProductPage({ productId }: TrOwnerEditProductPageProp
       setError(null);
       try {
         const result = await fetchOwnerProduct(productId);
-        if (!cancelled) setProduct(result.product);
+        if (!cancelled) {
+          setProduct(result.product);
+          setOwnerOnly(result.ownerOnly);
+        }
       } catch (loadError) {
         if (!cancelled) {
           setError(
@@ -61,6 +71,10 @@ export function TrOwnerEditProductPage({ productId }: TrOwnerEditProductPageProp
     };
   }, [isAuthenticated, isInitializing, productId]);
 
+  // The product's type decides the editor. Products from before types existed
+  // (or from a database without the column) are fashion products.
+  const productType = product?.productType ?? "fashion";
+
   return (
     <TrOwnerPanelGate>
       {({ activeBoutique }) => (
@@ -68,7 +82,9 @@ export function TrOwnerEditProductPage({ productId }: TrOwnerEditProductPageProp
           <TrPanelEditor
             backHref={trPanelProductsPath()}
             parentLabel="Ürünler"
-            title="Ürünü düzenle"
+            title={
+              productType === "simple" ? "Basit ürünü düzenle" : "Ürünü düzenle"
+            }
             subject={product?.title}
           >
             <AnimatePresence mode="wait">
@@ -78,7 +94,23 @@ export function TrOwnerEditProductPage({ productId }: TrOwnerEditProductPageProp
                 <TrPanelFadeIn key="edit-error">
                   <p className={panelErrorClass}>{error}</p>
                 </TrPanelFadeIn>
-              ) : product ? (
+              ) : product && productType === "simple" ? (
+                <TrPanelFadeIn key="edit-simple" shift={false}>
+                  <TrSimpleProductEditor
+                    boutiqueId={product.boutiqueId}
+                    boutiqueSlug={activeBoutique.slug}
+                    address={boutiqueLocationAddress(activeBoutique)}
+                    product={product}
+                    ownerOnly={ownerOnly}
+                    onSaved={(saved) => {
+                      setProduct(saved);
+                    }}
+                    onDeleted={() => {
+                      router.push(trPanelProductsPath());
+                    }}
+                  />
+                </TrPanelFadeIn>
+              ) : product && productType === "fashion" ? (
                 <TrPanelFadeIn key="edit-form" shift={false}>
                   <TrProductEditorForm
                     boutiqueId={product.boutiqueId}
@@ -91,6 +123,12 @@ export function TrOwnerEditProductPage({ productId }: TrOwnerEditProductPageProp
                       router.push(trPanelProductsPath());
                     }}
                   />
+                </TrPanelFadeIn>
+              ) : product ? (
+                <TrPanelFadeIn key="edit-unsupported">
+                  <p className={panelErrorClass}>
+                    Bu ürün türü henüz düzenlenemiyor.
+                  </p>
                 </TrPanelFadeIn>
               ) : null}
             </AnimatePresence>

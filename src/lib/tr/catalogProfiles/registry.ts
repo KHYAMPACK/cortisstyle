@@ -13,6 +13,7 @@ const FASHION_CAPABILITIES: TrCatalogProfileCapabilities = {
   pdpLayout: "split",
   skipStockValidation: false,
   skipInventoryDecrement: false,
+  productTypes: ["simple", "fashion"],
 };
 
 const CUSTOM_ART_CAPABILITIES: TrCatalogProfileCapabilities = {
@@ -24,6 +25,7 @@ const CUSTOM_ART_CAPABILITIES: TrCatalogProfileCapabilities = {
   pdpLayout: "custom_art",
   skipStockValidation: true,
   skipInventoryDecrement: true,
+  productTypes: [],
 };
 
 const CAPABILITIES: Record<TrCatalogProfileId, TrCatalogProfileCapabilities> = {

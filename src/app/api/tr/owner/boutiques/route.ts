@@ -20,6 +20,8 @@ export async function GET(request: Request) {
       themeAccent: boutique.themeAccent,
       status: boutique.status,
       catalogProfile: boutique.catalogProfile,
+      physicalAddress: boutique.physicalAddress,
+      shippingAddress: boutique.shippingAddress,
       offersIyzicoCheckout: await boutiqueOffersIyzicoCheckout(boutique.slug),
     })),
   );

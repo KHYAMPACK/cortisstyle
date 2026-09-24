@@ -17,8 +17,11 @@ import type {
   TrOrderWithItems,
   TrProduct,
   TrProductColor,
+  TrFulfillmentType,
   TrProductFeatures,
+  TrProductPrivate,
   TrProductStatus,
+  TrProductType,
 } from "@/types/tr-marketplace";
 
 export interface TrOwnerBoutiqueSummary {
@@ -29,6 +32,9 @@ export interface TrOwnerBoutiqueSummary {
   themeAccent?: string | null;
   status?: string;
   catalogProfile?: "fashion" | "custom_art";
+  /** Address shown on the storefront (Ayarlar → Adres). */
+  physicalAddress?: string | null;
+  shippingAddress?: string | null;
   offersIyzicoCheckout?: boolean;
 }
 
@@ -191,6 +197,8 @@ export async function fetchOwnerProductOriginals(
 export async function fetchOwnerProduct(productId: string): Promise<{
   product: TrProduct;
   boutique: TrOwnerBoutiqueSummary;
+  /** Owner-only data (cost price). */
+  ownerOnly: TrProductPrivate;
 }> {
   const response = await ownerFetch(
     `/api/tr/owner/products/${encodeURIComponent(productId)}`,
@@ -198,6 +206,7 @@ export async function fetchOwnerProduct(productId: string): Promise<{
   const data = (await parseOwnerJson(response)) as {
     product?: TrProduct;
     boutique?: TrOwnerBoutiqueSummary;
+    private?: TrProductPrivate;
     error?: string;
   };
   if (!response.ok) {
@@ -206,7 +215,11 @@ export async function fetchOwnerProduct(productId: string): Promise<{
   if (!data.product || !data.boutique) {
     throw new Error("Ürün bulunamadı.");
   }
-  return { product: data.product, boutique: data.boutique };
+  return {
+    product: data.product,
+    boutique: data.boutique,
+    ownerOnly: data.private ?? { costPriceKurus: null },
+  };
 }
 
 export interface TrOwnerProductPayload {
@@ -227,22 +240,41 @@ export interface TrOwnerProductPayload {
   sizeStocks?: Record<string, number>;
   conditionLabel?: string | null;
   status?: TrProductStatus;
+  /** Omitted by the fashion flows; the API then creates a `fashion` product. */
+  productType?: TrProductType;
+  fulfillmentType?: TrFulfillmentType;
+  /** Owner-only. `null` clears it. */
+  costPriceTry?: number | string | null;
 }
 
-export async function createOwnerProduct(
+/**
+ * Like `createOwnerProduct`, but also returns the API's `warning` (the product was
+ * created but something secondary, such as the cost price, was not stored).
+ */
+export async function createOwnerProductDetailed(
   payload: TrOwnerProductPayload,
-): Promise<TrProduct> {
+): Promise<{ product: TrProduct; warning?: string }> {
   const response = await ownerFetch("/api/tr/owner/products", {
     method: "POST",
     body: JSON.stringify(payload),
   });
-  const data = (await parseOwnerJson(response)) as { product?: TrProduct; error?: string };
+  const data = (await parseOwnerJson(response)) as {
+    product?: TrProduct;
+    warning?: string;
+    error?: string;
+  };
   if (!response.ok) {
     throw new Error(data.error ?? "Ürün oluşturulamadı.");
   }
   if (!data.product) throw new Error("Ürün oluşturulamadı.");
   invalidateProductLists();
-  return data.product;
+  return { product: data.product, warning: data.warning };
+}
+
+export async function createOwnerProduct(
+  payload: TrOwnerProductPayload,
+): Promise<TrProduct> {
+  return (await createOwnerProductDetailed(payload)).product;
 }
 
 /** Partial product fields for PATCH — API merges; full create still uses TrOwnerProductPayload. */

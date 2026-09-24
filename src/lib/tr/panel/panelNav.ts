@@ -147,8 +147,10 @@ export {
  * editor page is built. The bulk and set wizards under /urun/ keep the normal chrome.
  */
 const PANEL_EDITOR_ROUTES: RegExp[] = [
-  /^\/tr\/panel\/urun\/yeni\/?$/,
-  /^\/tr\/panel\/urun\/(?!takim\/?$|toplu\/?$)[^/]+\/?$/,
+  // Type chooser, Basit ürün, the fashion sub-chooser and the single-garment wizard.
+  /^\/tr\/panel\/urun\/yeni(\/basit|\/moda(\/tek-parca)?)?\/?$/,
+  // Editing an existing product (any type).
+  /^\/tr\/panel\/urun\/(?!yeni\/?$|takim\/?$|toplu\/?$)[^/]+\/?$/,
 ];
 
 export function isPanelEditorRoute(pathname: string): boolean {

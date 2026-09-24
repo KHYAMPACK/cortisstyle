@@ -75,6 +75,19 @@ describe("isPanelEditorRoute", () => {
     assert.equal(isPanelEditorRoute("/tr/panel/urun/abc-123/"), true);
   });
 
+  it("is true for every step of the create flow", () => {
+    for (const path of [
+      "/tr/panel/urun/yeni",
+      "/tr/panel/urun/yeni/basit",
+      "/tr/panel/urun/yeni/moda",
+      "/tr/panel/urun/yeni/moda/tek-parca",
+    ]) {
+      assert.equal(isPanelEditorRoute(path), true, path);
+    }
+    assert.equal(isPanelEditorRoute("/tr/panel/urun/yeni/baska"), false);
+    assert.equal(isPanelEditorRoute("/tr/panel/urun/yeni/moda/x"), false);
+  });
+
   it("keeps the normal chrome for lists and the set and bulk wizards", () => {
     for (const path of [
       "/tr/panel",

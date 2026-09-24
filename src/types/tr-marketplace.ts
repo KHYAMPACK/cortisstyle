@@ -3,6 +3,13 @@ import type { TrCustomArtProductFeatures } from "@/lib/tr/customArt/types";
 
 export type TrBoutiqueStatus = "draft" | "pending" | "verified" | "suspended";
 export type TrProductStatus = "available" | "sold" | "hidden";
+/**
+ * Which editor a product opens in. `fashion` = the garment flows (AI catalog,
+ * size charts, takım); `simple` = one price and one stock count.
+ */
+export type TrProductType = "simple" | "advanced" | "fashion";
+/** Informational for now — a digital product still uses normal checkout and shipping. */
+export type TrFulfillmentType = "physical" | "digital";
 export type TrPaymentStatus = "sandbox" | "pending" | "paid" | "failed" | "refunded";
 /** Ikas-like owner fulfillment pipeline (separate from payment). */
 export type TrFulfillmentStatus =
@@ -152,8 +159,22 @@ export interface TrProduct {
   /** Per-size units. Empty when product has no sizes (then `stock` is the single count). */
   sizeStocks: Record<string, number>;
   sortOrder: number;
+  /**
+   * Set on owner/admin reads (`select *`) only; the storefront's explicit column
+   * lists don't carry it. Treat a missing value as `fashion`.
+   */
+  productType?: TrProductType;
+  fulfillmentType?: TrFulfillmentType;
   createdAt: string;
   updatedAt: string;
+}
+
+/**
+ * Owner-only product data (`tr_product_private`). Returned by the owner API next
+ * to the product, never part of `TrProduct`: the products table is publicly readable.
+ */
+export interface TrProductPrivate {
+  costPriceKurus: number | null;
 }
 
 export interface TrProductWithBoutique extends TrProduct {
@@ -354,6 +375,9 @@ export interface CreateTrProductInput {
   stock?: number;
   sizeStocks?: Record<string, number>;
   sortOrder?: number;
+  /** Defaults to `fashion` (every programmatic caller is a garment flow). */
+  productType?: TrProductType;
+  fulfillmentType?: TrFulfillmentType;
 }
 
 export interface UpdateTrProductInput {
@@ -376,6 +400,7 @@ export interface UpdateTrProductInput {
   stock?: number;
   sizeStocks?: Record<string, number>;
   sortOrder?: number;
+  fulfillmentType?: TrFulfillmentType;
 }
 
 export interface CreateTrOrderInput {

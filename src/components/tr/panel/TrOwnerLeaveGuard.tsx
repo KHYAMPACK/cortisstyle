@@ -23,9 +23,20 @@ type LeaveDestination =
   | { kind: "href"; href: string }
   | { kind: "action"; run: () => void };
 
+/**
+ * `busy`: work is running (uploads, AI jobs) and leaving stops it.
+ * `unsaved`: the page holds edits that leaving would throw away.
+ */
+export type LeaveKind = "busy" | "unsaved";
+
 interface LeaveGuardContextValue {
   busy: boolean;
-  register: (id: string, busy: boolean, blockPanelNav?: boolean) => void;
+  register: (
+    id: string,
+    busy: boolean,
+    blockPanelNav?: boolean,
+    kind?: LeaveKind,
+  ) => void;
   requestLeave: (destination: LeaveDestination) => void;
 }
 
@@ -48,16 +59,27 @@ export function TrOwnerLeaveGuardProvider({ children }: { children: ReactNode })
   const router = useRouter();
   const titleId = useId();
   const [busyMap, setBusyMap] = useState<
-    Map<string, { blockPanelNav: boolean }>
+    Map<string, { blockPanelNav: boolean; kind: LeaveKind }>
   >(() => new Map());
   const [pending, setPending] = useState<LeaveDestination | null>(null);
   const navBlocked = [...busyMap.values()].some((entry) => entry.blockPanelNav);
+  // Running work outranks unsaved edits when both are registered.
+  const dialogKind: LeaveKind = [...busyMap.values()].some(
+    (entry) => entry.kind === "busy",
+  )
+    ? "busy"
+    : "unsaved";
   const unloadBusy = busyMap.size > 0;
   const unloadBusyRef = useRef(unloadBusy);
   unloadBusyRef.current = unloadBusy;
 
   const register = useCallback(
-    (id: string, busy: boolean, blockPanelNav = true) => {
+    (
+      id: string,
+      busy: boolean,
+      blockPanelNav = true,
+      kind: LeaveKind = "busy",
+    ) => {
       setBusyMap((current) => {
         const existing = current.get(id);
         if (!busy) {
@@ -66,11 +88,15 @@ export function TrOwnerLeaveGuardProvider({ children }: { children: ReactNode })
           copy.delete(id);
           return copy;
         }
-        if (existing && existing.blockPanelNav === blockPanelNav) {
+        if (
+          existing &&
+          existing.blockPanelNav === blockPanelNav &&
+          existing.kind === kind
+        ) {
           return current;
         }
         const copy = new Map(current);
-        copy.set(id, { blockPanelNav });
+        copy.set(id, { blockPanelNav, kind });
         return copy;
       });
     },
@@ -183,11 +209,14 @@ export function TrOwnerLeaveGuardProvider({ children }: { children: ReactNode })
                 id={titleId}
                 className="text-[20px] font-semibold text-neutral-900"
               >
-                İşlem devam ediyor
+                {dialogKind === "busy"
+                  ? "İşlem devam ediyor"
+                  : "Kaydedilmemiş değişiklikler var"}
               </p>
               <p className="mt-2 text-[15px] leading-relaxed text-neutral-600">
-                Bu işlemi sonlandırmak üzeresiniz. Devam eden katalog veya
-                model hazırlama durur; görseller yarıda kalabilir.
+                {dialogKind === "busy"
+                  ? "Bu işlemi sonlandırmak üzeresiniz. Devam eden katalog veya model hazırlama durur; görseller yarıda kalabilir."
+                  : "Bu sayfadan ayrılırsanız yaptığınız değişiklikler kaybolur."}
               </p>
               <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                 <button
@@ -195,14 +224,14 @@ export function TrOwnerLeaveGuardProvider({ children }: { children: ReactNode })
                   className={`${panelSecondaryBtnClass} flex-1`}
                   onClick={stay}
                 >
-                  Vazgeç
+                  {dialogKind === "busy" ? "Vazgeç" : "Sayfada kal"}
                 </button>
                 <button
                   type="button"
                   className={`${panelDangerBtnClass} flex-1`}
                   onClick={leave}
                 >
-                  Çık ve durdur
+                  {dialogKind === "busy" ? "Çık ve durdur" : "Değişiklikleri at"}
                 </button>
               </div>
             </motion.div>
@@ -216,15 +245,16 @@ export function TrOwnerLeaveGuardProvider({ children }: { children: ReactNode })
 export function useRegisterLeaveBusy(
   id: string,
   busy: boolean,
-  options?: { blockPanelNav?: boolean },
+  options?: { blockPanelNav?: boolean; kind?: LeaveKind },
 ) {
   const register = useContext(LeaveGuardContext)?.register;
   const blockPanelNav = options?.blockPanelNav ?? true;
+  const kind = options?.kind ?? "busy";
   useEffect(() => {
     if (!register) return;
-    register(id, busy, blockPanelNav);
+    register(id, busy, blockPanelNav, kind);
     return () => register(id, false);
-  }, [id, busy, blockPanelNav, register]);
+  }, [id, busy, blockPanelNav, kind, register]);
 }
 
 export function useRequestBusyLeave() {
