@@ -88,7 +88,8 @@ export function TrPanelLoading({
   );
 }
 
-function Pulse({ className }: { className: string }) {
+/** Accent-tinted placeholder block for skeletons. */
+export function TrPanelPulse({ className }: { className: string }) {
   return (
     <div
       className={`animate-pulse rounded-xl bg-[color:var(--panel-accent-soft)] ${className}`}
@@ -109,9 +110,9 @@ export function TrPanelMetricSkeleton({ count = 2 }: { count?: number }) {
           key={index}
           className="rounded-xl border border-neutral-200/80 bg-white px-5 py-6 shadow-[0_1px_2px_rgba(16,24,40,0.04)]"
         >
-          <Pulse className="h-10 w-28" />
-          <Pulse className="mt-4 h-4 w-36" />
-          <Pulse className="mt-2 h-3 w-48" />
+          <TrPanelPulse className="h-10 w-28" />
+          <TrPanelPulse className="mt-4 h-4 w-36" />
+          <TrPanelPulse className="mt-2 h-3 w-48" />
         </div>
       ))}
     </div>
@@ -133,12 +134,12 @@ export function TrPanelListSkeleton({
           key={index}
           className="flex items-center gap-4 rounded-xl border border-neutral-200/80 bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)] sm:p-5"
         >
-          <Pulse className="h-16 w-14 shrink-0" />
+          <TrPanelPulse className="h-16 w-14 shrink-0" />
           <div className="min-w-0 flex-1 space-y-2">
-            <Pulse className="h-4 w-2/3" />
-            <Pulse className="h-3 w-1/3" />
+            <TrPanelPulse className="h-4 w-2/3" />
+            <TrPanelPulse className="h-3 w-1/3" />
           </div>
-          <Pulse className="hidden h-4 w-16 sm:block" />
+          <TrPanelPulse className="hidden h-4 w-16 sm:block" />
         </div>
       ))}
     </div>
@@ -160,15 +161,15 @@ export function TrPanelSidebarSkeleton({
       aria-hidden
     >
       <div className="px-4 py-4">
-        <Pulse className="h-3 w-16 bg-white/15" />
+        <TrPanelPulse className="h-3 w-16 bg-white/15" />
         <div className="mt-3 flex items-center gap-3">
-          <Pulse className="h-9 w-9 rounded-full bg-white/15" />
-          <Pulse className="h-4 flex-1 bg-white/15" />
+          <TrPanelPulse className="h-9 w-9 rounded-full bg-white/15" />
+          <TrPanelPulse className="h-4 flex-1 bg-white/15" />
         </div>
       </div>
       <div className="flex-1 space-y-2 px-3 py-4">
         {Array.from({ length: 8 }, (_, index) => (
-          <Pulse key={index} className="h-9 w-full bg-white/10" />
+          <TrPanelPulse key={index} className="h-9 w-full bg-white/10" />
         ))}
       </div>
     </aside>

@@ -9,6 +9,8 @@ import {
   ownerCacheKeys,
   peekOwnerCache,
 } from "@/lib/tr/panel/ownerCache";
+import type { TrOwnerDashboard } from "@/lib/tr/panel/dashboardMetrics";
+import type { TrDashboardRangeId } from "@/lib/tr/panel/dashboardRange";
 import { wrapShipmentLabelHtml } from "@/lib/tr/shipping/labelHtml";
 import type { TrSeo } from "@/lib/tr/seo/seoFields";
 import type { TrShippingRate } from "@/lib/tr/shipping/types";
@@ -87,11 +89,13 @@ function invalidateProductLists(): void {
   invalidateOwnerCache("products:");
   invalidateOwnerCache("product-originals:");
   invalidateOwnerCache("summary:");
+  invalidateOwnerCache("dashboard:");
 }
 
 function invalidateOrderLists(): void {
   invalidateOwnerCache("orders:");
   invalidateOwnerCache("summary:");
+  invalidateOwnerCache("dashboard:");
 }
 
 export async function fetchOwnerBoutiques(): Promise<{
@@ -679,6 +683,55 @@ export async function fetchOwnerSummary(
     if (!data.summary) throw new Error("Özet yüklenemedi.");
     return data.summary;
   });
+}
+
+export type { TrOwnerDashboard } from "@/lib/tr/panel/dashboardMetrics";
+
+export interface TrOwnerDashboardQuery {
+  range: TrDashboardRangeId;
+  /** YYYY-MM-DD, only for range "custom". */
+  from?: string;
+  to?: string;
+}
+
+export function peekOwnerDashboard(
+  boutiqueId: string,
+  query: TrOwnerDashboardQuery,
+): TrOwnerDashboard | undefined {
+  return peekOwnerCache(
+    ownerCacheKeys.dashboard(boutiqueId, query.range, query.from, query.to),
+  );
+}
+
+export async function fetchOwnerDashboard(
+  boutiqueId: string,
+  query: TrOwnerDashboardQuery,
+): Promise<TrOwnerDashboard> {
+  return cachedOwnerFetch(
+    ownerCacheKeys.dashboard(boutiqueId, query.range, query.from, query.to),
+    async () => {
+      const params = new URLSearchParams({
+        boutiqueId,
+        range: query.range,
+      });
+      if (query.range === "custom") {
+        if (query.from) params.set("from", query.from);
+        if (query.to) params.set("to", query.to);
+      }
+      const response = await ownerFetch(
+        `/api/tr/owner/dashboard?${params.toString()}`,
+      );
+      const data = (await parseOwnerJson(response)) as {
+        dashboard?: TrOwnerDashboard;
+        error?: string;
+      };
+      if (!response.ok) {
+        throw new Error(data.error ?? "Özet yüklenemedi.");
+      }
+      if (!data.dashboard) throw new Error("Özet yüklenemedi.");
+      return data.dashboard;
+    },
+  );
 }
 
 export interface TrOwnerAiCreditUsage {
