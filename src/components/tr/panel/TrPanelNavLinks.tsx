@@ -4,6 +4,7 @@ import { LayoutGroup, motion } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useId, useState } from "react";
+import { TrPanelNavGroup } from "@/components/tr/panel/TrPanelNavGroup";
 import { panelNavIcon } from "@/components/tr/panel/TrPanelNavIcons";
 import {
   panelSidebarRowClass,
@@ -14,6 +15,8 @@ import {
   prefetchOwnerProducts,
 } from "@/lib/tr/ownerClient";
 import {
+  flattenPanelNav,
+  isPanelNavGroup,
   isTrPanelNavActive,
   panelNavForProfile,
   type TrCatalogProfileId,
@@ -41,7 +44,7 @@ export function TrPanelNavLinks({
 }) {
   const pathname = usePathname();
   const groupId = useId();
-  const navItems = panelNavForProfile(catalogProfile);
+  const navEntries = panelNavForProfile(catalogProfile);
 
   // Optimistic active state: the pill moves on click, before the route commits.
   // It is tied to the path it was clicked from, so it stops applying on its own
@@ -63,7 +66,7 @@ export function TrPanelNavLinks({
   };
 
   if (variant === "bottom") {
-    const primary = navItems.slice(0, 4);
+    const primary = flattenPanelNav(navEntries).slice(0, 4);
     return (
       <nav
         aria-label="Hızlı menü"
@@ -126,7 +129,20 @@ export function TrPanelNavLinks({
     >
       <LayoutGroup id={`${groupId}-side`}>
         <ul className="space-y-0.5">
-          {navItems.map((item) => {
+          {navEntries.map((item) => {
+            if (isPanelNavGroup(item)) {
+              return (
+                <li key={item.id}>
+                  <TrPanelNavGroup
+                    group={item}
+                    currentPath={currentPath}
+                    collapsed={collapsed}
+                    onSelect={select}
+                    onPrefetch={prefetchNav}
+                  />
+                </li>
+              );
+            }
             const active = isTrPanelNavActive(currentPath, item);
             const Icon = panelNavIcon(item.href);
             const showOrderDot =

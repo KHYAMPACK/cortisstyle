@@ -13,19 +13,33 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { AlertCircle } from "lucide-react";
 import { trPanelFadeTransition } from "@/components/tr/panel/TrPanelMotion";
 import {
   panelDangerBtnClass,
+  panelPrimaryBtnClass,
   panelSecondaryBtnClass,
 } from "@/components/tr/panel/panelUi";
+import { UNSAVED_CHANGES_MESSAGE } from "@/lib/tr/panel/saveModel";
 
 type LeaveDestination =
   | { kind: "href"; href: string }
   | { kind: "action"; run: () => void };
 
+/**
+ * `busy`: work is running (uploads, AI jobs) and leaving stops it.
+ * `unsaved`: the page holds edits that leaving would throw away.
+ */
+export type LeaveKind = "busy" | "unsaved";
+
 interface LeaveGuardContextValue {
   busy: boolean;
-  register: (id: string, busy: boolean, blockPanelNav?: boolean) => void;
+  register: (
+    id: string,
+    busy: boolean,
+    blockPanelNav?: boolean,
+    kind?: LeaveKind,
+  ) => void;
   requestLeave: (destination: LeaveDestination) => void;
 }
 
@@ -48,16 +62,27 @@ export function TrOwnerLeaveGuardProvider({ children }: { children: ReactNode })
   const router = useRouter();
   const titleId = useId();
   const [busyMap, setBusyMap] = useState<
-    Map<string, { blockPanelNav: boolean }>
+    Map<string, { blockPanelNav: boolean; kind: LeaveKind }>
   >(() => new Map());
   const [pending, setPending] = useState<LeaveDestination | null>(null);
   const navBlocked = [...busyMap.values()].some((entry) => entry.blockPanelNav);
+  // Running work outranks unsaved edits when both are registered.
+  const dialogKind: LeaveKind = [...busyMap.values()].some(
+    (entry) => entry.kind === "busy",
+  )
+    ? "busy"
+    : "unsaved";
   const unloadBusy = busyMap.size > 0;
   const unloadBusyRef = useRef(unloadBusy);
   unloadBusyRef.current = unloadBusy;
 
   const register = useCallback(
-    (id: string, busy: boolean, blockPanelNav = true) => {
+    (
+      id: string,
+      busy: boolean,
+      blockPanelNav = true,
+      kind: LeaveKind = "busy",
+    ) => {
       setBusyMap((current) => {
         const existing = current.get(id);
         if (!busy) {
@@ -66,11 +91,15 @@ export function TrOwnerLeaveGuardProvider({ children }: { children: ReactNode })
           copy.delete(id);
           return copy;
         }
-        if (existing && existing.blockPanelNav === blockPanelNav) {
+        if (
+          existing &&
+          existing.blockPanelNav === blockPanelNav &&
+          existing.kind === kind
+        ) {
           return current;
         }
         const copy = new Map(current);
-        copy.set(id, { blockPanelNav });
+        copy.set(id, { blockPanelNav, kind });
         return copy;
       });
     },
@@ -179,30 +208,52 @@ export function TrOwnerLeaveGuardProvider({ children }: { children: ReactNode })
               transition={trPanelFadeTransition}
               onClick={(event) => event.stopPropagation()}
             >
-              <p
-                id={titleId}
-                className="text-[20px] font-semibold text-neutral-900"
-              >
-                İşlem devam ediyor
-              </p>
-              <p className="mt-2 text-[15px] leading-relaxed text-neutral-600">
-                Bu işlemi sonlandırmak üzeresiniz. Devam eden katalog veya
-                model hazırlama durur; görseller yarıda kalabilir.
-              </p>
+              {dialogKind === "busy" ? (
+                <>
+                  <p
+                    id={titleId}
+                    className="text-[20px] font-semibold text-neutral-900"
+                  >
+                    İşlem devam ediyor
+                  </p>
+                  <p className="mt-2 text-[15px] leading-relaxed text-neutral-600">
+                    Bu işlemi sonlandırmak üzeresiniz. Devam eden katalog veya
+                    model hazırlama durur; görseller yarıda kalabilir.
+                  </p>
+                </>
+              ) : (
+                <div className="flex items-start gap-3">
+                  <AlertCircle
+                    className="mt-0.5 h-6 w-6 shrink-0 text-amber-500"
+                    strokeWidth={1.75}
+                    aria-hidden
+                  />
+                  <p
+                    id={titleId}
+                    className="text-[17px] leading-snug font-medium text-neutral-900"
+                  >
+                    {UNSAVED_CHANGES_MESSAGE}
+                  </p>
+                </div>
+              )}
               <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                 <button
                   type="button"
                   className={`${panelSecondaryBtnClass} flex-1`}
                   onClick={stay}
                 >
-                  Vazgeç
+                  {dialogKind === "busy" ? "Vazgeç" : "Hayır"}
                 </button>
                 <button
                   type="button"
-                  className={`${panelDangerBtnClass} flex-1`}
+                  className={`${
+                    dialogKind === "busy"
+                      ? panelDangerBtnClass
+                      : panelPrimaryBtnClass
+                  } flex-1`}
                   onClick={leave}
                 >
-                  Çık ve durdur
+                  {dialogKind === "busy" ? "Çık ve durdur" : "Evet"}
                 </button>
               </div>
             </motion.div>
@@ -216,15 +267,26 @@ export function TrOwnerLeaveGuardProvider({ children }: { children: ReactNode })
 export function useRegisterLeaveBusy(
   id: string,
   busy: boolean,
-  options?: { blockPanelNav?: boolean },
+  options?: { blockPanelNav?: boolean; kind?: LeaveKind },
 ) {
   const register = useContext(LeaveGuardContext)?.register;
   const blockPanelNav = options?.blockPanelNav ?? true;
+  const kind = options?.kind ?? "busy";
   useEffect(() => {
     if (!register) return;
-    register(id, busy, blockPanelNav);
+    register(id, busy, blockPanelNav, kind);
     return () => register(id, false);
-  }, [id, busy, blockPanelNav, register]);
+  }, [id, busy, blockPanelNav, kind, register]);
+}
+
+/**
+ * One line for any page that holds unsaved edits: `useUnsavedChangesGuard("id",
+ * dirty)`. While `dirty`, leaving the page (sidebar, back arrow, links) asks first,
+ * and reloading or closing the tab shows the browser's own prompt. The browser's
+ * Back button is not intercepted (the app router does not allow it).
+ */
+export function useUnsavedChangesGuard(id: string, dirty: boolean) {
+  useRegisterLeaveBusy(id, dirty, { kind: "unsaved" });
 }
 
 export function useRequestBusyLeave() {

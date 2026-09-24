@@ -21,6 +21,12 @@ import type {
   UpdateTrProductInput,
 } from "@/types/tr-marketplace";
 import { sanitizeProductFeatures } from "@/lib/tr/catalog/productFeatures";
+import { readFulfillmentType } from "@/lib/tr/catalog/mappers";
+import {
+  getProductPrivateAdmin,
+  readCostPriceKurus,
+  saveProductPrivateAdmin,
+} from "@/lib/tr/catalog/productPrivate";
 import { ensureColorSiblingLifestyleModelRecord } from "@/lib/tr/catalog/syncColorGroup";
 import {
   alignMarketplaceSlots,
@@ -85,8 +91,11 @@ export async function GET(request: Request, context: RouteContext) {
     );
   }
 
+  const ownerOnly = await getProductPrivateAdmin(id);
+
   return Response.json({
     product: resolved,
+    private: ownerOnly,
     boutique: {
       id: owned.boutique.id,
       slug: owned.boutique.slug,
@@ -256,9 +265,28 @@ export async function PATCH(request: Request, context: RouteContext) {
   if (typeof body.sortOrder === "number") {
     patch.sortOrder = body.sortOrder;
   }
+  const fulfillmentType = readFulfillmentType(body.fulfillmentType);
+  if (fulfillmentType) patch.fulfillmentType = fulfillmentType;
+
+  let costPriceKurus: number | null | undefined;
+  try {
+    costPriceKurus = readCostPriceKurus(body);
+  } catch (error) {
+    return Response.json(
+      { error: error instanceof Error ? error.message : "Alış fiyatı geçersiz." },
+      { status: 400 },
+    );
+  }
 
   try {
     const product = await updateProductAdmin(id, patch);
+    if (costPriceKurus !== undefined) {
+      await saveProductPrivateAdmin({
+        productId: id,
+        boutiqueId: owned.productBoutiqueId,
+        costPriceKurus,
+      });
+    }
     return Response.json({ product });
   } catch (error) {
     console.error("[tr/owner/products/[id]] patch failed:", error);

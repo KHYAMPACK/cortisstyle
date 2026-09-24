@@ -77,7 +77,7 @@ export function TrDashboardActionPill({
   const Icon = action.icon;
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-20 flex justify-center px-4 lg:bottom-5 lg:left-[var(--panel-sidebar-w,232px)] lg:transition-[left] lg:duration-200 motion-reduce:lg:transition-none">
+    <div className="pointer-events-none fixed inset-x-0 bottom-[calc(var(--panel-tabbar-h,3.5rem)+0.75rem+env(safe-area-inset-bottom))] z-20 flex justify-center px-4 lg:bottom-5 lg:left-[var(--panel-sidebar-w,232px)] lg:transition-[left] lg:duration-200 motion-reduce:lg:transition-none">
       <motion.div
         className="pointer-events-auto flex max-w-full items-center gap-2 rounded-full bg-neutral-900 py-1.5 pr-1.5 pl-3 text-white shadow-[0_10px_28px_rgba(16,24,40,0.3)]"
         initial={{ opacity: 0, y: 16 }}

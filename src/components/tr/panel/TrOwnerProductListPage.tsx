@@ -1,6 +1,8 @@
 "use client";
 
+import { ChevronLeft, ChevronRight, MoreHorizontal, Search, SlidersHorizontal } from "lucide-react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { TrPanelLink as Link } from "@/components/tr/panel/TrPanelLink";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
@@ -19,21 +21,17 @@ import { TrOwnerProductRouteGate } from "@/components/tr/panel/TrOwnerProductRou
 import {
   panelDesktopBtnClass,
   panelDesktopDangerBtnClass,
-  panelDesktopInputClass,
-  panelDesktopSearchClass,
   panelDesktopSecondaryBtnClass,
   panelDesktopSelectClass,
 } from "@/components/tr/panel/panelDesktopUi";
 import {
-  panelBackLinkClass,
   panelChipClass,
   panelEmptyClass,
   panelErrorClass,
-  panelHintClass,
-  panelPageTitleClass,
+  panelFieldClass,
+  panelLabelClass,
   panelPrimaryBtnClass,
   panelSecondaryBtnClass,
-  panelStickyFilterClass,
 } from "@/components/tr/panel/panelUi";
 import {
   TrPanelFadeIn,
@@ -41,6 +39,7 @@ import {
   TrPanelStagger,
   trPanelStaggerItem,
 } from "@/components/tr/panel/TrPanelMotion";
+import { TrPanelPopover } from "@/components/tr/panel/TrPanelPopover";
 import {
   getTrCategoryLabel,
   listCategoriesForProducts,
@@ -61,10 +60,8 @@ import {
   trPanelBatchNewProductsPath,
   trPanelEditProductPath,
   trPanelNewProductPath,
-  trPanelPath,
   trPanelTakimNewProductPath,
 } from "@/lib/tr/paths";
-import { sortProductSizes } from "@/lib/tr/productOptions";
 import { formatTryFromKurus } from "@/types/tr-marketplace";
 import type { TrProduct, TrProductStatus } from "@/types/tr-marketplace";
 
@@ -82,24 +79,149 @@ const STATUS_TONE: Record<TrProductStatus, string> = {
 
 const STATUS_OPTIONS: TrProductStatus[] = ["available", "sold", "hidden"];
 
-function stockSummary(product: TrProduct): string {
-  if (product.sizes.length === 0) return String(product.stock);
-  const sizes = sortProductSizes(product.sizes);
-  const parts = sizes.map((size) => {
-    const n = product.sizeStocks?.[size];
-    const qty = typeof n === "number" && Number.isFinite(n) ? n : 0;
-    return `${size}:${qty}`;
-  });
-  return `${product.stock} (${parts.join(" ")})`;
+const PAGE_SIZES = [20, 50, 100] as const;
+
+/** Same chip, tighter on desktop. */
+const filterChipClass = (active: boolean) =>
+  `${panelChipClass(active)} lg:min-h-0 lg:rounded-lg lg:px-3 lg:py-1.5 lg:text-[13px]`;
+
+const desktopButtonSize =
+  "lg:h-9 lg:min-h-0 lg:rounded-lg lg:px-4 lg:py-0 lg:text-[13px]";
+
+/** A badge only for the states worth a second look — "Satışta" is the norm. */
+function StatusBadge({ status }: { status: TrProductStatus }) {
+  if (status === "available") return null;
+  return (
+    <span
+      className={`shrink-0 rounded-md px-2 py-0.5 text-[12px] font-semibold ${STATUS_TONE[status]}`}
+    >
+      {STATUS_LABEL[status]}
+    </span>
+  );
 }
 
-function formatUpdated(iso: string): string {
-  return new Intl.DateTimeFormat("tr-TR", {
-    timeZone: "Europe/Istanbul",
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(iso));
+function isOnSale(product: TrProduct): boolean {
+  return (
+    typeof product.compareAtPriceKurus === "number" &&
+    product.compareAtPriceKurus > product.priceKurus
+  );
+}
+
+function ProductPrice({ product }: { product: TrProduct }) {
+  return (
+    <span className="tabular-nums">
+      {isOnSale(product) ? (
+        <span className="block text-[12px] text-neutral-400 line-through">
+          {formatTryFromKurus(product.compareAtPriceKurus!)}
+        </span>
+      ) : null}
+      <span className="font-medium text-neutral-900">
+        {formatTryFromKurus(product.priceKurus)}
+      </span>
+    </span>
+  );
+}
+
+function ProductStock({ product }: { product: TrProduct }) {
+  if (product.stock <= 0) {
+    return <span className="font-medium text-red-700">Tükendi</span>;
+  }
+  return <span className="tabular-nums">{product.stock} adet</span>;
+}
+
+function ProductThumb({
+  product,
+  priority,
+  className,
+}: {
+  product: TrProduct;
+  priority: boolean;
+  className: string;
+}) {
+  const cover = getPanelProductCover(product) ?? product.images[0] ?? null;
+  return (
+    <div
+      className={`relative shrink-0 overflow-hidden bg-[color:var(--panel-accent-soft)] ${className}`}
+    >
+      {cover ? (
+        <Image
+          src={cover}
+          alt=""
+          fill
+          priority={priority}
+          className="object-contain p-1"
+          sizes="80px"
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function ListPager({
+  page,
+  pageCount,
+  pageSize,
+  total,
+  onPage,
+  onPageSize,
+}: {
+  page: number;
+  pageCount: number;
+  pageSize: number;
+  total: number;
+  onPage: (next: number) => void;
+  onPageSize: (next: number) => void;
+}) {
+  const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
+  const to = Math.min(page * pageSize, total);
+  const arrowClass =
+    "grid h-8 w-8 place-items-center rounded-md border border-neutral-200 bg-white text-neutral-700 transition-colors duration-150 hover:bg-neutral-50 disabled:pointer-events-none disabled:opacity-40 motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--panel-accent-deep)]";
+
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 text-[13px] text-neutral-600">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <label className="flex items-center gap-2">
+          Satır adedi
+          <select
+            className={panelDesktopSelectClass}
+            value={pageSize}
+            onChange={(event) => onPageSize(Number(event.target.value))}
+          >
+            {PAGE_SIZES.map((size) => (
+              <option key={size} value={size}>
+                {size}
+              </option>
+            ))}
+          </select>
+        </label>
+        <span className="tabular-nums">
+          {from} - {to} / {total} ürün
+        </span>
+      </div>
+      {pageCount > 1 ? (
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            className={arrowClass}
+            disabled={page <= 1}
+            onClick={() => onPage(page - 1)}
+            aria-label="Önceki sayfa"
+          >
+            <ChevronLeft className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+          </button>
+          <button
+            type="button"
+            className={arrowClass}
+            disabled={page >= pageCount}
+            onClick={() => onPage(page + 1)}
+            aria-label="Sonraki sayfa"
+          >
+            <ChevronRight className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 function ProductList({
@@ -109,6 +231,7 @@ function ProductList({
   boutiqueId: string;
   boutiqueSlug: string;
 }) {
+  const router = useRouter();
   const cached = peekOwnerProducts(boutiqueId);
   const [products, setProducts] = useState<TrProduct[]>(cached?.products ?? []);
   const [loading, setLoading] = useState(!cached);
@@ -119,9 +242,10 @@ function ProductList({
     "all",
   );
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<number>(PAGE_SIZES[0]);
   const [bulkBusy, setBulkBusy] = useState(false);
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
-  const [savingIds, setSavingIds] = useState<Set<string>>(new Set());
   const openRestyle = useOpenElbiseRestyle();
 
   useEffect(() => {
@@ -218,7 +342,17 @@ function ProductList({
     return list;
   }, [categoryFilter, statusFilter, products, search]);
 
-  const orderedIds = useMemo(() => visible.map((p) => p.id), [visible]);
+  const pageCount = Math.max(1, Math.ceil(visible.length / pageSize));
+  const currentPage = Math.min(page, pageCount);
+  const pageItems = useMemo(
+    () => visible.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+    [visible, currentPage, pageSize],
+  );
+
+  const filterCount =
+    (statusFilter !== "all" ? 1 : 0) + (categoryFilter !== "all" ? 1 : 0);
+
+  const orderedIds = useMemo(() => pageItems.map((p) => p.id), [pageItems]);
   const selection = usePanelRowSelection(orderedIds);
   const restyleCandidates = useMemo(
     () => products.filter(isElbiseRestyleCandidate),
@@ -236,41 +370,12 @@ function ProductList({
     if (selection.selectedCount === 0) setConfirmBulkDelete(false);
   }, [selection.selectedCount]);
 
-  const markSaving = (id: string, on: boolean) => {
-    setSavingIds((current) => {
-      const next = new Set(current);
-      if (on) next.add(id);
-      else next.delete(id);
-      return next;
-    });
-  };
-
   const applyLocal = (updated: TrProduct) => {
     setProducts((current) =>
       current.map((entry) => (entry.id === updated.id ? updated : entry)),
     );
   };
   useElbiseRestyleSaved(applyLocal);
-
-  const patchProduct = async (
-    productId: string,
-    patch: Parameters<typeof updateOwnerProduct>[1],
-  ) => {
-    markSaving(productId, true);
-    setError(null);
-    try {
-      const updated = await updateOwnerProduct(productId, patch);
-      applyLocal(updated);
-    } catch (saveError) {
-      setError(
-        saveError instanceof Error
-          ? saveError.message
-          : "Ürün güncellenemedi.",
-      );
-    } finally {
-      markSaving(productId, false);
-    }
-  };
 
   const runBulk = async (
     patch: Parameters<typeof updateOwnerProduct>[1],
@@ -354,74 +459,206 @@ function ProductList({
     selection.clear();
   };
 
-  const filters = (
-    <div className={panelStickyFilterClass}>
-      <input
-        type="search"
-        value={search}
-        onChange={(event) => setSearch(event.target.value)}
-        placeholder="Ürün, kategori veya ürün kodu ara…"
-        className={`${panelDesktopSearchClass} max-w-none lg:max-w-sm`}
-        aria-label="Ürünlerde ara"
-      />
-      <div className="space-y-2">
-        <p className={`${panelHintClass} lg:text-[12px]`}>Durum</p>
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => setStatusFilter("all")}
-            className={`${panelChipClass(statusFilter === "all")} lg:min-h-0 lg:rounded-lg lg:px-3 lg:py-1.5 lg:text-[13px]`}
-          >
-            Tümü
-          </button>
-          {STATUS_OPTIONS.map((status) => (
-            <button
-              key={status}
-              type="button"
-              onClick={() => setStatusFilter(status)}
-              className={`${panelChipClass(statusFilter === status)} lg:min-h-0 lg:rounded-lg lg:px-3 lg:py-1.5 lg:text-[13px]`}
-            >
-              {STATUS_LABEL[status]}
-            </button>
-          ))}
-        </div>
-      </div>
-      <div className="space-y-2">
-        <p className={`${panelHintClass} lg:text-[12px]`}>Kategori</p>
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => setCategoryFilter("all")}
-            className={`${panelChipClass(categoryFilter === "all")} lg:min-h-0 lg:rounded-lg lg:px-3 lg:py-1.5 lg:text-[13px]`}
-          >
-            Tümü
-          </button>
-          {categories.map((entry) => (
-            <button
-              key={entry.id}
-              type="button"
-              onClick={() => setCategoryFilter(entry.id)}
-              className={`${panelChipClass(categoryFilter === entry.id)} lg:min-h-0 lg:rounded-lg lg:px-3 lg:py-1.5 lg:text-[13px]`}
-            >
-              {entry.label}
-            </button>
-          ))}
-          {uncategorizedCount > 0 ? (
+  const changeSearch = (value: string) => {
+    setSearch(value);
+    setPage(1);
+  };
+  const changeStatus = (value: "all" | TrProductStatus) => {
+    setStatusFilter(value);
+    setPage(1);
+  };
+  const changeCategory = (value: string) => {
+    setCategoryFilter(value);
+    setPage(1);
+  };
+  const clearFilters = () => {
+    setStatusFilter("all");
+    setCategoryFilter("all");
+    setPage(1);
+  };
+  const changePageSize = (value: number) => {
+    setPageSize(value);
+    setPage(1);
+  };
+
+  const pager = (
+    <ListPager
+      page={currentPage}
+      pageCount={pageCount}
+      pageSize={pageSize}
+      total={visible.length}
+      onPage={setPage}
+      onPageSize={changePageSize}
+    />
+  );
+
+  const header = (
+    <div className="flex items-center justify-between gap-3">
+      <h2 className="text-[1.25rem] font-semibold tracking-tight text-neutral-900 sm:text-[1.375rem]">
+        Ürünler
+      </h2>
+      <div className="flex items-center gap-2">
+        <TrPanelPopover
+          label="Diğer ekleme yolları"
+          align="end"
+          panelClassName="w-52 p-1.5"
+          trigger={(props) => (
             <button
               type="button"
-              onClick={() => setCategoryFilter("uncategorized")}
-              className={`${panelChipClass(categoryFilter === "uncategorized")} lg:min-h-0 lg:rounded-lg lg:px-3 lg:py-1.5 lg:text-[13px]`}
+              {...props}
+              aria-label="Diğer ekleme yolları"
+              className={`${panelSecondaryBtnClass} w-11 px-0 lg:w-9`}
             >
-              Kategorisiz
+              <MoreHorizontal className="h-[18px] w-[18px]" strokeWidth={1.75} aria-hidden />
             </button>
-          ) : null}
-        </div>
+          )}
+        >
+          {(close) => (
+            <ul className="text-[14px] text-neutral-800">
+              <li>
+                <Link
+                  href={trPanelTakimNewProductPath()}
+                  onClick={close}
+                  className="flex min-h-10 items-center rounded-md px-3 hover:bg-neutral-50"
+                >
+                  Takım yükle
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href={trPanelBatchNewProductsPath()}
+                  onClick={close}
+                  className="flex min-h-10 items-center rounded-md px-3 hover:bg-neutral-50"
+                >
+                  Toplu ekle
+                </Link>
+              </li>
+              {restyleCandidates.length > 0 ? (
+                <li>
+                  <button
+                    type="button"
+                    className="flex min-h-10 w-full items-center rounded-md px-3 text-left hover:bg-neutral-50"
+                    onClick={() => {
+                      close();
+                      openRestyle?.({
+                        boutiqueId,
+                        boutiqueSlug,
+                        products: restyleCandidates,
+                      });
+                    }}
+                  >
+                    Packshot + model
+                  </button>
+                </li>
+              ) : null}
+            </ul>
+          )}
+        </TrPanelPopover>
+        <Link
+          href={trPanelNewProductPath()}
+          className={`${panelPrimaryBtnClass} ${desktopButtonSize}`}
+        >
+          Ürün ekle
+        </Link>
       </div>
     </div>
   );
 
+  const toolbar = (
+    <div className="flex flex-wrap items-center gap-2">
+      <div className="relative min-w-0 flex-1 sm:max-w-sm">
+        <Search
+          className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-neutral-400"
+          strokeWidth={1.75}
+          aria-hidden
+        />
+        <input
+          type="search"
+          value={search}
+          onChange={(event) => changeSearch(event.target.value)}
+          placeholder="Tabloda arama yapın"
+          className={`${panelFieldClass} pl-9`}
+          aria-label="Ürünlerde ara"
+        />
+      </div>
+      <TrPanelPopover
+        label="Filtreler"
+        panelClassName="w-[19rem] p-4"
+        trigger={(props) => (
+          <button
+            type="button"
+            {...props}
+            className={`${panelSecondaryBtnClass} gap-2`}
+          >
+            <SlidersHorizontal className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+            Filtre
+            {filterCount > 0 ? (
+              <span className="grid h-5 min-w-5 place-items-center rounded-full bg-[color:var(--panel-accent)] px-1 text-[11px] font-semibold text-white">
+                {filterCount}
+              </span>
+            ) : null}
+          </button>
+        )}
+      >
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <p className={panelLabelClass}>Durum</p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => changeStatus("all")}
+                className={filterChipClass(statusFilter === "all")}
+              >
+                Tümü
+              </button>
+              {STATUS_OPTIONS.map((status) => (
+                <button
+                  key={status}
+                  type="button"
+                  onClick={() => changeStatus(status)}
+                  className={filterChipClass(statusFilter === status)}
+                >
+                  {STATUS_LABEL[status]}
+                </button>
+              ))}
+            </div>
+          </div>
+          <label className="block space-y-2">
+            <span className={panelLabelClass}>Kategori</span>
+            <select
+              className={panelFieldClass}
+              value={categoryFilter}
+              onChange={(event) => changeCategory(event.target.value)}
+            >
+              <option value="all">Tümü</option>
+              {categories.map((entry) => (
+                <option key={entry.id} value={entry.id}>
+                  {entry.label}
+                </option>
+              ))}
+              {uncategorizedCount > 0 ? (
+                <option value="uncategorized">Kategorisiz</option>
+              ) : null}
+            </select>
+          </label>
+          {filterCount > 0 ? (
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="text-[13px] font-semibold text-[color:var(--panel-accent-deep)] hover:underline"
+            >
+              Filtreleri temizle
+            </button>
+          ) : null}
+        </div>
+      </TrPanelPopover>
+    </div>
+  );
+
   return (
-    <>
+    <div className="space-y-4">
+      {header}
+
       {loading && products.length === 0 ? (
         <TrPanelListSkeleton rows={6} label="Ürünler yükleniyor" />
       ) : error && products.length === 0 ? (
@@ -429,7 +666,7 @@ function ProductList({
           <p className={panelErrorClass}>{error}</p>
         </TrPanelFadeIn>
       ) : (
-        <TrPanelFadeIn key="products-ready" className="space-y-5" shift={false}>
+        <TrPanelFadeIn key="products-ready" className="space-y-4" shift={false}>
           {notice ? (
             <p className="rounded-2xl border-2 border-amber-200 bg-amber-50 px-5 py-4 text-[16px] text-amber-950">
               {notice}
@@ -437,52 +674,7 @@ function ProductList({
           ) : null}
           {error ? <p className={panelErrorClass}>{error}</p> : null}
 
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <p className="text-[17px] font-medium text-neutral-700 lg:text-[14px]">
-              {categoryFilter === "all" &&
-              statusFilter === "all" &&
-              !search.trim()
-                ? `${products.length} ürün`
-                : `${visible.length} / ${products.length} ürün`}
-            </p>
-            <div className="flex flex-wrap items-center gap-2">
-              <Link
-                href={trPanelNewProductPath()}
-                className={`${panelPrimaryBtnClass} lg:h-9 lg:min-h-0 lg:rounded-lg lg:px-4 lg:py-0 lg:text-[13px]`}
-              >
-                + Yeni ürün ekle
-              </Link>
-              <Link
-                href={trPanelTakimNewProductPath()}
-                className={`${panelSecondaryBtnClass} lg:h-9 lg:min-h-0 lg:rounded-lg lg:px-4 lg:py-0 lg:text-[13px]`}
-              >
-                Takım yükle
-              </Link>
-              <Link
-                href={trPanelBatchNewProductsPath()}
-                className={`${panelSecondaryBtnClass} lg:h-9 lg:min-h-0 lg:rounded-lg lg:px-4 lg:py-0 lg:text-[13px]`}
-              >
-                Toplu ekle
-              </Link>
-              {restyleCandidates.length > 0 ? (
-                <button
-                  type="button"
-                  className={`${panelSecondaryBtnClass} lg:h-9 lg:min-h-0 lg:rounded-lg lg:px-4 lg:py-0 lg:text-[13px]`}
-                  onClick={() => {
-                    openRestyle?.({
-                      boutiqueId,
-                      boutiqueSlug,
-                      products: restyleCandidates,
-                    });
-                  }}
-                >
-                  Packshot + model
-                </button>
-              ) : null}
-            </div>
-          </div>
-
-          {products.length > 0 ? filters : null}
+          {products.length > 0 ? toolbar : null}
 
           {products.length === 0 ? (
             <p className={panelEmptyClass}>
@@ -498,27 +690,28 @@ function ProductList({
             </p>
           ) : visible.length === 0 ? (
             <p className={panelEmptyClass}>
-              Bu filtrede ürün yok. “Tümü”ne geçmeyi deneyin.
+              Aramanıza uyan ürün yok.
+              {filterCount > 0 ? (
+                <>
+                  <br />
+                  <button
+                    type="button"
+                    onClick={clearFilters}
+                    className="mt-3 inline-block font-semibold underline"
+                    style={{ color: "var(--panel-accent-deep)" }}
+                  >
+                    Filtreleri temizle
+                  </button>
+                </>
+              ) : null}
             </p>
           ) : (
             <>
               {/* Mobile cards */}
-              <div className="lg:hidden">
+              <div className="space-y-4 lg:hidden">
                 <TrPanelStagger className="space-y-3">
-                  {visible.map((product, index) => {
-                    const cover =
-                      getPanelProductCover(product) ??
-                      product.images[0] ??
-                      null;
-                    const statusLabel =
-                      STATUS_LABEL[product.status] ?? product.status;
-                    const statusTone =
-                      STATUS_TONE[product.status] ?? STATUS_TONE.hidden;
-                    const onSale =
-                      typeof product.compareAtPriceKurus === "number" &&
-                      product.compareAtPriceKurus > product.priceKurus;
+                  {pageItems.map((product, index) => {
                     const categoryLabel = getTrCategoryLabel(product.category);
-
                     return (
                       <motion.div
                         key={product.id}
@@ -526,61 +719,30 @@ function ProductList({
                       >
                         <Link
                           href={trPanelEditProductPath(product.id)}
-                          className="flex items-center gap-4 rounded-2xl border border-[color:var(--panel-accent-border)] bg-white p-4 shadow-sm transition-colors hover:bg-[color:var(--panel-accent-soft)] sm:gap-5 sm:p-5"
+                          className="flex items-center gap-4 rounded-xl border border-neutral-200/80 bg-white p-3 shadow-[0_1px_2px_rgba(16,24,40,0.04)] transition-colors hover:bg-[color:var(--panel-accent-soft)]"
                         >
-                          <div className="relative h-24 w-20 shrink-0 overflow-hidden rounded-xl bg-[color:var(--panel-accent-soft)] sm:h-28 sm:w-24">
-                            {cover ? (
-                              <Image
-                                src={cover}
-                                alt=""
-                                fill
-                                priority={index < 4}
-                                className="object-contain p-2"
-                                sizes="96px"
-                              />
-                            ) : null}
-                          </div>
-                          <div className="min-w-0 flex-1 space-y-2">
-                            <p className="text-[19px] leading-snug font-semibold text-neutral-900 sm:text-[20px]">
-                              {product.title}
-                            </p>
-                            <p className="text-[18px] font-medium text-neutral-800">
-                              {formatTryFromKurus(product.priceKurus)}
-                              {onSale ? (
-                                <span className="ml-2 text-[15px] font-normal text-neutral-500 line-through">
-                                  {formatTryFromKurus(
-                                    product.compareAtPriceKurus!,
-                                  )}
-                                </span>
-                              ) : null}
-                            </p>
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span
-                                className={`rounded-lg px-2.5 py-1 text-[14px] font-semibold ${statusTone}`}
-                              >
-                                {statusLabel}
-                              </span>
-                              {categoryLabel ? (
-                                <span className="rounded-lg bg-[color:var(--panel-accent-soft)] px-2.5 py-1 text-[14px] font-medium text-neutral-800">
-                                  {categoryLabel}
-                                </span>
-                              ) : null}
-                              <span className="rounded-lg bg-neutral-100 px-2.5 py-1 text-[14px] font-medium text-neutral-700">
-                                Stok: {product.stock}
-                              </span>
-                              {product.sizes.length > 0 ? (
-                                <span className="rounded-lg bg-neutral-100 px-2.5 py-1 text-[14px] font-medium text-neutral-700">
-                                  {product.sizes.join(" · ")}
-                                </span>
-                              ) : null}
-                              {onSale ? (
-                                <span className="rounded-lg bg-rose-50 px-2.5 py-1 text-[14px] font-semibold text-rose-800">
-                                  İndirimli
-                                </span>
-                              ) : null}
+                          <ProductThumb
+                            product={product}
+                            priority={index < 4}
+                            className="h-20 w-16 rounded-lg"
+                          />
+                          <div className="min-w-0 flex-1 space-y-1">
+                            <div className="flex items-center gap-2">
+                              <p className="min-w-0 truncate text-[16px] font-semibold text-neutral-900">
+                                {product.title}
+                              </p>
+                              <StatusBadge status={product.status} />
                             </div>
-                            <p className="text-[15px] font-medium text-[color:var(--panel-accent-deep)]">
-                              Düzenlemek için dokunun →
+                            {categoryLabel ? (
+                              <p className="truncate text-[13px] text-neutral-500">
+                                {categoryLabel}
+                              </p>
+                            ) : null}
+                            <p className="flex flex-wrap items-baseline gap-x-3 text-[14px]">
+                              <ProductPrice product={product} />
+                              <span className="text-neutral-600">
+                                <ProductStock product={product} />
+                              </span>
                             </p>
                           </div>
                         </Link>
@@ -588,11 +750,15 @@ function ProductList({
                     );
                   })}
                 </TrPanelStagger>
+                <div className="rounded-xl border border-neutral-200/80 bg-white px-4 py-3">
+                  {pager}
+                </div>
               </div>
 
               {/* Desktop table */}
               <div className="hidden space-y-3 lg:block">
                 <TrPanelDataTable
+                  contained={false}
                   onKeyDown={selection.onKeyDown}
                   selectAll={{
                     checked: selection.allVisibleSelected,
@@ -602,33 +768,18 @@ function ProductList({
                     onChange: selection.setAllVisible,
                     disabled: bulkBusy,
                   }}
-                  headers={[
-                    "Ürün",
-                    "Kategori",
-                    "Fiyat",
-                    "İndirim (eski fiyat)",
-                    "Durum",
-                    "Stok",
-                    "Güncelleme",
-                  ]}
-                  footer={`${visible.length} ürün · Shift aralık · Ctrl+A tümü`}
+                  headers={["Ürün", "Satış fiyatı", "Envanter"]}
+                  footer={pager}
                 >
-                  {visible.map((product, index) => {
-                    const cover =
-                      getPanelProductCover(product) ??
-                      product.images[0] ??
-                      null;
-                    const busy = savingIds.has(product.id) || bulkBusy;
-                    const priceTry = (product.priceKurus / 100).toFixed(2);
-                    const compareTry =
-                      product.compareAtPriceKurus != null
-                        ? (product.compareAtPriceKurus / 100).toFixed(2)
-                        : "";
-
+                  {pageItems.map((product, index) => {
+                    const categoryLabel = getTrCategoryLabel(product.category);
+                    const href = trPanelEditProductPath(product.id);
                     return (
                       <TrPanelDataTableRow
                         key={product.id}
                         selected={selection.isSelected(product.id)}
+                        onActivate={() => router.push(href)}
+                        onPointerEnter={() => router.prefetch(href)}
                       >
                         <TrPanelDataTableCell className="w-10">
                           <PanelSelectCheckbox
@@ -641,155 +792,34 @@ function ProductList({
                         </TrPanelDataTableCell>
                         <TrPanelDataTableCell>
                           <div className="flex items-center gap-3">
-                            <div className="relative h-10 w-8 shrink-0 overflow-hidden rounded bg-[color:var(--panel-accent-soft)]">
-                              {cover ? (
-                                <Image
-                                  src={cover}
-                                  alt=""
-                                  fill
-                                  priority={index < 4}
-                                  className="object-contain p-0.5"
-                                  sizes="32px"
-                                />
+                            <ProductThumb
+                              product={product}
+                              priority={index < 4}
+                              className="h-12 w-10 rounded"
+                            />
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2">
+                                <Link
+                                  href={href}
+                                  className="max-w-[320px] truncate font-semibold text-neutral-900 hover:underline"
+                                >
+                                  {product.title}
+                                </Link>
+                                <StatusBadge status={product.status} />
+                              </div>
+                              {categoryLabel ? (
+                                <p className="truncate text-[12px] text-neutral-500">
+                                  {categoryLabel}
+                                </p>
                               ) : null}
                             </div>
-                            <Link
-                              href={trPanelEditProductPath(product.id)}
-                              className="max-w-[220px] truncate font-semibold text-[color:var(--panel-accent-deep)] hover:underline"
-                            >
-                              {product.title}
-                            </Link>
                           </div>
                         </TrPanelDataTableCell>
                         <TrPanelDataTableCell>
-                          <select
-                            className={panelDesktopSelectClass}
-                            value={product.category ?? ""}
-                            disabled={busy}
-                            onChange={(event) => {
-                              const value = event.target.value || null;
-                              void patchProduct(product.id, {
-                                category: value,
-                              });
-                            }}
-                          >
-                            <option value="">—</option>
-                            {categoryOptions.map((entry) => (
-                              <option key={entry.id} value={entry.id}>
-                                {entry.label}
-                              </option>
-                            ))}
-                          </select>
+                          <ProductPrice product={product} />
                         </TrPanelDataTableCell>
                         <TrPanelDataTableCell>
-                          <input
-                            type="number"
-                            min={0}
-                            step="0.01"
-                            className={panelDesktopInputClass}
-                            defaultValue={priceTry}
-                            key={`price-${product.id}-${product.priceKurus}`}
-                            disabled={busy}
-                            onBlur={(event) => {
-                              const next = Number(event.target.value);
-                              if (
-                                !Number.isFinite(next) ||
-                                next <= 0 ||
-                                Math.round(next * 100) === product.priceKurus
-                              ) {
-                                event.target.value = priceTry;
-                                return;
-                              }
-                              void patchProduct(product.id, {
-                                priceTry: next,
-                              });
-                            }}
-                          />
-                        </TrPanelDataTableCell>
-                        <TrPanelDataTableCell>
-                          <div className="flex flex-col gap-1">
-                            <input
-                              type="number"
-                              min={0}
-                              step="0.01"
-                              placeholder="Eski fiyat"
-                              className={`${panelDesktopInputClass} w-28`}
-                              defaultValue={compareTry}
-                              key={`compare-${product.id}-${product.compareAtPriceKurus ?? "none"}`}
-                              disabled={busy}
-                              aria-label={`${product.title} indirimli eski fiyat`}
-                              onBlur={(event) => {
-                                const raw = event.target.value.trim();
-                                if (!raw) {
-                                  if (product.compareAtPriceKurus == null) {
-                                    return;
-                                  }
-                                  void patchProduct(product.id, {
-                                    compareAtPriceTry: null,
-                                  });
-                                  return;
-                                }
-                                const next = Number(raw);
-                                if (!Number.isFinite(next) || next <= 0) {
-                                  event.target.value = compareTry;
-                                  return;
-                                }
-                                const nextKurus = Math.round(next * 100);
-                                if (nextKurus === product.compareAtPriceKurus) {
-                                  return;
-                                }
-                                void patchProduct(product.id, {
-                                  compareAtPriceTry: next,
-                                });
-                              }}
-                            />
-                            {typeof product.compareAtPriceKurus === "number" &&
-                            product.compareAtPriceKurus > product.priceKurus ? (
-                              <span className="text-[11px] font-semibold text-rose-700">
-                                %
-                                {Math.round(
-                                  (1 -
-                                    product.priceKurus /
-                                      product.compareAtPriceKurus) *
-                                    100,
-                                )}{" "}
-                                indirim
-                              </span>
-                            ) : (
-                              <span className="text-[11px] text-neutral-400">
-                                Boş = indirim yok
-                              </span>
-                            )}
-                          </div>
-                        </TrPanelDataTableCell>
-                        <TrPanelDataTableCell>
-                          <select
-                            className={panelDesktopSelectClass}
-                            value={product.status}
-                            disabled={busy}
-                            onChange={(event) => {
-                              void patchProduct(product.id, {
-                                status: event.target
-                                  .value as TrProductStatus,
-                              });
-                            }}
-                          >
-                            {STATUS_OPTIONS.map((status) => (
-                              <option key={status} value={status}>
-                                {STATUS_LABEL[status]}
-                              </option>
-                            ))}
-                          </select>
-                        </TrPanelDataTableCell>
-                        <TrPanelDataTableCell>
-                          <span className="tabular-nums text-neutral-700">
-                            {stockSummary(product)}
-                          </span>
-                        </TrPanelDataTableCell>
-                        <TrPanelDataTableCell>
-                          <span className="whitespace-nowrap text-neutral-500">
-                            {formatUpdated(product.updatedAt)}
-                          </span>
+                          <ProductStock product={product} />
                         </TrPanelDataTableCell>
                       </TrPanelDataTableRow>
                     );
@@ -908,7 +938,7 @@ function ProductList({
           )}
         </TrPanelFadeIn>
       )}
-    </>
+    </div>
   );
 }
 
@@ -917,21 +947,10 @@ export function TrOwnerProductListPage() {
     <TrOwnerPanelGate>
       {({ activeBoutique }) => (
         <TrOwnerProductRouteGate activeBoutique={activeBoutique}>
-          <div className="space-y-5">
-          <div>
-            <Link
-              href={trPanelPath()}
-              className={`${panelBackLinkClass} lg:hidden`}
-            >
-              ← Giriş
-            </Link>
-            <h2 className={panelPageTitleClass}>Ürünler</h2>
-          </div>
           <ProductList
             boutiqueId={activeBoutique.id}
             boutiqueSlug={activeBoutique.slug}
           />
-        </div>
         </TrOwnerProductRouteGate>
       )}
     </TrOwnerPanelGate>

@@ -21,6 +21,11 @@ interface TrPanelDataTableProps {
   children: ReactNode;
   empty?: ReactNode;
   footer?: ReactNode;
+  /**
+   * Cap the table at ~70vh and scroll inside it (default). Pass false for a
+   * paginated table that should just grow with the page.
+   */
+  contained?: boolean;
 }
 
 export function TrPanelDataTable({
@@ -30,6 +35,7 @@ export function TrPanelDataTable({
   children,
   empty,
   footer,
+  contained = true,
 }: TrPanelDataTableProps) {
   return (
     <div
@@ -39,7 +45,11 @@ export function TrPanelDataTable({
       role={onKeyDown ? "region" : undefined}
       aria-label={onKeyDown ? "Seçilebilir tablo" : undefined}
     >
-      <div className="max-h-[min(70vh,720px)] overflow-auto">
+      <div
+        className={
+          contained ? "max-h-[min(70vh,720px)] overflow-auto" : "overflow-x-auto"
+        }
+      >
         <table className="w-full min-w-[720px] border-collapse text-left">
           <thead>
             <tr>
@@ -95,16 +105,36 @@ export function TrPanelDataTableRow({
   children,
   selected,
   className = "",
+  onActivate,
+  onPointerEnter,
 }: {
   children: ReactNode;
   selected?: boolean;
   className?: string;
+  /**
+   * Makes the whole row clickable. Clicks that land on a link, button or field
+   * inside the row keep their own behaviour and don't trigger it.
+   */
+  onActivate?: () => void;
+  onPointerEnter?: () => void;
 }) {
   return (
     <tr
+      onPointerEnter={onPointerEnter}
+      onClick={
+        onActivate
+          ? (event) => {
+              const target = event.target as HTMLElement;
+              if (target.closest("a, button, input, select, textarea, label")) {
+                return;
+              }
+              onActivate();
+            }
+          : undefined
+      }
       className={`border-b border-neutral-100 transition-colors hover:bg-[color:var(--panel-accent-soft)]/60 ${
-        selected ? "bg-[color:var(--panel-accent-soft)]/40" : ""
-      } ${className}`}
+        onActivate ? "cursor-pointer" : ""
+      } ${selected ? "bg-[color:var(--panel-accent-soft)]/40" : ""} ${className}`}
     >
       {children}
     </tr>

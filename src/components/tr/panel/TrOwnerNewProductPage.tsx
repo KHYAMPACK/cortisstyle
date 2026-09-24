@@ -1,15 +1,11 @@
 "use client";
 
-import { TrPanelLink as Link } from "@/components/tr/panel/TrPanelLink";
 import { AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
 import { TrOwnerProductRouteGate } from "@/components/tr/panel/TrOwnerProductRouteGate";
 import { TrOwnerProductCreatedSuccess } from "@/components/tr/panel/TrOwnerProductCreatedSuccess";
-import {
-  panelBackLinkClass,
-  panelPageTitleClass,
-} from "@/components/tr/panel/panelUi";
+import { TrPanelEditor } from "@/components/tr/panel/TrPanelEditor";
 import { TrPanelFadeIn } from "@/components/tr/panel/TrPanelMotion";
 import { TrProductCreateWizard } from "@/components/tr/panel/TrProductCreateWizard";
 import { trPanelProductsPath } from "@/lib/tr/paths";
@@ -44,16 +40,14 @@ function NewProductFlow({
   const [wizardKey, setWizardKey] = useState(0);
 
   return (
-    <div className="space-y-6">
+    <TrPanelEditor
+      backHref={trPanelProductsPath()}
+      parentLabel="Ürünler"
+      title={created ? "Ürün eklendi" : "Yeni ürün"}
+    >
       <AnimatePresence mode="wait">
         {created ? (
           <TrPanelFadeIn key="created-success">
-            <div className="mb-2">
-              <Link href={trPanelProductsPath()} className={panelBackLinkClass}>
-                ← Ürün listesi
-              </Link>
-              <h2 className={panelPageTitleClass}>Ürün eklendi</h2>
-            </div>
             <TrOwnerProductCreatedSuccess
               product={created}
               boutiqueSlug={boutiqueSlug}
@@ -69,31 +63,23 @@ function NewProductFlow({
           </TrPanelFadeIn>
         ) : (
           <TrPanelFadeIn key={`create-wizard-${wizardKey}`}>
-            <div>
-              <Link href={trPanelProductsPath()} className={panelBackLinkClass}>
-                ← Listeye dön
-              </Link>
-              <h2 className={panelPageTitleClass}>Yeni ürün</h2>
-              <p className="mt-2 text-[17px] text-neutral-600">
-                Adım adım ilerleyin — önce fotoğraf, sonra isim ve fiyat.
-              </p>
-            </div>
-            <div className="mt-6">
-              <TrProductCreateWizard
-                key={wizardKey}
-                boutiqueId={boutiqueId}
-                boutiqueSlug={boutiqueSlug}
-                onSaved={(product) => {
-                  setCreated(product);
-                  if (typeof window !== "undefined") {
-                    window.scrollTo({ top: 0, behavior: "smooth" });
-                  }
-                }}
-              />
-            </div>
+            <p className="mb-6 text-[15px] text-neutral-600">
+              Adım adım ilerleyin — önce fotoğraf, sonra isim ve fiyat.
+            </p>
+            <TrProductCreateWizard
+              key={wizardKey}
+              boutiqueId={boutiqueId}
+              boutiqueSlug={boutiqueSlug}
+              onSaved={(product) => {
+                setCreated(product);
+                if (typeof window !== "undefined") {
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }
+              }}
+            />
           </TrPanelFadeIn>
         )}
       </AnimatePresence>
-    </div>
+    </TrPanelEditor>
   );
 }

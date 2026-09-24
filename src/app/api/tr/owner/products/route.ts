@@ -12,6 +12,14 @@ import { parseTryToKurus } from "@/types/tr-marketplace";
 import type { TrProductColor, TrProductStatus } from "@/types/tr-marketplace";
 import { sanitizeProductFeatures } from "@/lib/tr/catalog/productFeatures";
 import {
+  readFulfillmentType,
+  readProductType,
+} from "@/lib/tr/catalog/mappers";
+import {
+  readCostPriceKurus,
+  saveProductPrivateAdmin,
+} from "@/lib/tr/catalog/productPrivate";
+import {
   alignMarketplaceSlots,
   cleanedLifestyleImages,
 } from "@/lib/tr/productImages";
@@ -164,6 +172,16 @@ export async function POST(request: Request) {
     }
   }
 
+  let costPriceKurus: number | null | undefined;
+  try {
+    costPriceKurus = readCostPriceKurus(body);
+  } catch (error) {
+    return Response.json(
+      { error: error instanceof Error ? error.message : "Alış fiyatı geçersiz." },
+      { status: 400 },
+    );
+  }
+
   let compareAtPriceKurus: number | null | undefined;
   if (
     body.compareAtPriceKurus !== undefined ||
@@ -232,9 +250,30 @@ export async function POST(request: Request) {
       status,
       stock,
       sizeStocks,
+      productType: readProductType(body.productType),
+      fulfillmentType: readFulfillmentType(body.fulfillmentType),
     });
 
-    return Response.json({ product }, { status: 201 });
+    // The product exists at this point, so a failure to store the cost is reported
+    // as a warning instead of an error (a retry would create a duplicate).
+    let warning: string | undefined;
+    if (costPriceKurus != null) {
+      try {
+        await saveProductPrivateAdmin({
+          productId: product.id,
+          boutiqueId: boutique.id,
+          costPriceKurus,
+        });
+      } catch (privateError) {
+        console.error("[tr/owner/products] private save failed:", privateError);
+        warning =
+          privateError instanceof Error
+            ? privateError.message
+            : "Alış fiyatı kaydedilemedi.";
+      }
+    }
+
+    return Response.json({ product, warning }, { status: 201 });
   } catch (error) {
     console.error("[tr/owner/products] create failed:", error);
     return Response.json(

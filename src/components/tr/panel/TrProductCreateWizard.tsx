@@ -1710,54 +1710,56 @@ export function TrProductCreateWizard({
 
       <div className={panelStickyActionsSpacerClass} aria-hidden />
       <div className={panelStickyActionsClass}>
-        {stepIndex > 0 ? (
-          <button type="button" className={panelSecondaryBtnClass} onClick={goBack}>
-            Geri
-          </button>
-        ) : null}
-        {showContinueButton ? (
-          <button
-            type="button"
-            className={`${panelPrimaryBtnClass} flex-1 disabled:opacity-60`}
-            onClick={goNext}
-            disabled={
-              awaitingFrontAi ||
-              (step.id === "model" && modelGenerating) ||
-              !canContinue
-            }
-          >
-            {awaitingFrontAi
-              ? "Gemini önerisini onaylayın…"
-              : step.id === "model" && modelGenerating
-                ? "Model oluşturuluyor…"
-                : "Devam"}
-          </button>
-        ) : null}
-        {step.id === "review" ? (
-          <button
-            type="button"
-            className={`${panelPrimaryBtnClass} flex-1`}
-            onClick={() => void save()}
-            disabled={
-              saving ||
-              uploading ||
-              modelGenerating ||
-              colorPackshotBusyIds.length > 0 ||
-              colorTryOnBusyIds.length > 0
-            }
-          >
-            {saving
-              ? "Kaydediliyor…"
-              : uploading ||
-                  modelGenerating ||
-                  colorPackshotBusyIds.length > 0 ||
-                  colorTryOnBusyIds.length > 0
-                ? "Görseller hazırlanıyor…"
-                : linkedColors
-                  ? `${skuCount} ürünü kaydet`
-                  : "Ürünü kaydet"}
-          </button>
-        ) : null}
+        <div className="mx-auto flex w-full max-w-4xl flex-wrap gap-3">
+          {stepIndex > 0 ? (
+            <button type="button" className={panelSecondaryBtnClass} onClick={goBack}>
+              Geri
+            </button>
+          ) : null}
+          {showContinueButton ? (
+            <button
+              type="button"
+              className={`${panelPrimaryBtnClass} flex-1 disabled:opacity-60`}
+              onClick={goNext}
+              disabled={
+                awaitingFrontAi ||
+                (step.id === "model" && modelGenerating) ||
+                !canContinue
+              }
+            >
+              {awaitingFrontAi
+                ? "Gemini önerisini onaylayın…"
+                : step.id === "model" && modelGenerating
+                  ? "Model oluşturuluyor…"
+                  : "Devam"}
+            </button>
+          ) : null}
+          {step.id === "review" ? (
+            <button
+              type="button"
+              className={`${panelPrimaryBtnClass} flex-1`}
+              onClick={() => void save()}
+              disabled={
+                saving ||
+                uploading ||
+                modelGenerating ||
+                colorPackshotBusyIds.length > 0 ||
+                colorTryOnBusyIds.length > 0
+              }
+            >
+              {saving
+                ? "Kaydediliyor…"
+                : uploading ||
+                    modelGenerating ||
+                    colorPackshotBusyIds.length > 0 ||
+                    colorTryOnBusyIds.length > 0
+                  ? "Görseller hazırlanıyor…"
+                  : linkedColors
+                    ? `${skuCount} ürünü kaydet`
+                    : "Ürünü kaydet"}
+            </button>
+          ) : null}
+        </div>
       </div>
 
       <TrProductImageLightbox

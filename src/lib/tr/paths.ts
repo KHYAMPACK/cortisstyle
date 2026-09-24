@@ -132,6 +132,21 @@ export function trPanelNewProductPath(): string {
   return "/tr/panel/urun/yeni";
 }
 
+/** Basit ürün editor. */
+export function trPanelNewSimpleProductPath(): string {
+  return "/tr/panel/urun/yeni/basit";
+}
+
+/** Fashion sub-chooser (tek parça sihirbazı / takım / toplu). */
+export function trPanelNewFashionProductPath(): string {
+  return "/tr/panel/urun/yeni/moda";
+}
+
+/** The single-garment AI wizard. */
+export function trPanelNewFashionSingleProductPath(): string {
+  return "/tr/panel/urun/yeni/moda/tek-parca";
+}
+
 export function trPanelBatchNewProductsPath(): string {
   return "/tr/panel/urun/toplu";
 }

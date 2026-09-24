@@ -1,13 +1,8 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type FormEvent,
-} from "react";
+import { Check } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { TrCatalogBackgroundPicker } from "@/components/tr/panel/TrCatalogBackgroundPicker";
 import { useRegisterLeaveBusy } from "@/components/tr/panel/TrOwnerLeaveGuard";
 import { TrOwnerAiCatalogEnhance } from "@/components/tr/panel/TrOwnerAiCatalogEnhance";
@@ -68,7 +63,6 @@ import {
   TR_OWNER_PRODUCT_LIMITS,
 } from "@/lib/tr/ownerProductConstraints";
 import {
-  createOwnerProduct,
   deleteOwnerProduct,
   type OwnerListingDraft,
   updateOwnerProduct,
@@ -95,9 +89,14 @@ import {
   panelLabelClass,
   panelPrimaryBtnClass,
   panelSecondaryBtnClass,
-  panelSectionClass,
 } from "@/components/tr/panel/panelUi";
+import {
+  TrPanelEditorActions,
+  TrPanelEditorCard,
+  TrPanelEditorTabs,
+} from "@/components/tr/panel/TrPanelEditor";
 import { TrPanelBusySpinner } from "@/components/tr/panel/TrPanelMotion";
+import { trBoutiqueProductPath } from "@/lib/tr/paths";
 import { formatTryFromKurus } from "@/types/tr-marketplace";
 import type { TrProduct, TrProductColor, TrProductFeatures, TrProductStatus } from "@/types/tr-marketplace";
 
@@ -164,18 +163,47 @@ function hasZeroSizeStockOnChart(
   return parsed !== null && sumSizeStocks(parsed) <= 0;
 }
 
-/** Edit mode: jump between sections (durum stays visible except on Sil). */
-const EDIT_STEPS = [
-  { id: "photos", title: "Fotoğraflar" },
-  { id: "name", title: "İsim" },
-  { id: "price", title: "Fiyat" },
-  { id: "category", title: "Kategori" },
-  { id: "sizes", title: "Beden" },
-  { id: "colors", title: "Renkler" },
-  { id: "danger", title: "Sil" },
+/** Tabs above the cards; each jumps to the card with the same id. "Ürünü sil" has no tab. */
+const EDIT_TABS = [
+  { id: "editor-temel", label: "Temel bilgi" },
+  { id: "editor-medya", label: "Medya" },
+  { id: "editor-detay", label: "Ürün detayı" },
+  { id: "editor-envanter", label: "Envanter" },
 ] as const;
 
-type EditStepId = (typeof EDIT_STEPS)[number]["id"];
+/** Save state in the editor's top bar (dark background). */
+function AutoSaveIndicator({
+  state,
+  error,
+}: {
+  state: "idle" | "pending" | "saving" | "saved" | "error";
+  error: string | null;
+}) {
+  if (state === "saving" || state === "pending") {
+    return (
+      <span className="inline-flex items-center gap-2 text-white/70" role="status">
+        <InlineBusySpinner />
+        {state === "pending" ? "Değişiklikler bekleniyor…" : "Kaydediliyor…"}
+      </span>
+    );
+  }
+  if (state === "saved") {
+    return (
+      <span className="inline-flex items-center gap-1.5 text-emerald-300" role="status">
+        <Check className="h-4 w-4" strokeWidth={2} aria-hidden />
+        Kaydedildi
+      </span>
+    );
+  }
+  if (state === "error") {
+    return (
+      <span className="max-w-[16rem] truncate text-red-300" role="alert" title={error ?? undefined}>
+        {error ?? "Kaydedilemedi"}
+      </span>
+    );
+  }
+  return <span className="text-white/50">Otomatik kaydedilir</span>;
+}
 
 function slugifyCustomId(label: string): string {
   return label
@@ -197,8 +225,7 @@ function slugifyCustomId(label: string): string {
 interface TrProductEditorFormProps {
   boutiqueId: string;
   boutiqueSlug?: string | null;
-  mode: "create" | "edit";
-  initialProduct?: TrProduct | null;
+  initialProduct: TrProduct;
   onSaved: (product: TrProduct) => void;
   onDeleted?: () => void;
 }
@@ -206,18 +233,10 @@ interface TrProductEditorFormProps {
 export function TrProductEditorForm({
   boutiqueId,
   boutiqueSlug = null,
-  mode,
   initialProduct,
   onSaved,
   onDeleted,
 }: TrProductEditorFormProps) {
-  const [editStepIndex, setEditStepIndex] = useState(0);
-  const editStep = EDIT_STEPS[editStepIndex] ?? EDIT_STEPS[0]!;
-  const sectioned = mode === "edit";
-  const showSection = (id: EditStepId) =>
-    !sectioned || editStep.id === id;
-  const showStatusEverywhere = sectioned && editStep.id !== "danger";
-
   const [title, setTitle] = useState(initialProduct?.title ?? "");
   const initialOnSale =
     typeof initialProduct?.compareAtPriceKurus === "number" &&
@@ -301,9 +320,8 @@ export function TrProductEditorForm({
     initialProduct?.status ?? "available",
   );
   const [uploading, setUploading] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  useRegisterLeaveBusy("product-editor", uploading || saving || deleting);
+  useRegisterLeaveBusy("product-editor", uploading || deleting);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [autoSaveState, setAutoSaveState] = useState<
@@ -550,10 +568,8 @@ export function TrProductEditorForm({
       if (sizeTotal > 0) {
         sizeStocks = parsed;
         stockValue = sizeTotal;
-      } else if (mode === "create") {
-        throw new Error("En az bir bedende stok girin.");
       }
-      // Edit: omit empty size map so autosave can persist durum without wiping stock.
+      // Omit an empty size map so autosave can persist durum without wiping stock.
     } else {
       if (!isValidStock(stock)) {
         throw new Error(
@@ -637,10 +653,7 @@ export function TrProductEditorForm({
       return null;
     }
 
-    const product =
-      mode === "create"
-        ? await createOwnerProduct(payload)
-        : await updateOwnerProduct(initialProduct!.id, payload);
+    const product = await updateOwnerProduct(initialProduct.id, payload);
 
     lastSavedFingerprintRef.current = fingerprint;
     onSaved(product);
@@ -651,7 +664,6 @@ export function TrProductEditorForm({
     if (next === status) return;
     const previous = status;
     setStatus(next);
-    if (mode !== "edit" || !initialProduct) return;
 
     const seq = ++statusSaveSeqRef.current;
     setAutoSaveState("saving");
@@ -675,28 +687,7 @@ export function TrProductEditorForm({
     }
   };
 
-  const handleSubmit = async (event: FormEvent) => {
-    event.preventDefault();
-    if (mode === "edit") {
-      // Edit relies on autosave; submit is a no-op safety net.
-      return;
-    }
-    setSaving(true);
-    setError(null);
-
-    try {
-      await persistProduct({ manual: true });
-    } catch (saveError) {
-      setError(
-        saveError instanceof Error ? saveError.message : "Kayıt başarısız.",
-      );
-    } finally {
-      setSaving(false);
-    }
-  };
-
   useEffect(() => {
-    if (mode !== "edit") return;
     if (!autosaveReadyRef.current) return;
     if (uploading || deleting) return;
     if (!payloadFingerprint) {
@@ -747,7 +738,6 @@ export function TrProductEditorForm({
     // persistProduct closes over latest fields; fingerprint drives the effect
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    mode,
     payloadFingerprint,
     uploading,
     deleting,
@@ -758,11 +748,32 @@ export function TrProductEditorForm({
   const fieldClass = panelFieldClass;
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {mode === "edit" ? (
-        <section
-          className={`${panelSectionClass} ${showStatusEverywhere ? "" : "hidden"}`}
+    <form onSubmit={(event) => event.preventDefault()} className="space-y-5">
+      <TrPanelEditorActions>
+        <AutoSaveIndicator state={autoSaveState} error={autoSaveError} />
+        {boutiqueSlug && status === "available" ? (
+          <a
+            href={trBoutiqueProductPath(boutiqueSlug, initialProduct.id)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hidden h-9 items-center rounded-lg border border-white/15 px-3 text-[13px] font-medium text-white/85 transition-colors duration-150 hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70 motion-reduce:transition-none sm:inline-flex"
+          >
+            Mağazada gör
+          </a>
+        ) : null}
+      </TrPanelEditorActions>
+
+      <TrPanelEditorTabs tabs={EDIT_TABS} />
+
+      {error ? <p className={panelErrorClass}>{error}</p> : null}
+
+      <div className="space-y-5">
+        <TrPanelEditorCard
+          id="editor-temel"
+          title="Temel bilgi"
+          hint="Mağazada görünen ad, fiyat ve satış durumu."
         >
+          <div className="space-y-4">
           <p className={panelLabelClass}>Durum</p>
           <p className={`mt-1 ${panelHintClass}`}>
             Satışta görünür, gizlide mağazada çıkmaz.
@@ -788,195 +799,8 @@ export function TrProductEditorForm({
               stok girin.
             </p>
           ) : null}
-        </section>
-      ) : null}
-
-      {sectioned ? (
-        <div className="rounded-2xl border border-[color:var(--panel-accent-border)] bg-white p-5 shadow-sm sm:p-6">
-          <div className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {EDIT_STEPS.map((step, index) => (
-              <button
-                key={step.id}
-                type="button"
-                onClick={() => {
-                  setError(null);
-                  setEditStepIndex(index);
-                }}
-                className={panelChipClass(index === editStepIndex)}
-              >
-                {step.title}
-              </button>
-            ))}
           </div>
-        </div>
-      ) : null}
-
-      <section
-        className={`${panelSectionClass} ${showSection("photos") ? "" : "hidden"}`}
-      >
-        <TrOwnerManualListingToggle
-          checked={manualMode}
-          onChange={(next) => {
-            setManualMode(next);
-            setFeatures((current) => withManualListing(current, next));
-          }}
-          disabled={saving}
-        />
-        <div>
-          <p className={panelLabelClass}>Fotoğraflar</p>
-          <p className={`mt-1 ${panelHintClass}`}>
-            {takim
-              ? "Takım görselleri bu sihirbazda değiştirilmez. Yeni packshot / model için Takım yükle akışını kullanın."
-              : manualMode
-                ? "Fotoğraflar sitede bu sırayla görünür. En az bir kare."
-              : elbise
-              ? "Ön ve arka manken zorunlu; dekolte / detay isteğe bağlı. Packshot ön+arka tamamınca üretilir."
-              : "Önce ön, sonra arka — her fotoğraf önizlenir."}
-          </p>
-        </div>
-
-        {takim ? (
-          <div className="flex flex-wrap gap-2">
-            {[...lifestyleImages, ...marketplaceImages, ...images]
-              .filter((url) => Boolean(url?.trim()))
-              .slice(0, 8)
-              .map((src) => (
-                <div
-                  key={src}
-                  className="relative h-24 w-16 overflow-hidden rounded-lg bg-neutral-100"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={src} alt="" className="h-full w-full object-contain p-1" />
-                </div>
-              ))}
-          </div>
-        ) : manualMode ? (
-          <TrOwnerManualPhotoGallery
-            boutiqueId={boutiqueId}
-            images={images}
-            onImagesChange={setImages}
-            onError={setError}
-            onLightbox={setLightbox}
-            disabled={saving}
-            uploading={uploading}
-            onUploadingChange={setUploading}
-          />
-        ) : (
-          <TrOwnerGuidedPhotoUpload
-          boutiqueId={boutiqueId}
-          images={images}
-          marketplaceImages={marketplaceImages}
-          catalogBackgroundCss={elbise ? undefined : catalogBackground.css}
-          title={title}
-          category={category}
-          productId={initialProduct?.id}
-          uploadType={family}
-          features={features}
-          listingDraft={listingDraft}
-          uploading={uploading}
-          onUploadingChange={setUploading}
-          onImagesChange={setImages}
-          onMarketplaceImagesChange={setMarketplaceImages}
-          onError={setError}
-          onLightbox={setLightbox}
-          onListingDraft={(draft) => {
-            setListingDraft(draft);
-            if (draft.features) {
-              setFeatures((current) => ({
-                ...draft.features,
-                ...(current.uploadKind
-                  ? {
-                      uploadKind: current.uploadKind,
-                      setItems: current.setItems,
-                    }
-                  : {}),
-                ...(current.aiModelId
-                  ? { aiModelId: current.aiModelId }
-                  : {}),
-                ...(current.lifestyleModelIds?.length
-                  ? { lifestyleModelIds: current.lifestyleModelIds }
-                  : {}),
-              }));
-            }
-          }}
-          disabled={saving}
-        />
-        )}
-
-        {takim || manualMode ? null : hasRequiredProductPhotos(images, requiredSlots) ? (
-          <div className="space-y-6 rounded-xl border border-[color:var(--panel-accent-border)] bg-[color:var(--panel-accent-soft)] p-4 sm:p-5">
-            <TrOwnerAiCatalogEnhance
-              boutiqueId={boutiqueId}
-              boutiqueSlug={boutiqueSlug}
-              productId={initialProduct?.id}
-              title={title}
-              category={category}
-              images={images}
-              marketplaceImages={marketplaceImages}
-              lifestyleImages={lifestyleImages}
-              selectedModelId={selectedModelId}
-              onSelectedModelIdChange={selectAiModel}
-              photographyStyle={photographyStyle}
-              onPhotographyStyleChange={setPhotographyStyle}
-              onMarketplaceImagesChange={setMarketplaceImages}
-              onLifestyleImagesChange={setLifestyleImages}
-              onFeaturesChange={setFeatures}
-              onListingDraft={setListingDraft}
-              disabled={uploading || saving}
-              skipPackshot={elbise}
-              features={features}
-              uploadType={family}
-            />
-            {mode === "edit" && elbise && initialProduct ? (
-              <div className="space-y-2">
-                <button
-                  type="button"
-                  className={panelPrimaryBtnClass}
-                  disabled={uploading || saving}
-                  onClick={() =>
-                    openRestyle?.({
-                      boutiqueId,
-                      boutiqueSlug,
-                      products: [
-                        {
-                          ...initialProduct,
-                          title: title.trim() || initialProduct.title,
-                          category,
-                          images,
-                          marketplaceImages,
-                          lifestyleImages,
-                          features,
-                        },
-                      ],
-                      initiallyCheckedIds: [initialProduct.id],
-                      initialModelId: selectedModelId,
-                    })
-                  }
-                >
-                  Packshot + modeli yenile
-                </button>
-                <p className={panelHintClass}>
-                  Seçili model kullanılır. Chip onayı → ön packshot → model
-                  kareleri. Askı fotoğrafları aynı kalır.
-                </p>
-              </div>
-            ) : null}
-            {!elbise &&
-            (marketplaceImages.some((url) => url?.trim()) ||
-              lifestyleImages.length > 0) ? (
-              <TrCatalogBackgroundPicker
-                value={catalogBackgroundId}
-                onChange={setCatalogBackgroundId}
-                disabled={uploading || saving}
-              />
-            ) : null}
-          </div>
-        ) : null}
-      </section>
-
-      <section
-        className={`${panelSectionClass} ${showSection("name") ? "" : "hidden"}`}
-      >
+          <div className="space-y-4 border-t border-neutral-100 pt-6">
         {manualMode ? null : (
         <TrOwnerAiFillListing
           boutiqueId={boutiqueId}
@@ -986,7 +810,6 @@ export function TrProductEditorForm({
           category={category}
           uploadType={family}
           cachedDraft={listingDraft}
-          disabled={saving}
           onError={setError}
           onApply={(draft) => {
             setTitle(clampTitle(draft.title));
@@ -1026,39 +849,8 @@ export function TrProductEditorForm({
             {title.length}/{TR_OWNER_PRODUCT_LIMITS.titleMax}
           </span>
         </label>
-
-        <label className="block space-y-2">
-          <span className={panelLabelClass}>Açıklama</span>
-          <textarea
-            value={description}
-            onChange={(event) =>
-              setDescription(clampDescription(event.target.value))
-            }
-            rows={5}
-            maxLength={TR_OWNER_PRODUCT_LIMITS.descriptionMax}
-            className={fieldClass}
-          />
-          <span className={panelHintClass}>
-            {description.length}/{TR_OWNER_PRODUCT_LIMITS.descriptionMax}
-          </span>
-        </label>
-
-        <TrOwnerProductFeaturesFields
-          value={features}
-          onChange={setFeatures}
-          disabled={saving}
-          fieldClass={fieldClass}
-          labelClass={panelLabelClass}
-          hintClass={panelHintClass}
-          variant={family ? "dress" : "default"}
-          family={family ?? "elbise"}
-          shopCategory={category}
-        />
-      </section>
-
-      <section
-        className={`${panelSectionClass} ${showSection("price") ? "" : "hidden"}`}
-      >
+          </div>
+          <div className="space-y-4 border-t border-neutral-100 pt-6">
         <label className="block space-y-2">
           <span className={panelLabelClass}>Fiyat (TL)</span>
           <input
@@ -1133,11 +925,205 @@ export function TrProductEditorForm({
             </span>
           </label>
         ) : null}
-      </section>
+          </div>
+        </TrPanelEditorCard>
 
-      <section
-        className={`${panelSectionClass} ${showSection("category") ? "" : "hidden"}`}
-      >
+        <TrPanelEditorCard
+          id="editor-medya"
+          title="Medya"
+          hint="Fotoğraflar mağazada bu sırayla görünür."
+        >
+          <div className="space-y-4">
+        <TrOwnerManualListingToggle
+          checked={manualMode}
+          onChange={(next) => {
+            setManualMode(next);
+            setFeatures((current) => withManualListing(current, next));
+          }}
+        />
+        <div>
+          <p className={panelHintClass}>
+            {takim
+              ? "Takım görselleri bu sihirbazda değiştirilmez. Yeni packshot / model için Takım yükle akışını kullanın."
+              : manualMode
+                ? "Fotoğraflar sitede bu sırayla görünür. En az bir kare."
+              : elbise
+              ? "Ön ve arka manken zorunlu; dekolte / detay isteğe bağlı. Packshot ön+arka tamamınca üretilir."
+              : "Önce ön, sonra arka — her fotoğraf önizlenir."}
+          </p>
+        </div>
+
+        {takim ? (
+          <div className="flex flex-wrap gap-2">
+            {[...lifestyleImages, ...marketplaceImages, ...images]
+              .filter((url) => Boolean(url?.trim()))
+              .slice(0, 8)
+              .map((src) => (
+                <div
+                  key={src}
+                  className="relative h-24 w-16 overflow-hidden rounded-lg bg-neutral-100"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={src} alt="" className="h-full w-full object-contain p-1" />
+                </div>
+              ))}
+          </div>
+        ) : manualMode ? (
+          <TrOwnerManualPhotoGallery
+            boutiqueId={boutiqueId}
+            images={images}
+            onImagesChange={setImages}
+            onError={setError}
+            onLightbox={setLightbox}
+              uploading={uploading}
+            onUploadingChange={setUploading}
+          />
+        ) : (
+          <TrOwnerGuidedPhotoUpload
+          boutiqueId={boutiqueId}
+          images={images}
+          marketplaceImages={marketplaceImages}
+          catalogBackgroundCss={elbise ? undefined : catalogBackground.css}
+          title={title}
+          category={category}
+          productId={initialProduct?.id}
+          uploadType={family}
+          features={features}
+          listingDraft={listingDraft}
+          uploading={uploading}
+          onUploadingChange={setUploading}
+          onImagesChange={setImages}
+          onMarketplaceImagesChange={setMarketplaceImages}
+          onError={setError}
+          onLightbox={setLightbox}
+          onListingDraft={(draft) => {
+            setListingDraft(draft);
+            if (draft.features) {
+              setFeatures((current) => ({
+                ...draft.features,
+                ...(current.uploadKind
+                  ? {
+                      uploadKind: current.uploadKind,
+                      setItems: current.setItems,
+                    }
+                  : {}),
+                ...(current.aiModelId
+                  ? { aiModelId: current.aiModelId }
+                  : {}),
+                ...(current.lifestyleModelIds?.length
+                  ? { lifestyleModelIds: current.lifestyleModelIds }
+                  : {}),
+              }));
+            }
+          }}
+        />
+        )}
+
+        {takim || manualMode ? null : hasRequiredProductPhotos(images, requiredSlots) ? (
+          <div className="space-y-6 rounded-xl border border-[color:var(--panel-accent-border)] bg-[color:var(--panel-accent-soft)] p-4 sm:p-5">
+            <TrOwnerAiCatalogEnhance
+              boutiqueId={boutiqueId}
+              boutiqueSlug={boutiqueSlug}
+              productId={initialProduct?.id}
+              title={title}
+              category={category}
+              images={images}
+              marketplaceImages={marketplaceImages}
+              lifestyleImages={lifestyleImages}
+              selectedModelId={selectedModelId}
+              onSelectedModelIdChange={selectAiModel}
+              photographyStyle={photographyStyle}
+              onPhotographyStyleChange={setPhotographyStyle}
+              onMarketplaceImagesChange={setMarketplaceImages}
+              onLifestyleImagesChange={setLifestyleImages}
+              onFeaturesChange={setFeatures}
+              onListingDraft={setListingDraft}
+              disabled={uploading}
+              skipPackshot={elbise}
+              features={features}
+              uploadType={family}
+            />
+            {elbise ? (
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  className={panelPrimaryBtnClass}
+                  disabled={uploading}
+                  onClick={() =>
+                    openRestyle?.({
+                      boutiqueId,
+                      boutiqueSlug,
+                      products: [
+                        {
+                          ...initialProduct,
+                          title: title.trim() || initialProduct.title,
+                          category,
+                          images,
+                          marketplaceImages,
+                          lifestyleImages,
+                          features,
+                        },
+                      ],
+                      initiallyCheckedIds: [initialProduct.id],
+                      initialModelId: selectedModelId,
+                    })
+                  }
+                >
+                  Packshot + modeli yenile
+                </button>
+                <p className={panelHintClass}>
+                  Seçili model kullanılır. Chip onayı → ön packshot → model
+                  kareleri. Askı fotoğrafları aynı kalır.
+                </p>
+              </div>
+            ) : null}
+            {!elbise &&
+            (marketplaceImages.some((url) => url?.trim()) ||
+              lifestyleImages.length > 0) ? (
+              <TrCatalogBackgroundPicker
+                value={catalogBackgroundId}
+                onChange={setCatalogBackgroundId}
+                disabled={uploading}
+              />
+            ) : null}
+          </div>
+        ) : null}
+          </div>
+        </TrPanelEditorCard>
+
+        <TrPanelEditorCard
+          id="editor-detay"
+          title="Ürün detayı"
+          hint="Açıklama, özellikler ve kategori ürün sayfasında gösterilir."
+        >
+          <div className="space-y-4">
+        <label className="block space-y-2">
+          <span className={panelLabelClass}>Açıklama</span>
+          <textarea
+            value={description}
+            onChange={(event) =>
+              setDescription(clampDescription(event.target.value))
+            }
+            rows={5}
+            maxLength={TR_OWNER_PRODUCT_LIMITS.descriptionMax}
+            className={fieldClass}
+          />
+          <span className={panelHintClass}>
+            {description.length}/{TR_OWNER_PRODUCT_LIMITS.descriptionMax}
+          </span>
+        </label>
+        <TrOwnerProductFeaturesFields
+          value={features}
+          onChange={setFeatures}
+          fieldClass={fieldClass}
+          labelClass={panelLabelClass}
+          hintClass={panelHintClass}
+          variant={family ? "dress" : "default"}
+          family={family ?? "elbise"}
+          shopCategory={category}
+        />
+          </div>
+          <div className="space-y-4 border-t border-neutral-100 pt-6">
         <p className={panelLabelClass}>Kategori</p>
         {takim ? (
           <p className={`mt-1 ${panelHintClass}`}>
@@ -1214,11 +1200,15 @@ export function TrProductEditorForm({
             </motion.div>
           ) : null}
         </AnimatePresence>
-      </section>
+          </div>
+        </TrPanelEditorCard>
 
-      <section
-        className={`${panelSectionClass} ${showSection("sizes") ? "" : "hidden"}`}
-      >
+        <TrPanelEditorCard
+          id="editor-envanter"
+          title="Envanter"
+          hint="Beden, stok ve renk seçenekleri."
+        >
+          <div className="space-y-4">
         <TrOwnerSizeChartStock
           chart={sizeChart}
           onChartChange={applySizeChart}
@@ -1229,11 +1219,8 @@ export function TrProductEditorForm({
           allowCustomSizes
           variant="editor"
         />
-      </section>
-
-      <section
-        className={`${panelSectionClass} ${showSection("colors") ? "" : "hidden"}`}
-      >
+          </div>
+          <div className="space-y-4 border-t border-neutral-100 pt-6">
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className={panelLabelClass}>Renkler</p>
@@ -1384,12 +1371,8 @@ export function TrProductEditorForm({
             </motion.div>
           ) : null}
         </AnimatePresence>
-      </section>
-
-      {mode === "edit" && initialProduct ? (
-        <section
-          className={`${panelSectionClass} ${showSection("colors") ? "" : "hidden"}`}
-        >
+          </div>
+          <div className="border-t border-neutral-100 pt-6">
           <TrOwnerColorGroupLinker
             boutiqueId={boutiqueId}
             product={{
@@ -1403,22 +1386,17 @@ export function TrProductEditorForm({
               onSaved(saved);
             }}
           />
-        </section>
-      ) : null}
+          </div>
+        </TrPanelEditorCard>
 
-      {error ? <p className={panelErrorClass}>{error}</p> : null}
-
-      {mode === "edit" && initialProduct ? (
-        <div className={showSection("danger") ? "" : "hidden"}>
-          <section className={panelSectionClass}>
-            <p className={panelLabelClass}>Ürünü sil</p>
+        <TrPanelEditorCard id="editor-sil" title="Ürünü sil" tone="danger">
             <p className={`mt-1 ${panelHintClass}`}>
               Bu işlem mağazadan ürünü kaldırır. Emin değilseniz dokunmayın.
             </p>
             {!confirmDelete ? (
               <button
                 type="button"
-                disabled={saving || uploading || deleting}
+                disabled={uploading || deleting}
                 onClick={() => setConfirmDelete(true)}
                 className={`${panelSecondaryBtnClass} mt-4 w-full border-red-300 text-red-800`}
               >
@@ -1493,53 +1471,8 @@ export function TrProductEditorForm({
                 </div>
               </div>
             )}
-          </section>
-        </div>
-      ) : null}
-
-      {sectioned ? (
-        <div className="sticky bottom-3 z-10 rounded-2xl border border-[color:var(--panel-accent-border)] bg-white/95 p-4 shadow-lg backdrop-blur-sm sm:p-5">
-          <div className="flex items-center gap-3 text-[14px] font-medium text-neutral-700">
-            {autoSaveState === "saving" || autoSaveState === "pending" ? (
-              <>
-                <InlineBusySpinner />
-                <span>
-                  {autoSaveState === "pending"
-                    ? "Değişiklikler bekleniyor…"
-                    : "Otomatik kaydediliyor…"}
-                </span>
-              </>
-            ) : autoSaveState === "saved" ? (
-              <span className="text-emerald-800">
-                Kaydedildi — değişiklikler otomatik güncellenir
-              </span>
-            ) : autoSaveState === "error" ? (
-              <span className="text-red-700">
-                {autoSaveError ?? "Kaydedilemedi"}
-              </span>
-            ) : (
-              <span className="text-neutral-500">
-                Değişiklikler otomatik kaydedilir
-              </span>
-            )}
-          </div>
-        </div>
-      ) : (
-        <button
-          type="submit"
-          disabled={saving || uploading || deleting}
-          className={`${panelPrimaryBtnClass} w-full gap-3`}
-        >
-          {saving ? (
-            <>
-              <InlineBusySpinner />
-              Kaydediliyor…
-            </>
-          ) : (
-            "Ürünü ekle"
-          )}
-        </button>
-      )}
+        </TrPanelEditorCard>
+      </div>
 
       <TrProductImageLightbox
         open={Boolean(lightbox)}

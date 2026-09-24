@@ -118,6 +118,8 @@ function productInsertRow(
     stock: input.stock ?? 1,
     size_stocks: input.sizeStocks ?? {},
     sort_order: input.sortOrder ?? 0,
+    product_type: input.productType ?? "fashion",
+    fulfillment_type: input.fulfillmentType ?? "physical",
   };
   for (const column of omitColumns) {
     delete row[column];
@@ -592,6 +594,9 @@ function productUpdateRow(input: UpdateTrProductInput): Record<string, unknown> 
   if (input.stock !== undefined) row.stock = input.stock;
   if (input.sizeStocks !== undefined) row.size_stocks = input.sizeStocks;
   if (input.sortOrder !== undefined) row.sort_order = input.sortOrder;
+  if (input.fulfillmentType !== undefined) {
+    row.fulfillment_type = input.fulfillmentType;
+  }
 
   return row;
 }
@@ -754,6 +759,8 @@ export async function duplicateProductAdmin(
     stock: existing.stock,
     sizeStocks: existing.sizeStocks,
     sortOrder: existing.sortOrder,
+    productType: existing.productType,
+    fulfillmentType: existing.fulfillmentType,
   });
 }
 

@@ -76,7 +76,7 @@ export const panelStickyFilterClass =
 
 /** Always-visible wizard actions, above the mobile tab bar. */
 export const panelStickyActionsClass =
-  "fixed inset-x-0 z-20 flex flex-wrap gap-3 border-t border-[color:var(--panel-accent-border)] bg-[#F2F3F5]/95 px-4 py-3 shadow-[0_-6px_16px_rgba(16,24,40,0.08)] backdrop-blur-sm sm:px-5 lg:bottom-0 lg:left-[var(--panel-sidebar-w,232px)] lg:px-6 lg:transition-[left] lg:duration-200 motion-reduce:lg:transition-none bottom-[calc(3.5rem+env(safe-area-inset-bottom))]";
+  "fixed inset-x-0 z-20 flex flex-wrap gap-3 border-t border-[color:var(--panel-accent-border)] bg-[#F2F3F5]/95 px-4 py-3 shadow-[0_-6px_16px_rgba(16,24,40,0.08)] backdrop-blur-sm sm:px-5 lg:bottom-0 lg:left-[var(--panel-sidebar-w,232px)] lg:px-6 lg:transition-[left] lg:duration-200 motion-reduce:lg:transition-none bottom-[calc(var(--panel-tabbar-h,3.5rem)+env(safe-area-inset-bottom))]";
 
 /** Clears the fixed action bar so the last field can scroll into view. */
 export const panelStickyActionsSpacerClass = "h-24 shrink-0 lg:h-20";
@@ -86,8 +86,13 @@ export const panelStickyActionsSpacerClass = "h-24 shrink-0 lg:h-20";
  * focus and spacing can never drift apart. The 15px left padding puts the icon at
  * the centre of the 64px collapsed rail, so it never moves when the rail expands.
  */
-export const panelSidebarRowClass =
-  `group relative flex min-h-11 w-full items-center gap-3 rounded-lg pl-[15px] pr-3 text-left text-[13.5px] font-medium whitespace-nowrap ${panelBtnMotion} focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-white/70`;
+const panelSidebarRowBase =
+  `group relative flex min-h-11 w-full items-center gap-3 rounded-lg pr-3 text-left text-[13.5px] font-medium whitespace-nowrap ${panelBtnMotion} focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-white/70`;
+
+export const panelSidebarRowClass = `${panelSidebarRowBase} pl-[15px]`;
+
+/** Row nested under a group heading: its text lines up with the heading's label (15px + 18px icon + 12px gap). */
+export const panelSidebarChildRowClass = `${panelSidebarRowBase} pl-[45px]`;
 
 export const panelSidebarRowIdleClass =
   "text-white/65 hover:bg-white/5 hover:text-white";

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { TrOwnerNewProductPage } from "@/components/tr/panel/TrOwnerNewProductPage";
+import { TrOwnerProductTypeChooser } from "@/components/tr/panel/TrOwnerProductTypeChooser";
 
 export const metadata: Metadata = {
   title: "Yeni ürün",
@@ -7,5 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function TrPanelNewProductRoute() {
-  return <TrOwnerNewProductPage />;
+  return <TrOwnerProductTypeChooser />;
 }
