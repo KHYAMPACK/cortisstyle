@@ -411,13 +411,16 @@ export interface CreateTrOrderInput {
   }>;
 }
 
+/** Whole lira render without decimals (₺3.500); a non-zero kuruş part shows both (₺89,90). */
 export function formatTryFromKurus(kurus: number): string {
-  const lira = kurus / 100;
+  const wholeLira = Math.round(kurus) % 100 === 0;
+  const digits = wholeLira ? 0 : 2;
   return new Intl.NumberFormat("tr-TR", {
     style: "currency",
     currency: "TRY",
-    maximumFractionDigits: 0,
-  }).format(lira);
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  }).format(kurus / 100);
 }
 
 export function parseTryToKurus(amount: string | number): number {
