@@ -29,6 +29,8 @@
 - [ ] `catalogProfile` — `"fashion"` or `"custom_art"`. See doc 06/07.
 - [ ] `customDomain` — if they have one; DNS still needs pointing separately (doc 03 §"White-label domain").
 - [ ] `shippingNote` / `exchangePolicy` — free-text, used in legal pages and PDP copy. Falls back to default kargo/iade copy if omitted.
+- [ ] `shippingFeeTry` (recommended) — flat kargo fee shoppers pay per order, in TRY (e.g. `120`). **Omit it and shoppers are not charged for shipping at all.**
+- [ ] `freeShippingMinItems` **or** `freeShippingMinSubtotalTry` — optional free-shipping threshold: orders with at least N items, or an items subtotal of at least N TRY, ship free. Set at most one. Leave both out and the fee always applies.
 
 **Starter products (optional)**
 - [ ] `products` — array of `{ title, priceTry, sizes?, colors?, category?, images?, stock? }`. Can be left empty and added later via the panel or the batch upload flow.
@@ -55,6 +57,8 @@
   "description": "",
   "catalogProfile": "fashion",
   "customDomain": "",
+  "shippingFeeTry": 120,
+  "freeShippingMinItems": 2,
   "shippingNote": "",
   "exchangePolicy": "",
   "products": []
@@ -68,4 +72,4 @@ Remove any empty fields you don't have yet rather than sending them as empty str
 1. Send the client the storefront link (`/tr/{slug}`) and ask them to sign up at `/giris`.
 2. Link their account: `npx tsx scripts/link-tr-boutique-owner.mts --email <their-email> --slug <slug>`.
 3. Log the time from "yes" to here in `docs/onboarding-time-log.md`.
-4. Run the go-live check once it exists (Phase 1B-T4, not built yet as of this template's writing) before telling the client they're live.
+4. Run the go-live check (`GET /api/tr/admin/boutiques/{id}/go-live-check`, Bearer `TR_ADMIN_SECRET`) before telling the client they're live. It reports the shipping fee rules as well as the carrier mode.

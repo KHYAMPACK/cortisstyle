@@ -18,9 +18,9 @@ Without a live payment integration, checkout creates a **pending** order and the
 
 ## Shipping
 
-`src/lib/tr/shipping/quoteShipping.ts` — flat fee, free at `FREE_SHIPPING_MIN_ITEMS`, identical for every product in the cart. There is **no per-product shipping exception** — one existed (`midiJeanTwins.ts`, hardcoding free shipping for two specific dresses) and was deleted because it was a core-code-reaching-into-a-specific-product violation. If a future promo needs product-specific shipping behavior, it needs a generic DB-backed mechanism, not a name/id match in this file.
+**What the shopper pays** is per-boutique DB config, not code: `tr_boutiques.shipping_fee_kurus` (flat fee, 0 = no shipping charge), plus at most one free-shipping threshold — `free_shipping_min_items` (order has N+ items) or `free_shipping_min_subtotal_kurus` (items subtotal, before discounts, reaches N). They are on `tr_boutiques_public` because the cart/checkout/PDP show them. `src/lib/tr/shipping/quoteShipping.ts` turns a boutique's `ShippingFeeConfig` plus the cart lines into a fee; `shippingCopy.ts` builds every piece of shopper-facing shipping text from the same config so it can't drift from what is charged; `settings.ts` validates writes. The server re-quotes from the re-priced catalog lines in `POST /api/tr/checkout` — the client-side numbers are display only. Set it through the intake file (`shippingFeeTry`, `freeShippingMinItems` | `freeShippingMinSubtotalTry`), `PATCH /api/tr/owner/boutiques/[id]`, or the seed route. A boutique with no fee set charges no shipping — `scripts/create-boutique.mts` warns when the intake omits it. `quoteShipping.test.ts` (run `npm test`) pins lilabutik's exact rules (120 TL, free at 2+ items) and the shopper-facing copy. The rule is identical for every product in the cart. There is **no per-product shipping exception** — one existed (`midiJeanTwins.ts`, hardcoding free shipping for two specific dresses) and was deleted because it was a core-code-reaching-into-a-specific-product violation. If a future promo needs product-specific shipping behavior, it needs a generic DB-backed mechanism, not a name/id match in this file.
 
-`src/lib/tr/shipping/registry.ts` (`SHIPPING_BY_SLUG`) still gates which boutiques have "live" (non-manual) shipping at all — currently just `lilabutik`. Basit Kargo webhook: `src/app/api/tr/shipping/basitkargo/webhook/route.ts`.
+**The carrier integration is a separate thing.** `src/lib/tr/shipping/registry.ts` (`SHIPPING_BY_SLUG`, `boutiqueHasCarrierIntegration()`) still gates which boutiques have a live Basit Kargo integration (label purchase, tracking) — currently just `lilabutik`, and it is still a per-slug code touch (roadmap P4-T2 moves it to per-boutique credentials). Boutiques without one use their own carrier: the owner updates the order status by hand (there is no tracking-code entry yet — roadmap P4-T3). `AUTO_BUY_FEE_CAP_KURUS` (`shipping/types.ts`) is the carrier label spend cap and is likewise Lila-only until P4-T2. Basit Kargo webhook: `src/app/api/tr/shipping/basitkargo/webhook/route.ts`.
 
 ## Payments (iyzico)
 
@@ -41,7 +41,7 @@ Checkout iyzico flow: `src/app/api/tr/checkout/iyzico/{start,abandon,callback}/r
 | Checkout | `src/app/api/tr/checkout/route.ts`, `src/components/tr/commerce/TrCheckoutPageContent.tsx` |
 | Orders / inventory | `src/lib/tr/orders.ts`, `src/lib/tr/inventory.ts` |
 | Discount codes | `src/lib/tr/discountCodes.ts` |
-| Shipping | `src/lib/tr/shipping/quoteShipping.ts`, `registry.ts` |
+| Shipping | `src/lib/tr/shipping/quoteShipping.ts`, `shippingCopy.ts`, `settings.ts` (fee rules); `registry.ts` (carrier integration) |
 | Payments | `src/lib/tr/payments/registry.ts` |
 
 ## Related

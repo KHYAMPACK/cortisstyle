@@ -41,7 +41,7 @@ Smoke test after onboarding: storefront loads at `/tr/{slug}`, a sized product c
 
 ## The few remaining per-slug code touches
 
-All optional cosmetic polish, not blockers — everything else is DB-driven:
+Optional polish, not blockers, except the carrier integration for a store that wants automatic labels — everything else is DB-driven:
 
 | Concern | File | If you skip it |
 |---|---|---|
@@ -49,8 +49,9 @@ All optional cosmetic polish, not blockers — everything else is DB-driven:
 | Branded auth-email logo | `src/lib/tr/authMail/templates.ts` (`EMAIL_LOGO_PATHS`) | Emails send with no logo |
 | Brand color/logo/favicon/title fallback | `src/lib/tr/storefront/boutiqueBrand.ts` | DB `theme_accent`/`logo_url`/`name` are read directly — only add an override here if you need to show something *different* from the DB |
 | Custom AI try-on house-model persona (fashion only) | `src/lib/tr/aiModel/registry.ts` | Boutique uses the shared/default AI models |
+| Live carrier integration (Basit Kargo label purchase/tracking) | `src/lib/tr/shipping/registry.ts` (`SHIPPING_BY_SLUG`) | Boutique uses manual status updates with its own carrier. This is only the carrier — the shipping **fee** shoppers pay is per-boutique DB config, set in the intake (`shippingFeeTry`, `freeShippingMinItems` \| `freeShippingMinSubtotalTry`). Moves to per-boutique credentials in roadmap P4-T2 |
 
-If you find yourself writing a new `if (slug === "...")` anywhere outside these four files, stop — it almost certainly belongs in a DB column instead. This exact pattern (a hardcoded per-slug check leaking into otherwise-generic code) has been deleted from checkout, shipping, and homepage code at least twice already.
+If you find yourself writing a new `if (slug === "...")` anywhere outside these files, stop — it almost certainly belongs in a DB column instead. This exact pattern (a hardcoded per-slug check leaking into otherwise-generic code) has been deleted from checkout, shipping, and homepage code at least twice already.
 
 ## Code map
 
