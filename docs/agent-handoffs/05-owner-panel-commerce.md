@@ -47,9 +47,15 @@ Product management pages: `urun/yeni` (type chooser), `urun/yeni/basit` (Basit �
 
 **Panel-wide state that persists across pages** (because it lives in the shell): the leave guard and the AI restyle session (`TrOwnerElbiseRestyleSession`). Pages release their leave-guard registration on unmount (`useRegisterLeaveBusy` cleans up), so a persistent guard is safe.
 
+## Order list (Siparişler)
+
+`TrOwnerOrdersPage.tsx` follows the panel's list-page pattern: title and **Dışa Aktar**, search ("Tabloda arama yapın") and a **Filtre** popover (sipariş durumu, ödeme durumu — only the statuses that occur — and tarih), a read-only table (Sipariş, Tarih, Müşteri, Sipariş Durumu, Ödeme Durumu, Toplam Tutar, Satış Kanalı; Tarih and Toplam Tutar sort) whose whole row opens the order, and a pager. Phones get one card per order. The pieces are in `orders/` (`TrOrderListTable`, `TrOrderFilterPopover`) and the pager is the shared `TrPanelListPager` (the product list still has its own copy — switch it over when convenient). Filtering, searching, sorting and the "Bugün 15:59" date are pure and tested in `src/lib/tr/panel/orderList.ts`: search matches order code, customer name, email, phone digits and product titles, every word must match, and "Bugün / Son 7 gün / Son 30 gün" use Istanbul days.
+
+Deliberately **not** there: the old cards' quick buttons (next step, Ödendi, Etiket hazırla) — everything you do to an order is on its page now, so packing several orders means opening each; row selection with bulk actions would bring that back; **Sipariş Oluştur** (no manual-order flow exists); a column picker. **Dışa Aktar** downloads the currently listed orders (all pages, current filters and sort) as a CSV built for Turkish Excel (`orders/orderExport.ts`: `;` separators, comma decimals, UTF-8 BOM, and cells that start with `= + - @` get an apostrophe so customer-typed text can't run as a formula).
+
 ## Order page (Sipariş #…)
 
-`/tr/panel/siparisler/[id]` is an **editor page** (listed in `PANEL_EDITOR_ROUTES`, so the shell drops its chrome): `TrOwnerOrderDetailPage.tsx` puts `TrPanelEditor` (`width="wide"`, status chips through its `badges` slot) over two columns built from `src/components/tr/panel/orders/`. Left: `TrOrderFulfillmentCard` (products table, status menu, the shipping step) and `TrOrderCustomerCard`. Right: `TrOrderSummaryCard` and `TrOrderPaymentCard`. The top bar carries **Önceki / Sonraki** and a ⋯ menu with **İptal Et** (asks first through `TrPanelConfirmPopover`; `side="bottom"` opens it under the button). The list, `/siparisler`, is still the older card list.
+`/tr/panel/siparisler/[id]` is an **editor page** (listed in `PANEL_EDITOR_ROUTES`, so the shell drops its chrome): `TrOwnerOrderDetailPage.tsx` puts `TrPanelEditor` (`width="wide"`, status chips through its `badges` slot) over two columns built from `src/components/tr/panel/orders/`. Left: `TrOrderFulfillmentCard` (products table, status menu, the shipping step) and `TrOrderCustomerCard`. Right: `TrOrderSummaryCard` and `TrOrderPaymentCard`. The top bar carries **Önceki / Sonraki** and a ⋯ menu with **İptal Et** (asks first through `TrPanelConfirmPopover`; `side="bottom"` opens it under the button).
 
 **Number shown.** `#` + `orderReference(id)` (`src/lib/tr/orderReference.ts`): the first 8 characters of the order id in capitals — the same code shoppers see on their tracking page, so owner and shopper can quote it to each other. There are no sequential per-boutique numbers (that would need a column, a backfill and shopper-page changes).
 
@@ -100,6 +106,7 @@ Checkout iyzico flow: `src/app/api/tr/checkout/iyzico/{start,abandon,callback}/r
 |---|---|
 | Owner auth | `src/lib/tr/ownerAuth.ts`, `src/lib/tr/panel/ownerClient.ts` |
 | Panel nav / capability gating | `src/lib/tr/panelNav.ts`, `src/lib/tr/catalogProfiles/registry.ts` |
+| Order list | `src/components/tr/panel/TrOwnerOrdersPage.tsx`, `orders/TrOrderListTable.tsx`, `orders/TrOrderFilterPopover.tsx`, `orders/orderExport.ts`, `TrPanelListPager.tsx`, `src/lib/tr/panel/orderList.ts` |
 | Order page | `src/components/tr/panel/TrOwnerOrderDetailPage.tsx`, `orders/`, `TrOwnerShipmentSection.tsx`, `src/lib/tr/panel/orderView.ts`, `src/lib/tr/shipping/manualShipment.ts`, `src/lib/tr/orderReference.ts` |
 | Home dashboard | `src/components/tr/panel/TrOwnerHomePage.tsx`, `src/components/tr/panel/dashboard/`, `src/lib/tr/panel/dashboardMetrics.ts`, `dashboardRange.ts`, `ownerDashboard.ts`, `src/app/api/tr/owner/dashboard/route.ts` |
 | Panel shell / navigation | `src/app/tr/panel/layout.tsx`, `template.tsx`, `loading.tsx`, `src/components/tr/panel/TrPanelShell.tsx`, `TrPanelNavLinks.tsx`, `TrPanelNavGroup.tsx`, `src/lib/tr/panel/panelNav.ts`, `TrPanelDesktopSidebar.tsx`, `TrPanelLink.tsx`, `panelUi.ts` |

@@ -5,7 +5,9 @@
 
 import type {
   TrFulfillmentStatus,
+  TrOrder,
   TrOrderWithItems,
+  TrPaymentStatus,
 } from "@/types/tr-marketplace";
 
 type OrderMoney = Pick<TrOrderWithItems, "items" | "totalKurus" | "discountKurus">;
@@ -24,6 +26,15 @@ export function orderShippingKurus(order: OrderMoney): number {
     0,
     order.totalKurus - (orderSubtotalKurus(order) - order.discountKurus),
   );
+}
+
+/** A test order reads as "Deneme ödeme" whatever its payment column says. */
+export function orderPaymentKey(
+  order: Pick<TrOrder, "isSandbox" | "paymentStatus">,
+): TrPaymentStatus {
+  return order.isSandbox || order.paymentStatus === "sandbox"
+    ? "sandbox"
+    : order.paymentStatus;
 }
 
 /** Card payments carry an iyzico payment id; everything else is settled by hand. */

@@ -2,6 +2,7 @@ import {
   FULFILLMENT_LABEL,
   PAYMENT_LABEL,
 } from "@/components/tr/panel/orderFulfillmentUi";
+import { orderPaymentKey } from "@/lib/tr/panel/orderView";
 import type {
   TrFulfillmentStatus,
   TrOrder,
@@ -46,13 +47,44 @@ const ON_LIGHT: Record<Tone, string> = {
   neutral: "bg-neutral-100 text-neutral-600",
 };
 
-/** A test order reads as "Deneme ödeme" whatever its payment column says. */
-export function orderPaymentKey(
-  order: Pick<TrOrder, "isSandbox" | "paymentStatus">,
-): TrPaymentStatus {
-  return order.isSandbox || order.paymentStatus === "sandbox"
-    ? "sandbox"
-    : order.paymentStatus;
+/** Outlined chips for tables and lists on the light canvas. */
+const OUTLINE_LIGHT: Record<Tone, string> = {
+  amber: "border-amber-300 bg-amber-50 text-amber-800",
+  sky: "border-sky-300 bg-sky-50 text-sky-800",
+  violet: "border-violet-300 bg-violet-50 text-violet-800",
+  emerald: "border-emerald-300 bg-emerald-50 text-emerald-800",
+  red: "border-red-300 bg-red-50 text-red-700",
+  neutral: "border-neutral-300 bg-neutral-50 text-neutral-600",
+};
+
+const outlineChip =
+  "inline-block rounded border px-2 py-0.5 text-[12px] leading-5 font-medium whitespace-nowrap";
+
+/** Fulfilment status as an outlined chip, for the order list. */
+export function TrOrderFulfillmentOutlineChip({
+  status,
+}: {
+  status: TrFulfillmentStatus;
+}) {
+  return (
+    <span className={`${outlineChip} ${OUTLINE_LIGHT[FULFILLMENT_TONE_OF[status]]}`}>
+      {FULFILLMENT_LABEL[status]}
+    </span>
+  );
+}
+
+/** Payment status as an outlined chip, for the order list. */
+export function TrOrderPaymentOutlineChip({
+  order,
+}: {
+  order: Pick<TrOrder, "isSandbox" | "paymentStatus">;
+}) {
+  const payment = orderPaymentKey(order);
+  return (
+    <span className={`${outlineChip} ${OUTLINE_LIGHT[PAYMENT_TONE_OF[payment]]}`}>
+      {PAYMENT_LABEL[payment]}
+    </span>
+  );
 }
 
 /** Fulfilment and payment status as two chips next to the title in the top bar. */

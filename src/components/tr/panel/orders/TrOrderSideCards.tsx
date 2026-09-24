@@ -3,16 +3,14 @@
 import NextLink from "next/link";
 import { Store } from "lucide-react";
 import { formatOrderDateLong } from "@/components/tr/panel/orderFulfillmentUi";
-import {
-  orderPaymentKey,
-  TrOrderPaymentChip,
-} from "@/components/tr/panel/orders/TrOrderBadges";
+import { TrOrderPaymentChip } from "@/components/tr/panel/orders/TrOrderBadges";
 import {
   panelCardClass,
   panelHintClass,
   panelSecondaryBtnClass,
 } from "@/components/tr/panel/panelUi";
 import {
+  orderPaymentKey,
   orderPaymentMethod,
   orderShippingKurus,
   orderSubtotalKurus,
