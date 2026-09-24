@@ -26,6 +26,8 @@ import {
   ProductSlugTakenError,
 } from "@/lib/tr/catalog/productSlug";
 import { sanitizeSeo } from "@/lib/tr/seo/seoFields";
+import { CategoryError, setProductCategories } from "@/lib/tr/catalog/categories";
+import { readCategoriesBody } from "@/lib/tr/catalog/categoryApi";
 import { isValidSlug } from "@/lib/tr/seo/slug";
 import {
   alignMarketplaceSlots,
@@ -202,6 +204,7 @@ export async function POST(request: Request) {
     );
   }
   const seo = body.seo !== undefined ? sanitizeSeo(body.seo) : undefined;
+  const categories = readCategoriesBody(body.categories);
 
   let compareAtPriceKurus: number | null | undefined;
   if (
@@ -314,6 +317,23 @@ export async function POST(request: Request) {
           privateError instanceof Error
             ? privateError.message
             : "Alış fiyatı kaydedilemedi.";
+      }
+    }
+
+    if (categories) {
+      try {
+        await setProductCategories({
+          productId: product.id,
+          boutiqueId: boutique.id,
+          categoryIds: categories.ids,
+          primaryId: categories.primaryId,
+        });
+      } catch (categoryError) {
+        console.error("[tr/owner/products] categories failed:", categoryError);
+        warning =
+          categoryError instanceof CategoryError
+            ? categoryError.message
+            : "Kategoriler kaydedilemedi.";
       }
     }
 

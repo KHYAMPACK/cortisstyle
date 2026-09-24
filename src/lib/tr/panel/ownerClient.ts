@@ -13,6 +13,13 @@ import type { TrOwnerDashboard } from "@/lib/tr/panel/dashboardMetrics";
 import type { TrDashboardRangeId } from "@/lib/tr/panel/dashboardRange";
 import { wrapShipmentLabelHtml } from "@/lib/tr/shipping/labelHtml";
 import type { TrSeo } from "@/lib/tr/seo/seoFields";
+import type { TrCategorySortCriterion } from "@/lib/tr/categories/sortCriteria";
+import type {
+  TrCategory,
+  TrCategoryListEntry,
+  TrCategoryMode,
+  TrProductCategories,
+} from "@/lib/tr/categories/types";
 import type { TrShippingRate } from "@/lib/tr/shipping/types";
 import type {
   TrInvoice,
@@ -40,6 +47,8 @@ export interface TrOwnerBoutiqueSummary {
   shippingAddress?: string | null;
   /** Own domain, when connected (`tr_boutiques.custom_domain`). */
   customDomain?: string | null;
+  /** `custom` = the boutique manages its own categories; `legacy` = the built-in fashion tree. */
+  categoryMode?: "legacy" | "custom";
   offersIyzicoCheckout?: boolean;
 }
 
@@ -206,6 +215,8 @@ export async function fetchOwnerProduct(productId: string): Promise<{
   boutique: TrOwnerBoutiqueSummary;
   /** Owner-only data (cost price). */
   ownerOnly: TrProductPrivate;
+  /** The product's categories (a boutique in `custom` category mode). */
+  categories: TrProductCategories;
 }> {
   const response = await ownerFetch(
     `/api/tr/owner/products/${encodeURIComponent(productId)}`,
@@ -214,6 +225,7 @@ export async function fetchOwnerProduct(productId: string): Promise<{
     product?: TrProduct;
     boutique?: TrOwnerBoutiqueSummary;
     private?: TrProductPrivate;
+    categories?: TrProductCategories;
     error?: string;
   };
   if (!response.ok) {
@@ -226,6 +238,7 @@ export async function fetchOwnerProduct(productId: string): Promise<{
     product: data.product,
     boutique: data.boutique,
     ownerOnly: data.private ?? { costPriceKurus: null },
+    categories: data.categories ?? { ids: [], primaryId: null },
   };
 }
 
@@ -255,12 +268,128 @@ export interface TrOwnerProductPayload {
   /** URL slug; on create, omitted = the server derives one from the title (Basit ürün). */
   slug?: string | null;
   seo?: TrSeo;
+  /** Categories to assign (custom category mode only). */
+  categories?: TrProductCategories;
 }
 
 /**
  * Like `createOwnerProduct`, but also returns the API's `warning` (the product was
  * created but something secondary, such as the cost price, was not stored).
  */
+/** What an owner can set on a category. */
+export interface TrOwnerCategoryInput {
+  name?: string;
+  parentId?: string | null;
+  slug?: string | null;
+  description?: string | null;
+  imageUrl?: string | null;
+  sortCriterion?: TrCategorySortCriterion | null;
+  seo?: TrSeo;
+}
+
+function invalidateCategories(): void {
+  invalidateOwnerCache("categories:");
+  invalidateProductLists();
+}
+
+async function readCategoryResponse<T>(
+  response: Response,
+  fallbackError: string,
+): Promise<T> {
+  const data = (await parseOwnerJson(response)) as T & { error?: string };
+  if (!response.ok) {
+    throw new Error(data.error ?? fallbackError);
+  }
+  return data;
+}
+
+export async function fetchOwnerCategories(boutiqueId: string): Promise<{
+  mode: TrCategoryMode;
+  categories: TrCategoryListEntry[];
+}> {
+  return cachedOwnerFetch(ownerCacheKeys.categories(boutiqueId), async () => {
+    const response = await ownerFetch(
+      `/api/tr/owner/categories?boutiqueId=${encodeURIComponent(boutiqueId)}`,
+    );
+    const data = await readCategoryResponse<{
+      mode?: TrCategoryMode;
+      categories?: TrCategoryListEntry[];
+    }>(response, "Kategoriler yüklenemedi.");
+    return { mode: data.mode ?? "legacy", categories: data.categories ?? [] };
+  });
+}
+
+export async function fetchOwnerCategory(categoryId: string): Promise<TrCategory> {
+  const response = await ownerFetch(
+    `/api/tr/owner/categories/${encodeURIComponent(categoryId)}`,
+  );
+  const data = await readCategoryResponse<{ category?: TrCategory }>(
+    response,
+    "Kategori yüklenemedi.",
+  );
+  if (!data.category) throw new Error("Kategori bulunamadı.");
+  return data.category;
+}
+
+export async function createOwnerCategory(
+  boutiqueId: string,
+  input: TrOwnerCategoryInput,
+): Promise<TrCategory> {
+  const response = await ownerFetch("/api/tr/owner/categories", {
+    method: "POST",
+    body: JSON.stringify({ boutiqueId, ...input }),
+  });
+  const data = await readCategoryResponse<{ category?: TrCategory }>(
+    response,
+    "Kategori oluşturulamadı.",
+  );
+  if (!data.category) throw new Error("Kategori oluşturulamadı.");
+  invalidateCategories();
+  return data.category;
+}
+
+export async function updateOwnerCategory(
+  categoryId: string,
+  input: TrOwnerCategoryInput,
+): Promise<TrCategory> {
+  const response = await ownerFetch(
+    `/api/tr/owner/categories/${encodeURIComponent(categoryId)}`,
+    { method: "PATCH", body: JSON.stringify(input) },
+  );
+  const data = await readCategoryResponse<{ category?: TrCategory }>(
+    response,
+    "Kategori güncellenemedi.",
+  );
+  if (!data.category) throw new Error("Kategori güncellenemedi.");
+  invalidateCategories();
+  return data.category;
+}
+
+export async function deleteOwnerCategory(categoryId: string): Promise<void> {
+  const response = await ownerFetch(
+    `/api/tr/owner/categories/${encodeURIComponent(categoryId)}`,
+    { method: "DELETE" },
+  );
+  await readCategoryResponse<{ ok?: boolean }>(response, "Kategori silinemedi.");
+  invalidateCategories();
+}
+
+/** Bulk: add products to a category, keeping the categories they already have. */
+export async function addOwnerProductsToCategory(
+  categoryId: string,
+  productIds: string[],
+): Promise<void> {
+  const response = await ownerFetch(
+    `/api/tr/owner/categories/${encodeURIComponent(categoryId)}/products`,
+    { method: "POST", body: JSON.stringify({ productIds }) },
+  );
+  await readCategoryResponse<{ ok?: boolean }>(
+    response,
+    "Ürünler kategoriye eklenemedi.",
+  );
+  invalidateCategories();
+}
+
 export async function createOwnerProductDetailed(
   payload: TrOwnerProductPayload,
 ): Promise<{ product: TrProduct; warning?: string }> {

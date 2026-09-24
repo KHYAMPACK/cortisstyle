@@ -15,6 +15,7 @@ import type {
   TrShippingProviderId,
 } from "@/types/tr-marketplace";
 import { sanitizeProductFeatures } from "@/lib/tr/catalog/productFeatures";
+import { readCategoryMode } from "@/lib/tr/categories/types";
 import { sanitizeSeo } from "@/lib/tr/seo/seoFields";
 import { readSizeStocks } from "@/lib/tr/sizeStocks";
 import {
@@ -138,6 +139,8 @@ export function mapBoutiqueRow(row: Record<string, unknown>): TrBoutique {
     returnAddress: (row.return_address as string | null) ?? null,
     sizePresets: readStringArray(row.size_presets),
     colorPresets: readProductColors(row.color_presets),
+    // A database without the column reads as legacy: nothing changes until it is switched.
+    categoryMode: readCategoryMode(row.category_mode),
     status: row.status as TrBoutique["status"],
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,

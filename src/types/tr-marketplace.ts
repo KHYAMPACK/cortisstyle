@@ -1,6 +1,7 @@
 import type { TrFashionProductFeatures } from "@/lib/tr/fashion/types";
 import type { TrCustomArtProductFeatures } from "@/lib/tr/customArt/types";
 import type { TrSeo } from "@/lib/tr/seo/seoFields";
+import type { TrCategoryMode } from "@/lib/tr/categories/types";
 
 export type TrBoutiqueStatus = "draft" | "pending" | "verified" | "suspended";
 export type TrProductStatus = "available" | "sold" | "hidden";
@@ -128,6 +129,8 @@ export interface TrBoutique extends TrBoutiquePublic {
   sizePresets: string[];
   /** Boutique-scoped reusable color chips for the product editor. */
   colorPresets: TrProductColor[];
+  /** Which category system the storefront and panel use (see patch_categories.sql). */
+  categoryMode: TrCategoryMode;
 }
 
 export interface TrProduct {

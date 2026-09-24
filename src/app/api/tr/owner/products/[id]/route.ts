@@ -28,6 +28,12 @@ import {
   setProductSlugAdmin,
 } from "@/lib/tr/catalog/productSlug";
 import { sanitizeSeo } from "@/lib/tr/seo/seoFields";
+import {
+  CategoryError,
+  getProductCategories,
+  setProductCategories,
+} from "@/lib/tr/catalog/categories";
+import { readCategoriesBody } from "@/lib/tr/catalog/categoryApi";
 import { isValidSlug } from "@/lib/tr/seo/slug";
 import {
   getProductPrivateAdmin,
@@ -99,10 +105,12 @@ export async function GET(request: Request, context: RouteContext) {
   }
 
   const ownerOnly = await getProductPrivateAdmin(id);
+  const categories = await getProductCategories(id);
 
   return Response.json({
     product: resolved,
     private: ownerOnly,
+    categories,
     boutique: {
       id: owned.boutique.id,
       slug: owned.boutique.slug,
@@ -289,6 +297,8 @@ export async function PATCH(request: Request, context: RouteContext) {
     slugChange = raw || null;
   }
 
+  const categories = readCategoriesBody(body.categories);
+
   let costPriceKurus: number | null | undefined;
   try {
     costPriceKurus = readCostPriceKurus(body);
@@ -313,6 +323,16 @@ export async function PATCH(request: Request, context: RouteContext) {
       });
       product.slug = slugChange;
     }
+    if (categories) {
+      await setProductCategories({
+        productId: id,
+        boutiqueId: owned.productBoutiqueId,
+        categoryIds: categories.ids,
+        primaryId: categories.primaryId,
+      });
+      // The primary category's slug is copied onto the product; return it fresh.
+      product.category = (await getProductByIdAdmin(id))?.category ?? null;
+    }
     if (costPriceKurus !== undefined) {
       await saveProductPrivateAdmin({
         productId: id,
@@ -324,6 +344,9 @@ export async function PATCH(request: Request, context: RouteContext) {
   } catch (error) {
     if (error instanceof ProductSlugTakenError) {
       return Response.json({ error: error.message }, { status: 409 });
+    }
+    if (error instanceof CategoryError) {
+      return Response.json({ error: error.message }, { status: error.status });
     }
     console.error("[tr/owner/products/[id]] patch failed:", error);
     return Response.json(

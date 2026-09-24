@@ -2,6 +2,9 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   storeAddress,
+  storeCategoryPath,
+  storeCategoryUrl,
+  storeCategoryUrlPrefix,
   storeProductPath,
   storeProductUrl,
   storeProductUrlPrefix,
@@ -54,5 +57,20 @@ describe("storeProductUrlPrefix", () => {
       storeProductUrlPrefix(onPlatform),
       "www.cortisstyle.com/tr/deneme-butik/urun/",
     );
+  });
+});
+
+describe("category addresses", () => {
+  it("are /kategori/<slug> on a custom domain and under /tr/<store> on the platform", () => {
+    assert.equal(storeCategoryPath({ ...onDomain, categorySlug: "canta" }), "/kategori/canta");
+    assert.equal(
+      storeCategoryPath({ ...onPlatform, categorySlug: "canta" }),
+      "/tr/deneme-butik/kategori/canta",
+    );
+    assert.equal(
+      storeCategoryUrl({ ...onDomain, categorySlug: "canta" }),
+      "https://lilaboutiquedenizli.com/kategori/canta",
+    );
+    assert.equal(storeCategoryUrlPrefix(onDomain), "lilaboutiquedenizli.com/kategori/");
   });
 });

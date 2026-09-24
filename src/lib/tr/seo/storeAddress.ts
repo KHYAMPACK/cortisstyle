@@ -1,5 +1,9 @@
 import { siteLegal } from "@/lib/platform/siteLegal";
-import { trBoutiquePath, trBoutiqueProductPath } from "@/lib/tr/paths";
+import {
+  trBoutiqueCategoryPath,
+  trBoutiquePath,
+  trBoutiqueProductPath,
+} from "@/lib/tr/paths";
 
 /**
  * "What is this store's public address?" in one place.
@@ -85,4 +89,29 @@ export function storeProductUrlPrefix(input: StoreAddressInput): string {
   const { host } = storeAddress(input);
   const path = storeProductPath({ ...input, slugOrId: "" });
   return `${host}${path}`;
+}
+
+/** Path of a category page on the store's address. */
+export function storeCategoryPath(
+  input: StoreAddressInput & { categorySlug: string },
+): string {
+  const { mode } = storeAddress(input);
+  return storeCustomerPath(
+    input.boutiqueSlug,
+    trBoutiqueCategoryPath(input.boutiqueSlug, input.categorySlug),
+    mode,
+  );
+}
+
+/** Full URL of a category page on the store's address. */
+export function storeCategoryUrl(
+  input: StoreAddressInput & { categorySlug: string },
+): string {
+  return `${storeAddress(input).origin}${storeCategoryPath(input)}`;
+}
+
+/** Text before the slug in a category's SEO card, e.g. "lilaboutiquedenizli.com/kategori/". */
+export function storeCategoryUrlPrefix(input: StoreAddressInput): string {
+  const { host } = storeAddress(input);
+  return `${host}${storeCategoryPath({ ...input, categorySlug: "" })}`;
 }

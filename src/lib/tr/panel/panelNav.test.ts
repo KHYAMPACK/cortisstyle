@@ -18,12 +18,12 @@ function productsGroup(profile: "fashion" | "custom_art"): TrPanelNavGroup | und
 }
 
 describe("panelNavForProfile", () => {
-  it("groups Ürünler and Stok under one heading for fashion boutiques", () => {
+  it("groups Ürünler, Stok and Tanımlamalar under one heading for fashion boutiques", () => {
     const group = productsGroup("fashion");
     assert.ok(group);
     assert.deepEqual(
       group.children.map((child) => child.label),
-      ["Ürünler", "Stok"],
+      ["Ürünler", "Stok", "Tanımlamalar"],
     );
   });
 
@@ -99,5 +99,22 @@ describe("isPanelEditorRoute", () => {
     ]) {
       assert.equal(isPanelEditorRoute(path), false, path);
     }
+  });
+});
+
+describe("categories routes", () => {
+  it("are editor routes for a single category and normal pages otherwise", () => {
+    assert.equal(isPanelEditorRoute("/tr/panel/tanimlamalar/kategoriler/yeni"), true);
+    assert.equal(isPanelEditorRoute("/tr/panel/tanimlamalar/kategoriler/abc-123"), true);
+    assert.equal(isPanelEditorRoute("/tr/panel/tanimlamalar/kategoriler"), false);
+    assert.equal(isPanelEditorRoute("/tr/panel/tanimlamalar"), false);
+  });
+
+  it("keep the Ürünler group open on the Tanımlamalar pages", () => {
+    const group = productsGroup("fashion")!;
+    const definitions = group.children[2]!;
+    assert.equal(isTrPanelNavActive("/tr/panel/tanimlamalar/kategoriler", definitions), true);
+    assert.equal(isTrPanelNavGroupActive("/tr/panel/tanimlamalar", group), true);
+    assert.equal(isTrPanelNavActive("/tr/panel/tanimlamalar", group.children[0]!), false);
   });
 });
