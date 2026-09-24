@@ -1,0 +1,68 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+import {
+  flattenPanelNav,
+  isPanelNavGroup,
+  isTrPanelNavActive,
+  isTrPanelNavGroupActive,
+  panelNavForProfile,
+  type TrPanelNavGroup,
+} from "./panelNav";
+
+function productsGroup(profile: "fashion" | "custom_art"): TrPanelNavGroup | undefined {
+  return panelNavForProfile(profile).find(
+    (entry): entry is TrPanelNavGroup =>
+      isPanelNavGroup(entry) && entry.id === "products",
+  );
+}
+
+describe("panelNavForProfile", () => {
+  it("groups Ürünler and Stok under one heading for fashion boutiques", () => {
+    const group = productsGroup("fashion");
+    assert.ok(group);
+    assert.deepEqual(
+      group.children.map((child) => child.label),
+      ["Ürünler", "Stok"],
+    );
+  });
+
+  it("drops the whole group when a profile hides all of its pages", () => {
+    assert.equal(productsGroup("custom_art"), undefined);
+  });
+
+  it("keeps the top-level order the tab bar relies on", () => {
+    assert.deepEqual(
+      flattenPanelNav(panelNavForProfile("fashion"))
+        .slice(0, 4)
+        .map((item) => item.label),
+      ["Giriş", "Siparişler", "Ürünler", "Stok"],
+    );
+  });
+});
+
+describe("nav active state", () => {
+  const group = productsGroup("fashion")!;
+
+  it("treats product edit and create routes as the Ürünler page", () => {
+    for (const path of [
+      "/tr/panel/urunler",
+      "/tr/panel/urun/yeni",
+      "/tr/panel/urun/abc",
+    ]) {
+      assert.equal(isTrPanelNavActive(path, group.children[0]!), true, path);
+      assert.equal(isTrPanelNavActive(path, group.children[1]!), false, path);
+    }
+  });
+
+  it("marks Stok active on its own route only", () => {
+    assert.equal(isTrPanelNavActive("/tr/panel/stok", group.children[1]!), true);
+    assert.equal(isTrPanelNavActive("/tr/panel/stok", group.children[0]!), false);
+  });
+
+  it("marks the group active exactly when one of its pages is", () => {
+    assert.equal(isTrPanelNavGroupActive("/tr/panel/stok", group), true);
+    assert.equal(isTrPanelNavGroupActive("/tr/panel/urun/yeni", group), true);
+    assert.equal(isTrPanelNavGroupActive("/tr/panel/siparisler", group), false);
+    assert.equal(isTrPanelNavGroupActive("/tr/panel", group), false);
+  });
+});

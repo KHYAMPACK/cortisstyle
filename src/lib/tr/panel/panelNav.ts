@@ -17,6 +17,7 @@ import {
   type TrCatalogProfileId,
 } from "@/lib/tr/catalogProfiles";
 
+/** One link in the panel menu. */
 export interface TrPanelNavItem {
   href: string;
   label: string;
@@ -25,8 +26,25 @@ export interface TrPanelNavItem {
   prefetch?: "products" | "orders";
 }
 
+/**
+ * An expandable heading with its pages nested underneath (Ürünler → Ürünler, Stok, …).
+ * The heading itself is not a link. To add a page to a group, add a child here, add
+ * the route, and gate it in `panelNavForProfile` if some vertical shouldn't see it.
+ */
+export interface TrPanelNavGroup {
+  id: string;
+  label: string;
+  children: TrPanelNavItem[];
+}
+
+export type TrPanelNavEntry = TrPanelNavItem | TrPanelNavGroup;
+
+export function isPanelNavGroup(entry: TrPanelNavEntry): entry is TrPanelNavGroup {
+  return "children" in entry;
+}
+
 /** Live owner-panel modules. Yeni ürün is a list CTA; İçerik stays a URL-only route. */
-export const TR_PANEL_NAV: TrPanelNavItem[] = [
+export const TR_PANEL_NAV: TrPanelNavEntry[] = [
   { href: trPanelPath(), label: "Giriş", match: "exact" },
   {
     href: trPanelOrdersPath(),
@@ -35,16 +53,22 @@ export const TR_PANEL_NAV: TrPanelNavItem[] = [
     prefetch: "orders",
   },
   {
-    href: trPanelProductsPath(),
+    id: "products",
     label: "Ürünler",
-    match: "products",
-    prefetch: "products",
-  },
-  {
-    href: trPanelStockPath(),
-    label: "Stok",
-    match: "prefix",
-    prefetch: "products",
+    children: [
+      {
+        href: trPanelProductsPath(),
+        label: "Ürünler",
+        match: "products",
+        prefetch: "products",
+      },
+      {
+        href: trPanelStockPath(),
+        label: "Stok",
+        match: "prefix",
+        prefetch: "products",
+      },
+    ],
   },
   { href: trPanelCustomersPath(), label: "Müşteriler", match: "prefix" },
   { href: trPanelCampaignsPath(), label: "İndirimler", match: "prefix" },
@@ -53,11 +77,15 @@ export const TR_PANEL_NAV: TrPanelNavItem[] = [
   { href: trPanelInvoicesPath(), label: "Faturalar", match: "prefix" },
 ];
 
+/**
+ * The menu for a catalog profile. Pages a profile can't use are removed, and a
+ * group whose pages are all removed disappears with them.
+ */
 export function panelNavForProfile(
   profile: TrCatalogProfileId = "fashion",
-): TrPanelNavItem[] {
+): TrPanelNavEntry[] {
   const caps = catalogProfileCapabilities(profile);
-  return TR_PANEL_NAV.filter((item) => {
+  const visible = (item: TrPanelNavItem): boolean => {
     if (item.href === trPanelProductsPath() && !caps.showProductsNav) {
       return false;
     }
@@ -65,7 +93,20 @@ export function panelNavForProfile(
       return false;
     }
     return true;
+  };
+
+  return TR_PANEL_NAV.flatMap((entry): TrPanelNavEntry[] => {
+    if (!isPanelNavGroup(entry)) return visible(entry) ? [entry] : [];
+    const children = entry.children.filter(visible);
+    return children.length > 0 ? [{ ...entry, children }] : [];
   });
+}
+
+/** Every link in menu order, groups expanded — for the mobile tab bar. */
+export function flattenPanelNav(entries: TrPanelNavEntry[]): TrPanelNavItem[] {
+  return entries.flatMap((entry) =>
+    isPanelNavGroup(entry) ? entry.children : [entry],
+  );
 }
 
 export function isTrPanelNavActive(
@@ -83,6 +124,13 @@ export function isTrPanelNavActive(
     );
   }
   return pathname === item.href || pathname.startsWith(`${item.href}/`);
+}
+
+export function isTrPanelNavGroupActive(
+  pathname: string,
+  group: TrPanelNavGroup,
+): boolean {
+  return group.children.some((child) => isTrPanelNavActive(pathname, child));
 }
 
 export type { TrCatalogProfileId };

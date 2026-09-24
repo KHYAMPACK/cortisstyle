@@ -83,8 +83,13 @@ export const panelStickyActionsSpacerClass = "h-24 shrink-0 lg:h-20";
  * focus and spacing can never drift apart. The 15px left padding puts the icon at
  * the centre of the 64px collapsed rail, so it never moves when the rail expands.
  */
-export const panelSidebarRowClass =
-  `group relative flex min-h-11 w-full items-center gap-3 rounded-lg pl-[15px] pr-3 text-left text-[13.5px] font-medium whitespace-nowrap ${panelBtnMotion} focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-white/70`;
+const panelSidebarRowBase =
+  `group relative flex min-h-11 w-full items-center gap-3 rounded-lg pr-3 text-left text-[13.5px] font-medium whitespace-nowrap ${panelBtnMotion} focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-white/70`;
+
+export const panelSidebarRowClass = `${panelSidebarRowBase} pl-[15px]`;
+
+/** Row nested under a group heading: its text lines up with the heading's label (15px + 18px icon + 12px gap). */
+export const panelSidebarChildRowClass = `${panelSidebarRowBase} pl-[45px]`;
 
 export const panelSidebarRowIdleClass =
   "text-white/65 hover:bg-white/5 hover:text-white";

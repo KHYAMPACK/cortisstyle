@@ -36,6 +36,22 @@ const ICONS: Record<string, LucideIcon> = {
   [trPanelInvoicesPath()]: Receipt,
 };
 
+/** Icon for a menu group heading (its pages nest under it without icons). Add a case per group. */
+export function PanelNavGroupIcon({
+  groupId,
+  className,
+}: {
+  groupId: string;
+  className?: string;
+}) {
+  switch (groupId) {
+    default:
+      return (
+        <Package className={className} strokeWidth={1.75} aria-hidden />
+      );
+  }
+}
+
 export function panelNavIcon(href: string): LucideIcon {
   return ICONS[href] ?? Home;
 }

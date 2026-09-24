@@ -23,6 +23,8 @@ Product management pages: `urun/yeni` (create wizard), `urun/[id]` (edit form), 
 4. **Instant fallback.** `app/tr/panel/loading.tsx` shows a skeleton in the page slot the moment a navigation starts if the route wasn't prefetched; the shell stays put.
 5. **Data is cached separately** in `src/lib/tr/panel/ownerCache.ts` (20 s, in-flight de-duplication, prefix invalidation). Fetch through `cachedOwnerFetch` so a revisit renders immediately.
 
+**Menu groups.** The sidebar list is `TR_PANEL_NAV` in `src/lib/tr/panel/panelNav.ts`: each entry is a link or a *group* (an expandable heading with pages nested under it — Ürünler → Ürünler, Stok). Today only Ürünler is a group, mirroring the reference admin; further Ürünler sub-pages (tanımlamalar, fiyat listesi, barkod etiketi, …) are added one at a time as real pages, not as "coming soon" placeholders. **To add a sub-page:** add the route under `src/app/tr/panel/`, add a child to the group in `TR_PANEL_NAV`, and hide it per vertical in `panelNavForProfile` if some `catalog_profile` shouldn't see it (a group whose children are all hidden disappears). Group headings are not links; a group opens itself when you are on one of its pages, a manual toggle lapses on the next navigation, and when the rail is collapsed the heading's pages open in a hover/click flyout (`TrPanelNavGroup.tsx`). The mobile tab bar uses `flattenPanelNav(...)`, so it still shows the first four links in order.
+
 **Sidebar.** Collapses to a 64 px icon rail (state remembered in `localStorage` via `panelSidebarState.ts`, read with `useSyncExternalStore` so hydration stays clean). The active pill and accent bar slide between items (framer-motion `layoutId`, scoped per instance). Nav rows and footer actions share `panelSidebarRowClass` in `panelUi.ts`, so hover/focus/spacing can't drift. The shell publishes the current width as `--panel-sidebar-w`; anything positioned against the sidebar (the wizard's sticky action bar) must use that variable, never a hard-coded 232 px.
 
 **Panel-wide state that persists across pages** (because it lives in the shell): the leave guard and the AI restyle session (`TrOwnerElbiseRestyleSession`). Pages release their leave-guard registration on unmount (`useRegisterLeaveBusy` cleans up), so a persistent guard is safe.
@@ -51,7 +53,7 @@ Checkout iyzico flow: `src/app/api/tr/checkout/iyzico/{start,abandon,callback}/r
 |---|---|
 | Owner auth | `src/lib/tr/ownerAuth.ts`, `src/lib/tr/panel/ownerClient.ts` |
 | Panel nav / capability gating | `src/lib/tr/panelNav.ts`, `src/lib/tr/catalogProfiles/registry.ts` |
-| Panel shell / navigation | `src/app/tr/panel/layout.tsx`, `template.tsx`, `loading.tsx`, `src/components/tr/panel/TrPanelShell.tsx`, `TrPanelNavLinks.tsx`, `TrPanelDesktopSidebar.tsx`, `TrPanelLink.tsx`, `panelUi.ts` |
+| Panel shell / navigation | `src/app/tr/panel/layout.tsx`, `template.tsx`, `loading.tsx`, `src/components/tr/panel/TrPanelShell.tsx`, `TrPanelNavLinks.tsx`, `TrPanelNavGroup.tsx`, `src/lib/tr/panel/panelNav.ts`, `TrPanelDesktopSidebar.tsx`, `TrPanelLink.tsx`, `panelUi.ts` |
 | Product create/edit | `src/components/tr/panel/TrProductCreateWizard.tsx`, `TrProductEditorForm.tsx` |
 | Batch / takım upload | `src/components/tr/panel/TrOwnerBatchCreatePage.tsx`, `TrOwnerTakimCreatePage.tsx` |
 | Stock / product list | `src/components/tr/panel/TrOwnerStockPage.tsx`, `TrOwnerProductListPage.tsx` |
