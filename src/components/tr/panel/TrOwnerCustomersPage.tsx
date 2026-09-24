@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { TrPanelLink as Link } from "@/components/tr/panel/TrPanelLink";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";

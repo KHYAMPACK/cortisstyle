@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { TrPanelShell } from "@/components/tr/panel/TrPanelShell";
 import { TrPanelSwBridge } from "@/components/tr/panel/TrPanelSwBridge";
 import { PANEL_CANVAS } from "@/lib/tr/panel/panelTheme";
 
@@ -37,7 +38,7 @@ export default function TrPanelLayout({
       }}
     >
       <TrPanelSwBridge />
-      {children}
+      <TrPanelShell>{children}</TrPanelShell>
     </div>
   );
 }

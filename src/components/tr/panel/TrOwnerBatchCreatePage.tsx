@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
+import { TrPanelLink as Link } from "@/components/tr/panel/TrPanelLink";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { TrOwnerAiJobQueueProvider, useScheduleAiJob } from "@/components/tr/panel/TrOwnerAiJobQueue";
 import { TrOwnerBatchListingsStep } from "@/components/tr/panel/TrOwnerBatchListingsStep";

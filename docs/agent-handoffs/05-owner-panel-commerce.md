@@ -10,6 +10,23 @@ Product management pages: `urun/yeni` (create wizard), `urun/[id]` (edit form), 
 
 **Important caveat for anyone editing these:** `TrProductCreateWizard.tsx`, `TrProductEditorForm.tsx`, `TrOwnerGuidedPhotoUpload.tsx`, `TrOwnerBatchCreatePage.tsx` (and its step components), `TrOwnerStorePreview.tsx`, `TrOwnerProductListPage.tsx`, and `TrOwnerStockPage.tsx` are large files (several are 1500+ lines) that interleave **generic** product fields (title, price, stock, images) with **garment-specific** UI (size charts, construction chips, category taxonomy) in the same component. This is known, deliberate technical debt from the fashion-module extraction (see [06-fashion-module.md](./06-fashion-module.md)) — splitting them cleanly is a bigger, riskier job than a file move and was deferred on purpose. Don't assume everything in `src/components/tr/panel/` is generic just because it's not under `src/components/tr/fashion/panel/`.
 
+## Panel shell & navigation (how pages load — follow this for every new page)
+
+**The shell mounts once.** `TrPanelShell` (`src/components/tr/panel/TrPanelShell.tsx`) is rendered by `src/app/tr/panel/layout.tsx`. It owns sign-in, the boutique list, the sidebar / mobile chrome, order alerts, and the leave-guard and restyle-session providers, and it stays mounted while the user moves between panel pages — only the page slot below it changes. It used to be mounted *by each page* (via `TrOwnerPanelGate`), which tore the sidebar down, showed a skeleton and re-fetched the boutique list on every click; that was the whole "not instant" feeling. A page must never mount its own shell.
+
+**Pages read the shell, they don't build it.** `TrOwnerPanelGate` is now only a consumer: `<TrOwnerPanelGate>{({ activeBoutique }) => …}</TrOwnerPanelGate>` hands the page the active boutique, the boutique list, `isStaff` and `setActiveBoutiqueId` (the same shape as before, so pages didn't change). Add a new panel page as a route under `src/app/tr/panel/` that renders a client component wrapped in it — nothing else.
+
+**How a click stays fast:**
+1. **Prefetch the whole route.** Panel routes are dynamic, so `prefetch="auto"` only fetches down to the loading boundary and the click still waits on the server. Nav links use `prefetch` (full route, cached 5 min by the client router — no global `staleTimes` change, so the storefront's no-cache behavior is untouched). In-page links use `TrPanelLink` (`TrPanelLink.tsx`), which arms the same full prefetch on hover, focus or touch so a long list doesn't prefetch every row on load. **Use `TrPanelLink`, not `next/link`, for panel links.** Prefetching only runs in production builds — judge speed on `npm run build && npm start` or a deploy, not on `npm run dev`.
+2. **Optimistic active state.** `TrPanelNavLinks` moves the active pill on click, before the route commits. It is tied to the path it was clicked from, so it stops applying on its own once the real path changes. A navigation the leave guard blocks never reaches the click handler (the guard stops it in the capture phase), so the pill can't get ahead of a blocked click.
+3. **No exit animation.** `app/tr/panel/template.tsx` re-mounts per navigation and replays a 140 ms opacity-only fade (`.tr-panel-enter` in `globals.css`); nothing waits for the old page to leave. Opacity only — a transform on that wrapper breaks `position: sticky` descendants (list filters).
+4. **Instant fallback.** `app/tr/panel/loading.tsx` shows a skeleton in the page slot the moment a navigation starts if the route wasn't prefetched; the shell stays put.
+5. **Data is cached separately** in `src/lib/tr/panel/ownerCache.ts` (20 s, in-flight de-duplication, prefix invalidation). Fetch through `cachedOwnerFetch` so a revisit renders immediately.
+
+**Sidebar.** Collapses to a 64 px icon rail (state remembered in `localStorage` via `panelSidebarState.ts`, read with `useSyncExternalStore` so hydration stays clean). The active pill and accent bar slide between items (framer-motion `layoutId`, scoped per instance). Nav rows and footer actions share `panelSidebarRowClass` in `panelUi.ts`, so hover/focus/spacing can't drift. The shell publishes the current width as `--panel-sidebar-w`; anything positioned against the sidebar (the wizard's sticky action bar) must use that variable, never a hard-coded 232 px.
+
+**Panel-wide state that persists across pages** (because it lives in the shell): the leave guard and the AI restyle session (`TrOwnerElbiseRestyleSession`). Pages release their leave-guard registration on unmount (`useRegisterLeaveBusy` cleans up), so a persistent guard is safe.
+
 ## Checkout & orders
 
 `POST /api/tr/checkout` creates the order; `TrCheckoutPageContent.tsx` drives the checkout page. Supporting logic: `src/lib/tr/cartCheckout.ts`, `checkoutProfile.ts`, `checkoutValidate.ts`, `checkoutSelection.ts`, `orders.ts`, `inventory.ts` (stock decrement — skipped entirely for `custom_art` per capability flag), `discountCodes.ts`. Checkout re-prices and re-validates server-side; it never trusts client-submitted prices.
@@ -34,6 +51,7 @@ Checkout iyzico flow: `src/app/api/tr/checkout/iyzico/{start,abandon,callback}/r
 |---|---|
 | Owner auth | `src/lib/tr/ownerAuth.ts`, `src/lib/tr/panel/ownerClient.ts` |
 | Panel nav / capability gating | `src/lib/tr/panelNav.ts`, `src/lib/tr/catalogProfiles/registry.ts` |
+| Panel shell / navigation | `src/app/tr/panel/layout.tsx`, `template.tsx`, `loading.tsx`, `src/components/tr/panel/TrPanelShell.tsx`, `TrPanelNavLinks.tsx`, `TrPanelDesktopSidebar.tsx`, `TrPanelLink.tsx`, `panelUi.ts` |
 | Product create/edit | `src/components/tr/panel/TrProductCreateWizard.tsx`, `TrProductEditorForm.tsx` |
 | Batch / takım upload | `src/components/tr/panel/TrOwnerBatchCreatePage.tsx`, `TrOwnerTakimCreatePage.tsx` |
 | Stock / product list | `src/components/tr/panel/TrOwnerStockPage.tsx`, `TrOwnerProductListPage.tsx` |

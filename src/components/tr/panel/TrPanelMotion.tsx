@@ -2,6 +2,10 @@
 
 import { Children } from "react";
 import { motion, type Transition } from "framer-motion";
+import {
+  PANEL_SIDEBAR_COLLAPSED_WIDTH,
+  PANEL_SIDEBAR_WIDTH,
+} from "@/components/tr/panel/panelUi";
 
 /** Shared easing for TR owner panel — keep loading / page changes soft. */
 export const trPanelEase = [0.22, 1, 0.36, 1] as const;
@@ -17,28 +21,6 @@ export const trPanelStaggerTransition: Transition = {
 };
 
 const STAGGER_CAP = 12;
-
-/** Soft enter/exit page body — pair with parent `AnimatePresence`.
- *  Opacity only: a translate transform on this wrapper would break
- *  `position: sticky` descendants (product/stock filters). */
-export function TrPanelPageTransition({
-  children,
-}: {
-  /** Kept for call-site clarity; parent should key by pathname. */
-  pathname?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={trPanelFadeTransition}
-    >
-      {children}
-    </motion.div>
-  );
-}
 
 /** Fade content in after data loads (swap with loading state). */
 export function TrPanelFadeIn({
@@ -164,10 +146,17 @@ export function TrPanelListSkeleton({
 }
 
 /** Desktop sidebar chrome while boutiques load. */
-export function TrPanelSidebarSkeleton() {
+export function TrPanelSidebarSkeleton({
+  collapsed = false,
+}: {
+  collapsed?: boolean;
+}) {
   return (
     <aside
-      className="flex h-dvh w-[232px] shrink-0 flex-col bg-[#1C1C1E]"
+      className="flex h-dvh shrink-0 flex-col overflow-hidden bg-[color:var(--panel-shell,#1C1C1E)]"
+      style={{
+        width: collapsed ? PANEL_SIDEBAR_COLLAPSED_WIDTH : PANEL_SIDEBAR_WIDTH,
+      }}
       aria-hidden
     >
       <div className="px-4 py-4">

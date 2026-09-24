@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { TrPanelLink as Link } from "@/components/tr/panel/TrPanelLink";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { TrOrderItemThumbs } from "@/components/tr/panel/TrOrderItemThumbs";
