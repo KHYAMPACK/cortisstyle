@@ -1,12 +1,12 @@
 "use client";
 
-import { Check } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useRegisterLeaveBusy } from "@/components/tr/panel/TrOwnerLeaveGuard";
+import { useUnsavedChangesGuard } from "@/components/tr/panel/TrOwnerLeaveGuard";
 import { TrOwnerManualPhotoGallery } from "@/components/tr/panel/TrOwnerManualPhotoGallery";
 import {
   TrPanelEditorActions,
   TrPanelEditorCard,
+  TrPanelEditorSave,
   TrPanelEditorTabs,
 } from "@/components/tr/panel/TrPanelEditor";
 import { TrPanelLink as Link } from "@/components/tr/panel/TrPanelLink";
@@ -168,10 +168,9 @@ export function TrSimpleProductEditor({
   }, []);
 
   const dirty = JSON.stringify(form) !== baseline;
-  useRegisterLeaveBusy(
+  useUnsavedChangesGuard(
     "simple-product-editor",
     dirty || saving || uploading || deleting,
-    { kind: "unsaved" },
   );
 
   const change = (patch: Partial<SimpleProductFormState>) => {
@@ -254,29 +253,8 @@ export function TrSimpleProductEditor({
       }}
       className="space-y-5"
     >
-      <TrPanelEditorActions>
-        {saving ? (
-          <span
-            className="hidden items-center gap-2 text-white/70 sm:inline-flex"
-            role="status"
-          >
-            <TrPanelBusySpinner />
-            Kaydediliyor…
-          </span>
-        ) : dirty ? (
-          <span className="hidden text-amber-300 sm:inline" role="status">
-            Kaydedilmemiş değişiklikler
-          </span>
-        ) : savedOnce ? (
-          <span
-            className="hidden items-center gap-1.5 text-emerald-300 sm:inline-flex"
-            role="status"
-          >
-            <Check className="h-4 w-4" strokeWidth={2} aria-hidden />
-            Kaydedildi
-          </span>
-        ) : null}
-        {product && product.status === "available" ? (
+      {product && product.status === "available" ? (
+        <TrPanelEditorActions>
           <a
             href={trBoutiqueProductPath(boutiqueSlug, product.id)}
             target="_blank"
@@ -285,16 +263,16 @@ export function TrSimpleProductEditor({
           >
             Mağazada gör
           </a>
-        ) : null}
-        <button
-          type="button"
-          onClick={() => void save()}
-          disabled={saving || uploading || deleting || (Boolean(product) && !dirty)}
-          className="inline-flex h-9 items-center rounded-lg bg-[color:var(--panel-accent)] px-4 text-[13px] font-semibold text-white transition-[background-color,opacity] duration-150 hover:bg-[color:var(--panel-accent-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70 disabled:pointer-events-none disabled:opacity-50 motion-reduce:transition-none"
-        >
-          Kaydet
-        </button>
-      </TrPanelEditorActions>
+        </TrPanelEditorActions>
+      ) : null}
+      <TrPanelEditorSave
+        dirty={dirty}
+        saving={saving}
+        saved={savedOnce}
+        requireDirty={Boolean(product)}
+        disabled={uploading || deleting}
+        onSave={() => void save()}
+      />
 
       <TrPanelEditorTabs tabs={TABS} />
 

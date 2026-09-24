@@ -13,11 +13,14 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { AlertCircle } from "lucide-react";
 import { trPanelFadeTransition } from "@/components/tr/panel/TrPanelMotion";
 import {
   panelDangerBtnClass,
+  panelPrimaryBtnClass,
   panelSecondaryBtnClass,
 } from "@/components/tr/panel/panelUi";
+import { UNSAVED_CHANGES_MESSAGE } from "@/lib/tr/panel/saveModel";
 
 type LeaveDestination =
   | { kind: "href"; href: string }
@@ -205,33 +208,52 @@ export function TrOwnerLeaveGuardProvider({ children }: { children: ReactNode })
               transition={trPanelFadeTransition}
               onClick={(event) => event.stopPropagation()}
             >
-              <p
-                id={titleId}
-                className="text-[20px] font-semibold text-neutral-900"
-              >
-                {dialogKind === "busy"
-                  ? "İşlem devam ediyor"
-                  : "Kaydedilmemiş değişiklikler var"}
-              </p>
-              <p className="mt-2 text-[15px] leading-relaxed text-neutral-600">
-                {dialogKind === "busy"
-                  ? "Bu işlemi sonlandırmak üzeresiniz. Devam eden katalog veya model hazırlama durur; görseller yarıda kalabilir."
-                  : "Bu sayfadan ayrılırsanız yaptığınız değişiklikler kaybolur."}
-              </p>
+              {dialogKind === "busy" ? (
+                <>
+                  <p
+                    id={titleId}
+                    className="text-[20px] font-semibold text-neutral-900"
+                  >
+                    İşlem devam ediyor
+                  </p>
+                  <p className="mt-2 text-[15px] leading-relaxed text-neutral-600">
+                    Bu işlemi sonlandırmak üzeresiniz. Devam eden katalog veya
+                    model hazırlama durur; görseller yarıda kalabilir.
+                  </p>
+                </>
+              ) : (
+                <div className="flex items-start gap-3">
+                  <AlertCircle
+                    className="mt-0.5 h-6 w-6 shrink-0 text-amber-500"
+                    strokeWidth={1.75}
+                    aria-hidden
+                  />
+                  <p
+                    id={titleId}
+                    className="text-[17px] leading-snug font-medium text-neutral-900"
+                  >
+                    {UNSAVED_CHANGES_MESSAGE}
+                  </p>
+                </div>
+              )}
               <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                 <button
                   type="button"
                   className={`${panelSecondaryBtnClass} flex-1`}
                   onClick={stay}
                 >
-                  {dialogKind === "busy" ? "Vazgeç" : "Sayfada kal"}
+                  {dialogKind === "busy" ? "Vazgeç" : "Hayır"}
                 </button>
                 <button
                   type="button"
-                  className={`${panelDangerBtnClass} flex-1`}
+                  className={`${
+                    dialogKind === "busy"
+                      ? panelDangerBtnClass
+                      : panelPrimaryBtnClass
+                  } flex-1`}
                   onClick={leave}
                 >
-                  {dialogKind === "busy" ? "Çık ve durdur" : "Değişiklikleri at"}
+                  {dialogKind === "busy" ? "Çık ve durdur" : "Evet"}
                 </button>
               </div>
             </motion.div>
@@ -255,6 +277,16 @@ export function useRegisterLeaveBusy(
     register(id, busy, blockPanelNav, kind);
     return () => register(id, false);
   }, [id, busy, blockPanelNav, kind, register]);
+}
+
+/**
+ * One line for any page that holds unsaved edits: `useUnsavedChangesGuard("id",
+ * dirty)`. While `dirty`, leaving the page (sidebar, back arrow, links) asks first,
+ * and reloading or closing the tab shows the browser's own prompt. The browser's
+ * Back button is not intercepted (the app router does not allow it).
+ */
+export function useUnsavedChangesGuard(id: string, dirty: boolean) {
+  useRegisterLeaveBusy(id, dirty, { kind: "unsaved" });
 }
 
 export function useRequestBusyLeave() {

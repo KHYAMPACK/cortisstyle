@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowLeft, ChevronRight, Info } from "lucide-react";
+import { ArrowLeft, Check, ChevronRight, Info } from "lucide-react";
 import {
   createContext,
   useContext,
@@ -12,6 +12,8 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { TrPanelLink as Link } from "@/components/tr/panel/TrPanelLink";
+import { TrPanelBusySpinner } from "@/components/tr/panel/TrPanelMotion";
+import { useSaveShortcut } from "@/components/tr/panel/useSaveShortcut";
 import { activeSectionIndex } from "@/lib/tr/panel/editorScrollSpy";
 
 /**
@@ -101,6 +103,72 @@ export function TrPanelEditor({
 export function TrPanelEditorActions({ children }: { children: ReactNode }) {
   const slot = useContext(ActionsSlotContext);
   return slot ? createPortal(children, slot) : null;
+}
+
+/**
+ * The save controls every editor's top bar shares: a status line and **Kaydet**,
+ * with Ctrl/Cmd+S. Pair it with `useUnsavedChangesGuard` so leaving with edits asks
+ * first. Forms save manually — there is no autosave (see the panel's save model).
+ *
+ * - `dirty`: the form differs from what was last saved.
+ * - `requireDirty`: an existing item can't be saved until something changed; a new
+ *   one can always be submitted.
+ * - `saved`: show "Kaydedildi" while clean (after a successful save).
+ */
+export function TrPanelEditorSave({
+  dirty,
+  saving,
+  saved = false,
+  requireDirty = false,
+  disabled = false,
+  onSave,
+  label = "Kaydet",
+}: {
+  dirty: boolean;
+  saving: boolean;
+  saved?: boolean;
+  requireDirty?: boolean;
+  /** Extra reasons not to save right now (an upload is running, …). */
+  disabled?: boolean;
+  onSave: () => void;
+  label?: string;
+}) {
+  const canSave = !saving && !disabled && (!requireDirty || dirty);
+  useSaveShortcut(onSave, canSave);
+
+  return (
+    <TrPanelEditorActions>
+      {saving ? (
+        <span
+          className="hidden items-center gap-2 text-white/70 sm:inline-flex"
+          role="status"
+        >
+          <TrPanelBusySpinner />
+          Kaydediliyor…
+        </span>
+      ) : dirty ? (
+        <span className="hidden text-amber-300 sm:inline" role="status">
+          Kaydedilmemiş değişiklikler
+        </span>
+      ) : saved ? (
+        <span
+          className="hidden items-center gap-1.5 text-emerald-300 sm:inline-flex"
+          role="status"
+        >
+          <Check className="h-4 w-4" strokeWidth={2} aria-hidden />
+          Kaydedildi
+        </span>
+      ) : null}
+      <button
+        type="button"
+        onClick={onSave}
+        disabled={!canSave}
+        className="inline-flex h-9 items-center rounded-lg bg-[color:var(--panel-accent)] px-4 text-[13px] font-semibold text-white transition-[background-color,opacity] duration-150 hover:bg-[color:var(--panel-accent-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70 disabled:pointer-events-none disabled:opacity-50 motion-reduce:transition-none"
+      >
+        {label}
+      </button>
+    </TrPanelEditorActions>
+  );
 }
 
 export interface TrPanelEditorTab {

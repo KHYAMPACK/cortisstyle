@@ -11,6 +11,7 @@ _Prepared 2026-09-24 on branch `panel-products`. Facts below were checked agains
 - **Lokasyon's "Ana adres"** reads `physical_address` (the field Ayarlar → Adres edits), falling back to `shipping_address`.
 - The Basit ürün has **no category card until M3** (its category stays empty) and **requires at least one photo** (the storefront has not been checked with photo-less products).
 - **Gelişmiş is not in the chooser** until its editor exists (no placeholders).
+- **Shared components merged for other agents:** the editor layout, `TrPanelPopover`, `TrPanelChoiceCard`, the data table options, the save model pieces and `TrPanelDrawer` (M7a's drawer was pulled forward).
 
 Apply `supabase/patch_product_types.sql` **before** trying Basit ürün on a real database. The app tolerates the patch being absent (products read as `fashion`, and the cost price save reports a clear error), but a Basit ürün created before the patch would lose its type.
 
@@ -85,9 +86,11 @@ Rules for the whole effort:
 | `TrPanelCreatableSelect` | Marka, Etiket | type a value or pick one already used in the boutique |
 | `TrPanelCategoryPicker` | product editor | multi-select tree with a primary marker, `⋯` menu (make primary / remove), "Kategorileri Düzenle" |
 | `TrPanelPopover` | done | filters and menus |
-| `TrPanelDrawer` | Varyant türü oluştur/düzenle, inline "yeni marka/etiket/kategori/…" from any editor, later Özel Alan, Ürün Birimi | right-side slide-over: title + close, scrolling body, sticky footer with Vazgeç / Kaydet. Dims the page, closes on Esc and backdrop click, traps focus, returns focus to the trigger, asks before discarding edits. Full-screen on phones. Stacks above the editor top bar and below the leave-guard dialog |
+| `TrPanelConfirmPopover` | done | small yes/no over a button; the unsaved-changes prompt in drawers |
+| `TrPanelEditorSave` + `useUnsavedChangesGuard` | done | the shared Kaydet / status / Ctrl+S cluster and the exit guard (§4 save model below) |
+| `TrPanelDrawer` (**done**) | Varyant türü oluştur/düzenle, inline "yeni marka/etiket/kategori/…" from any editor, later Özel Alan, Ürün Birimi | right-side slide-over: title + close, scrolling body, sticky footer with Vazgeç / Kaydet. Dims the page, closes on Esc and backdrop click, traps focus, returns focus to the trigger, asks before discarding edits. Full-screen on phones. Stacks above the editor top bar and below the leave-guard dialog |
 
-**Save model.** Basit/Gelişmiş use an explicit **Kaydet** (with the existing leave guard), like ikas. The fashion editor keeps autosave. Reason: a slug edit must not autosave on every keystroke and create redirects.
+**Save model (decided 2026-09-24, panel-wide).** Forms save manually with a confirmation on exit; actions apply immediately; inline table edits use a pending-changes bar. No autosave in anything new; the fashion editor keeps its autosave until its migration is planned. Full rules in `agent-handoffs/05-owner-panel-commerce.md` ("Saving"). Reason it matters here: a slug edit must not autosave on every keystroke and create redirects. Costly AI output on standard products (future): generated text lands in the field as an unsaved edit; paid media is stored when generated and attaches to the product on Kaydet.
 
 ## 5. Basit ürün — card by card
 
