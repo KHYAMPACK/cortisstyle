@@ -25,6 +25,9 @@ Rules for the whole effort:
 | Stored-only optional fields | Ürün türü **Dijital**, **HS kodu**, **Tedarikçi**, **Lokasyon**. Created as in ikas, optional, saved, *not* wired into checkout / shipping / purchasing |
 | Lokasyon | Shows the boutique's own address as **"Ana adres"**, read-only |
 | Stok | Its **own section**, separate from Lokasyon (ikas merges them) |
+| Sıralama ölçütü | Exactly six options (nothing below "Yeniden Eskiye"): En çok satanlar, İndirim oranına göre azalan / artan, Fiyata göre azalan / artan, Yeniden eskiye |
+| Create-in-place drawer | ikas opens a **right-side drawer** for creating definitions (Varyant türü oluştur, and more). One shared drawer component serves all of them (§4, §8) |
+| Variant creation | Mert could not work out ikas's flow, so §8 proposes the system |
 | Later | Özel Alanlar and Ürün Özelleştirmesi tabs |
 | Slug changes | Old URL **redirects** to the new one (Mert had no preference; this is my default) |
 
@@ -70,6 +73,7 @@ Rules for the whole effort:
 | `TrPanelCreatableSelect` | Marka, Etiket | type a value or pick one already used in the boutique |
 | `TrPanelCategoryPicker` | product editor | multi-select tree with a primary marker, `⋯` menu (make primary / remove), "Kategorileri Düzenle" |
 | `TrPanelPopover` | done | filters and menus |
+| `TrPanelDrawer` | Varyant türü oluştur/düzenle, inline "yeni marka/etiket/kategori/…" from any editor, later Özel Alan, Ürün Birimi | right-side slide-over: title + close, scrolling body, sticky footer with Vazgeç / Kaydet. Dims the page, closes on Esc and backdrop click, traps focus, returns focus to the trigger, asks before discarding edits. Full-screen on phones. Stacks above the editor top bar and below the leave-guard dialog |
 
 **Save model.** Basit/Gelişmiş use an explicit **Kaydet** (with the existing leave guard), like ikas. The fashion editor keeps autosave. Reason: a slug edit must not autosave on every keystroke and create redirects.
 
@@ -115,7 +119,7 @@ tr_product_categories (product_id, category_id, is_primary,
                        partial unique (product_id) where is_primary)
 ```
 
-- `sort_criterion` values seen in ikas: `best_selling`, `discount_desc`, `discount_asc`, `price_desc`, `price_asc`, `newest` (list scrolls; **confirm whether more exist**, likely `oldest`). "En çok satanlar" needs sales counts from `tr_order_items` (grouped query, cached).
+- `sort_criterion` has exactly six values (confirmed by Mert): `best_selling`, `discount_desc`, `discount_asc`, `price_desc`, `price_asc`, `newest`; null = the store's default order. "En çok satanlar" needs sales counts from `tr_order_items` (grouped query, cached).
 - **`tr_products.category` stays** as a copy of the primary category's slug, written in one place, so filters, the feed and the ~14 storefront files keep working during the switch.
 - **Rules:** unlimited depth, no cycles (server check), deleting a category moves its children up one level and unassigns products; if a product's primary is removed, the next category becomes primary (or none).
 - **Seed and backfill (SQL patch):** every boutique with `catalog_profile = 'fashion'` gets the current code tree as its categories (slug = existing id, so `elbise`, `pantolon`… match), and every product with a `category` gets one primary row. Style variants (`kase-kaban`, `kot-pantolon`, …) are seeded too and marked hidden from the menu so old products keep matching.
@@ -128,9 +132,63 @@ tr_product_categories (product_id, category_id, is_primary,
 - `/kategoriler/yeni` and `/kategoriler/[id]`: editor with Temel bilgi (ad, ebeveyn, açıklama, görsel), Ürünler (sıralama ölçütü), SEO.
 - Ürünler list bulk bar: "Kategori ekle" (adds; sets primary only when the product has none).
 
-## 8. Gelişmiş ürün (variants) — deferred
+## 8. Gelişmiş ürün — variants (proposal)
 
-= Basit + **Varyant** card. Price, SKU, barcode, stock (and images) become per-variant rows. This is the largest foundation: cart lines, checkout re-pricing, stock decrement and `tr_order_items` know only `size` today, and fashion's size-and-stock model is effectively a one-option variant system. **No design until Mert sends the variant UI**; then decide whether fashion migrates onto the new variant model (not now).
+Gelişmiş = Basit + a **Varyant** card. Mert couldn't work out from ikas how a variant actually gets created, so this is the system I propose: the standard two-step model (define an option once, then combine its values per product), built on the shared drawer.
+
+### 8.1 Three concepts
+
+1. **Varyant türü** (option type), defined **once per boutique** under Tanımlamalar → *Varyant Türleri*: a name (Renk, Beden, Boyut…), a **selection style** (*Liste* = text chips such as S / M / L; *Renk / Görsel* = swatches, each value with a color and/or an image) and an ordered list of values. This is the "Varyant Türü Oluştur" drawer in Mert's last screenshot.
+2. **Product options.** A Gelişmiş product picks which types it uses (max **3**) and which values of each apply (a subset, e.g. Renk: Kırmızı, Mavi; Beden: S, M, L).
+3. **Variants.** One sellable row per combination of the chosen values (Kırmızı / S, Kırmızı / M, …). Each row has: active toggle, SKU, barkod, **price** (blank = inherits the product's price), **stock**, and images (a subset of the product's media). Max **100** rows per product.
+
+### 8.2 The creation flow
+
+1. On the product, the Varyant card starts empty ("Henüz bir varyant eklemediniz") with **Varyant Ekle**.
+2. **Varyant Ekle opens the drawer.** Step 1: tick the variant types to use, from the boutique's list. If the type doesn't exist yet, **Yeni varyant türü** opens the same drawer form as the Varyant Türleri page, so a type can be created without leaving the product.
+3. Step 2, per chosen type: pick values (chips from that type's list; **+ yeni değer** adds one to the type's list on the spot).
+4. **Kaydet** generates every combination as a row in the card's table. The card then shows the option summary (Renk: Kırmızı, Mavi · Beden: S, M, L) and an editable table: Varyant, SKU, Barkod, Fiyat, Stok, Aktif.
+5. **Toplu düzenle** sets price / stock for all rows, or for every row of one value ("all Kırmızı"). Adding or removing a value later regenerates rows: rows for surviving combinations **keep their data**, new combinations arrive blank, removed ones are dropped after a confirm.
+6. Rules: with **zero** variants a Gelişmiş product sells exactly like a Basit one (product-level price, SKU, stock). Once variants exist, the product-level SKU / barkod / Stok inputs are replaced by the table, and the product price becomes the default that rows inherit.
+
+The Varyant Türleri page mirrors the Kategoriler pattern: list (Ad, Seçim stili, Varyantlar, kullanan ürün sayısı), "Varyant Türü Ekle" opens the drawer, a row click opens it in edit mode, empty state as in ikas. It becomes the second card on the Tanımlamalar hub (it is "needed" now, per Mert's add-when-needed rule). A type in use by products can't be deleted; renaming a value updates it everywhere.
+
+### 8.3 Data model (sketch, additive)
+
+```sql
+tr_variant_types        (id, boutique_id, name, selection_style 'list'|'swatch', sort_order,
+                         unique (boutique_id, lower(name)))
+tr_variant_type_values  (id, type_id, label, hex null, image_url null, sort_order,
+                         unique (type_id, lower(label)))
+tr_product_options      (product_id, type_id, sort_order, primary key (product_id, type_id))
+tr_product_variants     (id, product_id, option_value_ids uuid[],   -- ordered like the options
+                         sku, barcode, price_kurus null, compare_at_price_kurus null,
+                         stock int not null default 0, images jsonb, active bool, sort_order,
+                         unique (product_id, option_value_ids))
+tr_order_items          + variant_id uuid null, variant_label text null   -- snapshot at purchase
+```
+
+- Fashion boutiques are **seeded** with two types from what they already keep: `tr_boutiques.size_presets` → **Beden** (list) and `color_presets` → **Renk** (swatch, with the stored hex). Nothing is lost; the panel's existing chips and the new types describe the same values.
+- Variants are public-readable like their product (price, stock). Per-variant cost stays in the private table.
+- `tr_products.stock` stays as the **sum** of active variant stock, so lists, the feed and "sold out" status keep working.
+
+### 8.4 What changes downstream (the real cost)
+
+| Area | Today | With variants |
+|---|---|---|
+| Cart (local store) | line key = (productId, size) | (productId, variantId or size); legacy size lines keep working |
+| Checkout (`checkoutValidate.ts`) | validates size against `sizes`, prices from the product | validates variantId, prices from the variant (falls back to the product price), still re-quotes server-side |
+| Inventory (`commerce/inventory.ts`) | per-size map on the product | conditional decrement on the variant row, product stock recomputed; the "keep selling" flag applies |
+| Order items | `size` text | + `variant_id`, `variant_label`; order, email and panel screens show the label |
+| Product page | size picker | one selector per option: chips for *Liste*, swatches for *Renk / Görsel*; unavailable combinations disabled; price, stock and images follow the chosen variant |
+| Google feed | one item per product | one item per variant with `item_group_id` (+ color/size where the type is Renk/Beden) |
+| Panel Stok page | per-size table | rows per variant |
+
+About 25 storefront/checkout files touch `size` today, so this is its own milestone (M7c), started only once a real Gelişmiş product exists. Checkout is currently limited to quantity 1 per line ("adet şu an 1 ile sınırlı"); variants don't change that.
+
+### 8.5 Fashion and custom_art: coexist first (recommended)
+
+Fashion keeps its size-with-stock model and its color-group linking (separate products per color, with their own packshots) **unchanged**. `custom_art` also reuses sizes ("boyut") and colors ("stil") as its options. Gelişmiş is a *separate* mechanism at first, and the storefront supports both (a cart line has either a legacy size or a variant id). Moving fashion's sizes onto a **Beden** variant type later is mechanical but touches the wizard, size charts and the size picker; it is a separate, optional project to decide once Gelişmiş is proven. It is **not** part of this plan.
 
 ## 9. Build order (each milestone is testable in the panel)
 
@@ -142,7 +200,9 @@ tr_product_categories (product_id, category_id, is_primary,
 | M4 | Detay + Envanter | Marka/Etiket/Google kategorisi/Tedarikçi, rich text (editor + sanitizer + product page section), SKU/barkod/desi/HS kodu, continue-selling wiring, feed fields | patch 4 (if not folded into 1) |
 | M5 | Fashion re-home | moda chooser, `tek-parca` route for today's wizard, nav/route patterns | – |
 | M6 | Media v2 | video + HEIC (client-side HEIC conversion; direct-to-storage upload for video because of request-size limits) | storage policy |
-| M7 | Gelişmiş | variants, after screenshots | TBD |
+| M7a | Drawer + Varyant Türleri | `TrPanelDrawer`, Tanımlamalar card + Varyant Türleri page, seed Beden/Renk from the boutique presets | `tr_variant_types`, `tr_variant_type_values` |
+| M7b | Gelişmiş editor | Varyant card (Varyant Ekle drawer, combinations table, toplu düzenle); zero variants behaves like Basit | `tr_product_options`, `tr_product_variants` |
+| M7c | Variants in the shop | cart, checkout, inventory, order items, product-page selectors, feed, Stok page | `tr_order_items.variant_id` / `variant_label` |
 
 Every milestone: unit tests for the pure logic (registry per profile, route patterns, slug/redirect rules, category tree rules, payload building), `tsc` + lint + build, lilabutik regression check (product URLs, prices, checkout unchanged), and an update to `agent-handoffs/05-owner-panel-commerce.md`.
 
@@ -165,6 +225,5 @@ Every milestone: unit tests for the pure logic (registry per profile, route patt
 
 ## 12. Still open
 
-- The full **Sıralama ölçütü** list (is there anything below "Yeniden Eskiye"?).
-- The **variant UI** (blocks M7).
+- **Variant defaults to confirm:** max 3 option types and 100 variants per product; a variant's price is optional and inherits the product price; fashion and custom_art coexist with Gelişmiş for now (§8.5).
 - Category picker details if they differ from §5 (the `⋯` menu items were only inferred from the "Ana Kategori" badge).
