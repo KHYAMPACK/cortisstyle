@@ -4,7 +4,7 @@ import {
   isTrCheckoutSandboxMode,
   isTrIyzicoCaptureEnabled,
 } from "@/lib/tr/checkoutMode";
-import { isTrDemoProductId } from "@/lib/tr/looks/demoCatalog";
+import { isTrDemoProductId } from "@/lib/tr/demoIds";
 
 interface TrSandboxBannerProps {
   className?: string;
@@ -57,9 +57,5 @@ export function TrSandboxBanner({
 export function cartHasDemoItems(
   items: Array<{ productId: string }>,
 ): boolean {
-  return items.some(
-    (item) =>
-      isTrDemoProductId(item.productId) ||
-      item.productId.startsWith("demo-wl-"),
-  );
+  return items.some((item) => isTrDemoProductId(item.productId));
 }

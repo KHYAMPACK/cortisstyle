@@ -3,7 +3,7 @@
 import { Heart } from "lucide-react";
 import { useState, type MouseEvent } from "react";
 import { useTrScopedFavorites } from "@/components/tr/boutique/TrBoutiqueCommerceScope";
-import { favoriteSnapshotFromProduct } from "@/store/trFavoritesStore";
+import { favoriteSnapshotFromProduct } from "@/store/trBoutiqueLocalFavoritesStore";
 import type { TrProduct, TrProductWithBoutique } from "@/types/tr-marketplace";
 
 interface TrFavoriteButtonProps {

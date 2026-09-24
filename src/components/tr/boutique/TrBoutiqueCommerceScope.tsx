@@ -12,15 +12,7 @@ import { useStore } from "zustand";
 import { useTrPersistedHydration } from "@/lib/tr/useTrPersistedHydration";
 import { getTrBoutiqueLocalCartStore } from "@/store/trBoutiqueLocalCartStore";
 import { getTrBoutiqueLocalFavoritesStore } from "@/store/trBoutiqueLocalFavoritesStore";
-import {
-  selectFavoriteCount,
-  useTrFavoritesStore,
-  type TrFavoriteItem,
-} from "@/store/trFavoritesStore";
-import {
-  selectCartItemCount,
-  useTrCartStore,
-} from "@/store/trCartStore";
+import type { TrFavoriteItem } from "@/store/trBoutiqueLocalFavoritesStore";
 import { sameCartLine, type TrCartLineItem } from "@/types/tr-cart";
 
 export type TrBoutiqueCommercePanel =
@@ -42,9 +34,6 @@ interface TrBoutiqueCommerceScopeValue {
 
 const TrBoutiqueCommerceScopeContext =
   createContext<TrBoutiqueCommerceScopeValue | null>(null);
-
-/** Stable unused slug so hooks always subscribe to a store instance. */
-const UNUSED_SLUG = "__tr-boutique-commerce-unused__";
 
 interface TrBoutiqueCommerceScopeProviderProps {
   boutiqueSlug: string;
@@ -88,10 +77,7 @@ export function TrBoutiqueCommerceScopeProvider({
   );
 }
 
-export function useTrBoutiqueCommerceScopeOptional(): TrBoutiqueCommerceScopeValue | null {
-  return useContext(TrBoutiqueCommerceScopeContext);
-}
-
+/** Every boutique route renders inside TrBoutiqueCommerceScopeProvider (see TrBoutiqueEditorialShell). */
 export function useTrBoutiqueCommerceScope(): TrBoutiqueCommerceScopeValue {
   const context = useContext(TrBoutiqueCommerceScopeContext);
   if (!context) {
@@ -102,114 +88,61 @@ export function useTrBoutiqueCommerceScope(): TrBoutiqueCommerceScopeValue {
   return context;
 }
 
-/**
- * Cart API: boutique-local when inside editorial commerce scope,
- * otherwise the marketplace multi-tenant cart (unchanged).
- */
+/** Boutique-local cart, scoped to the current storefront. */
 export function useTrScopedCart() {
-  const scope = useTrBoutiqueCommerceScopeOptional();
-  const localSlug = scope?.boutiqueSlug ?? UNUSED_SLUG;
+  const scope = useTrBoutiqueCommerceScope();
   const localStore = useMemo(
-    () => getTrBoutiqueLocalCartStore(localSlug),
-    [localSlug],
+    () => getTrBoutiqueLocalCartStore(scope.boutiqueSlug),
+    [scope.boutiqueSlug],
   );
 
-  const globalItems = useTrCartStore((state) => state.items);
-  const globalAdd = useTrCartStore((state) => state.addItem);
-  const globalRemove = useTrCartStore((state) => state.removeItem);
-  const globalClear = useTrCartStore((state) => state.clearCart);
-  const globalCount = useTrCartStore(selectCartItemCount);
-  const globalHydrated = useTrPersistedHydration(useTrCartStore.persist);
-
-  const localItems = useStore(localStore, (state) => state.items);
-  const localAdd = useStore(localStore, (state) => state.addItem);
-  const localRemove = useStore(localStore, (state) => state.removeItem);
-  const localClear = useStore(localStore, (state) => state.clearCart);
-  const localCount = useStore(localStore, (state) => state.items.length);
-  const localHydrated = useTrPersistedHydration(localStore.persist);
-
-  if (scope) {
-    return {
-      scoped: true as const,
-      boutiqueSlug: scope.boutiqueSlug,
-      items: localItems,
-      addItem: localAdd as (item: TrCartLineItem) => boolean,
-      removeItem: localRemove,
-      clearCart: localClear,
-      itemCount: localCount,
-      hydrated: localHydrated,
-      hasItem: (productId: string, size?: string | null) =>
-        localItems.some((entry) => {
-          if (size === undefined) return entry.productId === productId;
-          return sameCartLine(entry, { productId, size });
-        }),
-    };
-  }
+  const items = useStore(localStore, (state) => state.items);
+  const addItem = useStore(localStore, (state) => state.addItem);
+  const removeItem = useStore(localStore, (state) => state.removeItem);
+  const clearCart = useStore(localStore, (state) => state.clearCart);
+  const itemCount = useStore(localStore, (state) => state.items.length);
+  const hydrated = useTrPersistedHydration(localStore.persist);
 
   return {
-    scoped: false as const,
-    boutiqueSlug: null as string | null,
-    items: globalItems,
-    addItem: globalAdd,
-    removeItem: globalRemove,
-    clearCart: globalClear,
-    itemCount: globalCount,
-    hydrated: globalHydrated,
+    scoped: true as const,
+    boutiqueSlug: scope.boutiqueSlug,
+    items,
+    addItem: addItem as (item: TrCartLineItem) => boolean,
+    removeItem,
+    clearCart,
+    itemCount,
+    hydrated,
     hasItem: (productId: string, size?: string | null) =>
-      globalItems.some((entry) => {
+      items.some((entry) => {
         if (size === undefined) return entry.productId === productId;
         return sameCartLine(entry, { productId, size });
       }),
   };
 }
 
-/**
- * Favorites API: boutique-local when inside editorial commerce scope,
- * otherwise marketplace favorites (unchanged).
- */
+/** Boutique-local favorites, scoped to the current storefront. */
 export function useTrScopedFavorites() {
-  const scope = useTrBoutiqueCommerceScopeOptional();
-  const localSlug = scope?.boutiqueSlug ?? UNUSED_SLUG;
+  const scope = useTrBoutiqueCommerceScope();
   const localStore = useMemo(
-    () => getTrBoutiqueLocalFavoritesStore(localSlug),
-    [localSlug],
+    () => getTrBoutiqueLocalFavoritesStore(scope.boutiqueSlug),
+    [scope.boutiqueSlug],
   );
 
-  const globalItems = useTrFavoritesStore((state) => state.items);
-  const globalToggle = useTrFavoritesStore((state) => state.toggleItem);
-  const globalRemove = useTrFavoritesStore((state) => state.removeItem);
-  const globalCount = useTrFavoritesStore(selectFavoriteCount);
-  const globalHydrated = useTrPersistedHydration(useTrFavoritesStore.persist);
-
-  const localItems = useStore(localStore, (state) => state.items);
-  const localToggle = useStore(localStore, (state) => state.toggleItem);
-  const localRemove = useStore(localStore, (state) => state.removeItem);
-  const localCount = useStore(localStore, (state) => state.items.length);
-  const localHydrated = useTrPersistedHydration(localStore.persist);
-
-  if (scope) {
-    return {
-      scoped: true as const,
-      boutiqueSlug: scope.boutiqueSlug,
-      items: localItems,
-      toggleItem: localToggle as (item: TrFavoriteItem) => void,
-      removeItem: localRemove,
-      itemCount: localCount,
-      hydrated: localHydrated,
-      hasItem: (productId: string) =>
-        localItems.some((entry) => entry.productId === productId),
-    };
-  }
+  const items = useStore(localStore, (state) => state.items);
+  const toggleItem = useStore(localStore, (state) => state.toggleItem);
+  const removeItem = useStore(localStore, (state) => state.removeItem);
+  const itemCount = useStore(localStore, (state) => state.items.length);
+  const hydrated = useTrPersistedHydration(localStore.persist);
 
   return {
-    scoped: false as const,
-    boutiqueSlug: null as string | null,
-    items: globalItems,
-    toggleItem: globalToggle,
-    removeItem: globalRemove,
-    itemCount: globalCount,
-    hydrated: globalHydrated,
+    scoped: true as const,
+    boutiqueSlug: scope.boutiqueSlug,
+    items,
+    toggleItem: toggleItem as (item: TrFavoriteItem) => void,
+    removeItem,
+    itemCount,
+    hydrated,
     hasItem: (productId: string) =>
-      globalItems.some((entry) => entry.productId === productId),
+      items.some((entry) => entry.productId === productId),
   };
 }

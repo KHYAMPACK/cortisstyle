@@ -1,8 +1,8 @@
 import { normalizeBoutiqueHost } from "@/lib/tr/customDomain";
 
 const DEFAULT_SITE_URL = "https://www.cortisstyle.com";
-/** Default post-auth landing for the Turkey-first product. */
-export const DEFAULT_AUTH_NEXT_PATH = "/tr";
+/** Default post-auth landing when no boutique-scoped `next` is known. */
+export const DEFAULT_AUTH_NEXT_PATH = "/";
 
 export function getSiteUrl(): string {
   if (process.env.NEXT_PUBLIC_SITE_URL) {
@@ -53,7 +53,7 @@ function normalizePublicHost(raw?: string | null): string | null {
   return value.replace(/^https?:\/\//, "").replace(/\/$/, "").replace(/:\d+$/, "");
 }
 
-/** Supabase magic-link return URL — validates session then routes to `/tr`. */
+/** Supabase magic-link return URL — validates session then routes to `DEFAULT_AUTH_NEXT_PATH`. */
 export function getMagicLinkRedirectUrl(): string {
   const next = encodeURIComponent(DEFAULT_AUTH_NEXT_PATH);
   return `${getSiteUrl()}/auth/callback?next=${next}`;

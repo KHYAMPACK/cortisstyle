@@ -226,7 +226,6 @@ export function TrProductDetailPanel({
           <TrProductColorSiblings
             product={product}
             siblings={colorSiblings}
-            surface="boutique"
             fromCadde={entry === "cadde"}
             accentColor={accent}
           />

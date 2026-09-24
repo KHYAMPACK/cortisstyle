@@ -219,7 +219,7 @@ export default function ResetPasswordPage() {
             {isComplete
               ? boutiqueFlow
                 ? `${brandTitle ?? "Mağaza"} girişine yönlendiriliyorsunuz…`
-                : "Redirecting you to Cadde..."
+                : "Redirecting you..."
               : boutiqueFlow
                 ? "Yeni şifreniz bu platformdaki tüm mağazalarda geçerlidir."
                 : "Choose a new curator password for your archive profile."}

@@ -13,8 +13,6 @@ import {
   trBoutiquePath,
   trBoutiqueProductPath,
   trBoutiqueProductsPath,
-  trHomePath,
-  trKombinlerPath,
 } from "@/lib/tr/paths";
 
 export type SeoHostContext =
@@ -136,8 +134,7 @@ export function platformMarketingPaths(): Array<{
   priority: number;
 }> {
   return [
-    { path: trHomePath(), changeFrequency: "daily", priority: 1 },
-    { path: trKombinlerPath(), changeFrequency: "daily", priority: 0.8 },
+    { path: "/", changeFrequency: "daily", priority: 1 },
     { path: "/privacy", changeFrequency: "monthly", priority: 0.4 },
     { path: "/terms", changeFrequency: "monthly", priority: 0.4 },
   ];

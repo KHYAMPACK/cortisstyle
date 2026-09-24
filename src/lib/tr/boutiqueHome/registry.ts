@@ -1,11 +1,14 @@
 import type { TrBoutiqueHomeLayoutId } from "@/lib/tr/boutiqueHome/types";
 
-const DEFAULT_LAYOUT: TrBoutiqueHomeLayoutId = "default";
-
-/** Storefront template — DB `home_layout` column is the source of truth. */
+/**
+ * Every boutique renders through the editorial shell now — the "default"
+ * (Cadde-chrome) layout was retired along with the Cadde marketplace itself.
+ * Kept as a function (not inlined at call sites) so the ~9 callers across
+ * boutique routes don't need touching if a real second layout ever returns.
+ */
 export function resolveBoutiqueHomeLayout(
-  _boutiqueSlug: string,
-  homeLayout?: "default" | "editorial" | null,
+  _boutiqueSlug?: string,
+  _homeLayout?: "default" | "editorial" | null,
 ): TrBoutiqueHomeLayoutId {
-  return homeLayout === "editorial" ? "editorial" : DEFAULT_LAYOUT;
+  return "editorial";
 }

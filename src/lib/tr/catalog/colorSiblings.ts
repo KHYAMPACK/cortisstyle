@@ -4,7 +4,6 @@ import type {
   TrProduct,
   TrProductColor,
   TrProductFeatures,
-  TrProductWithBoutique,
 } from "@/types/tr-marketplace";
 
 /** Upload session: primary + this many extras. */
@@ -300,19 +299,3 @@ export function excludeColorSiblingIds(
   return [product.id];
 }
 
-export function siblingProductHref(input: {
-  sibling: Pick<TrProductWithBoutique, "id" | "boutique">;
-  boutiqueSlug?: string;
-  fromCadde?: boolean;
-  surface: "boutique" | "cadde";
-}): { pathname: string; fromCadde?: boolean } {
-  if (input.surface === "cadde") {
-    return { pathname: `/tr/parca/${encodeURIComponent(input.sibling.id)}` };
-  }
-  const slug =
-    input.boutiqueSlug?.trim() || input.sibling.boutique.slug.trim();
-  return {
-    pathname: `/tr/${encodeURIComponent(slug)}/urun/${encodeURIComponent(input.sibling.id)}`,
-    fromCadde: input.fromCadde,
-  };
-}

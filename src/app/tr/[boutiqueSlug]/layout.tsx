@@ -1,27 +1,21 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
-import { TrBoutiqueBrandedShell } from "@/components/tr/boutique/TrBoutiqueBrandedShell";
 import { TrBoutiqueEditorialShell } from "@/components/tr/boutique/editorial/TrBoutiqueEditorialShell";
 import { TrIyzicoBuyerProtection } from "@/components/tr/commerce/TrIyzicoBuyerProtection";
-import { TrMarketplaceChrome } from "@/components/tr/TrMarketplaceChrome";
 import { getIyzicoBuyerProtection } from "@/lib/tr/payments/registry";
 import {
-  hasBoutiqueBrand,
   resolveBoutiqueBrandLabel,
   resolveBoutiqueDocumentDescription,
   resolveBoutiqueDocumentTitle,
   resolveBoutiqueFaviconUrl,
 } from "@/lib/tr/boutiqueBrand";
-import { resolveBoutiqueHomeLayout } from "@/lib/tr/boutiqueHome";
 import { BOUTIQUE_SLUG_HEADER } from "@/lib/introLoader";
-import { withEditorialDemoProducts } from "@/lib/tr/looks/editorialDemoProducts";
 import {
   safeGetBoutiqueStorefront,
   safeGetPublicBoutique,
 } from "@/lib/tr/publicData";
 import { siteLegal } from "@/lib/siteLegal";
-import { resolveStorefrontTheme } from "@/lib/tr/storefrontTheme";
 import { normalizeBoutiqueHost } from "@/lib/tr/customDomain";
 import { trBoutiquePath } from "@/lib/tr/paths";
 
@@ -149,38 +143,15 @@ export default async function BoutiqueLayout({
     notFound();
   }
 
-  const homeLayout = resolveBoutiqueHomeLayout(
-    boutiqueSlug,
-    boutique.homeLayout,
+  const storefront = await safeGetBoutiqueStorefront(boutiqueSlug);
+  const shell = (
+    <TrBoutiqueEditorialShell
+      boutique={boutique}
+      products={storefront?.products ?? []}
+    >
+      {children}
+    </TrBoutiqueEditorialShell>
   );
-  const theme = resolveStorefrontTheme(boutiqueSlug, boutique.homeLayout);
-
-  let shell: React.ReactNode;
-
-  if (theme === "editorial" || homeLayout === "editorial") {
-    const storefront = await safeGetBoutiqueStorefront(boutiqueSlug);
-    const products = withEditorialDemoProducts(
-      boutique,
-      storefront?.products ?? [],
-    );
-    shell = (
-      <TrBoutiqueEditorialShell boutique={boutique} products={products}>
-        {children}
-      </TrBoutiqueEditorialShell>
-    );
-  } else if (hasBoutiqueBrand(boutique)) {
-    const storefront = await safeGetBoutiqueStorefront(boutiqueSlug);
-    shell = (
-      <TrBoutiqueBrandedShell
-        boutique={boutique}
-        products={storefront?.products ?? []}
-      >
-        {children}
-      </TrBoutiqueBrandedShell>
-    );
-  } else {
-    shell = <TrMarketplaceChrome>{children}</TrMarketplaceChrome>;
-  }
 
   const buyerProtection = await getIyzicoBuyerProtection(boutique.slug);
 

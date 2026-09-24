@@ -1,6 +1,5 @@
 import { resolveBoutiqueHomeLayout } from "@/lib/tr/boutiqueHome";
 import type { TrBoutiqueHomeLayoutId } from "@/lib/tr/boutiqueHome/types";
-import { isTrDemoProduct } from "@/lib/tr/looks/demoCatalog";
 import { isTrCheckoutEnabled } from "@/lib/tr/platform";
 
 /** True when product should use Sepete ekle / local checkout (not WhatsApp-only). */
@@ -12,7 +11,6 @@ export function isProductCartCheckoutEnabled(product: {
   };
 }): boolean {
   if (isTrCheckoutEnabled()) return true;
-  if (isTrDemoProduct(product)) return true;
   const layout = product.boutique.homeLayout;
   const normalized =
     layout === "editorial" || layout === "default" ? layout : null;

@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { TrBoutiqueCartPageContent } from "@/components/tr/boutique/editorial/TrBoutiqueCartPageContent";
-import { resolveBoutiqueHomeLayout } from "@/lib/tr/boutiqueHome";
-import { withEditorialDemoProducts } from "@/lib/tr/looks/editorialDemoProducts";
 import { boutiqueOffersIyzicoCheckout } from "@/lib/tr/payments/registry";
 import { safeGetBoutiqueStorefront } from "@/lib/tr/publicData";
 import type { TrProductWithBoutique } from "@/types/tr-marketplace";
@@ -37,18 +35,12 @@ export default async function BoutiqueCartPage({
     notFound();
   }
 
-  if (
-    resolveBoutiqueHomeLayout(boutiqueSlug, storefront.homeLayout) !==
-    "editorial"
-  ) {
-    notFound();
-  }
-
-  const products = withEditorialDemoProducts(storefront, storefront.products);
-  const catalog: TrProductWithBoutique[] = products.map((product) => ({
-    ...product,
-    boutique: storefront,
-  }));
+  const catalog: TrProductWithBoutique[] = storefront.products.map(
+    (product) => ({
+      ...product,
+      boutique: storefront,
+    }),
+  );
   const iyzicoCheckout = await boutiqueOffersIyzicoCheckout(storefront.slug);
 
   return (

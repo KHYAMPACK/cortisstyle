@@ -18,7 +18,7 @@ export function Providers({
   boutiqueSlug?: string | null;
 }) {
   const pathname = usePathname();
-  const showIntroLoader = shouldMountIntroLoader(pathname, boutiqueSlug);
+  const showIntroLoader = shouldMountIntroLoader(pathname);
 
   useEffect(() => {
     if (showIntroLoader) return;

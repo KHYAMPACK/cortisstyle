@@ -61,7 +61,6 @@ import {
 } from "@/lib/tr/paths";
 import { getTrUserFirstName } from "@/lib/tr/userDisplayName";
 import { getTrBoutiqueLocalCartStore } from "@/store/trBoutiqueLocalCartStore";
-import { useTrCartStore } from "@/store/trCartStore";
 import {
   cartLineKey,
   cartTotalKurus,
@@ -128,8 +127,6 @@ function useCheckoutCart(boutiqueSlug: string | null): {
   clearCheckedOut: () => void;
   hydrated: boolean;
 } {
-  const globalItems = useTrCartStore((state) => state.items);
-  const clearGlobal = useTrCartStore((state) => state.clearCart);
   const [localItems, setLocalItems] = useState<TrCartLineItem[]>([]);
   const [selectedKeys, setSelectedKeys] = useState<string[] | null>(null);
   const [hydrated, setHydrated] = useState(!boutiqueSlug);
@@ -178,9 +175,9 @@ function useCheckoutCart(boutiqueSlug: string | null): {
   }
 
   return {
-    items: globalItems,
-    allItems: globalItems,
-    clearCheckedOut: clearGlobal,
+    items: [],
+    allItems: [],
+    clearCheckedOut: () => {},
     hydrated: true,
   };
 }

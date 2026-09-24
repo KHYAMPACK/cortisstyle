@@ -45,7 +45,7 @@ function AuthCallbackContent() {
 
   useEffect(() => {
     if (!isSupabaseConfigured()) {
-      router.replace("/tr");
+      router.replace(DEFAULT_AUTH_NEXT_PATH);
       return;
     }
 
@@ -64,7 +64,7 @@ function AuthCallbackContent() {
       ? nextPath
       : nextPath.includes("/giris")
         ? nextPath
-        : "/tr";
+        : DEFAULT_AUTH_NEXT_PATH;
 
     if (authError) {
       router.replace(

@@ -58,10 +58,10 @@ export function LegalPageShell({
     <div className="min-h-full bg-ice-floor text-jet-black">
       <header className="border-b border-blueprint-border px-5 py-6 md:px-10">
         <Link
-          href="/tr"
+          href="/"
           className="text-meta text-[9px] tracking-[0.35em] uppercase transition-colors hover:text-jet-black"
         >
-          ← Cadde
+          ← Ana sayfa
         </Link>
       </header>
 

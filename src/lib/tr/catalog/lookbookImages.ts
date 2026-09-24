@@ -2,7 +2,6 @@ export {
   isLookbookPieceImage,
   resolveTrProductImages,
   withLookbookPieceImages,
-  TR_LOOKBOOK_LOOK_COVERS,
   TR_LOOKBOOK_PIECE_IMAGES,
 } from "@/data/tr/lookbookPieceImages";
 

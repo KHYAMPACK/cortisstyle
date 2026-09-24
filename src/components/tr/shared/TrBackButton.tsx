@@ -1,15 +1,10 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   useTransition,
   type ReactNode,
 } from "react";
-import { useCaddePageTransition } from "@/components/tr/marketplace/CaddePageTransition";
-import {
-  shouldPlayCaddeBackTransition,
-  shouldPlayCaddePageTransition,
-} from "@/lib/platform/caddeTransition";
 import { trCanGoBack, writeTrScroll } from "@/lib/tr/scrollMemory";
 
 interface TrBackButtonProps {
@@ -29,9 +24,7 @@ export function TrBackButton({
   children = "← Geri",
 }: TrBackButtonProps) {
   const router = useRouter();
-  const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
-  const caddeTransition = useCaddePageTransition();
 
   const handleClick = () => {
     writeTrScroll(
@@ -40,17 +33,6 @@ export function TrBackButton({
     );
 
     const canBack = trCanGoBack() && window.history.length > 1;
-    if (caddeTransition) {
-      if (canBack && shouldPlayCaddeBackTransition(pathname)) {
-        caddeTransition.goBack();
-        return;
-      }
-      if (!canBack && shouldPlayCaddePageTransition(pathname, fallbackHref)) {
-        caddeTransition.go(fallbackHref);
-        return;
-      }
-    }
-
     startTransition(() => {
       if (canBack) {
         router.back();

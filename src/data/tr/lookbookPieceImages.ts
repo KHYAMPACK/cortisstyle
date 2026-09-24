@@ -6,14 +6,6 @@ import { isTrAssetUrl, isTrMarketplaceAssetUrl } from "@/lib/tr/trAssetUrls";
  */
 export const TR_LOOKBOOK_PIECE_IMAGES: readonly string[] = [];
 
-/** Editorial full-look covers (model / OOTD frames) for TR kombin cards. */
-export const TR_LOOKBOOK_LOOK_COVERS = [
-  "/images/clothes/outfit-07/ootd281.png",
-  "/images/clothes/outfit-06/ootd266.png",
-  "/images/clothes/outfit-03/ootd237.png",
-  "/images/clothes/outfit-010efe85/hero.png",
-] as const;
-
 export function isLookbookPieceImage(src: string | null | undefined): boolean {
   if (!src) return false;
   return src.startsWith("/images/clothes/");

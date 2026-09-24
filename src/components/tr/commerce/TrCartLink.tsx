@@ -2,17 +2,16 @@
 
 import { ShoppingBag } from "lucide-react";
 import {
-  useTrBoutiqueCommerceScopeOptional,
+  useTrBoutiqueCommerceScope,
   useTrScopedCart,
 } from "@/components/tr/boutique/TrBoutiqueCommerceScope";
 import { TrBoutiquePendingLink } from "@/components/tr/boutique/editorial/TrBoutiqueNavPending";
-import { TrSoftNavLink } from "@/components/tr/TrSoftNavLink";
-import { trBoutiqueCartPath, trCartPath } from "@/lib/tr/paths";
+import { trBoutiqueCartPath } from "@/lib/tr/paths";
 
 type TrCartLinkSize = "md" | "lg";
 
 export function TrCartLink({ size = "md" }: { size?: TrCartLinkSize }) {
-  const scope = useTrBoutiqueCommerceScopeOptional();
+  const scope = useTrBoutiqueCommerceScope();
   const cart = useTrScopedCart();
   const displayCount = cart.hydrated ? cart.itemCount : 0;
 
@@ -30,9 +29,7 @@ export function TrCartLink({ size = "md" }: { size?: TrCartLinkSize }) {
   const badge =
     displayCount > 0 ? (
       <span
-        className={`absolute flex min-w-4 items-center justify-center px-1 text-white ${
-          scope ? "bg-brand-primary" : "bg-neutral-900"
-        } ${
+        className={`absolute flex min-w-4 items-center justify-center bg-brand-primary px-1 text-white ${
           size === "lg"
             ? "top-0.5 right-0.5 h-5 min-w-5 text-[10px]"
             : "-top-0.5 -right-0.5 h-4 text-[9px]"
@@ -42,33 +39,17 @@ export function TrCartLink({ size = "md" }: { size?: TrCartLinkSize }) {
       </span>
     ) : null;
 
-  const href = scope
-    ? trBoutiqueCartPath(scope.boutiqueSlug)
-    : trCartPath();
-
-  const content = (
-    <>
-      <ShoppingBag strokeWidth={1.5} className={iconClass} />
-      {badge}
-    </>
-  );
-
-  if (scope) {
-    return (
-      <TrBoutiquePendingLink
-        href={href}
-        kind="cart"
-        className={className}
-        aria-label={label}
-      >
-        {content}
-      </TrBoutiquePendingLink>
-    );
-  }
+  const href = trBoutiqueCartPath(scope.boutiqueSlug);
 
   return (
-    <TrSoftNavLink href={href} className={className} aria-label={label}>
-      {content}
-    </TrSoftNavLink>
+    <TrBoutiquePendingLink
+      href={href}
+      kind="cart"
+      className={className}
+      aria-label={label}
+    >
+      <ShoppingBag strokeWidth={1.5} className={iconClass} />
+      {badge}
+    </TrBoutiquePendingLink>
   );
 }

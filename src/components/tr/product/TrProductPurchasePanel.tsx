@@ -3,7 +3,7 @@ import { TrPurchaseActions } from "@/components/tr/TrPurchaseActions";
 import { TrSandboxBanner } from "@/components/tr/TrSandboxBanner";
 import { TrWhatsAppOrderButton } from "@/components/tr/TrWhatsAppOrderButton";
 import { isProductCartCheckoutEnabled } from "@/lib/tr/cartCheckout";
-import { isTrDemoProduct } from "@/lib/tr/looks/demoCatalog";
+import { isTrDemoProduct } from "@/lib/tr/demoIds";
 import { getProductCoverImageFor } from "@/lib/tr/productImages";
 import {
   buildProductOrderMessage,

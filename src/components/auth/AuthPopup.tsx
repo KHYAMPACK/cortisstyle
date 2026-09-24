@@ -8,6 +8,7 @@ import { createPortal } from "react-dom";
 import { BrandLogo } from "@/components/BrandLogo";
 import { AuthTermsNotice } from "@/components/legal/AuthTermsNotice";
 import { useAuth } from "@/context/AuthContext";
+import { DEFAULT_AUTH_NEXT_PATH } from "@/lib/auth/authRedirect";
 import {
   classifyAuthError,
   localizeAuthError,
@@ -173,7 +174,7 @@ export function AuthPopup({
   const isTr = locale === "tr";
   const boutiqueSlug = brand?.boutiqueSlug?.trim().toLowerCase() || null;
   const isBoutiqueAuth = Boolean(boutiqueSlug);
-  const successHref = brand?.successHref?.trim() || "/tr";
+  const successHref = brand?.successHref?.trim() || DEFAULT_AUTH_NEXT_PATH;
   const accent = brand?.accent?.trim();
   const primaryBtnStyle = accent
     ? { backgroundColor: accent, borderColor: accent }

@@ -7,12 +7,6 @@ import {
   type MouseEvent,
   type ReactNode,
 } from "react";
-import { useCaddePageTransition } from "@/components/tr/marketplace/CaddePageTransition";
-import { shouldPlayCaddePageTransition, caddePathnameFromHref } from "@/lib/platform/caddeTransition";
-import {
-  caddeHashScrollBehavior,
-  scrollToCaddeLookAnchor,
-} from "@/lib/tr/looks/scrollToLook";
 import { markTrCanGoBack, writeTrScroll } from "@/lib/tr/scrollMemory";
 
 interface TrSoftNavLinkProps {
@@ -39,7 +33,6 @@ export function TrSoftNavLink({
   const router = useRouter();
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
-  const caddeTransition = useCaddePageTransition();
 
   const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
     if (
@@ -53,33 +46,10 @@ export function TrSoftNavLink({
       return;
     }
 
-    const destPath = caddePathnameFromHref(href);
-    const here = pathname.replace(/\/$/, "") || "/";
-
-    if (href.includes("#") && destPath === here) {
-      event.preventDefault();
-      writeTrScroll(pathname, window.scrollY);
-      markTrCanGoBack();
-      onNavigate?.();
-      const id = href.split("#")[1] ?? "";
-      if (id) {
-        window.history.pushState(null, "", href);
-        scrollToCaddeLookAnchor(id, caddeHashScrollBehavior());
-      }
-      return;
-    }
-
     event.preventDefault();
     writeTrScroll(pathname, window.scrollY);
     markTrCanGoBack();
     onNavigate?.();
-    if (
-      caddeTransition &&
-      shouldPlayCaddePageTransition(pathname, href)
-    ) {
-      caddeTransition.go(href);
-      return;
-    }
     startTransition(() => {
       router.push(href, href.includes("#") ? { scroll: false } : undefined);
     });

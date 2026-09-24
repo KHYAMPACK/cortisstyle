@@ -1,23 +1,12 @@
-import { resolveBoutiqueHomeLayout } from "@/lib/tr/boutiqueHome/registry";
 import type { TrStorefrontThemeId } from "@/lib/tr/storefrontTheme/types";
 
 /**
- * Slug → storefront theme (unique UI pack).
- * editorial when home layout is editorial; otherwise null (branded/Cadde chrome).
+ * Every boutique is "editorial" now — the branded/Cadde-chrome themes were
+ * retired along with the Cadde marketplace. See boutiqueHome/registry.ts.
  */
 export function resolveStorefrontTheme(
-  boutiqueSlug: string,
-  homeLayout?: "default" | "editorial" | null,
+  _boutiqueSlug?: string,
+  _homeLayout?: "default" | "editorial" | null,
 ): TrStorefrontThemeId | null {
-  return resolveBoutiqueHomeLayout(boutiqueSlug, homeLayout) === "editorial"
-    ? "editorial"
-    : null;
-}
-
-/** Local cart / sepet / odeme / editorial PLP routes. */
-export function boutiqueUsesLocalCommerce(
-  boutiqueSlug: string,
-  homeLayout?: "default" | "editorial" | null,
-): boolean {
-  return resolveStorefrontTheme(boutiqueSlug, homeLayout) != null;
+  return "editorial";
 }

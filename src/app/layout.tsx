@@ -8,9 +8,9 @@ import "./globals.css";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Cortisstyle — Cadde",
+  title: "Cortisstyle",
   description:
-    "Türkiye butik pazaryeri ve butik vitrinleri — Cortisstyle Cadde.",
+    "Butiğinizin online mağazasını sizin için kuruyoruz — ürün, ödeme, kargo, müşteri desteği tek platformda.",
   verification: {
     google: "lUtcENaTLXt-I3qvbtU_N3haAJ9CNXZ0QL7I1hZdGm8",
   },

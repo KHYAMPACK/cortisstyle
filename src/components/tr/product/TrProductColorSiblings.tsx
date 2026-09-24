@@ -7,17 +7,12 @@ import {
   getProductHoverImage,
   isCatalogCutoutImage,
 } from "@/lib/tr/productImages";
-import {
-  trBoutiqueProductPath,
-  trClothPath,
-  TR_PDP_FROM_CADDE,
-} from "@/lib/tr/paths";
+import { trBoutiqueProductPath, TR_PDP_FROM_CADDE } from "@/lib/tr/paths";
 import type { TrProductWithBoutique } from "@/types/tr-marketplace";
 
 interface TrProductColorSiblingsProps {
   product: TrProductWithBoutique;
   siblings: TrProductWithBoutique[];
-  surface: "boutique" | "cadde";
   fromCadde?: boolean;
   accentColor?: string;
 }
@@ -25,7 +20,6 @@ interface TrProductColorSiblingsProps {
 export function TrProductColorSiblings({
   product,
   siblings,
-  surface,
   fromCadde = false,
   accentColor,
 }: TrProductColorSiblingsProps) {
@@ -41,20 +35,14 @@ export function TrProductColorSiblings({
       <div className="-mx-1 mt-3 flex gap-3 overflow-x-auto px-1.5 py-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {siblings.map((sibling) => {
           const current = sibling.id === product.id;
-          const cover = getProductCoverImageFor(
-            surface === "cadde" ? "marketplace" : "boutique",
-            sibling,
-          );
+          const cover = getProductCoverImageFor("boutique", sibling);
           const thumbSrc = getProductHoverImage(sibling) ?? cover;
           const cutout = isCatalogCutoutImage(thumbSrc);
-          const href =
-            surface === "cadde"
-              ? trClothPath(sibling.id)
-              : trBoutiqueProductPath(
-                  sibling.boutique.slug,
-                  sibling.id,
-                  fromCadde ? { from: TR_PDP_FROM_CADDE } : undefined,
-                );
+          const href = trBoutiqueProductPath(
+            sibling.boutique.slug,
+            sibling.id,
+            fromCadde ? { from: TR_PDP_FROM_CADDE } : undefined,
+          );
           const label =
             sibling.features.color?.trim() ||
             sibling.colors[0]?.name ||

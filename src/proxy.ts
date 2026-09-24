@@ -122,11 +122,6 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  // Turkey-first product: platform root always goes to Cadde.
-  if (pathname === "/" || pathname === "") {
-    return NextResponse.redirect(new URL("/tr", request.url));
-  }
-
   return nextWithPathname(request, boutiqueSlug);
 }
 

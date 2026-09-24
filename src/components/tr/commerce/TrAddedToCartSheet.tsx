@@ -4,15 +4,14 @@ import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 import { useEffect, useMemo } from "react";
-import { useTrBoutiqueCommerceScopeOptional } from "@/components/tr/boutique/TrBoutiqueCommerceScope";
+import { useTrBoutiqueCommerceScope } from "@/components/tr/boutique/TrBoutiqueCommerceScope";
 import { useTrBoutiqueProductsOptional } from "@/components/tr/boutique/TrBoutiqueProductsContext";
 import { TrDemoGarmentVisual } from "@/components/tr/demo/TrDemoGarmentVisual";
 import { TrProductCard } from "@/components/tr/TrProductCard";
 import { TrSoftNavLink } from "@/components/tr/TrSoftNavLink";
-import { useTrMarketplaceCacheOptional } from "@/components/tr/TrMarketplaceCacheProvider";
 import { isTrDemoIconSrc } from "@/lib/tr/demoIcons";
 import { isCatalogCutoutImage } from "@/lib/tr/productImages";
-import { trBoutiqueCartPath, trCartPath } from "@/lib/tr/paths";
+import { trBoutiqueCartPath } from "@/lib/tr/paths";
 import { pickRelatedProducts } from "@/lib/tr/recommendations";
 import { useTrAddedToCartStore } from "@/store/trAddedToCartStore";
 import { formatTryFromKurus } from "@/types/tr-marketplace";
@@ -23,21 +22,19 @@ import { formatTryFromKurus } from "@/types/tr-marketplace";
 export function TrAddedToCartSheet() {
   const payload = useTrAddedToCartStore((state) => state.payload);
   const close = useTrAddedToCartStore((state) => state.close);
-  const cache = useTrMarketplaceCacheOptional();
-  const boutiqueScope = useTrBoutiqueCommerceScopeOptional();
+  const boutiqueScope = useTrBoutiqueCommerceScope();
   const boutiqueProducts = useTrBoutiqueProductsOptional();
 
   const related = useMemo(() => {
     if (!payload) return [];
-    const catalog =
-      boutiqueProducts?.products ?? cache?.products ?? [];
+    const catalog = boutiqueProducts?.products ?? [];
     if (!catalog.length) return [];
     return pickRelatedProducts({
       catalog,
       excludeIds: [payload.productId],
       limit: 4,
     });
-  }, [boutiqueProducts?.products, cache?.products, payload]);
+  }, [boutiqueProducts?.products, payload]);
 
   useEffect(() => {
     if (!payload) return;
@@ -153,23 +150,13 @@ export function TrAddedToCartSheet() {
               </div>
             </div>
 
-            {boutiqueScope ? (
-              <TrSoftNavLink
-                href={trBoutiqueCartPath(boutiqueScope.boutiqueSlug)}
-                onNavigate={close}
-                className="mt-8 inline-flex w-full items-center justify-center border border-jet-black bg-transparent px-6 py-3.5 text-[11px] tracking-[0.22em] text-jet-black uppercase transition-opacity hover:opacity-70"
-              >
-                Sepeti gör
-              </TrSoftNavLink>
-            ) : (
-              <TrSoftNavLink
-                href={trCartPath()}
-                onNavigate={close}
-                className="mt-8 inline-flex w-full items-center justify-center border border-jet-black bg-transparent px-6 py-3.5 text-[11px] tracking-[0.22em] text-jet-black uppercase transition-opacity hover:opacity-70"
-              >
-                Sepeti gör
-              </TrSoftNavLink>
-            )}
+            <TrSoftNavLink
+              href={trBoutiqueCartPath(boutiqueScope.boutiqueSlug)}
+              onNavigate={close}
+              className="mt-8 inline-flex w-full items-center justify-center border border-jet-black bg-transparent px-6 py-3.5 text-[11px] tracking-[0.22em] text-jet-black uppercase transition-opacity hover:opacity-70"
+            >
+              Sepeti gör
+            </TrSoftNavLink>
 
             {related.length > 0 ? (
               <div className="mt-10">
@@ -185,8 +172,7 @@ export function TrAddedToCartSheet() {
                     >
                       <TrProductCard
                         product={product}
-                        showBoutique={!boutiqueScope}
-                        variant="marketplace"
+                        showBoutique={false}
                         priority={index < 2}
                       />
                     </div>

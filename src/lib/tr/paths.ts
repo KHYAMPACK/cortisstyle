@@ -1,40 +1,7 @@
 import type { TrProduct } from "@/types/tr-marketplace";
 
-/** Home “Parçalar” section anchor. */
-export const TR_PIECES_SECTION_ID = "parcalar";
-
 export function trHomePath(): string {
   return "/tr";
-}
-
-/** Zara-style full-page search (no marketplace chrome). */
-export function trSearchPath(): string {
-  return "/tr/ara";
-}
-
-export function trProductsPath(params?: {
-  q?: string;
-  kategori?: string;
-}): string {
-  const base = "/tr/urunler";
-  const search = new URLSearchParams();
-  const q = params?.q?.trim();
-  const kategori = params?.kategori?.trim();
-  if (q) search.set("q", q);
-  if (kategori) search.set("kategori", kategori);
-  const qs = search.toString();
-  return qs ? `${base}?${qs}` : base;
-}
-
-export function trFavoritesPath(): string {
-  return "/tr/favoriler";
-}
-
-export function trBoutiquesPath(params?: { q?: string }): string {
-  const base = "/tr/butikler";
-  const q = params?.q?.trim();
-  if (!q) return base;
-  return `${base}?${new URLSearchParams({ q }).toString()}`;
 }
 
 export function trBoutiquePath(slug: string): string {
@@ -93,21 +60,6 @@ export function trBoutiqueProductPath(
   return path;
 }
 
-/** Marketplace cloth (parça) detail — not boutique-branded PDP. */
-export function trClothPath(productId: string): string {
-  return `/tr/parca/${encodeURIComponent(productId)}`;
-}
-
-/** Marketplace look (kombin) detail. */
-export function trLookPath(slug: string): string {
-  return `/tr/kombin/${encodeURIComponent(slug)}`;
-}
-
-/** Cadde lookbook — all outfits in editorial rhythm. */
-export function trKombinlerPath(): string {
-  return "/tr/kombinler";
-}
-
 /** Canonical boutique PDP when slug is known; legacy `/tr/shop/id` fallback otherwise. */
 export function trProductPath(
   productId: string,
@@ -129,12 +81,6 @@ export function trBoutiqueCartPath(boutiqueSlug: string): string {
   return `/tr/${encodeURIComponent(boutiqueSlug)}/sepet`;
 }
 
-export function trCheckoutPath(params?: { boutique?: string }): string {
-  const boutique = params?.boutique?.trim();
-  if (!boutique) return "/tr/odeme";
-  return `/tr/odeme?boutique=${encodeURIComponent(boutique)}`;
-}
-
 /** Boutique-scoped checkout (white-label / editorial local cart). */
 export function trBoutiqueCheckoutPath(boutiqueSlug: string): string {
   return `/tr/${encodeURIComponent(boutiqueSlug)}/odeme`;
@@ -144,11 +90,6 @@ export function trOrderConfirmationPath(params?: { boutique?: string }): string 
   const boutique = params?.boutique?.trim();
   if (!boutique) return "/tr/siparis-onay";
   return `/tr/${encodeURIComponent(boutique)}/siparis-onay`;
-}
-
-/** @deprecated Prefer trOrderConfirmationPath({ boutique }) */
-export function trBoutiqueOrderConfirmationPath(boutiqueSlug: string): string {
-  return trOrderConfirmationPath({ boutique: boutiqueSlug });
 }
 
 export function trBoutiqueLegalPath(boutiqueSlug: string, doc: string): string {
@@ -190,15 +131,6 @@ export function trBoutiqueOrderTrackingPath(
   if (query?.posta?.trim()) search.set("posta", query.posta.trim());
   const qs = search.toString();
   return qs ? `${base}?${qs}` : base;
-}
-
-export function trComingSoonPath(): string {
-  return "/tr/yakinda";
-}
-
-/** Localhost-only Photoroom → waist-anchored hero slot importer. */
-export function trDevHeroImportPath(): string {
-  return "/tr/dev/hero-import";
 }
 
 export function trPanelPath(): string {

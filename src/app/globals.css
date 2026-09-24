@@ -61,22 +61,6 @@ html.intro-loading-boutique body {
   overflow: hidden;
 }
 
-html.intro-loading-cadde,
-html.intro-loading-cadde body {
-  background: #000000 !important;
-  overflow: hidden;
-}
-
-/* Cover the hero before the client intro overlay mounts (reload FOUC). */
-html.intro-loading-cadde body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 9998;
-  background: #000;
-  pointer-events: none;
-}
-
 @layer components {
   .surface-canvas-paper {
     background-color: var(--canvas-paper);

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { TrCheckoutPageContent } from "@/components/tr/TrCheckoutPageContent";
-import { resolveBoutiqueHomeLayout } from "@/lib/tr/boutiqueHome";
 import { boutiqueOffersIyzicoCheckout } from "@/lib/tr/payments/registry";
 import { safeGetPublicBoutique } from "@/lib/tr/publicData";
 
@@ -28,12 +27,6 @@ export default async function BoutiqueCheckoutPage({
   const boutique = await safeGetPublicBoutique(boutiqueSlug);
 
   if (!boutique) notFound();
-
-  if (
-    resolveBoutiqueHomeLayout(boutiqueSlug, boutique.homeLayout) !== "editorial"
-  ) {
-    notFound();
-  }
 
   const iyzicoCheckout = await boutiqueOffersIyzicoCheckout(boutique.slug);
 

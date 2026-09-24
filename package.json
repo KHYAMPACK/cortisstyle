@@ -9,11 +9,8 @@
     "start": "next start",
     "lint": "eslint",
     "favicon:generate": "tsx scripts/generate-favicon.mts",
-    "tr:import-hero": "tsx scripts/import-tr-hero-slots.mts",
     "tr:generate-studio-models": "tsx scripts/generate-studio-ai-models.mts",
-    "tr:generate-lila-review": "tsx scripts/generate-lila-model-review.mts",
-    "tr:generate-cadde-hero": "tsx scripts/generate-cadde-hero-tryons.mts",
-    "tr:prepare-cadde-hero": "tsx scripts/prepare-cadde-hero-cutouts.mts"
+    "tr:generate-lila-review": "tsx scripts/generate-lila-model-review.mts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.108.2",

@@ -1,9 +1,7 @@
 import { isTrCategoryMatch } from "@/lib/tr/fashion/categories";
-import type { TrLookWithProducts } from "@/types/tr-look";
 import type { TrProductWithBoutique } from "@/types/tr-marketplace";
 
 const DEFAULT_PRODUCT_LIMIT = 8;
-const DEFAULT_LOOK_LIMIT = 4;
 
 /** Stable order for SSR/client parity (no Math.random). */
 function byId<T extends { id: string }>(a: T, b: T): number {
@@ -44,19 +42,6 @@ export function pickRelatedProducts(input: {
     picked.push(product);
   }
   return picked;
-}
-
-export function pickRelatedLooks(input: {
-  looks: TrLookWithProducts[];
-  excludeIds?: Iterable<string>;
-  limit?: number;
-}): TrLookWithProducts[] {
-  const limit = input.limit ?? DEFAULT_LOOK_LIMIT;
-  const exclude = new Set(input.excludeIds ?? []);
-  return input.looks
-    .filter((look) => !exclude.has(look.id))
-    .sort(byId)
-    .slice(0, limit);
 }
 
 /** Favorited catalog products first (boutique cart / account recommendations). */
