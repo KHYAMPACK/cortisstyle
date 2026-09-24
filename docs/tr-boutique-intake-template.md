@@ -26,7 +26,6 @@
 - [ ] `description` — short storefront description.
 
 **Storefront**
-- [ ] `homeLayout` — `"editorial"` (recommended for a standalone boutique) or `"default"` (Cadde marketplace layout). See doc 04.
 - [ ] `catalogProfile` — `"fashion"` or `"custom_art"`. See doc 06/07.
 - [ ] `customDomain` — if they have one; DNS still needs pointing separately (doc 03 §"White-label domain").
 - [ ] `shippingNote` / `exchangePolicy` — free-text, used in legal pages and PDP copy. Falls back to default kargo/iade copy if omitted.
@@ -54,7 +53,6 @@
   "logoUrl": "",
   "themeAccent": "",
   "description": "",
-  "homeLayout": "editorial",
   "catalogProfile": "fashion",
   "customDomain": "",
   "shippingNote": "",

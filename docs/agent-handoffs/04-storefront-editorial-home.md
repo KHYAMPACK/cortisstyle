@@ -4,7 +4,7 @@
 
 ## Every boutique is the editorial shell now
 
-The cross-boutique "Cadde" marketplace (shared browse/cart across boutiques) was retired along with its whole route tree. Every boutique now renders through the standalone editorial shell — its own local cart/favorites, own `giris`/`sepet`/`odeme`/`siparis-onay`/`yasal` routes. `resolveBoutiqueHomeLayout()` / `resolveStorefrontTheme()` (`src/lib/tr/boutiqueHome/registry.ts`, `src/lib/tr/storefrontTheme/registry.ts`) are kept as functions — always returning `"editorial"` — only so the ~9 call sites across boutique routes don't need touching if a real second layout ever returns. The `home_layout` DB column still exists but is no longer read for branching.
+The cross-boutique "Cadde" marketplace (shared browse/cart across boutiques) was retired along with its whole route tree. Every boutique now renders through the standalone editorial shell — its own local cart/favorites, own `giris`/`sepet`/`odeme`/`siparis-onay`/`yasal` routes. There is no layout switch any more: the old `resolveBoutiqueHomeLayout()` / `resolveStorefrontTheme()` registries (which always returned `"editorial"`) and the `tr_boutiques.home_layout` column were removed. If a genuine second layout ever returns, add it as a real theme model (roadmap P5-T1) rather than reviving a per-boutique layout flag. The DB column is dropped by `supabase/patch_drop_tr_boutiques_home_layout.sql` — apply it manually after the app version that stopped reading it is deployed.
 
 - **Editorial skin** (`"classic"` | `"atelier"`, `src/lib/tr/boutiqueHome/editorialSkin.ts`) — a *visual* choice within the editorial layout, resolved by a hardcoded `SLUG_SKINS` map with no DB equivalent. `lilabutik` is `"atelier"`; everything else defaults to `"classic"`. This is one of the few remaining per-slug code touches (see doc 03).
 
@@ -36,7 +36,6 @@ Every boutique keeps cart/favorites in `localStorage`, scoped per boutique slug 
 
 | Concern | Path |
 |---|---|
-| Home layout resolution | `src/lib/tr/boutiqueHome/registry.ts`, `types.ts` |
 | Editorial skin | `src/lib/tr/boutiqueHome/editorialSkin.ts` |
 | Editorial content builder | `src/lib/tr/boutiqueHome/editorialContent.ts`, `editorialDemoContent.ts` |
 | Editorial home sections (atelier) | `src/components/tr/boutique/editorial/TrBoutiqueAtelierHomeSections.tsx` |
