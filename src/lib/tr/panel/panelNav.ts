@@ -141,6 +141,20 @@ export {
   resolveCatalogProfile,
 };
 
+/**
+ * Full-screen editor routes. The shell hides the sidebar and tab bar on these and
+ * the page draws its own top bar (`TrPanelEditor`). Add a route here when a new
+ * editor page is built. The bulk and set wizards under /urun/ keep the normal chrome.
+ */
+const PANEL_EDITOR_ROUTES: RegExp[] = [
+  /^\/tr\/panel\/urun\/yeni\/?$/,
+  /^\/tr\/panel\/urun\/(?!takim\/?$|toplu\/?$)[^/]+\/?$/,
+];
+
+export function isPanelEditorRoute(pathname: string): boolean {
+  return PANEL_EDITOR_ROUTES.some((route) => route.test(pathname));
+}
+
 export function isPanelProductRoute(pathname: string): boolean {
   return (
     pathname === trPanelProductsPath() ||

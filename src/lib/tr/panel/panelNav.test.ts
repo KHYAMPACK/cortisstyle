@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   flattenPanelNav,
+  isPanelEditorRoute,
   isPanelNavGroup,
   isTrPanelNavActive,
   isTrPanelNavGroupActive,
@@ -64,5 +65,26 @@ describe("nav active state", () => {
     assert.equal(isTrPanelNavGroupActive("/tr/panel/urun/yeni", group), true);
     assert.equal(isTrPanelNavGroupActive("/tr/panel/siparisler", group), false);
     assert.equal(isTrPanelNavGroupActive("/tr/panel", group), false);
+  });
+});
+
+describe("isPanelEditorRoute", () => {
+  it("is true for the product create and edit pages", () => {
+    assert.equal(isPanelEditorRoute("/tr/panel/urun/yeni"), true);
+    assert.equal(isPanelEditorRoute("/tr/panel/urun/abc-123"), true);
+    assert.equal(isPanelEditorRoute("/tr/panel/urun/abc-123/"), true);
+  });
+
+  it("keeps the normal chrome for lists and the set and bulk wizards", () => {
+    for (const path of [
+      "/tr/panel",
+      "/tr/panel/urunler",
+      "/tr/panel/stok",
+      "/tr/panel/urun/takim",
+      "/tr/panel/urun/toplu",
+      "/tr/panel/siparisler/abc",
+    ]) {
+      assert.equal(isPanelEditorRoute(path), false, path);
+    }
   });
 });

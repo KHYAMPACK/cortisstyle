@@ -41,6 +41,7 @@ import {
   panelAccentCssVars,
   syncPanelAccentVarsToDocument,
 } from "@/lib/tr/panelTheme";
+import { isPanelEditorRoute } from "@/lib/tr/panel/panelNav";
 import { trPanelPath } from "@/lib/tr/paths";
 
 /** What a panel page receives once the shell is ready. */
@@ -198,11 +199,21 @@ function TrPanelShellBody({ children }: { children: ReactNode }) {
     boutiques.length > 0;
   const showSidebarSkeleton = isAuthenticated && booting;
 
+  // Editor pages own the whole screen. The chrome stays mounted (just hidden) so
+  // going back to the list brings it straight back, and only once the panel is
+  // ready — a signed-out visitor on an editor URL still gets the sign-in card.
+  const editorMode = showDesktopSidebar && isPanelEditorRoute(pathname ?? "");
+
   const shellVars = {
     ...accentStyle,
     "--panel-sidebar-w": `${
-      collapsed ? PANEL_SIDEBAR_COLLAPSED_WIDTH : PANEL_SIDEBAR_WIDTH
+      editorMode
+        ? 0
+        : collapsed
+          ? PANEL_SIDEBAR_COLLAPSED_WIDTH
+          : PANEL_SIDEBAR_WIDTH
     }px`,
+    "--panel-tabbar-h": editorMode ? "0px" : "3.5rem",
   } as CSSProperties;
 
   return (
@@ -221,7 +232,7 @@ function TrPanelShellBody({ children }: { children: ReactNode }) {
       />
 
       {showDesktopSidebar && activeBoutique ? (
-        <div className="hidden lg:block">
+        <div className={editorMode ? "hidden" : "hidden lg:block"}>
           <div className="sticky top-0">
             <TrPanelDesktopSidebar
               boutiques={boutiques}
@@ -248,7 +259,7 @@ function TrPanelShellBody({ children }: { children: ReactNode }) {
           showDesktopSidebar || booting ? "" : "mx-auto w-full max-w-5xl"
         }`}
       >
-        <div className="lg:hidden">
+        <div className={editorMode ? "hidden" : "lg:hidden"}>
           <TrPanelMobileChrome
             boutiques={boutiques}
             activeBoutique={activeBoutique}
@@ -278,11 +289,15 @@ function TrPanelShellBody({ children }: { children: ReactNode }) {
         ) : null}
 
         <div
-          className={`min-w-0 flex-1 px-4 py-4 sm:px-5 lg:px-6 lg:py-5 ${
-            isAuthenticated && activeBoutique
-              ? "pb-[calc(5.5rem+env(safe-area-inset-bottom))] lg:pb-5"
-              : "pb-5"
-          }`}
+          className={
+            editorMode
+              ? "min-w-0 flex-1"
+              : `min-w-0 flex-1 px-4 py-4 sm:px-5 lg:px-6 lg:py-5 ${
+                  isAuthenticated && activeBoutique
+                    ? "pb-[calc(5.5rem+env(safe-area-inset-bottom))] lg:pb-5"
+                    : "pb-5"
+                }`
+          }
         >
           {booting ? (
             <div className="tr-panel-enter">
@@ -318,7 +333,7 @@ function TrPanelShellBody({ children }: { children: ReactNode }) {
             </TrOwnerPanelReactContext.Provider>
           ) : null}
         </div>
-        {isAuthenticated && activeBoutique ? (
+        {isAuthenticated && activeBoutique && !editorMode ? (
           <TrPanelMobileTabBar
             boutiqueId={activeBoutique.id}
             catalogProfile={activeBoutique.catalogProfile ?? "fashion"}

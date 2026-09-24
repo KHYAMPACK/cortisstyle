@@ -73,7 +73,7 @@ export const panelStickyFilterClass =
 
 /** Always-visible wizard actions, above the mobile tab bar. */
 export const panelStickyActionsClass =
-  "fixed inset-x-0 z-20 flex flex-wrap gap-3 border-t border-[color:var(--panel-accent-border)] bg-[#F2F3F5]/95 px-4 py-3 shadow-[0_-6px_16px_rgba(16,24,40,0.08)] backdrop-blur-sm sm:px-5 lg:bottom-0 lg:left-[var(--panel-sidebar-w,232px)] lg:px-6 lg:transition-[left] lg:duration-200 motion-reduce:lg:transition-none bottom-[calc(3.5rem+env(safe-area-inset-bottom))]";
+  "fixed inset-x-0 z-20 flex flex-wrap gap-3 border-t border-[color:var(--panel-accent-border)] bg-[#F2F3F5]/95 px-4 py-3 shadow-[0_-6px_16px_rgba(16,24,40,0.08)] backdrop-blur-sm sm:px-5 lg:bottom-0 lg:left-[var(--panel-sidebar-w,232px)] lg:px-6 lg:transition-[left] lg:duration-200 motion-reduce:lg:transition-none bottom-[calc(var(--panel-tabbar-h,3.5rem)+env(safe-area-inset-bottom))]";
 
 /** Clears the fixed action bar so the last field can scroll into view. */
 export const panelStickyActionsSpacerClass = "h-24 shrink-0 lg:h-20";

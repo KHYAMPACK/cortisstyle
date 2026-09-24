@@ -1,16 +1,12 @@
 "use client";
 
-import { TrPanelLink as Link } from "@/components/tr/panel/TrPanelLink";
 import { AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
 import { TrOwnerProductRouteGate } from "@/components/tr/panel/TrOwnerProductRouteGate";
-import {
-  panelBackLinkClass,
-  panelErrorClass,
-  panelPageTitleClass,
-} from "@/components/tr/panel/panelUi";
+import { panelErrorClass } from "@/components/tr/panel/panelUi";
+import { TrPanelEditor } from "@/components/tr/panel/TrPanelEditor";
 import {
   TrPanelFadeIn,
   TrPanelLoading,
@@ -69,39 +65,36 @@ export function TrOwnerEditProductPage({ productId }: TrOwnerEditProductPageProp
     <TrOwnerPanelGate>
       {({ activeBoutique }) => (
         <TrOwnerProductRouteGate activeBoutique={activeBoutique}>
-        <div className="space-y-6">
-          <div>
-            <Link href={trPanelProductsPath()} className={panelBackLinkClass}>
-              ← Ürün listesine dön
-            </Link>
-            <h2 className={panelPageTitleClass}>Ürünü düzenle</h2>
-          </div>
-
-          <AnimatePresence mode="wait">
-            {loading ? (
-              <TrPanelLoading key="edit-loading" label="Ürün yükleniyor…" />
-            ) : error ? (
-              <TrPanelFadeIn key="edit-error">
-                <p className={panelErrorClass}>{error}</p>
-              </TrPanelFadeIn>
-            ) : product ? (
-              <TrPanelFadeIn key="edit-form">
-                <TrProductEditorForm
-                  boutiqueId={product.boutiqueId}
-                  boutiqueSlug={activeBoutique.slug}
-                  mode="edit"
-                  initialProduct={product}
-                  onSaved={(saved) => {
-                    setProduct(saved);
-                  }}
-                  onDeleted={() => {
-                    router.push(trPanelProductsPath());
-                  }}
-                />
-              </TrPanelFadeIn>
-            ) : null}
-          </AnimatePresence>
-        </div>
+          <TrPanelEditor
+            backHref={trPanelProductsPath()}
+            parentLabel="Ürünler"
+            title="Ürünü düzenle"
+            subject={product?.title}
+          >
+            <AnimatePresence mode="wait">
+              {loading ? (
+                <TrPanelLoading key="edit-loading" label="Ürün yükleniyor…" />
+              ) : error ? (
+                <TrPanelFadeIn key="edit-error">
+                  <p className={panelErrorClass}>{error}</p>
+                </TrPanelFadeIn>
+              ) : product ? (
+                <TrPanelFadeIn key="edit-form" shift={false}>
+                  <TrProductEditorForm
+                    boutiqueId={product.boutiqueId}
+                    boutiqueSlug={activeBoutique.slug}
+                    initialProduct={product}
+                    onSaved={(saved) => {
+                      setProduct(saved);
+                    }}
+                    onDeleted={() => {
+                      router.push(trPanelProductsPath());
+                    }}
+                  />
+                </TrPanelFadeIn>
+              ) : null}
+            </AnimatePresence>
+          </TrPanelEditor>
         </TrOwnerProductRouteGate>
       )}
     </TrOwnerPanelGate>
