@@ -38,10 +38,10 @@ import {
   type TrBoutiquePublic,
   type TrProductWithBoutique,
 } from "@/types/tr-marketplace";
-import { boutiqueHasLiveShipping } from "@/lib/tr/shipping/registry";
 import {
   freeShippingProgress,
   quoteCheckoutShippingFee,
+  shippingFeeConfigOf,
 } from "@/lib/tr/shipping/quoteShipping";
 import { useAtelierFabBottomInset } from "@/lib/tr/useAtelierFabBottomInset";
 import { TrFreeShippingNudge } from "@/components/tr/commerce/TrFreeShippingNudge";
@@ -259,18 +259,15 @@ export function TrBoutiqueCartPageContent({
   );
   const selectedTotal = cartTotalKurus(selectedItems);
   const selectedCount = selectedItems.length;
-  const liveShipping = boutiqueHasLiveShipping(boutique.slug) && !demoCart;
+  const shippingConfig = shippingFeeConfigOf(boutique);
+  const hasShippingFee = shippingConfig.feeKurus > 0 && !demoCart;
   const shippingFeeKurus =
-    liveShipping && selectedCount > 0
-      ? (quoteCheckoutShippingFee(
-          boutique.slug,
-          selectedCount,
-          selectedItems,
-        )?.feeKurus ?? 0)
+    hasShippingFee && selectedCount > 0
+      ? (quoteCheckoutShippingFee(shippingConfig, selectedItems)?.feeKurus ?? 0)
       : 0;
   const shippingProgress =
-    liveShipping && selectedCount > 0
-      ? freeShippingProgress(selectedCount, selectedItems)
+    hasShippingFee && selectedCount > 0
+      ? freeShippingProgress(shippingConfig, selectedItems)
       : null;
   const shippingShopHref = shippingProgress && !shippingProgress.free
     ? trBoutiqueProductsPath(boutique.slug)
@@ -416,10 +413,10 @@ export function TrBoutiqueCartPageContent({
             </p>
             <p className="mt-1 text-[17px] font-semibold tracking-tight text-brand-primary">
               {formatTryFromKurus(
-                liveShipping ? selectedTotal + shippingFeeKurus : selectedTotal,
+                hasShippingFee ? selectedTotal + shippingFeeKurus : selectedTotal,
               )}
             </p>
-            {!liveShipping ? (
+            {!hasShippingFee ? (
               <p className="mt-0.5 text-[9px] tracking-[0.12em] text-neutral-400">
                 * KDV dahil olmayabilir
               </p>

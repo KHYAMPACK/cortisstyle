@@ -33,7 +33,7 @@ import {
   updateOwnerOrderFulfillment,
   updateOwnerOrderPaymentPaid,
 } from "@/lib/tr/ownerClient";
-import { boutiqueHasLiveShipping } from "@/lib/tr/shipping/registry";
+import { boutiqueHasCarrierIntegration } from "@/lib/tr/shipping/registry";
 import { trPanelOrdersPath, trPanelPath } from "@/lib/tr/paths";
 import {
   formatTryFromKurus,
@@ -246,7 +246,7 @@ function OrderDetail({
             <p className={`mt-2 ${panelHintClass}`}>
               {fulfillmentHintForBoutique(
                 order.fulfillmentStatus,
-                boutiqueHasLiveShipping(boutiqueSlug),
+                boutiqueHasCarrierIntegration(boutiqueSlug),
               )}
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
@@ -358,7 +358,7 @@ function OrderDetail({
               </p>
               <p className={`mt-2 ${panelHintClass}`}>
                 Stok geri yüklenir
-                {boutiqueHasLiveShipping(boutiqueSlug)
+                {boutiqueHasCarrierIntegration(boutiqueSlug)
                   ? "; Basit Kargo kaydı da iptal edilir"
                   : ""}
                 . Kart iadesi henüz yok.

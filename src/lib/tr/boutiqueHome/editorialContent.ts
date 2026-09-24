@@ -12,9 +12,9 @@ import {
 } from "@/lib/tr/boutiqueHome/editorialDemoContent";
 import { isAtelierEditorialSkin } from "@/lib/tr/boutiqueHome/editorialSkin";
 import { listTrCategoryRoots } from "@/lib/tr/fashion/categories";
-import { liveShippingHomeBody } from "@/lib/tr/catalog/pdpReturns";
 import { trBoutiqueLegalPath, trBoutiquePath } from "@/lib/tr/paths";
-import { boutiqueHasLiveShipping } from "@/lib/tr/shipping/registry";
+import { shippingFeeConfigOf } from "@/lib/tr/shipping/quoteShipping";
+import { shippingHomeBody } from "@/lib/tr/shipping/shippingCopy";
 import type { TrBoutiquePublic } from "@/types/tr-marketplace";
 
 const TEMPLATE_ASSET = (name: string) => `/tr/boutiques/demo-maya/${name}`;
@@ -269,7 +269,7 @@ export function getEditorialContent(
       : merged.shopByCategoryTitle,
     promoBar: merged.promoBar ?? defaults.promoBar,
     infoStrip: atelier
-      ? applyAtelierShippingInfoStrip(boutique.slug, merged.infoStrip)
+      ? applyAtelierShippingInfoStrip(boutique, merged.infoStrip)
       : merged.infoStrip,
     categoryHero: {
       ...defaults.categoryHero,
@@ -327,11 +327,11 @@ export function getEditorialContent(
 }
 
 function applyAtelierShippingInfoStrip(
-  slug: string,
+  boutique: TrBoutiquePublic,
   strip: EditorialDemoContent["infoStrip"],
 ): EditorialDemoContent["infoStrip"] {
-  if (!boutiqueHasLiveShipping(slug)) return strip;
-  const shippingBody = liveShippingHomeBody();
+  const shippingBody = shippingHomeBody(shippingFeeConfigOf(boutique));
+  if (!shippingBody) return strip;
   if (!strip || strip.length === 0) {
     return [
       {

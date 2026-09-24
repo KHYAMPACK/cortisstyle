@@ -7,6 +7,7 @@ import {
   updateBoutiqueBrandAdmin,
   type UpdateTrBoutiqueBrandInput,
 } from "@/lib/tr/boutiques";
+import { validateShippingSettings } from "@/lib/tr/shipping/settings";
 
 export const runtime = "nodejs";
 
@@ -49,6 +50,9 @@ export async function GET(request: Request, context: RouteContext) {
       themeAccent: boutique.themeAccent,
       vergiNo: boutique.vergiNo,
       iban: boutique.iban,
+      shippingFeeKurus: boutique.shippingFeeKurus,
+      freeShippingMinItems: boutique.freeShippingMinItems,
+      freeShippingMinSubtotalKurus: boutique.freeShippingMinSubtotalKurus,
       status: boutique.status,
     },
   });
@@ -102,6 +106,16 @@ export async function PATCH(request: Request, context: RouteContext) {
   const iban = stringOrNull(body.iban);
   if (iban !== undefined) patch.iban = iban;
 
+  const shipping = validateShippingSettings({
+    shippingFeeKurus: body.shippingFeeKurus,
+    freeShippingMinItems: body.freeShippingMinItems,
+    freeShippingMinSubtotalKurus: body.freeShippingMinSubtotalKurus,
+  });
+  if (!shipping.ok) {
+    return Response.json({ error: shipping.error }, { status: 400 });
+  }
+  Object.assign(patch, shipping.value);
+
   try {
     const boutique = await updateBoutiqueBrandAdmin(id, patch);
     return Response.json({
@@ -120,6 +134,9 @@ export async function PATCH(request: Request, context: RouteContext) {
         themeAccent: boutique.themeAccent,
         vergiNo: boutique.vergiNo,
         iban: boutique.iban,
+        shippingFeeKurus: boutique.shippingFeeKurus,
+        freeShippingMinItems: boutique.freeShippingMinItems,
+        freeShippingMinSubtotalKurus: boutique.freeShippingMinSubtotalKurus,
         status: boutique.status,
       },
     });

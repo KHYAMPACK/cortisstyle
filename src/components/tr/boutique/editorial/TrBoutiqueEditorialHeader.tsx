@@ -40,8 +40,8 @@ import {
   trBoutiquePath,
   trBoutiqueProductsPath,
 } from "@/lib/tr/paths";
-import { boutiqueHasLiveShipping } from "@/lib/tr/shipping/registry";
-import { FREE_SHIPPING_PROMO_COPY } from "@/lib/tr/shipping/types";
+import { shippingFeeConfigOf } from "@/lib/tr/shipping/quoteShipping";
+import { freeShippingPromoCopy } from "@/lib/tr/shipping/shippingCopy";
 import { useAuth } from "@/context/AuthContext";
 import { getTrAccountChromeLabel } from "@/lib/tr/userDisplayName";
 import type { TrBoutiquePublic } from "@/types/tr-marketplace";
@@ -305,8 +305,9 @@ export function TrBoutiqueEditorialHeader({
   const logoUrl = resolveBoutiqueLogoUrl(boutique);
   const atelier = isAtelierEditorialSkin(boutique.slug);
   const onCheckoutPage = /\/odeme(\/|$)/.test(pathname);
+  const shippingPromoCopy = freeShippingPromoCopy(shippingFeeConfigOf(boutique));
   const showShippingPromo =
-    atelier && boutiqueHasLiveShipping(boutique.slug) && !onCheckoutPage;
+    atelier && shippingPromoCopy !== null && !onCheckoutPage;
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileDrillId, setMobileDrillId] = useState<string | null>(null);
   const [megaId, setMegaId] = useState<string | null>(null);
@@ -703,7 +704,7 @@ export function TrBoutiqueEditorialHeader({
           className="truncate px-3 py-1.5 text-center text-[10px] tracking-[0.14em] text-white uppercase sm:text-[11px]"
           style={{ backgroundColor: "var(--brand-primary)" }}
         >
-          {FREE_SHIPPING_PROMO_COPY}
+          {shippingPromoCopy}
         </p>
       ) : null}
       {atelier ? (

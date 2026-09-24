@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { TrCheckoutPageContent } from "@/components/tr/TrCheckoutPageContent";
 import { boutiqueOffersIyzicoCheckout } from "@/lib/tr/payments/registry";
 import { safeGetPublicBoutique } from "@/lib/tr/publicData";
+import { shippingFeeConfigOf } from "@/lib/tr/shipping/quoteShipping";
 
 interface BoutiqueCheckoutPageProps {
   params: Promise<{ boutiqueSlug: string }>;
@@ -46,6 +47,7 @@ export default async function BoutiqueCheckoutPage({
       <TrCheckoutPageContent
         boutiqueSlug={boutique.slug}
         iyzicoCheckout={iyzicoCheckout}
+        shipping={shippingFeeConfigOf(boutique)}
       />
     </div>
   );

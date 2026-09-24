@@ -1,10 +1,8 @@
-import { boutiqueHasLiveShipping } from "@/lib/tr/shipping/registry";
+import { boutiqueHasCarrierIntegration } from "@/lib/tr/shipping/registry";
 import { trBoutiqueLegalPath } from "@/lib/tr/paths";
-import {
-  FLAT_SHIPPING_FEE_KURUS,
-  FREE_SHIPPING_MIN_ITEMS,
-  FREE_SHIPPING_PROMO_COPY,
-} from "@/lib/tr/shipping/types";
+import { shippingFeeConfigOf } from "@/lib/tr/shipping/quoteShipping";
+import { tlLabel } from "@/lib/tr/shipping/shippingCopy";
+import type { TrBoutiquePublic } from "@/types/tr-marketplace";
 
 export type TrPdpPolicyRun = {
   text: string;
@@ -16,10 +14,6 @@ export type TrPdpDeliverySummary = {
   legalHref: string | null;
 };
 
-function tryLabel(kurus: number): string {
-  return `${Math.round(kurus / 100)} TL`;
-}
-
 function strong(text: string): TrPdpPolicyRun {
   return { text, strong: true };
 }
@@ -30,70 +24,89 @@ function paragraph(
   return runs.map((run) => (typeof run === "string" ? { text: run } : run));
 }
 
-/** Homepage atelier info-strip kargo body — code-owned so DB JSON cannot drift. */
-export function liveShippingHomeBody(): string {
-  return `${FREE_SHIPPING_PROMO_COPY}. Tek üründe ${tryLabel(FLAT_SHIPPING_FEE_KURUS)}. Türkiye geneline gönderim.`;
-}
-
 /**
- * PDP “Teslimat ve İade” copy.
- * Live shipping (Lila) matches `quoteCheckoutShippingFee`. No carrier names.
+ * PDP “Teslimat ve İade” copy. The fee sentence comes from the boutique's own
+ * shipping settings; the dispatch/returns wording differs only for boutiques with
+ * a carrier integration (Lila). No carrier names.
  */
 export function getPdpDeliverySummary(
-  boutiqueSlug?: string | null,
-  boutiqueName?: string | null,
+  boutique?: Pick<
+    TrBoutiquePublic,
+    | "slug"
+    | "name"
+    | "shippingFeeKurus"
+    | "freeShippingMinItems"
+    | "freeShippingMinSubtotalKurus"
+  > | null,
 ): TrPdpDeliverySummary {
+  const boutiqueSlug = boutique?.slug ?? null;
   const legalHref = boutiqueSlug
     ? trBoutiqueLegalPath(boutiqueSlug, "iade")
     : null;
-  const brand = boutiqueName?.trim() || "Mağazamız";
+  const brand = boutique?.name?.trim() || "Mağazamız";
+  const config = shippingFeeConfigOf(boutique ?? {});
+  const carrier = boutiqueSlug
+    ? boutiqueHasCarrierIntegration(boutiqueSlug)
+    : false;
 
-  if (!boutiqueSlug || !boutiqueHasLiveShipping(boutiqueSlug)) {
-    return {
-      legalHref,
-      paragraphs: [
+  const paragraphs: TrPdpPolicyRun[][] = [];
+
+  if (config.feeKurus > 0) {
+    const fee = strong(tlLabel(config.feeKurus));
+    if (config.freeMinItems !== null) {
+      paragraphs.push(
         paragraph(
-          "Sipariş sonrası kargo bilgisi paylaşılır. Türkiye geneline gönderim yapılır.",
+          `${brand} üzerinden verilen siparişlerde kargo ücreti `,
+          fee,
+          "’dir. ",
+          strong(`${config.freeMinItems} ürün`),
+          " ve üzeri alışverişlerde kargo ücretsizdir.",
         ),
+      );
+    } else if (config.freeMinSubtotalKurus !== null) {
+      paragraphs.push(
         paragraph(
-          "Teslimden itibaren ",
-          strong("14 gün"),
-          " içinde cayma hakkınızı kullanabilirsiniz. WhatsApp’tan sipariş numaranızla yazmanız yeterlidir. Cayma kapsamındaki iade kargo ücreti bize aittir; yeniden stoklama ücreti alınmaz.",
+          `${brand} üzerinden verilen siparişlerde kargo ücreti `,
+          fee,
+          "’dir. ",
+          strong(tlLabel(config.freeMinSubtotalKurus)),
+          " ve üzeri alışverişlerde kargo ücretsizdir.",
         ),
+      );
+    } else {
+      paragraphs.push(
         paragraph(
-          "Beden veya model değişimi için WhatsApp’tan yazın. Talepler ",
-          strong("stok durumuna göre"),
-          " değerlendirilir.",
+          `${brand} üzerinden verilen siparişlerde kargo ücreti `,
+          fee,
+          "’dir.",
         ),
-      ],
-    };
+      );
+    }
   }
 
-  return {
-    legalHref,
-    paragraphs: [
-      paragraph(
-        `${brand} üzerinden verilen siparişlerde kargo ücreti `,
-        strong(tryLabel(FLAT_SHIPPING_FEE_KURUS)),
-        "’dir. ",
-        strong(`${FREE_SHIPPING_MIN_ITEMS} ürün`),
-        " ve üzeri alışverişlerde kargo ücretsizdir.",
-      ),
-      paragraph(
-        "Siparişler ödeme onayından sonra ",
-        strong("1–5 iş günü"),
-        " içerisinde kargo firmasına teslim edilir. Türkiye geneline gönderim yapılır.",
-      ),
-      paragraph(
-        "Teslimden itibaren ",
-        strong("14 gün"),
-        " içinde cayma hakkınızı kullanabilirsiniz. WhatsApp’tan sipariş numaranızla yazmanız yeterlidir. Cayma kapsamındaki iade kargo ücreti bize aittir; yeniden stoklama ücreti alınmaz. Ürünü kullanılmamış ve orijinal ambalajında gönderin.",
-      ),
-      paragraph(
-        "Beden veya model değişimi için WhatsApp’tan yazın. Talepler ",
-        strong("stok durumuna göre"),
-        " değerlendirilir.",
-      ),
-    ],
-  };
+  paragraphs.push(
+    carrier
+      ? paragraph(
+          "Siparişler ödeme onayından sonra ",
+          strong("1–5 iş günü"),
+          " içerisinde kargo firmasına teslim edilir. Türkiye geneline gönderim yapılır.",
+        )
+      : paragraph(
+          "Sipariş sonrası kargo bilgisi paylaşılır. Türkiye geneline gönderim yapılır.",
+        ),
+    paragraph(
+      "Teslimden itibaren ",
+      strong("14 gün"),
+      carrier
+        ? " içinde cayma hakkınızı kullanabilirsiniz. WhatsApp’tan sipariş numaranızla yazmanız yeterlidir. Cayma kapsamındaki iade kargo ücreti bize aittir; yeniden stoklama ücreti alınmaz. Ürünü kullanılmamış ve orijinal ambalajında gönderin."
+        : " içinde cayma hakkınızı kullanabilirsiniz. WhatsApp’tan sipariş numaranızla yazmanız yeterlidir. Cayma kapsamındaki iade kargo ücreti bize aittir; yeniden stoklama ücreti alınmaz.",
+    ),
+    paragraph(
+      "Beden veya model değişimi için WhatsApp’tan yazın. Talepler ",
+      strong("stok durumuna göre"),
+      " değerlendirilir.",
+    ),
+  );
+
+  return { legalHref, paragraphs };
 }

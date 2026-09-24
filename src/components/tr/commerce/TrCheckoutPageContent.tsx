@@ -40,16 +40,16 @@ import {
   removeBoutiqueCheckedOutCartLines,
 } from "@/lib/tr/checkoutSelection";
 import { isTrCheckoutEnabled } from "@/lib/tr/platform";
-import { boutiqueHasLiveShipping } from "@/lib/tr/shipping/registry";
 import {
   isBackForwardNavigation,
   releaseIyzicoCheckoutHold,
   saveIyzicoCheckoutHold,
 } from "@/lib/tr/payments/iyzicoCheckoutHold";
 import {
+  NO_SHIPPING_FEE,
   freeShippingProgress,
   quoteCheckoutShippingFee,
-  shippingItemCount,
+  type ShippingFeeConfig,
 } from "@/lib/tr/shipping/quoteShipping";
 import {
   trBoutiqueCartPath,
@@ -196,9 +196,11 @@ function stepTitle(step: CheckoutStep): string {
 function TrCheckoutForm({
   boutiqueSlug,
   iyzicoCheckout,
+  shipping,
 }: {
   boutiqueSlug: string | null;
   iyzicoCheckout: boolean;
+  shipping: ShippingFeeConfig;
 }) {
   const router = useRouter();
   const { user, isAuthenticated, isInitializing } = useAuth();
@@ -361,16 +363,12 @@ function TrCheckoutForm({
   const totalKurus = cartTotalKurus(items);
   const demoCart = cartHasDemoItems(items);
   const boutiqueCheckout = Boolean(boutiqueSlug);
-  const liveShipping = Boolean(
-    boutiqueSlug && boutiqueHasLiveShipping(boutiqueSlug) && !demoCart,
-  );
-  const itemCount = shippingItemCount(items);
-  const shippingProgress = liveShipping
-    ? freeShippingProgress(itemCount, items)
+  const hasShippingFee = shipping.feeKurus > 0 && !demoCart;
+  const shippingProgress = hasShippingFee
+    ? freeShippingProgress(shipping, items)
     : null;
-  const shippingFeeKurus = liveShipping
-    ? (quoteCheckoutShippingFee(boutiqueSlug!, itemCount, items)?.feeKurus ??
-      0)
+  const shippingFeeKurus = hasShippingFee
+    ? (quoteCheckoutShippingFee(shipping, items)?.feeKurus ?? 0)
     : 0;
   const payableKurus = totalKurus + shippingFeeKurus;
   const shippingNudge = shippingProgress ? (
@@ -1177,7 +1175,7 @@ function TrCheckoutForm({
             ))}
           </div>
           <div className="mt-5 border-t border-black/5 pt-4 space-y-2">
-            {liveShipping ? (
+            {hasShippingFee ? (
               <>
                 <div className="flex items-center justify-between text-[13px]">
                   <span className="text-neutral-500">Ürünler</span>
@@ -1219,9 +1217,11 @@ function TrCheckoutForm({
 function TrCheckoutPageInner({
   boutiqueSlug: boutiqueSlugProp = null,
   iyzicoCheckout = false,
+  shipping,
 }: {
   boutiqueSlug?: string | null;
   iyzicoCheckout?: boolean;
+  shipping: ShippingFeeConfig;
 }) {
   const searchParams = useSearchParams();
   const boutiqueSlug =
@@ -1229,15 +1229,22 @@ function TrCheckoutPageInner({
     searchParams.get("boutique")?.trim() ||
     null;
   return (
-    <TrCheckoutForm boutiqueSlug={boutiqueSlug} iyzicoCheckout={iyzicoCheckout} />
+    <TrCheckoutForm
+      boutiqueSlug={boutiqueSlug}
+      iyzicoCheckout={iyzicoCheckout}
+      shipping={shipping}
+    />
   );
 }
 
 export function TrCheckoutPageContent({
   boutiqueSlug = null,
   iyzicoCheckout = false,
+  shipping = NO_SHIPPING_FEE,
 }: {
   boutiqueSlug?: string | null;
+  /** The boutique's shipping fee rules, resolved server-side and passed down (display only — the server re-quotes at checkout). */
+  shipping?: ShippingFeeConfig;
   /** Resolved server-side (registry.ts is DB-backed and can't run client-side). Defaults false when unknown, e.g. the marketplace-wide checkout which doesn't offer card payment. */
   iyzicoCheckout?: boolean;
 } = {}) {
@@ -1252,6 +1259,7 @@ export function TrCheckoutPageContent({
       <TrCheckoutPageInner
         boutiqueSlug={boutiqueSlug}
         iyzicoCheckout={iyzicoCheckout}
+        shipping={shipping}
       />
     </Suspense>
   );

@@ -28,7 +28,7 @@ import {
   updateOwnerOrderFulfillment,
   updateOwnerOrderPaymentPaid,
 } from "@/lib/tr/ownerClient";
-import { boutiqueHasLiveShipping } from "@/lib/tr/shipping/registry";
+import { boutiqueHasCarrierIntegration } from "@/lib/tr/shipping/registry";
 import {
   SHIPPING_BLOCK_ADDRESS_REJECTED,
   hasPurchasedShippingLabel,
@@ -71,7 +71,7 @@ export function TrOwnerOrderListCard({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const live = boutiqueHasLiveShipping(boutiqueSlug);
+  const live = boutiqueHasCarrierIntegration(boutiqueSlug);
   const cardCheckout = offersIyzicoCheckout;
   const paid =
     order.paymentStatus === "paid" ||

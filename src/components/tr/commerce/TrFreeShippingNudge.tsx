@@ -3,7 +3,10 @@
 import { Check, Truck } from "lucide-react";
 import { TrSoftNavLink } from "@/components/tr/TrSoftNavLink";
 import type { FreeShippingProgress } from "@/lib/tr/shipping/quoteShipping";
-import { FLAT_SHIPPING_FEE_KURUS } from "@/lib/tr/shipping/types";
+import {
+  freeShippingNudgeDetail,
+  tlLabel,
+} from "@/lib/tr/shipping/shippingCopy";
 import { formatTryFromKurus } from "@/types/tr-marketplace";
 
 export function TrFreeShippingNudge({
@@ -45,10 +48,11 @@ export function TrFreeShippingNudge({
     progress.needed > 0
       ? Math.min(1, Math.max(0, progress.current / progress.needed))
       : 0;
-  const detail =
-    progress.remaining === 1
-      ? "1 ürün daha ekle, kargo bedava"
-      : `${progress.remaining} ürüne tamamla, kargo bedava`;
+  const detail = freeShippingNudgeDetail(progress);
+  const counter =
+    progress.unit === "amount"
+      ? `${tlLabel(progress.current)}/${tlLabel(progress.needed)}`
+      : `${progress.current}/${progress.needed}`;
   const inner = (
     <>
       <div className="flex items-end justify-between gap-3">
@@ -60,7 +64,7 @@ export function TrFreeShippingNudge({
           />
           <div className="min-w-0">
             <p className="text-[10px] tracking-[0.18em] text-neutral-500 uppercase">
-              Kargo {formatTryFromKurus(FLAT_SHIPPING_FEE_KURUS)}
+              Kargo {formatTryFromKurus(progress.feeKurus)}
             </p>
             <p className="mt-0.5 text-[12px] leading-snug text-neutral-800">
               {detail}
@@ -68,7 +72,7 @@ export function TrFreeShippingNudge({
           </div>
         </div>
         <p className="shrink-0 text-[10px] tracking-[0.16em] text-neutral-400 uppercase">
-          {progress.current}/{progress.needed}
+          {counter}
         </p>
       </div>
       <div

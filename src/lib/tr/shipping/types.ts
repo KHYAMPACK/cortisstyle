@@ -50,20 +50,13 @@ export const DEFAULT_APPAREL_PACKAGE = {
   weight: 1,
 } as const;
 
-/** What the shopper is charged at checkout for a single item (Lila). Server-set only. */
-export const FLAT_SHIPPING_FEE_KURUS = 12_000;
-
-/** 2+ items (quantity sum) → shopper pays 0 TL kargo. Checkout quotes this. */
-export const FREE_SHIPPING_MIN_ITEMS = 2;
-
-/** Sitewide atelier header + cart / checkout promo. */
-export const FREE_SHIPPING_PROMO_COPY = "2 ürün ve üzeri kargo ücretsiz";
-
-/** One-item cart / checkout nudge. */
-export const FREE_SHIPPING_NUDGE_COPY = "1 ürün daha ekle, kargo bedava";
-
-/** Auto-buy may debit Lila up to charged fee + 20 TL buffer. */
-export const AUTO_BUY_FEE_CAP_KURUS = FLAT_SHIPPING_FEE_KURUS + 2_000;
+/**
+ * Carrier auto-buy may debit the boutique's Basit balance up to this much per
+ * label (Lila's 120 TL flat fee + a 20 TL buffer). Independent of the fee the
+ * shopper is charged, which is per-boutique now (see quoteShipping.ts). Moves
+ * per-boutique with the carrier settings (roadmap P4-T2).
+ */
+export const AUTO_BUY_FEE_CAP_KURUS = 14_000;
 
 export const SHIPPING_BLOCK_ADDRESS_REJECTED = "address_rejected" as const;
 export const SHIPPING_BLOCK_INSUFFICIENT_BALANCE =

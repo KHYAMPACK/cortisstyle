@@ -6,6 +6,11 @@ import {
 } from "@/lib/tr/boutiques";
 import { createDiscountCodeAdmin } from "@/lib/tr/discountCodes";
 import {
+  liraToKurus,
+  validateShippingSettings,
+  type ShippingSettingsValue,
+} from "@/lib/tr/shipping/settings";
+import {
   createOrderAdmin,
   updateOrderFulfillmentStatusAdmin,
 } from "@/lib/tr/orders";
@@ -34,6 +39,12 @@ interface SeedBoutiquePayload {
   customDomain?: string;
   editorialContent?: Record<string, unknown>;
   catalogProfile?: "fashion" | "custom_art";
+  /** Flat fee shoppers pay per order, in TRY (e.g. 120). Omit for no shipping charge. */
+  shippingFeeTry?: number;
+  /** Orders with at least this many items ship free. Use this OR the amount threshold. */
+  freeShippingMinItems?: number | null;
+  /** Orders whose items subtotal reaches this many TRY ship free. */
+  freeShippingMinSubtotalTry?: number;
   status?: "draft" | "pending" | "verified" | "suspended";
   products?: Array<{
     title: string;
@@ -88,6 +99,44 @@ export async function POST(request: Request) {
     return Response.json({ error: "Invalid JSON payload." }, { status: 400 });
   }
 
+  // Validate shipping settings up front so a bad value is a clear 400, not a
+  // half-applied seed that fails on a DB constraint.
+  const shippingBySlug = new Map<string, ShippingSettingsValue>();
+  for (const input of payload.boutiques ?? []) {
+    const feeKurus =
+      input.shippingFeeTry === undefined
+        ? undefined
+        : liraToKurus(input.shippingFeeTry);
+    const amountKurus =
+      input.freeShippingMinSubtotalTry === undefined
+        ? undefined
+        : liraToKurus(input.freeShippingMinSubtotalTry);
+    if (
+      (input.shippingFeeTry !== undefined && feeKurus === undefined) ||
+      (input.freeShippingMinSubtotalTry !== undefined &&
+        amountKurus === undefined)
+    ) {
+      return Response.json(
+        {
+          error: `${input.slug}: shippingFeeTry and freeShippingMinSubtotalTry must be non-negative numbers of TRY.`,
+        },
+        { status: 400 },
+      );
+    }
+    const result = validateShippingSettings({
+      shippingFeeKurus: feeKurus,
+      freeShippingMinItems: input.freeShippingMinItems,
+      freeShippingMinSubtotalKurus: amountKurus,
+    });
+    if (!result.ok) {
+      return Response.json(
+        { error: `${input.slug}: ${result.error}` },
+        { status: 400 },
+      );
+    }
+    shippingBySlug.set(input.slug, result.value);
+  }
+
   try {
     const createdBoutiques = [];
     const createdProducts: Array<{
@@ -101,6 +150,7 @@ export async function POST(request: Request) {
     for (const boutiqueInput of payload.boutiques ?? []) {
       const existing = await getBoutiqueBySlugAdmin(boutiqueInput.slug);
       const desiredStatus = boutiqueInput.status ?? "verified";
+      const shipping = shippingBySlug.get(boutiqueInput.slug) ?? {};
       let boutique = existing
         ? await updateBoutiqueBrandAdmin(existing.id, {
             description: boutiqueInput.description,
@@ -118,6 +168,7 @@ export async function POST(request: Request) {
             vergiNo: boutiqueInput.vergiNo,
             iban: boutiqueInput.iban,
             contactEmail: boutiqueInput.contactEmail,
+            ...shipping,
           })
         : await createBoutiqueAdmin({
             slug: boutiqueInput.slug,
@@ -137,6 +188,7 @@ export async function POST(request: Request) {
             customDomain: boutiqueInput.customDomain,
             editorialContent: boutiqueInput.editorialContent,
             catalogProfile: boutiqueInput.catalogProfile,
+            ...shipping,
             status: desiredStatus,
           });
 

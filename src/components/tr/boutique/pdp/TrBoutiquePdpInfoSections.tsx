@@ -34,8 +34,7 @@ export function TrBoutiquePdpInfoSections({
   });
   const care = getCareInstructions(product.category);
   const delivery = getPdpDeliverySummary(
-    product.boutique.slug,
-    product.boutique.name,
+    product.boutique,
   );
   const rule = branded ? "border-black/8" : "border-blueprint-border";
 

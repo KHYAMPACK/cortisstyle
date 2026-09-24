@@ -28,9 +28,9 @@ import { startIyzicoCheckoutForm } from "@/lib/tr/payments/startCheckoutForm";
 import { autoFulfillPaidShipment } from "@/lib/tr/shipping/ownerShipment";
 import {
   quoteCheckoutShippingFee,
-  shippingItemCount,
+  shippingFeeConfigOf,
 } from "@/lib/tr/shipping/quoteShipping";
-import { boutiqueHasLiveShipping } from "@/lib/tr/shipping/registry";
+import { boutiqueHasCarrierIntegration } from "@/lib/tr/shipping/registry";
 import type {
   CreateTrOrderInput,
   TrBoutiquePublic,
@@ -182,21 +182,15 @@ export async function POST(request: Request) {
 
     let shippingFeeKurus = 0;
     let shippingProvider: CreateTrOrderInput["shippingProvider"] = null;
-    if (boutiqueSlug && boutiqueHasLiveShipping(boutiqueSlug)) {
-      const itemCount = shippingItemCount(checkout.lines);
-      const quote = quoteCheckoutShippingFee(
-        boutiqueSlug,
-        itemCount,
-        checkout.lines,
-      );
-      if (!quote) {
-        return Response.json(
-          { error: "Kargo ücreti alınamadı. Adresi kontrol edip tekrar deneyin." },
-          { status: 502 },
-        );
+    if (boutique) {
+      // Server-side only: the fee comes from the boutique's own settings and the
+      // re-priced catalog lines, never from anything the client sent.
+      shippingFeeKurus =
+        quoteCheckoutShippingFee(shippingFeeConfigOf(boutique), checkout.lines)
+          ?.feeKurus ?? 0;
+      if (boutiqueSlug && boutiqueHasCarrierIntegration(boutiqueSlug)) {
+        shippingProvider = "basitkargo";
       }
-      shippingFeeKurus = quote.feeKurus;
-      shippingProvider = "basitkargo";
     }
 
     if (wantsIyzico && boutique) {
@@ -254,7 +248,7 @@ export async function POST(request: Request) {
       sandbox &&
       boutiqueSlug &&
       expectedBoutiqueId &&
-      boutiqueHasLiveShipping(boutiqueSlug)
+      boutiqueHasCarrierIntegration(boutiqueSlug)
     ) {
       await autoFulfillPaidShipment(
         { id: expectedBoutiqueId, slug: boutiqueSlug },

@@ -10,7 +10,7 @@ import type {
 } from "@/types/tr-marketplace";
 
 export const PUBLIC_BOUTIQUE_COLUMNS =
-  "id, slug, name, legal_name, description, logo_url, whatsapp_phone, instagram_handle, theme_accent, shipping_note, exchange_policy, physical_address, custom_domain, editorial_content, catalog_profile, vergi_no, contact_email, status, created_at, updated_at";
+  "id, slug, name, legal_name, description, logo_url, whatsapp_phone, instagram_handle, theme_accent, shipping_note, exchange_policy, physical_address, custom_domain, editorial_content, catalog_profile, vergi_no, contact_email, status, created_at, updated_at, shipping_fee_kurus, free_shipping_min_items, free_shipping_min_subtotal_kurus";
 
 /** Prefer this view once `patch_tr_boutiques_public_view.sql` is applied (anon-safe). */
 export const PUBLIC_BOUTIQUE_VIEW = "tr_boutiques_public";
@@ -35,6 +35,9 @@ function boutiqueInsertRow(input: CreateTrBoutiqueInput) {
     vergi_no: input.vergiNo?.trim() ?? null,
     iban: input.iban?.trim() ?? null,
     commission_bps: input.commissionBps ?? 1000,
+    shipping_fee_kurus: input.shippingFeeKurus ?? 0,
+    free_shipping_min_items: input.freeShippingMinItems ?? null,
+    free_shipping_min_subtotal_kurus: input.freeShippingMinSubtotalKurus ?? null,
     contact_name: input.contactName?.trim() ?? null,
     contact_phone: input.contactPhone?.trim() ?? null,
     contact_email: input.contactEmail?.trim() ?? null,
@@ -223,6 +226,10 @@ export interface UpdateTrBoutiqueBrandInput {
   customDomain?: string | null;
   editorialContent?: Record<string, unknown> | null;
   catalogProfile?: "fashion" | "custom_art";
+  /** Shipping fee rules — validate with validateShippingSettings() first. */
+  shippingFeeKurus?: number;
+  freeShippingMinItems?: number | null;
+  freeShippingMinSubtotalKurus?: number | null;
   /** Seller legal — owner panel only; not on public boutique. */
   legalName?: string | null;
   vergiNo?: string | null;
@@ -266,6 +273,15 @@ export async function updateBoutiqueBrandAdmin(
   }
   if (input.customDomain !== undefined) {
     row.custom_domain = input.customDomain?.trim().toLowerCase() || null;
+  }
+  if (input.shippingFeeKurus !== undefined) {
+    row.shipping_fee_kurus = input.shippingFeeKurus;
+  }
+  if (input.freeShippingMinItems !== undefined) {
+    row.free_shipping_min_items = input.freeShippingMinItems;
+  }
+  if (input.freeShippingMinSubtotalKurus !== undefined) {
+    row.free_shipping_min_subtotal_kurus = input.freeShippingMinSubtotalKurus;
   }
   if (input.editorialContent !== undefined) {
     row.editorial_content = input.editorialContent;

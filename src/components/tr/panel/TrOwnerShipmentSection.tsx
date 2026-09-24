@@ -28,7 +28,9 @@ import {
   buildAddressCorrectionWhatsAppMessage,
   buildWhatsAppOrderUrl,
 } from "@/lib/tr/whatsapp";
-import { boutiqueHasLiveShipping } from "@/lib/tr/shipping/registry";
+import { boutiqueHasCarrierIntegration } from "@/lib/tr/shipping/registry";
+import { tlLabel } from "@/lib/tr/shipping/shippingCopy";
+import { AUTO_BUY_FEE_CAP_KURUS } from "@/lib/tr/shipping/types";
 import {
   SHIPPING_BLOCK_ADDRESS_REJECTED,
   SHIPPING_BLOCK_INSUFFICIENT_BALANCE,
@@ -66,7 +68,7 @@ export function TrOwnerShipmentSection({
   order: TrOrderWithItems;
   onOrder: (order: TrOrderWithItems) => void;
 }) {
-  const live = boutiqueHasLiveShipping(boutiqueSlug);
+  const live = boutiqueHasCarrierIntegration(boutiqueSlug);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [trackingPath, setTrackingPath] = useState<string | null>(null);
@@ -191,10 +193,10 @@ export function TrOwnerShipmentSection({
       <p className="text-[19px] font-semibold text-neutral-900">Kargo</p>
       <p className={panelHintClass}>
         {shipment.feeKurus === 0
-          ? "Alıcı kargo ödemedi (2 ürün ve üzeri ücretsiz). En uygun firma otomatik seçilir (en fazla 140 TL). Siz paketi hazırlayıp etiketi yazdırın. Adresi normalde değiştiremezsiniz."
+          ? `Alıcı kargo ödemedi (ücretsiz kargo). En uygun firma otomatik seçilir (en fazla ${tlLabel(AUTO_BUY_FEE_CAP_KURUS)}). Siz paketi hazırlayıp etiketi yazdırın. Adresi normalde değiştiremezsiniz.`
           : shipment.feeKurus != null
-            ? `Alıcı ${formatTryFromKurus(shipment.feeKurus)} kargo ödedi; en uygun firma otomatik seçilir (en fazla 140 TL). Siz paketi hazırlayıp etiketi yazdırın. Adresi normalde değiştiremezsiniz.`
-            : "Alıcı kargo ücreti siparişte kayıtlıdır; en uygun firma otomatik seçilir (en fazla 140 TL). Siz paketi hazırlayıp etiketi yazdırın. Adresi normalde değiştiremezsiniz."}
+            ? `Alıcı ${formatTryFromKurus(shipment.feeKurus)} kargo ödedi; en uygun firma otomatik seçilir (en fazla ${tlLabel(AUTO_BUY_FEE_CAP_KURUS)}). Siz paketi hazırlayıp etiketi yazdırın. Adresi normalde değiştiremezsiniz.`
+            : `Alıcı kargo ücreti siparişte kayıtlıdır; en uygun firma otomatik seçilir (en fazla ${tlLabel(AUTO_BUY_FEE_CAP_KURUS)}). Siz paketi hazırlayıp etiketi yazdırın. Adresi normalde değiştiremezsiniz.`}
       </p>
 
       {cancelled ? (

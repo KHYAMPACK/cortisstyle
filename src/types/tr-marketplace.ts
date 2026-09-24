@@ -79,6 +79,12 @@ export interface TrBoutiquePublic {
   catalogProfile: TrCatalogProfileId;
   /** Public storefront contact email override. Null → info@{customDomain} or platform mailbox. */
   contactEmail: string | null;
+  /** Flat shipping fee charged per order, kuruş. 0 = no shipping charge. */
+  shippingFeeKurus: number;
+  /** Orders with at least this many items ship free. Null = no item threshold. */
+  freeShippingMinItems: number | null;
+  /** Orders whose items subtotal reaches this (kuruş) ship free. Null = no amount threshold. */
+  freeShippingMinSubtotalKurus: number | null;
   status: TrBoutiqueStatus;
   createdAt: string;
   updatedAt: string;
@@ -316,6 +322,9 @@ export interface CreateTrBoutiqueInput {
   vergiNo?: string | null;
   iban?: string | null;
   commissionBps?: number;
+  shippingFeeKurus?: number;
+  freeShippingMinItems?: number | null;
+  freeShippingMinSubtotalKurus?: number | null;
   contactName?: string | null;
   contactPhone?: string | null;
   contactEmail?: string | null;

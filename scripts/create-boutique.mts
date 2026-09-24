@@ -69,6 +69,12 @@ interface BoutiqueIntake {
   exchangePolicy?: string;
   physicalAddress?: string;
   customDomain?: string;
+  /** Flat fee shoppers pay per order, in TRY (e.g. 120). Omit = shoppers are not charged for shipping. */
+  shippingFeeTry?: number;
+  /** Orders with at least this many items ship free (use this OR freeShippingMinSubtotalTry). */
+  freeShippingMinItems?: number;
+  /** Orders whose items subtotal reaches this many TRY ship free. */
+  freeShippingMinSubtotalTry?: number;
   catalogProfile?: "fashion" | "custom_art";
   status?: "draft" | "pending" | "verified" | "suspended";
   products?: Array<{
@@ -122,6 +128,12 @@ async function main() {
   if (missingRecommended.length > 0) {
     console.log(
       `Note: recommended fields not set (will fall back to platform defaults): ${missingRecommended.join(", ")}`,
+    );
+  }
+
+  if (intake.shippingFeeTry === undefined) {
+    console.log(
+      "Note: no shippingFeeTry set — shoppers will NOT be charged for shipping. Set it (and optionally freeShippingMinItems or freeShippingMinSubtotalTry) if this store charges kargo.",
     );
   }
 

@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "tsx --test \"src/**/*.test.ts\"",
     "favicon:generate": "tsx scripts/generate-favicon.mts",
     "tr:generate-studio-models": "tsx scripts/generate-studio-ai-models.mts",
     "tr:generate-lila-review": "tsx scripts/generate-lila-model-review.mts"

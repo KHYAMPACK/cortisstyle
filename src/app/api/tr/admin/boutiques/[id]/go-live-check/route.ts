@@ -3,7 +3,9 @@ import { getBoutiqueByIdAdmin } from "@/lib/tr/boutiques";
 import { isTrAdminAuthorized } from "@/lib/tr/adminAuth";
 import { resolveBoutiqueContactEmail } from "@/lib/tr/commerce/checkoutMode";
 import { boutiqueOffersIyzicoCheckout } from "@/lib/tr/payments/registry";
-import { boutiqueHasLiveShipping } from "@/lib/tr/shipping/registry";
+import { boutiqueHasCarrierIntegration } from "@/lib/tr/shipping/registry";
+import { shippingFeeConfigOf } from "@/lib/tr/shipping/quoteShipping";
+import { freeShippingPromoCopy, tlLabel } from "@/lib/tr/shipping/shippingCopy";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -128,13 +130,25 @@ export async function GET(
       : "manual (pending orders, owner marks paid)",
   });
 
-  // 6. Shipping mode — informational, not a blocker either way.
-  const liveShipping = boutiqueHasLiveShipping(boutique.slug);
+  // 6. Shipping — informational, not a blocker either way. Two separate things:
+  // whether a carrier is integrated, and what the shopper is charged.
+  const carrierIntegrated = boutiqueHasCarrierIntegration(boutique.slug);
   checks.push({
     id: "shipping_mode",
     label: "Shipping mode decided",
     ok: true,
-    detail: liveShipping ? "live carrier" : "manual tracking",
+    detail: carrierIntegrated ? "live carrier" : "manual tracking",
+  });
+  const feeConfig = shippingFeeConfigOf(boutique);
+  const promo = freeShippingPromoCopy(feeConfig);
+  checks.push({
+    id: "shipping_fee",
+    label: "Shopper shipping fee set",
+    ok: true,
+    detail:
+      feeConfig.feeKurus > 0
+        ? `${tlLabel(feeConfig.feeKurus)}${promo ? `, ${promo}` : ""}`
+        : "none — shoppers are not charged for shipping",
   });
 
   // 7. Custom domain resolves, if one is set.

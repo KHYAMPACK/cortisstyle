@@ -23,7 +23,3 @@ export const CHECKOUT_RATE_LIMITS = {
   iyzicoAbandonPerIp: { limit: 20, windowMs: 10 * 60 * 1000 },
 } as const;
 
-/** Live shipping quote (Basit) — display only; checkout re-quotes server-side. */
-export const SHIPPING_QUOTE_RATE_LIMITS = {
-  perIp: { limit: 40, windowMs: 10 * 60 * 1000 },
-} as const;

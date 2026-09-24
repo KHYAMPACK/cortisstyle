@@ -1,5 +1,5 @@
 export {
-  boutiqueHasLiveShipping,
+  boutiqueHasCarrierIntegration,
   getShippingProviderId,
   type TrShippingProviderId,
 } from "@/lib/tr/shipping/registry";
@@ -9,10 +9,6 @@ export {
   DEFAULT_APPAREL_PACKAGE,
   EMPTY_ORDER_SHIPMENT,
   hasPurchasedShippingLabel,
-  FLAT_SHIPPING_FEE_KURUS,
-  FREE_SHIPPING_MIN_ITEMS,
-  FREE_SHIPPING_NUDGE_COPY,
-  FREE_SHIPPING_PROMO_COPY,
   SHIPPING_BLOCK_ADDRESS_REJECTED,
   SHIPPING_BLOCK_INSUFFICIENT_BALANCE,
   SHIPPING_BLOCK_PROVIDER_ERROR,

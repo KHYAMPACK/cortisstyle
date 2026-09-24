@@ -6,7 +6,7 @@ import {
   panelHintClass,
   panelSectionClass,
 } from "@/components/tr/panel/panelUi";
-import { boutiqueHasLiveShipping } from "@/lib/tr/shipping/registry";
+import { boutiqueHasCarrierIntegration } from "@/lib/tr/shipping/registry";
 
 const STORAGE_KEY = "tr-panel-orders-process-open";
 
@@ -44,7 +44,7 @@ export function TrOwnerOrderProcessGuide({
   boutiqueSlug: string;
 }) {
   const [open, setOpen] = useState(true);
-  const shippingLive = boutiqueHasLiveShipping(boutiqueSlug);
+  const shippingLive = boutiqueHasCarrierIntegration(boutiqueSlug);
 
   useEffect(() => {
     try {

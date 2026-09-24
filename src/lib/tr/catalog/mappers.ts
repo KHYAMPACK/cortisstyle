@@ -105,6 +105,16 @@ export function mapBoutiqueRow(row: Record<string, unknown>): TrBoutique {
       typeof row.catalog_profile === "string" ? row.catalog_profile : null,
     ),
     contactEmail: (row.contact_email as string | null) ?? null,
+    shippingFeeKurus:
+      typeof row.shipping_fee_kurus === "number" ? row.shipping_fee_kurus : 0,
+    freeShippingMinItems:
+      typeof row.free_shipping_min_items === "number"
+        ? row.free_shipping_min_items
+        : null,
+    freeShippingMinSubtotalKurus:
+      typeof row.free_shipping_min_subtotal_kurus === "number"
+        ? row.free_shipping_min_subtotal_kurus
+        : null,
     vergiNo: (row.vergi_no as string | null) ?? null,
     iban: (row.iban as string | null) ?? null,
     commissionBps: (row.commission_bps as number) ?? 1000,
@@ -140,6 +150,9 @@ export function toPublicBoutique(boutique: TrBoutique): TrBoutiquePublic {
     editorialContent: boutique.editorialContent,
     catalogProfile: boutique.catalogProfile,
     contactEmail: boutique.contactEmail,
+    shippingFeeKurus: boutique.shippingFeeKurus,
+    freeShippingMinItems: boutique.freeShippingMinItems,
+    freeShippingMinSubtotalKurus: boutique.freeShippingMinSubtotalKurus,
     status: boutique.status,
     createdAt: boutique.createdAt,
     updatedAt: boutique.updatedAt,
