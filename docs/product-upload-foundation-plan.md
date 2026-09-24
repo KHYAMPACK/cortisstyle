@@ -18,7 +18,7 @@ Rules for the whole effort:
 | Topic | Decision |
 |---|---|
 | Types | Basit + Gelişmiş for every vertical; fashion gets a third option that opens a sub-choice (Takım, Tek parça sihirbazı, Toplu ekle) |
-| Gelişmiş | = Basit + a **Varyant** card. Variant UI screenshots come later (it shares a component with a later feature) |
+| Gelişmiş | = Basit + a **Varyant** card. The variant system is proposed in §8 and awaits Mert's confirmation; its create-in-place UI is the shared drawer |
 | Categories | Multiple per product, one **primary** ("Ana Kategori"). **Unlimited depth.** Normal categories only — **no dynamic (rule-based) categories** |
 | Where categories live | Ürünler → **Tanımlamalar** hub. The hub shows **only Kategoriler** for now; the other ikas cards (Markalar, Etiketler, Özel Alanlar, Varyant Türleri, Ürün Grupları, Tedarikçiler, Ürün Kişiselleştirmeleri, Ürün Birimleri, Sepet Linki) are added when something needs them |
 | Assigning categories | From the product editor (create and edit) and as a bulk action in the Ürünler list |
