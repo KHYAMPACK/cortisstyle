@@ -16,12 +16,15 @@ import {
   type TrSeoFormValue,
 } from "@/lib/tr/seo/seoFields";
 import { isValidSlug } from "@/lib/tr/seo/slug";
+import { parseDecimalInput, readProductDetailsBody } from "@/lib/tr/productDetails";
+import { plainTextToRichHtml } from "@/lib/tr/richText";
 import type { TrProductCategories } from "@/lib/tr/categories/types";
 import type {
   TrFulfillmentType,
   TrProduct,
   TrProductPrivate,
   TrProductStatus,
+  TrUnitType,
 } from "@/types/tr-marketplace";
 
 /**
@@ -44,6 +47,22 @@ export interface SimpleProductFormState {
   images: string[];
   /** Slug and the SEO card's fields. */
   seo: TrSeoFormValue;
+  /** Açıklama as the editor's HTML (`""` when empty); the server sanitizes it. */
+  descriptionHtml: string;
+  brand: string;
+  tags: string[];
+  googleCategory: string;
+  /** Owner-only, like `costPriceTry`. */
+  supplier: string;
+  sku: string;
+  barcode: string;
+  desi: string;
+  /** Owner-only. */
+  hsCode: string;
+  continueSelling: boolean;
+  unitPriceEnabled: boolean;
+  unitAmount: string;
+  unitType: TrUnitType;
   /**
    * The product's categories when the boutique manages its own; `null` when it uses
    * the built-in tree (nothing is sent, nothing is shown).
@@ -64,6 +83,19 @@ export function emptySimpleProductForm(
     stock: "1",
     images: [],
     seo: { ...EMPTY_SEO_FORM },
+    descriptionHtml: "",
+    brand: "",
+    tags: [],
+    googleCategory: "",
+    supplier: "",
+    sku: "",
+    barcode: "",
+    desi: "",
+    hsCode: "",
+    continueSelling: false,
+    unitPriceEnabled: false,
+    unitAmount: "",
+    unitType: "kg",
     categories,
   };
 }
@@ -96,7 +128,43 @@ export function simpleFormFromProduct(
     stock: String(product.stock),
     images: product.images,
     seo: seoToForm(product.slug, product.seo),
+    descriptionHtml:
+      product.descriptionHtml ?? plainTextToRichHtml(product.description),
+    brand: product.brand ?? "",
+    tags: product.tags ?? [],
+    googleCategory: product.googleCategory ?? "",
+    supplier: ownerOnly.supplier ?? "",
+    sku: product.sku ?? "",
+    barcode: product.barcode ?? "",
+    desi: product.desi != null ? String(product.desi) : "",
+    hsCode: ownerOnly.hsCode ?? "",
+    continueSelling: product.continueSelling ?? false,
+    unitPriceEnabled: product.unitPrice?.enabled ?? false,
+    unitAmount:
+      product.unitPrice?.amount != null ? String(product.unitPrice.amount) : "",
+    unitType: product.unitPrice?.type ?? "kg",
     categories,
+  };
+}
+
+/** The detail fields as the API body carries them (also what the validation reads). */
+function detailFields(form: SimpleProductFormState) {
+  return {
+    descriptionHtml: form.descriptionHtml || null,
+    brand: form.brand,
+    tags: form.tags,
+    googleCategory: form.googleCategory,
+    sku: form.sku,
+    barcode: form.barcode,
+    desi: parseDecimalInput(form.desi),
+    continueSelling: form.continueSelling,
+    unitPrice: {
+      enabled: form.unitPriceEnabled,
+      amount: parseDecimalInput(form.unitAmount),
+      type: form.unitType,
+    },
+    supplier: form.supplier,
+    hsCode: form.hsCode,
   };
 }
 
@@ -142,6 +210,12 @@ export function validateSimpleProductForm(
   if (form.seo.canonical && !isValidCanonicalPath(`/${form.seo.canonical}`)) {
     return "Canonical URL geçersiz.";
   }
+  // The API's own rules for the detail fields (lengths, formats, unit price).
+  try {
+    readProductDetailsBody(detailFields(form));
+  } catch (problem) {
+    return problem instanceof Error ? problem.message : "Ürün ayrıntıları geçersiz.";
+  }
   return null;
 }
 
@@ -185,6 +259,7 @@ export function simpleProductPayload(
     // Empty = the server derives it from the title.
     slug: form.seo.slug.replace(/-+$/, "") || undefined,
     seo: seoFromForm(form.seo),
+    ...detailFields(form),
     ...(form.categories ? { categories: form.categories } : {}),
   };
 }
@@ -218,6 +293,7 @@ export function simpleProductPatch(
     status,
     images,
     seo,
+    ...detailFields(form),
     // An emptied slug clears it; the old address then redirects to the id URL.
     slug: form.seo.slug.replace(/-+$/, "") || null,
     ...(categories ? { categories } : {}),

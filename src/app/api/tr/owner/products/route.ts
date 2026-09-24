@@ -26,6 +26,9 @@ import {
   ProductSlugTakenError,
 } from "@/lib/tr/catalog/productSlug";
 import { sanitizeSeo } from "@/lib/tr/seo/seoFields";
+import { readProductDetailsBody } from "@/lib/tr/productDetails";
+import { richHtmlToPlainText } from "@/lib/tr/richText";
+import { sanitizeRichHtml } from "@/lib/tr/richTextSanitize";
 import { CategoryError, setProductCategories } from "@/lib/tr/catalog/categories";
 import { readCategoriesBody } from "@/lib/tr/catalog/categoryApi";
 import { isValidSlug } from "@/lib/tr/seo/slug";
@@ -192,6 +195,21 @@ export async function POST(request: Request) {
     );
   }
 
+  let details: ReturnType<typeof readProductDetailsBody>;
+  try {
+    details = readProductDetailsBody(body);
+  } catch (error) {
+    return Response.json(
+      { error: error instanceof Error ? error.message : "Ürün ayrıntıları geçersiz." },
+      { status: 400 },
+    );
+  }
+  const { supplier, hsCode, descriptionHtml, ...publicDetails } = details;
+  // The editor is client code: the description is sanitized here, and its plain-text
+  // form is what the meta description, the feed and AI fill read.
+  const cleanDescription =
+    descriptionHtml !== undefined ? sanitizeRichHtml(descriptionHtml) : undefined;
+
   // A Basit ürün gets a slug from its title unless the owner chose one; a chosen
   // slug must be valid and free. Garment products only get one when asked.
   const productType = readProductType(body.productType);
@@ -255,7 +273,13 @@ export async function POST(request: Request) {
       boutiqueId: boutique.id,
       title,
       description:
-        typeof body.description === "string" ? body.description : null,
+        cleanDescription !== undefined
+          ? richHtmlToPlainText(cleanDescription ?? "") || null
+          : typeof body.description === "string"
+            ? body.description
+            : null,
+      ...(cleanDescription !== undefined ? { descriptionHtml: cleanDescription } : {}),
+      ...publicDetails,
       priceKurus,
       compareAtPriceKurus,
       sizes,
@@ -304,19 +328,24 @@ export async function POST(request: Request) {
     // The product exists at this point, so a failure to store the cost is reported
     // as a warning instead of an error (a retry would create a duplicate).
     let warning: string | undefined;
-    if (costPriceKurus != null) {
+    const privateValues = {
+      ...(costPriceKurus != null ? { costPriceKurus } : {}),
+      ...(supplier ? { supplier } : {}),
+      ...(hsCode ? { hsCode } : {}),
+    };
+    if (Object.keys(privateValues).length > 0) {
       try {
         await saveProductPrivateAdmin({
           productId: product.id,
           boutiqueId: boutique.id,
-          costPriceKurus,
+          ...privateValues,
         });
       } catch (privateError) {
         console.error("[tr/owner/products] private save failed:", privateError);
         warning =
           privateError instanceof Error
             ? privateError.message
-            : "Alış fiyatı kaydedilemedi.";
+            : "Ürünün özel bilgileri kaydedilemedi.";
       }
     }
 

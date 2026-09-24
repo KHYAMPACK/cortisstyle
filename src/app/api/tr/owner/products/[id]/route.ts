@@ -28,6 +28,9 @@ import {
   setProductSlugAdmin,
 } from "@/lib/tr/catalog/productSlug";
 import { sanitizeSeo } from "@/lib/tr/seo/seoFields";
+import { readProductDetailsBody } from "@/lib/tr/productDetails";
+import { richHtmlToPlainText } from "@/lib/tr/richText";
+import { sanitizeRichHtml } from "@/lib/tr/richTextSanitize";
 import {
   CategoryError,
   getProductCategories,
@@ -309,6 +312,24 @@ export async function PATCH(request: Request, context: RouteContext) {
     );
   }
 
+  let details: ReturnType<typeof readProductDetailsBody>;
+  try {
+    details = readProductDetailsBody(body);
+  } catch (error) {
+    return Response.json(
+      { error: error instanceof Error ? error.message : "Ürün ayrıntıları geçersiz." },
+      { status: 400 },
+    );
+  }
+  const { supplier, hsCode, descriptionHtml, ...publicDetails } = details;
+  Object.assign(patch, publicDetails);
+  if (descriptionHtml !== undefined) {
+    // Sanitized here (the editor is client code); `description` keeps the plain text.
+    const clean = sanitizeRichHtml(descriptionHtml);
+    patch.descriptionHtml = clean;
+    patch.description = richHtmlToPlainText(clean ?? "") || null;
+  }
+
   try {
     // Check the slug first so a taken one rejects the whole save instead of half of it.
     if (typeof slugChange === "string") {
@@ -333,11 +354,17 @@ export async function PATCH(request: Request, context: RouteContext) {
       // The primary category's slug is copied onto the product; return it fresh.
       product.category = (await getProductByIdAdmin(id))?.category ?? null;
     }
-    if (costPriceKurus !== undefined) {
+    if (
+      costPriceKurus !== undefined ||
+      supplier !== undefined ||
+      hsCode !== undefined
+    ) {
       await saveProductPrivateAdmin({
         productId: id,
         boutiqueId: owned.productBoutiqueId,
         costPriceKurus,
+        supplier,
+        hsCode,
       });
     }
     return Response.json({ product });
@@ -417,6 +444,36 @@ export async function POST(request: Request, context: RouteContext) {
 
   try {
     const product = await duplicateProductAdmin(id);
+
+    // The copy keeps the owner-only details and the categories. The copy exists
+    // already, so a failure here is logged, not reported as a failed duplicate.
+    try {
+      const [ownerOnly, categories] = await Promise.all([
+        getProductPrivateAdmin(id),
+        getProductCategories(id),
+      ]);
+      if (ownerOnly.costPriceKurus != null || ownerOnly.supplier || ownerOnly.hsCode) {
+        await saveProductPrivateAdmin({
+          productId: product.id,
+          boutiqueId: owned.productBoutiqueId,
+          costPriceKurus: ownerOnly.costPriceKurus,
+          supplier: ownerOnly.supplier,
+          hsCode: ownerOnly.hsCode,
+        });
+      }
+      if (categories.ids.length > 0) {
+        await setProductCategories({
+          productId: product.id,
+          boutiqueId: owned.productBoutiqueId,
+          categoryIds: categories.ids,
+          primaryId: categories.primaryId,
+        });
+        product.category = (await getProductByIdAdmin(product.id))?.category ?? null;
+      }
+    } catch (copyError) {
+      console.error("[tr/owner/products/[id]] duplicate extras failed:", copyError);
+    }
+
     return Response.json({ product }, { status: 201 });
   } catch (error) {
     console.error("[tr/owner/products/[id]] duplicate failed:", error);

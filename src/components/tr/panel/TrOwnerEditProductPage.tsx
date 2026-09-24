@@ -20,7 +20,11 @@ import { useAuth } from "@/context/AuthContext";
 import { fetchOwnerProduct } from "@/lib/tr/ownerClient";
 import { trPanelProductsPath } from "@/lib/tr/paths";
 import type { TrProductCategories } from "@/lib/tr/categories/types";
-import type { TrProduct, TrProductPrivate } from "@/types/tr-marketplace";
+import {
+  EMPTY_PRODUCT_PRIVATE,
+  type TrProduct,
+  type TrProductPrivate,
+} from "@/types/tr-marketplace";
 
 interface TrOwnerEditProductPageProps {
   productId: string;
@@ -30,9 +34,7 @@ export function TrOwnerEditProductPage({ productId }: TrOwnerEditProductPageProp
   const router = useRouter();
   const { isAuthenticated, isInitializing } = useAuth();
   const [product, setProduct] = useState<TrProduct | null>(null);
-  const [ownerOnly, setOwnerOnly] = useState<TrProductPrivate>({
-    costPriceKurus: null,
-  });
+  const [ownerOnly, setOwnerOnly] = useState<TrProductPrivate>(EMPTY_PRODUCT_PRIVATE);
   const [productCategories, setProductCategories] =
     useState<TrProductCategories>({ ids: [], primaryId: null });
   const [loading, setLoading] = useState(true);

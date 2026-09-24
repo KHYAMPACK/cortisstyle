@@ -21,18 +21,21 @@ import type {
   TrProductCategories,
 } from "@/lib/tr/categories/types";
 import type { TrShippingRate } from "@/lib/tr/shipping/types";
-import type {
-  TrInvoice,
-  TrInvoiceStatus,
-  TrOrderWithItems,
-  TrProduct,
-  TrProductColor,
-  TrFulfillmentType,
-  TrProductFeatures,
-  TrProductPrivate,
-  TrProductStatus,
-  TrProductType,
+import {
+  EMPTY_PRODUCT_PRIVATE,
+  type TrInvoice,
+  type TrInvoiceStatus,
+  type TrOrderWithItems,
+  type TrProduct,
+  type TrProductColor,
+  type TrFulfillmentType,
+  type TrProductFeatures,
+  type TrProductPrivate,
+  type TrProductStatus,
+  type TrProductType,
+  type TrUnitPrice,
 } from "@/types/tr-marketplace";
+import type { TrProductFacets } from "@/lib/tr/catalog/productFacets";
 
 export interface TrOwnerBoutiqueSummary {
   id: string;
@@ -97,6 +100,7 @@ async function parseOwnerJson(response: Response): Promise<unknown> {
 function invalidateProductLists(): void {
   invalidateOwnerCache("products:");
   invalidateOwnerCache("categories:");
+  invalidateOwnerCache("product-facets:");
   invalidateOwnerCache("product-originals:");
   invalidateOwnerCache("summary:");
   invalidateOwnerCache("dashboard:");
@@ -238,7 +242,7 @@ export async function fetchOwnerProduct(productId: string): Promise<{
   return {
     product: data.product,
     boutique: data.boutique,
-    ownerOnly: data.private ?? { costPriceKurus: null },
+    ownerOnly: data.private ?? EMPTY_PRODUCT_PRIVATE,
     categories: data.categories ?? { ids: [], primaryId: null },
   };
 }
@@ -271,12 +275,21 @@ export interface TrOwnerProductPayload {
   seo?: TrSeo;
   /** Categories to assign (custom category mode only). */
   categories?: TrProductCategories;
+  /** Rich-text description (HTML); the server sanitizes it and derives `description`. */
+  descriptionHtml?: string | null;
+  brand?: string | null;
+  tags?: string[];
+  googleCategory?: string | null;
+  sku?: string | null;
+  barcode?: string | null;
+  desi?: number | null;
+  continueSelling?: boolean;
+  unitPrice?: TrUnitPrice;
+  /** Owner-only, like `costPriceTry`. */
+  supplier?: string | null;
+  hsCode?: string | null;
 }
 
-/**
- * Like `createOwnerProduct`, but also returns the API's `warning` (the product was
- * created but something secondary, such as the cost price, was not stored).
- */
 /** What an owner can set on a category. */
 export interface TrOwnerCategoryInput {
   name?: string;
@@ -317,6 +330,26 @@ export async function fetchOwnerCategories(boutiqueId: string): Promise<{
       categories?: TrCategoryListEntry[];
     }>(response, "Kategoriler yüklenemedi.");
     return { mode: data.mode ?? "legacy", categories: data.categories ?? [] };
+  });
+}
+
+/** Brands, tags and suppliers the boutique already uses (suggestions for the creatable fields). */
+export async function fetchOwnerProductFacets(
+  boutiqueId: string,
+): Promise<TrProductFacets> {
+  return cachedOwnerFetch(ownerCacheKeys.productFacets(boutiqueId), async () => {
+    const response = await ownerFetch(
+      `/api/tr/owner/products/facets?boutiqueId=${encodeURIComponent(boutiqueId)}`,
+    );
+    const data = await readCategoryResponse<Partial<TrProductFacets>>(
+      response,
+      "Öneriler yüklenemedi.",
+    );
+    return {
+      brands: data.brands ?? [],
+      tags: data.tags ?? [],
+      suppliers: data.suppliers ?? [],
+    };
   });
 }
 
@@ -391,6 +424,10 @@ export async function addOwnerProductsToCategory(
   invalidateCategories();
 }
 
+/**
+ * Like `createOwnerProduct`, but also returns the API's `warning` (the product was
+ * created but something secondary, such as the cost price, was not stored).
+ */
 export async function createOwnerProductDetailed(
   payload: TrOwnerProductPayload,
 ): Promise<{ product: TrProduct; warning?: string }> {

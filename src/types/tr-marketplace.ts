@@ -12,6 +12,8 @@ export type TrProductStatus = "available" | "sold" | "hidden";
 export type TrProductType = "simple" | "advanced" | "fashion";
 /** Informational for now — a digital product still uses normal checkout and shipping. */
 export type TrFulfillmentType = "physical" | "digital";
+/** Unit of a product's content, for the unit price (see `productUnits.ts`). */
+export type TrUnitType = "g" | "kg" | "ml" | "l" | "cm" | "m" | "m2" | "adet";
 export type TrPaymentStatus = "sandbox" | "pending" | "paid" | "failed" | "refunded";
 /** Ikas-like owner fulfillment pipeline (separate from payment). */
 export type TrFulfillmentStatus =
@@ -133,7 +135,37 @@ export interface TrBoutique extends TrBoutiquePublic {
   categoryMode: TrCategoryMode;
 }
 
-export interface TrProduct {
+/** "Birim fiyat": the price per kg / l / m…, worked out from the content amount. */
+export interface TrUnitPrice {
+  enabled: boolean;
+  /** How much the product contains, in `type` units (500 for a 500 g pack). */
+  amount: number | null;
+  type: TrUnitType | null;
+}
+
+/**
+ * Public-safe fields the Basit ürün editor adds (Ürün detayı, Envanter, Stok, Birim
+ * fiyat; `supabase/patch_product_details.sql`). Present on owner/admin reads
+ * (`select *`) once the patch is applied; owner-only data (supplier, HS code) is
+ * `TrProductPrivate` instead.
+ */
+export interface TrProductDetails {
+  /** Sanitized rich-text description; `description` holds its plain-text form. */
+  descriptionHtml: string | null;
+  brand: string | null;
+  tags: string[];
+  /** Free text the Google Merchant feed can emit as google_product_category. */
+  googleCategory: string | null;
+  sku: string | null;
+  barcode: string | null;
+  /** Shipping volume weight; the carrier label will use it. */
+  desi: number | null;
+  /** Keep selling at zero stock. Stored; the storefront does not act on it yet. */
+  continueSelling: boolean;
+  unitPrice: TrUnitPrice | null;
+}
+
+export interface TrProduct extends Partial<TrProductDetails> {
   id: string;
   boutiqueId: string;
   title: string;
@@ -182,7 +214,17 @@ export interface TrProduct {
  */
 export interface TrProductPrivate {
   costPriceKurus: number | null;
+  /** Free text; stored only. */
+  supplier: string | null;
+  /** Gümrük tarife (GTİP) code; stored only. */
+  hsCode: string | null;
 }
+
+export const EMPTY_PRODUCT_PRIVATE: TrProductPrivate = {
+  costPriceKurus: null,
+  supplier: null,
+  hsCode: null,
+};
 
 export interface TrProductWithBoutique extends TrProduct {
   boutique: TrBoutiquePublic;
@@ -361,7 +403,7 @@ export interface CreateTrBoutiqueInput {
   status?: TrBoutiqueStatus;
 }
 
-export interface CreateTrProductInput {
+export interface CreateTrProductInput extends Partial<TrProductDetails> {
   boutiqueId: string;
   title: string;
   description?: string | null;
@@ -390,7 +432,7 @@ export interface CreateTrProductInput {
   seo?: TrSeo;
 }
 
-export interface UpdateTrProductInput {
+export interface UpdateTrProductInput extends Partial<TrProductDetails> {
   title?: string;
   description?: string | null;
   priceKurus?: number;

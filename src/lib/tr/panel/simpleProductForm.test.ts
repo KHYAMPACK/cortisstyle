@@ -9,7 +9,22 @@ import {
   validateSimpleProductForm,
   type SimpleProductFormState,
 } from "./simpleProductForm";
-import type { TrProduct } from "@/types/tr-marketplace";
+import { EMPTY_PRODUCT_PRIVATE, type TrProduct } from "@/types/tr-marketplace";
+
+/** The fields the detail cards add to every save, so an edit can also clear them. */
+const DETAIL_KEYS = [
+  "barcode",
+  "brand",
+  "continueSelling",
+  "descriptionHtml",
+  "desi",
+  "googleCategory",
+  "hsCode",
+  "sku",
+  "supplier",
+  "tags",
+  "unitPrice",
+];
 
 function form(
   overrides: Partial<SimpleProductFormState> = {},
@@ -110,7 +125,8 @@ describe("simpleProductPatch", () => {
       "status",
       "stock",
       "title",
-    ]);
+      ...DETAIL_KEYS,
+    ].sort());
     assert.equal(patch.costPriceTry, 120);
   });
 
@@ -139,7 +155,10 @@ describe("simpleFormFromProduct", () => {
   } as TrProduct;
 
   it("turns a discounted product back into normal + discounted price", () => {
-    const state = simpleFormFromProduct(product, { costPriceKurus: 12000 });
+    const state = simpleFormFromProduct(product, {
+      ...EMPTY_PRODUCT_PRIVATE,
+      costPriceKurus: 12000,
+    });
     assert.equal(state.priceTry, "450");
     assert.equal(state.salePriceTry, "399.90");
     assert.equal(state.costPriceTry, "120");
@@ -148,7 +167,7 @@ describe("simpleFormFromProduct", () => {
   });
 
   it("round-trips through the payload", () => {
-    const state = simpleFormFromProduct(product, { costPriceKurus: null });
+    const state = simpleFormFromProduct(product, EMPTY_PRODUCT_PRIVATE);
     const payload = simpleProductPayload(state, "b1");
     assert.equal(Math.round(payload.priceTry * 100), 39990);
     assert.equal(Math.round(payload.compareAtPriceTry! * 100), 45000);
@@ -212,7 +231,7 @@ describe("slug and SEO in the form", () => {
         slug: "deri-cuzdan",
         seo: { title: "Cüzdan", noindex: true, canonical: "/urun/x" },
       } as TrProduct,
-      { costPriceKurus: null },
+      EMPTY_PRODUCT_PRIVATE,
     );
     assert.deepEqual(state.seo, {
       slug: "deri-cuzdan",
@@ -245,9 +264,124 @@ describe("categories in the form", () => {
     const saved = { ids: ["c1"], primaryId: "c1" };
     const state = simpleFormFromProduct(
       { title: "x", priceKurus: 100, compareAtPriceKurus: null, status: "available", stock: 1, images: ["a"] } as TrProduct,
-      { costPriceKurus: null },
+      EMPTY_PRODUCT_PRIVATE,
       saved,
     );
     assert.deepEqual(state.categories, saved);
   });
 });
+
+describe("detail fields in the form", () => {
+  it("start empty and send nothing meaningful for a bare product", () => {
+    const payload = simpleProductPayload(form(), "b1");
+    assert.equal(payload.descriptionHtml, null);
+    assert.equal(payload.brand, "");
+    assert.deepEqual(payload.tags, []);
+    assert.equal(payload.desi, null);
+    assert.equal(payload.continueSelling, false);
+    assert.deepEqual(payload.unitPrice, { enabled: false, amount: null, type: "kg" });
+    assert.equal(validateSimpleProductForm(form()), null);
+  });
+
+  it("carries every detail to the payload and the patch", () => {
+    const filled = form({
+      descriptionHtml: "<p>El yapımı</p>",
+      brand: "Lila",
+      tags: ["deri", "yeni"],
+      googleCategory: "Giyim ve Aksesuar",
+      supplier: "Atölye A",
+      sku: "LB-1",
+      barcode: "8690000000012",
+      desi: "1,5",
+      hsCode: "4202.31.00.00.00",
+      continueSelling: true,
+      unitPriceEnabled: true,
+      unitAmount: "500",
+      unitType: "g",
+    });
+    const expected = {
+      descriptionHtml: "<p>El yapımı</p>",
+      brand: "Lila",
+      tags: ["deri", "yeni"],
+      googleCategory: "Giyim ve Aksesuar",
+      supplier: "Atölye A",
+      sku: "LB-1",
+      barcode: "8690000000012",
+      desi: 1.5,
+      hsCode: "4202.31.00.00.00",
+      continueSelling: true,
+      unitPrice: { enabled: true, amount: 500, type: "g" },
+    };
+    assert.equal(validateSimpleProductForm(filled), null);
+    assert.deepEqual(pick(simpleProductPayload(filled, "b1")), expected);
+    assert.deepEqual(pick(simpleProductPatch(filled)), expected);
+  });
+
+  it("reports the first invalid detail with the API's own sentence", () => {
+    assert.match(validateSimpleProductForm(form({ barcode: "12 34" }))!, /Barkod/);
+    assert.match(validateSimpleProductForm(form({ hsCode: "ab" }))!, /HS kodu/);
+    assert.match(validateSimpleProductForm(form({ desi: "0" }))!, /Desi/);
+    assert.match(
+      validateSimpleProductForm(form({ unitPriceEnabled: true, unitAmount: "" }))!,
+      /miktar ve birim/,
+    );
+    assert.equal(
+      validateSimpleProductForm(form({ unitPriceEnabled: true, unitAmount: "2,5", unitType: "l" })),
+      null,
+    );
+  });
+
+  it("loads a saved product's details, falling back to the plain description", () => {
+    const state = simpleFormFromProduct(
+      {
+        title: "x",
+        priceKurus: 100,
+        compareAtPriceKurus: null,
+        status: "available",
+        stock: 1,
+        images: ["a"],
+        description: "Bir\n\nİki",
+        brand: "Lila",
+        tags: ["a"],
+        sku: "S1",
+        desi: 2.5,
+        continueSelling: true,
+        unitPrice: { enabled: true, amount: 250, type: "ml" },
+      } as TrProduct,
+      { costPriceKurus: null, supplier: "Toptancı", hsCode: "6109.10" },
+    );
+    assert.equal(state.descriptionHtml, "<p>Bir</p><p>İki</p>");
+    assert.equal(state.brand, "Lila");
+    assert.deepEqual(state.tags, ["a"]);
+    assert.equal(state.sku, "S1");
+    assert.equal(state.desi, "2.5");
+    assert.equal(state.continueSelling, true);
+    assert.equal(state.unitPriceEnabled, true);
+    assert.equal(state.unitAmount, "250");
+    assert.equal(state.unitType, "ml");
+    assert.equal(state.supplier, "Toptancı");
+    assert.equal(state.hsCode, "6109.10");
+  });
+
+  it("prefers the saved rich description over the plain one", () => {
+    const state = simpleFormFromProduct(
+      {
+        title: "x",
+        priceKurus: 100,
+        compareAtPriceKurus: null,
+        status: "available",
+        stock: 1,
+        images: ["a"],
+        description: "düz",
+        descriptionHtml: "<p><strong>zengin</strong></p>",
+      } as TrProduct,
+      EMPTY_PRODUCT_PRIVATE,
+    );
+    assert.equal(state.descriptionHtml, "<p><strong>zengin</strong></p>");
+  });
+});
+
+function pick(source: object) {
+  const record = source as Record<string, unknown>;
+  return Object.fromEntries(DETAIL_KEYS.map((key) => [key, record[key]]));
+}

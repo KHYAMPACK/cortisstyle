@@ -306,6 +306,7 @@ export function TrPanelEditorCard({
   title,
   hint,
   tone = "default",
+  allowOverflow = false,
   children,
 }: {
   id: string;
@@ -313,6 +314,8 @@ export function TrPanelEditorCard({
   /** Short explanation shown from the (i) next to the title. */
   hint?: string;
   tone?: "default" | "danger";
+  /** Let dropdowns inside the card extend past its bottom edge (suggestion lists); sideways it still clips. */
+  allowOverflow?: boolean;
   children: ReactNode;
 }) {
   const titleId = `${id}-title`;
@@ -320,9 +323,9 @@ export function TrPanelEditorCard({
     <section
       id={id}
       aria-labelledby={titleId}
-      className={`scroll-mt-32 overflow-hidden rounded-xl border bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04)] ${
-        tone === "danger" ? "border-red-200" : "border-neutral-200/80"
-      }`}
+      className={`scroll-mt-32 rounded-xl border bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04)] ${
+        allowOverflow ? "overflow-x-clip" : "overflow-hidden"
+      } ${tone === "danger" ? "border-red-200" : "border-neutral-200/80"}`}
     >
       <header className="flex items-center gap-2 border-b border-neutral-200/80 px-4 py-3.5 sm:px-6 sm:py-4">
         <h2
