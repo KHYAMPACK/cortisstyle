@@ -2,23 +2,18 @@ import {
   requireOwnedBoutique,
   requireTrOwner,
 } from "@/lib/tr/ownerAuth";
-import { ensureDraftInvoiceForBoutiqueOrder } from "@/lib/tr/invoices";
+import { markOrderPaidByOwner } from "@/lib/tr/commerce/ownerMarkPaid";
 import {
   getOrderByIdAdmin,
   updateOrderFulfillmentStatusAdmin,
-  updateOrderPaymentStatusAdmin,
 } from "@/lib/tr/orders";
 import {
-  autoFulfillPaidShipment,
   cancelLiveShipmentForCancelledOrder,
   refreshBasitKargoOrder,
 } from "@/lib/tr/shipping/ownerShipment";
 import { boutiqueOffersIyzicoCheckout } from "@/lib/tr/payments/registry";
 import { getShippingProviderId } from "@/lib/tr/shipping/registry";
-import type {
-  TrFulfillmentStatus,
-  TrPaymentStatus,
-} from "@/types/tr-marketplace";
+import type { TrFulfillmentStatus } from "@/types/tr-marketplace";
 
 export const runtime = "nodejs";
 
@@ -66,9 +61,12 @@ export async function GET(request: Request, context: RouteContext) {
     order = await refreshBasitKargoOrder(boutique.slug, order);
   }
 
+  // An unpaid card checkout is not an order yet — but an order the owner created by
+  // hand (manual) is, even unpaid.
   if (
     (await boutiqueOffersIyzicoCheckout(boutique.slug)) &&
     !order.isSandbox &&
+    order.channel !== "manual" &&
     (order.paymentStatus === "pending" || order.paymentStatus === "failed")
   ) {
     return Response.json({ error: "Sipariş bulunamadı." }, { status: 404 });
@@ -127,7 +125,10 @@ export async function PATCH(request: Request, context: RouteContext) {
     return Response.json({ error: "Sipariş bulunamadı." }, { status: 404 });
   }
 
-  const cardCheckout = await boutiqueOffersIyzicoCheckout(boutique.slug);
+  // Card payments belong to iyzico — except on an order the owner created by hand.
+  const cardCheckout =
+    (await boutiqueOffersIyzicoCheckout(boutique.slug)) &&
+    existing.channel !== "manual";
   if (
     cardCheckout &&
     !existing.isSandbox &&
@@ -164,19 +165,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   try {
     if (hasPayment) {
-      await updateOrderPaymentStatusAdmin(id, "paid" as TrPaymentStatus);
-      try {
-        await ensureDraftInvoiceForBoutiqueOrder(boutique.id, id);
-      } catch (invoiceError) {
-        console.error(
-          "[tr/owner/orders/[id]] invoice draft after paid failed:",
-          invoiceError,
-        );
-      }
-      await autoFulfillPaidShipment(
-        { id: boutique.id, slug: boutique.slug },
-        id,
-      );
+      await markOrderPaidByOwner(boutique, id);
     }
     if (hasFulfillment) {
       if (

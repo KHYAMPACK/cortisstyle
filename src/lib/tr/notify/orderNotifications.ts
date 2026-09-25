@@ -8,13 +8,17 @@ function storageKey(boutiqueId: string): string {
 
 /** Orders that should surface in owner alerts. Unpaid card holds stay hidden. */
 export function isActionableOwnerOrder(
-  order: Pick<TrOrder, "paymentStatus" | "isSandbox" | "fulfillmentStatus">,
+  order: Pick<TrOrder, "paymentStatus" | "isSandbox" | "fulfillmentStatus"> & {
+    channel?: TrOrder["channel"];
+  },
   options?: { cardCheckout?: boolean },
 ): boolean {
   if (order.fulfillmentStatus === "cancelled") return false;
   if (
     options?.cardCheckout &&
     !order.isSandbox &&
+    // An order the owner created by hand is real even while unpaid.
+    order.channel !== "manual" &&
     (order.paymentStatus === "pending" || order.paymentStatus === "failed")
   ) {
     return false;
@@ -28,7 +32,9 @@ export function isActionableOwnerOrder(
 }
 
 export function isOwnerListedOrder(
-  order: Pick<TrOrder, "paymentStatus" | "isSandbox" | "fulfillmentStatus">,
+  order: Pick<TrOrder, "paymentStatus" | "isSandbox" | "fulfillmentStatus"> & {
+    channel?: TrOrder["channel"];
+  },
   options?: { cardCheckout?: boolean },
 ): boolean {
   return isActionableOwnerOrder(order, options);

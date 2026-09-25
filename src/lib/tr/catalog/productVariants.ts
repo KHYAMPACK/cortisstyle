@@ -108,6 +108,38 @@ export async function listVariantsByProductIds(
   return byProduct;
 }
 
+/**
+ * Every variant of a boutique's Gelişmiş products, keyed by product id — what the manual
+ * order picker lists. Products are read first and their variants by id in chunks (a
+ * boutique can have far more products than one URL can name).
+ */
+export async function listVariantsByBoutique(
+  boutiqueId: string,
+): Promise<Map<string, TrProductVariant[]>> {
+  const supabase = client();
+  let ids: string[];
+  // Only Gelişmiş products have variants; before product types exist, ask about all.
+  const advanced = await supabase
+    .from("tr_products")
+    .select("id")
+    .eq("boutique_id", boutiqueId)
+    .eq("product_type", "advanced");
+  if (advanced.error) {
+    const all = await supabase.from("tr_products").select("id").eq("boutique_id", boutiqueId);
+    if (all.error) throw all.error;
+    ids = (all.data ?? []).map((row) => String(row.id));
+  } else {
+    ids = (advanced.data ?? []).map((row) => String(row.id));
+  }
+
+  const byProduct = new Map<string, TrProductVariant[]>();
+  for (let start = 0; start < ids.length; start += 150) {
+    const chunk = await listVariantsByProductIds(ids.slice(start, start + 150));
+    for (const [productId, variants] of chunk) byProduct.set(productId, variants);
+  }
+  return byProduct;
+}
+
 /** Looks up a variant value's label ("Kırmızı") among a boutique's variant types. */
 export async function variantValueLabelOf(
   boutiqueId: string,

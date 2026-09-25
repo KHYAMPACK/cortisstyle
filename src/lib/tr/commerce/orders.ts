@@ -110,8 +110,11 @@ export async function createOrderAdmin(
 
     // Find or create the customer this order belongs to. Never throws and never
     // blocks the sale: with no customer the order is simply placed unlinked.
+    // A manual order already knows its customer.
     const customerBoutiqueId = input.items[0]?.boutiqueId;
-    const customerId = customerBoutiqueId
+    const customerId = input.customerId
+      ? input.customerId
+      : customerBoutiqueId
       ? await ensureCustomerForOrderAdmin({
           boutiqueId: customerBoutiqueId,
           name: input.customerName,
@@ -132,6 +135,15 @@ export async function createOrderAdmin(
         total_kurus: totalKurus,
         discount_code: discountCode,
         discount_kurus: discountKurus,
+        // Manual-order columns are only written when used, so the shop's checkout
+        // never depends on `patch_tr_manual_orders.sql`.
+        ...(input.channel === "manual" ? { channel: "manual" } : {}),
+        ...(input.customerNote?.trim()
+          ? { customer_note: input.customerNote.trim() }
+          : {}),
+        ...(input.discountTitle?.trim()
+          ? { discount_title: input.discountTitle.trim() }
+          : {}),
         invoice_type: invoiceType,
         buyer_tax_id: buyerTaxId,
         buyer_tax_office: buyerTaxOffice,

@@ -276,8 +276,15 @@ export type TrCustomerAddressInput = {
 
 export type TrCustomerAddressPatch = Partial<TrCustomerAddressInput>;
 
+/** Where an order came from: the shop's checkout, or the owner creating it in the panel. */
+export type TrOrderChannel = "storefront" | "manual";
+
 export interface TrOrder {
   id: string;
+  /** `manual` = created by the owner in the panel (Sipariş Oluştur). */
+  channel: TrOrderChannel;
+  /** The owner's "Müşteri Notu" on a manual order. */
+  customerNote: string | null;
   /** The boutique customer record this order belongs to; null on orders that predate customers. */
   customerId: string | null;
   customerEmail: string;
@@ -289,6 +296,8 @@ export interface TrOrder {
   discountCode: string | null;
   /** Amount subtracted from line subtotal (kuruş). */
   discountKurus: number;
+  /** Name of a manual price reduction ("Arkadaş indirimi"); a coupon uses `discountCode`. */
+  discountTitle: string | null;
   invoiceType: TrInvoiceType;
   buyerTaxId: string | null;
   buyerTaxOffice: string | null;
@@ -502,6 +511,14 @@ export interface CreateTrOrderInput {
   discountKurus?: number;
   /** When true (default for live checkout), decrement stock after insert. */
   decrementInventory?: boolean;
+  /** A manual price reduction's name; set with `discountKurus` instead of a coupon code. */
+  discountTitle?: string | null;
+  /** Default `storefront`. `manual` = an owner-created order (see `patch_tr_manual_orders.sql`). */
+  channel?: TrOrderChannel;
+  /** The owner's note on a manual order. */
+  customerNote?: string | null;
+  /** The customer record this order is for; skips the find-or-create by e-mail. */
+  customerId?: string | null;
   /** Customer-paid shipping (kuruş). Server-quoted; never trust the client. */
   shippingFeeKurus?: number;
   shippingProvider?: TrOrder["shipment"]["provider"];

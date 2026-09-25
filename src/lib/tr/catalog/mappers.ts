@@ -352,6 +352,11 @@ function readFulfillmentStatus(
 export function mapOrderRow(row: Record<string, unknown>): TrOrder {
   return {
     id: row.id as string,
+    channel: row.channel === "manual" ? "manual" : "storefront",
+    customerNote:
+      typeof row.customer_note === "string" && row.customer_note.trim()
+        ? row.customer_note
+        : null,
     customerId:
       typeof row.customer_id === "string" && row.customer_id ? row.customer_id : null,
     customerEmail: row.customer_email as string,
@@ -365,6 +370,10 @@ export function mapOrderRow(row: Record<string, unknown>): TrOrder {
         : null,
     discountKurus:
       typeof row.discount_kurus === "number" ? (row.discount_kurus as number) : 0,
+    discountTitle:
+      typeof row.discount_title === "string" && row.discount_title.trim()
+        ? row.discount_title
+        : null,
     invoiceType: readInvoiceType(row.invoice_type),
     buyerTaxId: (row.buyer_tax_id as string | null) ?? null,
     buyerTaxOffice: (row.buyer_tax_office as string | null) ?? null,

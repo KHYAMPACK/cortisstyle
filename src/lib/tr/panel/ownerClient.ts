@@ -25,11 +25,14 @@ import type {
 } from "@/lib/tr/categories/types";
 import {
   EMPTY_PRODUCT_VARIANTS,
+  type TrProductVariant,
   type TrProductVariants,
   type TrVariantPresetImport,
   type TrVariantType,
   type TrVariantTypeListEntry,
 } from "@/lib/tr/variants/types";
+import type { ManualOrderDraft } from "@/lib/tr/orders/manualOrder";
+import type { TrOrderDraft } from "@/lib/tr/orders/orderDraft";
 import type { TrShippingRate } from "@/lib/tr/shipping/types";
 import {
   EMPTY_PRODUCT_PRIVATE,
@@ -114,6 +117,7 @@ function invalidateProductLists(): void {
   invalidateOwnerCache("categories:");
   invalidateOwnerCache("product-facets:");
   invalidateOwnerCache("product-originals:");
+  invalidateOwnerCache("product-variants:");
   invalidateOwnerCache("summary:");
   invalidateOwnerCache("dashboard:");
 }
@@ -1451,6 +1455,122 @@ export async function deleteOwnerCustomer(
     throw new Error(data.error ?? "Müşteri silinemedi.");
   }
   invalidateOwnerCache("customers:");
+}
+
+/** The variants of the boutique's Gelişmiş products, with the label of each value. */
+export interface OwnerProductVariants {
+  variants: Record<string, TrProductVariant[]>;
+  labels: Record<string, string>;
+}
+
+export function peekOwnerProductVariants(
+  boutiqueId: string,
+): OwnerProductVariants | undefined {
+  return peekOwnerCache(ownerCacheKeys.productVariants(boutiqueId));
+}
+
+export async function fetchOwnerProductVariants(
+  boutiqueId: string,
+): Promise<OwnerProductVariants> {
+  return cachedOwnerFetch(ownerCacheKeys.productVariants(boutiqueId), async () => {
+    const response = await ownerFetch(
+      `/api/tr/owner/product-variants?boutiqueId=${encodeURIComponent(boutiqueId)}`,
+    );
+    const data = (await parseOwnerJson(response)) as Partial<OwnerProductVariants> & {
+      error?: string;
+    };
+    if (!response.ok) throw new Error(data.error ?? "Varyantlar yüklenemedi.");
+    return { variants: data.variants ?? {}, labels: data.labels ?? {} };
+  });
+}
+
+/**
+ * Creates an order by hand. `draftId` is the draft it was made from, which the server
+ * deletes. Placing an order moves stock, so the product lists are refreshed too.
+ */
+export async function createOwnerOrder(
+  boutiqueId: string,
+  order: ManualOrderDraft,
+  draftId?: string | null,
+): Promise<TrOrderWithItems> {
+  const response = await ownerFetch("/api/tr/owner/orders", {
+    method: "POST",
+    body: JSON.stringify({ boutiqueId, draftId: draftId ?? undefined, ...order }),
+  });
+  const data = (await parseOwnerJson(response)) as {
+    order?: TrOrderWithItems;
+    error?: string;
+  };
+  if (!response.ok || !data.order) {
+    throw new Error(data.error ?? "Sipariş oluşturulamadı.");
+  }
+  invalidateOrderLists();
+  invalidateProductLists();
+  invalidateOwnerCache("order-drafts:");
+  return data.order;
+}
+
+export function peekOwnerOrderDrafts(boutiqueId: string): TrOrderDraft[] | undefined {
+  return peekOwnerCache(ownerCacheKeys.orderDrafts(boutiqueId));
+}
+
+export async function fetchOwnerOrderDrafts(boutiqueId: string): Promise<TrOrderDraft[]> {
+  return cachedOwnerFetch(ownerCacheKeys.orderDrafts(boutiqueId), async () => {
+    const response = await ownerFetch(
+      `/api/tr/owner/order-drafts?boutiqueId=${encodeURIComponent(boutiqueId)}`,
+    );
+    const data = (await parseOwnerJson(response)) as {
+      drafts?: TrOrderDraft[];
+      error?: string;
+    };
+    if (!response.ok) throw new Error(data.error ?? "Taslaklar yüklenemedi.");
+    return data.drafts ?? [];
+  });
+}
+
+async function readDraftResponse(response: Response, fallback: string): Promise<TrOrderDraft> {
+  const data = (await parseOwnerJson(response)) as { draft?: TrOrderDraft; error?: string };
+  if (!response.ok || !data.draft) throw new Error(data.error ?? fallback);
+  invalidateOwnerCache("order-drafts:");
+  return data.draft;
+}
+
+export async function createOwnerOrderDraft(
+  boutiqueId: string,
+  order: ManualOrderDraft,
+): Promise<TrOrderDraft> {
+  const response = await ownerFetch("/api/tr/owner/order-drafts", {
+    method: "POST",
+    body: JSON.stringify({ boutiqueId, ...order }),
+  });
+  return readDraftResponse(response, "Taslak kaydedilemedi.");
+}
+
+export async function updateOwnerOrderDraft(
+  boutiqueId: string,
+  draftId: string,
+  order: ManualOrderDraft,
+): Promise<TrOrderDraft> {
+  const response = await ownerFetch(
+    `/api/tr/owner/order-drafts/${encodeURIComponent(draftId)}`,
+    { method: "PATCH", body: JSON.stringify({ boutiqueId, ...order }) },
+  );
+  return readDraftResponse(response, "Taslak kaydedilemedi.");
+}
+
+export async function deleteOwnerOrderDraft(
+  boutiqueId: string,
+  draftId: string,
+): Promise<void> {
+  const response = await ownerFetch(
+    `/api/tr/owner/order-drafts/${encodeURIComponent(draftId)}?boutiqueId=${encodeURIComponent(boutiqueId)}`,
+    { method: "DELETE" },
+  );
+  if (!response.ok) {
+    const data = (await parseOwnerJson(response)) as { error?: string };
+    throw new Error(data.error ?? "Taslak silinemedi.");
+  }
+  invalidateOwnerCache("order-drafts:");
 }
 
 export async function fetchOwnerDiscountCodes(boutiqueId: string) {
