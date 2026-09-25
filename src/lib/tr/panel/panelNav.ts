@@ -2,6 +2,7 @@ import {
   trPanelCampaignsPath,
   trPanelCustomersPath,
   trPanelDefinitionsPath,
+  trPanelDraftsPath,
   trPanelInvoicesPath,
   trPanelOrdersPath,
   trPanelPath,
@@ -25,6 +26,8 @@ export interface TrPanelNavItem {
   /** Exact match for home; prefix match for nested product routes. */
   match: "exact" | "products" | "prefix";
   prefetch?: "products" | "orders";
+  /** `false` keeps the page out of the phone tab bar (it has room for four). */
+  tabBar?: false;
 }
 
 /**
@@ -48,10 +51,18 @@ export function isPanelNavGroup(entry: TrPanelNavEntry): entry is TrPanelNavGrou
 export const TR_PANEL_NAV: TrPanelNavEntry[] = [
   { href: trPanelPath(), label: "Giriş", match: "exact" },
   {
-    href: trPanelOrdersPath(),
+    id: "orders",
     label: "Siparişler",
-    match: "prefix",
-    prefetch: "orders",
+    children: [
+      {
+        href: trPanelOrdersPath(),
+        label: "Siparişler",
+        match: "prefix",
+        prefetch: "orders",
+      },
+      // Saved unfinished manual orders.
+      { href: trPanelDraftsPath(), label: "Taslaklar", match: "prefix", tabBar: false },
+    ],
   },
   {
     id: "products",
@@ -114,6 +125,16 @@ export function flattenPanelNav(entries: TrPanelNavEntry[]): TrPanelNavItem[] {
   );
 }
 
+/** The pages the phone tab bar shows: the first `count` links, without those that opt out. */
+export function panelTabBarItems(
+  entries: TrPanelNavEntry[],
+  count = 4,
+): TrPanelNavItem[] {
+  return flattenPanelNav(entries)
+    .filter((item) => item.tabBar !== false)
+    .slice(0, count);
+}
+
 export function isTrPanelNavActive(
   pathname: string,
   item: TrPanelNavItem,
@@ -158,8 +179,10 @@ const PANEL_EDITOR_ROUTES: RegExp[] = [
   /^\/tr\/panel\/tanimlamalar\/kategoriler\/[^/]+\/?$/,
   // Editing an existing product (any type).
   /^\/tr\/panel\/urun\/(?!yeni\/?$|takim\/?$|toplu\/?$)[^/]+\/?$/,
-  // One order (the list, /siparisler, keeps the normal chrome).
+  // One order, or a new one (the list, /siparisler, keeps the normal chrome).
   /^\/tr\/panel\/siparisler\/[^/]+\/?$/,
+  // One draft order (the list, /taslaklar, keeps the normal chrome).
+  /^\/tr\/panel\/taslaklar\/[^/]+\/?$/,
   // A new customer, one customer, and editing one (the list keeps the chrome).
   /^\/tr\/panel\/musteriler\/(yeni|(?!yeni\/)[^/]+(\/duzenle)?)\/?$/,
 ];

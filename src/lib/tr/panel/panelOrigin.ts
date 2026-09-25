@@ -16,7 +16,10 @@ const MAX_ORIGIN_LENGTH = 600;
 const ORIGIN_LABELS: ReadonlyArray<readonly [RegExp, string]> = [
   [/^\/tr\/panel\/?$/, "Giriş"],
   [/^\/tr\/panel\/siparisler\/?$/, "Siparişler"],
+  [/^\/tr\/panel\/siparisler\/yeni\/?$/, "Yeni Sipariş"],
   [/^\/tr\/panel\/siparisler\/[^/]+\/?$/, "Sipariş Detayı"],
+  [/^\/tr\/panel\/taslaklar\/?$/, "Taslaklar"],
+  [/^\/tr\/panel\/taslaklar\/[^/]+\/?$/, "Taslak Sipariş"],
   [/^\/tr\/panel\/musteriler\/?$/, "Müşteriler"],
   [/^\/tr\/panel\/musteriler\/[^/]+\/?$/, "Müşteri Detayı"],
   [/^\/tr\/panel\/urunler\/?$/, "Ürünler"],

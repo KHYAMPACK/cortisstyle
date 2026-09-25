@@ -22,6 +22,8 @@ import {
 } from "@/components/tr/panel/TrPanelEditor";
 import { TrPanelLink as Link } from "@/components/tr/panel/TrPanelLink";
 import { TrPanelPulse } from "@/components/tr/panel/TrPanelMotion";
+import { usePanelBackTarget } from "@/components/tr/panel/usePanelOrigin";
+import { isOrderEditorPath, withNewCustomer } from "@/lib/tr/orders/orderEditorReturn";
 import { withSingleDefault, CUSTOMER_LIMITS } from "@/lib/tr/customers/customerModel";
 import {
   createOwnerCustomer,
@@ -78,6 +80,8 @@ function CustomerForm({
   initial: TrBoutiqueCustomer | null;
 }) {
   const router = useRouter();
+  // A new customer can be added from the order editor, which they go back to afterwards.
+  const back = usePanelBackTarget({ href: trPanelCustomersPath(), label: "Müşteriler" });
   const [baseline, setBaseline] = useState<FormSnapshot>(() => snapshotOf(initial));
   const [name, setName] = useState(baseline.name);
   const [email, setEmail] = useState(baseline.email);
@@ -161,7 +165,13 @@ function CustomerForm({
       setNote(next.note);
       setAddresses(next.addresses);
       setSaved(true);
-      if (!initial) router.push(trPanelCustomerPath(customer.id));
+      if (!initial) {
+        router.push(
+          back.fromElsewhere && isOrderEditorPath(back.href)
+            ? withNewCustomer(back.href, customer.id)
+            : trPanelCustomerPath(customer.id),
+        );
+      }
     } catch (saveError) {
       if (saveError instanceof OwnerCustomerEmailTakenError) {
         setTakenBy(saveError.existingCustomerId);
@@ -194,8 +204,8 @@ function CustomerForm({
 
   return (
     <TrPanelEditor
-      backHref={initial ? trPanelCustomerPath(initial.id) : trPanelCustomersPath()}
-      parentLabel={initial ? "Müşteri Detayı" : "Müşteriler"}
+      backHref={initial ? trPanelCustomerPath(initial.id) : back.href}
+      parentLabel={initial ? "Müşteri Detayı" : back.label}
       title={editing ? "Müşteriyi Düzenle" : "Yeni Müşteri"}
       subject={name.trim() || null}
     >

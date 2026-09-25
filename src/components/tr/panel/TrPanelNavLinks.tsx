@@ -15,10 +15,10 @@ import {
   prefetchOwnerProducts,
 } from "@/lib/tr/ownerClient";
 import {
-  flattenPanelNav,
   isPanelNavGroup,
   isTrPanelNavActive,
   panelNavForProfile,
+  panelTabBarItems,
   type TrCatalogProfileId,
 } from "@/lib/tr/panelNav";
 import { trPanelOrdersPath } from "@/lib/tr/paths";
@@ -66,7 +66,7 @@ export function TrPanelNavLinks({
   };
 
   if (variant === "bottom") {
-    const primary = flattenPanelNav(navEntries).slice(0, 4);
+    const primary = panelTabBarItems(navEntries);
     return (
       <nav
         aria-label="Hızlı menü"
@@ -137,6 +137,7 @@ export function TrPanelNavLinks({
                     group={item}
                     currentPath={currentPath}
                     collapsed={collapsed}
+                    hasNewOrders={hasNewOrders}
                     onSelect={select}
                     onPrefetch={prefetchNav}
                   />

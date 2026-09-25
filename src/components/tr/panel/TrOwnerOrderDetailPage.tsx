@@ -3,7 +3,10 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useState } from "react";
 import { TrOrderFulfillmentCard } from "@/components/tr/panel/orders/TrOrderFulfillmentCard";
-import { TrOrderCustomerCard } from "@/components/tr/panel/orders/TrOrderCustomerCard";
+import {
+  TrOrderCustomerCard,
+  TrOrderCustomerNoteCard,
+} from "@/components/tr/panel/orders/TrOrderCustomerCard";
 import {
   TrOrderPaymentCard,
   TrOrderSummaryCard,
@@ -240,6 +243,7 @@ function OrderPage({
               onStatus={(status) => void setStatus(status)}
               onOrder={applyOrder}
             />
+            {order.customerNote ? <TrOrderCustomerNoteCard note={order.customerNote} /> : null}
             <TrOrderCustomerCard
               order={order}
               customerOrderNumber={customerOrderNumber(list, order)}
@@ -262,7 +266,8 @@ function OrderPage({
               canMarkPaid={
                 order.paymentStatus === "pending" &&
                 !order.isSandbox &&
-                !boutique.offersIyzicoCheckout
+                // Card payments belong to iyzico, except on an order the owner created by hand.
+                (!boutique.offersIyzicoCheckout || order.channel === "manual")
               }
               busy={saving}
               onMarkPaid={markPaid}

@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
-  flattenPanelNav,
   isPanelEditorRoute,
   isPanelNavGroup,
   isTrPanelNavActive,
   isTrPanelNavGroupActive,
   panelNavForProfile,
+  panelTabBarItems,
   type TrPanelNavGroup,
 } from "./panelNav";
 
@@ -33,11 +33,44 @@ describe("panelNavForProfile", () => {
 
   it("keeps the top-level order the tab bar relies on", () => {
     assert.deepEqual(
-      flattenPanelNav(panelNavForProfile("fashion"))
-        .slice(0, 4)
-        .map((item) => item.label),
+      panelTabBarItems(panelNavForProfile("fashion")).map((item) => item.label),
       ["Giriş", "Siparişler", "Ürünler", "Stok"],
     );
+  });
+
+  it("groups Siparişler and Taslaklar under one heading", () => {
+    const group = panelNavForProfile("fashion").find(
+      (entry): entry is TrPanelNavGroup => isPanelNavGroup(entry) && entry.id === "orders",
+    );
+    assert.ok(group);
+    assert.deepEqual(
+      group.children.map((child) => child.label),
+      ["Siparişler", "Taslaklar"],
+    );
+    // Drafts are a page for the sidebar; the phone tab bar keeps its four.
+    assert.equal(group.children[1]!.tabBar, false);
+  });
+});
+
+describe("nav active state — orders group", () => {
+  const group = panelNavForProfile("fashion").find(
+    (entry): entry is TrPanelNavGroup => isPanelNavGroup(entry) && entry.id === "orders",
+  )!;
+
+  it("marks Siparişler for the list, an order and a new order, Taslaklar for drafts", () => {
+    for (const path of [
+      "/tr/panel/siparisler",
+      "/tr/panel/siparisler/abc",
+      "/tr/panel/siparisler/yeni",
+    ]) {
+      assert.equal(isTrPanelNavActive(path, group.children[0]!), true, path);
+      assert.equal(isTrPanelNavActive(path, group.children[1]!), false, path);
+    }
+    for (const path of ["/tr/panel/taslaklar", "/tr/panel/taslaklar/abc"]) {
+      assert.equal(isTrPanelNavActive(path, group.children[1]!), true, path);
+      assert.equal(isTrPanelNavActive(path, group.children[0]!), false, path);
+      assert.equal(isTrPanelNavGroupActive(path, group), true, path);
+    }
   });
 });
 
@@ -82,6 +115,14 @@ describe("isPanelEditorRoute", () => {
     assert.equal(isPanelEditorRoute("/tr/panel/siparisler/abc-123/"), true);
     assert.equal(isPanelEditorRoute("/tr/panel/siparisler"), false);
     assert.equal(isPanelEditorRoute("/tr/panel/siparisler/abc/baska"), false);
+  });
+
+  it("is true for a new order and one draft, but not the drafts list", () => {
+    assert.equal(isPanelEditorRoute("/tr/panel/siparisler/yeni"), true);
+    assert.equal(isPanelEditorRoute("/tr/panel/taslaklar/abc-123"), true);
+    assert.equal(isPanelEditorRoute("/tr/panel/taslaklar/abc-123/"), true);
+    assert.equal(isPanelEditorRoute("/tr/panel/taslaklar"), false);
+    assert.equal(isPanelEditorRoute("/tr/panel/taslaklar/abc/baska"), false);
   });
 
   it("is true for a customer's create, detail and edit pages, but not the list", () => {

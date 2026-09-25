@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { PanelNavGroupIcon } from "@/components/tr/panel/TrPanelNavIcons";
+import { trPanelOrdersPath } from "@/lib/tr/paths";
 import {
   panelEaseCss,
   panelSidebarChildRowClass,
@@ -41,10 +42,16 @@ function ActiveMarks() {
   );
 }
 
+/** The dot that says a new order arrived. */
+function OrderDot({ className }: { className: string }) {
+  return <span className={`h-1.5 w-1.5 rounded-full bg-rose-500 ${className}`} aria-hidden />;
+}
+
 export function TrPanelNavGroup({
   group,
   currentPath,
   collapsed,
+  hasNewOrders,
   onSelect,
   onPrefetch,
 }: {
@@ -52,6 +59,8 @@ export function TrPanelNavGroup({
   /** Real path, or the optimistic one right after a click. */
   currentPath: string;
   collapsed: boolean;
+  /** A new order arrived: the Siparişler group and its Siparişler page carry a dot. */
+  hasNewOrders: boolean;
   onSelect: (href: string) => void;
   onPrefetch: (kind: TrPanelNavItem["prefetch"]) => void;
 }) {
@@ -75,6 +84,7 @@ export function TrPanelNavGroup({
       <CollapsedGroup
         group={group}
         headingActive={childActive}
+        showDot={hasNewOrders && group.id === "orders"}
         currentPath={currentPath}
         onSelect={onSelect}
         onPrefetch={onPrefetch}
@@ -99,6 +109,9 @@ export function TrPanelNavGroup({
           className="relative h-[18px] w-[18px] shrink-0"
         />
         <span className="relative min-w-0 flex-1 truncate">{group.label}</span>
+        {hasNewOrders && group.id === "orders" && !open ? (
+          <OrderDot className="relative" />
+        ) : null}
         <ChevronDown
           className={`relative h-4 w-4 shrink-0 text-white/50 transition-transform duration-200 motion-reduce:transition-none ${
             open ? "rotate-180" : ""
@@ -138,6 +151,9 @@ export function TrPanelNavGroup({
                     <span className="relative min-w-0 truncate">
                       {child.label}
                     </span>
+                    {hasNewOrders && child.href === trPanelOrdersPath() ? (
+                      <OrderDot className="relative ml-auto" />
+                    ) : null}
                   </Link>
                 </li>
               );
@@ -156,12 +172,14 @@ export function TrPanelNavGroup({
 function CollapsedGroup({
   group,
   headingActive,
+  showDot,
   currentPath,
   onSelect,
   onPrefetch,
 }: {
   group: TrPanelNavGroupModel;
   headingActive: boolean;
+  showDot: boolean;
   currentPath: string;
   onSelect: (href: string) => void;
   onPrefetch: (kind: TrPanelNavItem["prefetch"]) => void;
@@ -244,6 +262,7 @@ function CollapsedGroup({
           groupId={group.id}
           className="relative h-[18px] w-[18px] shrink-0"
         />
+        {showDot ? <OrderDot className="absolute top-2.5 left-[27px]" /> : null}
       </button>
 
       {anchor

@@ -1,7 +1,7 @@
 "use client";
 
 import NextLink from "next/link";
-import { Store } from "lucide-react";
+import { PenLine, Store } from "lucide-react";
 import { formatOrderDateLong } from "@/components/tr/panel/orderFulfillmentUi";
 import { TrOrderPaymentChip } from "@/components/tr/panel/orders/TrOrderBadges";
 import {
@@ -34,6 +34,12 @@ function MoneyRow({
   );
 }
 
+/** "İndirim (YAZ20)" for a coupon, or the name the owner gave a manual reduction. */
+function discountLabel(order: Pick<TrOrderWithItems, "discountCode" | "discountTitle">): string {
+  if (order.discountTitle) return order.discountTitle;
+  return `İndirim${order.discountCode ? ` (${order.discountCode})` : ""}`;
+}
+
 /** When it was placed, where, and how the total is made up. */
 export function TrOrderSummaryCard({
   order,
@@ -51,16 +57,23 @@ export function TrOrderSummaryCard({
       <h2 className="text-[16px] font-semibold text-neutral-900">Sipariş Özeti</h2>
       <div className="space-y-2 text-[13.5px]">
         <p className="text-neutral-700">{formatOrderDateLong(order.createdAt)}</p>
-        <NextLink
-          href={storefrontHref}
-          target="_blank"
-          rel="noopener"
-          prefetch={false}
-          className="inline-flex items-center gap-2 text-neutral-600 hover:text-neutral-900 hover:underline"
-        >
-          <Store className="h-4 w-4 text-neutral-400" strokeWidth={1.75} aria-hidden />
-          {boutiqueName}
-        </NextLink>
+        {order.channel === "manual" ? (
+          <p className="inline-flex items-center gap-2 text-neutral-600">
+            <PenLine className="h-4 w-4 text-neutral-400" strokeWidth={1.75} aria-hidden />
+            Manuel sipariş
+          </p>
+        ) : (
+          <NextLink
+            href={storefrontHref}
+            target="_blank"
+            rel="noopener"
+            prefetch={false}
+            className="inline-flex items-center gap-2 text-neutral-600 hover:text-neutral-900 hover:underline"
+          >
+            <Store className="h-4 w-4 text-neutral-400" strokeWidth={1.75} aria-hidden />
+            {boutiqueName}
+          </NextLink>
+        )}
       </div>
 
       <dl className="space-y-2.5 border-t border-neutral-100 pt-4">
@@ -71,7 +84,7 @@ export function TrOrderSummaryCard({
         />
         {order.discountKurus > 0 ? (
           <MoneyRow
-            label={`İndirim${order.discountCode ? ` (${order.discountCode})` : ""}`}
+            label={discountLabel(order)}
             value={`−${formatTryFromKurus(order.discountKurus)}`}
             muted
           />
@@ -140,8 +153,9 @@ export function TrOrderPaymentCard({
       {canMarkPaid ? (
         <div className="space-y-3">
           <p className={panelHintClass}>
-            Kart ödemesi açık değil. Havale / WhatsApp ile tahsil ettiğinizde
-            “Ödendi” işaretleyin; sonra paketleyin.
+            {order.channel === "manual"
+              ? "Bu siparişi siz oluşturdunuz. Ödemeyi elden, havale ya da başka bir yolla aldığınızda “Ödendi” işaretleyin; sonra paketleyin."
+              : "Kart ödemesi açık değil. Havale / WhatsApp ile tahsil ettiğinizde “Ödendi” işaretleyin; sonra paketleyin."}
           </p>
           <button
             type="button"

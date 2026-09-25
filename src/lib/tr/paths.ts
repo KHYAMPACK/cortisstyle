@@ -180,6 +180,20 @@ export function trPanelOrderPath(orderId: string): string {
   return `/tr/panel/siparisler/${encodeURIComponent(orderId)}`;
 }
 
+/** A new order built by hand (Sipariş Oluştur). */
+export function trPanelNewOrderPath(): string {
+  return "/tr/panel/siparisler/yeni";
+}
+
+/** Taslaklar: saved unfinished manual orders. */
+export function trPanelDraftsPath(): string {
+  return "/tr/panel/taslaklar";
+}
+
+export function trPanelDraftPath(draftId: string): string {
+  return `/tr/panel/taslaklar/${encodeURIComponent(draftId)}`;
+}
+
 export function trPanelCustomersPath(): string {
   return "/tr/panel/musteriler";
 }
