@@ -145,6 +145,11 @@ export function trPanelNewSimpleProductPath(): string {
   return "/tr/panel/urun/yeni/basit";
 }
 
+/** Gelişmiş ürün editor (Basit ürün + variants). */
+export function trPanelNewAdvancedProductPath(): string {
+  return "/tr/panel/urun/yeni/gelismis";
+}
+
 /** Fashion sub-chooser (tek parça sihirbazı / takım / toplu). */
 export function trPanelNewFashionProductPath(): string {
   return "/tr/panel/urun/yeni/moda";

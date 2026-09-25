@@ -90,6 +90,24 @@ function readText(
   return text;
 }
 
+/** SKU from a request value: trimmed text, `null` when blank, `undefined` when not sent. */
+export function readSkuValue(value: unknown): string | null | undefined {
+  const sku = readText(value, PRODUCT_DETAIL_LIMITS.skuMax, "SKU");
+  if (sku !== undefined && sku !== null && /[\u0000-\u001f\u007f]/.test(sku)) {
+    throw new Error("SKU geçersiz karakter içeriyor.");
+  }
+  return sku;
+}
+
+/** Barcode from a request value, like `readSkuValue`. */
+export function readBarcodeValue(value: unknown): string | null | undefined {
+  const barcode = readText(value, PRODUCT_DETAIL_LIMITS.barcodeMax, "Barkod");
+  if (barcode !== undefined && barcode !== null && !/^[0-9A-Za-z._-]+$/.test(barcode)) {
+    throw new Error("Barkod yalnızca harf, rakam, nokta, tire ve alt çizgi içerebilir.");
+  }
+  return barcode;
+}
+
 function readNumber(
   value: unknown,
   label: string,
@@ -176,21 +194,11 @@ export function readProductDetailsBody(
   );
   if (googleCategory !== undefined) details.googleCategory = googleCategory;
 
-  const sku = readText(body.sku, PRODUCT_DETAIL_LIMITS.skuMax, "SKU");
-  if (sku !== undefined) {
-    if (sku !== null && /[\u0000-\u001f\u007f]/.test(sku)) {
-      throw new Error("SKU geçersiz karakter içeriyor.");
-    }
-    details.sku = sku;
-  }
+  const sku = readSkuValue(body.sku);
+  if (sku !== undefined) details.sku = sku;
 
-  const barcode = readText(body.barcode, PRODUCT_DETAIL_LIMITS.barcodeMax, "Barkod");
-  if (barcode !== undefined) {
-    if (barcode !== null && !/^[0-9A-Za-z._-]+$/.test(barcode)) {
-      throw new Error("Barkod yalnızca harf, rakam, nokta, tire ve alt çizgi içerebilir.");
-    }
-    details.barcode = barcode;
-  }
+  const barcode = readBarcodeValue(body.barcode);
+  if (barcode !== undefined) details.barcode = barcode;
 
   const desi = readNumber(body.desi, "Desi", {
     max: PRODUCT_DETAIL_LIMITS.desiMax,

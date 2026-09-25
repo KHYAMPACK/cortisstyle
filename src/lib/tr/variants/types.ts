@@ -87,3 +87,64 @@ export function mapVariantTypeRow(
     updatedAt: String(row.updated_at ?? ""),
   };
 }
+
+/**
+ * A product's sellable variant: one row per combination of option values (Kırmızı / S).
+ * Only Gelişmiş products have them; a product without variants sells at product level.
+ */
+export interface TrProductVariant {
+  id: string;
+  /** One value id per option, in the order of the product's option types. */
+  optionValueIds: string[];
+  sku: string | null;
+  barcode: string | null;
+  /** Selling price in kuruş; `null` inherits the product's price (and its discount). */
+  priceKurus: number | null;
+  stock: number;
+  /** A subset of the product's images; empty = the product's own. */
+  images: string[];
+  active: boolean;
+  sortOrder: number;
+}
+
+/** A product's options (variant type ids in order) and its variants. */
+export interface TrProductVariants {
+  typeIds: string[];
+  variants: TrProductVariant[];
+}
+
+export const EMPTY_PRODUCT_VARIANTS: TrProductVariants = { typeIds: [], variants: [] };
+
+/** What an owner sends for a product's variants; a combination is identified by its value ids. */
+export interface TrProductVariantInput {
+  optionValueIds: string[];
+  sku: string | null;
+  barcode: string | null;
+  priceKurus: number | null;
+  stock: number;
+  images: string[];
+  active: boolean;
+}
+
+export interface TrProductVariantsInput {
+  typeIds: string[];
+  variants: TrProductVariantInput[];
+}
+
+export function mapProductVariantRow(row: Record<string, unknown>): TrProductVariant {
+  return {
+    id: String(row.id),
+    optionValueIds: Array.isArray(row.option_value_ids)
+      ? row.option_value_ids.filter((id): id is string => typeof id === "string")
+      : [],
+    sku: typeof row.sku === "string" && row.sku ? row.sku : null,
+    barcode: typeof row.barcode === "string" && row.barcode ? row.barcode : null,
+    priceKurus: typeof row.price_kurus === "number" ? row.price_kurus : null,
+    stock: typeof row.stock === "number" ? row.stock : 0,
+    images: Array.isArray(row.images)
+      ? row.images.filter((url): url is string => typeof url === "string")
+      : [],
+    active: row.active !== false,
+    sortOrder: typeof row.sort_order === "number" ? row.sort_order : 0,
+  };
+}

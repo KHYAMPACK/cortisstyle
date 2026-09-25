@@ -20,6 +20,7 @@ import { useAuth } from "@/context/AuthContext";
 import { fetchOwnerProduct } from "@/lib/tr/ownerClient";
 import { trPanelProductsPath } from "@/lib/tr/paths";
 import type { TrProductCategories } from "@/lib/tr/categories/types";
+import { EMPTY_PRODUCT_VARIANTS, type TrProductVariants } from "@/lib/tr/variants/types";
 import {
   EMPTY_PRODUCT_PRIVATE,
   type TrProduct,
@@ -37,6 +38,7 @@ export function TrOwnerEditProductPage({ productId }: TrOwnerEditProductPageProp
   const [ownerOnly, setOwnerOnly] = useState<TrProductPrivate>(EMPTY_PRODUCT_PRIVATE);
   const [productCategories, setProductCategories] =
     useState<TrProductCategories>({ ids: [], primaryId: null });
+  const [variants, setVariants] = useState<TrProductVariants>(EMPTY_PRODUCT_VARIANTS);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -57,6 +59,7 @@ export function TrOwnerEditProductPage({ productId }: TrOwnerEditProductPageProp
           setProduct(result.product);
           setOwnerOnly(result.ownerOnly);
           setProductCategories(result.categories);
+          setVariants(result.variants);
         }
       } catch (loadError) {
         if (!cancelled) {
@@ -89,7 +92,11 @@ export function TrOwnerEditProductPage({ productId }: TrOwnerEditProductPageProp
             backHref={trPanelProductsPath()}
             parentLabel="Ürünler"
             title={
-              productType === "simple" ? "Basit ürünü düzenle" : "Ürünü düzenle"
+              productType === "simple"
+                ? "Basit ürünü düzenle"
+                : productType === "advanced"
+                  ? "Gelişmiş ürünü düzenle"
+                  : "Ürünü düzenle"
             }
             subject={product?.title}
           >
@@ -100,7 +107,7 @@ export function TrOwnerEditProductPage({ productId }: TrOwnerEditProductPageProp
                 <TrPanelFadeIn key="edit-error">
                   <p className={panelErrorClass}>{error}</p>
                 </TrPanelFadeIn>
-              ) : product && productType === "simple" ? (
+              ) : product && (productType === "simple" || productType === "advanced") ? (
                 <TrPanelFadeIn key="edit-simple" shift={false}>
                   <TrSimpleProductEditor
                     boutiqueId={product.boutiqueId}
@@ -111,6 +118,7 @@ export function TrOwnerEditProductPage({ productId }: TrOwnerEditProductPageProp
                     ownerOnly={ownerOnly}
                     categoryMode={activeBoutique.categoryMode}
                     initialCategories={productCategories}
+                    initialVariants={variants}
                     onSaved={(saved) => {
                       setProduct(saved);
                     }}

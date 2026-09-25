@@ -29,6 +29,14 @@ import { sanitizeSeo } from "@/lib/tr/seo/seoFields";
 import { readProductDetailsBody } from "@/lib/tr/productDetails";
 import { richHtmlToPlainText } from "@/lib/tr/richText";
 import { sanitizeRichHtml } from "@/lib/tr/richTextSanitize";
+import {
+  ProductVariantsError,
+  saveProductVariants,
+} from "@/lib/tr/catalog/productVariants";
+import {
+  readVariantsBody,
+  sumActiveStock,
+} from "@/lib/tr/variants/productVariantRules";
 import { CategoryError, setProductCategories } from "@/lib/tr/catalog/categories";
 import { readCategoriesBody } from "@/lib/tr/catalog/categoryApi";
 import { isValidSlug } from "@/lib/tr/seo/slug";
@@ -210,6 +218,21 @@ export async function POST(request: Request) {
   const cleanDescription =
     descriptionHtml !== undefined ? sanitizeRichHtml(descriptionHtml) : undefined;
 
+  // Gelişmiş ürün: its variants come with the product. With variants the product's
+  // stock is the sum of the active variants' stock, whatever the client sent.
+  let variantsInput: ReturnType<typeof readVariantsBody>;
+  try {
+    variantsInput = readVariantsBody(body.variants);
+  } catch (error) {
+    return Response.json(
+      { error: error instanceof Error ? error.message : "Varyantlar geçersiz." },
+      { status: 400 },
+    );
+  }
+  if (variantsInput && variantsInput.variants.length > 0) {
+    stock = sumActiveStock(variantsInput.variants);
+  }
+
   // A Basit ürün gets a slug from its title unless the owner chose one; a chosen
   // slug must be valid and free. Garment products only get one when asked.
   const productType = readProductType(body.productType);
@@ -346,6 +369,23 @@ export async function POST(request: Request) {
           privateError instanceof Error
             ? privateError.message
             : "Ürünün özel bilgileri kaydedilemedi.";
+      }
+    }
+
+    if (variantsInput && variantsInput.typeIds.length > 0) {
+      try {
+        await saveProductVariants({
+          productId: product.id,
+          boutiqueId: boutique.id,
+          input: variantsInput,
+          productImages: product.images,
+        });
+      } catch (variantsError) {
+        console.error("[tr/owner/products] variants failed:", variantsError);
+        warning =
+          variantsError instanceof ProductVariantsError
+            ? variantsError.message
+            : "Varyantlar kaydedilemedi.";
       }
     }
 

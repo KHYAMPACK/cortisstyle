@@ -78,6 +78,12 @@ export function clampDescription(raw: string): string {
   return raw.slice(0, TR_OWNER_PRODUCT_LIMITS.descriptionMax);
 }
 
+/** A price in kuruş as the text of a price field (`450`, `399.90`). */
+export function kurusToPriceInput(kurus: number): string {
+  const lira = kurus / 100;
+  return Number.isInteger(lira) ? String(lira) : lira.toFixed(2);
+}
+
 export function parseTryPrice(raw: string): number | null {
   const n = Number(raw.replace(",", "."));
   if (!Number.isFinite(n)) return null;

@@ -31,6 +31,17 @@ import { sanitizeSeo } from "@/lib/tr/seo/seoFields";
 import { readProductDetailsBody } from "@/lib/tr/productDetails";
 import { richHtmlToPlainText } from "@/lib/tr/richText";
 import { sanitizeRichHtml } from "@/lib/tr/richTextSanitize";
+import { EMPTY_PRODUCT_VARIANTS } from "@/lib/tr/variants/types";
+import {
+  copyProductVariants,
+  getProductVariants,
+  productVariantsErrorResponse,
+  saveProductVariants,
+} from "@/lib/tr/catalog/productVariants";
+import {
+  readVariantsBody,
+  sumActiveStock,
+} from "@/lib/tr/variants/productVariantRules";
 import {
   CategoryError,
   getProductCategories,
@@ -109,11 +120,17 @@ export async function GET(request: Request, context: RouteContext) {
 
   const ownerOnly = await getProductPrivateAdmin(id);
   const categories = await getProductCategories(id);
+  // Only a Gelişmiş ürün has options and variants: skip the two lookups for the rest.
+  const variants =
+    resolved.productType === "advanced"
+      ? await getProductVariants(id)
+      : EMPTY_PRODUCT_VARIANTS;
 
   return Response.json({
     product: resolved,
     private: ownerOnly,
     categories,
+    variants,
     boutique: {
       id: owned.boutique.id,
       slug: owned.boutique.slug,
@@ -323,6 +340,21 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
   const { supplier, hsCode, descriptionHtml, ...publicDetails } = details;
   Object.assign(patch, publicDetails);
+
+  // Variants (Gelişmiş ürün): `undefined` leaves them alone. With variants the product's
+  // stock is the sum of the active variants' stock, whatever the client sent.
+  let variantsInput: ReturnType<typeof readVariantsBody>;
+  try {
+    variantsInput = readVariantsBody(body.variants);
+  } catch (error) {
+    return Response.json(
+      { error: error instanceof Error ? error.message : "Varyantlar geçersiz." },
+      { status: 400 },
+    );
+  }
+  if (variantsInput && variantsInput.variants.length > 0) {
+    patch.stock = sumActiveStock(variantsInput.variants);
+  }
   if (descriptionHtml !== undefined) {
     // Sanitized here (the editor is client code); `description` keeps the plain text.
     const clean = sanitizeRichHtml(descriptionHtml);
@@ -343,6 +375,14 @@ export async function PATCH(request: Request, context: RouteContext) {
         slug: slugChange,
       });
       product.slug = slugChange;
+    }
+    if (variantsInput) {
+      await saveProductVariants({
+        productId: id,
+        boutiqueId: owned.productBoutiqueId,
+        input: variantsInput,
+        productImages: product.images,
+      });
     }
     if (categories) {
       await setProductCategories({
@@ -375,6 +415,8 @@ export async function PATCH(request: Request, context: RouteContext) {
     if (error instanceof CategoryError) {
       return Response.json({ error: error.message }, { status: error.status });
     }
+    const variantsFailure = productVariantsErrorResponse(error);
+    if (variantsFailure) return variantsFailure;
     console.error("[tr/owner/products/[id]] patch failed:", error);
     return Response.json(
       {
@@ -459,6 +501,14 @@ export async function POST(request: Request, context: RouteContext) {
           costPriceKurus: ownerOnly.costPriceKurus,
           supplier: ownerOnly.supplier,
           hsCode: ownerOnly.hsCode,
+        });
+      }
+      if (product.productType === "advanced") {
+        await copyProductVariants({
+          fromProductId: id,
+          toProductId: product.id,
+          boutiqueId: owned.productBoutiqueId,
+          toProductImages: product.images,
         });
       }
       if (categories.ids.length > 0) {

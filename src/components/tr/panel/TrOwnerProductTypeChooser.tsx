@@ -1,6 +1,6 @@
 "use client";
 
-import { Package, Shirt } from "lucide-react";
+import { Layers, Package, Shirt } from "lucide-react";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
 import { TrOwnerProductRouteGate } from "@/components/tr/panel/TrOwnerProductRouteGate";
 import { TrPanelChoiceCard } from "@/components/tr/panel/TrPanelChoiceCard";
@@ -13,7 +13,8 @@ import type { TrProductType } from "@/types/tr-marketplace";
 
 function ProductTypeIcon({ id }: { id: TrProductType }) {
   const props = { className: "h-5 w-5", strokeWidth: 1.75, "aria-hidden": true };
-  return id === "fashion" ? <Shirt {...props} /> : <Package {...props} />;
+  if (id === "fashion") return <Shirt {...props} />;
+  return id === "advanced" ? <Layers {...props} /> : <Package {...props} />;
 }
 
 /**
@@ -24,7 +25,7 @@ function ProductTypeIcon({ id }: { id: TrProductType }) {
 export function TrOwnerProductTypeChooser() {
   return (
     <TrOwnerPanelGate>
-      {({ activeBoutique }) => (
+      {({ activeBoutique, isStaff }) => (
         <TrOwnerProductRouteGate activeBoutique={activeBoutique}>
           <TrPanelEditor
             backHref={trPanelProductsPath()}
@@ -39,7 +40,9 @@ export function TrOwnerProductTypeChooser() {
                 Bir ürünün türü eklendikten sonra değişmez.
               </p>
               <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                {productTypesForProfile(resolveCatalogProfile(activeBoutique)).map(
+                {productTypesForProfile(resolveCatalogProfile(activeBoutique), {
+                  isStaff,
+                }).map(
                   (type) => (
                     <TrPanelChoiceCard
                       key={type.id}

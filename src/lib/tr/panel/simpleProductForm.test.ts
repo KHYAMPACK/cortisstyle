@@ -385,3 +385,87 @@ function pick(source: object) {
   const record = source as Record<string, unknown>;
   return Object.fromEntries(DETAIL_KEYS.map((key) => [key, record[key]]));
 }
+
+describe("Gelişmiş ürün in the form", () => {
+  const advanced = (overrides: Partial<SimpleProductFormState> = {}) =>
+    form({ ...emptySimpleProductForm(null, "advanced"), title: "Tişört", priceTry: "300", images: ["u1"], ...overrides });
+  const rows = [
+    { key: "k|s", optionValueIds: ["k", "s"], sku: "A", barcode: "", price: "", stock: "3", images: [], active: true },
+    { key: "k|l", optionValueIds: ["k", "l"], sku: "", barcode: "", price: "350", stock: "4", images: ["u1"], active: true },
+    { key: "m|s", optionValueIds: ["m", "s"], sku: "", barcode: "", price: "", stock: "9", images: [], active: false },
+  ];
+
+  it("starts as an advanced product without variants", () => {
+    const empty = emptySimpleProductForm(null, "advanced");
+    assert.equal(empty.productType, "advanced");
+    assert.deepEqual(empty.variants, { typeIds: [], rows: [] });
+    assert.equal(emptySimpleProductForm().productType, "simple");
+  });
+
+  it("sends its type and variants, and totals the stock from the active variants", () => {
+    const state = advanced({ variants: { typeIds: ["renk", "beden"], rows } });
+    const payload = simpleProductPayload(state, "b1");
+    assert.equal(payload.productType, "advanced");
+    assert.equal(payload.stock, 7); // 3 + 4; the inactive 9 doesn't count
+    assert.equal(payload.status, "available");
+    const variants = payload.variants as { typeIds: string[]; rows: Array<Record<string, unknown>> };
+    assert.deepEqual(variants.typeIds, ["renk", "beden"]);
+    assert.deepEqual(variants.rows.map((row) => [row.priceTry, row.stock, row.active]), [
+      [null, 3, true],
+      [350, 4, true],
+      [null, 9, false],
+    ]);
+    assert.equal(simpleProductPatch(state).stock, 7);
+    assert.ok("variants" in simpleProductPatch(state));
+  });
+
+  it("is sold out when every active variant is out of stock", () => {
+    const state = advanced({
+      variants: { typeIds: ["renk"], rows: [{ ...rows[0]!, optionValueIds: ["k"], key: "k", stock: "0" }] },
+    });
+    assert.equal(simpleProductStatus(state), "sold");
+  });
+
+  it("behaves like a Basit ürün without variants, and sends an empty list to clear them", () => {
+    const state = advanced({ stock: "5" });
+    assert.equal(simpleProductPayload(state, "b1").stock, 5);
+    assert.deepEqual(simpleProductPatch(state).variants, { typeIds: [], rows: [] });
+    assert.equal(validateSimpleProductForm(state), null);
+  });
+
+  it("ignores the stock field once there are variants, but not before", () => {
+    const withVariants = advanced({ stock: "", variants: { typeIds: ["renk", "beden"], rows } });
+    assert.equal(validateSimpleProductForm(withVariants), null);
+    assert.match(validateSimpleProductForm(advanced({ stock: "" }))!, /Stok/);
+  });
+
+  it("reports a bad variant row with the API's sentence", () => {
+    const bad = advanced({
+      variants: { typeIds: ["renk", "beden"], rows: [{ ...rows[0]!, stock: "-2" }] },
+    });
+    assert.match(validateSimpleProductForm(bad)!, /stoğu/);
+    const badPrice = advanced({
+      variants: { typeIds: ["renk", "beden"], rows: [{ ...rows[0]!, price: "0" }] },
+    });
+    assert.match(validateSimpleProductForm(badPrice)!, /fiyatı/);
+  });
+
+  it("does not send variants for a Basit ürün", () => {
+    assert.equal("variants" in simpleProductPayload(form(), "b1"), false);
+    assert.equal("variants" in simpleProductPatch(form()), false);
+  });
+
+  it("loads a saved product's type and variants", () => {
+    const state = simpleFormFromProduct(
+      { title: "x", priceKurus: 100, compareAtPriceKurus: null, status: "available", stock: 7, images: ["a"], productType: "advanced" } as TrProduct,
+      EMPTY_PRODUCT_PRIVATE,
+      null,
+      {
+        typeIds: ["renk"],
+        variants: [{ id: "v", optionValueIds: ["k"], sku: "S", barcode: null, priceKurus: 12000, stock: 7, images: [], active: true, sortOrder: 0 }],
+      },
+    );
+    assert.equal(state.productType, "advanced");
+    assert.deepEqual(state.variants.rows.map((row) => [row.key, row.sku, row.price, row.stock]), [["k", "S", "120", "7"]]);
+  });
+});

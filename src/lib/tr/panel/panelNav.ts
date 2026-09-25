@@ -152,8 +152,8 @@ export {
  * editor page is built. The bulk and set wizards under /urun/ keep the normal chrome.
  */
 const PANEL_EDITOR_ROUTES: RegExp[] = [
-  // Type chooser, Basit ürün, the fashion sub-chooser and the single-garment wizard.
-  /^\/tr\/panel\/urun\/yeni(\/basit|\/moda(\/tek-parca)?)?\/?$/,
+  // Type chooser, Basit and Gelişmiş ürün, the fashion sub-chooser and the single-garment wizard.
+  /^\/tr\/panel\/urun\/yeni(\/basit|\/gelismis|\/moda(\/tek-parca)?)?\/?$/,
   // A category: the create form or an existing one.
   /^\/tr\/panel\/tanimlamalar\/kategoriler\/[^/]+\/?$/,
   // Editing an existing product (any type).

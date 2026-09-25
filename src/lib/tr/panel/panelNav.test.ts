@@ -71,6 +71,8 @@ describe("nav active state", () => {
 describe("isPanelEditorRoute", () => {
   it("is true for the product create and edit pages", () => {
     assert.equal(isPanelEditorRoute("/tr/panel/urun/yeni"), true);
+    assert.equal(isPanelEditorRoute("/tr/panel/urun/yeni/basit"), true);
+    assert.equal(isPanelEditorRoute("/tr/panel/urun/yeni/gelismis"), true);
     assert.equal(isPanelEditorRoute("/tr/panel/urun/abc-123"), true);
     assert.equal(isPanelEditorRoute("/tr/panel/urun/abc-123/"), true);
   });

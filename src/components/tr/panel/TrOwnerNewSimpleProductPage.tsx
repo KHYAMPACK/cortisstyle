@@ -11,7 +11,12 @@ import {
 } from "@/components/tr/panel/TrSimpleProductEditor";
 import { trPanelEditProductPath, trPanelProductsPath } from "@/lib/tr/paths";
 
-export function TrOwnerNewSimpleProductPage() {
+/** Creates a Basit ürün, or a Gelişmiş ürün (Basit + variants) with `productType="advanced"`. */
+export function TrOwnerNewSimpleProductPage({
+  productType = "simple",
+}: {
+  productType?: "simple" | "advanced";
+}) {
   const router = useRouter();
 
   return (
@@ -21,7 +26,7 @@ export function TrOwnerNewSimpleProductPage() {
           <TrPanelEditor
             backHref={trPanelProductsPath()}
             parentLabel="Ürünler"
-            title="Basit ürün ekle"
+            title={productType === "advanced" ? "Gelişmiş ürün ekle" : "Basit ürün ekle"}
           >
             <TrSimpleProductEditor
               key={activeBoutique.id}
@@ -29,6 +34,7 @@ export function TrOwnerNewSimpleProductPage() {
               boutiqueSlug={activeBoutique.slug}
               customDomain={activeBoutique.customDomain}
               categoryMode={activeBoutique.categoryMode}
+              productType={productType}
               address={boutiqueLocationAddress(activeBoutique)}
               onCreated={(created, warning) => {
                 if (warning) {

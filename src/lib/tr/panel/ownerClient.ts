@@ -20,10 +20,12 @@ import type {
   TrCategoryMode,
   TrProductCategories,
 } from "@/lib/tr/categories/types";
-import type {
-  TrVariantPresetImport,
-  TrVariantType,
-  TrVariantTypeListEntry,
+import {
+  EMPTY_PRODUCT_VARIANTS,
+  type TrProductVariants,
+  type TrVariantPresetImport,
+  type TrVariantType,
+  type TrVariantTypeListEntry,
 } from "@/lib/tr/variants/types";
 import type { TrShippingRate } from "@/lib/tr/shipping/types";
 import {
@@ -227,6 +229,8 @@ export async function fetchOwnerProduct(productId: string): Promise<{
   ownerOnly: TrProductPrivate;
   /** The product's categories (a boutique in `custom` category mode). */
   categories: TrProductCategories;
+  /** A Gelişmiş product's option types and variants (empty for every other product). */
+  variants: TrProductVariants;
 }> {
   const response = await ownerFetch(
     `/api/tr/owner/products/${encodeURIComponent(productId)}`,
@@ -236,6 +240,7 @@ export async function fetchOwnerProduct(productId: string): Promise<{
     boutique?: TrOwnerBoutiqueSummary;
     private?: TrProductPrivate;
     categories?: TrProductCategories;
+    variants?: TrProductVariants;
     error?: string;
   };
   if (!response.ok) {
@@ -249,6 +254,7 @@ export async function fetchOwnerProduct(productId: string): Promise<{
     boutique: data.boutique,
     ownerOnly: data.private ?? EMPTY_PRODUCT_PRIVATE,
     categories: data.categories ?? { ids: [], primaryId: null },
+    variants: data.variants ?? EMPTY_PRODUCT_VARIANTS,
   };
 }
 
@@ -293,6 +299,8 @@ export interface TrOwnerProductPayload {
   /** Owner-only, like `costPriceTry`. */
   supplier?: string | null;
   hsCode?: string | null;
+  /** Gelişmiş ürün: the option types and variant rows (`variantsBody`). */
+  variants?: Record<string, unknown> | null;
 }
 
 /** What an owner can set on a category. */

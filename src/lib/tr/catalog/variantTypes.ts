@@ -109,8 +109,7 @@ export async function listVariantTypes(boutiqueId: string): Promise<TrVariantTyp
 }
 
 /**
- * How many products use each type. Gelişmiş products (`tr_product_options`) do not
- * exist yet, so this is 0 until they do; a missing table counts as 0 too.
+ * How many products use each type (`tr_product_options`). A missing table counts as 0.
  */
 async function countProductsByType(typeIds: string[]): Promise<Map<string, number>> {
   const counts = new Map<string, number>();
@@ -137,6 +136,35 @@ export async function listVariantTypeEntries(
   const types = await listVariantTypes(boutiqueId);
   const counts = await countProductsByType(types.map((type) => type.id));
   return types.map((type) => ({ ...type, productCount: counts.get(type.id) ?? 0 }));
+}
+
+/**
+ * For each of the given values, how many products have a variant that uses it. A value
+ * that is in use cannot be removed: its variants would lose a part of their combination.
+ */
+async function countProductsByValue(valueIds: string[]): Promise<Map<string, number>> {
+  const counts = new Map<string, number>();
+  if (valueIds.length === 0) return counts;
+  const { data, error } = await client()
+    .from("tr_product_variants")
+    .select("product_id, option_value_ids")
+    .overlaps("option_value_ids", valueIds);
+  if (error) {
+    if (!isSchemaMissing(error)) throw error;
+    return counts;
+  }
+  const wanted = new Set(valueIds);
+  const productsByValue = new Map<string, Set<string>>();
+  for (const row of data ?? []) {
+    for (const valueId of (row.option_value_ids ?? []) as string[]) {
+      if (!wanted.has(valueId)) continue;
+      const products = productsByValue.get(valueId) ?? new Set<string>();
+      products.add(String(row.product_id));
+      productsByValue.set(valueId, products);
+    }
+  }
+  for (const [valueId, products] of productsByValue) counts.set(valueId, products.size);
+  return counts;
 }
 
 export async function getVariantType(id: string): Promise<TrVariantType | null> {
@@ -237,6 +265,21 @@ export async function updateVariantType(
     );
   }
 
+  // Values keep their ids across a rename (variants reference them). A value that
+  // variants use cannot be removed, so check before anything is written.
+  const plan = planValueChanges(current.values, input.values);
+  const usage = await countProductsByValue(plan.remove);
+  for (const valueId of plan.remove) {
+    const products = usage.get(valueId);
+    if (products) {
+      const label = current.values.find((value) => value.id === valueId)?.label ?? "";
+      throw new VariantTypeError(
+        `“${label}” değeri ${products} üründe kullanılıyor; kaldırılamaz.`,
+        409,
+      );
+    }
+  }
+
   const supabase = client();
   const { error: typeError } = await supabase
     .from("tr_variant_types")
@@ -248,11 +291,8 @@ export async function updateVariantType(
     .eq("id", id);
   if (typeError) failure(typeError, input.name);
 
-  // Values keep their ids across a rename (variants will reference them). Removals
-  // first, then updates, then new values, so a label freed by one step can be taken by
-  // the next.
-  // TODO(M7b): refuse to remove a value, or the type, while a variant uses it.
-  const plan = planValueChanges(current.values, input.values);
+  // Removals first, then updates, then new values, so a label freed by one step can
+  // be taken by the next.
   if (plan.remove.length > 0) {
     const { error } = await supabase
       .from("tr_variant_type_values")
@@ -298,9 +338,21 @@ export async function updateVariantType(
 
 /** Deletes the type and, by cascade, its values. */
 export async function deleteVariantType(id: string): Promise<void> {
-  // TODO(M7b): refuse while a product uses the type.
+  const inUse = (await countProductsByType([id])).get(id) ?? 0;
+  if (inUse > 0) {
+    throw new VariantTypeError(
+      `Bu varyant türü ${inUse} üründe kullanılıyor; silinemez.`,
+      409,
+    );
+  }
   const { error } = await client().from("tr_variant_types").delete().eq("id", id);
-  if (error) failure(error);
+  if (error) {
+    // The foreign key on tr_product_options is the backstop for a race with the check.
+    if (error.code === "23503") {
+      throw new VariantTypeError("Bu varyant türü ürünlerde kullanılıyor; silinemez.", 409);
+    }
+    failure(error);
+  }
 }
 
 // ------------------------------------------------------- preset import
