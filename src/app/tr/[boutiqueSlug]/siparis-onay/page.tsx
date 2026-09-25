@@ -5,12 +5,19 @@ import { notFound } from "next/navigation";
 import { TrIyzicoResumePay } from "@/components/tr/commerce/TrIyzicoResumePay";
 import { TrIyzicoCheckoutHoldEffects } from "@/components/tr/commerce/TrIyzicoCheckoutHoldEffects";
 import { resolveBoutiqueBrandLabel } from "@/lib/tr/boutiqueBrand";
+import { orderItemOption } from "@/lib/tr/orderItemOption";
 import { verifyOrderConfirmToken } from "@/lib/tr/orderConfirmToken";
 import { getOrderByIdAdmin } from "@/lib/tr/orders";
 import { boutiqueOffersIyzicoCheckout } from "@/lib/tr/payments/registry";
 import { trBoutiqueOrderTrackingPath, trBoutiquePath } from "@/lib/tr/paths";
 import { safeGetPublicBoutique } from "@/lib/tr/publicData";
-import { formatTryFromKurus } from "@/types/tr-marketplace";
+import { formatTryFromKurus, type TrOrderItem } from "@/types/tr-marketplace";
+
+/** "Beden: M" or "Varyant: Kırmızı / S", or null when the line has neither. */
+function optionOf(item: TrOrderItem): string | null {
+  const option = orderItemOption(item);
+  return option ? `${option.label}: ${option.value}` : null;
+}
 
 interface BoutiqueOrderConfirmationPageProps {
   params: Promise<{ boutiqueSlug: string }>;
@@ -151,7 +158,7 @@ export default async function BoutiqueOrderConfirmationPage({
                 <div className="min-w-0 flex-1">
                   <p className="text-[13px] text-neutral-900">{item.title}</p>
                   <p className="mt-0.5 text-[11px] text-neutral-500">
-                    {item.size ? `Beden: ${item.size} · ` : null}
+                    {optionOf(item) ? `${optionOf(item)} · ` : null}
                     Adet: {item.quantity}
                   </p>
                 </div>

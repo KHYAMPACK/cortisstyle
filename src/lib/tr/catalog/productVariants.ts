@@ -4,6 +4,7 @@ import { planVariantChanges } from "@/lib/tr/variants/productVariantRules";
 import {
   EMPTY_PRODUCT_VARIANTS,
   mapProductVariantRow,
+  type TrProductVariant,
   type TrProductVariants,
   type TrProductVariantsInput,
 } from "@/lib/tr/variants/types";
@@ -76,6 +77,46 @@ export async function getProductVariants(productId: string): Promise<TrProductVa
       mapProductVariantRow(row as Record<string, unknown>),
     ),
   };
+}
+
+/**
+ * The variants of several products in one query, keyed by product id (a product without
+ * variants has no entry). For checkout, which needs them for every line of a cart.
+ * Tolerant of `patch_product_variants.sql` not being applied: nothing has variants then.
+ */
+export async function listVariantsByProductIds(
+  productIds: readonly string[],
+): Promise<Map<string, TrProductVariant[]>> {
+  const byProduct = new Map<string, TrProductVariant[]>();
+  if (productIds.length === 0) return byProduct;
+  const { data, error } = await client()
+    .from("tr_product_variants")
+    .select("*")
+    .in("product_id", [...new Set(productIds)])
+    .order("sort_order", { ascending: true });
+  if (error) {
+    if (!isSchemaMissing(error)) throw error;
+    return byProduct;
+  }
+  for (const row of data ?? []) {
+    const record = row as Record<string, unknown>;
+    const productId = String(record.product_id);
+    const list = byProduct.get(productId) ?? [];
+    list.push(mapProductVariantRow(record));
+    byProduct.set(productId, list);
+  }
+  return byProduct;
+}
+
+/** Looks up a variant value's label ("Kırmızı") among a boutique's variant types. */
+export async function variantValueLabelOf(
+  boutiqueId: string,
+): Promise<(valueId: string) => string> {
+  const labels = new Map<string, string>();
+  for (const type of await listVariantTypes(boutiqueId)) {
+    for (const value of type.values) labels.set(value.id, value.label);
+  }
+  return (valueId) => labels.get(valueId) ?? "?";
 }
 
 /**

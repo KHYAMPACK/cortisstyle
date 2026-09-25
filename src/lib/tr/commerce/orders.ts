@@ -5,6 +5,10 @@ import {
   shippingAddressToJson,
 } from "@/lib/tr/mappers";
 import { ensureCustomerForOrderAdmin } from "@/lib/tr/commerce/customers";
+import {
+  inventoryLinesOf,
+  type InventoryLine,
+} from "@/lib/tr/commerce/inventoryLines";
 import { getProductCoverImageFor } from "@/lib/tr/productImages";
 import {
   listProductsByIdsAdmin,
@@ -74,10 +78,11 @@ export async function createOrderAdmin(
   const isSandbox = input.isSandbox ?? false;
   const paymentStatus: TrPaymentStatus = isSandbox ? "sandbox" : "pending";
 
-  const inventoryLines = input.items.map((item) => ({
+  const inventoryLines: InventoryLine[] = input.items.map((item) => ({
     productId: item.productId,
     size: item.size?.trim() || null,
     quantity: item.quantity ?? 1,
+    ...(item.variantId ? { variant: { id: item.variantId } } : {}),
   }));
 
   const shouldDecrement = input.decrementInventory !== false;
@@ -161,6 +166,13 @@ export async function createOrderAdmin(
           price_kurus: item.priceKurus,
           quantity: item.quantity ?? 1,
           size: item.size?.trim() || null,
+          // Only a variant line writes these, so an order without one never touches the columns.
+          ...(item.variantId
+            ? {
+                variant_id: item.variantId,
+                variant_label: item.variantLabel?.trim() || null,
+              }
+            : {}),
           reference_image_url: item.referenceImageUrl?.trim() || null,
           customization: item.customization ?? null,
         })),
@@ -353,15 +365,7 @@ export async function updateOrderFulfillmentStatusAdmin(
       const { restoreInventoryForOrderLines } = await import(
         "@/lib/tr/inventory"
       );
-      await restoreInventoryForOrderLines(
-        existing.items
-          .filter((item) => item.productId)
-          .map((item) => ({
-            productId: item.productId as string,
-            size: item.size,
-            quantity: item.quantity,
-          })),
-      );
+      await restoreInventoryForOrderLines(inventoryLinesOf(existing.items));
     } catch (restoreError) {
       console.error(
         "[tr/orders] inventory restore on cancel failed:",

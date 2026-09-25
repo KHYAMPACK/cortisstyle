@@ -221,6 +221,8 @@ export async function POST(request: Request) {
         priceKurus: line.priceKurus,
         quantity: line.quantity,
         size: line.size,
+        variantId: line.variantId,
+        variantLabel: line.variantLabel,
         referenceImageUrl: line.referenceImageUrl,
         customization: line.customization,
       })),

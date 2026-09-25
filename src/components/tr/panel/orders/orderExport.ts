@@ -2,6 +2,7 @@ import {
   FULFILLMENT_LABEL,
   PAYMENT_LABEL,
 } from "@/components/tr/panel/orderFulfillmentUi";
+import { orderItemOption } from "@/lib/tr/orderItemOption";
 import { orderReference } from "@/lib/tr/orderReference";
 import { istanbulDayString } from "@/lib/tr/panel/dashboardRange";
 import {
@@ -11,7 +12,7 @@ import {
   orderSubtotalKurus,
   orderUnitCount,
 } from "@/lib/tr/panel/orderView";
-import type { TrOrderWithItems } from "@/types/tr-marketplace";
+import type { TrOrderItem, TrOrderWithItems } from "@/types/tr-marketplace";
 
 /**
  * "Dışa Aktar": the listed orders as a CSV that opens correctly in Turkish Excel —
@@ -20,6 +21,12 @@ import type { TrOrderWithItems } from "@/types/tr-marketplace";
  */
 
 const SEPARATOR = ";";
+
+/** " (M)" or " (Kırmızı / S)" — the size or variant a line was bought with. */
+function optionSuffix(item: TrOrderItem): string {
+  const option = orderItemOption(item);
+  return option ? ` (${option.value})` : "";
+}
 
 const HEADERS = [
   "Sipariş No",
@@ -80,7 +87,7 @@ export function ordersToCsv(orders: readonly TrOrderWithItems[]): string {
     const products = order.items
       .map(
         (item) =>
-          `${item.quantity} × ${item.title}${item.size ? ` (${item.size})` : ""}`,
+          `${item.quantity} × ${item.title}${optionSuffix(item)}`,
       )
       .join("; ");
     return [

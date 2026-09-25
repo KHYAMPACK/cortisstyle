@@ -62,7 +62,8 @@ export async function ensureDraftInvoiceForBoutiqueOrder(
         title: item.title,
         quantity: item.quantity,
         priceKurus: item.priceKurus,
-        size: item.size,
+        // A variant's label reads as the option, like a size does.
+        size: item.variantLabel ?? item.size,
       })),
       notes: "KDV dahil (detay muhasebe sürecinde).",
     })

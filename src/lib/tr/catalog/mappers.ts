@@ -433,6 +433,12 @@ export function mapOrderItemRow(row: Record<string, unknown>): TrOrderItem {
     quantity: (row.quantity as number) ?? 1,
     size:
       typeof sizeRaw === "string" && sizeRaw.trim() ? sizeRaw.trim() : null,
+    variantId:
+      typeof row.variant_id === "string" && row.variant_id ? row.variant_id : null,
+    variantLabel:
+      typeof row.variant_label === "string" && row.variant_label.trim()
+        ? row.variant_label.trim()
+        : null,
     referenceImageUrl:
       typeof referenceRaw === "string" && referenceRaw.trim()
         ? referenceRaw.trim()

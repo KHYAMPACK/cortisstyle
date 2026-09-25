@@ -1,5 +1,6 @@
 import { getPublicBoutiqueBySlug } from "@/lib/tr/boutiques";
 import { decrementInventoryForOrderLines } from "@/lib/tr/inventory";
+import { inventoryLinesOf } from "@/lib/tr/commerce/inventoryLines";
 import { verifyOrderConfirmToken } from "@/lib/tr/orderConfirmToken";
 import {
   getOrderByIdAdmin,
@@ -92,15 +93,7 @@ export async function POST(request: Request) {
   let payable = order;
   if (order.paymentStatus === "failed") {
     try {
-      await decrementInventoryForOrderLines(
-        order.items
-          .filter((item) => item.productId)
-          .map((item) => ({
-            productId: item.productId as string,
-            size: item.size,
-            quantity: item.quantity,
-          })),
-      );
+      await decrementInventoryForOrderLines(inventoryLinesOf(order.items));
     } catch (stockError) {
       return Response.json(
         {

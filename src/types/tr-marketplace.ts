@@ -385,6 +385,10 @@ export interface TrOrderItem {
   quantity: number;
   /** Selected beden at purchase; null when product has no sizes. */
   size: string | null;
+  /** The variant sold (Gelişmiş ürün); null without variants or once that variant was removed. */
+  variantId: string | null;
+  /** "Kırmızı / S" as it read at purchase; null for products without variants. */
+  variantLabel: string | null;
   /** Customer source photo for custom_art orders. */
   referenceImageUrl: string | null;
   customization: TrOrderItemCustomization | null;
@@ -510,6 +514,9 @@ export interface CreateTrOrderInput {
     priceKurus: number;
     quantity?: number;
     size?: string | null;
+    /** A Gelişmiş ürün's variant: its id and the label to keep on the order. */
+    variantId?: string | null;
+    variantLabel?: string | null;
     referenceImageUrl?: string | null;
     customization?: TrOrderItemCustomization | null;
   }>;
