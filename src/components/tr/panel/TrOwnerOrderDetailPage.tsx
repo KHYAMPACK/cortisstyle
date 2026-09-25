@@ -243,10 +243,11 @@ function OrderPage({
             <TrOrderCustomerCard
               order={order}
               customerOrderNumber={customerOrderNumber(list, order)}
-              customerHref={withPanelOrigin(
-                trPanelCustomerPath(order.customerEmail),
-                selfPath,
-              )}
+              customerHref={
+                order.customerId
+                  ? withPanelOrigin(trPanelCustomerPath(order.customerId), selfPath)
+                  : null
+              }
             />
           </div>
 

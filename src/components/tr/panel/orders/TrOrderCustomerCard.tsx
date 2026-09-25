@@ -48,8 +48,12 @@ export function TrOrderCustomerCard({
   >;
   /** "N. sipariş" — how many orders this customer has placed, counting this one. */
   customerOrderNumber: number;
-  /** The customer's page — the caller adds where to come back to. */
-  customerHref: string;
+  /**
+   * The customer's page — the caller adds where to come back to. Null when the order
+   * isn't tied to a customer record (e.g. placed before customers existed and not
+   * yet backfilled), in which case the name is plain text.
+   */
+  customerHref: string | null;
 }) {
   const address = order.shippingAddress;
   const corporate = order.invoiceType === "corporate";
@@ -63,12 +67,16 @@ export function TrOrderCustomerCard({
 
       <div className="grid gap-5 px-4 py-5 sm:px-6 md:grid-cols-3 md:gap-0 md:divide-x md:divide-neutral-100">
         <Block title="İletişim">
-          <Link
-            href={customerHref}
-            className="block truncate font-medium text-[color:var(--panel-accent-deep)] hover:underline"
-          >
-            {order.customerName}
-          </Link>
+          {customerHref ? (
+            <Link
+              href={customerHref}
+              className="block truncate font-medium text-[color:var(--panel-accent-deep)] hover:underline"
+            >
+              {order.customerName}
+            </Link>
+          ) : (
+            <p className="truncate font-medium text-neutral-800">{order.customerName}</p>
+          )}
           <p className="flex items-center gap-2 break-all">
             <Mail className="h-3.5 w-3.5 shrink-0 text-neutral-400" strokeWidth={1.75} aria-hidden />
             <a href={`mailto:${order.customerEmail}`} className="hover:underline">

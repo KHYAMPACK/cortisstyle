@@ -14,15 +14,8 @@ import type {
   TrOrder,
   TrOrderItem,
   TrOrderWithItems,
-  TrOwnerCustomer,
   TrPaymentStatus,
 } from "@/types/tr-marketplace";
-
-const CUSTOMER_ORDER_STATUSES: TrPaymentStatus[] = [
-  "paid",
-  "sandbox",
-];
-const SPEND_STATUSES: TrPaymentStatus[] = ["paid", "sandbox"];
 
 async function withProductImages(
   items: TrOrderItem[],
@@ -363,48 +356,6 @@ export async function updateOrderFulfillmentStatusAdmin(
   }
 
   return mapOrderRow(data as Record<string, unknown>);
-}
-
-export async function listOwnerCustomersByBoutiqueIdAdmin(
-  boutiqueId: string,
-): Promise<TrOwnerCustomer[]> {
-  const orders = await listOrdersByBoutiqueIdAdmin(boutiqueId);
-  const byEmail = new Map<string, TrOwnerCustomer>();
-
-  for (const order of orders) {
-    if (!CUSTOMER_ORDER_STATUSES.includes(order.paymentStatus)) continue;
-    if (order.fulfillmentStatus === "cancelled") continue;
-    const email = order.customerEmail.toLowerCase();
-    const existing = byEmail.get(email);
-    const lineTotal = order.items
-      .filter((item) => item.boutiqueId === boutiqueId)
-      .reduce((sum, item) => sum + item.priceKurus * item.quantity, 0);
-    const countSpend = SPEND_STATUSES.includes(order.paymentStatus);
-
-    if (!existing) {
-      byEmail.set(email, {
-        email,
-        name: order.customerName,
-        phone: order.customerPhone,
-        orderCount: 1,
-        spendKurus: countSpend ? lineTotal : 0,
-        lastOrderAt: order.createdAt,
-      });
-      continue;
-    }
-
-    existing.orderCount += 1;
-    if (countSpend) existing.spendKurus += lineTotal;
-    if (order.createdAt > existing.lastOrderAt) {
-      existing.lastOrderAt = order.createdAt;
-      existing.name = order.customerName;
-      existing.phone = order.customerPhone ?? existing.phone;
-    }
-  }
-
-  return [...byEmail.values()].sort((a, b) =>
-    b.lastOrderAt.localeCompare(a.lastOrderAt),
-  );
 }
 
 export async function updateOrderPaymentStatusAdmin(

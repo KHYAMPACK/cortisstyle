@@ -17,6 +17,8 @@ import {
 } from "@/lib/tr/shipping/labelHtml";
 import type { TrShippingRate } from "@/lib/tr/shipping/types";
 import type {
+  TrBoutiqueCustomer,
+  TrBoutiqueCustomerAddress,
   TrInvoice,
   TrInvoiceStatus,
   TrOrderWithItems,
@@ -96,6 +98,8 @@ function invalidateOrderLists(): void {
   invalidateOwnerCache("orders:");
   invalidateOwnerCache("summary:");
   invalidateOwnerCache("dashboard:");
+  // Placing an order can create the customer.
+  invalidateOwnerCache("customers:");
 }
 
 export async function fetchOwnerBoutiques(): Promise<{
@@ -140,7 +144,7 @@ export function peekOwnerSummary(
 
 export function peekOwnerCustomers(
   boutiqueId: string,
-): import("@/types/tr-marketplace").TrOwnerCustomer[] | undefined {
+): TrBoutiqueCustomer[] | undefined {
   return peekOwnerCache(ownerCacheKeys.customers(boutiqueId));
 }
 
@@ -1087,13 +1091,15 @@ async function parseShipmentResponse(
   };
 }
 
-export async function fetchOwnerCustomers(boutiqueId: string) {
+export async function fetchOwnerCustomers(
+  boutiqueId: string,
+): Promise<TrBoutiqueCustomer[]> {
   return cachedOwnerFetch(ownerCacheKeys.customers(boutiqueId), async () => {
     const response = await ownerFetch(
       `/api/tr/owner/customers?boutiqueId=${encodeURIComponent(boutiqueId)}`,
     );
     const data = (await parseOwnerJson(response)) as {
-      customers?: import("@/types/tr-marketplace").TrOwnerCustomer[];
+      customers?: TrBoutiqueCustomer[];
       error?: string;
     };
     if (!response.ok) {
@@ -1101,6 +1107,85 @@ export async function fetchOwnerCustomers(boutiqueId: string) {
     }
     return data.customers ?? [];
   });
+}
+
+/** What the customer form sends. */
+export interface OwnerCustomerPayload {
+  name: string;
+  email: string;
+  phone: string;
+  note: string;
+  addresses: TrBoutiqueCustomerAddress[];
+}
+
+/** Another customer already has that e-mail; carries their id so the form can link to them. */
+export class OwnerCustomerEmailTakenError extends Error {
+  constructor(
+    message: string,
+    readonly existingCustomerId: string | null,
+  ) {
+    super(message);
+    this.name = "OwnerCustomerEmailTakenError";
+  }
+}
+
+async function readCustomerResponse(
+  response: Response,
+  fallback: string,
+): Promise<TrBoutiqueCustomer> {
+  const data = (await parseOwnerJson(response)) as {
+    customer?: TrBoutiqueCustomer;
+    existingCustomerId?: string | null;
+    error?: string;
+  };
+  if (response.status === 409) {
+    throw new OwnerCustomerEmailTakenError(
+      data.error ?? fallback,
+      data.existingCustomerId ?? null,
+    );
+  }
+  if (!response.ok) throw new Error(data.error ?? fallback);
+  if (!data.customer) throw new Error(fallback);
+  invalidateOwnerCache("customers:");
+  return data.customer;
+}
+
+export async function createOwnerCustomer(
+  boutiqueId: string,
+  payload: OwnerCustomerPayload,
+): Promise<TrBoutiqueCustomer> {
+  const response = await ownerFetch("/api/tr/owner/customers", {
+    method: "POST",
+    body: JSON.stringify({ boutiqueId, ...payload }),
+  });
+  return readCustomerResponse(response, "Müşteri kaydedilemedi.");
+}
+
+export async function updateOwnerCustomer(
+  boutiqueId: string,
+  customerId: string,
+  payload: OwnerCustomerPayload,
+): Promise<TrBoutiqueCustomer> {
+  const response = await ownerFetch(
+    `/api/tr/owner/customers/${encodeURIComponent(customerId)}`,
+    { method: "PATCH", body: JSON.stringify({ boutiqueId, ...payload }) },
+  );
+  return readCustomerResponse(response, "Müşteri kaydedilemedi.");
+}
+
+export async function deleteOwnerCustomer(
+  boutiqueId: string,
+  customerId: string,
+): Promise<void> {
+  const response = await ownerFetch(
+    `/api/tr/owner/customers/${encodeURIComponent(customerId)}?boutiqueId=${encodeURIComponent(boutiqueId)}`,
+    { method: "DELETE" },
+  );
+  if (!response.ok) {
+    const data = (await parseOwnerJson(response)) as { error?: string };
+    throw new Error(data.error ?? "Müşteri silinemedi.");
+  }
+  invalidateOwnerCache("customers:");
 }
 
 export async function fetchOwnerDiscountCodes(boutiqueId: string) {

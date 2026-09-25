@@ -171,8 +171,16 @@ export function trPanelCustomersPath(): string {
   return "/tr/panel/musteriler";
 }
 
-export function trPanelCustomerPath(email: string): string {
-  return `/tr/panel/musteriler/${encodeURIComponent(email)}`;
+export function trPanelNewCustomerPath(): string {
+  return "/tr/panel/musteriler/yeni";
+}
+
+export function trPanelCustomerPath(customerId: string): string {
+  return `/tr/panel/musteriler/${encodeURIComponent(customerId)}`;
+}
+
+export function trPanelEditCustomerPath(customerId: string): string {
+  return `${trPanelCustomerPath(customerId)}/duzenle`;
 }
 
 /** @deprecated Use trPanelCampaignsPath — kept for redirects. */

@@ -299,6 +299,8 @@ function readFulfillmentStatus(
 export function mapOrderRow(row: Record<string, unknown>): TrOrder {
   return {
     id: row.id as string,
+    customerId:
+      typeof row.customer_id === "string" && row.customer_id ? row.customer_id : null,
     customerEmail: row.customer_email as string,
     customerName: row.customer_name as string,
     customerPhone: (row.customer_phone as string | null) ?? null,

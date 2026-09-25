@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, ChevronsUpDown, ChevronUp, Store } from "lucide-react";
+import { Store } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
@@ -8,6 +8,7 @@ import {
   TrOrderPaymentOutlineChip,
 } from "@/components/tr/panel/orders/TrOrderBadges";
 import { PanelSelectCheckbox } from "@/components/tr/panel/PanelSelectCheckbox";
+import { TrPanelSortHeader } from "@/components/tr/panel/TrPanelSortHeader";
 import {
   TrPanelDataTable,
   TrPanelDataTableCell,
@@ -32,42 +33,6 @@ import { formatTryFromKurus, type TrOrderWithItems } from "@/types/tr-marketplac
 export interface OrderSort {
   key: OrderSortKey;
   direction: SortDirection;
-}
-
-function SortHeader({
-  label,
-  column,
-  sort,
-  onSort,
-}: {
-  label: string;
-  column: OrderSortKey;
-  sort: OrderSort;
-  onSort: (column: OrderSortKey) => void;
-}) {
-  const active = sort.key === column;
-  const Icon = !active
-    ? ChevronsUpDown
-    : sort.direction === "asc"
-      ? ChevronUp
-      : ChevronDown;
-  return (
-    <button
-      type="button"
-      onClick={() => onSort(column)}
-      aria-label={`${label} sütununa göre sırala`}
-      className={`-mx-1 inline-flex items-center gap-1.5 rounded px-1 py-0.5 transition-colors duration-150 hover:text-neutral-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--panel-accent-deep)] ${
-        active ? "text-neutral-900" : ""
-      }`}
-    >
-      {label}
-      <Icon
-        className={`h-3.5 w-3.5 ${active ? "text-[color:var(--panel-accent-deep)]" : "text-neutral-400"}`}
-        strokeWidth={1.75}
-        aria-hidden
-      />
-    </button>
-  );
 }
 
 function ChannelCell({ name }: { name: string }) {
@@ -166,11 +131,11 @@ export function TrOrderListTable({
           }}
           headers={[
             "Sipariş",
-            <SortHeader key="date" label="Tarih" column="date" sort={sort} onSort={onSort} />,
+            <TrPanelSortHeader key="date" label="Tarih" active={sort.key === "date"} direction={sort.direction} onSort={() => onSort("date")} />,
             "Müşteri",
             "Sipariş Durumu",
             "Ödeme Durumu",
-            <SortHeader key="total" label="Toplam Tutar" column="total" sort={sort} onSort={onSort} />,
+            <TrPanelSortHeader key="total" label="Toplam Tutar" active={sort.key === "total"} direction={sort.direction} onSort={() => onSort("total")} />,
             "Satış Kanalı",
           ]}
           footer={footer}

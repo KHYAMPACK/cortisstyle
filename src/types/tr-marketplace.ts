@@ -229,6 +229,8 @@ export type TrCustomerAddressPatch = Partial<TrCustomerAddressInput>;
 
 export interface TrOrder {
   id: string;
+  /** The boutique customer record this order belongs to; null on orders that predate customers. */
+  customerId: string | null;
   customerEmail: string;
   customerName: string;
   customerPhone: string | null;
@@ -293,13 +295,34 @@ export interface TrDiscountCode {
   updatedAt: string;
 }
 
-export interface TrOwnerCustomer {
-  email: string;
+/** One saved delivery address on a boutique customer. */
+export interface TrBoutiqueCustomerAddress {
+  id: string;
+  /** What the owner calls it: "Ev", "İş", "Teslimat adresi". */
+  title: string;
+  /** Who receives the parcel. */
   name: string;
+  line1: string;
+  line2: string;
+  district: string;
+  city: string;
+  postalCode: string;
+  country: string;
+  isDefault: boolean;
+}
+
+/** A person who buys from one boutique (or was added by its owner). Personal data. */
+export interface TrBoutiqueCustomer {
+  id: string;
+  boutiqueId: string;
+  name: string;
+  /** Lower-cased; unique per boutique. */
+  email: string;
   phone: string | null;
-  orderCount: number;
-  spendKurus: number;
-  lastOrderAt: string;
+  note: string | null;
+  addresses: TrBoutiqueCustomerAddress[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface TrOrderItem {

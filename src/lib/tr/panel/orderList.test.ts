@@ -94,6 +94,9 @@ describe("filterOrders", () => {
     assert.deepEqual(find("mehmet"), ["bbbb"]);
     assert.deepEqual(find("ÖZ"), ["bbbb"]);
     assert.deepEqual(find("saten"), ["bbbb"]);
+    // Turkish capital I must not stop a match.
+    assert.deepEqual(find("SATEN"), ["bbbb"]);
+    assert.deepEqual(find("ELBISE"), ["aaaa", "cccc", "dddd"]);
     assert.deepEqual(find("5551112233"), ["aaaa", "cccc", "dddd"]);
     assert.deepEqual(find("nothing like this"), []);
   });

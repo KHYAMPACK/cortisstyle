@@ -13,6 +13,7 @@ import {
   resolveDashboardWindow,
 } from "@/lib/tr/panel/dashboardRange";
 import { orderPaymentKey } from "@/lib/tr/panel/orderView";
+import { foldForSearch } from "@/lib/tr/panel/searchFold";
 import { orderReference } from "@/lib/tr/orderReference";
 
 export type OrderPeriod = "all" | "today" | "7d" | "30d";
@@ -48,10 +49,6 @@ export function orderFilterCount(filters: OrderListFilters): number {
   ).length;
 }
 
-function lower(value: string): string {
-  return value.toLocaleLowerCase("tr-TR");
-}
-
 function digitsOf(value: string): string {
   return value.replace(/\D/g, "");
 }
@@ -65,13 +62,13 @@ function searchText(order: TrOrderWithItems): string {
     digitsOf(order.customerPhone ?? ""),
     ...order.items.map((item) => item.title),
   ]
-    .map(lower)
+    .map(foldForSearch)
     .join(" ");
 }
 
 /** Every word typed must appear somewhere (order code, customer, phone, product). */
 function matchesSearch(order: TrOrderWithItems, query: string): boolean {
-  const words = lower(query)
+  const words = foldForSearch(query)
     .replace(/#/g, " ")
     .split(/\s+/)
     .filter(Boolean);

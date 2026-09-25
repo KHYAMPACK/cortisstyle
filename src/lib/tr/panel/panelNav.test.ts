@@ -82,6 +82,20 @@ describe("isPanelEditorRoute", () => {
     assert.equal(isPanelEditorRoute("/tr/panel/siparisler/abc/baska"), false);
   });
 
+  it("is true for a customer's create, detail and edit pages, but not the list", () => {
+    for (const path of [
+      "/tr/panel/musteriler/yeni",
+      "/tr/panel/musteriler/abc-123",
+      "/tr/panel/musteriler/abc-123/",
+      "/tr/panel/musteriler/abc-123/duzenle",
+    ]) {
+      assert.equal(isPanelEditorRoute(path), true, path);
+    }
+    assert.equal(isPanelEditorRoute("/tr/panel/musteriler"), false);
+    assert.equal(isPanelEditorRoute("/tr/panel/musteriler/abc/baska"), false);
+    assert.equal(isPanelEditorRoute("/tr/panel/musteriler/yeni/duzenle"), false);
+  });
+
   it("is true for every step of the create flow", () => {
     for (const path of [
       "/tr/panel/urun/yeni",

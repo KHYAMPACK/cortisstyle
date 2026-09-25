@@ -153,6 +153,8 @@ const PANEL_EDITOR_ROUTES: RegExp[] = [
   /^\/tr\/panel\/urun\/(?!yeni\/?$|takim\/?$|toplu\/?$)[^/]+\/?$/,
   // One order (the list, /siparisler, keeps the normal chrome).
   /^\/tr\/panel\/siparisler\/[^/]+\/?$/,
+  // A new customer, one customer, and editing one (the list keeps the chrome).
+  /^\/tr\/panel\/musteriler\/(yeni|(?!yeni\/)[^/]+(\/duzenle)?)\/?$/,
 ];
 
 export function isPanelEditorRoute(pathname: string): boolean {
