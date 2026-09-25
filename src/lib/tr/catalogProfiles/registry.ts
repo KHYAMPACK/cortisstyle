@@ -13,7 +13,7 @@ const FASHION_CAPABILITIES: TrCatalogProfileCapabilities = {
   pdpLayout: "split",
   skipStockValidation: false,
   skipInventoryDecrement: false,
-  productTypes: ["simple", "fashion"],
+  productTypes: ["simple", "advanced", "fashion"],
 };
 
 const CUSTOM_ART_CAPABILITIES: TrCatalogProfileCapabilities = {

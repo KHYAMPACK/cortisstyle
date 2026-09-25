@@ -48,6 +48,14 @@ export function trBoutiqueProductPath(
   return `/tr/${encodeURIComponent(boutiqueSlug)}/urun/${encodeURIComponent(productId)}`;
 }
 
+/** A category page on a boutique's own categories: `/tr/{boutique}/kategori/{slug}`. */
+export function trBoutiqueCategoryPath(
+  boutiqueSlug: string,
+  categorySlug: string,
+): string {
+  return `/tr/${encodeURIComponent(boutiqueSlug)}/kategori/${encodeURIComponent(categorySlug)}`;
+}
+
 /** Canonical boutique PDP when slug is known; legacy `/tr/shop/id` fallback otherwise. */
 export function trProductPath(
   productId: string,
@@ -137,6 +145,11 @@ export function trPanelNewSimpleProductPath(): string {
   return "/tr/panel/urun/yeni/basit";
 }
 
+/** Gelişmiş ürün editor (Basit ürün + variants). */
+export function trPanelNewAdvancedProductPath(): string {
+  return "/tr/panel/urun/yeni/gelismis";
+}
+
 /** Fashion sub-chooser (tek parça sihirbazı / takım / toplu). */
 export function trPanelNewFashionProductPath(): string {
   return "/tr/panel/urun/yeni/moda";
@@ -202,6 +215,27 @@ export function trPanelContentPackPath(packId: string): string {
 
 export function trPanelReportsPath(): string {
   return "/tr/panel/raporlar";
+}
+
+/** Tanımlamalar hub (categories now; brands, tags, … when something needs them). */
+export function trPanelDefinitionsPath(): string {
+  return "/tr/panel/tanimlamalar";
+}
+
+export function trPanelCategoriesPath(): string {
+  return "/tr/panel/tanimlamalar/kategoriler";
+}
+
+export function trPanelVariantTypesPath(): string {
+  return "/tr/panel/tanimlamalar/varyant-turleri";
+}
+
+export function trPanelNewCategoryPath(): string {
+  return "/tr/panel/tanimlamalar/kategoriler/yeni";
+}
+
+export function trPanelEditCategoryPath(categoryId: string): string {
+  return `/tr/panel/tanimlamalar/kategoriler/${encodeURIComponent(categoryId)}`;
 }
 
 export function trPanelStockPath(): string {

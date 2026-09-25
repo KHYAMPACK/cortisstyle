@@ -1,6 +1,7 @@
 import {
   trPanelCampaignsPath,
   trPanelCustomersPath,
+  trPanelDefinitionsPath,
   trPanelInvoicesPath,
   trPanelOrdersPath,
   trPanelPath,
@@ -68,6 +69,7 @@ export const TR_PANEL_NAV: TrPanelNavEntry[] = [
         match: "prefix",
         prefetch: "products",
       },
+      { href: trPanelDefinitionsPath(), label: "Tanımlamalar", match: "prefix" },
     ],
   },
   { href: trPanelCustomersPath(), label: "Müşteriler", match: "prefix" },
@@ -90,6 +92,9 @@ export function panelNavForProfile(
       return false;
     }
     if (item.href === trPanelStockPath() && !caps.showStockNav) {
+      return false;
+    }
+    if (item.href === trPanelDefinitionsPath() && !caps.showProductsNav) {
       return false;
     }
     return true;
@@ -147,8 +152,10 @@ export {
  * editor page is built. The bulk and set wizards under /urun/ keep the normal chrome.
  */
 const PANEL_EDITOR_ROUTES: RegExp[] = [
-  // Type chooser, Basit ürün, the fashion sub-chooser and the single-garment wizard.
-  /^\/tr\/panel\/urun\/yeni(\/basit|\/moda(\/tek-parca)?)?\/?$/,
+  // Type chooser, Basit and Gelişmiş ürün, the fashion sub-chooser and the single-garment wizard.
+  /^\/tr\/panel\/urun\/yeni(\/basit|\/gelismis|\/moda(\/tek-parca)?)?\/?$/,
+  // A category: the create form or an existing one.
+  /^\/tr\/panel\/tanimlamalar\/kategoriler\/[^/]+\/?$/,
   // Editing an existing product (any type).
   /^\/tr\/panel\/urun\/(?!yeni\/?$|takim\/?$|toplu\/?$)[^/]+\/?$/,
   // One order (the list, /siparisler, keeps the normal chrome).
@@ -167,6 +174,8 @@ export function isPanelProductRoute(pathname: string): boolean {
     pathname.startsWith("/tr/panel/urunler") ||
     pathname.startsWith("/tr/panel/urun/") ||
     pathname === trPanelStockPath() ||
-    pathname.startsWith(`${trPanelStockPath()}/`)
+    pathname.startsWith(`${trPanelStockPath()}/`) ||
+    pathname === trPanelDefinitionsPath() ||
+    pathname.startsWith(`${trPanelDefinitionsPath()}/`)
   );
 }

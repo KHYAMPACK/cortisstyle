@@ -10,11 +10,15 @@ import type {
   TrFulfillmentType,
   TrProduct,
   TrProductColor,
+  TrProductDetails,
   TrProductType,
   TrShippingAddress,
   TrShippingProviderId,
 } from "@/types/tr-marketplace";
 import { sanitizeProductFeatures } from "@/lib/tr/catalog/productFeatures";
+import { readCategoryMode } from "@/lib/tr/categories/types";
+import { sanitizeSeo } from "@/lib/tr/seo/seoFields";
+import { isUnitType } from "@/lib/tr/productUnits";
 import { readSizeStocks } from "@/lib/tr/sizeStocks";
 import {
   EMPTY_ORDER_SHIPMENT,
@@ -44,7 +48,7 @@ function readStringArray(value: unknown): string[] {
   return value.filter((entry): entry is string => typeof entry === "string");
 }
 
-function readProductColors(value: unknown): TrProductColor[] {
+export function readProductColors(value: unknown): TrProductColor[] {
   if (!Array.isArray(value)) return [];
 
   return value
@@ -137,6 +141,8 @@ export function mapBoutiqueRow(row: Record<string, unknown>): TrBoutique {
     returnAddress: (row.return_address as string | null) ?? null,
     sizePresets: readStringArray(row.size_presets),
     colorPresets: readProductColors(row.color_presets),
+    // A database without the column reads as legacy: nothing changes until it is switched.
+    categoryMode: readCategoryMode(row.category_mode),
     status: row.status as TrBoutique["status"],
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
@@ -171,6 +177,44 @@ export function toPublicBoutique(boutique: TrBoutique): TrBoutiquePublic {
   };
 }
 
+function readText(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value : null;
+}
+
+function readNumberOrNull(value: unknown): number | null {
+  const n = typeof value === "string" ? Number(value) : value;
+  return typeof n === "number" && Number.isFinite(n) ? n : null;
+}
+
+/**
+ * The detail columns (`patch_product_details.sql`). Only the ones present in the row
+ * are returned, so the storefront's explicit column lists — and a database without the
+ * patch — map exactly as before.
+ */
+export function mapProductDetails(
+  row: Record<string, unknown>,
+): Partial<TrProductDetails> {
+  const details: Partial<TrProductDetails> = {};
+  if ("description_html" in row) details.descriptionHtml = readText(row.description_html);
+  if ("brand" in row) details.brand = readText(row.brand);
+  if ("tags" in row) details.tags = readStringArray(row.tags);
+  if ("google_category" in row) details.googleCategory = readText(row.google_category);
+  if ("sku" in row) details.sku = readText(row.sku);
+  if ("barcode" in row) details.barcode = readText(row.barcode);
+  if ("desi" in row) details.desi = readNumberOrNull(row.desi);
+  if ("continue_selling_when_out_of_stock" in row) {
+    details.continueSelling = row.continue_selling_when_out_of_stock === true;
+  }
+  if ("unit_price_enabled" in row) {
+    details.unitPrice = {
+      enabled: row.unit_price_enabled === true,
+      amount: readNumberOrNull(row.unit_amount),
+      type: isUnitType(row.unit_type) ? row.unit_type : null,
+    };
+  }
+  return details;
+}
+
 export function mapProductRow(row: Record<string, unknown>): TrProduct {
   const compareAt =
     typeof row.compare_at_price_kurus === "number"
@@ -203,6 +247,15 @@ export function mapProductRow(row: Record<string, unknown>): TrProduct {
     sortOrder: (row.sort_order as number) ?? 0,
     productType: readProductType(row.product_type),
     fulfillmentType: readFulfillmentType(row.fulfillment_type),
+    // Present only on `select *` reads; the storefront's column lists omit them.
+    slug:
+      "slug" in row
+        ? typeof row.slug === "string"
+          ? row.slug
+          : null
+        : undefined,
+    seo: "seo" in row ? sanitizeSeo(row.seo) : undefined,
+    ...mapProductDetails(row),
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   };

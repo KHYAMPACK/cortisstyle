@@ -20,6 +20,27 @@ import {
   saveProductPrivateAdmin,
 } from "@/lib/tr/catalog/productPrivate";
 import {
+  assertProductSlugFree,
+  generateUniqueProductSlug,
+  isProductSlugConflict,
+  ProductSlugTakenError,
+} from "@/lib/tr/catalog/productSlug";
+import { sanitizeSeo } from "@/lib/tr/seo/seoFields";
+import { readProductDetailsBody } from "@/lib/tr/productDetails";
+import { richHtmlToPlainText } from "@/lib/tr/richText";
+import { sanitizeRichHtml } from "@/lib/tr/richTextSanitize";
+import {
+  ProductVariantsError,
+  saveProductVariants,
+} from "@/lib/tr/catalog/productVariants";
+import {
+  readVariantsBody,
+  sumActiveStock,
+} from "@/lib/tr/variants/productVariantRules";
+import { CategoryError, setProductCategories } from "@/lib/tr/catalog/categories";
+import { readCategoriesBody } from "@/lib/tr/catalog/categoryApi";
+import { isValidSlug } from "@/lib/tr/seo/slug";
+import {
   alignMarketplaceSlots,
   cleanedLifestyleImages,
 } from "@/lib/tr/productImages";
@@ -182,6 +203,50 @@ export async function POST(request: Request) {
     );
   }
 
+  let details: ReturnType<typeof readProductDetailsBody>;
+  try {
+    details = readProductDetailsBody(body);
+  } catch (error) {
+    return Response.json(
+      { error: error instanceof Error ? error.message : "Ürün ayrıntıları geçersiz." },
+      { status: 400 },
+    );
+  }
+  const { supplier, hsCode, descriptionHtml, ...publicDetails } = details;
+  // The editor is client code: the description is sanitized here, and its plain-text
+  // form is what the meta description, the feed and AI fill read.
+  const cleanDescription =
+    descriptionHtml !== undefined ? sanitizeRichHtml(descriptionHtml) : undefined;
+
+  // Gelişmiş ürün: its variants come with the product. With variants the product's
+  // stock is the sum of the active variants' stock, whatever the client sent.
+  let variantsInput: ReturnType<typeof readVariantsBody>;
+  try {
+    variantsInput = readVariantsBody(body.variants);
+  } catch (error) {
+    return Response.json(
+      { error: error instanceof Error ? error.message : "Varyantlar geçersiz." },
+      { status: 400 },
+    );
+  }
+  if (variantsInput && variantsInput.variants.length > 0) {
+    stock = sumActiveStock(variantsInput.variants);
+  }
+
+  // A Basit ürün gets a slug from its title unless the owner chose one; a chosen
+  // slug must be valid and free. Garment products only get one when asked.
+  const productType = readProductType(body.productType);
+  const requestedSlug =
+    typeof body.slug === "string" && body.slug.trim() ? body.slug.trim() : null;
+  if (requestedSlug && !isValidSlug(requestedSlug)) {
+    return Response.json(
+      { error: "Geçersiz slug: küçük harf, rakam ve tek tire kullanın." },
+      { status: 400 },
+    );
+  }
+  const seo = body.seo !== undefined ? sanitizeSeo(body.seo) : undefined;
+  const categories = readCategoriesBody(body.categories);
+
   let compareAtPriceKurus: number | null | undefined;
   if (
     body.compareAtPriceKurus !== undefined ||
@@ -227,11 +292,17 @@ export async function POST(request: Request) {
         ? body.catalogBackgroundId.trim() || null
         : null;
 
-    const product = await createProductAdmin({
+    const input = {
       boutiqueId: boutique.id,
       title,
       description:
-        typeof body.description === "string" ? body.description : null,
+        cleanDescription !== undefined
+          ? richHtmlToPlainText(cleanDescription ?? "") || null
+          : typeof body.description === "string"
+            ? body.description
+            : null,
+      ...(cleanDescription !== undefined ? { descriptionHtml: cleanDescription } : {}),
+      ...publicDetails,
       priceKurus,
       compareAtPriceKurus,
       sizes,
@@ -250,31 +321,96 @@ export async function POST(request: Request) {
       status,
       stock,
       sizeStocks,
-      productType: readProductType(body.productType),
+      productType,
       fulfillmentType: readFulfillmentType(body.fulfillmentType),
-    });
+      seo,
+    };
+
+    if (requestedSlug) await assertProductSlugFree(boutique.id, requestedSlug);
+    const autoSlug = !requestedSlug && productType === "simple";
+    const lostRaces = new Set<string>();
+    let slug: string | undefined = requestedSlug ?? undefined;
+    let product: Awaited<ReturnType<typeof createProductAdmin>> | null = null;
+    for (let attempt = 0; product === null; attempt += 1) {
+      if (autoSlug) {
+        slug = await generateUniqueProductSlug(boutique.id, title, lostRaces);
+      }
+      try {
+        product = await createProductAdmin({ ...input, slug });
+      } catch (createError) {
+        // Two products created at once can pick the same slug; the unique index
+        // rejects the second, which then takes the next free one.
+        if (autoSlug && slug && attempt < 2 && isProductSlugConflict(createError)) {
+          lostRaces.add(slug);
+          continue;
+        }
+        throw createError;
+      }
+    }
 
     // The product exists at this point, so a failure to store the cost is reported
     // as a warning instead of an error (a retry would create a duplicate).
     let warning: string | undefined;
-    if (costPriceKurus != null) {
+    const privateValues = {
+      ...(costPriceKurus != null ? { costPriceKurus } : {}),
+      ...(supplier ? { supplier } : {}),
+      ...(hsCode ? { hsCode } : {}),
+    };
+    if (Object.keys(privateValues).length > 0) {
       try {
         await saveProductPrivateAdmin({
           productId: product.id,
           boutiqueId: boutique.id,
-          costPriceKurus,
+          ...privateValues,
         });
       } catch (privateError) {
         console.error("[tr/owner/products] private save failed:", privateError);
         warning =
           privateError instanceof Error
             ? privateError.message
-            : "Alış fiyatı kaydedilemedi.";
+            : "Ürünün özel bilgileri kaydedilemedi.";
+      }
+    }
+
+    if (variantsInput && variantsInput.typeIds.length > 0) {
+      try {
+        await saveProductVariants({
+          productId: product.id,
+          boutiqueId: boutique.id,
+          input: variantsInput,
+          productImages: product.images,
+        });
+      } catch (variantsError) {
+        console.error("[tr/owner/products] variants failed:", variantsError);
+        warning =
+          variantsError instanceof ProductVariantsError
+            ? variantsError.message
+            : "Varyantlar kaydedilemedi.";
+      }
+    }
+
+    if (categories) {
+      try {
+        await setProductCategories({
+          productId: product.id,
+          boutiqueId: boutique.id,
+          categoryIds: categories.ids,
+          primaryId: categories.primaryId,
+        });
+      } catch (categoryError) {
+        console.error("[tr/owner/products] categories failed:", categoryError);
+        warning =
+          categoryError instanceof CategoryError
+            ? categoryError.message
+            : "Kategoriler kaydedilemedi.";
       }
     }
 
     return Response.json({ product, warning }, { status: 201 });
   } catch (error) {
+    if (error instanceof ProductSlugTakenError) {
+      return Response.json({ error: error.message }, { status: 409 });
+    }
     console.error("[tr/owner/products] create failed:", error);
     return Response.json(
       {

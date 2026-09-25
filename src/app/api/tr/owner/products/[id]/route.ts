@@ -23,6 +23,33 @@ import type {
 import { sanitizeProductFeatures } from "@/lib/tr/catalog/productFeatures";
 import { readFulfillmentType } from "@/lib/tr/catalog/mappers";
 import {
+  assertProductSlugFree,
+  ProductSlugTakenError,
+  setProductSlugAdmin,
+} from "@/lib/tr/catalog/productSlug";
+import { sanitizeSeo } from "@/lib/tr/seo/seoFields";
+import { readProductDetailsBody } from "@/lib/tr/productDetails";
+import { richHtmlToPlainText } from "@/lib/tr/richText";
+import { sanitizeRichHtml } from "@/lib/tr/richTextSanitize";
+import { EMPTY_PRODUCT_VARIANTS } from "@/lib/tr/variants/types";
+import {
+  copyProductVariants,
+  getProductVariants,
+  productVariantsErrorResponse,
+  saveProductVariants,
+} from "@/lib/tr/catalog/productVariants";
+import {
+  readVariantsBody,
+  sumActiveStock,
+} from "@/lib/tr/variants/productVariantRules";
+import {
+  CategoryError,
+  getProductCategories,
+  setProductCategories,
+} from "@/lib/tr/catalog/categories";
+import { readCategoriesBody } from "@/lib/tr/catalog/categoryApi";
+import { isValidSlug } from "@/lib/tr/seo/slug";
+import {
   getProductPrivateAdmin,
   readCostPriceKurus,
   saveProductPrivateAdmin,
@@ -92,10 +119,18 @@ export async function GET(request: Request, context: RouteContext) {
   }
 
   const ownerOnly = await getProductPrivateAdmin(id);
+  const categories = await getProductCategories(id);
+  // Only a Gelişmiş ürün has options and variants: skip the two lookups for the rest.
+  const variants =
+    resolved.productType === "advanced"
+      ? await getProductVariants(id)
+      : EMPTY_PRODUCT_VARIANTS;
 
   return Response.json({
     product: resolved,
     private: ownerOnly,
+    categories,
+    variants,
     boutique: {
       id: owned.boutique.id,
       slug: owned.boutique.slug,
@@ -267,6 +302,22 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
   const fulfillmentType = readFulfillmentType(body.fulfillmentType);
   if (fulfillmentType) patch.fulfillmentType = fulfillmentType;
+  if (body.seo !== undefined) patch.seo = sanitizeSeo(body.seo);
+
+  // `undefined`: not sent. `null`: clear the slug (the product is then addressed by id only).
+  let slugChange: string | null | undefined;
+  if (body.slug !== undefined) {
+    const raw = typeof body.slug === "string" ? body.slug.trim() : "";
+    if (raw && !isValidSlug(raw)) {
+      return Response.json(
+        { error: "Geçersiz slug: küçük harf, rakam ve tek tire kullanın." },
+        { status: 400 },
+      );
+    }
+    slugChange = raw || null;
+  }
+
+  const categories = readCategoriesBody(body.categories);
 
   let costPriceKurus: number | null | undefined;
   try {
@@ -278,17 +329,94 @@ export async function PATCH(request: Request, context: RouteContext) {
     );
   }
 
+  let details: ReturnType<typeof readProductDetailsBody>;
   try {
+    details = readProductDetailsBody(body);
+  } catch (error) {
+    return Response.json(
+      { error: error instanceof Error ? error.message : "Ürün ayrıntıları geçersiz." },
+      { status: 400 },
+    );
+  }
+  const { supplier, hsCode, descriptionHtml, ...publicDetails } = details;
+  Object.assign(patch, publicDetails);
+
+  // Variants (Gelişmiş ürün): `undefined` leaves them alone. With variants the product's
+  // stock is the sum of the active variants' stock, whatever the client sent.
+  let variantsInput: ReturnType<typeof readVariantsBody>;
+  try {
+    variantsInput = readVariantsBody(body.variants);
+  } catch (error) {
+    return Response.json(
+      { error: error instanceof Error ? error.message : "Varyantlar geçersiz." },
+      { status: 400 },
+    );
+  }
+  if (variantsInput && variantsInput.variants.length > 0) {
+    patch.stock = sumActiveStock(variantsInput.variants);
+  }
+  if (descriptionHtml !== undefined) {
+    // Sanitized here (the editor is client code); `description` keeps the plain text.
+    const clean = sanitizeRichHtml(descriptionHtml);
+    patch.descriptionHtml = clean;
+    patch.description = richHtmlToPlainText(clean ?? "") || null;
+  }
+
+  try {
+    // Check the slug first so a taken one rejects the whole save instead of half of it.
+    if (typeof slugChange === "string") {
+      await assertProductSlugFree(owned.productBoutiqueId, slugChange, id);
+    }
     const product = await updateProductAdmin(id, patch);
-    if (costPriceKurus !== undefined) {
+    if (slugChange !== undefined) {
+      await setProductSlugAdmin({
+        productId: id,
+        boutiqueId: owned.productBoutiqueId,
+        slug: slugChange,
+      });
+      product.slug = slugChange;
+    }
+    if (variantsInput) {
+      await saveProductVariants({
+        productId: id,
+        boutiqueId: owned.productBoutiqueId,
+        input: variantsInput,
+        productImages: product.images,
+      });
+    }
+    if (categories) {
+      await setProductCategories({
+        productId: id,
+        boutiqueId: owned.productBoutiqueId,
+        categoryIds: categories.ids,
+        primaryId: categories.primaryId,
+      });
+      // The primary category's slug is copied onto the product; return it fresh.
+      product.category = (await getProductByIdAdmin(id))?.category ?? null;
+    }
+    if (
+      costPriceKurus !== undefined ||
+      supplier !== undefined ||
+      hsCode !== undefined
+    ) {
       await saveProductPrivateAdmin({
         productId: id,
         boutiqueId: owned.productBoutiqueId,
         costPriceKurus,
+        supplier,
+        hsCode,
       });
     }
     return Response.json({ product });
   } catch (error) {
+    if (error instanceof ProductSlugTakenError) {
+      return Response.json({ error: error.message }, { status: 409 });
+    }
+    if (error instanceof CategoryError) {
+      return Response.json({ error: error.message }, { status: error.status });
+    }
+    const variantsFailure = productVariantsErrorResponse(error);
+    if (variantsFailure) return variantsFailure;
     console.error("[tr/owner/products/[id]] patch failed:", error);
     return Response.json(
       {
@@ -358,6 +486,44 @@ export async function POST(request: Request, context: RouteContext) {
 
   try {
     const product = await duplicateProductAdmin(id);
+
+    // The copy keeps the owner-only details and the categories. The copy exists
+    // already, so a failure here is logged, not reported as a failed duplicate.
+    try {
+      const [ownerOnly, categories] = await Promise.all([
+        getProductPrivateAdmin(id),
+        getProductCategories(id),
+      ]);
+      if (ownerOnly.costPriceKurus != null || ownerOnly.supplier || ownerOnly.hsCode) {
+        await saveProductPrivateAdmin({
+          productId: product.id,
+          boutiqueId: owned.productBoutiqueId,
+          costPriceKurus: ownerOnly.costPriceKurus,
+          supplier: ownerOnly.supplier,
+          hsCode: ownerOnly.hsCode,
+        });
+      }
+      if (product.productType === "advanced") {
+        await copyProductVariants({
+          fromProductId: id,
+          toProductId: product.id,
+          boutiqueId: owned.productBoutiqueId,
+          toProductImages: product.images,
+        });
+      }
+      if (categories.ids.length > 0) {
+        await setProductCategories({
+          productId: product.id,
+          boutiqueId: owned.productBoutiqueId,
+          categoryIds: categories.ids,
+          primaryId: categories.primaryId,
+        });
+        product.category = (await getProductByIdAdmin(product.id))?.category ?? null;
+      }
+    } catch (copyError) {
+      console.error("[tr/owner/products/[id]] duplicate extras failed:", copyError);
+    }
+
     return Response.json({ product }, { status: 201 });
   } catch (error) {
     console.error("[tr/owner/products/[id]] duplicate failed:", error);

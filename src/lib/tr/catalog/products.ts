@@ -6,6 +6,14 @@ import {
   getServerServiceSupabase,
 } from "@/lib/supabase/supabaseServer";
 import { mapProductRow } from "@/lib/tr/mappers";
+import {
+  DETAIL_COLUMNS,
+  DETAILS_PATCH_MISSING,
+  detailRow,
+  hasDetailValue,
+  isEmptyDetail,
+  withoutDetailColumns,
+} from "@/lib/tr/catalog/productDetailColumns";
 import { sanitizeProductFeatures } from "@/lib/tr/catalog/productFeatures";
 import type {
   CreateTrProductInput,
@@ -121,6 +129,13 @@ function productInsertRow(
     product_type: input.productType ?? "fashion",
     fulfillment_type: input.fulfillmentType ?? "physical",
   };
+  // Only sent when there is something to store, so creating a garment product
+  // never touches (or depends on) the SEO columns.
+  if (input.slug) row.slug = input.slug;
+  if (input.seo && Object.keys(input.seo).length > 0) row.seo = input.seo;
+  for (const [column, value] of Object.entries(detailRow(input))) {
+    if (!isEmptyDetail(value)) row[column] = value;
+  }
   for (const column of omitColumns) {
     delete row[column];
   }
@@ -500,6 +515,9 @@ export async function createProductAdmin(
     }
 
     const missing = missingColumnFromError(error);
+    if (missing && DETAIL_COLUMNS.has(missing) && isMissingColumnError(error, missing)) {
+      throw new Error(DETAILS_PATCH_MISSING);
+    }
     if (missing && isMissingColumnError(error, missing)) {
       console.warn(
         `[tr/products] column '${missing}' missing — saving without it. Apply matching supabase/patch_*.sql when ready.`,
@@ -597,6 +615,8 @@ function productUpdateRow(input: UpdateTrProductInput): Record<string, unknown> 
   if (input.fulfillmentType !== undefined) {
     row.fulfillment_type = input.fulfillmentType;
   }
+  if (input.seo !== undefined) row.seo = input.seo;
+  Object.assign(row, detailRow(input));
 
   return row;
 }
@@ -648,6 +668,20 @@ export async function updateProductAdmin(
 
   if (error) {
     const missing = missingColumnFromError(error);
+    if (missing && DETAIL_COLUMNS.has(missing) && isMissingColumnError(error, missing)) {
+      // Nothing to store in them: save the rest. A real value would be lost, so say so.
+      if (hasDetailValue(row)) throw new Error(DETAILS_PATCH_MISSING);
+      const rest = withoutDetailColumns(row);
+      if (Object.keys(rest).length === 0) return (await getProductByIdAdmin(productId))!;
+      const retry = await supabase
+        .from("tr_products")
+        .update(rest)
+        .eq("id", productId)
+        .select("*")
+        .single();
+      if (retry.error) throw retry.error;
+      return mapProductRow(retry.data as Record<string, unknown>);
+    }
     if (missing && missing in row && isMissingColumnError(error, missing)) {
       console.warn(
         `[tr/products] column '${missing}' missing on update — applying without it.`,
@@ -761,6 +795,15 @@ export async function duplicateProductAdmin(
     sortOrder: existing.sortOrder,
     productType: existing.productType,
     fulfillmentType: existing.fulfillmentType,
+    // Copies keep the descriptive details; SKU and barcode identify one product, so
+    // they stay empty.
+    descriptionHtml: existing.descriptionHtml,
+    brand: existing.brand,
+    tags: existing.tags,
+    googleCategory: existing.googleCategory,
+    desi: existing.desi,
+    continueSelling: existing.continueSelling,
+    unitPrice: existing.unitPrice,
   });
 }
 

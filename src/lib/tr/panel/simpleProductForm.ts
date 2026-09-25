@@ -1,6 +1,7 @@
 import {
   isValidStock,
   isValidTryPrice,
+  kurusToPriceInput,
   parseTryPrice,
   TR_OWNER_PRODUCT_LIMITS,
 } from "@/lib/tr/ownerProductConstraints";
@@ -8,11 +9,32 @@ import type {
   TrOwnerProductPatch,
   TrOwnerProductPayload,
 } from "@/lib/tr/panel/ownerClient";
+import {
+  EMPTY_SEO_FORM,
+  isValidCanonicalPath,
+  seoFromForm,
+  seoToForm,
+  type TrSeoFormValue,
+} from "@/lib/tr/seo/seoFields";
+import { isValidSlug } from "@/lib/tr/seo/slug";
+import { parseDecimalInput, readProductDetailsBody } from "@/lib/tr/productDetails";
+import { plainTextToRichHtml } from "@/lib/tr/richText";
+import { EMPTY_PRODUCT_VARIANTS, type TrProductVariants } from "@/lib/tr/variants/types";
+import {
+  EMPTY_VARIANTS_FORM,
+  validateVariantsForm,
+  variantsBody,
+  variantsFormFromProduct,
+  variantsTotalStock,
+  type VariantsFormState,
+} from "@/lib/tr/variants/variantForm";
+import type { TrProductCategories } from "@/lib/tr/categories/types";
 import type {
   TrFulfillmentType,
   TrProduct,
   TrProductPrivate,
   TrProductStatus,
+  TrUnitType,
 } from "@/types/tr-marketplace";
 
 /**
@@ -24,6 +46,10 @@ import type {
  * normal price is shown struck through.
  */
 export interface SimpleProductFormState {
+  /** Gelişmiş = Basit + variants. */
+  productType: "simple" | "advanced";
+  /** The Varyant card's rows (Gelişmiş only; empty = sells at product level). */
+  variants: VariantsFormState;
   title: string;
   fulfillmentType: TrFulfillmentType;
   priceTry: string;
@@ -33,10 +59,38 @@ export interface SimpleProductFormState {
   hidden: boolean;
   stock: string;
   images: string[];
+  /** Slug and the SEO card's fields. */
+  seo: TrSeoFormValue;
+  /** Açıklama as the editor's HTML (`""` when empty); the server sanitizes it. */
+  descriptionHtml: string;
+  brand: string;
+  tags: string[];
+  googleCategory: string;
+  /** Owner-only, like `costPriceTry`. */
+  supplier: string;
+  sku: string;
+  barcode: string;
+  desi: string;
+  /** Owner-only. */
+  hsCode: string;
+  continueSelling: boolean;
+  unitPriceEnabled: boolean;
+  unitAmount: string;
+  unitType: TrUnitType;
+  /**
+   * The product's categories when the boutique manages its own; `null` when it uses
+   * the built-in tree (nothing is sent, nothing is shown).
+   */
+  categories: TrProductCategories | null;
 }
 
-export function emptySimpleProductForm(): SimpleProductFormState {
+export function emptySimpleProductForm(
+  categories: TrProductCategories | null = null,
+  productType: "simple" | "advanced" = "simple",
+): SimpleProductFormState {
   return {
+    productType,
+    variants: EMPTY_VARIANTS_FORM,
     title: "",
     fulfillmentType: "physical",
     priceTry: "",
@@ -45,41 +99,94 @@ export function emptySimpleProductForm(): SimpleProductFormState {
     hidden: false,
     stock: "1",
     images: [],
+    seo: { ...EMPTY_SEO_FORM },
+    descriptionHtml: "",
+    brand: "",
+    tags: [],
+    googleCategory: "",
+    supplier: "",
+    sku: "",
+    barcode: "",
+    desi: "",
+    hsCode: "",
+    continueSelling: false,
+    unitPriceEnabled: false,
+    unitAmount: "",
+    unitType: "kg",
+    categories,
   };
-}
-
-function kurusToInput(kurus: number): string {
-  const lira = kurus / 100;
-  return Number.isInteger(lira) ? String(lira) : lira.toFixed(2);
 }
 
 export function simpleFormFromProduct(
   product: TrProduct,
   ownerOnly: TrProductPrivate,
+  categories: TrProductCategories | null = null,
+  variants: TrProductVariants = EMPTY_PRODUCT_VARIANTS,
 ): SimpleProductFormState {
   const onSale =
     typeof product.compareAtPriceKurus === "number" &&
     product.compareAtPriceKurus > product.priceKurus;
   return {
+    productType: product.productType === "advanced" ? "advanced" : "simple",
+    variants: variantsFormFromProduct(variants),
     title: product.title,
     fulfillmentType: product.fulfillmentType ?? "physical",
-    priceTry: kurusToInput(
+    priceTry: kurusToPriceInput(
       onSale ? product.compareAtPriceKurus! : product.priceKurus,
     ),
-    salePriceTry: onSale ? kurusToInput(product.priceKurus) : "",
+    salePriceTry: onSale ? kurusToPriceInput(product.priceKurus) : "",
     costPriceTry:
       ownerOnly.costPriceKurus != null
-        ? kurusToInput(ownerOnly.costPriceKurus)
+        ? kurusToPriceInput(ownerOnly.costPriceKurus)
         : "",
     hidden: product.status === "hidden",
     stock: String(product.stock),
     images: product.images,
+    seo: seoToForm(product.slug, product.seo),
+    descriptionHtml:
+      product.descriptionHtml ?? plainTextToRichHtml(product.description),
+    brand: product.brand ?? "",
+    tags: product.tags ?? [],
+    googleCategory: product.googleCategory ?? "",
+    supplier: ownerOnly.supplier ?? "",
+    sku: product.sku ?? "",
+    barcode: product.barcode ?? "",
+    desi: product.desi != null ? String(product.desi) : "",
+    hsCode: ownerOnly.hsCode ?? "",
+    continueSelling: product.continueSelling ?? false,
+    unitPriceEnabled: product.unitPrice?.enabled ?? false,
+    unitAmount:
+      product.unitPrice?.amount != null ? String(product.unitPrice.amount) : "",
+    unitType: product.unitPrice?.type ?? "kg",
+    categories,
+  };
+}
+
+/** The detail fields as the API body carries them (also what the validation reads). */
+function detailFields(form: SimpleProductFormState) {
+  return {
+    descriptionHtml: form.descriptionHtml || null,
+    brand: form.brand,
+    tags: form.tags,
+    googleCategory: form.googleCategory,
+    sku: form.sku,
+    barcode: form.barcode,
+    desi: parseDecimalInput(form.desi),
+    continueSelling: form.continueSelling,
+    unitPrice: {
+      enabled: form.unitPriceEnabled,
+      amount: parseDecimalInput(form.unitAmount),
+      type: form.unitType,
+    },
+    supplier: form.supplier,
+    hsCode: form.hsCode,
   };
 }
 
 /** First problem in the form as a sentence for the owner, or null when it can be saved. */
 export function validateSimpleProductForm(
   form: SimpleProductFormState,
+  options: { requireSlug?: boolean } = {},
 ): string | null {
   if (!form.title.trim()) return "Ürün adı zorunlu.";
   if (!isValidTryPrice(form.priceTry)) {
@@ -103,11 +210,31 @@ export function validateSimpleProductForm(
       return "Alış fiyatı geçersiz.";
     }
   }
-  if (!isValidStock(form.stock)) {
+  // With variants the stock is the sum of theirs, not a field of its own.
+  if (form.variants.rows.length === 0 && !isValidStock(form.stock)) {
     return `Stok ${TR_OWNER_PRODUCT_LIMITS.stockMin}–${TR_OWNER_PRODUCT_LIMITS.stockMax} arası bir sayı olmalı.`;
+  }
+  if (form.productType === "advanced") {
+    const variantsProblem = validateVariantsForm(form.variants);
+    if (variantsProblem) return variantsProblem;
   }
   if (form.images.filter((url) => url.trim()).length === 0) {
     return "En az bir fotoğraf ekleyin.";
+  }
+  const slug = form.seo.slug.replace(/-+$/, "");
+  if (slug ? !isValidSlug(slug) : options.requireSlug) {
+    return slug
+      ? "Slug yalnızca küçük harf, rakam ve tek tire içermeli."
+      : "Slug boş olamaz.";
+  }
+  if (form.seo.canonical && !isValidCanonicalPath(`/${form.seo.canonical}`)) {
+    return "Canonical URL geçersiz.";
+  }
+  // The API's own rules for the detail fields (lengths, formats, unit price).
+  try {
+    readProductDetailsBody(detailFields(form));
+  } catch (problem) {
+    return problem instanceof Error ? problem.message : "Ürün ayrıntıları geçersiz.";
   }
   return null;
 }
@@ -116,7 +243,14 @@ export function simpleProductStatus(
   form: SimpleProductFormState,
 ): TrProductStatus {
   if (form.hidden) return "hidden";
-  return Number.parseInt(form.stock, 10) > 0 ? "available" : "sold";
+  return effectiveStock(form) > 0 ? "available" : "sold";
+}
+
+/** The product's stock: its own field, or the sum of the active variants' when it has variants. */
+export function effectiveStock(form: SimpleProductFormState): number {
+  return form.variants.rows.length > 0
+    ? variantsTotalStock(form.variants)
+    : Number.parseInt(form.stock, 10);
 }
 
 /**
@@ -137,18 +271,24 @@ export function simpleProductPayload(
 
   return {
     boutiqueId,
-    productType: "simple",
+    productType: form.productType,
     title: form.title.trim(),
     fulfillmentType: form.fulfillmentType,
     priceTry: sale ?? price,
     compareAtPriceTry: sale !== null ? price : null,
     costPriceTry: cost,
-    stock: Number.parseInt(form.stock, 10),
+    stock: effectiveStock(form),
     status: simpleProductStatus(form),
     images: form.images.map((url) => url.trim()).filter(Boolean),
     sizes: [],
     colors: [],
     category: null,
+    // Empty = the server derives it from the title.
+    slug: form.seo.slug.replace(/-+$/, "") || undefined,
+    seo: seoFromForm(form.seo),
+    ...detailFields(form),
+    ...(form.productType === "advanced" ? { variants: variantsBody(form.variants) } : {}),
+    ...(form.categories ? { categories: form.categories } : {}),
   };
 }
 
@@ -168,6 +308,9 @@ export function simpleProductPatch(
     stock,
     status,
     images,
+    seo,
+    categories,
+    variants,
   } = simpleProductPayload(form, "");
   return {
     title,
@@ -178,5 +321,11 @@ export function simpleProductPatch(
     stock,
     status,
     images,
+    seo,
+    ...detailFields(form),
+    ...(variants ? { variants } : {}),
+    // An emptied slug clears it; the old address then redirects to the id URL.
+    slug: form.seo.slug.replace(/-+$/, "") || null,
+    ...(categories ? { categories } : {}),
   };
 }

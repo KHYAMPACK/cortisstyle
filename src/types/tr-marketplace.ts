@@ -1,5 +1,7 @@
 import type { TrFashionProductFeatures } from "@/lib/tr/fashion/types";
 import type { TrCustomArtProductFeatures } from "@/lib/tr/customArt/types";
+import type { TrSeo } from "@/lib/tr/seo/seoFields";
+import type { TrCategoryMode } from "@/lib/tr/categories/types";
 
 export type TrBoutiqueStatus = "draft" | "pending" | "verified" | "suspended";
 export type TrProductStatus = "available" | "sold" | "hidden";
@@ -10,6 +12,8 @@ export type TrProductStatus = "available" | "sold" | "hidden";
 export type TrProductType = "simple" | "advanced" | "fashion";
 /** Informational for now — a digital product still uses normal checkout and shipping. */
 export type TrFulfillmentType = "physical" | "digital";
+/** Unit of a product's content, for the unit price (see `productUnits.ts`). */
+export type TrUnitType = "g" | "kg" | "ml" | "l" | "cm" | "m" | "m2" | "adet";
 export type TrPaymentStatus = "sandbox" | "pending" | "paid" | "failed" | "refunded";
 /** Ikas-like owner fulfillment pipeline (separate from payment). */
 export type TrFulfillmentStatus =
@@ -127,9 +131,41 @@ export interface TrBoutique extends TrBoutiquePublic {
   sizePresets: string[];
   /** Boutique-scoped reusable color chips for the product editor. */
   colorPresets: TrProductColor[];
+  /** Which category system the storefront and panel use (see patch_categories.sql). */
+  categoryMode: TrCategoryMode;
 }
 
-export interface TrProduct {
+/** "Birim fiyat": the price per kg / l / m…, worked out from the content amount. */
+export interface TrUnitPrice {
+  enabled: boolean;
+  /** How much the product contains, in `type` units (500 for a 500 g pack). */
+  amount: number | null;
+  type: TrUnitType | null;
+}
+
+/**
+ * Public-safe fields the Basit ürün editor adds (Ürün detayı, Envanter, Stok, Birim
+ * fiyat; `supabase/patch_product_details.sql`). Present on owner/admin reads
+ * (`select *`) once the patch is applied; owner-only data (supplier, HS code) is
+ * `TrProductPrivate` instead.
+ */
+export interface TrProductDetails {
+  /** Sanitized rich-text description; `description` holds its plain-text form. */
+  descriptionHtml: string | null;
+  brand: string | null;
+  tags: string[];
+  /** Free text the Google Merchant feed can emit as google_product_category. */
+  googleCategory: string | null;
+  sku: string | null;
+  barcode: string | null;
+  /** Shipping volume weight; the carrier label will use it. */
+  desi: number | null;
+  /** Keep selling at zero stock. Stored; the storefront does not act on it yet. */
+  continueSelling: boolean;
+  unitPrice: TrUnitPrice | null;
+}
+
+export interface TrProduct extends Partial<TrProductDetails> {
   id: string;
   boutiqueId: string;
   title: string;
@@ -165,6 +201,9 @@ export interface TrProduct {
    */
   productType?: TrProductType;
   fulfillmentType?: TrFulfillmentType;
+  /** Owner/admin reads only (the storefront reads slug and SEO through `productSlug.ts`). */
+  slug?: string | null;
+  seo?: TrSeo;
   createdAt: string;
   updatedAt: string;
 }
@@ -175,7 +214,17 @@ export interface TrProduct {
  */
 export interface TrProductPrivate {
   costPriceKurus: number | null;
+  /** Free text; stored only. */
+  supplier: string | null;
+  /** Gümrük tarife (GTİP) code; stored only. */
+  hsCode: string | null;
 }
+
+export const EMPTY_PRODUCT_PRIVATE: TrProductPrivate = {
+  costPriceKurus: null,
+  supplier: null,
+  hsCode: null,
+};
 
 export interface TrProductWithBoutique extends TrProduct {
   boutique: TrBoutiquePublic;
@@ -379,7 +428,7 @@ export interface CreateTrBoutiqueInput {
   status?: TrBoutiqueStatus;
 }
 
-export interface CreateTrProductInput {
+export interface CreateTrProductInput extends Partial<TrProductDetails> {
   boutiqueId: string;
   title: string;
   description?: string | null;
@@ -403,9 +452,12 @@ export interface CreateTrProductInput {
   /** Defaults to `fashion` (every programmatic caller is a garment flow). */
   productType?: TrProductType;
   fulfillmentType?: TrFulfillmentType;
+  /** A valid, already-unique slug (see `generateUniqueProductSlug`). */
+  slug?: string | null;
+  seo?: TrSeo;
 }
 
-export interface UpdateTrProductInput {
+export interface UpdateTrProductInput extends Partial<TrProductDetails> {
   title?: string;
   description?: string | null;
   priceKurus?: number;
@@ -426,6 +478,8 @@ export interface UpdateTrProductInput {
   sizeStocks?: Record<string, number>;
   sortOrder?: number;
   fulfillmentType?: TrFulfillmentType;
+  /** The slug itself changes through `setProductSlugAdmin`, which also records the redirect. */
+  seo?: TrSeo;
 }
 
 export interface CreateTrOrderInput {

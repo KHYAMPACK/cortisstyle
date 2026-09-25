@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
+import { useEffect, useMemo, useState } from "react";
 import { useUnsavedChangesGuard } from "@/components/tr/panel/TrOwnerLeaveGuard";
 import { TrOwnerManualPhotoGallery } from "@/components/tr/panel/TrOwnerManualPhotoGallery";
 import {
@@ -9,7 +10,16 @@ import {
   TrPanelEditorSave,
   TrPanelEditorTabs,
 } from "@/components/tr/panel/TrPanelEditor";
+import { TrPanelCategoryPicker } from "@/components/tr/panel/TrPanelCategoryPicker";
+import {
+  TrPanelCreatableSelect,
+  TrPanelTagsField,
+} from "@/components/tr/panel/TrPanelCreatableSelect";
 import { TrPanelLink as Link } from "@/components/tr/panel/TrPanelLink";
+import { TrPanelSeoCard } from "@/components/tr/panel/TrPanelSeoCard";
+import { TrProductVariantsCard } from "@/components/tr/panel/TrProductVariantsCard";
+import { useOwnerCategories } from "@/components/tr/panel/useOwnerCategories";
+import { useOwnerProductFacets } from "@/components/tr/panel/useOwnerProductFacets";
 import { TrPanelBusySpinner } from "@/components/tr/panel/TrPanelMotion";
 import { TrProductImageLightbox } from "@/components/tr/panel/TrProductImageLightbox";
 import {
@@ -34,6 +44,7 @@ import {
   type TrOwnerBoutiqueSummary,
 } from "@/lib/tr/ownerClient";
 import {
+  effectiveStock,
   emptySimpleProductForm,
   simpleFormFromProduct,
   simpleProductPatch,
@@ -42,10 +53,24 @@ import {
   type SimpleProductFormState,
 } from "@/lib/tr/panel/simpleProductForm";
 import { trBoutiqueProductPath, trPanelSettingsPath } from "@/lib/tr/paths";
-import type {
-  TrFulfillmentType,
-  TrProduct,
-  TrProductPrivate,
+import {
+  PRODUCT_DETAIL_LIMITS,
+  parseDecimalInput,
+  sanitizeDecimalInput,
+} from "@/lib/tr/productDetails";
+import { UNIT_TYPES, unitPricePerReference } from "@/lib/tr/productUnits";
+import type { TrProductVariants } from "@/lib/tr/variants/types";
+import type { TrProductCategories } from "@/lib/tr/categories/types";
+import type { TrSeoFormValue } from "@/lib/tr/seo/seoFields";
+import { slugify } from "@/lib/tr/seo/slug";
+import { storeProductUrlPrefix } from "@/lib/tr/seo/storeAddress";
+import {
+  EMPTY_PRODUCT_PRIVATE,
+  formatTryFromKurus,
+  type TrFulfillmentType,
+  type TrProduct,
+  type TrProductPrivate,
+  type TrUnitType,
 } from "@/types/tr-marketplace";
 
 /** One-shot message handed from the create page to the edit page it redirects to. */
@@ -60,12 +85,40 @@ export function boutiqueLocationAddress(
   );
 }
 
-const TABS = [
+const TABS_BASIC = [
   { id: "editor-temel", label: "Temel bilgi" },
   { id: "editor-medya", label: "Medya" },
+  { id: "editor-detay", label: "Ürün detayı" },
+  { id: "editor-envanter", label: "Envanter" },
   { id: "editor-stok", label: "Stok" },
   { id: "editor-lokasyon", label: "Lokasyon" },
+  { id: "editor-seo", label: "SEO" },
 ] as const;
+
+/** A Gelişmiş ürün is the same plus a Varyant card after Medya. */
+const TABS_ADVANCED = [
+  TABS_BASIC[0],
+  TABS_BASIC[1],
+  { id: "editor-varyant", label: "Varyant" },
+  ...TABS_BASIC.slice(2),
+] as const;
+
+// The editor is a sizeable bundle that only this page needs: load it on demand.
+const TrPanelRichTextField = dynamic(
+  () =>
+    import("@/components/tr/panel/TrPanelRichTextField").then(
+      (module) => module.TrPanelRichTextField,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div
+        className="min-h-[12rem] animate-pulse rounded-lg border border-neutral-200 bg-neutral-50"
+        aria-hidden
+      />
+    ),
+  },
+);
 
 const FULFILLMENT_OPTIONS: Array<{ id: TrFulfillmentType; label: string }> = [
   { id: "physical", label: "Fiziksel" },
@@ -110,36 +163,68 @@ function PriceField({
 }
 
 /**
- * The Basit ürün editor: one price, one stock count. Creates when `product` is
- * absent, edits otherwise. Saving is explicit (Kaydet in the top bar) and leaving
- * with unsaved edits asks first.
+ * The Basit and Gelişmiş ürün editor. A Basit ürün has one price and one stock count; a
+ * Gelişmiş ürün is the same plus a Varyant card, and sells like a Basit ürün until it has
+ * variants. Creates when `product` is absent, edits otherwise. Saving is explicit (Kaydet
+ * in the top bar) and leaving with unsaved edits asks first.
  */
 export function TrSimpleProductEditor({
   boutiqueId,
   boutiqueSlug,
+  customDomain = null,
   address,
   product,
   ownerOnly,
+  categoryMode = "legacy",
+  initialCategories,
+  productType = "simple",
+  initialVariants,
   onCreated,
   onSaved,
   onDeleted,
 }: {
   boutiqueId: string;
   boutiqueSlug: string;
+  /** The store's own domain, for the SEO preview. */
+  customDomain?: string | null;
   /** "Ana adres" shown in the Lokasyon card. */
   address: string | null;
   product?: TrProduct;
   ownerOnly?: TrProductPrivate;
+  /** `custom`: the boutique manages its own categories and the editor shows the picker. */
+  categoryMode?: "legacy" | "custom";
+  /** The saved product's categories (edit). */
+  initialCategories?: TrProductCategories;
+  /** Which editor to create; an existing product's own type wins. */
+  productType?: "simple" | "advanced";
+  /** A Gelişmiş product's saved option types and variants (edit). */
+  initialVariants?: TrProductVariants;
   onCreated?: (product: TrProduct, warning?: string) => void;
   onSaved?: (product: TrProduct) => void;
   onDeleted?: () => void;
 }) {
-  const [form, setForm] = useState<SimpleProductFormState>(() =>
-    product
-      ? simpleFormFromProduct(product, ownerOnly ?? { costPriceKurus: null })
-      : emptySimpleProductForm(),
+  const managesCategories = categoryMode === "custom";
+  const { categories, loaded: categoriesLoaded } = useOwnerCategories(
+    boutiqueId,
+    managesCategories,
   );
+  const facets = useOwnerProductFacets(boutiqueId);
+  const [form, setForm] = useState<SimpleProductFormState>(() => {
+    const own = managesCategories
+      ? (initialCategories ?? { ids: [], primaryId: null })
+      : null;
+    return product
+      ? simpleFormFromProduct(
+          product,
+          ownerOnly ?? EMPTY_PRODUCT_PRIVATE,
+          own,
+          initialVariants,
+        )
+      : emptySimpleProductForm(own, productType);
+  });
   const [baseline, setBaseline] = useState(() => JSON.stringify(form));
+  // The rich-text field owns its content after the first load.
+  const [initialDescription] = useState(() => form.descriptionHtml);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -180,7 +265,9 @@ export function TrSimpleProductEditor({
 
   const save = async () => {
     if (saving || uploading) return;
-    const problem = validateSimpleProductForm(form);
+    const problem = validateSimpleProductForm(form, {
+      requireSlug: Boolean(product?.slug),
+    });
     if (problem) {
       setError(problem);
       return;
@@ -243,7 +330,34 @@ export function TrSimpleProductEditor({
     }
   };
 
-  const zeroStock = form.stock.trim() !== "" && Number(form.stock) === 0;
+  const advanced = form.productType === "advanced";
+  const hasVariants = form.variants.rows.length > 0;
+  const totalStock = effectiveStock(form);
+  const zeroStock = hasVariants
+    ? totalStock === 0
+    : form.stock.trim() !== "" && Number(form.stock) === 0;
+  const tabs = advanced ? TABS_ADVANCED : TABS_BASIC;
+  const unitPreview = useMemo(() => {
+    const sellPrice =
+      parseDecimalInput(form.salePriceTry) ?? parseDecimalInput(form.priceTry);
+    if (!form.unitPriceEnabled || sellPrice === null || sellPrice <= 0) return null;
+    const perReference = unitPricePerReference(Math.round(sellPrice * 100), {
+      enabled: true,
+      amount: parseDecimalInput(form.unitAmount),
+      type: form.unitType,
+    });
+    return perReference
+      ? `${formatTryFromKurus(perReference.perKurus)} / ${perReference.symbol}`
+      : null;
+  }, [
+    form.priceTry,
+    form.salePriceTry,
+    form.unitAmount,
+    form.unitPriceEnabled,
+    form.unitType,
+  ]);
+  const changeSeo = (patch: Partial<TrSeoFormValue>) =>
+    change({ seo: { ...form.seo, ...patch } });
 
   return (
     <form
@@ -274,7 +388,7 @@ export function TrSimpleProductEditor({
         onSave={() => void save()}
       />
 
-      <TrPanelEditorTabs tabs={TABS} />
+      <TrPanelEditorTabs tabs={tabs} />
 
       {notice ? (
         <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[14px] text-amber-950">
@@ -357,6 +471,57 @@ export function TrSimpleProductEditor({
             />
           </div>
 
+          <div className="space-y-3">
+            <label className="flex items-center gap-3 text-[14px] text-neutral-800">
+              <input
+                type="checkbox"
+                checked={form.unitPriceEnabled}
+                onChange={(event) => change({ unitPriceEnabled: event.target.checked })}
+                className="h-4 w-4 accent-[color:var(--panel-accent)]"
+              />
+              Birim fiyat göster
+            </label>
+            {form.unitPriceEnabled ? (
+              <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)]">
+                <label className="block space-y-2">
+                  <span className={panelLabelClass}>Ürün miktarı</span>
+                  <input
+                    value={form.unitAmount}
+                    onChange={(event) =>
+                      change({ unitAmount: sanitizeDecimalInput(event.target.value, 3, 7) })
+                    }
+                    inputMode="decimal"
+                    className={panelFieldClass}
+                  />
+                </label>
+                <label className="block space-y-2">
+                  <span className={panelLabelClass}>Birim</span>
+                  <select
+                    value={form.unitType}
+                    onChange={(event) => change({ unitType: event.target.value as TrUnitType })}
+                    className={panelFieldClass}
+                  >
+                    {UNIT_TYPES.map((unit) => (
+                      <option key={unit.id} value={unit.id}>
+                        {unit.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <div className="space-y-2">
+                  <span className={panelLabelClass}>Birim fiyat</span>
+                  <p className="flex min-h-11 items-center rounded-lg bg-neutral-50 px-3 text-[14px] font-medium text-neutral-800 lg:min-h-9 lg:text-[13px]">
+                    {unitPreview ?? "—"}
+                  </p>
+                </div>
+              </div>
+            ) : null}
+            <p className={panelHintClass}>
+              Ürünün miktarına göre kg / litre / metre başına fiyatı hesaplar.
+              Şimdilik yalnızca kaydedilir; mağaza sayfası henüz göstermiyor.
+            </p>
+          </div>
+
           <div className="space-y-2">
             <p className={panelLabelClass}>Durum</p>
             <div className="flex flex-wrap gap-3">
@@ -398,6 +563,165 @@ export function TrSimpleProductEditor({
           />
         </TrPanelEditorCard>
 
+        {advanced ? (
+          <TrPanelEditorCard
+            id="editor-varyant"
+            title="Varyant"
+            hint="Renk, beden gibi seçeneklerin her kombinasyonu ayrı SKU, fiyat ve stokla satılabilir. Varyant eklemezseniz ürün tek fiyat ve tek stokla satılır."
+          >
+            <TrProductVariantsCard
+              boutiqueId={boutiqueId}
+              variants={form.variants}
+              onChange={(variants) => change({ variants })}
+              productImages={form.images}
+              productPrice={form.priceTry}
+              disabled={saving}
+            />
+          </TrPanelEditorCard>
+        ) : null}
+
+        <TrPanelEditorCard
+          id="editor-detay"
+          title="Ürün detayı"
+          hint="Ürünü tanımlayan bilgiler. Şimdilik kaydedilir; mağaza sayfası ve Google akışı henüz bunları kullanmıyor."
+          allowOverflow
+        >
+          <div className="grid gap-4 sm:grid-cols-2">
+            <TrPanelCreatableSelect
+              label="Marka"
+              value={form.brand}
+              onChange={(brand) => change({ brand })}
+              options={facets.brands}
+              maxLength={PRODUCT_DETAIL_LIMITS.brandMax}
+              disabled={saving}
+            />
+            <TrPanelTagsField
+              label="Etiket"
+              values={form.tags}
+              onChange={(tags) => change({ tags })}
+              options={facets.tags}
+              maxItems={PRODUCT_DETAIL_LIMITS.tagsMax}
+              maxLength={PRODUCT_DETAIL_LIMITS.tagMax}
+              disabled={saving}
+            />
+            <label className="block space-y-2">
+              <span className={panelLabelClass}>Google ürün kategorisi</span>
+              <input
+                value={form.googleCategory}
+                onChange={(event) => change({ googleCategory: event.target.value })}
+                maxLength={PRODUCT_DETAIL_LIMITS.googleCategoryMax}
+                placeholder="Giyim ve Aksesuar > Giyim"
+                className={panelFieldClass}
+              />
+              <span className={`block ${panelHintClass}`}>
+                Google Alışveriş&apos;teki kategori adı.
+              </span>
+            </label>
+            <TrPanelCreatableSelect
+              label="Tedarikçi"
+              value={form.supplier}
+              onChange={(supplier) => change({ supplier })}
+              options={facets.suppliers}
+              maxLength={PRODUCT_DETAIL_LIMITS.supplierMax}
+              hint="Yalnızca siz görürsünüz."
+              disabled={saving}
+            />
+          </div>
+
+          {managesCategories && form.categories ? (
+            <div className="space-y-2">
+              <p className={panelLabelClass}>Kategori</p>
+              {categoriesLoaded ? (
+                <TrPanelCategoryPicker
+                  categories={categories}
+                  value={form.categories}
+                  onChange={(next) => change({ categories: next })}
+                  disabled={saving}
+                />
+              ) : (
+                <p className={panelHintClass}>Kategoriler yükleniyor…</p>
+              )}
+              <p className={panelHintClass}>
+                Ürünün listelendiği kategoriler; biri ana kategoridir.
+              </p>
+            </div>
+          ) : null}
+
+          <div className="space-y-2">
+            <p id="simple-product-description-label" className={panelLabelClass}>
+              Açıklama
+            </p>
+            <TrPanelRichTextField
+              initialHtml={initialDescription}
+              onChange={(descriptionHtml) => change({ descriptionHtml })}
+              placeholder="Ürünü anlatın: malzeme, ölçüler, bakım…"
+              disabled={saving}
+              labelledBy="simple-product-description-label"
+            />
+          </div>
+        </TrPanelEditorCard>
+
+        <TrPanelEditorCard
+          id="editor-envanter"
+          title="Envanter"
+          hint="Stok kodları ve kargo bilgisi. Şimdilik kaydedilir; kargo etiketi ve Google akışı henüz kullanmıyor."
+        >
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="block space-y-2">
+              <span className={panelLabelClass}>SKU</span>
+              <input
+                value={form.sku}
+                onChange={(event) => change({ sku: event.target.value })}
+                maxLength={PRODUCT_DETAIL_LIMITS.skuMax}
+                disabled={hasVariants}
+                className={panelFieldClass}
+              />
+            </label>
+            <label className="block space-y-2">
+              <span className={panelLabelClass}>Barkod</span>
+              <input
+                value={form.barcode}
+                onChange={(event) => change({ barcode: event.target.value })}
+                maxLength={PRODUCT_DETAIL_LIMITS.barcodeMax}
+                disabled={hasVariants}
+                className={panelFieldClass}
+              />
+            </label>
+            <label className="block space-y-2">
+              <span className={panelLabelClass}>Kargo: desi</span>
+              <input
+                value={form.desi}
+                onChange={(event) =>
+                  change({ desi: sanitizeDecimalInput(event.target.value, 2, 4) })
+                }
+                inputMode="decimal"
+                className={panelFieldClass}
+              />
+            </label>
+            <label className="block space-y-2">
+              <span className={panelLabelClass}>HS kodu</span>
+              <input
+                value={form.hsCode}
+                onChange={(event) =>
+                  change({ hsCode: event.target.value.replace(/[^\d. ]/g, "") })
+                }
+                maxLength={PRODUCT_DETAIL_LIMITS.hsCodeMax}
+                inputMode="numeric"
+                className={panelFieldClass}
+              />
+              <span className={`block ${panelHintClass}`}>
+                Gümrük tarife kodu. Yalnızca siz görürsünüz.
+              </span>
+            </label>
+          </div>
+          {hasVariants ? (
+            <p className={panelHintClass}>
+              Ürünün varyantları var: SKU ve barkod her varyant için Varyant kartındaki
+              tabloda girilir.
+            </p>
+          ) : null}
+        </TrPanelEditorCard>
+
         <TrPanelEditorCard
           id="editor-stok"
           title="Stok"
@@ -406,19 +730,37 @@ export function TrSimpleProductEditor({
           <label className="block max-w-xs space-y-2">
             <span className={panelLabelClass}>Stok adedi</span>
             <input
-              value={form.stock}
+              value={hasVariants ? String(totalStock) : form.stock}
               onChange={(event) =>
                 change({ stock: sanitizeStockInput(event.target.value) })
               }
               inputMode="numeric"
+              disabled={hasVariants}
               className={panelFieldClass}
             />
           </label>
           <p className={panelHintClass}>
-            {zeroStock && !form.hidden
-              ? "Stok 0 olduğu için ürün mağazada “Satıldı” görünür."
-              : "Sipariş geldikçe otomatik düşer."}
+            {hasVariants
+              ? "Toplam stok, aktif varyantların stoklarının toplamıdır; stoğu Varyant kartından düzenleyin."
+              : zeroStock && !form.hidden
+                ? "Stok 0 olduğu için ürün mağazada “Satıldı” görünür."
+                : "Sipariş geldikçe otomatik düşer."}
           </p>
+          <div className="space-y-1.5">
+            <label className="flex items-center gap-3 text-[14px] text-neutral-800">
+              <input
+                type="checkbox"
+                checked={form.continueSelling}
+                onChange={(event) => change({ continueSelling: event.target.checked })}
+                className="h-4 w-4 accent-[color:var(--panel-accent)]"
+              />
+              Stoğu tükenince satmaya devam et
+            </label>
+            <p className={panelHintClass}>
+              Şimdilik yalnızca kaydedilir: mağaza stoğu biten ürünü yine
+              “Satıldı” gösterir.
+            </p>
+          </div>
         </TrPanelEditorCard>
 
         <TrPanelEditorCard
@@ -443,6 +785,15 @@ export function TrSimpleProductEditor({
             </Link>
           </p>
         </TrPanelEditorCard>
+
+        <TrPanelSeoCard
+          id="editor-seo"
+          value={form.seo}
+          onChange={changeSeo}
+          entityName={form.title}
+          urlPrefix={storeProductUrlPrefix({ boutiqueSlug, customDomain })}
+          suggestedSlug={product ? "" : slugify(form.title)}
+        />
 
         {product ? (
           <TrPanelEditorCard id="editor-sil" title="Ürünü sil" tone="danger">

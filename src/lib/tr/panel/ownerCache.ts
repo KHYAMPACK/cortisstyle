@@ -70,6 +70,9 @@ export const ownerCacheKeys = {
   boutiques: "boutiques",
   products: (boutiqueId: string) => `products:${boutiqueId}`,
   productOriginals: (boutiqueId: string) => `product-originals:${boutiqueId}`,
+  categories: (boutiqueId: string) => `categories:${boutiqueId}`,
+  productFacets: (boutiqueId: string) => `product-facets:${boutiqueId}`,
+  variantTypes: (boutiqueId: string) => `variant-types:${boutiqueId}`,
   orders: (boutiqueId: string) => `orders:${boutiqueId}`,
   summary: (boutiqueId: string, range: string) =>
     `summary:${boutiqueId}:${range}`,
