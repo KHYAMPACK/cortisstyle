@@ -6,7 +6,6 @@ import { TrOwnerProductRouteGate } from "@/components/tr/panel/TrOwnerProductRou
 import { TrPanelEditor } from "@/components/tr/panel/TrPanelEditor";
 import {
   boutiqueLocationAddress,
-  SIMPLE_PRODUCT_NOTICE_KEY,
   TrSimpleProductEditor,
 } from "@/components/tr/panel/TrSimpleProductEditor";
 import { trPanelEditProductPath, trPanelProductsPath } from "@/lib/tr/paths";
@@ -36,19 +35,8 @@ export function TrOwnerNewSimpleProductPage({
               categoryMode={activeBoutique.categoryMode}
               productType={productType}
               address={boutiqueLocationAddress(activeBoutique)}
-              onCreated={(created, warning) => {
-                if (warning) {
-                  try {
-                    window.sessionStorage.setItem(
-                      SIMPLE_PRODUCT_NOTICE_KEY,
-                      `Ürün eklendi, ancak: ${warning}`,
-                    );
-                  } catch {
-                    /* ignore */
-                  }
-                }
-                router.replace(trPanelEditProductPath(created.id));
-              }}
+              // The editor already raised the "Ürün eklendi" toast; it stays over the redirect.
+              onCreated={(created) => router.replace(trPanelEditProductPath(created.id))}
             />
           </TrPanelEditor>
         </TrOwnerProductRouteGate>

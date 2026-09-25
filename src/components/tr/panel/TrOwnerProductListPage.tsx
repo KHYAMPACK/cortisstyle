@@ -57,6 +57,7 @@ import {
   peekOwnerProducts,
   updateOwnerProduct,
 } from "@/lib/tr/ownerClient";
+import { toast } from "@/lib/tr/panel/toast";
 import { PanelSelectCheckbox } from "@/components/tr/panel/PanelSelectCheckbox";
 import { usePanelRowSelection } from "@/hooks/usePanelRowSelection";
 import {
@@ -254,8 +255,8 @@ function ProductList({
   const cached = peekOwnerProducts(boutiqueId);
   const [products, setProducts] = useState<TrProduct[]>(cached?.products ?? []);
   const [loading, setLoading] = useState(!cached);
+  // Only a failure to load the list; what an action did is a toast.
   const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string | "all">("all");
   const [statusFilter, setStatusFilter] = useState<"all" | TrProductStatus>(
     "all",
@@ -266,20 +267,6 @@ function ProductList({
   const [bulkBusy, setBulkBusy] = useState(false);
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
   const openRestyle = useOpenElbiseRestyle();
-
-  useEffect(() => {
-    try {
-      const raw = window.sessionStorage.getItem(
-        "tr-panel-product-delete-notice",
-      );
-      if (raw) {
-        setNotice(raw);
-        window.sessionStorage.removeItem("tr-panel-product-delete-notice");
-      }
-    } catch {
-      /* ignore */
-    }
-  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -424,15 +411,17 @@ function ProductList({
     if (ids.length === 0) return;
     setConfirmBulkDelete(false);
     setBulkBusy(true);
-    setError(null);
     const result = await runOwnerPatches(
       ids,
       (id) => updateOwnerProduct(id, patch),
       { concurrency: 4 },
     );
     for (const updated of result.ok) applyLocal(updated);
+    if (result.ok.length > 0) {
+      toast.success(`${result.ok.length} ürün güncellendi.`);
+    }
     if (result.failed.length > 0) {
-      setError(
+      toast.error(
         `${result.failed.length} ürün güncellenemedi: ${result.failed[0]?.error}`,
       );
     }
@@ -446,17 +435,13 @@ function ProductList({
     if (ids.length === 0) return;
     setConfirmBulkDelete(false);
     setBulkBusy(true);
-    setError(null);
     try {
       await addOwnerProductsToCategory(categoryId, ids);
+      toast.success(`${ids.length} ürün kategoriye eklendi.`);
       const fresh = await fetchOwnerProducts(boutiqueId);
       setProducts(fresh.products);
     } catch (bulkError) {
-      setError(
-        bulkError instanceof Error
-          ? bulkError.message
-          : "Ürünler kategoriye eklenemedi.",
-      );
+      toast.error(bulkError, "Ürünler kategoriye eklenemedi.");
     } finally {
       setBulkBusy(false);
       selection.clear();
@@ -467,8 +452,6 @@ function ProductList({
     const ids = [...selection.selectedIds];
     if (ids.length === 0) return;
     setBulkBusy(true);
-    setError(null);
-    setNotice(null);
     const result = await runOwnerPatches(
       ids,
       async (id) => {
@@ -498,21 +481,17 @@ function ProductList({
     const deletedCount = deletedIds.size;
     const hiddenCount = hiddenIds.size;
     if (hiddenCount > 0) {
-      setNotice(
+      toast.warning(
         deletedCount > 0
           ? `${deletedCount} ürün silindi; ${hiddenCount} ürün sipariş geçmişinde olduğu için gizlendi.`
           : `${hiddenCount} ürün sipariş geçmişinde olduğu için kalıcı silinemedi; mağazadan gizlendi.`,
       );
     } else if (deletedCount > 0) {
-      setNotice(
-        deletedCount === 1
-          ? "1 ürün silindi."
-          : `${deletedCount} ürün silindi.`,
-      );
+      toast.success(`${deletedCount} ürün silindi.`);
     }
 
     if (result.failed.length > 0) {
-      setError(
+      toast.error(
         `${result.failed.length} ürün silinemedi: ${result.failed[0]?.error}`,
       );
     }
@@ -730,11 +709,6 @@ function ProductList({
         </TrPanelFadeIn>
       ) : (
         <TrPanelFadeIn key="products-ready" className="space-y-4" shift={false}>
-          {notice ? (
-            <p className="rounded-2xl border-2 border-amber-200 bg-amber-50 px-5 py-4 text-[16px] text-amber-950">
-              {notice}
-            </p>
-          ) : null}
           {error ? <p className={panelErrorClass}>{error}</p> : null}
 
           {products.length > 0 ? toolbar : null}

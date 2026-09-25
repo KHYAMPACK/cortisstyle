@@ -67,6 +67,7 @@ import {
   type OwnerListingDraft,
   updateOwnerProduct,
 } from "@/lib/tr/ownerClient";
+import { toast } from "@/lib/tr/panel/toast";
 import {
   alignMarketplaceSlots,
   cleanedLifestyleImages,
@@ -1431,12 +1432,9 @@ export function TrProductEditorForm({
                           const result = await deleteOwnerProduct(
                             initialProduct.id,
                           );
-                          if (result.message && typeof window !== "undefined") {
-                            window.sessionStorage.setItem(
-                              "tr-panel-product-delete-notice",
-                              result.message,
-                            );
-                          }
+                          // A product with past orders is hidden, not deleted: say so.
+                          if (result.message) toast.warning(result.message);
+                          else toast.success("Ürün silindi.");
                           onDeleted?.();
                         } catch (deleteError) {
                           setError(

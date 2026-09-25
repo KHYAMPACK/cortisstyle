@@ -12,7 +12,6 @@ import { TrPanelImageField } from "@/components/tr/panel/TrPanelImageField";
 import { TrPanelSeoCard } from "@/components/tr/panel/TrPanelSeoCard";
 import { TrPanelBusySpinner } from "@/components/tr/panel/TrPanelMotion";
 import {
-  panelErrorClass,
   panelFieldClass,
   panelHintClass,
   panelLabelClass,
@@ -36,6 +35,7 @@ import {
   validateCategoryForm,
   type CategoryFormState,
 } from "@/lib/tr/panel/categoryForm";
+import { toast } from "@/lib/tr/panel/toast";
 import type { TrSeoFormValue } from "@/lib/tr/seo/seoFields";
 import { slugify } from "@/lib/tr/seo/slug";
 import { storeCategoryUrlPrefix } from "@/lib/tr/seo/storeAddress";
@@ -78,7 +78,6 @@ export function TrCategoryEditor({
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [savedOnce, setSavedOnce] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const dirty = JSON.stringify(form) !== baseline;
   useUnsavedChangesGuard(
@@ -93,7 +92,6 @@ export function TrCategoryEditor({
 
   const change = (patch: Partial<CategoryFormState>) => {
     setForm((current) => ({ ...current, ...patch }));
-    setError(null);
   };
   const changeSeo = (patch: Partial<TrSeoFormValue>) =>
     change({ seo: { ...form.seo, ...patch } });
@@ -102,26 +100,27 @@ export function TrCategoryEditor({
     if (saving || uploading) return;
     const problem = validateCategoryForm(form, { requireSlug: Boolean(category) });
     if (problem) {
-      setError(problem);
+      toast.error(problem);
       return;
     }
     const submitted = JSON.stringify(form);
     setSaving(true);
-    setError(null);
     try {
       const input = categoryInput(form, { isEdit: Boolean(category) });
       if (!category) {
         const created = await createOwnerCategory(boutiqueId, input);
         setBaseline(submitted);
+        toast.success("Kategori eklendi.");
         onCreated?.(created);
       } else {
         const saved = await updateOwnerCategory(category.id, input);
         setBaseline(submitted);
         setSavedOnce(true);
+        toast.success("Kategori kaydedildi.");
         onSaved?.(saved);
       }
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "Kaydedilemedi.");
+      toast.error(saveError, "Kategori kaydedilemedi.");
     } finally {
       setSaving(false);
     }
@@ -130,15 +129,13 @@ export function TrCategoryEditor({
   const remove = async () => {
     if (!category) return;
     setDeleting(true);
-    setError(null);
     try {
       await deleteOwnerCategory(category.id);
+      toast.success("Kategori silindi.");
       setBaseline(JSON.stringify(form)); // nothing left to lose: release the exit guard
       onDeleted?.();
     } catch (deleteError) {
-      setError(
-        deleteError instanceof Error ? deleteError.message : "Kategori silinemedi.",
-      );
+      toast.error(deleteError, "Kategori silinemedi.");
       setConfirmDelete(false);
     } finally {
       setDeleting(false);
@@ -163,8 +160,6 @@ export function TrCategoryEditor({
       />
 
       <TrPanelEditorTabs tabs={TABS} />
-
-      {error ? <p className={panelErrorClass}>{error}</p> : null}
 
       <div className="space-y-5">
         <TrPanelEditorCard
@@ -226,7 +221,9 @@ export function TrCategoryEditor({
             boutiqueId={boutiqueId}
             value={form.imageUrl}
             onChange={(imageUrl) => change({ imageUrl })}
-            onError={setError}
+            onError={(message) => {
+              if (message) toast.error(message);
+            }}
             onUploadingChange={setUploading}
             disabled={saving}
           />

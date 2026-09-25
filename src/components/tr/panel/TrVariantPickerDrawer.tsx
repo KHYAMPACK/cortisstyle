@@ -11,6 +11,7 @@ import {
   panelLabelClass,
   panelSecondaryBtnClass,
 } from "@/components/tr/panel/panelUi";
+import { toast } from "@/lib/tr/panel/toast";
 import { PRODUCT_VARIANT_LIMITS } from "@/lib/tr/variants/productVariantRules";
 import type { VariantSelection } from "@/lib/tr/variants/variantForm";
 import type { TrVariantTypeListEntry } from "@/lib/tr/variants/types";
@@ -65,7 +66,6 @@ export function TrVariantPickerDrawer({
   onAddValue: (type: TrVariantTypeListEntry, label: string) => Promise<string | null>;
 }) {
   const [drafts, setDrafts] = useState<Record<string, string>>({});
-  const [notes, setNotes] = useState<Record<string, string>>({});
   const [adding, setAdding] = useState<string | null>(null);
 
   const atLimit = selection.typeIds.length >= PRODUCT_VARIANT_LIMITS.typesMax;
@@ -113,8 +113,8 @@ export function TrVariantPickerDrawer({
     setAdding(type.id);
     const problemText = await onAddValue(type, label);
     setAdding(null);
-    setNotes((current) => ({ ...current, [type.id]: problemText ?? "" }));
-    if (!problemText) setDrafts((current) => ({ ...current, [type.id]: "" }));
+    if (problemText) toast.error(problemText);
+    else setDrafts((current) => ({ ...current, [type.id]: "" }));
   };
 
   const selectedTypes = selection.typeIds
@@ -274,7 +274,6 @@ export function TrVariantPickerDrawer({
                   Renk veya görsel değerleri eklemek için “Türü düzenle”yi kullanın.
                 </p>
               )}
-              {notes[type.id] ? <p className={panelHintClass}>{notes[type.id]}</p> : null}
             </section>
           );
         })}

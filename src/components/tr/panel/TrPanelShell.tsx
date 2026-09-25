@@ -13,6 +13,7 @@ import {
 } from "react";
 import { AuthPopup } from "@/components/AuthPopup";
 import { TrOwnerElbiseRestyleProvider } from "@/components/tr/fashion/panel/TrOwnerElbiseRestyleSession";
+import { TrPanelToaster } from "@/components/tr/panel/TrPanelToaster";
 import {
   TrOwnerLeaveGuardProvider,
   useRequestBusyLeave,
@@ -79,6 +80,7 @@ export function TrPanelShell({ children }: { children: ReactNode }) {
     <TrOwnerLeaveGuardProvider>
       <TrOwnerElbiseRestyleProvider>
         <TrPanelShellBody>{children}</TrPanelShellBody>
+        <TrPanelToaster />
       </TrOwnerElbiseRestyleProvider>
     </TrOwnerLeaveGuardProvider>
   );

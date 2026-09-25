@@ -25,6 +25,7 @@ import {
   importOwnerVariantPresets,
 } from "@/lib/tr/ownerClient";
 import { trPanelDefinitionsPath } from "@/lib/tr/paths";
+import { toast } from "@/lib/tr/panel/toast";
 import type {
   TrVariantPresetImport,
   TrVariantType,
@@ -163,14 +164,12 @@ export function TrVariantTypesList({ boutiqueId }: { boutiqueId: string }) {
 
   const importPresets = async () => {
     setImporting(true);
-    setError(null);
     try {
       await importOwnerVariantPresets(boutiqueId);
+      toast.success("Beden ve renkler varyant türü olarak aktarıldı.");
       setVersion((current) => current + 1);
     } catch (importError) {
-      setError(
-        importError instanceof Error ? importError.message : "İçe aktarılamadı.",
-      );
+      toast.error(importError, "İçe aktarılamadı.");
     } finally {
       setImporting(false);
     }

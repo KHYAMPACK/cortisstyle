@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useUnsavedChangesGuard } from "@/components/tr/panel/TrOwnerLeaveGuard";
 import { TrOwnerManualPhotoGallery } from "@/components/tr/panel/TrOwnerManualPhotoGallery";
 import {
@@ -25,7 +25,6 @@ import { TrProductImageLightbox } from "@/components/tr/panel/TrProductImageLigh
 import {
   panelChipClass,
   panelDangerBtnClass,
-  panelErrorClass,
   panelFieldClass,
   panelHintClass,
   panelLabelClass,
@@ -62,6 +61,7 @@ import { UNIT_TYPES, unitPricePerReference } from "@/lib/tr/productUnits";
 import type { TrProductVariants } from "@/lib/tr/variants/types";
 import type { TrProductCategories } from "@/lib/tr/categories/types";
 import type { TrSeoFormValue } from "@/lib/tr/seo/seoFields";
+import { toast } from "@/lib/tr/panel/toast";
 import { slugify } from "@/lib/tr/seo/slug";
 import { storeProductUrlPrefix } from "@/lib/tr/seo/storeAddress";
 import {
@@ -72,9 +72,6 @@ import {
   type TrProductPrivate,
   type TrUnitType,
 } from "@/types/tr-marketplace";
-
-/** One-shot message handed from the create page to the edit page it redirects to. */
-export const SIMPLE_PRODUCT_NOTICE_KEY = "tr-panel-simple-product-notice";
 
 /** "Ana adres" — the boutique's own address, from Ayarlar. */
 export function boutiqueLocationAddress(
@@ -230,27 +227,9 @@ export function TrSimpleProductEditor({
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [savedOnce, setSavedOnce] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [lightbox, setLightbox] = useState<{ src: string; label: string } | null>(
     null,
   );
-  const [notice] = useState<string | null>(() => {
-    if (!product || typeof window === "undefined") return null;
-    try {
-      return window.sessionStorage.getItem(SIMPLE_PRODUCT_NOTICE_KEY);
-    } catch {
-      return null;
-    }
-  });
-
-  // Show the hand-over message once: clear it after it has been read.
-  useEffect(() => {
-    try {
-      window.sessionStorage.removeItem(SIMPLE_PRODUCT_NOTICE_KEY);
-    } catch {
-      /* ignore */
-    }
-  }, []);
 
   const dirty = JSON.stringify(form) !== baseline;
   useUnsavedChangesGuard(
@@ -260,7 +239,6 @@ export function TrSimpleProductEditor({
 
   const change = (patch: Partial<SimpleProductFormState>) => {
     setForm((current) => ({ ...current, ...patch }));
-    setError(null);
   };
 
   const save = async () => {
@@ -269,19 +247,21 @@ export function TrSimpleProductEditor({
       requireSlug: Boolean(product?.slug),
     });
     if (problem) {
-      setError(problem);
+      toast.error(problem);
       return;
     }
 
     const submitted = JSON.stringify(form);
     setSaving(true);
-    setError(null);
     try {
       if (!product) {
         const { product: created, warning } = await createOwnerProductDetailed(
           simpleProductPayload(form, boutiqueId),
         );
         setBaseline(submitted);
+        // The toast outlives the redirect to the new product's page.
+        if (warning) toast.warning(`Ürün eklendi, ancak: ${warning}`);
+        else toast.success("Ürün eklendi.");
         onCreated?.(created, warning);
       } else {
         const saved = await updateOwnerProduct(
@@ -290,12 +270,11 @@ export function TrSimpleProductEditor({
         );
         setBaseline(submitted);
         setSavedOnce(true);
+        toast.success("Ürün kaydedildi.");
         onSaved?.(saved);
       }
     } catch (saveError) {
-      setError(
-        saveError instanceof Error ? saveError.message : "Kaydedilemedi.",
-      );
+      toast.error(saveError, "Ürün kaydedilemedi.");
     } finally {
       setSaving(false);
     }
@@ -304,26 +283,16 @@ export function TrSimpleProductEditor({
   const remove = async () => {
     if (!product) return;
     setDeleting(true);
-    setError(null);
     try {
       const result = await deleteOwnerProduct(product.id);
-      if (result.message) {
-        try {
-          window.sessionStorage.setItem(
-            "tr-panel-product-delete-notice",
-            result.message,
-          );
-        } catch {
-          /* ignore */
-        }
-      }
+      // A product with past orders is hidden instead of deleted: say so.
+      if (result.message) toast.warning(result.message);
+      else toast.success("Ürün silindi.");
       // Nothing left to lose: release the leave guard before navigating away.
       setBaseline(JSON.stringify(form));
       onDeleted?.();
     } catch (deleteError) {
-      setError(
-        deleteError instanceof Error ? deleteError.message : "Ürün silinemedi.",
-      );
+      toast.error(deleteError, "Ürün silinemedi.");
       setConfirmDelete(false);
     } finally {
       setDeleting(false);
@@ -389,13 +358,6 @@ export function TrSimpleProductEditor({
       />
 
       <TrPanelEditorTabs tabs={tabs} />
-
-      {notice ? (
-        <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[14px] text-amber-950">
-          {notice}
-        </p>
-      ) : null}
-      {error ? <p className={panelErrorClass}>{error}</p> : null}
 
       <div className="space-y-5">
         <TrPanelEditorCard
@@ -555,7 +517,9 @@ export function TrSimpleProductEditor({
             boutiqueId={boutiqueId}
             images={form.images}
             onImagesChange={(images) => change({ images })}
-            onError={setError}
+            onError={(message) => {
+              if (message) toast.error(message);
+            }}
             onLightbox={setLightbox}
             disabled={saving}
             uploading={uploading}

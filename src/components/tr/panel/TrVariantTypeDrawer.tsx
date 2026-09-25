@@ -7,12 +7,12 @@ import { TrPanelDrawer } from "@/components/tr/panel/TrPanelDrawer";
 import { TrPanelBusySpinner } from "@/components/tr/panel/TrPanelMotion";
 import {
   panelChipClass,
-  panelErrorClass,
   panelFieldClass,
   panelHintClass,
   panelLabelClass,
   panelSecondaryBtnClass,
 } from "@/components/tr/panel/panelUi";
+import { toast } from "@/lib/tr/panel/toast";
 import {
   createOwnerVariantType,
   deleteOwnerVariantType,
@@ -76,8 +76,6 @@ export function TrVariantTypeDrawer({
   const [form, setForm] = useState<VariantTypeFormState>(emptyVariantTypeForm);
   const [baseline, setBaseline] = useState("");
   const [draft, setDraft] = useState("");
-  const [note, setNote] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -94,8 +92,6 @@ export function TrVariantTypeDrawer({
       setForm(initial);
       setBaseline(JSON.stringify(initial));
       setDraft("");
-      setNote(null);
-      setError(null);
       setConfirmDelete(false);
     }
   }
@@ -106,7 +102,6 @@ export function TrVariantTypeDrawer({
 
   const change = (patch: Partial<VariantTypeFormState>) => {
     setForm((current) => ({ ...current, ...patch }));
-    setError(null);
   };
 
   const updateValue = (key: string, patch: Partial<VariantValueDraft>) => {
@@ -116,25 +111,21 @@ export function TrVariantTypeDrawer({
         value.key === key ? { ...value, ...patch } : value,
       ),
     }));
-    setError(null);
   };
 
   const commitDraft = (source: VariantTypeFormState): VariantTypeFormState => {
     const labels = splitValueInput(draft);
     if (labels.length === 0) return source;
     const { form: next, skipped } = addValues(source, labels);
-    setNote(
-      skipped.length > 0
-        ? `Zaten var veya sınır aşıldı: ${skipped.join(", ")}`
-        : null,
-    );
+    if (skipped.length > 0) {
+      toast.warning(`Eklenmedi (zaten var veya sınır aşıldı): ${skipped.join(", ")}`);
+    }
     return next;
   };
 
   const addFromDraft = () => {
     setForm(commitDraft(form));
     setDraft("");
-    setError(null);
   };
 
   const save = async () => {
@@ -144,21 +135,21 @@ export function TrVariantTypeDrawer({
     if (problem) {
       setForm(submitted);
       setDraft("");
-      setError(problem);
+      toast.error(problem);
       return;
     }
     setSaving(true);
-    setError(null);
     try {
       const body = variantTypeBody(submitted);
       const saved = type
         ? await updateOwnerVariantType(type.id, body)
         : await createOwnerVariantType(boutiqueId, body);
+      toast.success(type ? "Varyant türü kaydedildi." : "Varyant türü eklendi.");
       onSaved(saved);
     } catch (saveError) {
       setForm(submitted);
       setDraft("");
-      setError(saveError instanceof Error ? saveError.message : "Kaydedilemedi.");
+      toast.error(saveError, "Varyant türü kaydedilemedi.");
     } finally {
       setSaving(false);
     }
@@ -167,14 +158,12 @@ export function TrVariantTypeDrawer({
   const remove = async () => {
     if (!type || busy) return;
     setDeleting(true);
-    setError(null);
     try {
       await deleteOwnerVariantType(type.id);
+      toast.success("Varyant türü silindi.");
       onDeleted?.(type.id);
     } catch (deleteError) {
-      setError(
-        deleteError instanceof Error ? deleteError.message : "Silinemedi.",
-      );
+      toast.error(deleteError, "Varyant türü silinemedi.");
       setConfirmDelete(false);
     } finally {
       setDeleting(false);
@@ -185,16 +174,13 @@ export function TrVariantTypeDrawer({
     const key = pickingFor.current;
     if (!key) return;
     setUploadingKey(key);
-    setError(null);
     try {
       const uploaded = await uploadOwnerProductImage(boutiqueId, file, {
         removeBackground: false,
       });
       updateValue(key, { imageUrl: uploaded.url });
     } catch (uploadError) {
-      setError(
-        uploadError instanceof Error ? uploadError.message : "Görsel yüklenemedi.",
-      );
+      toast.error(uploadError, "Görsel yüklenemedi.");
     } finally {
       setUploadingKey(null);
       if (fileInput.current) fileInput.current.value = "";
@@ -212,8 +198,6 @@ export function TrVariantTypeDrawer({
       onSave={() => void save()}
     >
       <div className="space-y-6">
-        {error ? <p className={panelErrorClass}>{error}</p> : null}
-
         <label className="block space-y-2">
           <span className={panelLabelClass}>
             Varyant türü adı
@@ -419,7 +403,6 @@ export function TrVariantTypeDrawer({
               Ekle
             </button>
           </div>
-          {note ? <p className={panelHintClass}>{note}</p> : null}
           {swatch ? (
             <p className={panelHintClass}>
               Her değer için bir renk veya görsel seçin; ikisi de olabilir.
