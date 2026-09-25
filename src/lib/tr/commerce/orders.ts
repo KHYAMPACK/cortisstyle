@@ -4,6 +4,7 @@ import {
   mapOrderRow,
   shippingAddressToJson,
 } from "@/lib/tr/mappers";
+import { ensureCustomerForOrderAdmin } from "@/lib/tr/commerce/customers";
 import { getProductCoverImageFor } from "@/lib/tr/productImages";
 import {
   listProductsByIdsAdmin,
@@ -102,9 +103,23 @@ export async function createOrderAdmin(
     const buyerTitle =
       invoiceType === "corporate" ? input.buyerTitle?.trim() || null : null;
 
+    // Find or create the customer this order belongs to. Never throws and never
+    // blocks the sale: with no customer the order is simply placed unlinked.
+    const customerBoutiqueId = input.items[0]?.boutiqueId;
+    const customerId = customerBoutiqueId
+      ? await ensureCustomerForOrderAdmin({
+          boutiqueId: customerBoutiqueId,
+          name: input.customerName,
+          email: input.customerEmail,
+          phone: input.customerPhone ?? null,
+          shippingAddress: input.shippingAddress,
+        })
+      : null;
+
     const orderInsert = await supabase
       .from("tr_orders")
       .insert({
+        ...(customerId ? { customer_id: customerId } : {}),
         customer_email: input.customerEmail.trim().toLowerCase(),
         customer_name: input.customerName.trim(),
         customer_phone: input.customerPhone?.trim() ?? null,
