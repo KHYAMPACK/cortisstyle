@@ -5,6 +5,10 @@ import {
   shippingAddressToJson,
 } from "@/lib/tr/mappers";
 import { ensureCustomerForOrderAdmin } from "@/lib/tr/commerce/customers";
+import {
+  inventoryLinesOf,
+  type InventoryLine,
+} from "@/lib/tr/commerce/inventoryLines";
 import { getProductCoverImageFor } from "@/lib/tr/productImages";
 import {
   listProductsByIdsAdmin,
@@ -74,10 +78,11 @@ export async function createOrderAdmin(
   const isSandbox = input.isSandbox ?? false;
   const paymentStatus: TrPaymentStatus = isSandbox ? "sandbox" : "pending";
 
-  const inventoryLines = input.items.map((item) => ({
+  const inventoryLines: InventoryLine[] = input.items.map((item) => ({
     productId: item.productId,
     size: item.size?.trim() || null,
     quantity: item.quantity ?? 1,
+    ...(item.variantId ? { variant: { id: item.variantId } } : {}),
   }));
 
   const shouldDecrement = input.decrementInventory !== false;
@@ -105,8 +110,11 @@ export async function createOrderAdmin(
 
     // Find or create the customer this order belongs to. Never throws and never
     // blocks the sale: with no customer the order is simply placed unlinked.
+    // A manual order already knows its customer.
     const customerBoutiqueId = input.items[0]?.boutiqueId;
-    const customerId = customerBoutiqueId
+    const customerId = input.customerId
+      ? input.customerId
+      : customerBoutiqueId
       ? await ensureCustomerForOrderAdmin({
           boutiqueId: customerBoutiqueId,
           name: input.customerName,
@@ -127,6 +135,15 @@ export async function createOrderAdmin(
         total_kurus: totalKurus,
         discount_code: discountCode,
         discount_kurus: discountKurus,
+        // Manual-order columns are only written when used, so the shop's checkout
+        // never depends on `patch_tr_manual_orders.sql`.
+        ...(input.channel === "manual" ? { channel: "manual" } : {}),
+        ...(input.customerNote?.trim()
+          ? { customer_note: input.customerNote.trim() }
+          : {}),
+        ...(input.discountTitle?.trim()
+          ? { discount_title: input.discountTitle.trim() }
+          : {}),
         invoice_type: invoiceType,
         buyer_tax_id: buyerTaxId,
         buyer_tax_office: buyerTaxOffice,
@@ -161,6 +178,13 @@ export async function createOrderAdmin(
           price_kurus: item.priceKurus,
           quantity: item.quantity ?? 1,
           size: item.size?.trim() || null,
+          // Only a variant line writes these, so an order without one never touches the columns.
+          ...(item.variantId
+            ? {
+                variant_id: item.variantId,
+                variant_label: item.variantLabel?.trim() || null,
+              }
+            : {}),
           reference_image_url: item.referenceImageUrl?.trim() || null,
           customization: item.customization ?? null,
         })),
@@ -353,15 +377,7 @@ export async function updateOrderFulfillmentStatusAdmin(
       const { restoreInventoryForOrderLines } = await import(
         "@/lib/tr/inventory"
       );
-      await restoreInventoryForOrderLines(
-        existing.items
-          .filter((item) => item.productId)
-          .map((item) => ({
-            productId: item.productId as string,
-            size: item.size,
-            quantity: item.quantity,
-          })),
-      );
+      await restoreInventoryForOrderLines(inventoryLinesOf(existing.items));
     } catch (restoreError) {
       console.error(
         "[tr/orders] inventory restore on cancel failed:",

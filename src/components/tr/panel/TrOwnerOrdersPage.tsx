@@ -18,9 +18,11 @@ import {
   panelEmptyClass,
   panelErrorClass,
   panelFieldClass,
+  panelPrimaryBtnClass,
   panelSecondaryBtnClass,
   panelSuccessClass,
 } from "@/components/tr/panel/panelUi";
+import { TrPanelLink as Link } from "@/components/tr/panel/TrPanelLink";
 import {
   PANEL_PAGE_SIZES,
   TrPanelListPager,
@@ -57,6 +59,7 @@ import {
   type OrderSortKey,
 } from "@/lib/tr/panel/orderList";
 import { orderPaymentKey } from "@/lib/tr/panel/orderView";
+import { trPanelNewOrderPath } from "@/lib/tr/paths";
 import { boutiqueHasCarrierIntegration } from "@/lib/tr/shipping/registry";
 import type { TrOrderWithItems, TrPaymentStatus } from "@/types/tr-marketplace";
 
@@ -83,11 +86,14 @@ function OrdersList({
   boutiqueName,
   hasCarrierIntegration,
   offersCardPayments,
+  canCreateOrders,
 }: {
   boutiqueId: string;
   boutiqueName: string;
   hasCarrierIntegration: boolean;
   offersCardPayments: boolean;
+  /** Custom-art boutiques can't create orders by hand (they need the customer's photo). */
+  canCreateOrders: boolean;
 }) {
   const bulkContext = useMemo<OrderBulkContext>(
     () => ({ hasCarrierIntegration, offersCardPayments }),
@@ -318,16 +324,23 @@ function OrdersList({
         <h2 className="text-[1.25rem] font-semibold tracking-tight text-neutral-900 sm:text-[1.375rem]">
           Siparişler
         </h2>
-        <button
-          type="button"
-          onClick={() => downloadOrdersCsv(visible)}
-          disabled={visible.length === 0}
-          title="Listelenen siparişleri CSV olarak indir"
-          className={`${panelSecondaryBtnClass} gap-2`}
-        >
-          <Upload className="h-4 w-4" strokeWidth={1.75} aria-hidden />
-          Dışa Aktar
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => downloadOrdersCsv(visible)}
+            disabled={visible.length === 0}
+            title="Listelenen siparişleri CSV olarak indir"
+            className={`${panelSecondaryBtnClass} gap-2`}
+          >
+            <Upload className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+            Dışa Aktar
+          </button>
+          {canCreateOrders ? (
+            <Link href={trPanelNewOrderPath()} className={panelPrimaryBtnClass}>
+              Sipariş Oluştur
+            </Link>
+          ) : null}
+        </div>
       </div>
 
       {loading && orders.length === 0 ? (
@@ -447,6 +460,7 @@ export function TrOwnerOrdersPage() {
           boutiqueName={activeBoutique.name}
           hasCarrierIntegration={boutiqueHasCarrierIntegration(activeBoutique.slug)}
           offersCardPayments={Boolean(activeBoutique.offersIyzicoCheckout)}
+          canCreateOrders={activeBoutique.catalogProfile !== "custom_art"}
         />
       )}
     </TrOwnerPanelGate>

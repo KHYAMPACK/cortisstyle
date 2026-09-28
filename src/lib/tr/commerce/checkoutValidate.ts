@@ -11,9 +11,15 @@ import {
   isMadeToOrderProduct,
   resolveCustomArtPriceKurus,
 } from "@/lib/tr/customArt/pricing";
+import {
+  listVariantsByProductIds,
+  variantValueLabelOf,
+} from "@/lib/tr/catalog/productVariants";
 import { resolveProductSizes } from "@/lib/tr/productOptions";
 import { listProductsByIdsAdmin } from "@/lib/tr/products";
 import { isProductSizeSellable } from "@/lib/tr/sizeStocks";
+import type { TrProductVariant } from "@/lib/tr/variants/types";
+import { resolveVariantSale } from "@/lib/tr/variants/variantSale";
 import type {
   TrDiscountCode,
   TrOrderItemCustomization,
@@ -25,6 +31,8 @@ export type CheckoutClientItem = {
   /** Client claim — verified against DB boutique_id. */
   boutiqueId: string;
   size?: string | null;
+  /** A Gelişmiş ürün's variant; required for a product that has variants. */
+  variantId?: string | null;
   quantity?: number;
   referenceImageUrl?: string | null;
   styleOption?: string | null;
@@ -38,6 +46,9 @@ export type ResolvedCheckoutLine = {
   priceKurus: number;
   quantity: number;
   size: string | null;
+  /** The variant sold and its label ("Kırmızı / S"); null for a product without variants. */
+  variantId: string | null;
+  variantLabel: string | null;
   referenceImageUrl: string | null;
   customization: TrOrderItemCustomization | null;
 };
@@ -61,7 +72,12 @@ function normalizeSize(size: string | null | undefined): string | null {
 function resolveLineFromProduct(
   product: TrProduct,
   item: CheckoutClientItem,
-  options: { customArt: boolean },
+  options: {
+    customArt: boolean;
+    /** The product's variants (empty for a product without any). */
+    variants: readonly TrProductVariant[];
+    labelOf: (valueId: string) => string;
+  },
 ): ResolvedCheckoutLine | { error: string } {
   const quantity = Math.max(1, Math.floor(item.quantity ?? 1));
   if (quantity !== 1) {
@@ -77,6 +93,32 @@ function resolveLineFromProduct(
   if (product.boutiqueId !== item.boutiqueId) {
     return {
       error: `"${product.title}" bu butiğe ait değil.`,
+    };
+  }
+
+  // A product with variants is sold by choosing one: its price and stock come from it.
+  const variantSale = resolveVariantSale({
+    productTitle: product.title,
+    productPriceKurus: product.priceKurus,
+    variants: options.variants,
+    // Client input: anything but a string is treated as "no variant chosen".
+    variantId: typeof item.variantId === "string" ? item.variantId : null,
+    quantity,
+    labelOf: options.labelOf,
+  });
+  if (variantSale.kind === "error") return { error: variantSale.error };
+  if (variantSale.kind === "variant") {
+    return {
+      productId: product.id,
+      boutiqueId: product.boutiqueId,
+      title: product.title,
+      priceKurus: variantSale.priceKurus,
+      quantity,
+      size: null,
+      variantId: variantSale.variant.id,
+      variantLabel: variantSale.label,
+      referenceImageUrl: null,
+      customization: null,
     };
   }
 
@@ -171,6 +213,8 @@ function resolveLineFromProduct(
     priceKurus,
     quantity,
     size: resolvedSize,
+    variantId: null,
+    variantLabel: null,
     referenceImageUrl: options.customArt ? referenceImageUrl : null,
     customization,
   };
@@ -214,6 +258,22 @@ export async function resolveCheckoutFromCatalog(input: {
   );
   const byId = new Map(products.map((product) => [product.id, product]));
 
+  // Only Gelişmiş products can have variants, so the others cost no extra query.
+  const variantsByProduct = await listVariantsByProductIds(
+    products
+      .filter((product) => product.productType === "advanced")
+      .map((product) => product.id),
+  );
+  const labelers = new Map<string, (valueId: string) => string>();
+  async function labelerFor(boutiqueId: string) {
+    let labelOf = labelers.get(boutiqueId);
+    if (!labelOf) {
+      labelOf = await variantValueLabelOf(boutiqueId);
+      labelers.set(boutiqueId, labelOf);
+    }
+    return labelOf;
+  }
+
   const boutiqueProfileCache = new Map<string, boolean>();
 
   async function isCustomArtBoutique(boutiqueId: string): Promise<boolean> {
@@ -243,7 +303,15 @@ export async function resolveCheckoutFromCatalog(input: {
       };
     }
     const customArt = await isCustomArtBoutique(product.boutiqueId);
-    const resolved = resolveLineFromProduct(product, item, { customArt });
+    const variants = variantsByProduct.get(product.id) ?? [];
+    const resolved = resolveLineFromProduct(product, item, {
+      customArt,
+      variants,
+      labelOf:
+        variants.length > 0
+          ? await labelerFor(product.boutiqueId)
+          : (valueId) => valueId,
+    });
     if ("error" in resolved) {
       return { ok: false, error: resolved.error, status: 400 };
     }

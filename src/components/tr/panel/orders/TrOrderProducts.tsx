@@ -5,6 +5,7 @@ import { ExternalLink } from "lucide-react";
 import { TrPanelLink as Link } from "@/components/tr/panel/TrPanelLink";
 import { TrPanelPopover } from "@/components/tr/panel/TrPanelPopover";
 import { getTrCategoryLabel } from "@/lib/tr/fashion/categories";
+import { orderItemOption } from "@/lib/tr/orderItemOption";
 import { trPanelEditProductPath } from "@/lib/tr/paths";
 import {
   formatTryFromKurus,
@@ -15,8 +16,9 @@ const ROW_GRID =
   "sm:grid sm:grid-cols-[minmax(0,1fr)_4rem_6.5rem_7.5rem] sm:items-center sm:gap-4";
 
 function variantLine(item: TrOrderItem): string | null {
+  const option = orderItemOption(item);
   const parts = [
-    item.size ? `Beden: ${item.size}` : null,
+    option ? `${option.label}: ${option.value}` : null,
     item.customization?.styleOption?.trim()
       ? `Stil: ${item.customization.styleOption.trim()}`
       : null,
@@ -67,6 +69,7 @@ function ProductDetails({
 }) {
   const category = item.category ? getTrCategoryLabel(item.category) : null;
   const style = item.customization?.styleOption?.trim();
+  const option = orderItemOption(item);
 
   return (
     <div className="w-[15.5rem] space-y-3 p-1">
@@ -87,7 +90,7 @@ function ProductDetails({
       <dl className="space-y-3 border-t border-neutral-100 pt-3">
         <InfoRow label="Ürün adı">{item.title}</InfoRow>
         {category ? <InfoRow label="Ana kategori">{category}</InfoRow> : null}
-        {item.size ? <InfoRow label="Beden">{item.size}</InfoRow> : null}
+        {option ? <InfoRow label={option.label}>{option.value}</InfoRow> : null}
         {style ? <InfoRow label="Stil">{style}</InfoRow> : null}
         {item.referenceImageUrl ? (
           <InfoRow label="Müşteri fotoğrafı">

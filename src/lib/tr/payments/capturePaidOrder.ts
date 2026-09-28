@@ -1,5 +1,6 @@
 import { ensureDraftInvoiceForBoutiqueOrder } from "@/lib/tr/invoices";
 import { decrementInventoryForOrderLines } from "@/lib/tr/inventory";
+import { inventoryLinesOf } from "@/lib/tr/commerce/inventoryLines";
 import {
   getOrderByIdAdmin,
   markOrderPaidIfAwaitingPaymentAdmin,
@@ -25,15 +26,7 @@ export async function captureBoutiqueOrderAsPaid(input: {
 
   const wasFailed = existing.paymentStatus === "failed";
   if (wasFailed) {
-    await decrementInventoryForOrderLines(
-      existing.items
-        .filter((item) => item.productId)
-        .map((item) => ({
-          productId: item.productId as string,
-          size: item.size,
-          quantity: item.quantity,
-        })),
-    );
+    await decrementInventoryForOrderLines(inventoryLinesOf(existing.items));
   }
 
   const updated = await markOrderPaidIfAwaitingPaymentAdmin(

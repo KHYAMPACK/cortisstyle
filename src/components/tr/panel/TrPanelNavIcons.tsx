@@ -45,6 +45,10 @@ export function PanelNavGroupIcon({
   className?: string;
 }) {
   switch (groupId) {
+    case "orders":
+      return (
+        <ShoppingBag className={className} strokeWidth={1.75} aria-hidden />
+      );
     default:
       return (
         <Package className={className} strokeWidth={1.75} aria-hidden />

@@ -4,6 +4,7 @@ import { planVariantChanges } from "@/lib/tr/variants/productVariantRules";
 import {
   EMPTY_PRODUCT_VARIANTS,
   mapProductVariantRow,
+  type TrProductVariant,
   type TrProductVariants,
   type TrProductVariantsInput,
 } from "@/lib/tr/variants/types";
@@ -76,6 +77,78 @@ export async function getProductVariants(productId: string): Promise<TrProductVa
       mapProductVariantRow(row as Record<string, unknown>),
     ),
   };
+}
+
+/**
+ * The variants of several products in one query, keyed by product id (a product without
+ * variants has no entry). For checkout, which needs them for every line of a cart.
+ * Tolerant of `patch_product_variants.sql` not being applied: nothing has variants then.
+ */
+export async function listVariantsByProductIds(
+  productIds: readonly string[],
+): Promise<Map<string, TrProductVariant[]>> {
+  const byProduct = new Map<string, TrProductVariant[]>();
+  if (productIds.length === 0) return byProduct;
+  const { data, error } = await client()
+    .from("tr_product_variants")
+    .select("*")
+    .in("product_id", [...new Set(productIds)])
+    .order("sort_order", { ascending: true });
+  if (error) {
+    if (!isSchemaMissing(error)) throw error;
+    return byProduct;
+  }
+  for (const row of data ?? []) {
+    const record = row as Record<string, unknown>;
+    const productId = String(record.product_id);
+    const list = byProduct.get(productId) ?? [];
+    list.push(mapProductVariantRow(record));
+    byProduct.set(productId, list);
+  }
+  return byProduct;
+}
+
+/**
+ * Every variant of a boutique's Gelişmiş products, keyed by product id — what the manual
+ * order picker lists. Products are read first and their variants by id in chunks (a
+ * boutique can have far more products than one URL can name).
+ */
+export async function listVariantsByBoutique(
+  boutiqueId: string,
+): Promise<Map<string, TrProductVariant[]>> {
+  const supabase = client();
+  let ids: string[];
+  // Only Gelişmiş products have variants; before product types exist, ask about all.
+  const advanced = await supabase
+    .from("tr_products")
+    .select("id")
+    .eq("boutique_id", boutiqueId)
+    .eq("product_type", "advanced");
+  if (advanced.error) {
+    const all = await supabase.from("tr_products").select("id").eq("boutique_id", boutiqueId);
+    if (all.error) throw all.error;
+    ids = (all.data ?? []).map((row) => String(row.id));
+  } else {
+    ids = (advanced.data ?? []).map((row) => String(row.id));
+  }
+
+  const byProduct = new Map<string, TrProductVariant[]>();
+  for (let start = 0; start < ids.length; start += 150) {
+    const chunk = await listVariantsByProductIds(ids.slice(start, start + 150));
+    for (const [productId, variants] of chunk) byProduct.set(productId, variants);
+  }
+  return byProduct;
+}
+
+/** Looks up a variant value's label ("Kırmızı") among a boutique's variant types. */
+export async function variantValueLabelOf(
+  boutiqueId: string,
+): Promise<(valueId: string) => string> {
+  const labels = new Map<string, string>();
+  for (const type of await listVariantTypes(boutiqueId)) {
+    for (const value of type.values) labels.set(value.id, value.label);
+  }
+  return (valueId) => labels.get(valueId) ?? "?";
 }
 
 /**

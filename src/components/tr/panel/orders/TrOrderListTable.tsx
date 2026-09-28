@@ -1,6 +1,6 @@
 "use client";
 
-import { Store } from "lucide-react";
+import { PenLine, Store } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
@@ -35,13 +35,15 @@ export interface OrderSort {
   direction: SortDirection;
 }
 
-function ChannelCell({ name }: { name: string }) {
+/** Where the order came from: the shop, or "Manuel" for one the owner created in the panel. */
+function ChannelCell({ name, manual }: { name: string; manual: boolean }) {
+  const Icon = manual ? PenLine : Store;
   return (
     <span className="inline-flex items-center gap-2">
       <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md border border-neutral-200 bg-neutral-50">
-        <Store className="h-3.5 w-3.5 text-neutral-500" strokeWidth={1.75} aria-hidden />
+        <Icon className="h-3.5 w-3.5 text-neutral-500" strokeWidth={1.75} aria-hidden />
       </span>
-      <span className="max-w-[160px] truncate">{name}</span>
+      <span className="max-w-[160px] truncate">{manual ? "Manuel" : name}</span>
     </span>
   );
 }
@@ -190,7 +192,7 @@ export function TrOrderListTable({
                   </p>
                 </TrPanelDataTableCell>
                 <TrPanelDataTableCell>
-                  <ChannelCell name={boutiqueName} />
+                  <ChannelCell name={boutiqueName} manual={order.channel === "manual"} />
                 </TrPanelDataTableCell>
               </TrPanelDataTableRow>
             );

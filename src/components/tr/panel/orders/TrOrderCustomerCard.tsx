@@ -1,4 +1,4 @@
-import { Mail, MapPin, Phone, User } from "lucide-react";
+import { Mail, MapPin, MessageCircle, Phone, User } from "lucide-react";
 import { panelCardShellClass } from "@/components/tr/panel/panelUi";
 import { TrPanelLink as Link } from "@/components/tr/panel/TrPanelLink";
 import type { TrOrder } from "@/types/tr-marketplace";
@@ -17,6 +17,25 @@ function Block({
         {children}
       </div>
     </div>
+  );
+}
+
+/** The note the owner typed when creating an order by hand (Müşteri Notu). */
+export function TrOrderCustomerNoteCard({ note }: { note: string }) {
+  return (
+    <section className={panelCardShellClass}>
+      <header className="flex items-center gap-2.5 border-b border-neutral-100 px-4 py-4 sm:px-6">
+        <MessageCircle
+          className="h-[18px] w-[18px] text-neutral-500"
+          strokeWidth={1.75}
+          aria-hidden
+        />
+        <h2 className="text-[16px] font-semibold text-neutral-900">Müşteri Notu</h2>
+      </header>
+      <p className="px-4 py-4 text-[13.5px] leading-relaxed whitespace-pre-wrap text-neutral-700 sm:px-6">
+        {note}
+      </p>
+    </section>
   );
 }
 
