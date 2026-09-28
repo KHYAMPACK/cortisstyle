@@ -58,7 +58,6 @@ import {
   isValidStock,
   isValidTryPrice,
   sanitizeColorName,
-  sanitizeStockInput,
   sanitizeTryPriceInput,
   TR_OWNER_PRODUCT_LIMITS,
 } from "@/lib/tr/ownerProductConstraints";

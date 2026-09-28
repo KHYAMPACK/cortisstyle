@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { TrCustomerAddressDrawer } from "@/components/tr/panel/customers/TrCustomerAddressDrawer";
 import { useUnsavedChangesGuard } from "@/components/tr/panel/TrOwnerLeaveGuard";
+import { toast } from "@/lib/tr/panel/toast";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
 import {
   panelDangerBtnClass,
@@ -20,7 +21,6 @@ import {
   TrPanelEditorCard,
   TrPanelEditorSave,
 } from "@/components/tr/panel/TrPanelEditor";
-import { TrPanelLink as Link } from "@/components/tr/panel/TrPanelLink";
 import { TrPanelPulse } from "@/components/tr/panel/TrPanelMotion";
 import { usePanelBackTarget } from "@/components/tr/panel/usePanelOrigin";
 import { isOrderEditorPath, withNewCustomer } from "@/lib/tr/orders/orderEditorReturn";
@@ -90,8 +90,6 @@ function CustomerForm({
   const [addresses, setAddresses] = useState(baseline.addresses);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [takenBy, setTakenBy] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   // Each open of the address drawer is a new session so it starts fresh.
@@ -112,8 +110,6 @@ function CustomerForm({
 
   function touch() {
     setSaved(false);
-    setError(null);
-    setTakenBy(null);
   }
 
   function openDrawer(address: TrBoutiqueCustomerAddress | null) {
@@ -150,8 +146,6 @@ function CustomerForm({
     if (saving) return;
     setSaving(true);
     setSaved(false);
-    setError(null);
-    setTakenBy(null);
     const payload: OwnerCustomerPayload = { name, email, phone, note, addresses };
     try {
       const customer = initial
@@ -165,6 +159,7 @@ function CustomerForm({
       setNote(next.note);
       setAddresses(next.addresses);
       setSaved(true);
+      toast.success(editing ? "Müşteri kaydedildi." : "Müşteri eklendi.");
       if (!initial) {
         router.push(
           back.fromElsewhere && isOrderEditorPath(back.href)
@@ -173,12 +168,14 @@ function CustomerForm({
         );
       }
     } catch (saveError) {
-      if (saveError instanceof OwnerCustomerEmailTakenError) {
-        setTakenBy(saveError.existingCustomerId);
+      if (saveError instanceof OwnerCustomerEmailTakenError && saveError.existingCustomerId) {
+        const existingId = saveError.existingCustomerId;
+        toast.error(saveError.message, undefined, {
+          action: { label: "Müşteriyi aç", onClick: () => router.push(trPanelCustomerPath(existingId)) },
+        });
+      } else {
+        toast.error(saveError, "Müşteri kaydedilemedi.");
       }
-      setError(
-        saveError instanceof Error ? saveError.message : "Müşteri kaydedilemedi.",
-      );
     } finally {
       setSaving(false);
     }
@@ -187,16 +184,14 @@ function CustomerForm({
   async function remove() {
     if (!initial || deleting) return;
     setDeleting(true);
-    setError(null);
     try {
       await deleteOwnerCustomer(boutiqueId, initial.id);
+      toast.success("Müşteri silindi.");
       // Nothing left to save: leave without the unsaved-changes prompt.
       setBaseline(current);
       router.push(trPanelCustomersPath());
     } catch (deleteError) {
-      setError(
-        deleteError instanceof Error ? deleteError.message : "Müşteri silinemedi.",
-      );
+      toast.error(deleteError, "Müşteri silinemedi.");
       setConfirmDelete(false);
       setDeleting(false);
     }
@@ -218,23 +213,6 @@ function CustomerForm({
       />
 
       <div className="space-y-4 pt-1">
-        {error ? (
-          <p className={panelErrorClass} role="alert">
-            {error}
-            {takenBy ? (
-              <>
-                {" "}
-                <Link
-                  href={trPanelCustomerPath(takenBy)}
-                  className="font-semibold underline"
-                >
-                  Müşteriyi aç
-                </Link>
-              </>
-            ) : null}
-          </p>
-        ) : null}
-
         <TrPanelEditorCard
           id="bilgiler"
           title="Müşteri Bilgileri"
