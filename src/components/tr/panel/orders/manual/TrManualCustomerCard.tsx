@@ -3,6 +3,7 @@
 import { ChevronDown, MapPin, Plus, X } from "lucide-react";
 import { useId, useMemo, useRef, useState } from "react";
 import { TrCustomerAddressDrawer } from "@/components/tr/panel/customers/TrCustomerAddressDrawer";
+import { toast } from "@/lib/tr/panel/toast";
 import {
   panelErrorClass,
   panelFieldClass,
@@ -174,14 +175,12 @@ export function TrManualCustomerCard({
   onCustomerUpdated: (customer: TrBoutiqueCustomer) => void;
 }) {
   const customer = customerId ? (customers?.find((entry) => entry.id === customerId) ?? null) : null;
-  const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   // Each open of the address drawer is a new session so it starts fresh.
   const [drawer, setDrawer] = useState({ session: 0, open: false });
 
   async function addAddress(address: TrBoutiqueCustomerAddress) {
     if (!customer) return;
-    setError(null);
     setSaving(true);
     const others = address.isDefault
       ? customer.addresses.map((entry) => ({ ...entry, isDefault: false }))
@@ -196,8 +195,9 @@ export function TrManualCustomerCard({
       });
       onCustomerUpdated(updated);
       onSelectAddress(address.id);
+      toast.success("Adres eklendi.");
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "Adres kaydedilemedi.");
+      toast.error(saveError, "Adres kaydedilemedi.");
     } finally {
       setSaving(false);
     }
@@ -294,8 +294,6 @@ export function TrManualCustomerCard({
               {saving ? "Kaydediliyor…" : "Adres Ekle"}
             </button>
           </div>
-          {error ? <p className={panelErrorClass} role="alert">{error}</p> : null}
-
           <TrCustomerAddressDrawer
             key={drawer.session}
             open={drawer.open}

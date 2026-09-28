@@ -20,6 +20,7 @@ import {
   takeManualOrderStash,
 } from "@/components/tr/panel/orders/manual/manualOrderStash";
 import { useUnsavedChangesGuard } from "@/components/tr/panel/TrOwnerLeaveGuard";
+import { toast } from "@/lib/tr/panel/toast";
 import {
   panelCardShellClass,
   panelErrorClass,
@@ -167,7 +168,6 @@ export function TrManualOrderEditor({
   const [shippingOpen, setShippingOpen] = useState(false);
   const [busy, setBusy] = useState<"draft" | "create" | "delete" | null>(null);
   const [savedFlag, setSavedFlag] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [appliedNewCustomer, setAppliedNewCustomer] = useState<string | null>(null);
 
@@ -286,7 +286,6 @@ export function TrManualOrderEditor({
   function change(patch: Partial<ManualOrderDraft>) {
     setOrder((current) => ({ ...current, ...patch }));
     setSavedFlag(false);
-    setError(null);
   }
 
   function addUnits(added: SellableUnit[]) {
@@ -337,17 +336,17 @@ export function TrManualOrderEditor({
   async function saveDraft() {
     if (busy) return;
     if (isManualOrderBlank(order)) {
-      setError("Taslağa kaydetmek için ürün veya müşteri ekleyin.");
+      toast.error("Taslağa kaydetmek için ürün veya müşteri ekleyin.");
       return;
     }
     setBusy("draft");
-    setError(null);
     try {
       const result = draftId
         ? await updateOwnerOrderDraft(boutique.id, draftId, order)
         : await createOwnerOrderDraft(boutique.id, order);
       setSaved(order);
       setSavedFlag(true);
+      toast.success("Taslak kaydedildi.");
       if (!draftId) {
         setDraftId(result.id);
         // This becomes the draft's own page; the way back stays where it was.
@@ -357,7 +356,7 @@ export function TrManualOrderEditor({
         );
       }
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "Taslak kaydedilemedi.");
+      toast.error(saveError, "Taslak kaydedilemedi.");
     } finally {
       setBusy(null);
     }
@@ -367,18 +366,18 @@ export function TrManualOrderEditor({
     if (busy) return;
     const problem = createProblem();
     if (problem) {
-      setError(problem);
+      toast.error(problem);
       return;
     }
     setBusy("create");
-    setError(null);
     try {
       const created = await createOwnerOrder(boutique.id, order, draftId);
       // The order exists; nothing is left unsaved.
       setSaved(order);
+      toast.success("Sipariş oluşturuldu.");
       router.push(trPanelOrderPath(created.id));
     } catch (createFailure) {
-      setError(createFailure instanceof Error ? createFailure.message : "Sipariş oluşturulamadı.");
+      toast.error(createFailure, "Sipariş oluşturulamadı.");
       setBusy(null);
     }
   }
@@ -386,13 +385,13 @@ export function TrManualOrderEditor({
   async function deleteDraft() {
     if (busy || !draftId) return;
     setBusy("delete");
-    setError(null);
     try {
       await deleteOwnerOrderDraft(boutique.id, draftId);
       setSaved(order);
+      toast.success("Taslak silindi.");
       router.push(trPanelDraftsPath());
     } catch (deleteFailure) {
-      setError(deleteFailure instanceof Error ? deleteFailure.message : "Taslak silinemedi.");
+      toast.error(deleteFailure, "Taslak silinemedi.");
       setBusy(null);
     }
   }
@@ -481,9 +480,9 @@ export function TrManualOrderEditor({
 
       <div className="grid gap-4 pt-1 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
         <div className="min-w-0 space-y-4">
-          {error || loadError ? (
+          {loadError ? (
             <p className={panelErrorClass} role="alert">
-              {error ?? loadError}
+              {loadError}
             </p>
           ) : null}
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, Upload, X } from "lucide-react";
+import { Search, Upload } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { downloadOrdersCsv } from "@/components/tr/panel/orders/orderExport";
 import {
@@ -14,13 +14,13 @@ import {
 } from "@/components/tr/panel/orders/TrOrderListTable";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
 import { TrOwnerPushPromptBanner } from "@/components/tr/panel/TrOwnerPushPromptBanner";
+import { toast } from "@/lib/tr/panel/toast";
 import {
   panelEmptyClass,
   panelErrorClass,
   panelFieldClass,
   panelPrimaryBtnClass,
   panelSecondaryBtnClass,
-  panelSuccessClass,
 } from "@/components/tr/panel/panelUi";
 import { TrPanelLink as Link } from "@/components/tr/panel/TrPanelLink";
 import {
@@ -63,6 +63,13 @@ import { trPanelNewOrderPath } from "@/lib/tr/paths";
 import { boutiqueHasCarrierIntegration } from "@/lib/tr/shipping/registry";
 import type { TrOrderWithItems, TrPaymentStatus } from "@/types/tr-marketplace";
 
+function announceBulkRun(summary: OrderBulkResultSummary): void {
+  const message = summary.lines.join(" ");
+  if (summary.tone === "success") toast.success(message);
+  else if (summary.tone === "warning") toast.warning(message);
+  else toast.error(message);
+}
+
 /** Order the payment statuses appear in the Filtre popover. */
 const PAYMENT_ORDER: TrPaymentStatus[] = [
   "paid",
@@ -71,13 +78,6 @@ const PAYMENT_ORDER: TrPaymentStatus[] = [
   "refunded",
   "sandbox",
 ];
-
-const NOTICE_CLASS: Record<OrderBulkResultSummary["tone"], string> = {
-  success: panelSuccessClass,
-  warning:
-    "rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[14px] text-amber-950",
-  error: panelErrorClass,
-};
 
 type BulkMenuId = OrderBulkAction | "export";
 
@@ -108,7 +108,6 @@ function OrdersList({
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<number>(PANEL_PAGE_SIZES[0]);
   const [bulkBusy, setBulkBusy] = useState(false);
-  const [notice, setNotice] = useState<OrderBulkResultSummary | null>(null);
   // "Bugün" / "Dün" in the date column are relative to when the page was opened.
   const [nowMs] = useState(() => Date.now());
 
@@ -210,17 +209,13 @@ function OrdersList({
     // or the browser blocks it.
     const printTab = id === "print-labels" ? beginOwnerLabelPrint() : null;
     if (id === "print-labels" && !printTab) {
-      setNotice({
-        tone: "error",
-        lines: [
-          "Tarayıcı yazdırma sekmesini engelledi. Bu site için açılır pencerelere izin verin.",
-        ],
-      });
+      toast.error(
+        "Tarayıcı yazdırma sekmesini engelledi. Bu site için açılır pencerelere izin verin.",
+      );
       return;
     }
 
     setBulkBusy(true);
-    setNotice(null);
     const targetIds = targets.map((order) => order.id);
     try {
       let done = 0;
@@ -256,7 +251,7 @@ function OrdersList({
         failed = result.failed;
       }
 
-      setNotice(
+      announceBulkRun(
         summarizeBulkRun({
           action: id,
           done,
@@ -268,12 +263,7 @@ function OrdersList({
       fetchOwnerOrders(boutiqueId).then(setOrders, () => {});
     } catch (bulkError) {
       printTab?.abort();
-      setNotice({
-        tone: "error",
-        lines: [
-          bulkError instanceof Error ? bulkError.message : "İşlem tamamlanamadı.",
-        ],
-      });
+      toast.error(bulkError, "İşlem tamamlanamadı.");
     } finally {
       setBulkBusy(false);
     }
@@ -351,27 +341,6 @@ function OrdersList({
         <TrPanelFadeIn key="orders-ready" className="space-y-4" shift={false}>
           <TrOwnerPushPromptBanner boutiqueId={boutiqueId} />
           {error ? <p className={panelErrorClass}>{error}</p> : null}
-
-          {notice ? (
-            <div
-              role="status"
-              className={`${NOTICE_CLASS[notice.tone]} flex items-start justify-between gap-3`}
-            >
-              <div className="space-y-0.5">
-                {notice.lines.map((line) => (
-                  <p key={line}>{line}</p>
-                ))}
-              </div>
-              <button
-                type="button"
-                onClick={() => setNotice(null)}
-                aria-label="Bildirimi kapat"
-                className="grid h-6 w-6 shrink-0 place-items-center rounded-md opacity-70 transition-opacity hover:opacity-100"
-              >
-                <X className="h-4 w-4" strokeWidth={1.75} aria-hidden />
-              </button>
-            </div>
-          ) : null}
 
           {orders.length > 0 ? (
             <div className="flex flex-wrap items-center gap-2">

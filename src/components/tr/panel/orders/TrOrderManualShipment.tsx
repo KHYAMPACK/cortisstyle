@@ -6,7 +6,6 @@ import {
 } from "@/components/tr/panel/orderFulfillmentUi";
 import {
   panelChipClass,
-  panelErrorClass,
   panelFieldClass,
   panelHintClass,
   panelLabelClass,
@@ -14,6 +13,7 @@ import {
   panelSecondaryBtnClass,
 } from "@/components/tr/panel/panelUi";
 import { TrPanelDrawer } from "@/components/tr/panel/TrPanelDrawer";
+import { toast } from "@/lib/tr/panel/toast";
 import { saveOwnerManualShipment } from "@/lib/tr/ownerClient";
 import {
   CARRIER_NAME_MAX,
@@ -51,7 +51,6 @@ export function TrOrderManualShipment({
   const [carrier, setCarrier] = useState("");
   const [tracking, setTracking] = useState("");
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const dirty =
     carrier.trim() !== savedCarrier.trim() ||
@@ -60,27 +59,22 @@ export function TrOrderManualShipment({
   function openDrawer() {
     setCarrier(savedCarrier);
     setTracking(savedTracking);
-    setError(null);
     setOpen(true);
   }
 
   async function save() {
     if (saving) return;
     setSaving(true);
-    setError(null);
     try {
       const result = await saveOwnerManualShipment(boutiqueId, order.id, {
         carrierName: carrier,
         trackingCode: tracking,
       });
       onOrder(result.order);
+      toast.success("Kargo bilgisi kaydedildi.");
       setOpen(false);
     } catch (saveError) {
-      setError(
-        saveError instanceof Error
-          ? saveError.message
-          : "Kargo bilgisi kaydedilemedi.",
-      );
+      toast.error(saveError, "Kargo bilgisi kaydedilemedi.");
     } finally {
       setSaving(false);
     }
@@ -212,7 +206,6 @@ export function TrOrderManualShipment({
             </p>
           </div>
 
-          {error ? <p className={panelErrorClass}>{error}</p> : null}
         </div>
       </TrPanelDrawer>
     </div>

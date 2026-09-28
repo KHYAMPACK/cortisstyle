@@ -1,6 +1,5 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useState } from "react";
 import { TrOrderFulfillmentCard } from "@/components/tr/panel/orders/TrOrderFulfillmentCard";
 import {
@@ -14,16 +13,14 @@ import {
 import { TrOrderTopActions } from "@/components/tr/panel/orders/TrOrderTopActions";
 import { TrOrderTopBadges } from "@/components/tr/panel/orders/TrOrderBadges";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
-import { panelErrorClass, panelSuccessClass } from "@/components/tr/panel/panelUi";
+import { panelErrorClass } from "@/components/tr/panel/panelUi";
+import { toast } from "@/lib/tr/panel/toast";
 import { TrPanelEditor } from "@/components/tr/panel/TrPanelEditor";
 import {
   usePanelBackTarget,
   usePanelSelfPath,
 } from "@/components/tr/panel/usePanelOrigin";
-import {
-  TrPanelPulse,
-  trPanelFadeTransition,
-} from "@/components/tr/panel/TrPanelMotion";
+import { TrPanelPulse } from "@/components/tr/panel/TrPanelMotion";
 import {
   fetchOwnerOrder,
   fetchOwnerOrders,
@@ -92,9 +89,9 @@ function OrderPage({
   const [order, setOrder] = useState<TrOrderWithItems | null>(
     () => cachedList?.find((entry) => entry.id === orderId) ?? null,
   );
-  const [error, setError] = useState<string | null>(null);
+  // Only the per-order load failure: what an action did is a toast.
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [cancelNotice, setCancelNotice] = useState(false);
 
   const refreshList = useCallback(() => {
     fetchOwnerOrders(boutiqueId).then(setList, () => {
@@ -108,12 +105,10 @@ function OrderPage({
       (result) => {
         if (!cancelled) setOrder(result);
       },
-      (loadError: unknown) => {
+      (failure: unknown) => {
         if (cancelled) return;
-        setError(
-          loadError instanceof Error
-            ? loadError.message
-            : "Sipariş yüklenemedi.",
+        setLoadError(
+          failure instanceof Error ? failure.message : "Sipariş yüklenemedi.",
         );
       },
     );
@@ -127,12 +122,6 @@ function OrderPage({
       cancelled = true;
     };
   }, [boutiqueId, orderId]);
-
-  useEffect(() => {
-    if (!cancelNotice) return;
-    const timer = window.setTimeout(() => setCancelNotice(false), 4000);
-    return () => window.clearTimeout(timer);
-  }, [cancelNotice]);
 
   /** An action changed the order: show the new state and keep the list in step. */
   const applyOrder = useCallback(
@@ -149,12 +138,11 @@ function OrderPage({
   ): Promise<boolean> => {
     if (saving) return false;
     setSaving(true);
-    setError(null);
     try {
       applyOrder(await action());
       return true;
     } catch (actionError) {
-      setError(actionError instanceof Error ? actionError.message : fallback);
+      toast.error(actionError, fallback);
       return false;
     } finally {
       setSaving(false);
@@ -166,7 +154,9 @@ function OrderPage({
       () => updateOwnerOrderFulfillment(boutiqueId, orderId, status),
       "Durum güncellenemedi.",
     );
-    if (worked && status === "cancelled") setCancelNotice(true);
+    if (worked && status === "cancelled") {
+      toast.success("Sipariş iptal edildi. Stok geri yüklendi.");
+    }
   };
 
   const markPaid = () =>
@@ -211,30 +201,13 @@ function OrderPage({
         />
       ) : null}
 
-      {!order && error ? (
-        <p className={`${panelErrorClass} mt-1`}>{error}</p>
+      {!order && loadError ? (
+        <p className={`${panelErrorClass} mt-1`}>{loadError}</p>
       ) : !order ? (
         <OrderSkeleton />
       ) : (
         <div className="grid gap-4 pt-1 lg:grid-cols-[minmax(0,1fr)_21rem] lg:items-start">
           <div className="min-w-0 space-y-4">
-            {error ? <p className={panelErrorClass}>{error}</p> : null}
-            <AnimatePresence>
-              {cancelNotice ? (
-                <motion.p
-                  key="cancel-notice"
-                  className={panelSuccessClass}
-                  role="status"
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }}
-                  transition={trPanelFadeTransition}
-                >
-                  Sipariş iptal edildi. Stok geri yüklendi.
-                </motion.p>
-              ) : null}
-            </AnimatePresence>
-
             <TrOrderFulfillmentCard
               boutiqueId={boutiqueId}
               hasCarrierIntegration={hasCarrierIntegration}
