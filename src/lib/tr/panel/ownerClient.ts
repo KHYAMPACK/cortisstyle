@@ -23,6 +23,7 @@ import type {
   TrCategoryMode,
   TrProductCategories,
 } from "@/lib/tr/categories/types";
+import type { TrDiscountCampaign } from "@/lib/tr/discounts/types";
 import {
   EMPTY_PRODUCT_VARIANTS,
   type TrProductVariant,
@@ -430,6 +431,83 @@ export async function deleteOwnerCategory(categoryId: string): Promise<void> {
   );
   await readApiResponse<{ ok?: boolean }>(response, "Kategori silinemedi.");
   invalidateCategories();
+}
+
+function invalidateDiscountCampaigns(): void {
+  invalidateOwnerCache("discount-campaigns:");
+}
+
+/** The boutique's discount campaigns (automatic and code), newest first. */
+export async function fetchOwnerDiscountCampaigns(
+  boutiqueId: string,
+): Promise<TrDiscountCampaign[]> {
+  return cachedOwnerFetch(ownerCacheKeys.discountCampaigns(boutiqueId), async () => {
+    const response = await ownerFetch(
+      `/api/tr/owner/discount-campaigns?boutiqueId=${encodeURIComponent(boutiqueId)}`,
+    );
+    const data = await readApiResponse<{ campaigns?: TrDiscountCampaign[] }>(
+      response,
+      "Kampanyalar yüklenemedi.",
+    );
+    return data.campaigns ?? [];
+  });
+}
+
+export async function fetchOwnerDiscountCampaign(
+  campaignId: string,
+): Promise<TrDiscountCampaign> {
+  const response = await ownerFetch(
+    `/api/tr/owner/discount-campaigns/${encodeURIComponent(campaignId)}`,
+  );
+  const data = await readApiResponse<{ campaign?: TrDiscountCampaign }>(
+    response,
+    "Kampanya yüklenemedi.",
+  );
+  if (!data.campaign) throw new Error("Kampanya bulunamadı.");
+  return data.campaign;
+}
+
+export async function createOwnerDiscountCampaign(
+  boutiqueId: string,
+  body: Record<string, unknown>,
+): Promise<TrDiscountCampaign> {
+  const response = await ownerFetch("/api/tr/owner/discount-campaigns", {
+    method: "POST",
+    body: JSON.stringify({ boutiqueId, ...body }),
+  });
+  const data = await readApiResponse<{ campaign?: TrDiscountCampaign }>(
+    response,
+    "Kampanya oluşturulamadı.",
+  );
+  if (!data.campaign) throw new Error("Kampanya oluşturulamadı.");
+  invalidateDiscountCampaigns();
+  return data.campaign;
+}
+
+export async function updateOwnerDiscountCampaign(
+  campaignId: string,
+  body: Record<string, unknown>,
+): Promise<TrDiscountCampaign> {
+  const response = await ownerFetch(
+    `/api/tr/owner/discount-campaigns/${encodeURIComponent(campaignId)}`,
+    { method: "PATCH", body: JSON.stringify(body) },
+  );
+  const data = await readApiResponse<{ campaign?: TrDiscountCampaign }>(
+    response,
+    "Kampanya güncellenemedi.",
+  );
+  if (!data.campaign) throw new Error("Kampanya güncellenemedi.");
+  invalidateDiscountCampaigns();
+  return data.campaign;
+}
+
+export async function deleteOwnerDiscountCampaign(campaignId: string): Promise<void> {
+  const response = await ownerFetch(
+    `/api/tr/owner/discount-campaigns/${encodeURIComponent(campaignId)}`,
+    { method: "DELETE" },
+  );
+  await readApiResponse<{ ok?: boolean }>(response, "Kampanya silinemedi.");
+  invalidateDiscountCampaigns();
 }
 
 /** The boutique's variant types, and how many saved sizes / colours could be imported. */
@@ -1571,71 +1649,6 @@ export async function deleteOwnerOrderDraft(
     throw new Error(data.error ?? "Taslak silinemedi.");
   }
   invalidateOwnerCache("order-drafts:");
-}
-
-export async function fetchOwnerDiscountCodes(boutiqueId: string) {
-  return cachedOwnerFetch(ownerCacheKeys.discounts(boutiqueId), async () => {
-    const response = await ownerFetch(
-      `/api/tr/owner/discounts?boutiqueId=${encodeURIComponent(boutiqueId)}`,
-    );
-    const data = (await parseOwnerJson(response)) as {
-      codes?: import("@/types/tr-marketplace").TrDiscountCode[];
-      error?: string;
-    };
-    if (!response.ok) {
-      throw new Error(data.error ?? "Kuponlar yüklenemedi.");
-    }
-    return data.codes ?? [];
-  });
-}
-
-export async function createOwnerDiscountCode(
-  boutiqueId: string,
-  payload: {
-    code: string;
-    percentOff?: number;
-    amountOffTry?: number;
-    usageLimit?: number | null;
-  },
-) {
-  const response = await ownerFetch("/api/tr/owner/discounts", {
-    method: "POST",
-    body: JSON.stringify({ boutiqueId, ...payload }),
-  });
-  const data = (await parseOwnerJson(response)) as {
-    code?: import("@/types/tr-marketplace").TrDiscountCode;
-    error?: string;
-  };
-  if (!response.ok) {
-    throw new Error(data.error ?? "Kupon oluşturulamadı.");
-  }
-  if (!data.code) throw new Error("Kupon oluşturulamadı.");
-  invalidateOwnerCache("discounts:");
-  return data.code;
-}
-
-export async function setOwnerDiscountCodeActive(
-  boutiqueId: string,
-  codeId: string,
-  active: boolean,
-) {
-  const response = await ownerFetch(
-    `/api/tr/owner/discounts/${encodeURIComponent(codeId)}`,
-    {
-      method: "PATCH",
-      body: JSON.stringify({ boutiqueId, active }),
-    },
-  );
-  const data = (await parseOwnerJson(response)) as {
-    code?: import("@/types/tr-marketplace").TrDiscountCode;
-    error?: string;
-  };
-  if (!response.ok) {
-    throw new Error(data.error ?? "Kupon güncellenemedi.");
-  }
-  if (!data.code) throw new Error("Kupon güncellenemedi.");
-  invalidateOwnerCache("discounts:");
-  return data.code;
 }
 
 export async function fetchOwnerContentPacks(boutiqueId: string) {

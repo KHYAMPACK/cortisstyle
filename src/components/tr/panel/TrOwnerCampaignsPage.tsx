@@ -2,19 +2,17 @@
 
 import { TrPanelLink as Link } from "@/components/tr/panel/TrPanelLink";
 import { motion } from "framer-motion";
-import { useEffect, useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
+import { TrCampaignTypeChooser } from "@/components/tr/panel/discounts/TrCampaignTypeChooser";
 import {
   panelBackLinkClass,
   panelEmptyClass,
   panelErrorClass,
-  panelFieldClass,
-  panelHintClass,
-  panelLabelClass,
   panelPageTitleClass,
   panelPrimaryBtnClass,
   panelSecondaryBtnClass,
-  panelSectionClass,
 } from "@/components/tr/panel/panelUi";
 import {
   TrPanelFadeIn,
@@ -23,68 +21,147 @@ import {
   trPanelStaggerItem,
 } from "@/components/tr/panel/TrPanelMotion";
 import {
-  createOwnerDiscountCode,
-  fetchOwnerDiscountCodes,
+  fetchOwnerDiscountCampaigns,
   fetchOwnerProducts,
   peekOwnerProducts,
-  setOwnerDiscountCodeActive,
   updateOwnerProduct,
 } from "@/lib/tr/ownerClient";
-import { trPanelEditProductPath, trPanelPath } from "@/lib/tr/paths";
+import type { TrDiscountCampaign } from "@/lib/tr/discounts/types";
 import {
-  formatTryFromKurus,
-  type TrDiscountCode,
-  type TrProduct,
-} from "@/types/tr-marketplace";
+  trPanelEditCampaignPath,
+  trPanelEditProductPath,
+  trPanelPath,
+} from "@/lib/tr/paths";
+import { formatTryFromKurus, type TrProduct } from "@/types/tr-marketplace";
 
-function CampaignsBoard({ boutiqueId }: { boutiqueId: string }) {
-  const cached = peekOwnerProducts(boutiqueId);
-  const [products, setProducts] = useState<TrProduct[]>(cached?.products ?? []);
-  const [codes, setCodes] = useState<TrDiscountCode[]>([]);
-  const [loading, setLoading] = useState(!cached);
+function campaignSummary(campaign: TrDiscountCampaign): string {
+  if (campaign.discountType === "percent") return `%${campaign.percentOff} indirim`;
+  if (campaign.discountType === "fixed") {
+    return `${formatTryFromKurus(campaign.amountOffKurus ?? 0)} indirim`;
+  }
+  return "Ücretsiz kargo";
+}
+
+function CampaignsList({ boutiqueId }: { boutiqueId: string }) {
+  const router = useRouter();
+  const [campaigns, setCampaigns] = useState<TrDiscountCampaign[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [code, setCode] = useState("");
-  const [percentOff, setPercentOff] = useState("10");
-  const [saving, setSaving] = useState(false);
+  const [chooserOpen, setChooserOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    async function load() {
-      setError(null);
-      try {
-        const [productResult, codeResult] = await Promise.all([
-          fetchOwnerProducts(boutiqueId),
-          fetchOwnerDiscountCodes(boutiqueId),
-        ]);
-        if (cancelled) return;
-        setProducts(productResult.products);
-        setCodes(codeResult);
-      } catch (loadError) {
+    fetchOwnerDiscountCampaigns(boutiqueId)
+      .then((result) => {
+        if (!cancelled) setCampaigns(result);
+      })
+      .catch((loadError: unknown) => {
         if (!cancelled) {
           setError(
-            loadError instanceof Error
-              ? loadError.message
-              : "Kampanyalar yüklenemedi.",
+            loadError instanceof Error ? loadError.message : "Kampanyalar yüklenemedi.",
           );
         }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-    void load();
+      });
     return () => {
       cancelled = true;
     };
   }, [boutiqueId]);
 
-  const reload = async () => {
-    const [productResult, codeResult] = await Promise.all([
-      fetchOwnerProducts(boutiqueId),
-      fetchOwnerDiscountCodes(boutiqueId),
-    ]);
-    setProducts(productResult.products);
-    setCodes(codeResult);
-  };
+  return (
+    <section className="space-y-3">
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="text-[19px] font-semibold text-neutral-900">Kampanyalar</h3>
+        <button
+          type="button"
+          onClick={() => setChooserOpen(true)}
+          className={panelPrimaryBtnClass}
+        >
+          Kampanya Ekle
+        </button>
+      </div>
+
+      {error && !campaigns ? (
+        <p className={panelErrorClass}>{error}</p>
+      ) : !campaigns ? (
+        <TrPanelListSkeleton rows={3} label="Kampanyalar yükleniyor" />
+      ) : campaigns.length === 0 ? (
+        <div className={panelEmptyClass}>
+          <p className="font-semibold text-neutral-900">Henüz kampanya eklemediniz.</p>
+          <p className="mt-1">Koşullara göre otomatik uygulanan bir indirim oluşturun.</p>
+        </div>
+      ) : (
+        <TrPanelFadeIn>
+          <div className="overflow-hidden rounded-xl border border-neutral-200/80 bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+            <ul className="divide-y divide-neutral-100">
+              {campaigns.map((campaign) => (
+                <li
+                  key={campaign.id}
+                  onClick={() => router.push(trPanelEditCampaignPath(campaign.id))}
+                  onPointerEnter={() =>
+                    router.prefetch(trPanelEditCampaignPath(campaign.id))
+                  }
+                  className="flex cursor-pointer flex-wrap items-center justify-between gap-3 px-4 py-3 transition-colors duration-150 hover:bg-[color:var(--panel-accent-soft)]/60 motion-reduce:transition-none"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-[14px] font-semibold text-neutral-900">
+                      {campaign.title}
+                    </p>
+                    <p className="mt-0.5 text-[13px] text-neutral-500">
+                      {campaign.kind === "automatic" ? "Otomatik İndirim" : "İndirim Kodu"}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="rounded-lg bg-[color:var(--panel-accent-soft)] px-2.5 py-1 text-[13px] font-semibold text-neutral-800">
+                      {campaignSummary(campaign)}
+                    </span>
+                    <span
+                      className={`rounded-lg px-2.5 py-1 text-[13px] font-semibold ${
+                        campaign.active
+                          ? "bg-emerald-50 text-emerald-900"
+                          : "bg-neutral-100 text-neutral-600"
+                      }`}
+                    >
+                      {campaign.active ? "Aktif" : "Pasif"}
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </TrPanelFadeIn>
+      )}
+
+      <TrCampaignTypeChooser open={chooserOpen} onClose={() => setChooserOpen(false)} />
+    </section>
+  );
+}
+
+function ProductSalesList({ boutiqueId }: { boutiqueId: string }) {
+  const cached = peekOwnerProducts(boutiqueId);
+  const [products, setProducts] = useState<TrProduct[]>(cached?.products ?? []);
+  const [loading, setLoading] = useState(!cached);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchOwnerProducts(boutiqueId)
+      .then((result) => {
+        if (!cancelled) setProducts(result.products);
+      })
+      .catch((loadError: unknown) => {
+        if (!cancelled) {
+          setError(
+            loadError instanceof Error ? loadError.message : "Ürün indirimleri yüklenemedi.",
+          );
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [boutiqueId]);
 
   const onSale = products.filter(
     (product) =>
@@ -96,200 +173,61 @@ function CampaignsBoard({ boutiqueId }: { boutiqueId: string }) {
     setSaving(true);
     setError(null);
     try {
-      await updateOwnerProduct(product.id, {
-        compareAtPriceTry: null,
-      });
-      await reload();
+      await updateOwnerProduct(product.id, { compareAtPriceTry: null });
+      const result = await fetchOwnerProducts(boutiqueId);
+      setProducts(result.products);
     } catch (saveError) {
-      setError(
-        saveError instanceof Error
-          ? saveError.message
-          : "İndirim kaldırılamadı.",
-      );
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const createCoupon = async (event: FormEvent) => {
-    event.preventDefault();
-    setSaving(true);
-    setError(null);
-    try {
-      const percent = Number(percentOff);
-      await createOwnerDiscountCode(boutiqueId, {
-        code,
-        percentOff: percent,
-      });
-      setCode("");
-      await reload();
-    } catch (saveError) {
-      setError(
-        saveError instanceof Error
-          ? saveError.message
-          : "Kupon oluşturulamadı.",
-      );
+      setError(saveError instanceof Error ? saveError.message : "İndirim kaldırılamadı.");
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <>
-      {loading && products.length === 0 && codes.length === 0 ? (
-        <TrPanelListSkeleton rows={4} label="Kampanyalar yükleniyor" />
+    <section className="space-y-3">
+      <div>
+        <h3 className="text-[19px] font-semibold text-neutral-900">Ürün indirimleri</h3>
+        <p className="mt-1 text-[13px] leading-relaxed text-neutral-500">
+          Ürün düzenlerken eski fiyat girerek indirim açın.
+        </p>
+      </div>
+
+      {error ? <p className={panelErrorClass}>{error}</p> : null}
+
+      {loading && products.length === 0 ? (
+        <TrPanelListSkeleton rows={2} label="Ürün indirimleri yükleniyor" />
+      ) : onSale.length === 0 ? (
+        <p className={panelEmptyClass}>Aktif ürün indirimi yok.</p>
       ) : (
-        <TrPanelFadeIn className="space-y-6">
-          {error ? <p className={panelErrorClass}>{error}</p> : null}
-
-          <section className="space-y-3">
-            <div>
-              <h3 className="text-[19px] font-semibold text-neutral-900">
-                Ürün indirimleri
-              </h3>
-              <p className={`mt-1 ${panelHintClass}`}>
-                Ürün düzenlerken eski fiyat girerek indirim açın.
-              </p>
-            </div>
-            {onSale.length === 0 ? (
-              <p className={panelEmptyClass}>
-                Aktif ürün indirimi yok.
-              </p>
-            ) : (
-              <TrPanelStagger className="space-y-3">
-                {onSale.map((product) => (
-                  <motion.div key={product.id} variants={trPanelStaggerItem}>
-                    <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[color:var(--panel-accent-border)] bg-white p-4 shadow-sm sm:p-5">
-                      <Link
-                        href={trPanelEditProductPath(product.id)}
-                        className="min-w-0 flex-1"
-                      >
-                        <p className="text-[18px] font-semibold text-neutral-900">
-                          {product.title}
-                        </p>
-                        <p className="mt-1 text-[15px] text-neutral-600">
-                          {formatTryFromKurus(product.priceKurus)}
-                          {product.compareAtPriceKurus ? (
-                            <span className="ml-2 text-neutral-400 line-through">
-                              {formatTryFromKurus(product.compareAtPriceKurus)}
-                            </span>
-                          ) : null}
-                        </p>
-                      </Link>
-                      <button
-                        type="button"
-                        disabled={saving}
-                        onClick={() => void clearSale(product)}
-                        className={panelSecondaryBtnClass}
-                      >
-                        İndirimi kaldır
-                      </button>
-                    </div>
-                  </motion.div>
-                ))}
-              </TrPanelStagger>
-            )}
-          </section>
-
-          <section className="space-y-3">
-            <div>
-              <h3 className="text-[19px] font-semibold text-neutral-900">
-                Kupon kodları
-              </h3>
-              <p className={`mt-1 ${panelHintClass}`}>
-                Ödeme adımında kupon kodu olarak kullanılır (yüzde indirim).
-              </p>
-            </div>
-
-            <form
-              onSubmit={(event) => void createCoupon(event)}
-              className={`${panelSectionClass} sm:flex sm:flex-wrap sm:items-end sm:gap-4`}
-            >
-              <label className="block min-w-[10rem] flex-1 space-y-2">
-                <span className={panelLabelClass}>Kod</span>
-                <input
-                  value={code}
-                  onChange={(event) => setCode(event.target.value)}
-                  className={panelFieldClass}
-                  placeholder="YAZ10"
-                  required
-                />
-              </label>
-              <label className="mt-4 block w-full space-y-2 sm:mt-0 sm:w-28">
-                <span className={panelLabelClass}>% indirim</span>
-                <input
-                  value={percentOff}
-                  onChange={(event) => setPercentOff(event.target.value)}
-                  className={panelFieldClass}
-                  inputMode="numeric"
-                  required
-                />
-              </label>
-              <button
-                type="submit"
-                disabled={saving}
-                className={`${panelPrimaryBtnClass} mt-4 w-full sm:mt-0 sm:w-auto`}
-              >
-                Kupon ekle
-              </button>
-            </form>
-
-            {codes.length === 0 ? (
-              <p className={panelEmptyClass}>Henüz kupon yok.</p>
-            ) : (
-              <TrPanelStagger className="space-y-3">
-                {codes.map((entry) => (
-                  <motion.div key={entry.id} variants={trPanelStaggerItem}>
-                    <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[color:var(--panel-accent-border)] bg-white p-4 shadow-sm sm:p-5">
-                      <div className="min-w-0">
-                        <p className="text-[18px] font-semibold tracking-wide text-neutral-900">
-                          {entry.code}
-                        </p>
-                        <div className="mt-2 flex flex-wrap items-center gap-2">
-                          <span className="rounded-lg bg-[color:var(--panel-accent-soft)] px-2.5 py-1 text-[14px] font-semibold text-neutral-800">
-                            {entry.percentOff != null
-                              ? `%${entry.percentOff}`
-                              : entry.amountOffKurus
-                                ? formatTryFromKurus(entry.amountOffKurus)
-                                : "—"}
-                          </span>
-                          <span
-                            className={`rounded-lg px-2.5 py-1 text-[14px] font-semibold ${
-                              entry.active
-                                ? "bg-emerald-50 text-emerald-900"
-                                : "bg-neutral-100 text-neutral-600"
-                            }`}
-                          >
-                            {entry.active ? "Aktif" : "Pasif"}
-                          </span>
-                          <span className="rounded-lg bg-neutral-100 px-2.5 py-1 text-[14px] font-medium text-neutral-700">
-                            {entry.usedCount} kullanım
-                          </span>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        disabled={saving}
-                        onClick={() =>
-                          void setOwnerDiscountCodeActive(
-                            boutiqueId,
-                            entry.id,
-                            !entry.active,
-                          ).then(reload)
-                        }
-                        className={panelSecondaryBtnClass}
-                      >
-                        {entry.active ? "Pasifleştir" : "Aktifleştir"}
-                      </button>
-                    </div>
-                  </motion.div>
-                ))}
-              </TrPanelStagger>
-            )}
-          </section>
-        </TrPanelFadeIn>
+        <TrPanelStagger className="space-y-3">
+          {onSale.map((product) => (
+            <motion.div key={product.id} variants={trPanelStaggerItem}>
+              <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[color:var(--panel-accent-border)] bg-white p-4 shadow-sm sm:p-5">
+                <Link href={trPanelEditProductPath(product.id)} className="min-w-0 flex-1">
+                  <p className="text-[16px] font-semibold text-neutral-900">{product.title}</p>
+                  <p className="mt-1 text-[14px] text-neutral-600">
+                    {formatTryFromKurus(product.priceKurus)}
+                    {product.compareAtPriceKurus ? (
+                      <span className="ml-2 text-neutral-400 line-through">
+                        {formatTryFromKurus(product.compareAtPriceKurus)}
+                      </span>
+                    ) : null}
+                  </p>
+                </Link>
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={() => void clearSale(product)}
+                  className={panelSecondaryBtnClass}
+                >
+                  İndirimi kaldır
+                </button>
+              </div>
+            </motion.div>
+          ))}
+        </TrPanelStagger>
       )}
-    </>
+    </section>
   );
 }
 
@@ -297,14 +235,15 @@ export function TrOwnerCampaignsPage() {
   return (
     <TrOwnerPanelGate>
       {({ activeBoutique }) => (
-        <div className="space-y-5">
+        <div className="space-y-6">
           <div>
             <Link href={trPanelPath()} className={panelBackLinkClass}>
               ← Giriş
             </Link>
             <h2 className={panelPageTitleClass}>İndirimler</h2>
           </div>
-          <CampaignsBoard boutiqueId={activeBoutique.id} />
+          <CampaignsList boutiqueId={activeBoutique.id} />
+          <ProductSalesList boutiqueId={activeBoutique.id} />
         </div>
       )}
     </TrOwnerPanelGate>

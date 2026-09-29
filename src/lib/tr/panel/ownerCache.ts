@@ -82,7 +82,7 @@ export const ownerCacheKeys = {
   customers: (boutiqueId: string) => `customers:${boutiqueId}`,
   orderDrafts: (boutiqueId: string) => `order-drafts:${boutiqueId}`,
   productVariants: (boutiqueId: string) => `product-variants:${boutiqueId}`,
-  discounts: (boutiqueId: string) => `discounts:${boutiqueId}`,
+  discountCampaigns: (boutiqueId: string) => `discount-campaigns:${boutiqueId}`,
   invoices: (boutiqueId: string) => `invoices:${boutiqueId}`,
   settings: (boutiqueId: string) => `settings:${boutiqueId}`,
 };

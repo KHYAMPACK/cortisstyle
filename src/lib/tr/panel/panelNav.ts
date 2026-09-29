@@ -185,6 +185,8 @@ const PANEL_EDITOR_ROUTES: RegExp[] = [
   /^\/tr\/panel\/taslaklar\/[^/]+\/?$/,
   // A new customer, one customer, and editing one (the list keeps the chrome).
   /^\/tr\/panel\/musteriler\/(yeni|(?!yeni\/)[^/]+(\/duzenle)?)\/?$/,
+  // A campaign: the create form or an existing one (the list keeps the chrome).
+  /^\/tr\/panel\/kampanyalar\/[^/]+\/?$/,
 ];
 
 export function isPanelEditorRoute(pathname: string): boolean {

@@ -138,7 +138,7 @@ Without a live payment integration, checkout creates a **pending** order and the
 
 ## Discount campaigns (İndirimler)
 
-**Status (2026-09-29): the M1 engine is built** (`src/lib/tr/discounts/`, `supabase/patch_discount_campaigns.sql`); the panel editor, checkout wiring, and the old `TrOwnerCampaignsPage` MVP have not been touched yet — see the milestone table below. This replaces the old coupon-only MVP: `patch_tr_discount_codes.sql` was never applied to production, so there was nothing to migrate.
+**Status (2026-09-29): M1 and M2 are built** (`src/lib/tr/discounts/`, `src/lib/tr/catalog/discountCampaigns.ts`, `supabase/patch_discount_campaigns.sql` — applied in production). The panel now has a full `kind: 'automatic'` editor at the **İndirimler** nav entry, replacing the old coupon MVP's UI; checkout wiring (M3) and the `kind: 'code'` Kuponlar tab (M4) have not been touched yet — see the milestone table below.
 
 **The model** mirrors ikas: a **campaign** is either `kind: 'automatic'` (applies itself when a cart matches, no code) or `kind: 'code'` (only applies through one of its own codes). Both share the same fields — İndirim Türü (`percent` | `fixed` | `free_shipping`; X Al Y Kazan is not modeled), Koşullar (every product, or a scoped set in `tr_discount_campaign_products`, with an "İndirimli ürünleri dahil et" opt-in for items already on sale), Gereksinimler (optional min/max cart subtotal and item count — checked against the **whole cart**, not the scoped subset), Ayarlar (`stackable`), Aktif Tarihler. Where they differ: an automatic campaign has its own Kullanım Limitleri (`usage_limit_total` / `usage_limit_per_customer` on the campaign row); a code campaign has a **Kuponlar** tab instead — `tr_discount_campaign_codes`, one row per redeemable code, each with its own independent total/per-customer limits. "Otomatik Kod Üret" bulk-inserts several codes sharing one prefix and one set of limits. Per-customer usage is **not** tracked in a new table — `tr_orders` already has `discount_code` and `customer_id`/`customer_email`, so it's counted from there.
 
@@ -149,11 +149,11 @@ Without a live payment integration, checkout creates a **pending** order and the
 | # | Scope | Touches checkout? |
 |---|---|---|
 | M1 | Schema (`tr_discount_campaigns`, `tr_discount_campaign_products`, `tr_discount_campaign_codes`) + types + the pure engine above | No — **built** |
-| M2 | Panel: Kampanyalar list, "Kampanya Ekle" type chooser, the shared editor tabs for `kind: 'automatic'`; DB layer (`catalog/discountCampaigns.ts`) and owner API routes | No |
+| M2 | Panel: Kampanyalar list, "Kampanya Ekle" type chooser, the shared editor tabs for `kind: 'automatic'`; DB layer (`catalog/discountCampaigns.ts`) and owner API routes | No — **built** |
 | M3 | Checkout: evaluate automatic campaigns against the cart (`checkoutValidate.ts`), apply the M1 stacking rule | **Yes** — waits on Mert (storefront/checkout is otherwise frozen, see `docs/product-upload-foundation-plan.md` §Status; M7c-1 was the one prior exception) |
 | M4 | Panel + DB for `kind: 'code'` (the Kuponlar tab, both add-a-code modes) and pointing checkout's existing code lookup at the new tables instead of the retired `tr_discount_codes` | Yes, same as M3 |
 
-The old `TrOwnerCampaignsPage.tsx` / `discountCodes.ts` / `tr_discount_codes` stay as they are until M2–M4 replace them; nothing has been deleted yet.
+**M2 notes.** `TrOwnerCampaignsPage.tsx` was rewritten in place (same route, same export, so the İndirimler nav entry needed no change): a Kampanyalar list (fetches `tr_discount_campaigns` via the new API), a "Kampanya Ekle" modal (`TrCampaignTypeChooser`) offering Otomatik İndirim (→ the new editor) and a disabled İndirim Kodu card ("Yakında", M4), plus the pre-existing "Ürün indirimleri" (compare-at-price) section carried over unchanged — that's a separate, older feature (per-product sale price) that the campaigns model doesn't replace. The editor (`TrDiscountCampaignEditor.tsx`, at `/tr/panel/kampanyalar/yeni` and `/tr/panel/kampanyalar/[id]`, both full-screen editor routes) covers all six shared tabs for `kind: 'automatic'` only; `kind: 'code'` campaigns can't be created yet. The old coupon MVP (`discountCodes.ts`, `tr_discount_codes`) is now fully unreached from the panel (no remaining nav or UI touches it) but not deleted — left alone until M4 confirms nothing else needs it. Koşullar's "Belirli Ürünler" scope uses a new `TrCampaignProductPicker` modal + `useOwnerProducts` hook (product-level, not variant-level, since a campaign's scope is `productIds`).
 
 ## Shipping
 
@@ -194,8 +194,8 @@ Checkout iyzico flow: `src/app/api/tr/checkout/iyzico/{start,abandon,callback}/r
 | Settings | `src/components/tr/panel/TrOwnerSettingsPage.tsx` |
 | Checkout | `src/app/api/tr/checkout/route.ts`, `src/components/tr/commerce/TrCheckoutPageContent.tsx` |
 | Orders / inventory | `src/lib/tr/orders.ts`, `src/lib/tr/inventory.ts` |
-| Discount campaigns (new, M1 only) | `src/lib/tr/discounts/{types,campaignRules,codeRules}.ts`, `supabase/patch_discount_campaigns.sql` |
-| Discount codes (old MVP, still live until M2–M4 replace it) | `src/lib/tr/discountCodes.ts`, `TrOwnerCampaignsPage.tsx` |
+| Discount campaigns (M1 + M2) | `src/lib/tr/discounts/{types,campaignRules,codeRules}.ts`, `src/lib/tr/catalog/{discountCampaigns,discountCampaignApi}.ts`, `src/lib/tr/panel/campaignForm.ts`, `src/app/api/tr/owner/discount-campaigns/`, `src/components/tr/panel/TrOwnerCampaignsPage.tsx`, `discounts/{TrDiscountCampaignEditor,TrOwnerDiscountCampaignEditorPage,TrCampaignTypeChooser,TrCampaignProductPicker}.tsx`, `useOwnerProducts.ts`, `src/app/tr/panel/kampanyalar/`, `supabase/patch_discount_campaigns.sql` |
+| Discount codes (old MVP, DB only — unreached from the panel, kept until M4) | `src/lib/tr/discountCodes.ts` |
 | Shipping | `src/lib/tr/shipping/quoteShipping.ts`, `shippingCopy.ts`, `settings.ts` (fee rules); `registry.ts` (carrier integration) |
 | Payments | `src/lib/tr/payments/registry.ts` |
 

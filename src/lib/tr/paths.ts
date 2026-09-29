@@ -219,6 +219,14 @@ export function trPanelCampaignsPath(): string {
   return "/tr/panel/kampanyalar";
 }
 
+export function trPanelNewCampaignPath(): string {
+  return "/tr/panel/kampanyalar/yeni";
+}
+
+export function trPanelEditCampaignPath(campaignId: string): string {
+  return `/tr/panel/kampanyalar/${encodeURIComponent(campaignId)}`;
+}
+
 export function trPanelContentPath(): string {
   return "/tr/panel/icerik";
 }
