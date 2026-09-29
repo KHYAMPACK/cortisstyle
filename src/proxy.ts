@@ -4,9 +4,19 @@ import { PATHNAME_HEADER, BOUTIQUE_SLUG_HEADER } from "@/lib/introLoader";
 import { MAINTENANCE_PATH } from "@/lib/launchGates";
 import {
   isBoutiqueDomainPassthroughPath,
+  isCanonicalRedirectExemptPath,
+  lookupBoutiqueCustomDomainAtEdge,
+  parsePlatformBoutiquePath,
   resolveBoutiqueSlugFromHostAtEdge,
   rewriteBoutiqueDomainPath,
+  storesDomainFromEnv,
 } from "@/lib/tr/customDomain";
+import {
+  resolveCanonicalRedirect,
+  resolveStoreHostKind,
+  type StoreHostKind,
+  type StoreRedirectTarget,
+} from "@/lib/tr/seo/storeAddress";
 import {
   BOUTIQUE_WELL_KNOWN_ICON_PATHS,
   resolveHostFaviconPublicPath,
@@ -82,6 +92,76 @@ function rewriteWithPathname(
   });
 }
 
+/** A permanent redirect to a store's canonical host, preserving the query string. */
+function redirectResponse(
+  request: NextRequest,
+  target: StoreRedirectTarget,
+): NextResponse {
+  const url = request.nextUrl.clone();
+  url.protocol = "https:";
+  url.host = target.host;
+  url.port = "";
+  const qIndex = target.path.indexOf("?");
+  url.pathname = qIndex >= 0 ? target.path.slice(0, qIndex) : target.path;
+  url.search = qIndex >= 0 ? target.path.slice(qIndex) : "";
+  return NextResponse.redirect(url, 308);
+}
+
+/**
+ * Store URLs (docs/product-upload-foundation-plan.md): does this request belong on a
+ * different, canonical host — and if so, where? Handles all three stray variants: the
+ * platform's `/tr/<slug>/…` duplicate, a boutique's default subdomain once a custom
+ * domain is connected, and `www.` on a custom domain. Returns null (do nothing) for a
+ * path that never redirects (`isCanonicalRedirectExemptPath`), a host that isn't tied to
+ * any one boutique, or a boutique with nothing canonical to send it to yet.
+ */
+async function resolveProxyRedirect(
+  pathname: string,
+  search: string,
+  hostKind: StoreHostKind,
+  storesDomain: string | null,
+): Promise<StoreRedirectTarget | null | "not-found"> {
+  if (isCanonicalRedirectExemptPath(pathname)) return null;
+
+  if (hostKind.kind === "platform") {
+    const parsed = parsePlatformBoutiquePath(pathname);
+    if (!parsed) return null;
+    const customDomain = await lookupBoutiqueCustomDomainAtEdge(parsed.slug);
+    if (customDomain === undefined) return null; // not a real boutique slug; leave it alone
+    return resolveCanonicalRedirect({
+      hostKind,
+      cleanPath: parsed.cleanPath + search,
+      slug: parsed.slug,
+      customDomain,
+      storesDomain,
+    });
+  }
+
+  if (hostKind.kind === "subdomain") {
+    const customDomain = await lookupBoutiqueCustomDomainAtEdge(hostKind.slug);
+    // Shape matched <slug>.<storesDomain>, but no boutique has this slug.
+    if (customDomain === undefined) return "not-found";
+    return resolveCanonicalRedirect({
+      hostKind,
+      cleanPath: pathname + search,
+      slug: hostKind.slug,
+      customDomain,
+      storesDomain,
+    });
+  }
+
+  // custom-domain kind: only the www. variant can possibly redirect (to the apex).
+  if (!hostKind.hostWasWww) return null;
+  const customDomain = (await lookupBoutiqueCustomDomainAtEdge(hostKind.slug)) ?? null;
+  return resolveCanonicalRedirect({
+    hostKind,
+    cleanPath: pathname + search,
+    slug: hostKind.slug,
+    customDomain,
+    storesDomain,
+  });
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -92,12 +172,33 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL(MAINTENANCE_PATH, request.url));
   }
 
-  // White-label custom domains (e.g. example.com → /tr/lilabutik/…)
+  // White-label custom domains (e.g. example.com → /tr/lilabutik/…) and, once
+  // TR_STORES_DOMAIN is set, every boutique's default subdomain (<slug>.<that domain>).
   const host =
     request.headers.get("x-forwarded-host") ??
     request.headers.get("host") ??
     "";
-  const boutiqueSlug = await resolveBoutiqueSlugFromHostAtEdge(host);
+  const customDomainSlug = await resolveBoutiqueSlugFromHostAtEdge(host);
+  const storesDomain = storesDomainFromEnv();
+  const hostKind = resolveStoreHostKind({ host, storesDomain, customDomainSlug });
+
+  const redirect = await resolveProxyRedirect(
+    pathname,
+    request.nextUrl.search,
+    hostKind,
+    storesDomain,
+  );
+  if (redirect === "not-found") {
+    return new NextResponse("Not Found", { status: 404 });
+  }
+  if (redirect) {
+    return redirectResponse(request, redirect);
+  }
+
+  const boutiqueSlug =
+    hostKind.kind === "custom-domain" || hostKind.kind === "subdomain"
+      ? hostKind.slug
+      : null;
   if (boutiqueSlug && BOUTIQUE_WELL_KNOWN_ICON_PATHS.has(pathname)) {
     const iconPath = resolveHostFaviconPublicPath(boutiqueSlug);
     const url = request.nextUrl.clone();

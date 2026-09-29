@@ -64,7 +64,7 @@ export function subdomainSlugOf(
   return label;
 }
 
-function storesDomainFromEnv(): string | null {
+export function storesDomainFromEnv(): string | null {
   const raw = process.env.TR_STORES_DOMAIN?.trim().toLowerCase().replace(/^\.+/, "");
   return raw && raw.includes(".") ? raw : null;
 }
@@ -97,54 +97,88 @@ function parseEnvDomainMap(): Record<string, string> {
   }
 }
 
-async function fetchBoutiqueDomainMapFromDb(): Promise<Record<string, string>> {
+interface EdgeBoutiqueMap {
+  /** Host (bare or `www.`-prefixed) → slug, for boutiques with a connected custom domain. */
+  hostToSlug: Record<string, string>;
+  /** Every known boutique's slug → its custom domain, or null when it has none. A slug
+   *  absent from this object is not a real boutique at all (see `lookupBoutiqueCustomDomainAtEdge`). */
+  bySlug: Record<string, string | null>;
+}
+
+const EMPTY_EDGE_MAP: EdgeBoutiqueMap = { hostToSlug: {}, bySlug: {} };
+
+async function fetchEdgeBoutiqueMapFromDb(): Promise<EdgeBoutiqueMap> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !anonKey) return {};
+  if (!url || !anonKey) return EMPTY_EDGE_MAP;
 
   try {
+    // Every boutique, not just ones with a custom domain — the subdomain-existence check
+    // and the platform-path canonical-redirect decision both need to know a slug is real
+    // even when it has no custom domain yet.
     const response = await fetch(
-      `${url}/rest/v1/tr_boutiques_public?select=slug,custom_domain&custom_domain=not.is.null`,
+      `${url}/rest/v1/tr_boutiques_public?select=slug,custom_domain`,
       {
         headers: { apikey: anonKey, authorization: `Bearer ${anonKey}` },
         cache: "no-store",
       },
     );
-    if (!response.ok) return {};
+    if (!response.ok) return EMPTY_EDGE_MAP;
     const rows = (await response.json()) as Array<{
       slug: string;
       custom_domain: string | null;
     }>;
-    const out: Record<string, string> = {};
+    const hostToSlug: Record<string, string> = {};
+    const bySlug: Record<string, string | null> = {};
     for (const row of rows) {
-      const host = row.custom_domain
-        ?.trim()
-        .toLowerCase()
-        .replace(/^www\./, "");
       const slug = row.slug?.trim().toLowerCase();
-      if (!host || !slug) continue;
-      out[host] = slug;
-      out[`www.${host}`] = slug;
+      if (!slug) continue;
+      const host = row.custom_domain?.trim().toLowerCase().replace(/^www\./, "") || null;
+      bySlug[slug] = host;
+      if (host) {
+        hostToSlug[host] = slug;
+        hostToSlug[`www.${host}`] = slug;
+      }
     }
-    return out;
+    return { hostToSlug, bySlug };
   } catch {
-    return {};
+    return EMPTY_EDGE_MAP;
   }
 }
 
-let edgeCachedMap: Record<string, string> = {};
+let edgeCachedMap: EdgeBoutiqueMap = EMPTY_EDGE_MAP;
 let edgeCachedAt = 0;
 let edgeRefreshInFlight: Promise<void> | null = null;
 
-async function refreshEdgeDomainMap(): Promise<void> {
-  const dbMap = await fetchBoutiqueDomainMapFromDb();
+async function refreshEdgeBoutiqueMap(): Promise<void> {
+  const dbMap = await fetchEdgeBoutiqueMapFromDb();
   // Keep serving the last-known-good map on a failed/empty DB fetch rather
   // than wiping a working cache — a transient Supabase blip shouldn't take
   // every white-label domain down until the next refresh window.
-  if (Object.keys(dbMap).length > 0 || Object.keys(edgeCachedMap).length === 0) {
-    edgeCachedMap = { ...parseEnvDomainMap(), ...dbMap };
+  const hasRows = Object.keys(dbMap.bySlug).length > 0;
+  if (hasRows || Object.keys(edgeCachedMap.bySlug).length === 0) {
+    const envMap = parseEnvDomainMap();
+    const bySlug = { ...dbMap.bySlug };
+    for (const [host, slug] of Object.entries(envMap)) {
+      // The env override is for a host not yet saved to the DB row (testing DNS before
+      // updating the column) — it wins for a boutique whose DB value is still empty.
+      if (bySlug[slug] == null) bySlug[slug] = host;
+    }
+    edgeCachedMap = { hostToSlug: { ...envMap, ...dbMap.hostToSlug }, bySlug };
   }
   edgeCachedAt = Date.now();
+}
+
+async function ensureFreshEdgeBoutiqueMap(): Promise<void> {
+  const isStale = Date.now() - edgeCachedAt > EDGE_DOMAIN_MAP_TTL_MS;
+  if (isStale && !edgeRefreshInFlight) {
+    edgeRefreshInFlight = refreshEdgeBoutiqueMap().finally(() => {
+      edgeRefreshInFlight = null;
+    });
+  }
+  if (edgeCachedAt === 0 && edgeRefreshInFlight) {
+    await edgeRefreshInFlight;
+  }
 }
 
 /**
@@ -156,16 +190,24 @@ async function refreshEdgeDomainMap(): Promise<void> {
 export async function resolveBoutiqueSlugFromHostAtEdge(
   host: string,
 ): Promise<string | null> {
-  const isStale = Date.now() - edgeCachedAt > EDGE_DOMAIN_MAP_TTL_MS;
-  if (isStale && !edgeRefreshInFlight) {
-    edgeRefreshInFlight = refreshEdgeDomainMap().finally(() => {
-      edgeRefreshInFlight = null;
-    });
-  }
-  if (edgeCachedAt === 0 && edgeRefreshInFlight) {
-    await edgeRefreshInFlight;
-  }
-  return edgeCachedMap[normalizeBoutiqueHost(host)] ?? null;
+  await ensureFreshEdgeBoutiqueMap();
+  return edgeCachedMap.hostToSlug[normalizeBoutiqueHost(host)] ?? null;
+}
+
+/**
+ * A known boutique's custom domain (or null when it has none), or `undefined` when no
+ * boutique has this slug at all. Store URLs: used to 404 an unknown subdomain rather than
+ * falling through to platform routing, and to decide a platform-path or subdomain
+ * request's canonical redirect.
+ */
+export async function lookupBoutiqueCustomDomainAtEdge(
+  slug: string,
+): Promise<string | null | undefined> {
+  await ensureFreshEdgeBoutiqueMap();
+  const normalized = slug.trim().toLowerCase();
+  return Object.prototype.hasOwnProperty.call(edgeCachedMap.bySlug, normalized)
+    ? edgeCachedMap.bySlug[normalized]
+    : undefined;
 }
 
 /**
@@ -268,4 +310,46 @@ export function rewriteBoutiqueDomainPath(
 
   // Fallback: nest under boutique
   return `${base}${pathname.startsWith("/") ? pathname : `/${pathname}`}`;
+}
+
+/**
+ * Paths that never redirect to a boutique's canonical host, on any host — framework
+ * internals, shared auth, ACME challenges, and the owner panel (reachable on a boutique's
+ * own host as well as the platform, by design — see `rewriteBoutiqueDomainPath`). Unlike
+ * `isBoutiqueDomainPassthroughPath`, this does *not* cover origin SEO files or static
+ * assets: those redirect like any other boutique path, pointing crawlers at the real
+ * canonical host once one exists.
+ */
+export function isCanonicalRedirectExemptPath(pathname: string): boolean {
+  return (
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/api/") ||
+    pathname.startsWith("/auth/") ||
+    pathname.startsWith("/.well-known/") ||
+    pathname === "/tr/panel" ||
+    pathname.startsWith("/tr/panel/")
+  );
+}
+
+/**
+ * `/tr/<slug>` or `/tr/<slug>/…` on the platform host → the slug and the clean-path
+ * equivalent (`/` for the bare boutique path). Null for anything else (the marketing
+ * site, an unrelated path, or a malformed one) — nothing to redirect.
+ *
+ * Shape-level only, like `subdomainSlugOf`: it doesn't know "panel" or a nonexistent slug
+ * are special — call `isCanonicalRedirectExemptPath` first, and check the slug exists,
+ * before treating the result as a real boutique to redirect.
+ */
+export function parsePlatformBoutiquePath(
+  pathname: string,
+): { slug: string; cleanPath: string } | null {
+  const match = /^\/tr\/([^/]+)(\/.*)?$/.exec(pathname);
+  if (!match) return null;
+  let slug: string;
+  try {
+    slug = decodeURIComponent(match[1]!);
+  } catch {
+    return null;
+  }
+  return { slug, cleanPath: match[2] || "/" };
 }

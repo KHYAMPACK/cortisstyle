@@ -174,7 +174,9 @@ export function canonicalStoreHost(input: {
   storesDomain: string | null;
 }): string | null {
   const domain = input.customDomain?.trim().toLowerCase().replace(/^www\./, "");
-  if (domain) return domain;
+  // `.includes(".")` guards against a malformed value ("localhost", a typo) reaching a
+  // redirect target — a real domain always has a dot.
+  if (domain && domain.includes(".")) return domain;
   if (input.storesDomain) return `${input.slug}.${input.storesDomain}`;
   return null;
 }

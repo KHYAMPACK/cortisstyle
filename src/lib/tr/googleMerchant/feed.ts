@@ -4,8 +4,10 @@
  */
 
 import { resolveBoutiqueBrandLabel } from "@/lib/tr/boutiqueBrand";
+import { storesDomainFromEnv } from "@/lib/tr/customDomain";
 import { getProductCoverImageFor, getStorefrontGalleryImages } from "@/lib/tr/productImages";
 import { trBoutiquePath } from "@/lib/tr/paths";
+import { canonicalStoreHost } from "@/lib/tr/seo/storeAddress";
 import {
   absoluteUrl,
   boutiqueCustomerPath,
@@ -83,20 +85,21 @@ function mapCondition(
 }
 
 /**
- * Public storefront origin for product `link`s (prefer boutique custom domain).
- * Falls back to platform `/tr/{slug}` when no domain is mapped.
+ * Public storefront origin for product `link`s: the boutique's canonical host (its
+ * custom domain, else its default subdomain once `TR_STORES_DOMAIN` is set) so Google
+ * always sees the real address even when the feed itself is fetched via the platform
+ * mirror. Falls back to platform `/tr/{slug}` when neither exists yet.
  */
 export function resolveMerchantStoreOrigin(
   boutique: Pick<TrBoutiquePublic, "slug" | "customDomain">,
   requestOrigin: string,
 ): { origin: string; mode: "boutique-domain" | "platform" } {
-  const custom = boutique.customDomain
-    ?.trim()
-    .toLowerCase()
-    .replace(/^www\./, "");
-  if (custom && custom.includes(".")) {
-    return { origin: `https://${custom}`, mode: "boutique-domain" };
-  }
+  const host = canonicalStoreHost({
+    slug: boutique.slug,
+    customDomain: boutique.customDomain,
+    storesDomain: storesDomainFromEnv(),
+  });
+  if (host) return { origin: `https://${host}`, mode: "boutique-domain" };
   return { origin: requestOrigin, mode: "platform" };
 }
 

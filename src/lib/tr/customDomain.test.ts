@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import { after, describe, it } from "node:test";
 import {
+  isCanonicalRedirectExemptPath,
   normalizeBoutiqueHost,
+  parsePlatformBoutiquePath,
   resolveSlugFromStoresSubdomain,
   subdomainSlugOf,
 } from "./customDomain";
@@ -80,5 +82,75 @@ describe("resolveSlugFromStoresSubdomain", () => {
 
     process.env.TR_STORES_DOMAIN = "   ";
     assert.equal(resolveSlugFromStoresSubdomain("lilabutik.corti.store"), null);
+  });
+});
+
+describe("isCanonicalRedirectExemptPath", () => {
+  it("exempts framework internals, auth, well-known and the owner panel", () => {
+    for (const pathname of [
+      "/_next/static/chunk.js",
+      "/api/tr/owner/orders",
+      "/auth/callback",
+      "/.well-known/apple-app-site-association",
+      "/tr/panel",
+      "/tr/panel/siparisler",
+    ]) {
+      assert.equal(isCanonicalRedirectExemptPath(pathname), true, pathname);
+    }
+  });
+
+  it("does not exempt origin SEO files or static assets — those redirect too", () => {
+    for (const pathname of ["/sitemap.xml", "/robots.txt", "/favicon.ico", "/urun/a"]) {
+      assert.equal(isCanonicalRedirectExemptPath(pathname), false, pathname);
+    }
+  });
+
+  it("does not exempt a boutique's own /tr/<slug> path, only /tr/panel", () => {
+    assert.equal(isCanonicalRedirectExemptPath("/tr/lilabutik"), false);
+    assert.equal(isCanonicalRedirectExemptPath("/tr/panelli-butik"), false);
+  });
+});
+
+describe("parsePlatformBoutiquePath", () => {
+  it("reads the slug and clean path off /tr/<slug>/…", () => {
+    assert.deepEqual(parsePlatformBoutiquePath("/tr/deneme-butik/urun/a"), {
+      slug: "deneme-butik",
+      cleanPath: "/urun/a",
+    });
+  });
+
+  it("is the boutique home (clean path '/') for the bare /tr/<slug>", () => {
+    assert.deepEqual(parsePlatformBoutiquePath("/tr/deneme-butik"), {
+      slug: "deneme-butik",
+      cleanPath: "/",
+    });
+    assert.deepEqual(parsePlatformBoutiquePath("/tr/deneme-butik/"), {
+      slug: "deneme-butik",
+      cleanPath: "/",
+    });
+  });
+
+  it("decodes a percent-encoded slug", () => {
+    assert.deepEqual(parsePlatformBoutiquePath("/tr/deneme%20butik"), {
+      slug: "deneme butik",
+      cleanPath: "/",
+    });
+  });
+
+  it("is null for anything that isn't /tr/<something>", () => {
+    for (const pathname of ["/", "/privacy", "/tr", "/tr/", "/urun/a"]) {
+      assert.equal(parsePlatformBoutiquePath(pathname), null, pathname);
+    }
+  });
+
+  it("is null (not thrown) on a malformed percent-encoding", () => {
+    assert.equal(parsePlatformBoutiquePath("/tr/%zz"), null);
+  });
+
+  it("does not itself treat /tr/panel as special — the caller checks that first", () => {
+    assert.deepEqual(parsePlatformBoutiquePath("/tr/panel/siparisler"), {
+      slug: "panel",
+      cleanPath: "/siparisler",
+    });
   });
 });
