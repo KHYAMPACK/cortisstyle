@@ -2,7 +2,7 @@ import { createOrderAdmin } from "@/lib/tr/orders";
 import { getPublicBoutiqueBySlug } from "@/lib/tr/boutiques";
 import {
   recordCampaignUsageIfNeeded,
-  recordDiscountUsageIfNeeded,
+  recordCodeUsageIfNeeded,
   resolveCheckoutFromCatalog,
   type CheckoutClientItem,
 } from "@/lib/tr/checkoutValidate";
@@ -244,7 +244,7 @@ export async function POST(request: Request) {
     // Card capture: burn the coupon/campaigns only after iyzico SUCCESS.
     if (!wantsIyzico) {
       try {
-        await recordDiscountUsageIfNeeded(checkout.discountRow);
+        await recordCodeUsageIfNeeded(checkout.appliedCode);
       } catch (couponError) {
         console.error("[tr/checkout] coupon usage increment failed:", couponError);
       }

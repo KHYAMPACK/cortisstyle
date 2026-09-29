@@ -18,6 +18,7 @@ import {
 } from "@/components/tr/panel/panelUi";
 import { useOwnerProducts } from "@/components/tr/panel/useOwnerProducts";
 import { TrCampaignProductPicker } from "@/components/tr/panel/discounts/TrCampaignProductPicker";
+import { TrCampaignCouponsCard } from "@/components/tr/panel/discounts/TrCampaignCouponsCard";
 import {
   createOwnerDiscountCampaign,
   deleteOwnerDiscountCampaign,
@@ -31,14 +32,27 @@ import {
   type CampaignFormState,
 } from "@/lib/tr/panel/campaignForm";
 import { CAMPAIGN_LIMITS } from "@/lib/tr/discounts/campaignRules";
-import type { TrDiscountCampaign, TrDiscountType } from "@/lib/tr/discounts/types";
+import type {
+  TrDiscountCampaign,
+  TrDiscountKind,
+  TrDiscountType,
+} from "@/lib/tr/discounts/types";
 import { toast } from "@/lib/tr/panel/toast";
 
-const TABS = [
+const AUTOMATIC_TABS = [
   { id: "editor-temel", label: "Temel Bilgiler" },
   { id: "editor-kosullar", label: "Koşullar" },
   { id: "editor-gereksinimler", label: "Gereksinimler" },
   { id: "editor-limitler", label: "Kullanım Limitleri" },
+  { id: "editor-ayarlar", label: "Ayarlar" },
+  { id: "editor-tarihler", label: "Aktif Tarihler" },
+] as const;
+
+const CODE_TABS = [
+  { id: "editor-temel", label: "Temel Bilgiler" },
+  { id: "editor-kosullar", label: "Koşullar" },
+  { id: "editor-gereksinimler", label: "Gereksinimler" },
+  { id: "editor-kuponlar", label: "Kuponlar" },
   { id: "editor-ayarlar", label: "Ayarlar" },
   { id: "editor-tarihler", label: "Aktif Tarihler" },
 ] as const;
@@ -50,13 +64,16 @@ const DISCOUNT_TYPE_OPTIONS: { id: TrDiscountType; label: string }[] = [
 ];
 
 /**
- * The automatic-campaign editor (create and edit): Temel Bilgiler, Koşullar,
- * Gereksinimler, Kullanım Limitleri, Ayarlar, Aktif Tarihler. `kind: 'code'` and its
- * Kuponlar tab land in M4. Manual save with an exit guard, like every panel form.
+ * The campaign editor (create and edit), for both kinds: Temel Bilgiler, Koşullar,
+ * Gereksinimler, Ayarlar, Aktif Tarihler are shared; the fifth tab is Kullanım
+ * Limitleri for `kind: 'automatic'` or Kuponlar for `kind: 'code'` (which needs the
+ * campaign saved first — codes belong to a campaign id). Manual save with an exit
+ * guard for the shared fields; codes save themselves instantly (`TrCampaignCouponsCard`).
  */
 export function TrDiscountCampaignEditor({
   boutiqueId,
   campaign,
+  initialKind = "automatic",
   onCreated,
   onSaved,
   onDeleted,
@@ -64,12 +81,14 @@ export function TrDiscountCampaignEditor({
   boutiqueId: string;
   /** Absent = creating a new campaign. */
   campaign?: TrDiscountCampaign;
+  /** Which kind a new campaign starts as; ignored once `campaign` is set. */
+  initialKind?: TrDiscountKind;
   onCreated?: (campaign: TrDiscountCampaign) => void;
   onSaved?: (campaign: TrDiscountCampaign) => void;
   onDeleted?: () => void;
 }) {
   const [form, setForm] = useState<CampaignFormState>(() =>
-    campaign ? campaignFormFromCampaign(campaign) : emptyCampaignForm(),
+    campaign ? campaignFormFromCampaign(campaign) : emptyCampaignForm(initialKind),
   );
   const [baseline, setBaseline] = useState(() => JSON.stringify(form));
   const [saving, setSaving] = useState(false);
@@ -152,7 +171,7 @@ export function TrDiscountCampaignEditor({
         onSave={() => void save()}
       />
 
-      <TrPanelEditorTabs tabs={TABS} />
+      <TrPanelEditorTabs tabs={form.kind === "code" ? CODE_TABS : AUTOMATIC_TABS} />
 
       <div className="space-y-5">
         <TrPanelEditorCard
@@ -354,40 +373,56 @@ export function TrDiscountCampaignEditor({
           </p>
         </TrPanelEditorCard>
 
-        <TrPanelEditorCard
-          id="editor-limitler"
-          title="Kullanım Limitleri"
-          hint="Bu kampanya toplamda veya müşteri başına kaç kez kullanılabilir."
-        >
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="block space-y-2">
-              <span className={panelLabelClass}>Toplam kullanım limiti</span>
-              <input
-                value={form.usageLimitTotal}
-                onChange={(event) =>
-                  change({ usageLimitTotal: event.target.value.replace(/[^\d]/g, "") })
-                }
-                inputMode="numeric"
-                placeholder="Sınırsız"
-                className={panelFieldClass}
-              />
-            </label>
-            <label className="block space-y-2">
-              <span className={panelLabelClass}>Müşteri başına kullanım limiti</span>
-              <input
-                value={form.usageLimitPerCustomer}
-                onChange={(event) =>
-                  change({
-                    usageLimitPerCustomer: event.target.value.replace(/[^\d]/g, ""),
-                  })
-                }
-                inputMode="numeric"
-                placeholder="Sınırsız"
-                className={panelFieldClass}
-              />
-            </label>
-          </div>
-        </TrPanelEditorCard>
+        {form.kind === "code" ? (
+          <TrPanelEditorCard
+            id="editor-kuponlar"
+            title="Kuponlar"
+            hint="Bu kampanyanın kullanılabilir kodları; her birinin kendi kullanım limiti olur."
+          >
+            {campaign ? (
+              <TrCampaignCouponsCard campaignId={campaign.id} />
+            ) : (
+              <p className={panelHintClass}>
+                Kuponları eklemek için önce kampanyayı kaydedin.
+              </p>
+            )}
+          </TrPanelEditorCard>
+        ) : (
+          <TrPanelEditorCard
+            id="editor-limitler"
+            title="Kullanım Limitleri"
+            hint="Bu kampanya toplamda veya müşteri başına kaç kez kullanılabilir."
+          >
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block space-y-2">
+                <span className={panelLabelClass}>Toplam kullanım limiti</span>
+                <input
+                  value={form.usageLimitTotal}
+                  onChange={(event) =>
+                    change({ usageLimitTotal: event.target.value.replace(/[^\d]/g, "") })
+                  }
+                  inputMode="numeric"
+                  placeholder="Sınırsız"
+                  className={panelFieldClass}
+                />
+              </label>
+              <label className="block space-y-2">
+                <span className={panelLabelClass}>Müşteri başına kullanım limiti</span>
+                <input
+                  value={form.usageLimitPerCustomer}
+                  onChange={(event) =>
+                    change({
+                      usageLimitPerCustomer: event.target.value.replace(/[^\d]/g, ""),
+                    })
+                  }
+                  inputMode="numeric"
+                  placeholder="Sınırsız"
+                  className={panelFieldClass}
+                />
+              </label>
+            </div>
+          </TrPanelEditorCard>
+        )}
 
         <TrPanelEditorCard id="editor-ayarlar" title="Ayarlar">
           <label className="flex items-center gap-3 text-[14px] text-neutral-800">

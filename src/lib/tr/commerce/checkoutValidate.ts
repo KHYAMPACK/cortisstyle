@@ -1,17 +1,24 @@
 import {
-  getDiscountCodeForBoutiqueAdmin,
-  incrementDiscountCodeUsageAdmin,
-} from "@/lib/tr/discountCodes";
-import {
   countCustomerCampaignUses,
+  getCampaign,
   incrementCampaignUsage,
   listAutomaticCampaigns,
 } from "@/lib/tr/catalog/discountCampaigns";
 import {
+  countCustomerCodeUses,
+  findCampaignCodeByCode,
+  incrementCampaignCodeUsage,
+} from "@/lib/tr/catalog/discountCampaignCodes";
+import {
+  evaluateCodeRedemption,
   resolveAutomaticDiscount,
   type DiscountCartContext,
 } from "@/lib/tr/discounts/campaignRules";
-import type { TrDiscountCampaign } from "@/lib/tr/discounts/types";
+import { normalizeCode } from "@/lib/tr/discounts/codeRules";
+import type {
+  TrDiscountCampaign,
+  TrDiscountCampaignCode,
+} from "@/lib/tr/discounts/types";
 import { getBoutiqueByIdAdmin } from "@/lib/tr/boutiques";
 import { isCustomArtCatalogProfile } from "@/lib/tr/catalogProfiles";
 import {
@@ -30,11 +37,7 @@ import { listProductsByIdsAdmin } from "@/lib/tr/products";
 import { isProductSizeSellable } from "@/lib/tr/sizeStocks";
 import type { TrProductVariant } from "@/lib/tr/variants/types";
 import { resolveVariantSale } from "@/lib/tr/variants/variantSale";
-import type {
-  TrDiscountCode,
-  TrOrderItemCustomization,
-  TrProduct,
-} from "@/types/tr-marketplace";
+import type { TrOrderItemCustomization, TrProduct } from "@/types/tr-marketplace";
 
 export type CheckoutClientItem = {
   productId: string;
@@ -67,15 +70,16 @@ export type ResolvedCheckout = {
   lines: ResolvedCheckoutLine[];
   subtotalKurus: number;
   discountCode: string | null;
-  /** Combined total off: the code's discount plus every matching automatic campaign's. */
+  /** Combined total off: the redeemed code's discount plus every matching automatic campaign's. */
   discountKurus: number;
   totalKurus: number;
-  discountRow: TrDiscountCode | null;
+  /** The `kind: 'code'` campaign's code that was redeemed, if any. */
+  appliedCode: TrDiscountCampaignCode | null;
   /** Automatic campaigns that applied (M1's stacking rule already picked these). */
   appliedCampaigns: TrDiscountCampaign[];
-  /** A label for the automatic-campaign part of the discount, joined when more than one applied. */
+  /** A label for the discount, joined when more than one campaign/code applied. */
   discountTitle: string | null;
-  /** An applied campaign was `discount_type: 'free_shipping'`. */
+  /** A code or an automatic campaign was `discount_type: 'free_shipping'`. */
   freeShipping: boolean;
   /** When true, skip inventory decrement for all lines. */
   skipInventoryDecrement: boolean;
@@ -253,23 +257,6 @@ function resolveLineFromProduct(
   };
 }
 
-export function computeDiscountKurus(
-  subtotalKurus: number,
-  discount: TrDiscountCode,
-): number {
-  if (subtotalKurus <= 0) return 0;
-  if (discount.percentOff != null) {
-    return Math.min(
-      subtotalKurus,
-      Math.floor((subtotalKurus * discount.percentOff) / 100),
-    );
-  }
-  if (discount.amountOffKurus != null) {
-    return Math.min(subtotalKurus, discount.amountOffKurus);
-  }
-  return 0;
-}
-
 /**
  * Re-load products from DB; ignore client title/price.
  * Optional `expectedBoutiqueId` rejects any foreign boutique lines.
@@ -368,49 +355,67 @@ export async function resolveCheckoutFromCatalog(input: {
     0,
   );
 
-  const codeRaw = input.discountCode?.trim().toUpperCase() ?? "";
-  let discountRow: TrDiscountCode | null = null;
-  let discountKurus = 0;
+  const cart: DiscountCartContext = {
+    lines: lines.map((line) => {
+      const product = byId.get(line.productId);
+      return {
+        productId: line.productId,
+        priceKurus: line.priceKurus,
+        quantity: line.quantity,
+        onSale: Boolean(
+          product?.compareAtPriceKurus != null &&
+            product.compareAtPriceKurus > product.priceKurus,
+        ),
+      };
+    }),
+  };
+
+  const checkoutBoutiqueId = lines[0]?.boutiqueId;
+
+  // A typed discount code: a `kind: 'code'` campaign's own Kuponlar.
+  const codeRaw = input.discountCode?.trim() ?? "";
+  let appliedCode: TrDiscountCampaignCode | null = null;
+  let codeCampaignTitle: string | null = null;
+  let codeDiscountKurus = 0;
+  let codeFreeShipping = false;
 
   if (codeRaw) {
-    const boutiqueId = lines[0]?.boutiqueId;
-    if (!boutiqueId) {
+    if (!checkoutBoutiqueId) {
       return { ok: false, error: "Sepet boş.", status: 400 };
     }
-    discountRow = await getDiscountCodeForBoutiqueAdmin(boutiqueId, codeRaw);
-    if (!discountRow || !discountRow.active) {
+    const codeRow = await findCampaignCodeByCode(
+      checkoutBoutiqueId,
+      normalizeCode(codeRaw),
+    );
+    const codeCampaign = codeRow ? await getCampaign(codeRow.campaignId) : null;
+    if (!codeRow || !codeCampaign) {
       return { ok: false, error: "Kupon kodu geçersiz.", status: 400 };
     }
-    if (
-      discountRow.usageLimit != null &&
-      discountRow.usedCount >= discountRow.usageLimit
-    ) {
-      return { ok: false, error: "Kupon kullanım limiti doldu.", status: 400 };
+    const priorUses = input.customerEmail
+      ? await countCustomerCodeUses(codeRow.code, input.customerEmail)
+      : 0;
+    const redemption = evaluateCodeRedemption({
+      campaign: codeCampaign,
+      code: codeRow,
+      cart,
+      customerPriorUses: priorUses,
+    });
+    if (!redemption.ok) {
+      return { ok: false, error: redemption.error, status: 400 };
     }
-    discountKurus = computeDiscountKurus(subtotalKurus, discountRow);
+    appliedCode = codeRow;
+    codeCampaignTitle = codeCampaign.title;
+    codeDiscountKurus = redemption.discountKurus;
+    codeFreeShipping = redemption.freeShipping;
   }
 
+  // Automatic campaigns: apply themselves, no code needed.
   let appliedCampaigns: TrDiscountCampaign[] = [];
   let campaignDiscountKurus = 0;
-  let freeShipping = false;
-  const campaignBoutiqueId = lines[0]?.boutiqueId;
-  if (campaignBoutiqueId) {
-    const automatic = await listAutomaticCampaigns(campaignBoutiqueId);
+  let automaticFreeShipping = false;
+  if (checkoutBoutiqueId) {
+    const automatic = await listAutomaticCampaigns(checkoutBoutiqueId);
     if (automatic.length > 0) {
-      const cart: DiscountCartContext = {
-        lines: lines.map((line) => {
-          const product = byId.get(line.productId);
-          return {
-            productId: line.productId,
-            priceKurus: line.priceKurus,
-            quantity: line.quantity,
-            onSale: Boolean(
-              product?.compareAtPriceKurus != null &&
-                product.compareAtPriceKurus > product.priceKurus,
-            ),
-          };
-        }),
-      };
       const eligible = await excludeCampaignsAtCustomerLimit(
         automatic,
         input.customerEmail ?? null,
@@ -418,18 +423,19 @@ export async function resolveCheckoutFromCatalog(input: {
       const resolved = resolveAutomaticDiscount(eligible, cart);
       appliedCampaigns = resolved.campaigns;
       campaignDiscountKurus = resolved.discountKurus;
-      freeShipping = resolved.freeShipping;
+      automaticFreeShipping = resolved.freeShipping;
     }
   }
 
   const totalDiscountKurus = Math.min(
     subtotalKurus,
-    discountKurus + campaignDiscountKurus,
+    campaignDiscountKurus + codeDiscountKurus,
   );
-  const discountTitle =
-    appliedCampaigns.length > 0
-      ? appliedCampaigns.map((campaign) => campaign.title).join(", ")
-      : null;
+  const discountTitles = [
+    ...appliedCampaigns.map((campaign) => campaign.title),
+    ...(codeCampaignTitle ? [codeCampaignTitle] : []),
+  ];
+  const discountTitle = discountTitles.length > 0 ? discountTitles.join(", ") : null;
 
   const skipInventoryDecrement = products.every((product) =>
     isMadeToOrderProduct(product.features),
@@ -440,26 +446,24 @@ export async function resolveCheckoutFromCatalog(input: {
     checkout: {
       lines,
       subtotalKurus,
-      discountCode: discountRow?.code ?? null,
+      discountCode: appliedCode?.code ?? null,
       discountKurus: totalDiscountKurus,
       totalKurus: Math.max(0, subtotalKurus - totalDiscountKurus),
-      discountRow,
+      appliedCode,
       appliedCampaigns,
       discountTitle,
-      freeShipping,
+      freeShipping: automaticFreeShipping || codeFreeShipping,
       skipInventoryDecrement,
     },
   };
 }
 
-export async function recordDiscountUsageIfNeeded(
-  discountRow: TrDiscountCode | null,
+/** Burns one use of a redeemed code's own Toplam kullanım limiti. */
+export async function recordCodeUsageIfNeeded(
+  appliedCode: TrDiscountCampaignCode | null,
 ): Promise<void> {
-  if (!discountRow) return;
-  const ok = await incrementDiscountCodeUsageAdmin(discountRow.id);
-  if (!ok) {
-    throw new Error("Kupon kullanım limiti doldu.");
-  }
+  if (!appliedCode) return;
+  await incrementCampaignCodeUsage(appliedCode.id);
 }
 
 /** Burns one use of each applied automatic campaign's Toplam kullanım limiti. */

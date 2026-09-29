@@ -23,7 +23,10 @@ import type {
   TrCategoryMode,
   TrProductCategories,
 } from "@/lib/tr/categories/types";
-import type { TrDiscountCampaign } from "@/lib/tr/discounts/types";
+import type {
+  TrDiscountCampaign,
+  TrDiscountCampaignCode,
+} from "@/lib/tr/discounts/types";
 import {
   EMPTY_PRODUCT_VARIANTS,
   type TrProductVariant,
@@ -508,6 +511,64 @@ export async function deleteOwnerDiscountCampaign(campaignId: string): Promise<v
   );
   await readApiResponse<{ ok?: boolean }>(response, "Kampanya silinemedi.");
   invalidateDiscountCampaigns();
+}
+
+/** A `kind: 'code'` campaign's Kuponlar tab: its codes, oldest first. */
+export async function fetchOwnerCampaignCodes(
+  campaignId: string,
+): Promise<TrDiscountCampaignCode[]> {
+  const response = await ownerFetch(
+    `/api/tr/owner/discount-campaigns/${encodeURIComponent(campaignId)}/codes`,
+  );
+  const data = await readApiResponse<{ codes?: TrDiscountCampaignCode[] }>(
+    response,
+    "Kuponlar yüklenemedi.",
+  );
+  return data.codes ?? [];
+}
+
+/** "Özel Kupon": one code. `body` is `readCustomCodeBody`'s shape plus `mode: 'custom'`. */
+export async function addOwnerCampaignCode(
+  campaignId: string,
+  body: Record<string, unknown>,
+): Promise<TrDiscountCampaignCode> {
+  const response = await ownerFetch(
+    `/api/tr/owner/discount-campaigns/${encodeURIComponent(campaignId)}/codes`,
+    { method: "POST", body: JSON.stringify({ mode: "custom", ...body }) },
+  );
+  const data = await readApiResponse<{ code?: TrDiscountCampaignCode }>(
+    response,
+    "Kupon oluşturulamadı.",
+  );
+  if (!data.code) throw new Error("Kupon oluşturulamadı.");
+  return data.code;
+}
+
+/** "Otomatik Kod Üret": a prefixed batch. `body` is `readGenerateCodesBody`'s shape. */
+export async function generateOwnerCampaignCodes(
+  campaignId: string,
+  body: Record<string, unknown>,
+): Promise<TrDiscountCampaignCode[]> {
+  const response = await ownerFetch(
+    `/api/tr/owner/discount-campaigns/${encodeURIComponent(campaignId)}/codes`,
+    { method: "POST", body: JSON.stringify({ mode: "generate", ...body }) },
+  );
+  const data = await readApiResponse<{ codes?: TrDiscountCampaignCode[] }>(
+    response,
+    "Kupon kodları oluşturulamadı.",
+  );
+  return data.codes ?? [];
+}
+
+export async function deleteOwnerCampaignCode(
+  campaignId: string,
+  codeId: string,
+): Promise<void> {
+  const response = await ownerFetch(
+    `/api/tr/owner/discount-campaigns/${encodeURIComponent(campaignId)}/codes/${encodeURIComponent(codeId)}`,
+    { method: "DELETE" },
+  );
+  await readApiResponse<{ ok?: boolean }>(response, "Kupon silinemedi.");
 }
 
 /** The boutique's variant types, and how many saved sizes / colours could be imported. */

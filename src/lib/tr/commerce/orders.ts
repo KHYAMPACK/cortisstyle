@@ -80,7 +80,9 @@ export async function createOrderAdmin(
     0,
     Math.min(subtotalKurus, Math.floor(input.discountKurus ?? 0)),
   );
-  const discountCode = input.discountCode?.trim().toUpperCase() || null;
+  // Stored exactly as resolved: kind:'code' campaign codes are lowercase-normalized
+  // (codeRules.ts's normalizeCode), unlike the old tr_discount_codes' uppercase codes.
+  const discountCode = input.discountCode?.trim() || null;
   const shippingFeeKurus = Math.max(0, Math.floor(input.shippingFeeKurus ?? 0));
   const totalKurus = Math.max(0, subtotalKurus - discountKurus + shippingFeeKurus);
 

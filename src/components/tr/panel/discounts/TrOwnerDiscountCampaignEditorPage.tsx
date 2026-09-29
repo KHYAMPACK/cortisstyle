@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
 import { TrDiscountCampaignEditor } from "@/components/tr/panel/discounts/TrDiscountCampaignEditor";
@@ -18,6 +18,8 @@ export function TrOwnerDiscountCampaignEditorPage({
   campaignId?: string;
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialKind = searchParams.get("kind") === "code" ? "code" : "automatic";
   const [state, setState] = useState<{
     id: string;
     campaign: TrDiscountCampaign | null;
@@ -53,7 +55,13 @@ export function TrOwnerDiscountCampaignEditorPage({
         <TrPanelEditor
           backHref={trPanelCampaignsPath()}
           parentLabel="Kampanyalar"
-          title={campaignId ? "Kampanyayı düzenle" : "Kampanya ekle"}
+          title={
+            campaignId
+              ? "Kampanyayı düzenle"
+              : initialKind === "code"
+                ? "İndirim kodu ekle"
+                : "Kampanya ekle"
+          }
           subject={loaded?.campaign?.title}
         >
           {campaignId && !loaded ? (
@@ -66,6 +74,7 @@ export function TrOwnerDiscountCampaignEditorPage({
                 key={loaded?.campaign?.id ?? "new"}
                 boutiqueId={activeBoutique.id}
                 campaign={loaded?.campaign ?? undefined}
+                initialKind={initialKind}
                 onCreated={(created) =>
                   router.replace(trPanelEditCampaignPath(created.id))
                 }

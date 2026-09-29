@@ -219,8 +219,10 @@ export function trPanelCampaignsPath(): string {
   return "/tr/panel/kampanyalar";
 }
 
-export function trPanelNewCampaignPath(): string {
-  return "/tr/panel/kampanyalar/yeni";
+export function trPanelNewCampaignPath(kind?: "automatic" | "code"): string {
+  return kind === "code"
+    ? "/tr/panel/kampanyalar/yeni?kind=code"
+    : "/tr/panel/kampanyalar/yeni";
 }
 
 export function trPanelEditCampaignPath(campaignId: string): string {

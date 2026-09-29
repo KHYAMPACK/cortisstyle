@@ -52,17 +52,14 @@ export async function captureBoutiqueOrderAsPaid(input: {
 
   if (updated.discountCode) {
     try {
-      const { getDiscountCodeForBoutiqueAdmin } = await import(
-        "@/lib/tr/discountCodes"
+      const { findCampaignCodeByCode, incrementCampaignCodeUsage } = await import(
+        "@/lib/tr/catalog/discountCampaignCodes"
       );
-      const { recordDiscountUsageIfNeeded } = await import(
-        "@/lib/tr/checkoutValidate"
-      );
-      const row = await getDiscountCodeForBoutiqueAdmin(
+      const row = await findCampaignCodeByCode(
         input.boutique.id,
         updated.discountCode,
       );
-      await recordDiscountUsageIfNeeded(row);
+      if (row) await incrementCampaignCodeUsage(row.id);
     } catch (couponError) {
       console.error("[tr/payments] coupon usage after paid failed:", couponError);
     }
