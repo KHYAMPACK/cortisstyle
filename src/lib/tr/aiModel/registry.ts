@@ -24,10 +24,10 @@ import type {
   TrAiModelIdentity,
   TrAiModelOption,
   TrAiModelPose,
-  TrLilaPhotographyStyle,
+  TrHousePhotographyStyle,
 } from "@/lib/tr/aiModel/types";
 
-export type { TrAiModelGender, TrLilaPhotographyStyle };
+export type { TrAiModelGender, TrHousePhotographyStyle };
 
 function parseEnvUrlList(envKey: string): string[] {
   // Server: TR_AI_STUDIO_* · Client picker: NEXT_PUBLIC_TR_AI_STUDIO_* (FASHN needs public URLs anyway)
@@ -67,20 +67,28 @@ function hasRefs(urls: string[]): boolean {
   return urls.some((url) => Boolean(url?.trim()));
 }
 
-export const LILA_HOUSE_MODEL_ID = "boutique:lilabutik";
-export const LILA_DEFAULT_PHOTOGRAPHY_STYLE: TrLilaPhotographyStyle = "blinds";
-export const LILA_TRYON_SHOTS_PER_STYLE = 1;
-
-export const LILA_PHOTOGRAPHY_STYLE_LABELS: Record<
-  TrLilaPhotographyStyle,
-  string
-> = {
+export const DEFAULT_HOUSE_PHOTOGRAPHY_STYLE: TrHousePhotographyStyle = "blinds";
+export const HOUSE_PHOTOGRAPHY_STYLES: readonly TrHousePhotographyStyle[] = [
+  "blinds",
+  "flash",
+];
+export const HOUSE_PHOTOGRAPHY_STYLE_LABELS: Record<TrHousePhotographyStyle, string> = {
   blinds: "Panjur",
   flash: "Flaş",
 };
 
+export function parseHousePhotographyStyle(raw: unknown): TrHousePhotographyStyle {
+  return raw === "flash" ? "flash" : DEFAULT_HOUSE_PHOTOGRAPHY_STYLE;
+}
+
+/**
+ * Lila Butik's house model. The id is stored on products (`features.aiModelId`), so it
+ * must not change.
+ */
+export const LILA_HOUSE_MODEL_ID = "boutique:lilabutik";
+
 export const LILABUTIK_LILA_TRYON_REFS_BY_STYLE: Record<
-  TrLilaPhotographyStyle,
+  TrHousePhotographyStyle,
   readonly string[]
 > = {
   blinds: [
@@ -100,20 +108,6 @@ export const LILABUTIK_LILA_TRYON_REFS = [
   ...LILABUTIK_LILA_TRYON_REFS_BY_STYLE.blinds,
   ...LILABUTIK_LILA_TRYON_REFS_BY_STYLE.flash,
 ] as const;
-
-export function isLilaHouseModelId(modelId: string | null | undefined): boolean {
-  return modelId?.trim() === LILA_HOUSE_MODEL_ID;
-}
-
-export function parseLilaPhotographyStyle(
-  raw: unknown,
-): TrLilaPhotographyStyle {
-  return raw === "flash" ? "flash" : LILA_DEFAULT_PHOTOGRAPHY_STYLE;
-}
-
-export function lilaTryOnShotCount(modelId: string | null | undefined): number {
-  return isLilaHouseModelId(modelId) ? LILA_TRYON_SHOTS_PER_STYLE : 1;
-}
 
 export interface ElbiseTryOnPlates {
   threeQuarter: string;
@@ -141,19 +135,15 @@ export function getElbiseTryOnPlates(
       back: STUDIO_SELIN_BACK_PATH,
     };
   }
-  if (isLilaHouseModelId(id)) {
-    return {
-      threeQuarter: LILA_STUDIO_THREE_QUARTER_PATH,
-      back: LILA_STUDIO_BACK_PATH,
-    };
-  }
+  const housePlates = houseModelIdentity(id)?.elbiseTryOnPlates;
+  if (housePlates) return housePlates;
   const option = getAiModelOptionById(id);
   const first = option?.referenceImageUrls.find((url) => Boolean(url?.trim()));
   if (!first) return null;
   return { threeQuarter: first.trim(), back: null };
 }
 
-/** Owners pick the person (and Lila lighting), not the pose. */
+/** Owners pick the person (and a house model's lighting), not the pose. */
 export function pickRandomModelReferenceUrl(urls: string[]): string | null {
   const picked = pickDistinctModelReferenceUrls(urls, 1);
   return picked[0] ?? null;
@@ -187,6 +177,11 @@ const BOUTIQUE_AI_MODELS: Record<string, TrAiModelIdentity> = {
     displayName: "Lila",
     gender: "woman",
     referenceImageUrls: [...LILABUTIK_LILA_TRYON_REFS],
+    referenceImageUrlsByStyle: LILABUTIK_LILA_TRYON_REFS_BY_STYLE,
+    elbiseTryOnPlates: {
+      threeQuarter: LILA_STUDIO_THREE_QUARTER_PATH,
+      back: LILA_STUDIO_BACK_PATH,
+    },
     faceReferenceUrls: [],
     defaultPose: "standing-front",
     notes:
@@ -262,7 +257,7 @@ function boutiqueOption(identity: TrAiModelIdentity): TrAiModelOption {
     id: `boutique:${identity.boutiqueSlug}`,
     label: identity.displayName,
     hint: ready
-      ? identity.boutiqueSlug === "lilabutik"
+      ? identity.referenceImageUrlsByStyle
         ? "Butik modeli · stil seçin, poz rastgele"
         : "Butik modeli · poz rastgele"
       : "Referans fotoğrafı bekleniyor",
@@ -292,6 +287,27 @@ export function getBoutiqueAiModelIdentity(
 ): TrAiModelIdentity | null {
   const slug = boutiqueSlug.trim().toLowerCase();
   return BOUTIQUE_AI_MODELS[slug] ?? null;
+}
+
+/** The boutique house model a `boutique:<slug>` id names, if registered. */
+function houseModelIdentity(
+  modelId: string | null | undefined,
+): TrAiModelIdentity | null {
+  const id = modelId?.trim() ?? "";
+  if (!id.startsWith("boutique:")) return null;
+  return getBoutiqueAiModelIdentity(id.slice("boutique:".length));
+}
+
+/** Plates per photography style for a house model shot in several styles, else null. */
+export function housePhotographyStyleRefs(
+  modelId: string | null | undefined,
+): Record<TrHousePhotographyStyle, readonly string[]> | null {
+  return houseModelIdentity(modelId)?.referenceImageUrlsByStyle ?? null;
+}
+
+/** The owner picks a photography style for this model (Lila: blinds / flash). */
+export function modelHasPhotographyStyles(modelId: string | null | undefined): boolean {
+  return housePhotographyStyleRefs(modelId) !== null;
 }
 
 export function listRegisteredAiModelBoutiqueSlugs(): string[] {

@@ -61,9 +61,9 @@ import {
   withManualListing,
 } from "@/lib/tr/catalog/productFeatures";
 import {
-  LILA_DEFAULT_PHOTOGRAPHY_STYLE,
-  parseLilaPhotographyStyle,
-  type TrLilaPhotographyStyle,
+  DEFAULT_HOUSE_PHOTOGRAPHY_STYLE,
+  parseHousePhotographyStyle,
+  type TrHousePhotographyStyle,
 } from "@/lib/tr/aiModel/registry";
 import {
   DEFAULT_CATALOG_BACKGROUND_ID,
@@ -257,7 +257,7 @@ export function TrProductCreateWizard({
   );
   const [selectedModelId, setSelectedModelId] = useState<string | null>(null);
   const [photographyStyle, setPhotographyStyle] =
-    useState<TrLilaPhotographyStyle>(LILA_DEFAULT_PHOTOGRAPHY_STYLE);
+    useState<TrHousePhotographyStyle>(DEFAULT_HOUSE_PHOTOGRAPHY_STYLE);
   const [photoJobs, setPhotoJobs] = useState<PipelineJobItem[]>([]);
   const [modelJobs, setModelJobs] = useState<PipelineJobItem[]>([]);
   const [lightbox, setLightbox] = useState<{
@@ -787,7 +787,7 @@ export function TrProductCreateWizard({
       draft.catalogBackgroundId || DEFAULT_CATALOG_BACKGROUND_ID,
     );
     setSelectedModelId(draft.selectedModelId);
-    setPhotographyStyle(parseLilaPhotographyStyle(draft.photographyStyle));
+    setPhotographyStyle(parseHousePhotographyStyle(draft.photographyStyle));
     setColorVariants(draft.colorVariants ?? []);
     setDraftBanner(null);
   };

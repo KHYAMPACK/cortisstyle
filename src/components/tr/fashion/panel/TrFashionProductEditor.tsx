@@ -40,8 +40,8 @@ import {
   panelSecondaryBtnClass,
 } from "@/components/tr/panel/panelUi";
 import {
-  LILA_DEFAULT_PHOTOGRAPHY_STYLE,
-  type TrLilaPhotographyStyle,
+  DEFAULT_HOUSE_PHOTOGRAPHY_STYLE,
+  type TrHousePhotographyStyle,
 } from "@/lib/tr/aiModel/registry";
 import { getCatalogBackground } from "@/lib/tr/catalogBackgrounds/registry";
 import { TR_BOUTIQUE_CATEGORIES } from "@/lib/tr/fashion/categories";
@@ -179,7 +179,7 @@ export function TrFashionProductEditor({
   const [savedOnce, setSavedOnce] = useState(false);
   const [listingDraft, setListingDraft] = useState<OwnerListingDraft | null>(null);
   const [photographyStyle, setPhotographyStyle] =
-    useState<TrLilaPhotographyStyle>(LILA_DEFAULT_PHOTOGRAPHY_STYLE);
+    useState<TrHousePhotographyStyle>(DEFAULT_HOUSE_PHOTOGRAPHY_STYLE);
   const [lightbox, setLightbox] = useState<{ src: string; label: string } | null>(
     null,
   );

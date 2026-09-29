@@ -3,20 +3,20 @@
 import { useEffect } from "react";
 import {
   getDefaultReadyAiModelId,
-  isLilaHouseModelId,
-  LILA_DEFAULT_PHOTOGRAPHY_STYLE,
-  LILA_PHOTOGRAPHY_STYLE_LABELS,
-  LILABUTIK_LILA_TRYON_REFS_BY_STYLE,
+  DEFAULT_HOUSE_PHOTOGRAPHY_STYLE,
+  HOUSE_PHOTOGRAPHY_STYLE_LABELS,
+  HOUSE_PHOTOGRAPHY_STYLES,
+  housePhotographyStyleRefs,
   listAiModelOptions,
-  type TrLilaPhotographyStyle,
+  type TrHousePhotographyStyle,
 } from "@/lib/tr/aiModel/registry";
 
 interface TrOwnerAiModelPickerProps {
   boutiqueSlug?: string | null;
   value: string | null;
   onChange: (id: string | null) => void;
-  photographyStyle?: TrLilaPhotographyStyle;
-  onPhotographyStyleChange?: (style: TrLilaPhotographyStyle) => void;
+  photographyStyle?: TrHousePhotographyStyle;
+  onPhotographyStyleChange?: (style: TrHousePhotographyStyle) => void;
   disabled?: boolean;
   /** Sheet / regen: skip the page heading, keep a 2-col grid. */
   variant?: "default" | "sheet";
@@ -27,8 +27,6 @@ interface TrOwnerAiModelPickerProps {
   /** When false, do not auto-pick the house model (lifestyle shots already exist). */
   autoSelectDefault?: boolean;
 }
-
-const LILA_STYLES: TrLilaPhotographyStyle[] = ["blinds", "flash"];
 
 function pickerCardClass(active: boolean): string {
   return [
@@ -65,7 +63,7 @@ export function TrOwnerAiModelPicker({
   boutiqueSlug,
   value,
   onChange,
-  photographyStyle = LILA_DEFAULT_PHOTOGRAPHY_STYLE,
+  photographyStyle = DEFAULT_HOUSE_PHOTOGRAPHY_STYLE,
   onPhotographyStyleChange,
   disabled = false,
   variant = "default",
@@ -74,8 +72,7 @@ export function TrOwnerAiModelPicker({
   autoSelectDefault = true,
 }: TrOwnerAiModelPickerProps) {
   const options = listAiModelOptions(boutiqueSlug).filter((o) => o.ready);
-  const showLilaStyles =
-    isLilaHouseModelId(value) && !hidePhotographyStyle;
+  const styleRefs = hidePhotographyStyle ? null : housePhotographyStyleRefs(value);
 
   useEffect(() => {
     if (value || !autoSelectDefault) return;
@@ -93,7 +90,7 @@ export function TrOwnerAiModelPicker({
             Model seçimi
           </p>
           <p className="mt-1 text-[14px] text-neutral-600">
-            {showLilaStyles
+            {styleRefs
               ? "Kimin üzerinde gösterileceği. Işık stilini siz seçersiniz; poz rastgele."
               : hidePhotographyStyle
                 ? "Kimin üzerinde gösterileceği. Poz: üç-çeyrek ve sırt (detay varsa üçüncü kare)."
@@ -181,18 +178,18 @@ export function TrOwnerAiModelPicker({
         </div>
       )}
 
-      {showLilaStyles ? (
+      {styleRefs ? (
         <div className="space-y-2">
           <p className="text-[15px] font-semibold text-neutral-800">
             Işık stili
           </p>
           <p className="text-[13px] text-neutral-600">
-            Poz rastgele. Bu stilden 2 farklı kare üretilir.
+            Poz rastgele. Bu stilden bir kare üretilir.
           </p>
           <div className="grid grid-cols-2 gap-2">
-            {LILA_STYLES.map((style) => {
+            {HOUSE_PHOTOGRAPHY_STYLES.map((style) => {
               const active = photographyStyle === style;
-              const thumb = LILABUTIK_LILA_TRYON_REFS_BY_STYLE[style][0];
+              const thumb = styleRefs[style][0];
               return (
                 <button
                   key={style}
@@ -220,7 +217,7 @@ export function TrOwnerAiModelPicker({
                     </span>
                   ) : null}
                   <span className="pr-5 text-[15px] font-semibold text-neutral-900">
-                    {LILA_PHOTOGRAPHY_STYLE_LABELS[style]}
+                    {HOUSE_PHOTOGRAPHY_STYLE_LABELS[style]}
                   </span>
                 </button>
               );

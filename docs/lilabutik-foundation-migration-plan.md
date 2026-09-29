@@ -18,6 +18,15 @@ Inputs: `docs/product-upload-foundation-plan.md` (all of it, esp. Status, §4 sa
   - **"+ Kategori ekle"** uses the shared `slugify`, checked to give identical ids to the old local slugifier.
 - **Verified:** `tsc`, 580/580 tests, `next build`. Repo-wide lint is unchanged (60 errors and 32 warnings, all already there; none in new files). **Not yet verified in a browser:** no staff login is available to the agent, so the A.4 checklist on `deneme-butik` is the next step.
 
+**C.2, C.3 and B0 built on `main-t0o1c2` (2026-09-29).**
+
+- **C.2:** `EMAIL_LOGO_PATHS` is gone. Auth emails use the storefront logo (`resolveBoutiqueLogoUrl`) unless it's an SVG, and the SVG check now also catches `logo.svg?v=2`. lilabutik keeps its PNG (`…/logo.png?v=4`, pinned in `authMail/templates.test.ts`). The intake template and doc 03 ask for a PNG logo.
+- **C.3:** the photography styles and elbise try-on plates are now optional fields on a boutique's house-model entry (`referenceImageUrlsByStyle`, `elbiseTryOnPlates` on `TrAiModelIdentity`). Lila's entry carries her data. Generic code asks `modelHasPhotographyStyles` / `housePhotographyStyleRefs` instead of `isLilaHouseModelId`, and the style type and constants are named `TrHousePhotographyStyle` / `DEFAULT_HOUSE_PHOTOGRAPHY_STYLE` / `HOUSE_PHOTOGRAPHY_STYLE_LABELS`.
+  - **Unchanged:** the stored id `boutique:lilabutik`, the style values `blinds`/`flash` (kept in owners' local drafts) and every reference image path. Pinned in `aiModel/registry.test.ts`.
+  - **Dead code dropped:** the unused multi-plate branch (`LILA_TRYON_SHOTS_PER_STYLE` was 1).
+  - **Copy fix:** the model picker's "Bu stilden 2 farklı kare üretilir" said 2 while one is produced; it now says one.
+- **B0:** doc 03 names `deneme-butik` and the favicon-on-own-domain gap. The foundation plan's size-file count is corrected.
+
 A0 detail:
 
 - **The module:** `src/lib/tr/fashion/productForm.ts` holds the fashion editor's form state, validation (the old editor's checks and wording), the Kaydet PATCH body, and `rebaseFashionForm` for server-side AI/colour-group saves. Its tests are in `productForm.test.ts` (22 tests).
@@ -115,7 +124,7 @@ All questions answered. Nothing is built until Mert says to start.
   - **What happens:** when every size's stock is typed as 0, `buildPayload` sends `sizes` but omits both `sizeStocks` and `stock`. The code comments this as deliberate: "so autosave can persist durum without wiping stock".
   - **Result:** the server keeps the old non-zero `size_stocks`, so an owner apparently can't mark a sized garment sold out through its stock fields.
   - **Parity decision:** the rebuild must make an explicit call here (see Still open, Q4), not copy it silently.
-- Owner-facing strings in this flow are named after one boutique: `LILA_DEFAULT_PHOTOGRAPHY_STYLE` and `TrLilaPhotographyStyle` are imported by the fashion editor, the wizard and `TrOwnerAiCatalogEnhance`. See C.4.
+- Owner-facing strings in this flow are named after one boutique: `LILA_DEFAULT_PHOTOGRAPHY_STYLE` and `TrLilaPhotographyStyle` are imported by the fashion editor, the wizard and `TrOwnerAiCatalogEnhance`. See C.3.
 
 **Which pieces are already generic and which are fashion** (fashion imports counted with a grep):
 

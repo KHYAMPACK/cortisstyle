@@ -2,11 +2,8 @@ import {
   aiModelOptionHasReferences,
   getAiModelOptionById,
   getBoutiqueAiModelIdentity,
-  isLilaHouseModelId,
-  LILABUTIK_LILA_TRYON_REFS_BY_STYLE,
-  lilaTryOnShotCount,
-  parseLilaPhotographyStyle,
-  pickDistinctModelReferenceUrls,
+  housePhotographyStyleRefs,
+  parseHousePhotographyStyle,
   pickRandomModelReferenceUrl,
 } from "@/lib/tr/aiModel/registry";
 import { resolveAiModelProvider } from "@/lib/tr/aiModel/providers";
@@ -46,7 +43,7 @@ function sanitizeShots(
 
 /**
  * Orchestrate on-model generation for a boutique garment cutout / packshot.
- * Lila + style: one random plate from that style’s three poses. Studio: one random plate.
+ * House model with styles (Lila): one random plate from the chosen style’s three poses. Studio: one random plate.
  * Elbise: pass `shots` with pinned plates and garments (2–3, all must succeed).
  */
 export async function generateBoutiqueAiModelImage(
@@ -95,9 +92,9 @@ export async function generateBoutiqueAiModelImage(
   }
 
   const provider = resolveAiModelProvider(request.providerId);
-  const lila = isLilaHouseModelId(option.id);
-  const photographyStyle = lila
-    ? parseLilaPhotographyStyle(request.photographyStyle)
+  const styleRefs = housePhotographyStyleRefs(option.id);
+  const photographyStyle = styleRefs
+    ? parseHousePhotographyStyle(request.photographyStyle)
     : undefined;
 
   const jobs: Array<{
@@ -114,17 +111,13 @@ export async function generateBoutiqueAiModelImage(
           prompt: shot.prompt ?? request.prompt,
         }))
       : (() => {
-          const shotCount = lilaTryOnShotCount(option.id);
-          const pool = photographyStyle
-            ? [...LILABUTIK_LILA_TRYON_REFS_BY_STYLE[photographyStyle]]
-            : option.referenceImageUrls;
-          const refs =
-            shotCount > 1
-              ? pickDistinctModelReferenceUrls(pool, shotCount)
-              : (() => {
-                  const one = pickRandomModelReferenceUrl(pool);
-                  return one ? [one] : [];
-                })();
+          // One try-on per run: a random plate (from the chosen style, if any).
+          const pool =
+            styleRefs && photographyStyle
+              ? [...styleRefs[photographyStyle]]
+              : option.referenceImageUrls;
+          const one = pickRandomModelReferenceUrl(pool);
+          const refs = one ? [one] : [];
           const cutout = request.garment.cutoutImageUrl.trim();
           return refs.map((ref) => ({
             ref,
