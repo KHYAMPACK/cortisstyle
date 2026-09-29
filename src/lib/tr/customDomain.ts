@@ -16,6 +16,67 @@ export function normalizeBoutiqueHost(host: string): string {
   return host.trim().toLowerCase().replace(/:\d+$/, "");
 }
 
+/**
+ * Store URLs (planned, docs/product-upload-foundation-plan.md): every boutique's default
+ * address, `<slug>.<TR_STORES_DOMAIN>`. Pure host parsing only — not yet called from
+ * `proxy.ts`; wiring it in (plus the existence check: does a boutique with this slug
+ * actually exist) is a later step of that milestone.
+ */
+
+/**
+ * Subdomain labels that must never resolve to a store, even once wildcard DNS answers for
+ * all of them — infrastructure/reserved words a boutique could otherwise be slugged as.
+ */
+export const RESERVED_STORE_SUBDOMAIN_LABELS = new Set([
+  "www",
+  "api",
+  "cdn",
+  "static",
+  "assets",
+  "admin",
+  "app",
+  "mail",
+  "ftp",
+  "panel",
+  "owner",
+]);
+
+/**
+ * Does `host` look like `<slug>.<storesDomain>`? Pure — no DB, no network; a returned
+ * slug is not guaranteed to belong to a real boutique, only to have the right shape.
+ * `storesDomain` is normally `TR_STORES_DOMAIN` (see `resolveSlugFromStoresSubdomain`),
+ * passed explicitly here so this stays testable without touching the environment.
+ */
+export function subdomainSlugOf(
+  host: string,
+  storesDomain: string | null,
+): string | null {
+  if (!storesDomain) return null;
+  const normalizedHost = normalizeBoutiqueHost(host);
+  const suffix = `.${storesDomain}`;
+  if (!normalizedHost.endsWith(suffix)) return null;
+
+  const label = normalizedHost.slice(0, -suffix.length);
+  // A store's own subdomain is exactly one label: not "" (the bare stores domain, which
+  // isn't a store) and not "a.b" (some other, deeper subdomain we don't own the meaning of).
+  if (!label || label.includes(".")) return null;
+  if (RESERVED_STORE_SUBDOMAIN_LABELS.has(label)) return null;
+  return label;
+}
+
+function storesDomainFromEnv(): string | null {
+  const raw = process.env.TR_STORES_DOMAIN?.trim().toLowerCase().replace(/^\.+/, "");
+  return raw && raw.includes(".") ? raw : null;
+}
+
+/**
+ * `subdomainSlugOf` against `TR_STORES_DOMAIN`. Returns null (never throws) when the env
+ * var is unset — this function is safe to call before that domain exists or is configured.
+ */
+export function resolveSlugFromStoresSubdomain(host: string): string | null {
+  return subdomainSlugOf(host, storesDomainFromEnv());
+}
+
 const EDGE_DOMAIN_MAP_TTL_MS = 120_000;
 
 /** `TR_BOUTIQUE_DOMAINS` env override — ops-controlled, no hardcoded fallback. */
