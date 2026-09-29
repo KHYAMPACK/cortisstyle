@@ -7,6 +7,8 @@ import {
   listCategories,
 } from "@/lib/tr/catalog/categories";
 import { trBoutiqueCategoryPath } from "@/lib/tr/paths";
+import { storesDomainFromEnv } from "@/lib/tr/customDomain";
+import { canonicalStoreHost } from "@/lib/tr/seo/storeAddress";
 import {
   absoluteUrl,
   boutiqueCustomerPath,
@@ -119,8 +121,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   );
 
   try {
+    const storesDomain = storesDomainFromEnv();
     const boutiques = await listPublicBoutiques();
     for (const boutique of boutiques) {
+      // A boutique with its own canonical host (a custom domain, or its default
+      // subdomain once TR_STORES_DOMAIN is set) is only ever listed on ITS OWN
+      // sitemap — matching ikas, which never cross-lists a merchant store from its
+      // own marketing-site sitemap (verified live, 2026-09-29).
+      const hasOwnHost = canonicalStoreHost({
+        slug: boutique.slug,
+        customDomain: boutique.customDomain,
+        storesDomain,
+      });
+      if (hasOwnHost) continue;
+
       const boutiqueEntries = await boutiqueSitemapEntries({
         boutiqueSlug: boutique.slug,
         origin: ctx.origin,

@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  canonicalStoreHost,
+  resolveCanonicalRedirect,
+  resolveStoreHostKind,
   storeAddress,
   storeCategoryPath,
   storeCategoryUrl,
@@ -8,6 +11,7 @@ import {
   storeProductPath,
   storeProductUrl,
   storeProductUrlPrefix,
+  type StoreHostKind,
 } from "./storeAddress";
 
 const onDomain = { boutiqueSlug: "lilabutik", customDomain: "lilaboutiquedenizli.com" };
@@ -72,5 +76,181 @@ describe("category addresses", () => {
       "https://lilaboutiquedenizli.com/kategori/canta",
     );
     assert.equal(storeCategoryUrlPrefix(onDomain), "lilaboutiquedenizli.com/kategori/");
+  });
+});
+
+describe("resolveStoreHostKind", () => {
+  const base = { host: "", storesDomain: "corti.store", customDomainSlug: null };
+
+  it("is custom-domain when the custom-domain lookup already matched, apex or www", () => {
+    assert.deepEqual(
+      resolveStoreHostKind({ ...base, host: "lilaboutiquedenizli.com", customDomainSlug: "lilabutik" }),
+      { kind: "custom-domain", slug: "lilabutik", hostWasWww: false },
+    );
+    assert.deepEqual(
+      resolveStoreHostKind({
+        ...base,
+        host: "WWW.lilaboutiquedenizli.com",
+        customDomainSlug: "lilabutik",
+      }),
+      { kind: "custom-domain", slug: "lilabutik", hostWasWww: true },
+    );
+  });
+
+  it("is subdomain when the host matches <slug>.<storesDomain> and no custom domain matched", () => {
+    assert.deepEqual(resolveStoreHostKind({ ...base, host: "lilabutik.corti.store" }), {
+      kind: "subdomain",
+      slug: "lilabutik",
+    });
+  });
+
+  it("prefers the custom-domain match over a coincidental subdomain-shaped host", () => {
+    assert.deepEqual(
+      resolveStoreHostKind({
+        ...base,
+        host: "lilabutik.corti.store",
+        customDomainSlug: "someone-else",
+      }),
+      { kind: "custom-domain", slug: "someone-else", hostWasWww: false },
+    );
+  });
+
+  it("falls back to platform for anything else, including www.cortisstyle.com", () => {
+    assert.deepEqual(resolveStoreHostKind({ ...base, host: "www.cortisstyle.com" }), {
+      kind: "platform",
+    });
+  });
+});
+
+describe("canonicalStoreHost", () => {
+  it("prefers the custom domain, stripped of www", () => {
+    assert.equal(
+      canonicalStoreHost({
+        slug: "lilabutik",
+        customDomain: "WWW.Lilaboutiquedenizli.com",
+        storesDomain: "corti.store",
+      }),
+      "lilaboutiquedenizli.com",
+    );
+  });
+
+  it("falls back to the subdomain without a custom domain", () => {
+    assert.equal(
+      canonicalStoreHost({ slug: "deneme-butik", customDomain: null, storesDomain: "corti.store" }),
+      "deneme-butik.corti.store",
+    );
+  });
+
+  it("is null when neither exists yet — nothing canonical to send anyone to", () => {
+    assert.equal(
+      canonicalStoreHost({ slug: "deneme-butik", customDomain: null, storesDomain: null }),
+      null,
+    );
+  });
+});
+
+describe("resolveCanonicalRedirect", () => {
+  const platform: StoreHostKind = { kind: "platform" };
+  const subdomain: StoreHostKind = { kind: "subdomain", slug: "deneme-butik" };
+  const customDomainApex: StoreHostKind = {
+    kind: "custom-domain",
+    slug: "lilabutik",
+    hostWasWww: false,
+  };
+  const customDomainWww: StoreHostKind = {
+    kind: "custom-domain",
+    slug: "lilabutik",
+    hostWasWww: true,
+  };
+
+  it("sends a platform-host request to the subdomain when there is no custom domain", () => {
+    assert.deepEqual(
+      resolveCanonicalRedirect({
+        hostKind: platform,
+        cleanPath: "/urun/a",
+        slug: "deneme-butik",
+        customDomain: null,
+        storesDomain: "corti.store",
+      }),
+      { host: "deneme-butik.corti.store", path: "/urun/a" },
+    );
+  });
+
+  it("sends a platform-host request straight to the custom domain when one exists", () => {
+    assert.deepEqual(
+      resolveCanonicalRedirect({
+        hostKind: platform,
+        cleanPath: "/urun/a",
+        slug: "lilabutik",
+        customDomain: "lilaboutiquedenizli.com",
+        storesDomain: "corti.store",
+      }),
+      { host: "lilaboutiquedenizli.com", path: "/urun/a" },
+    );
+  });
+
+  it("does not redirect a platform-host request when nothing canonical exists yet", () => {
+    assert.equal(
+      resolveCanonicalRedirect({
+        hostKind: platform,
+        cleanPath: "/urun/a",
+        slug: "deneme-butik",
+        customDomain: null,
+        storesDomain: null,
+      }),
+      null,
+    );
+  });
+
+  it("sends the subdomain to the custom domain once one is connected", () => {
+    assert.deepEqual(
+      resolveCanonicalRedirect({
+        hostKind: subdomain,
+        cleanPath: "/urunler",
+        slug: "deneme-butik",
+        customDomain: "deneme-butik.com",
+        storesDomain: "corti.store",
+      }),
+      { host: "deneme-butik.com", path: "/urunler" },
+    );
+  });
+
+  it("keeps the subdomain canonical without a custom domain", () => {
+    assert.equal(
+      resolveCanonicalRedirect({
+        hostKind: subdomain,
+        cleanPath: "/urunler",
+        slug: "deneme-butik",
+        customDomain: null,
+        storesDomain: "corti.store",
+      }),
+      null,
+    );
+  });
+
+  it("sends www.<custom domain> to the apex", () => {
+    assert.deepEqual(
+      resolveCanonicalRedirect({
+        hostKind: customDomainWww,
+        cleanPath: "/",
+        slug: "lilabutik",
+        customDomain: "lilaboutiquedenizli.com",
+        storesDomain: "corti.store",
+      }),
+      { host: "lilaboutiquedenizli.com", path: "/" },
+    );
+  });
+
+  it("does not redirect the apex custom domain — it is already canonical", () => {
+    assert.equal(
+      resolveCanonicalRedirect({
+        hostKind: customDomainApex,
+        cleanPath: "/",
+        slug: "lilabutik",
+        customDomain: "lilaboutiquedenizli.com",
+        storesDomain: "corti.store",
+      }),
+      null,
+    );
   });
 });
