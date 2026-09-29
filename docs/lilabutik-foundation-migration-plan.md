@@ -35,7 +35,11 @@ A0 detail:
   - Every-size-0 saves 0 stock (Q4 fix).
   - A garment without sizes sends an empty size map.
 - **Pure helpers moved out of components into `lib/`** so the form module doesn't import UI files: `sizeStockInputs.ts` (from `TrOwnerSizeChartStock`) and `productPhotoChecks.ts` (from `TrOwnerGuidedPhotoUpload` / `TrOwnerManualPhotoGallery`). The components re-export them, so no caller changed.
-- **Finding pinned by a test, not changed:** the size board always shows the whole default chart. So saving one of lilabutik's 11 `XS–XL` garments from the editor adds `2XL` and `3XL` at 0 stock. The old editor does the same on any edit, so this is parity, not new behaviour. Stopping it is a separate decision (Still open, Q13).
+- **Q13 (decided: b):** the old editor's size board always shows the whole default chart, so saving one of lilabutik's 11 `XS–XL` garments adds `2XL`/`3XL` at 0 stock. **The new editor keeps exactly the garment's own sizes.**
+  - The size table lists only those sizes, each has "Kaldır", and the chart's missing sizes appear as "+ 2XL" / "+ 3XL" chips (`TrOwnerSizeChartStock` `onlyListedSizes`).
+  - The create wizard, batch and takım flows still start from the full chart.
+  - The old editor keeps adding them until it is retired in A3.
+  - Validation asks for at least one size unless "Beden yok" is chosen.
 
 Three independent work areas, each split into milestones that ship on their own:
 
@@ -79,6 +83,7 @@ From read-only queries on production:
 | 8 | **lilabutik's colour-group products are never merged into Renk variants** |
 | 9 | **Option (a):** SVG-only stores are asked for a PNG logo at onboarding (add a line to `docs/tr-boutique-intake-template.md` when C.2 ships). No `email_logo_url` column. C.2's map removal still goes ahead |
 | 10 | **On hold:** editorial skin / favicon / brand no-DB paths (C.1, C.5, C.6) aren't scheduled. Revisit when asked |
+| 13 | **Keep exactly a garment's own sizes** in the new editor (no 2XL/3XL added to XS–XL garments on save) |
 | 12 | **AI persona stays manual per-boutique ops work.** Only the de-Lila rename inside shared panel code (C.3) is done, together with Area A |
 
 | 6 | **No extra fields for fashion products.** A4's Alış fiyatı / Tedarikçi-HS / Envanter / Ürün detayı cards are dropped. (Whether this also drops the SEO card from Q3 is being confirmed with Mert) |
@@ -383,4 +388,4 @@ Every SQL patch above follows the existing convention: an idempotent `supabase/p
 10. **Editorial skin / favicon DB work (C.1/C.5):** do it now pre-emptively, or wait for a second real store (my recommendation)?
 11. **Carrier (C4):** do C4a/C4b now while it's cheap, or all together when a second store needs labels? And which approved checkout change should C4d ride along with?
 12. **AI persona (C.3):** OK to keep it as manual per-boutique ops work, with only the de-Lila rename done now?
-13. **XS–XL garments gaining 2XL/3XL on save (found in A0):** keep today's behaviour (the storefront shows 2XL/3XL as out of stock after an edit), or have the editor keep exactly the sizes a garment already has?
+13. ~~XS–XL garments gaining 2XL/3XL on save~~ **Decided (b):** the new editor keeps exactly the garment's sizes.
