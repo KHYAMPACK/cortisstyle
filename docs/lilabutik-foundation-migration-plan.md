@@ -50,7 +50,10 @@ From read-only queries on production:
 | 10 | **On hold:** editorial skin / favicon / brand no-DB paths (C.1, C.5, C.6) aren't scheduled. Revisit when asked |
 | 12 | **AI persona stays manual per-boutique ops work.** Only the de-Lila rename inside shared panel code (C.3) is done, together with Area A |
 
-Waiting on answers: Q6 (extra cards for fashion; proposed: Alış fiyatı only) and Q11 (carrier timing, and how the checkout step gets its freeze lift).
+| 6 | **No extra fields for fashion products.** A4's Alış fiyatı / Tedarikçi-HS / Envanter / Ürün detayı cards are dropped. (Whether this also drops the SEO card from Q3 is being confirmed with Mert) |
+| 11 | **Carrier (C4) waits** until a second store wants automatic labels. When it runs, Mert has approved lifting the storefront freeze for its checkout/PDP step (C4d) as its own scoped exception |
+
+All questions answered. Nothing is built until Mert says to start.
 
 ## 1. Decisions I'm assuming (change any of these)
 
