@@ -14,14 +14,21 @@ Payments live in a separate table, `tr_boutique_integrations` (`boutique_id`, `p
 
 ## Request → boutique resolution
 
-Two paths reach a boutique:
+Three paths reach a boutique:
 
-1. **Platform path** — `/tr/{slug}/...`. The slug is just a URL param; no special resolution needed.
+1. **Platform path** — `/tr/{slug}/...`. The slug is just a URL param; no special resolution needed. Since the Store URLs work (below), this is no longer a *canonical* address for a boutique — it's a redirect source once one exists.
 2. **Custom domain** — `src/proxy.ts` (this is a customized Next.js fork; the file that would be `middleware.ts` elsewhere is `proxy.ts` here) calls `resolveBoutiqueSlugFromHostAtEdge(host)` in `src/lib/tr/customDomain.ts`, which resolves the request's `Host` header to a slug and rewrites the path to `/tr/{slug}/...` via `rewriteBoutiqueDomainPath()`.
+3. **Default subdomain** (`<slug>.<TR_STORES_DOMAIN>`) — same rewrite as a custom domain, but resolved by pure host parsing (`resolveSlugFromStoresSubdomain`/`subdomainSlugOf`, no DB), and only once the boutique's slug is confirmed to exist (an unknown subdomain 404s rather than falling through to platform routing).
 
-**`tr_boutiques.custom_domain` is the source of truth** for domain resolution, read through `tr_boutiques_public` with a short-TTL in-memory cache per warm edge instance (`EDGE_DOMAIN_MAP_TTL_MS`, `src/lib/tr/customDomain.ts`). The `TR_BOUTIQUE_DOMAINS` env var (a JSON host→slug map) is only an ops override for a host that isn't in the DB yet — e.g. while testing DNS before the row is set. Nothing about domain routing requires a code change.
+**`tr_boutiques.custom_domain` is the source of truth** for domain resolution, read through `tr_boutiques_public` with a short-TTL in-memory cache per warm edge instance (`EDGE_DOMAIN_MAP_TTL_MS`, `src/lib/tr/customDomain.ts` — the cache now also tracks every boutique's slug → custom domain, not just the ones with one, so `proxy.ts` can check a subdomain's existence and look up a redirect target for a bare slug). The `TR_BOUTIQUE_DOMAINS` env var (a JSON host→slug map) is only an ops override for a host that isn't in the DB yet — e.g. while testing DNS before the row is set. Nothing about domain routing requires a code change.
 
-`resolveBoutiqueSlugFromHostAtEdge()` is the *only* place that ever derives a slug from a host — everything downstream (SEO, favicon, auth redirect, the boutique-slug React context) reads the `x-boutique-slug` header it stamps, rather than re-deriving it.
+`resolveBoutiqueSlugFromHostAtEdge()` is the *only* place that ever derives a slug from a **custom-domain** host — everything downstream (SEO, favicon, auth redirect, the boutique-slug React context) reads the `x-boutique-slug` header `proxy.ts` stamps, rather than re-deriving it. `resolveSlugFromStoresSubdomain()` is its subdomain-host counterpart.
+
+### Store URLs — canonical host and redirects (built 2026-09-29)
+
+Every boutique has a **canonical host**: its custom domain if connected, else its default subdomain once `TR_STORES_DOMAIN` is set, else nothing yet (in which case it's still only reachable via the platform path, exactly as before this work). `canonicalStoreHost()` / `resolveStoreHostKind()` / `resolveCanonicalRedirect()` (`src/lib/tr/seo/storeAddress.ts`) are the single decision layer every consumer shares: `proxy.ts` (308s a stray variant to the canonical host before doing anything else — the platform's `/tr/<slug>/…`, a subdomain once a custom domain is connected, `www.` on a custom domain), `sitemap.ts` (drops a boutique with a canonical host from the platform's cross-listing, matching how ikas never cross-lists a merchant store from its own marketing-site sitemap), and the Google feed (`resolveMerchantStoreOrigin`, product `link`s always point at the canonical host). `robots.ts` needed no change — it's already host-aware via the stamped header.
+
+This is fully inert wherever `TR_STORES_DOMAIN` is unset for a boutique without a custom domain — nothing redirects, nothing is dropped from the sitemap, identical to today's behavior. It is **not** inert for a boutique that already has a custom domain (lilabutik): its platform-path duplicate and `www.` variant now redirect immediately, regardless of `TR_STORES_DOMAIN`. See `docs/product-upload-foundation-plan.md`'s "Store URLs" section for the full design and what's still open (ops setting `TR_STORES_DOMAIN` + wildcard DNS/cert, then validating the subdomain path against `deneme-butik` in production).
 
 ## Onboarding a new boutique
 
@@ -58,7 +65,7 @@ If you find yourself writing a new `if (slug === "...")` anywhere outside these 
 | Concern | Path |
 |---|---|
 | Boutique CRUD (admin) | `src/lib/tr/boutiques.ts`, `src/app/api/tr/admin/boutiques/`, `src/app/api/tr/admin/seed/` |
-| Domain routing | `src/lib/tr/customDomain.ts`, `src/proxy.ts` |
+| Domain routing | `src/lib/tr/customDomain.ts`, `src/proxy.ts`, `src/lib/tr/seo/storeAddress.ts` (canonical host + redirect decision) |
 | Brand helpers | `src/lib/tr/storefront/boutiqueBrand.ts` |
 | Catalog profile / vertical capabilities | `src/lib/tr/catalogProfiles/` |
 | Owner auth | `src/lib/tr/ownerAuth.ts`, `src/lib/tr/panel/ownerClient.ts` |
