@@ -136,6 +136,25 @@ The owner can build an order by hand — a customer who ordered over Instagram o
 
 Without a live payment integration, checkout creates a **pending** order and the owner marks it paid manually from the panel. `TR_CHECKOUT_SANDBOX` forces this behavior for staging even when a payment integration exists.
 
+## Discount campaigns (İndirimler)
+
+**Status (2026-09-29): the M1 engine is built** (`src/lib/tr/discounts/`, `supabase/patch_discount_campaigns.sql`); the panel editor, checkout wiring, and the old `TrOwnerCampaignsPage` MVP have not been touched yet — see the milestone table below. This replaces the old coupon-only MVP: `patch_tr_discount_codes.sql` was never applied to production, so there was nothing to migrate.
+
+**The model** mirrors ikas: a **campaign** is either `kind: 'automatic'` (applies itself when a cart matches, no code) or `kind: 'code'` (only applies through one of its own codes). Both share the same fields — İndirim Türü (`percent` | `fixed` | `free_shipping`; X Al Y Kazan is not modeled), Koşullar (every product, or a scoped set in `tr_discount_campaign_products`, with an "İndirimli ürünleri dahil et" opt-in for items already on sale), Gereksinimler (optional min/max cart subtotal and item count — checked against the **whole cart**, not the scoped subset), Ayarlar (`stackable`), Aktif Tarihler. Where they differ: an automatic campaign has its own Kullanım Limitleri (`usage_limit_total` / `usage_limit_per_customer` on the campaign row); a code campaign has a **Kuponlar** tab instead — `tr_discount_campaign_codes`, one row per redeemable code, each with its own independent total/per-customer limits. "Otomatik Kod Üret" bulk-inserts several codes sharing one prefix and one set of limits. Per-customer usage is **not** tracked in a new table — `tr_orders` already has `discount_code` and `customer_id`/`customer_email`, so it's counted from there.
+
+**The engine is pure and tested** (`src/lib/tr/discounts/campaignRules.ts`, `codeRules.ts`): `readCampaignBody` validates the shared tabs (amounts arrive as kuruş — the panel form converts TRY before calling it, like the product form does); `campaignMatchesCart` / `campaignDiscountKurus` / `qualifyingSubtotalKurus` decide whether a campaign applies and what it takes off, scoped correctly to its own Koşullar; `resolveAutomaticDiscount` picks which of a boutique's automatic campaigns apply to a cart — **non-stackable campaigns are mutually exclusive (the single largest discount wins), every matching stackable campaign combines with it, each computed independently against its own scope and the total capped at the cart subtotal** (a default, not yet confirmed against real multi-campaign scenarios); `evaluateCodeRedemption` is the code-entry equivalent. `codeRules.ts` has the Kuponlar-tab validation and `generateCampaignCodes` (`<prefix><6 random lowercase alphanumeric chars>`, collision-checked against a passed-in existing set).
+
+**Not built yet — the milestones below:**
+
+| # | Scope | Touches checkout? |
+|---|---|---|
+| M1 | Schema (`tr_discount_campaigns`, `tr_discount_campaign_products`, `tr_discount_campaign_codes`) + types + the pure engine above | No — **built** |
+| M2 | Panel: Kampanyalar list, "Kampanya Ekle" type chooser, the shared editor tabs for `kind: 'automatic'`; DB layer (`catalog/discountCampaigns.ts`) and owner API routes | No |
+| M3 | Checkout: evaluate automatic campaigns against the cart (`checkoutValidate.ts`), apply the M1 stacking rule | **Yes** — waits on Mert (storefront/checkout is otherwise frozen, see `docs/product-upload-foundation-plan.md` §Status; M7c-1 was the one prior exception) |
+| M4 | Panel + DB for `kind: 'code'` (the Kuponlar tab, both add-a-code modes) and pointing checkout's existing code lookup at the new tables instead of the retired `tr_discount_codes` | Yes, same as M3 |
+
+The old `TrOwnerCampaignsPage.tsx` / `discountCodes.ts` / `tr_discount_codes` stay as they are until M2–M4 replace them; nothing has been deleted yet.
+
 ## Shipping
 
 **What the shopper pays** is per-boutique DB config, not code: `tr_boutiques.shipping_fee_kurus` (flat fee, 0 = no shipping charge), plus at most one free-shipping threshold — `free_shipping_min_items` (order has N+ items) or `free_shipping_min_subtotal_kurus` (items subtotal, before discounts, reaches N). They are on `tr_boutiques_public` because the cart/checkout/PDP show them. `src/lib/tr/shipping/quoteShipping.ts` turns a boutique's `ShippingFeeConfig` plus the cart lines into a fee; `shippingCopy.ts` builds every piece of shopper-facing shipping text from the same config so it can't drift from what is charged; `settings.ts` validates writes. The server re-quotes from the re-priced catalog lines in `POST /api/tr/checkout` — the client-side numbers are display only. Set it through the intake file (`shippingFeeTry`, `freeShippingMinItems` | `freeShippingMinSubtotalTry`), `PATCH /api/tr/owner/boutiques/[id]`, or the seed route. A boutique with no fee set charges no shipping — `scripts/create-boutique.mts` warns when the intake omits it. `quoteShipping.test.ts` (run `npm test`) pins lilabutik's exact rules (120 TL, free at 2+ items) and the shopper-facing copy. The rule is identical for every product in the cart. There is **no per-product shipping exception** — one existed (`midiJeanTwins.ts`, hardcoding free shipping for two specific dresses) and was deleted because it was a core-code-reaching-into-a-specific-product violation. If a future promo needs product-specific shipping behavior, it needs a generic DB-backed mechanism, not a name/id match in this file.
@@ -175,7 +194,8 @@ Checkout iyzico flow: `src/app/api/tr/checkout/iyzico/{start,abandon,callback}/r
 | Settings | `src/components/tr/panel/TrOwnerSettingsPage.tsx` |
 | Checkout | `src/app/api/tr/checkout/route.ts`, `src/components/tr/commerce/TrCheckoutPageContent.tsx` |
 | Orders / inventory | `src/lib/tr/orders.ts`, `src/lib/tr/inventory.ts` |
-| Discount codes | `src/lib/tr/discountCodes.ts` |
+| Discount campaigns (new, M1 only) | `src/lib/tr/discounts/{types,campaignRules,codeRules}.ts`, `supabase/patch_discount_campaigns.sql` |
+| Discount codes (old MVP, still live until M2–M4 replace it) | `src/lib/tr/discountCodes.ts`, `TrOwnerCampaignsPage.tsx` |
 | Shipping | `src/lib/tr/shipping/quoteShipping.ts`, `shippingCopy.ts`, `settings.ts` (fee rules); `registry.ts` (carrier integration) |
 | Payments | `src/lib/tr/payments/registry.ts` |
 
