@@ -40,9 +40,9 @@ import type {
  * Form state of the fashion (garment) product editor, kept as the strings the owner
  * typed. The editor and its tests share it so the rules live in one place.
  *
- * Prices follow the fashion editor's model: `priceTry` is the normal price; with
- * `discountEnabled`, `salePriceTry` is what the customer pays and the normal price is
- * shown struck through.
+ * Prices follow the storefront's model, like the Basit editor: `priceTry` is the normal
+ * price ("Satış fiyatı"); if `salePriceTry` is set it is what the customer pays and the
+ * normal price is shown struck through.
  *
  * Durum is derived from stock (Mert, 2026-09-29): the owner only chooses whether the
  * product is hidden; it is "Satıldı" when its stock is 0 and "Satışta" otherwise.
@@ -50,7 +50,7 @@ import type {
 export interface FashionProductFormState {
   title: string;
   priceTry: string;
-  discountEnabled: boolean;
+  /** "İndirimli fiyat"; empty = no discount. */
   salePriceTry: string;
   /** Plain text: meta description, Google feed and AI fill read it. */
   description: string;
@@ -84,7 +84,6 @@ export function fashionFormFromProduct(
     priceTry: kurusToPriceInput(
       onSale ? product.compareAtPriceKurus! : product.priceKurus,
     ),
-    discountEnabled: onSale,
     salePriceTry: onSale ? kurusToPriceInput(product.priceKurus) : "",
     description: product.description ?? "",
     features: product.features ?? {},
@@ -176,7 +175,7 @@ export function validateFashionProductForm(
     return `Stok ${TR_OWNER_PRODUCT_LIMITS.stockMin}–${TR_OWNER_PRODUCT_LIMITS.stockMax} arası olmalı.`;
   }
 
-  if (form.discountEnabled) {
+  if (form.salePriceTry.trim()) {
     if (!isValidTryPrice(form.salePriceTry)) {
       return "Geçerli bir indirimli fiyat girin.";
     }
@@ -220,7 +219,7 @@ export function fashionProductPatch(
   form: FashionProductFormState,
 ): TrOwnerProductPatch {
   const price = parseTryPrice(form.priceTry)!;
-  const sale = form.discountEnabled ? parseTryPrice(form.salePriceTry)! : null;
+  const sale = form.salePriceTry.trim() ? parseTryPrice(form.salePriceTry)! : null;
 
   const sizes = fashionFormSizes(form);
   const sizeStocks =

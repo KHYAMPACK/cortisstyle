@@ -6,7 +6,19 @@ Inputs: `docs/product-upload-foundation-plan.md` (all of it, esp. Status, §4 sa
 
 ## Status
 
-**A0 built on `main-t0o1c2` (2026-09-29).** Nothing uses it yet, and the live editor is unchanged.
+**A0, A1 and A2 built on `main-t0o1c2` (2026-09-29).** lilabutik's owner still gets the old autosaving editor; the new one opens only for staff via `urun/[id]?editor=yeni`. **A3** (the A.4 checklist, then the new editor as the default) waits for Mert's separate go-ahead.
+
+- **A1:** `components/tr/panel/TrPanelProductFields.tsx` holds the shared title, price, Durum, "Mağazada gör" and delete-card components. `TrSimpleProductEditor` now uses them with the same markup, so Basit/Gelişmiş look unchanged.
+- **A2:** `components/tr/fashion/panel/TrFashionProductEditor.tsx` covers the same cards and the same AI flows as the old editor, built on the A1 pieces with manual save (Kaydet, Ctrl+S, leave guard) and toasts. Deliberate differences from the old editor:
+  - **Price:** Satış fiyatı / İndirimli fiyat fields like Basit, instead of the "İndirim var mı?" switch. A filled İndirimli fiyat means a discount, so the stored prices are the same.
+  - **Durum:** Satışta / Gizli; sold follows stock (Q5).
+  - **All sizes at 0:** saves 0 stock (Q4).
+  - **Packshots** produced in the editor are unsaved edits until Kaydet (the leave guard protects them). Before, autosave stored them.
+  - **Restyle, model photos and colour-group links** still save on the server immediately. Their result is folded into the form (`rebaseFashionForm`) without discarding unsaved edits.
+  - **"+ Kategori ekle"** uses the shared `slugify`, checked to give identical ids to the old local slugifier.
+- **Verified:** `tsc`, 580/580 tests, `next build`. Repo-wide lint is unchanged (60 errors and 32 warnings, all already there; none in new files). **Not yet verified in a browser:** no staff login is available to the agent, so the A.4 checklist on `deneme-butik` is the next step.
+
+A0 detail:
 
 - **The module:** `src/lib/tr/fashion/productForm.ts` holds the fashion editor's form state, validation (the old editor's checks and wording), the Kaydet PATCH body, and `rebaseFashionForm` for server-side AI/colour-group saves. Its tests are in `productForm.test.ts` (22 tests).
 - **What the PATCH body does, per Mert's decisions:**

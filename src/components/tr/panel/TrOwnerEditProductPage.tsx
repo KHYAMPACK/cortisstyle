@@ -11,6 +11,7 @@ import {
   TrPanelFadeIn,
   TrPanelLoading,
 } from "@/components/tr/panel/TrPanelMotion";
+import { TrFashionProductEditor } from "@/components/tr/fashion/panel/TrFashionProductEditor";
 import { TrProductEditorForm } from "@/components/tr/panel/TrProductEditorForm";
 import {
   boutiqueLocationAddress,
@@ -29,9 +30,18 @@ import {
 
 interface TrOwnerEditProductPageProps {
   productId: string;
+  /**
+   * `manual-save` (from `?editor=yeni`) opens the rebuilt fashion editor instead of the
+   * autosaving one. Staff only while it is being checked against lilabutik; see
+   * docs/lilabutik-foundation-migration-plan.md (A2/A3).
+   */
+  requestedFashionEditor?: "manual-save" | null;
 }
 
-export function TrOwnerEditProductPage({ productId }: TrOwnerEditProductPageProps) {
+export function TrOwnerEditProductPage({
+  productId,
+  requestedFashionEditor = null,
+}: TrOwnerEditProductPageProps) {
   const router = useRouter();
   const { isAuthenticated, isInitializing } = useAuth();
   const [product, setProduct] = useState<TrProduct | null>(null);
@@ -86,7 +96,7 @@ export function TrOwnerEditProductPage({ productId }: TrOwnerEditProductPageProp
 
   return (
     <TrOwnerPanelGate>
-      {({ activeBoutique }) => (
+      {({ activeBoutique, isStaff }) => (
         <TrOwnerProductRouteGate activeBoutique={activeBoutique}>
           <TrPanelEditor
             backHref={trPanelProductsPath()}
@@ -119,6 +129,23 @@ export function TrOwnerEditProductPage({ productId }: TrOwnerEditProductPageProp
                     categoryMode={activeBoutique.categoryMode}
                     initialCategories={productCategories}
                     initialVariants={variants}
+                    onSaved={(saved) => {
+                      setProduct(saved);
+                    }}
+                    onDeleted={() => {
+                      router.push(trPanelProductsPath());
+                    }}
+                  />
+                </TrPanelFadeIn>
+              ) : product &&
+                productType === "fashion" &&
+                isStaff &&
+                requestedFashionEditor === "manual-save" ? (
+                <TrPanelFadeIn key="edit-fashion" shift={false}>
+                  <TrFashionProductEditor
+                    boutiqueId={product.boutiqueId}
+                    boutiqueSlug={activeBoutique.slug}
+                    initialProduct={product}
                     onSaved={(saved) => {
                       setProduct(saved);
                     }}

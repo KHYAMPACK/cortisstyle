@@ -5,7 +5,6 @@ import { useMemo, useState } from "react";
 import { useUnsavedChangesGuard } from "@/components/tr/panel/TrOwnerLeaveGuard";
 import { TrOwnerManualPhotoGallery } from "@/components/tr/panel/TrOwnerManualPhotoGallery";
 import {
-  TrPanelEditorActions,
   TrPanelEditorCard,
   TrPanelEditorSave,
   TrPanelEditorTabs,
@@ -20,21 +19,21 @@ import { TrPanelSeoCard } from "@/components/tr/panel/TrPanelSeoCard";
 import { TrProductVariantsCard } from "@/components/tr/panel/TrProductVariantsCard";
 import { useOwnerCategories } from "@/components/tr/panel/useOwnerCategories";
 import { useOwnerProductFacets } from "@/components/tr/panel/useOwnerProductFacets";
-import { TrPanelBusySpinner } from "@/components/tr/panel/TrPanelMotion";
+import {
+  TrPanelPriceField,
+  TrPanelProductDeleteCard,
+  TrPanelProductStoreLink,
+  TrPanelProductTitleField,
+  TrPanelProductVisibilityField,
+} from "@/components/tr/panel/TrPanelProductFields";
 import { TrProductImageLightbox } from "@/components/tr/panel/TrProductImageLightbox";
 import {
-  panelChipClass,
-  panelDangerBtnClass,
   panelFieldClass,
   panelHintClass,
   panelLabelClass,
-  panelSecondaryBtnClass,
 } from "@/components/tr/panel/panelUi";
 import {
-  clampTitle,
   sanitizeStockInput,
-  sanitizeTryPriceInput,
-  TR_OWNER_PRODUCT_LIMITS,
 } from "@/lib/tr/ownerProductConstraints";
 import {
   createOwnerProductDetailed,
@@ -51,7 +50,7 @@ import {
   validateSimpleProductForm,
   type SimpleProductFormState,
 } from "@/lib/tr/panel/simpleProductForm";
-import { trBoutiqueProductPath, trPanelSettingsPath } from "@/lib/tr/paths";
+import { trPanelSettingsPath } from "@/lib/tr/paths";
 import {
   PRODUCT_DETAIL_LIMITS,
   parseDecimalInput,
@@ -122,43 +121,6 @@ const FULFILLMENT_OPTIONS: Array<{ id: TrFulfillmentType; label: string }> = [
   { id: "digital", label: "Dijital" },
 ];
 
-function PriceField({
-  label,
-  required,
-  value,
-  onChange,
-  hint,
-}: {
-  label: string;
-  required?: boolean;
-  value: string;
-  onChange: (next: string) => void;
-  hint?: string;
-}) {
-  return (
-    <label className="block space-y-2">
-      <span className={panelLabelClass}>
-        {label}
-        {required ? (
-          <span className="text-[color:var(--panel-accent)]"> *</span>
-        ) : null}
-      </span>
-      <span className="relative block">
-        <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-[14px] text-neutral-400">
-          ₺
-        </span>
-        <input
-          value={value}
-          onChange={(event) => onChange(sanitizeTryPriceInput(event.target.value))}
-          inputMode="decimal"
-          className={`${panelFieldClass} pl-8`}
-        />
-      </span>
-      {hint ? <span className={`block ${panelHintClass}`}>{hint}</span> : null}
-    </label>
-  );
-}
-
 /**
  * The Basit and Gelişmiş ürün editor. A Basit ürün has one price and one stock count; a
  * Gelişmiş ürün is the same plus a Varyant card, and sells like a Basit ürün until it has
@@ -225,7 +187,6 @@ export function TrSimpleProductEditor({
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const [savedOnce, setSavedOnce] = useState(false);
   const [lightbox, setLightbox] = useState<{ src: string; label: string } | null>(
     null,
@@ -280,8 +241,8 @@ export function TrSimpleProductEditor({
     }
   };
 
-  const remove = async () => {
-    if (!product) return;
+  const remove = async (): Promise<boolean> => {
+    if (!product) return false;
     setDeleting(true);
     try {
       const result = await deleteOwnerProduct(product.id);
@@ -291,9 +252,10 @@ export function TrSimpleProductEditor({
       // Nothing left to lose: release the leave guard before navigating away.
       setBaseline(JSON.stringify(form));
       onDeleted?.();
+      return true;
     } catch (deleteError) {
       toast.error(deleteError, "Ürün silinemedi.");
-      setConfirmDelete(false);
+      return false;
     } finally {
       setDeleting(false);
     }
@@ -337,16 +299,7 @@ export function TrSimpleProductEditor({
       className="space-y-5"
     >
       {product && product.status === "available" ? (
-        <TrPanelEditorActions>
-          <a
-            href={trBoutiqueProductPath(boutiqueSlug, product.id)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hidden h-9 items-center rounded-lg border border-white/15 px-3 text-[13px] font-medium text-white/85 transition-colors duration-150 hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70 motion-reduce:transition-none md:inline-flex"
-          >
-            Mağazada gör
-          </a>
-        </TrPanelEditorActions>
+        <TrPanelProductStoreLink boutiqueSlug={boutiqueSlug} productId={product.id} />
       ) : null}
       <TrPanelEditorSave
         dirty={dirty}
@@ -366,23 +319,10 @@ export function TrSimpleProductEditor({
           hint="Mağazada görünen ad, fiyat ve satış durumu."
         >
           <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_14rem]">
-            <label className="block space-y-2">
-              <span className={panelLabelClass}>
-                Ürün adı
-                <span className="text-[color:var(--panel-accent)]"> *</span>
-              </span>
-              <input
-                value={form.title}
-                onChange={(event) =>
-                  change({ title: clampTitle(event.target.value) })
-                }
-                maxLength={TR_OWNER_PRODUCT_LIMITS.titleMax}
-                className={panelFieldClass}
-              />
-              <span className={`block ${panelHintClass}`}>
-                {form.title.length}/{TR_OWNER_PRODUCT_LIMITS.titleMax}
-              </span>
-            </label>
+            <TrPanelProductTitleField
+              value={form.title}
+              onChange={(title) => change({ title })}
+            />
             <label className="block space-y-2">
               <span className={panelLabelClass}>
                 Ürün türü
@@ -413,19 +353,19 @@ export function TrSimpleProductEditor({
           ) : null}
 
           <div className="grid gap-4 sm:grid-cols-3">
-            <PriceField
+            <TrPanelPriceField
               label="Satış fiyatı"
               required
               value={form.priceTry}
               onChange={(priceTry) => change({ priceTry })}
             />
-            <PriceField
+            <TrPanelPriceField
               label="İndirimli fiyat"
               value={form.salePriceTry}
               onChange={(salePriceTry) => change({ salePriceTry })}
               hint="Doluysa müşteri bunu öder; satış fiyatı üstü çizili görünür."
             />
-            <PriceField
+            <TrPanelPriceField
               label="Alış fiyatı"
               value={form.costPriceTry}
               onChange={(costPriceTry) => change({ costPriceTry })}
@@ -484,28 +424,10 @@ export function TrSimpleProductEditor({
             </p>
           </div>
 
-          <div className="space-y-2">
-            <p className={panelLabelClass}>Durum</p>
-            <div className="flex flex-wrap gap-3">
-              <button
-                type="button"
-                className={panelChipClass(!form.hidden)}
-                onClick={() => change({ hidden: false })}
-              >
-                Satışta
-              </button>
-              <button
-                type="button"
-                className={panelChipClass(form.hidden)}
-                onClick={() => change({ hidden: true })}
-              >
-                Gizli
-              </button>
-            </div>
-            <p className={panelHintClass}>
-              Satışta görünür, gizlide mağazada çıkmaz.
-            </p>
-          </div>
+          <TrPanelProductVisibilityField
+            hidden={form.hidden}
+            onChange={(hidden) => change({ hidden })}
+          />
         </TrPanelEditorCard>
 
         <TrPanelEditorCard
@@ -760,63 +682,12 @@ export function TrSimpleProductEditor({
         />
 
         {product ? (
-          <TrPanelEditorCard id="editor-sil" title="Ürünü sil" tone="danger">
-            <p className={panelHintClass}>
-              Bu işlem ürünü mağazadan kaldırır. Emin değilseniz dokunmayın.
-            </p>
-            {!confirmDelete ? (
-              <button
-                type="button"
-                disabled={saving || uploading || deleting}
-                onClick={() => setConfirmDelete(true)}
-                className={`${panelSecondaryBtnClass} w-full border-red-300 text-red-800 sm:w-auto`}
-              >
-                Ürünü sil
-              </button>
-            ) : (
-              <div
-                className="space-y-4 rounded-xl border border-red-300 bg-red-50 p-5"
-                role="alertdialog"
-                aria-labelledby="delete-simple-product-title"
-              >
-                <p
-                  id="delete-simple-product-title"
-                  className="text-[16px] font-semibold text-neutral-900"
-                >
-                  Ürünü silmek istediğinize emin misiniz?
-                </p>
-                <p className="text-[14px] leading-relaxed text-neutral-700">
-                  <span className="font-semibold">{product.title}</span> kalıcı
-                  olarak silinir. Bu işlem geri alınamaz.
-                </p>
-                <div className="flex flex-wrap gap-3">
-                  <button
-                    type="button"
-                    disabled={deleting}
-                    className={panelDangerBtnClass}
-                    onClick={() => void remove()}
-                  >
-                    {deleting ? (
-                      <>
-                        <TrPanelBusySpinner />
-                        Siliniyor…
-                      </>
-                    ) : (
-                      "Evet, sil"
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    disabled={deleting}
-                    className={panelSecondaryBtnClass}
-                    onClick={() => setConfirmDelete(false)}
-                  >
-                    Vazgeç
-                  </button>
-                </div>
-              </div>
-            )}
-          </TrPanelEditorCard>
+          <TrPanelProductDeleteCard
+            productTitle={product.title}
+            disabled={saving || uploading}
+            deleting={deleting}
+            onDelete={remove}
+          />
         ) : null}
       </div>
 

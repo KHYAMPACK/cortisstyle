@@ -92,7 +92,6 @@ describe("fashionFormFromProduct → fashionProductPatch (parity with the stored
   it("keeps a discount as sale price + struck-through price", () => {
     const product = garment({ priceKurus: 99_950, compareAtPriceKurus: 149_900 });
     const loaded = fashionFormFromProduct(product);
-    assert.equal(loaded.discountEnabled, true);
     assert.equal(loaded.priceTry, "1499");
     assert.equal(loaded.salePriceTry, "999.50");
     const patch = fashionProductPatch(loaded);
@@ -209,17 +208,19 @@ describe("validateFashionProductForm", () => {
     );
   });
 
-  it("requires the discounted price to be valid and lower", () => {
+  it("treats an empty discounted price as no discount, otherwise requires it valid and lower", () => {
+    assert.equal(validateFashionProductForm(form({ salePriceTry: "  " })), null);
+    assert.equal(fashionProductPatch(form({ salePriceTry: "" })).compareAtPriceTry, null);
     assert.match(
-      validateFashionProductForm(form({ discountEnabled: true, salePriceTry: "" }))!,
+      validateFashionProductForm(form({ salePriceTry: "abc" }))!,
       /indirimli fiyat/,
     );
     assert.match(
-      validateFashionProductForm(form({ discountEnabled: true, salePriceTry: "1899" }))!,
+      validateFashionProductForm(form({ salePriceTry: "1899" }))!,
       /düşük/,
     );
     assert.equal(
-      validateFashionProductForm(form({ discountEnabled: true, salePriceTry: "1499" })),
+      validateFashionProductForm(form({ salePriceTry: "1499" })),
       null,
     );
   });
