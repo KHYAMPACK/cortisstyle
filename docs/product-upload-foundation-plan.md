@@ -227,7 +227,7 @@ tr_order_items          + variant_id uuid null, variant_label text null   -- sna
 | Google feed | one item per product | one item per variant with `item_group_id` (+ color/size where the type is Renk/Beden) |
 | Panel Stok page | per-size table | rows per variant |
 
-About 25 storefront/checkout files touch `size` today, so this is its own milestone (M7c), started only once a real Gelişmiş product exists. Checkout is currently limited to quantity 1 per line ("adet şu an 1 ile sınırlı"); variants don't change that.
+About 35 storefront/checkout/order/feed files (about 50 counting the panel) touch `size` today (recounted 2026-09-29, see `lilabutik-foundation-migration-plan.md` §B.1), so this is its own milestone (M7c), started only once a real Gelişmiş product exists. Checkout is currently limited to quantity 1 per line ("adet şu an 1 ile sınırlı"); variants don't change that.
 
 ### 8.5 Fashion and custom_art: coexist first (recommended)
 

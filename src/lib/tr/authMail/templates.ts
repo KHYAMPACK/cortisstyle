@@ -24,27 +24,23 @@ function resolveEmailAssetBaseUrl(): string {
   return site;
 }
 
-/**
- * PNG-only overrides for email clients (many block SVG).
- * Paths are under /public.
- */
-const EMAIL_LOGO_PATHS: Partial<Record<string, string>> = {
-  lilabutik: "/tr/boutiques/lilabutik/logo.png",
-};
+/** Many email clients block SVG, so an SVG logo is left out of the email. */
+function isSvgPath(path: string): boolean {
+  return /\.svg$/i.test(path.split(/[?#]/)[0] ?? "");
+}
 
+/**
+ * Name and logo for a boutique's auth emails. The logo is the storefront logo
+ * (`resolveBoutiqueLogoUrl`: code override, else `tr_boutiques.logo_url`) unless it
+ * is an SVG; a store with only an SVG logo is asked for a PNG at onboarding.
+ */
 export function resolveBoutiqueAuthMailBrand(
   boutique: Pick<TrBoutiquePublic, "slug" | "name" | "logoUrl">,
 ): BoutiqueAuthMailBrand {
   const name = resolveBoutiqueBrandLabel(boutique.slug, boutique.name);
-  const emailLogoPath = EMAIL_LOGO_PATHS[boutique.slug];
+  const storefrontLogo = resolveBoutiqueLogoUrl(boutique);
   const logoPath =
-    emailLogoPath ||
-    (() => {
-      const path = resolveBoutiqueLogoUrl(boutique);
-      // Skip SVG in email — unreliable across clients.
-      if (path?.toLowerCase().endsWith(".svg")) return null;
-      return path;
-    })();
+    storefrontLogo && !isSvgPath(storefrontLogo) ? storefrontLogo : null;
 
   const base = resolveEmailAssetBaseUrl();
   const logoAbsoluteUrl = logoPath
