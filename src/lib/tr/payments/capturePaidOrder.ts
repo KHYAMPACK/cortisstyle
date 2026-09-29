@@ -3,6 +3,7 @@ import { decrementInventoryForOrderLines } from "@/lib/tr/inventory";
 import { inventoryLinesOf } from "@/lib/tr/commerce/inventoryLines";
 import {
   getOrderByIdAdmin,
+  getOrderDiscountCampaignIdsAdmin,
   markOrderPaidIfAwaitingPaymentAdmin,
 } from "@/lib/tr/orders";
 import { autoFulfillPaidShipment } from "@/lib/tr/shipping/ownerShipment";
@@ -65,6 +66,18 @@ export async function captureBoutiqueOrderAsPaid(input: {
     } catch (couponError) {
       console.error("[tr/payments] coupon usage after paid failed:", couponError);
     }
+  }
+
+  try {
+    const campaignIds = await getOrderDiscountCampaignIdsAdmin(input.orderId);
+    if (campaignIds.length > 0) {
+      const { incrementCampaignUsage } = await import(
+        "@/lib/tr/catalog/discountCampaigns"
+      );
+      await Promise.all(campaignIds.map((id) => incrementCampaignUsage(id)));
+    }
+  } catch (campaignError) {
+    console.error("[tr/payments] campaign usage after paid failed:", campaignError);
   }
 
   try {

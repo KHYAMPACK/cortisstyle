@@ -197,3 +197,89 @@ export async function deleteCampaign(id: string): Promise<void> {
     throw error;
   }
 }
+
+// ---------------------------------------------------------------- checkout (M3)
+
+/**
+ * A boutique's `kind: 'automatic'` campaigns, for evaluating a cart at checkout.
+ * Active/inactive and date-window filtering happens in `campaignMatchesCart`
+ * (the pure engine), not here — this just narrows to the kind checkout cares about.
+ */
+export async function listAutomaticCampaigns(
+  boutiqueId: string,
+): Promise<TrDiscountCampaign[]> {
+  const supabase = getServiceSupabase();
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("tr_discount_campaigns")
+    .select("*")
+    .eq("boutique_id", boutiqueId)
+    .eq("kind", "automatic");
+  if (error) {
+    if (!isSchemaMissing(error)) {
+      console.error("[tr/discount-campaigns] automatic list failed:", error.message);
+    }
+    return [];
+  }
+  const rows = data ?? [];
+  const scope = await loadProductScope(rows.map((row) => String(row.id)));
+  return rows.map((row) =>
+    mapDiscountCampaignRow(row as Record<string, unknown>, scope.get(String(row.id)) ?? []),
+  );
+}
+
+/**
+ * How many of a customer's non-failed, non-refunded orders already carry this
+ * campaign's id in `discount_campaign_ids` — what a Müşteri başına kullanım limiti
+ * is checked against. Tolerant of the column not existing yet (`patch_discount_campaign_usage.sql`
+ * not applied): treated as "never used", the same "not built yet" degrade every other
+ * read here uses.
+ */
+export async function countCustomerCampaignUses(
+  campaignId: string,
+  customerEmail: string,
+): Promise<number> {
+  const supabase = getServiceSupabase();
+  const email = customerEmail.trim().toLowerCase();
+  if (!supabase || !email) return 0;
+  const { data, error } = await supabase
+    .from("tr_orders")
+    .select("payment_status")
+    .eq("customer_email", email)
+    .contains("discount_campaign_ids", [campaignId]);
+  if (error) {
+    if (!isSchemaMissing(error)) {
+      console.error("[tr/discount-campaigns] customer usage count failed:", error.message);
+    }
+    return 0;
+  }
+  return (data ?? []).filter(
+    (row) => row.payment_status !== "failed" && row.payment_status !== "refunded",
+  ).length;
+}
+
+/**
+ * Burns one use of a campaign's Toplam kullanım limiti after a sale actually
+ * completes (mirrors `incrementDiscountCodeUsageAdmin`): a compare-and-set on
+ * `used_count` so two payments finishing at once can't both slip past a limit of 1.
+ * A campaign with no total limit still gets counted (useful for reporting), just
+ * never blocked by it.
+ */
+export async function incrementCampaignUsage(campaignId: string): Promise<void> {
+  const supabase = getServiceSupabase();
+  if (!supabase) return;
+  const campaign = await getCampaign(campaignId);
+  if (!campaign) return;
+  let query = supabase
+    .from("tr_discount_campaigns")
+    .update({ used_count: campaign.usedCount + 1 })
+    .eq("id", campaignId)
+    .eq("used_count", campaign.usedCount);
+  if (campaign.usageLimitTotal != null) {
+    query = query.lt("used_count", campaign.usageLimitTotal);
+  }
+  const { error } = await query;
+  if (error && !isSchemaMissing(error)) {
+    console.error("[tr/discount-campaigns] usage increment failed:", error.message);
+  }
+}

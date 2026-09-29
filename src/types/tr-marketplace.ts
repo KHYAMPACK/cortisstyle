@@ -513,6 +513,8 @@ export interface CreateTrOrderInput {
   decrementInventory?: boolean;
   /** A manual price reduction's name; set with `discountKurus` instead of a coupon code. */
   discountTitle?: string | null;
+  /** Automatic discount campaigns (tr_discount_campaigns) applied to this order. */
+  discountCampaignIds?: string[];
   /** Default `storefront`. `manual` = an owner-created order (see `patch_tr_manual_orders.sql`). */
   channel?: TrOrderChannel;
   /** The owner's note on a manual order. */

@@ -2,6 +2,16 @@ import {
   getDiscountCodeForBoutiqueAdmin,
   incrementDiscountCodeUsageAdmin,
 } from "@/lib/tr/discountCodes";
+import {
+  countCustomerCampaignUses,
+  incrementCampaignUsage,
+  listAutomaticCampaigns,
+} from "@/lib/tr/catalog/discountCampaigns";
+import {
+  resolveAutomaticDiscount,
+  type DiscountCartContext,
+} from "@/lib/tr/discounts/campaignRules";
+import type { TrDiscountCampaign } from "@/lib/tr/discounts/types";
 import { getBoutiqueByIdAdmin } from "@/lib/tr/boutiques";
 import { isCustomArtCatalogProfile } from "@/lib/tr/catalogProfiles";
 import {
@@ -57,12 +67,35 @@ export type ResolvedCheckout = {
   lines: ResolvedCheckoutLine[];
   subtotalKurus: number;
   discountCode: string | null;
+  /** Combined total off: the code's discount plus every matching automatic campaign's. */
   discountKurus: number;
   totalKurus: number;
   discountRow: TrDiscountCode | null;
+  /** Automatic campaigns that applied (M1's stacking rule already picked these). */
+  appliedCampaigns: TrDiscountCampaign[];
+  /** A label for the automatic-campaign part of the discount, joined when more than one applied. */
+  discountTitle: string | null;
+  /** An applied campaign was `discount_type: 'free_shipping'`. */
+  freeShipping: boolean;
   /** When true, skip inventory decrement for all lines. */
   skipInventoryDecrement: boolean;
 };
+
+/** Drops any campaign the customer has already used up to its own per-customer limit. */
+async function excludeCampaignsAtCustomerLimit(
+  campaigns: readonly TrDiscountCampaign[],
+  customerEmail: string | null,
+): Promise<TrDiscountCampaign[]> {
+  const email = customerEmail?.trim();
+  const limited = campaigns.filter((campaign) => campaign.usageLimitPerCustomer !== null);
+  if (!email || limited.length === 0) return [...campaigns];
+  const overLimit = new Set<string>();
+  for (const campaign of limited) {
+    const uses = await countCustomerCampaignUses(campaign.id, email);
+    if (uses >= campaign.usageLimitPerCustomer!) overLimit.add(campaign.id);
+  }
+  return campaigns.filter((campaign) => !overLimit.has(campaign.id));
+}
 
 function normalizeSize(size: string | null | undefined): string | null {
   const trimmed = size?.trim() ?? "";
@@ -245,6 +278,8 @@ export async function resolveCheckoutFromCatalog(input: {
   items: CheckoutClientItem[];
   expectedBoutiqueId?: string | null;
   discountCode?: string | null;
+  /** For an automatic campaign's Müşteri başına kullanım limiti. */
+  customerEmail?: string | null;
 }): Promise<
   | { ok: true; checkout: ResolvedCheckout }
   | { ok: false; error: string; status: number }
@@ -355,6 +390,47 @@ export async function resolveCheckoutFromCatalog(input: {
     discountKurus = computeDiscountKurus(subtotalKurus, discountRow);
   }
 
+  let appliedCampaigns: TrDiscountCampaign[] = [];
+  let campaignDiscountKurus = 0;
+  let freeShipping = false;
+  const campaignBoutiqueId = lines[0]?.boutiqueId;
+  if (campaignBoutiqueId) {
+    const automatic = await listAutomaticCampaigns(campaignBoutiqueId);
+    if (automatic.length > 0) {
+      const cart: DiscountCartContext = {
+        lines: lines.map((line) => {
+          const product = byId.get(line.productId);
+          return {
+            productId: line.productId,
+            priceKurus: line.priceKurus,
+            quantity: line.quantity,
+            onSale: Boolean(
+              product?.compareAtPriceKurus != null &&
+                product.compareAtPriceKurus > product.priceKurus,
+            ),
+          };
+        }),
+      };
+      const eligible = await excludeCampaignsAtCustomerLimit(
+        automatic,
+        input.customerEmail ?? null,
+      );
+      const resolved = resolveAutomaticDiscount(eligible, cart);
+      appliedCampaigns = resolved.campaigns;
+      campaignDiscountKurus = resolved.discountKurus;
+      freeShipping = resolved.freeShipping;
+    }
+  }
+
+  const totalDiscountKurus = Math.min(
+    subtotalKurus,
+    discountKurus + campaignDiscountKurus,
+  );
+  const discountTitle =
+    appliedCampaigns.length > 0
+      ? appliedCampaigns.map((campaign) => campaign.title).join(", ")
+      : null;
+
   const skipInventoryDecrement = products.every((product) =>
     isMadeToOrderProduct(product.features),
   );
@@ -365,9 +441,12 @@ export async function resolveCheckoutFromCatalog(input: {
       lines,
       subtotalKurus,
       discountCode: discountRow?.code ?? null,
-      discountKurus,
-      totalKurus: Math.max(0, subtotalKurus - discountKurus),
+      discountKurus: totalDiscountKurus,
+      totalKurus: Math.max(0, subtotalKurus - totalDiscountKurus),
       discountRow,
+      appliedCampaigns,
+      discountTitle,
+      freeShipping,
       skipInventoryDecrement,
     },
   };
@@ -380,5 +459,14 @@ export async function recordDiscountUsageIfNeeded(
   const ok = await incrementDiscountCodeUsageAdmin(discountRow.id);
   if (!ok) {
     throw new Error("Kupon kullanım limiti doldu.");
+  }
+}
+
+/** Burns one use of each applied automatic campaign's Toplam kullanım limiti. */
+export async function recordCampaignUsageIfNeeded(
+  appliedCampaigns: readonly TrDiscountCampaign[],
+): Promise<void> {
+  for (const campaign of appliedCampaigns) {
+    await incrementCampaignUsage(campaign.id);
   }
 }

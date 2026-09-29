@@ -1,6 +1,7 @@
 import { createOrderAdmin } from "@/lib/tr/orders";
 import { getPublicBoutiqueBySlug } from "@/lib/tr/boutiques";
 import {
+  recordCampaignUsageIfNeeded,
   recordDiscountUsageIfNeeded,
   resolveCheckoutFromCatalog,
   type CheckoutClientItem,
@@ -154,6 +155,7 @@ export async function POST(request: Request) {
       items: body.items,
       expectedBoutiqueId,
       discountCode: body.discountCode,
+      customerEmail: body.customerEmail,
     });
 
     if (!resolved.ok) {
@@ -184,10 +186,12 @@ export async function POST(request: Request) {
     let shippingProvider: CreateTrOrderInput["shippingProvider"] = null;
     if (boutique) {
       // Server-side only: the fee comes from the boutique's own settings and the
-      // re-priced catalog lines, never from anything the client sent.
-      shippingFeeKurus =
-        quoteCheckoutShippingFee(shippingFeeConfigOf(boutique), checkout.lines)
-          ?.feeKurus ?? 0;
+      // re-priced catalog lines, never from anything the client sent. A matching
+      // free-shipping campaign overrides it.
+      shippingFeeKurus = checkout.freeShipping
+        ? 0
+        : (quoteCheckoutShippingFee(shippingFeeConfigOf(boutique), checkout.lines)
+            ?.feeKurus ?? 0);
       if (boutiqueSlug && boutiqueHasCarrierIntegration(boutiqueSlug)) {
         shippingProvider = "basitkargo";
       }
@@ -228,6 +232,8 @@ export async function POST(request: Request) {
       })),
       discountCode: checkout.discountCode,
       discountKurus: checkout.discountKurus,
+      discountTitle: checkout.discountTitle,
+      discountCampaignIds: checkout.appliedCampaigns.map((campaign) => campaign.id),
       shippingFeeKurus,
       shippingProvider,
       isSandbox: sandbox,
@@ -235,12 +241,17 @@ export async function POST(request: Request) {
       notifyOwners: !wantsIyzico,
     });
 
-    // Card capture: burn the coupon only after iyzico SUCCESS.
+    // Card capture: burn the coupon/campaigns only after iyzico SUCCESS.
     if (!wantsIyzico) {
       try {
         await recordDiscountUsageIfNeeded(checkout.discountRow);
       } catch (couponError) {
         console.error("[tr/checkout] coupon usage increment failed:", couponError);
+      }
+      try {
+        await recordCampaignUsageIfNeeded(checkout.appliedCampaigns);
+      } catch (campaignError) {
+        console.error("[tr/checkout] campaign usage increment failed:", campaignError);
       }
     }
 

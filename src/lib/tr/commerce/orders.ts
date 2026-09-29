@@ -22,6 +22,15 @@ import type {
   TrPaymentStatus,
 } from "@/types/tr-marketplace";
 
+type DbError = { code?: string; message?: string };
+
+function isSchemaMissing(error: DbError): boolean {
+  if (["42703", "42P01", "PGRST204", "PGRST205"].includes(error.code ?? "")) {
+    return true;
+  }
+  return /does not exist|schema cache|could not find/i.test(error.message ?? "");
+}
+
 async function withProductImages(
   items: TrOrderItem[],
 ): Promise<TrOrderItem[]> {
@@ -124,43 +133,64 @@ export async function createOrderAdmin(
         })
       : null;
 
-    const orderInsert = await supabase
+    const orderFields: Record<string, unknown> = {
+      ...(customerId ? { customer_id: customerId } : {}),
+      customer_email: input.customerEmail.trim().toLowerCase(),
+      customer_name: input.customerName.trim(),
+      customer_phone: input.customerPhone?.trim() ?? null,
+      shipping_address: shippingAddressToJson(input.shippingAddress),
+      total_kurus: totalKurus,
+      discount_code: discountCode,
+      discount_kurus: discountKurus,
+      // Manual-order columns are only written when used, so the shop's checkout
+      // never depends on `patch_tr_manual_orders.sql`.
+      ...(input.channel === "manual" ? { channel: "manual" } : {}),
+      ...(input.customerNote?.trim()
+        ? { customer_note: input.customerNote.trim() }
+        : {}),
+      ...(input.discountTitle?.trim()
+        ? { discount_title: input.discountTitle.trim() }
+        : {}),
+      invoice_type: invoiceType,
+      buyer_tax_id: buyerTaxId,
+      buyer_tax_office: buyerTaxOffice,
+      buyer_title: buyerTitle,
+      payment_status: paymentStatus,
+      fulfillment_status: "created",
+      is_sandbox: isSandbox,
+      ...(shippingFeeKurus > 0
+        ? { shipping_fee_kurus: shippingFeeKurus }
+        : {}),
+      ...(input.shippingProvider
+        ? { shipping_provider: input.shippingProvider }
+        : {}),
+      ...(input.createdAt ? { created_at: input.createdAt } : {}),
+    };
+
+    const campaignIds = input.discountCampaignIds?.filter(Boolean) ?? [];
+    let orderInsert = await supabase
       .from("tr_orders")
-      .insert({
-        ...(customerId ? { customer_id: customerId } : {}),
-        customer_email: input.customerEmail.trim().toLowerCase(),
-        customer_name: input.customerName.trim(),
-        customer_phone: input.customerPhone?.trim() ?? null,
-        shipping_address: shippingAddressToJson(input.shippingAddress),
-        total_kurus: totalKurus,
-        discount_code: discountCode,
-        discount_kurus: discountKurus,
-        // Manual-order columns are only written when used, so the shop's checkout
-        // never depends on `patch_tr_manual_orders.sql`.
-        ...(input.channel === "manual" ? { channel: "manual" } : {}),
-        ...(input.customerNote?.trim()
-          ? { customer_note: input.customerNote.trim() }
-          : {}),
-        ...(input.discountTitle?.trim()
-          ? { discount_title: input.discountTitle.trim() }
-          : {}),
-        invoice_type: invoiceType,
-        buyer_tax_id: buyerTaxId,
-        buyer_tax_office: buyerTaxOffice,
-        buyer_title: buyerTitle,
-        payment_status: paymentStatus,
-        fulfillment_status: "created",
-        is_sandbox: isSandbox,
-        ...(shippingFeeKurus > 0
-          ? { shipping_fee_kurus: shippingFeeKurus }
-          : {}),
-        ...(input.shippingProvider
-          ? { shipping_provider: input.shippingProvider }
-          : {}),
-        ...(input.createdAt ? { created_at: input.createdAt } : {}),
-      })
+      .insert(
+        campaignIds.length > 0
+          ? { ...orderFields, discount_campaign_ids: campaignIds }
+          : orderFields,
+      )
       .select("*")
       .single();
+
+    if (
+      orderInsert.error &&
+      campaignIds.length > 0 &&
+      isSchemaMissing(orderInsert.error)
+    ) {
+      // patch_discount_campaign_usage.sql not applied yet: still place the order,
+      // just without recording which campaign(s) discounted it.
+      orderInsert = await supabase
+        .from("tr_orders")
+        .insert(orderFields)
+        .select("*")
+        .single();
+    }
 
     if (orderInsert.error) throw orderInsert.error;
     orderRow = orderInsert.data as Record<string, unknown>;
@@ -247,6 +277,32 @@ export async function createOrderAdmin(
     ...order,
     items,
   };
+}
+
+/**
+ * The automatic campaign ids recorded on an order, for burning their usage limit
+ * once payment succeeds (`capturePaidOrder.ts`). A separate, narrow read instead of
+ * adding the column to `TrOrder`/`mapOrderRow`, since nothing else needs it. Tolerant
+ * of `patch_discount_campaign_usage.sql` not being applied yet.
+ */
+export async function getOrderDiscountCampaignIdsAdmin(
+  orderId: string,
+): Promise<string[]> {
+  const supabase = getServiceSupabase();
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("tr_orders")
+    .select("discount_campaign_ids")
+    .eq("id", orderId)
+    .maybeSingle();
+  if (error) {
+    if (!isSchemaMissing(error)) {
+      console.error("[tr/orders] discount campaign id lookup failed:", error.message);
+    }
+    return [];
+  }
+  const ids = data?.discount_campaign_ids;
+  return Array.isArray(ids) ? ids.filter((id): id is string => typeof id === "string") : [];
 }
 
 export async function getOrderByIdAdmin(
