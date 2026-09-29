@@ -24,8 +24,8 @@ import {
 import { alignMarketplaceSlots, cleanedLifestyleImages } from "@/lib/tr/productImages";
 import { detectSizeChart, type TrSizeChartId } from "@/lib/tr/productOptions";
 import {
-  sizesFromStockInputs,
-  stockInputsFromSizeStocks,
+  sizesInStockInputs,
+  stockInputsForProductSizes,
   type SizeStockInputs,
 } from "@/lib/tr/sizeStockInputs";
 import { parseSizeStockInputs, sumSizeStocks } from "@/lib/tr/sizeStocks";
@@ -60,6 +60,10 @@ export interface FashionProductFormState {
   manualMode: boolean;
   /** `none` = no sizes; the product then has one stock count. */
   sizeChart: TrSizeChartId;
+  /**
+   * Exactly the garment's sizes → typed stock. Unlike the create flows, the chart's
+   * other defaults are not added: an XS–XL dress stays XS–XL (Mert, 2026-09-29).
+   */
   sizeStockInputs: SizeStockInputs;
   /** The single stock count when there are no sizes. */
   stock: string;
@@ -93,7 +97,7 @@ export function fashionFormFromProduct(
     sizeStockInputs:
       sizeChart === "none"
         ? {}
-        : stockInputsFromSizeStocks(sizeChart, product.sizeStocks),
+        : stockInputsForProductSizes(product.sizes, product.sizeStocks),
     stock: String(product.stock ?? 1),
     colorsEnabled: product.colors.length > 0,
     colors: product.colors,
@@ -132,9 +136,7 @@ export function fashionFormFacts(
 
 /** The sizes that will be saved (none when the chart is `none`). */
 export function fashionFormSizes(form: FashionProductFormState): string[] {
-  return form.sizeChart === "none"
-    ? []
-    : sizesFromStockInputs(form.sizeChart, form.sizeStockInputs);
+  return form.sizeChart === "none" ? [] : sizesInStockInputs(form.sizeStockInputs);
 }
 
 /**
@@ -167,6 +169,9 @@ export function validateFashionProductForm(
   }
 
   const sizes = fashionFormSizes(form);
+  if (form.sizeChart !== "none" && sizes.length === 0) {
+    return "En az bir beden ekleyin ya da “Beden yok” seçin.";
+  }
   if (sizes.length > 0) {
     if (!parseSizeStockInputs(sizes, form.sizeStockInputs)) {
       return `Her beden için stok ${TR_OWNER_PRODUCT_LIMITS.stockMin}–${TR_OWNER_PRODUCT_LIMITS.stockMax} arası olmalı.`;

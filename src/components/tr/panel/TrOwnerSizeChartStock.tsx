@@ -6,7 +6,11 @@ import {
   NUMERIC_EXPANDED_SIZES,
   sizesForChart,
 } from "@/lib/tr/productOptions";
-import { sizesForStockInputs } from "@/lib/tr/sizeStockInputs";
+import {
+  missingChartSizes,
+  sizesForStockInputs,
+  sizesInStockInputs,
+} from "@/lib/tr/sizeStockInputs";
 
 export {
   emptyStockInputsForChart,
@@ -61,6 +65,11 @@ interface TrOwnerSizeChartStockProps {
   /** Extra colors: stock rows only — chart is shared with the primary SKU. */
   hideChart?: boolean;
   heading?: string;
+  /**
+   * Edit an existing garment: list only the sizes in `stockInputs` (no chart defaults
+   * added), let every size be removed, and offer the chart's missing sizes as chips.
+   */
+  onlyListedSizes?: boolean;
 }
 
 function parsedStockQty(raw: string): number {
@@ -130,8 +139,14 @@ export function TrOwnerSizeChartStock({
   allowCustomSizes = false,
   hideChart = false,
   heading,
+  onlyListedSizes = false,
 }: TrOwnerSizeChartStockProps) {
-  const chartSizes = sizesForStockInputs(chart, stockInputs);
+  const chartSizes = onlyListedSizes
+    ? sizesInStockInputs(stockInputs)
+    : sizesForStockInputs(chart, stockInputs);
+  const addableChartSizes = onlyListedSizes
+    ? missingChartSizes(chart, stockInputs)
+    : [];
   const [addingSize, setAddingSize] = useState(false);
   const [newSize, setNewSize] = useState("");
   const missingExpandedSizes =
@@ -165,7 +180,7 @@ export function TrOwnerSizeChartStock({
     delete next[size];
     // Keep chart defaults present as "0" so the row stays until chart change.
     const defaults = new Set(sizesForChart(chart));
-    if (defaults.has(size)) {
+    if (!onlyListedSizes && defaults.has(size)) {
       next[size] = "0";
     }
     onStockInputsChange(next);
@@ -231,7 +246,8 @@ export function TrOwnerSizeChartStock({
               const isDefault = sizesForChart(chart).includes(size);
               const isExpandedNumeric = NUMERIC_EXPANDED_SIZES.includes(size);
               const canRemove =
-                !isDefault && (allowCustomSizes || isExpandedNumeric);
+                onlyListedSizes ||
+                (!isDefault && (allowCustomSizes || isExpandedNumeric));
               return (
                 <div
                   key={size}
@@ -263,6 +279,27 @@ export function TrOwnerSizeChartStock({
               );
             })}
           </div>
+
+          {chartSizes.length === 0 ? (
+            <p className={panelHintClass}>
+              Henüz beden yok. Aşağıdan ekleyin ya da “Beden yok” seçin.
+            </p>
+          ) : null}
+
+          {addableChartSizes.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {addableChartSizes.map((size) => (
+                <button
+                  key={size}
+                  type="button"
+                  className={panelAddChipClass}
+                  onClick={() => onStockInputsChange({ ...stockInputs, [size]: "0" })}
+                >
+                  + {size}
+                </button>
+              ))}
+            </div>
+          ) : null}
 
           {missingExpandedSizes.length > 0 ? (
             <button

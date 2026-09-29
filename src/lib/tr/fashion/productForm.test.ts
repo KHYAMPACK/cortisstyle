@@ -79,14 +79,42 @@ describe("fashionFormFromProduct → fashionProductPatch (parity with the stored
     });
   }
 
-  it("adds 2XL and 3XL at 0 to an XS–XL garment, exactly as the old editor did", () => {
-    // Pinned on purpose: the size board always shows the whole letter chart. Changing
-    // this is a separate decision, not a side effect of the rebuild.
+  it("keeps an XS–XL garment at XS–XL (no 2XL / 3XL added)", () => {
     const product = garment({ sizes: LETTER_TO_XL, sizeStocks: stocksFor(LETTER_TO_XL) });
-    const patch = fashionProductPatch(fashionFormFromProduct(product));
-    assert.deepEqual(patch.sizes, LETTER_FULL);
-    assert.deepEqual(patch.sizeStocks, { ...product.sizeStocks, "2XL": 0, "3XL": 0 });
+    const loaded = fashionFormFromProduct(product);
+    assert.deepEqual(Object.keys(loaded.sizeStockInputs), LETTER_TO_XL);
+    const patch = fashionProductPatch(loaded);
+    assert.deepEqual(patch.sizes, LETTER_TO_XL);
+    assert.deepEqual(patch.sizeStocks, product.sizeStocks);
     assert.equal(patch.stock, product.stock);
+  });
+
+  it("keeps a custom size outside the chart", () => {
+    const sizes = ["S", "M", "STD"];
+    const patch = fashionProductPatch(
+      fashionFormFromProduct(garment({ sizes, sizeStocks: stocksFor(sizes, () => 2) })),
+    );
+    assert.deepEqual(patch.sizes, ["S", "M", "STD"]);
+    assert.equal(patch.stock, 6);
+  });
+
+  it("saves a size the owner added or removed", () => {
+    const loaded = fashionFormFromProduct(
+      garment({ sizes: LETTER_TO_XL, sizeStocks: stocksFor(LETTER_TO_XL, () => 1) }),
+    );
+    const added = fashionProductPatch({
+      ...loaded,
+      sizeStockInputs: { ...loaded.sizeStockInputs, "2XL": "3" },
+    });
+    assert.deepEqual(added.sizes, [...LETTER_TO_XL, "2XL"]);
+    assert.equal(added.stock, 8);
+
+    const withoutXs = { ...loaded.sizeStockInputs };
+    delete withoutXs.XS;
+    const removed = fashionProductPatch({ ...loaded, sizeStockInputs: withoutXs });
+    assert.deepEqual(removed.sizes, ["S", "M", "L", "XL"]);
+    assert.equal(removed.sizeStocks?.XS, undefined);
+    assert.equal(removed.stock, 4);
   });
 
   it("keeps a discount as sale price + struck-through price", () => {
@@ -182,6 +210,10 @@ describe("validateFashionProductForm", () => {
     assert.match(
       validateFashionProductForm(form({ sizeChart: "none", sizeStockInputs: {}, stock: "" }))!,
       /^Stok/,
+    );
+    assert.match(
+      validateFashionProductForm(form({ sizeStockInputs: {} }))!,
+      /En az bir beden/,
     );
   });
 

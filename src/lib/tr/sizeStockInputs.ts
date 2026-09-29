@@ -57,3 +57,32 @@ export function sizesFromStockInputs(
 ): string[] {
   return sizesForStockInputs(chart, stockInputs);
 }
+
+/** Exactly the sizes in the inputs, sorted (no chart defaults added). */
+export function sizesInStockInputs(stockInputs: SizeStockInputs): string[] {
+  return sortProductSizes(Object.keys(stockInputs).filter((size) => size.trim()));
+}
+
+/** The chart's default sizes that aren't in the inputs yet (quick "+ 2XL" chips). */
+export function missingChartSizes(
+  chart: TrSizeChartId,
+  stockInputs: SizeStockInputs,
+): string[] {
+  return sizesForChart(chart).filter((size) => stockInputs[size] === undefined);
+}
+
+/** Inputs for exactly the product's own sizes and their stock. */
+export function stockInputsForProductSizes(
+  sizes: string[],
+  sizeStocks: Record<string, number> | null | undefined,
+): SizeStockInputs {
+  const out: SizeStockInputs = {};
+  for (const raw of sizes) {
+    const size = raw.trim();
+    if (!size) continue;
+    const n = sizeStocks?.[size];
+    out[size] =
+      typeof n === "number" && Number.isFinite(n) ? String(Math.max(0, Math.floor(n))) : "0";
+  }
+  return out;
+}

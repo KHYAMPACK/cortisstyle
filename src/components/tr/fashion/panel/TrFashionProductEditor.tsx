@@ -767,6 +767,7 @@ export function TrFashionProductEditor({
             stock={form.stock}
             onStockChange={(stock) => change({ stock })}
             allowCustomSizes
+            onlyListedSizes
             variant="editor"
           />
 
