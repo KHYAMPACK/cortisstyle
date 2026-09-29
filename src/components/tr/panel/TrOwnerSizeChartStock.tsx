@@ -5,8 +5,14 @@ import type { TrSizeChartId } from "@/lib/tr/productOptions";
 import {
   NUMERIC_EXPANDED_SIZES,
   sizesForChart,
-  sortProductSizes,
 } from "@/lib/tr/productOptions";
+import { sizesForStockInputs } from "@/lib/tr/sizeStockInputs";
+
+export {
+  emptyStockInputsForChart,
+  sizesFromStockInputs,
+  stockInputsFromSizeStocks,
+} from "@/lib/tr/sizeStockInputs";
 import {
   sanitizeStockInput,
   TR_OWNER_PRODUCT_LIMITS,
@@ -114,18 +120,6 @@ function StockQtyField({
   );
 }
 
-function displaySizesForChart(
-  chart: TrSizeChartId,
-  stockInputs: Record<string, string>,
-): string[] {
-  if (chart === "none") return [];
-  const chartSizes = sizesForChart(chart);
-  const extras = Object.keys(stockInputs).filter(
-    (size) => size.trim() && !chartSizes.includes(size),
-  );
-  return sortProductSizes([...chartSizes, ...extras]);
-}
-
 export function TrOwnerSizeChartStock({
   chart,
   onChartChange,
@@ -137,7 +131,7 @@ export function TrOwnerSizeChartStock({
   hideChart = false,
   heading,
 }: TrOwnerSizeChartStockProps) {
-  const chartSizes = displaySizesForChart(chart, stockInputs);
+  const chartSizes = sizesForStockInputs(chart, stockInputs);
   const [addingSize, setAddingSize] = useState(false);
   const [newSize, setNewSize] = useState("");
   const missingExpandedSizes =
@@ -332,39 +326,4 @@ export function TrOwnerSizeChartStock({
       )}
     </div>
   );
-}
-
-export function emptyStockInputsForChart(
-  chart: TrSizeChartId,
-  fill = "0",
-): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const size of sizesForChart(chart)) {
-    out[size] = fill;
-  }
-  return out;
-}
-
-export function stockInputsFromSizeStocks(
-  chart: TrSizeChartId,
-  sizeStocks: Record<string, number> | null | undefined,
-): Record<string, string> {
-  const out = emptyStockInputsForChart(chart, "0");
-  if (!sizeStocks) return out;
-  for (const [size, n] of Object.entries(sizeStocks)) {
-    if (!size.trim()) continue;
-    if (typeof n === "number" && Number.isFinite(n)) {
-      out[size] = String(Math.max(0, Math.floor(n)));
-    }
-  }
-  return out;
-}
-
-/** Sizes to persist: chart defaults plus any custom keys in the stock inputs. */
-export function sizesFromStockInputs(
-  chart: TrSizeChartId,
-  stockInputs: Record<string, string>,
-): string[] {
-  if (chart === "none") return [];
-  return displaySizesForChart(chart, stockInputs);
 }
