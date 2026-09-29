@@ -43,12 +43,14 @@ From read-only queries on production:
 | 2 | **Switch lilabutik's fashion editor from autosave to manual save** (Kaydet + leave guard) |
 | 3 | **SEO card on fashion products = option (b):** Sayfa başlığı / Açıklama / noindex, **no slug field**, so lilabutik's product URLs and canonicals don't change |
 | 5 | **Durum is derived from stock**, like Basit: the owner picks Satışta or Gizli; "Satıldı" is shown when stock is 0. Replaces D3. Verified safe on live data: no lilabutik product is `sold` today (61 `available` + 33 `hidden`, all with stock > 0), so no existing product changes status on its first save |
+| 4 | **Fix the all-sizes-zero bug** (§A.1) in A0/A2: typing 0 in every size saves zero stock, and with Q5 the product then shows as sold out. Needed anyway for Q5 to work. Live data today: 0 lilabutik products have all sizes at zero, 0 have an empty size map, and 0 have a `stock` that differs from the sum of their sizes, so the fix changes no existing row |
 | 7 | **Area B deferred** (as recommended in §B.3) |
 | 8 | **lilabutik's colour-group products are never merged into Renk variants** |
+| 9 | **Option (a):** SVG-only stores are asked for a PNG logo at onboarding (add a line to `docs/tr-boutique-intake-template.md` when C.2 ships). No `email_logo_url` column. C.2's map removal still goes ahead |
+| 10 | **On hold:** editorial skin / favicon / brand no-DB paths (C.1, C.5, C.6) aren't scheduled. Revisit when asked |
+| 12 | **AI persona stays manual per-boutique ops work.** Only the de-Lila rename inside shared panel code (C.3) is done, together with Area A |
 
-Consequence of Q5 for Q4: deriving the status from stock only works if "every size 0" actually saves as zero stock, so the all-sizes-zero bug (§A.1) **must be fixed** in A0/A2, not reproduced. Live data today: 0 lilabutik products have all sizes at zero, 0 have an empty size map, and 0 have a `stock` that differs from the sum of their sizes. The fix changes no existing row.
-
-Waiting on answers: Q4 (confirm the fix), Q6, Q9, Q10, Q11, Q12.
+Waiting on answers: Q6 (extra cards for fashion; proposed: Alış fiyatı only) and Q11 (carrier timing, and how the checkout step gets its freeze lift).
 
 ## 1. Decisions I'm assuming (change any of these)
 
