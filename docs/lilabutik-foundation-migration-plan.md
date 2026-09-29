@@ -35,13 +35,28 @@ From read-only queries on production:
 | Variant types / variants | 1 / 0 | Gelişmiş isn't in real use anywhere |
 | `tr_boutique_integrations` rows | 1 (lilabutik iyzico) | The carrier is not in the table yet |
 
+## Decisions (Mert, 2026-09-29)
+
+| Q | Decision |
+|---|---|
+| 1 | **Go on Area A**, and A3 (new editor as default for lilabutik) gets its own explicit go-ahead after the staff-flag period |
+| 2 | **Switch lilabutik's fashion editor from autosave to manual save** (Kaydet + leave guard) |
+| 3 | **SEO card on fashion products = option (b):** Sayfa başlığı / Açıklama / noindex, **no slug field**, so lilabutik's product URLs and canonicals don't change |
+| 5 | **Durum is derived from stock**, like Basit: the owner picks Satışta or Gizli; "Satıldı" is shown when stock is 0. Replaces D3. Verified safe on live data: no lilabutik product is `sold` today (61 `available` + 33 `hidden`, all with stock > 0), so no existing product changes status on its first save |
+| 7 | **Area B deferred** (as recommended in §B.3) |
+| 8 | **lilabutik's colour-group products are never merged into Renk variants** |
+
+Consequence of Q5 for Q4: deriving the status from stock only works if "every size 0" actually saves as zero stock, so the all-sizes-zero bug (§A.1) **must be fixed** in A0/A2, not reproduced. Live data today: 0 lilabutik products have all sizes at zero, 0 have an empty size map, and 0 have a `stock` that differs from the sum of their sizes. The fix changes no existing row.
+
+Waiting on answers: Q4 (confirm the fix), Q6, Q9, Q10, Q11, Q12.
+
 ## 1. Decisions I'm assuming (change any of these)
 
 | # | Topic | Assumption | Why |
 |---|---|---|---|
 | D1 | §8.5 "coexist first" | **Respected.** Area A doesn't touch the size model. Area B is planned but recommended *deferred*, with preparatory steps that leave the stored data alone | §8.5's reasons still hold, and the live data (28/94 colour-grouped products, zero real variant sales) strengthens them |
 | D2 | Fashion editor save model | Manual save (Kaydet, Ctrl+S, leave guard), per 05's panel-wide rule. AI actions that already persist server-side (restyle, colour-group link, AI enhance) stay **actions** that apply immediately | Autosave is the named exception in 05. The AI flows spend paid credits and already write through their own endpoints |
-| D3 | Durum in the fashion editor | Stays an **explicit three-way owner choice** (Satışta / Satıldı / Gizli), saved with Kaydet like every other field. It is *not* derived from stock the way Basit does it | Changing how lilabutik's owner marks a garment "Satıldı" is a behaviour change nobody asked for. Today's status chips save instantly as an action; moving them into the form is the only change |
+| D3 | Durum in the fashion editor | **Superseded by Mert's Q5 answer: derived from stock (Satışta/Gizli + sold at 0).** Original assumption: stays an **explicit three-way owner choice** (Satışta / Satıldı / Gizli), saved with Kaydet like every other field. It is *not* derived from stock the way Basit does it | Changing how lilabutik's owner marks a garment "Satıldı" is a behaviour change nobody asked for. Today's status chips save instantly as an action; moving them into the form is the only change |
 | D4 | Açıklama in the fashion editor | Stays the **plain textarea** writing `description`. No rich-text field for fashion in Area A | `description` feeds lilabutik's meta description, Google feed and AI fill. Rich text would start writing `description_html` and re-deriving `description`, changing whitespace in live meta/feed text. The fashion PDP renders neither |
 | D5 | New cards for fashion (SEO, Ürün detayı, Envanter, Alış fiyatı) | **Not in the parity rebuild (A2).** Offered as a separate opt-in milestone (A4) needing Mert's yes | Parity first. Each card has its own live consequence (a slug changes a canonical URL; SKU/brand feed nothing yet) |
 | D6 | Where the new editor lives | `src/components/tr/fashion/panel/TrFashionProductEditor.tsx` plus pure rules in `src/lib/tr/fashion/productForm.ts`. Core's `TrOwnerEditProductPage` picks it through a registry slot, not a direct fashion import (§A-boundary) | Keeps the ESLint boundary meaningful and lets the dispatcher eventually join `FASHION_FREE_CORE_TARGETS` |
