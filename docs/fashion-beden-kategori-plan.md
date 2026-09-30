@@ -1,6 +1,6 @@
 # Fashion Beden & Kategori → foundation — plan
 
-_Prepared 2026-09-30 on branch `main-t0o1c2`. **S1 built (2026-09-30), K0–K2 not started.** Facts checked against the repo at `ff89987` (after PR #3) and against the live Supabase project with read-only `SELECT`s. Background: `docs/lilabutik-foundation-migration-plan.md` (this is a follow-up to its Area A; its Area B — moving sizes onto `tr_product_variants` — stays deferred and is **not** what this plan does)._
+_Prepared 2026-09-30 on branch `main-t0o1c2`. **S1 built (2026-09-30); K0 already in place; K1–K2 not started.** Facts checked against the repo at `ff89987` (after PR #3) and against the live Supabase project with read-only `SELECT`s. Background: `docs/lilabutik-foundation-migration-plan.md` (this is a follow-up to its Area A; its Area B — moving sizes onto `tr_product_variants` — stays deferred and is **not** what this plan does)._
 
 **Goal (Mert):** a fashion boutique's **sizes (Beden)** and **categories (Kategori)** come from the boutique's own foundation definitions (Tanımlamalar → Varyant Türleri / Kategoriler) instead of lists hardcoded in code, so a new store can define its own without a code change.
 
@@ -14,7 +14,7 @@ _Prepared 2026-09-30 on branch `main-t0o1c2`. **S1 built (2026-09-30), K0–K2 n
 - **Removed as dead code:** the old preset import and the unused `boutiques/[id]/options` API; `TrProductEditorForm`; `sizesForChart`, `sizesForStockBoard`, `missingNumericExpandedSizes`; the draft files' copies of the empty-board helper; the Stok page's never-read `savingIds`; the size table's deprecated `variant` prop.
 - **Rename offer (decision 6):** saving a Beden type that renamed sizes still on products opens "Ürünlerdeki bedenler de güncellensin mi?" with each rename and its product count. **Evet** renames the size on those products (`POST …/variant-types/[id]/rename-sizes`, rules in `variants/sizeRenames.ts`): swaps work, a rename onto a size the product already has merges the two, and total stock never changes. **Hayır** leaves products as they are. A shopper's cart holding the old label is re-checked at checkout like any size that no longer exists.
 
-**S1 complete.** Next: K0 (sitemap / category route check `category_mode`).
+**S1 complete.** K0 turned out to be in place already (see §0). Next: K1.
 
 ## Decisions (Mert, 2026-09-30)
 
@@ -51,7 +51,7 @@ _Prepared 2026-09-30 on branch `main-t0o1c2`. **S1 built (2026-09-30), K0–K2 n
 
 **Live:** lilabutik is `legacy`, 0 own categories. Products per category: elbise 52, pantolon 15, bluz 11, ceket 6, gömlek 3, takım 3, etek 2, tişört 2 (8 leaves in use).
 
-**Found while planning — a storefront trap:** `sitemap.ts` and the `/kategori/<slug>` route read `tr_categories` **without checking `category_mode`**. So merely *creating* lilabutik's categories would publish new `/kategori/…` pages (the M3a layout, not lilabutik's atelier PLP) and add them to `lilaboutiquedenizli.com`'s sitemap. Any plan must gate those on `category_mode = 'custom'` first (or create the rows with `noindex`).
+**Checked again (2026-09-30), not a trap after all:** `sitemap.ts` (`getBoutiqueCategoryMode`) and the `/kategori/<slug>` loader (`loadPublicCategoryPage`) already ignore `tr_categories` unless the boutique is in `custom` mode (the first check searched case-sensitively and missed it). So **K0 needs no change**. What it does mean: the moment lilabutik switches to `custom`, its `/kategori/…` pages (the plain M3a layout) and their sitemap entries go live, while the menu still links to the atelier PLP until K2. **So the switch belongs with K2, not at the end of K1.**
 
 ## 1. Decisions I'm assuming (change any of these)
 
@@ -68,7 +68,7 @@ _Prepared 2026-09-30 on branch `main-t0o1c2`. **S1 built (2026-09-30), K0–K2 n
 
 ## 2. Milestones
 
-Each ships on its own. Order: **S1 → K0 → K1 → K2**, then K3/S2 only if wanted.
+Each ships on its own. Order: **S1 → K1 → K2** (K0 turned out to be in place already), then K3/S2 only if wanted.
 
 ### Beden
 
@@ -81,8 +81,8 @@ Each ships on its own. Order: **S1 → K0 → K1 → K2**, then K3/S2 only if wa
 
 | # | Milestone | Contents | Storefront? | SQL |
 |---|---|---|---|---|
-| **K0** | Close the sitemap/page trap | `sitemap.ts` and `/kategori/<slug>` only use `tr_categories` for boutiques in `custom` mode. Today that changes nothing (lilabutik has no rows; `deneme-butik` is `legacy`) | **Yes, tiny** (sitemap + one route; needs a scoped freeze lift) | – |
-| **K1** | Import + panel switch | • `system_key` column.<br>• **"Hazır kategorileri içe aktar"** on the Kategoriler page (legacy boutiques only): creates the tree with today's slugs and keys, and assigns every product to its current category as primary (`tr_product_categories`). It does **not** change `tr_products.category`.<br>• Fashion logic (`garmentUploadTypes`, `takimUpload`, care copy, AI listing draft) resolves families via `system_key` with the old id match as fallback.<br>• Fashion editor shows `TrPanelCategoryPicker` in `custom` mode (the code-tree picker in `legacy`).<br>• AI listing draft chooses among the boutique's own categories.<br>• A category whose system key fashion needs (elbise, takım…) can be renamed but not deleted, with a clear message.<br>• **Switching lilabutik to `custom`** is the last step, done by Mert with one `update` after checking the import. | No, once K0 is in: with identical slugs, the storefront keeps reading the code tree and shows the same menu | `patch_category_system_keys.sql` |
+| ~~K0~~ | ~~Close the sitemap/page trap~~ | **Already in place** — both already check `category_mode` (see §0). | – | – |
+| **K1** | Import + panel switch | • `system_key` column.<br>• **"Hazır kategorileri içe aktar"** on the Kategoriler page (legacy boutiques only): creates the tree with today's slugs and keys, and assigns every product to its current category as primary (`tr_product_categories`). It does **not** change `tr_products.category`.<br>• Fashion logic (`garmentUploadTypes`, `takimUpload`, care copy, AI listing draft) resolves families via `system_key` with the old id match as fallback.<br>• Fashion editor shows `TrPanelCategoryPicker` in `custom` mode (the code-tree picker in `legacy`).<br>• AI listing draft chooses among the boutique's own categories.<br>• A category whose system key fashion needs (elbise, takım…) can be renamed but not deleted, with a clear message.<br>• The import doesn't switch the boutique: its rows stay unused (nothing public reads them in `legacy` mode). **Switching lilabutik to `custom` happens with K2.** | No, once K0 is in: with identical slugs, the storefront keeps reading the code tree and shows the same menu | `patch_category_system_keys.sql` |
 | **K2** | Storefront reads the boutique's categories (= M3b) | Menu, mega-menu, drawer, PLP filters/labels, product-card/PDP labels and breadcrumbs, home rows, recommendations read `tr_categories` for `custom` boutiques; `legacy` keeps the code tree. Parity check: lilabutik's menu and PLPs identical before/after. After this, a category the owner creates actually appears in the shop | **Yes, broad** (~15 storefront files, needs a freeze lift) | – |
 | K3 (later) | Retire the code tree | `fashion/categories.ts` becomes only the import template + AI fallback | – | – |
 
@@ -90,7 +90,7 @@ Each ships on its own. Order: **S1 → K0 → K1 → K2**, then K3/S2 only if wa
 
 | Risk | Level | Mitigation |
 |---|---|---|
-| Category rows publish new pages / sitemap entries on lilabutik | **High** if skipped | K0 first; import button only offered after K0 is deployed |
+| lilabutik's `/kategori/…` pages go live when it switches to `custom` | Medium | Switch it together with K2, after the parity check |
 | Dress/takım pipeline misclassifies a product after the switch | Medium | `system_key` + ancestor walk, old id match as fallback; tests pinning every lilabutik category; keyed categories can't be deleted |
 | Owner creates a category in `custom` mode before K2 and it doesn't show in the shop | Medium (confusing) | Panel hint "Mağaza menüsünde K2 ile görünecek" until K2 ships, or do K1 and K2 back to back |
 | Size type edits (rename "M" → "Medium") don't rename existing products' labels | Medium | Say so in the drawer; renaming values in use either blocked or offered as "update N products" (decide in S1) |
