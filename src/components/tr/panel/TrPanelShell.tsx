@@ -12,7 +12,6 @@ import {
   type ReactNode,
 } from "react";
 import { AuthPopup } from "@/components/AuthPopup";
-import { TrOwnerElbiseRestyleProvider } from "@/components/tr/fashion/panel/TrOwnerElbiseRestyleSession";
 import { TrPanelToaster } from "@/components/tr/panel/TrPanelToaster";
 import {
   TrOwnerLeaveGuardProvider,
@@ -78,10 +77,8 @@ const STORAGE_KEY = "tr-panel-boutique-id";
 export function TrPanelShell({ children }: { children: ReactNode }) {
   return (
     <TrOwnerLeaveGuardProvider>
-      <TrOwnerElbiseRestyleProvider>
-        <TrPanelShellBody>{children}</TrPanelShellBody>
-        <TrPanelToaster />
-      </TrOwnerElbiseRestyleProvider>
+      <TrPanelShellBody>{children}</TrPanelShellBody>
+      <TrPanelToaster />
     </TrOwnerLeaveGuardProvider>
   );
 }

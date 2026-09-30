@@ -1,8 +1,6 @@
 import { getSupabaseClient } from "@/lib/supabaseClient";
 import type { SizeRenameOffer } from "@/lib/tr/variants/sizeRenames";
 import { prepareOwnerUploadFile } from "@/lib/tr/prepareOwnerUploadFile";
-import { sanitizeProductFeatures } from "@/lib/tr/catalog/productFeatures";
-import { parseAiCategoryId } from "@/lib/tr/fashion/categories";
 import type { TrOwnerProductOriginals } from "@/lib/tr/catalog/products";
 import {
   cachedOwnerFetch,
@@ -789,28 +787,18 @@ export async function setOwnerColorGroup(input: {
   return data.product;
 }
 
-export type TrMarketplaceUploadStatus = "ready" | "skipped" | "failed";
-
 export interface OwnerProductImageUploadResult {
   url: string;
-  marketplaceUrl: string | null;
-  marketplaceStatus: TrMarketplaceUploadStatus;
-  marketplaceError: string | null;
 }
 
 export async function uploadOwnerProductImage(
   boutiqueId: string,
   file: File,
-  options?: { removeBackground?: boolean },
 ): Promise<OwnerProductImageUploadResult> {
   const prepared = await prepareOwnerUploadFile(file);
   const formData = new FormData();
   formData.set("boutiqueId", boutiqueId);
   formData.set("file", prepared);
-  formData.set(
-    "removeBackground",
-    options?.removeBackground === false ? "false" : "true",
-  );
 
   const response = await ownerFetch("/api/tr/owner/upload", {
     method: "POST",
@@ -823,13 +811,7 @@ export async function uploadOwnerProductImage(
     );
   }
 
-  let data: {
-    url?: string;
-    marketplaceUrl?: string | null;
-    marketplaceStatus?: TrMarketplaceUploadStatus;
-    marketplaceError?: string | null;
-    error?: string;
-  };
+  let data: { url?: string; error?: string };
   try {
     data = (await parseOwnerJson(response)) as typeof data;
   } catch {
@@ -845,252 +827,7 @@ export async function uploadOwnerProductImage(
   }
   if (!data.url) throw new Error("Fotoğraf yüklenemedi.");
 
-  const marketplaceUrl = data.marketplaceUrl ?? null;
-  const marketplaceStatus: TrMarketplaceUploadStatus =
-    data.marketplaceStatus ??
-    (marketplaceUrl ? "ready" : "failed");
-
-  return {
-    url: data.url,
-    marketplaceUrl,
-    marketplaceStatus,
-    marketplaceError: data.marketplaceError ?? null,
-  };
-}
-
-export interface OwnerListingDraft {
-  title: string;
-  description: string;
-  features?: TrProductFeatures;
-  category?: string | null;
-  promptFront?: string | null;
-}
-
-function readOwnerListingDraft(raw: unknown): OwnerListingDraft | null {
-  if (!raw || typeof raw !== "object") return null;
-  const record = raw as Record<string, unknown>;
-  const title = typeof record.title === "string" ? record.title.trim() : "";
-  if (!title) return null;
-  const promptFront =
-    typeof record.promptFront === "string" ? record.promptFront.trim() : "";
-  return {
-    title,
-    description:
-      typeof record.description === "string" ? record.description.trim() : "",
-    features: sanitizeProductFeatures(record.features),
-    category: parseAiCategoryId(record.category),
-    promptFront: promptFront || null,
-  };
-}
-
-export interface OwnerPackshotResult {
-  status: string;
-  imageUrls: string[];
-  predictionId: string | null;
-  creditsUsed: number | null;
-  error: string | null;
-  listingDraft?: OwnerListingDraft | null;
-}
-
-export async function requestOwnerPackshot(input: {
-  boutiqueId: string;
-  sourceImageUrl: string;
-  productId?: string;
-  title?: string;
-  category?: string | null;
-  view?: "front" | "back" | "extra" | "detail";
-  promptExtra?: string;
-  /** From prepare-packshot — avoids a second Gemini call. */
-  prompt?: string;
-  listingDraft?: OwnerListingDraft | null;
-  numImages?: number;
-  skipPhotoroom?: boolean;
-  uploadType?: string | null;
-}): Promise<OwnerPackshotResult> {
-  const response = await ownerFetch("/api/tr/owner/ai-catalog/packshot", {
-    method: "POST",
-    body: JSON.stringify(input),
-  });
-  const data = (await parseOwnerJson(response)) as {
-    ok?: boolean;
-    result?: OwnerPackshotResult;
-    error?: string;
-  };
-  if (!response.ok) {
-    throw new Error(data.error ?? "Packshot üretilemedi.");
-  }
-  if (!data.result) {
-    throw new Error("Packshot yanıtı eksik.");
-  }
-  return data.result;
-}
-
-export interface OwnerPackshotPrepareResult {
-  prompt: string;
-  listingDraft: OwnerListingDraft | null;
-  usedGemini: boolean;
-}
-
-/** Gemini identify + packshot prompt only (no FASHN). */
-export async function requestOwnerPackshotPrepare(input: {
-  boutiqueId: string;
-  sourceImageUrl: string;
-  backImageUrl?: string;
-  detailImageUrl?: string;
-  title?: string;
-  category?: string | null;
-  view?: "front" | "back" | "extra" | "detail";
-  promptExtra?: string;
-  uploadType?: string | null;
-  existingTitle?: string | null;
-  existingDescription?: string | null;
-  lockedConstruction?: {
-    neckline?: string | null;
-    sleeves?: string | null;
-    fit?: string | null;
-    length?: string | null;
-    decollete?: string | null;
-    rise?: string | null;
-    hem?: string | null;
-  } | null;
-  inferConstructionFamily?: boolean;
-}): Promise<OwnerPackshotPrepareResult> {
-  const response = await ownerFetch(
-    "/api/tr/owner/ai-catalog/prepare-packshot",
-    {
-      method: "POST",
-      body: JSON.stringify(input),
-    },
-  );
-  const data = (await parseOwnerJson(response)) as {
-    ok?: boolean;
-    prompt?: string;
-    listingDraft?: OwnerListingDraft | null;
-    usedGemini?: boolean;
-    error?: string;
-  };
-  if (!response.ok) {
-    throw new Error(data.error ?? "Ürün analizi başarısız.");
-  }
-  if (!data.prompt?.trim()) {
-    throw new Error("Packshot prompt eksik.");
-  }
-  return {
-    prompt: data.prompt.trim(),
-    listingDraft: readOwnerListingDraft(data.listingDraft),
-    usedGemini: Boolean(data.usedGemini),
-  };
-}
-
-export async function requestOwnerListingDraft(input: {
-  boutiqueId: string;
-  sourceImageUrl: string;
-  backImageUrl?: string;
-  detailImageUrl?: string;
-  category?: string | null;
-  uploadType?: string | null;
-  inferConstructionFamily?: boolean;
-}): Promise<OwnerListingDraft> {
-  const response = await ownerFetch("/api/tr/owner/ai-catalog/listing-draft", {
-    method: "POST",
-    body: JSON.stringify(input),
-  });
-  const data = (await parseOwnerJson(response)) as {
-    ok?: boolean;
-    draft?: OwnerListingDraft;
-    error?: string;
-  };
-  if (!response.ok) {
-    throw new Error(data.error ?? "Ürün metni oluşturulamadı.");
-  }
-  if (!data.draft?.title?.trim()) {
-    throw new Error("Ürün metni yanıtı eksik.");
-  }
-  return (
-    readOwnerListingDraft(data.draft) ?? {
-      title: data.draft.title.trim(),
-      description: data.draft.description?.trim() ?? "",
-      features: {},
-    }
-  );
-}
-
-export async function requestOwnerGarmentColor(input: {
-  boutiqueId: string;
-  sourceImageUrl: string;
-  backImageUrl?: string;
-}): Promise<string> {
-  const response = await ownerFetch("/api/tr/owner/ai-catalog/listing-draft", {
-    method: "POST",
-    body: JSON.stringify({ ...input, colorOnly: true }),
-  });
-  const data = (await parseOwnerJson(response)) as {
-    ok?: boolean;
-    color?: string;
-    error?: string;
-  };
-  if (!response.ok) {
-    throw new Error(data.error ?? "Renk analizi başarısız.");
-  }
-  return typeof data.color === "string" ? data.color.trim() : "";
-}
-
-export interface OwnerAiModelGenerateResult {
-  status: string;
-  providerId?: string;
-  imageUrl?: string;
-  imageUrls?: string[];
-  jobId?: string;
-  creditsUsed?: number | null;
-  error?: string;
-  stub?: boolean;
-}
-
-export async function requestOwnerAiModelGenerate(input: {
-  boutiqueId: string;
-  cutoutImageUrl: string;
-  originalImageUrl?: string;
-  productId?: string;
-  title?: string;
-  category?: string | null;
-  pose?:
-    | "standing-front"
-    | "standing-back"
-    | "standing-three-quarter"
-    | "full-body"
-    | "waist-up";
-  modelId?: string;
-  photographyStyle?: "blinds" | "flash";
-    prompt?: string;
-  shots?: Array<{
-    pose:
-      | "standing-front"
-      | "standing-back"
-      | "standing-three-quarter"
-      | "full-body"
-      | "waist-up";
-    cutoutImageUrl: string;
-    modelReferenceUrl: string;
-    prompt?: string;
-  }>;
-  replaceLifestyleIndex?: number;
-}): Promise<OwnerAiModelGenerateResult> {
-  const response = await ownerFetch("/api/tr/owner/ai-model/generate", {
-    method: "POST",
-    body: JSON.stringify(input),
-  });
-  const data = (await parseOwnerJson(response)) as {
-    ok?: boolean;
-    result?: OwnerAiModelGenerateResult;
-    error?: string;
-  };
-  if (!response.ok) {
-    throw new Error(data.error ?? "Model görseli üretilemedi.");
-  }
-  if (!data.result) {
-    throw new Error("Model görseli yanıtı eksik.");
-  }
-  return data.result;
+  return { url: data.url };
 }
 
 export interface TrOwnerSummaryResponse {
@@ -1186,36 +923,6 @@ export async function fetchOwnerDashboard(
       return data.dashboard;
     },
   );
-}
-
-export interface TrOwnerAiCreditUsage {
-  period: "month";
-  periodLabel: string;
-  creditsUsed: number;
-  creditsUsd: number;
-  creditsTry: number;
-  packshotCredits: number;
-  modelCredits: number;
-  eventCount: number;
-}
-
-export async function fetchOwnerAiCredits(
-  boutiqueId: string,
-): Promise<TrOwnerAiCreditUsage> {
-  return cachedOwnerFetch(ownerCacheKeys.credits(boutiqueId), async () => {
-    const response = await ownerFetch(
-      `/api/tr/owner/ai-credits?boutiqueId=${encodeURIComponent(boutiqueId)}`,
-    );
-    const data = (await parseOwnerJson(response)) as {
-      usage?: TrOwnerAiCreditUsage;
-      error?: string;
-    };
-    if (!response.ok) {
-      throw new Error(data.error ?? "Kredi özeti yüklenemedi.");
-    }
-    if (!data.usage) throw new Error("Kredi özeti yüklenemedi.");
-    return data.usage;
-  });
 }
 
 export async function deleteOwnerProduct(

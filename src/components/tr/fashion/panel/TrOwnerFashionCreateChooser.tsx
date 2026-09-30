@@ -34,7 +34,7 @@ export function TrOwnerFashionCreateChooser() {
                   href={trPanelNewFashionSingleProductPath()}
                   icon={<Shirt {...ICON} />}
                   title="Tek parça"
-                  description="Tek bir giysi için adım adım sihirbaz: fotoğraf, isim, fiyat, beden ve model."
+                  description="Tek bir giysi için adım adım sihirbaz: fotoğraf, isim, fiyat ve beden."
                 />
                 <TrPanelChoiceCard
                   href={trPanelTakimNewProductPath()}

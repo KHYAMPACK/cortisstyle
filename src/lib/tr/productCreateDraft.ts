@@ -1,24 +1,18 @@
 /**
  * Client-side draft for the yeni ürün wizard.
  *
- * Prefer localStorage over a DB table: catalog/lifestyle URLs already live in
- * tr-assets; the draft is small JSON; restore is instant on reload with no
- * new schema/API. Clear on successful save.
+ * Prefer localStorage over a DB table: photo URLs already live in tr-assets; the
+ * draft is small JSON; restore is instant on reload with no new schema/API. Clear on
+ * successful save.
  *
- * v2 is photo-first (no Tür step). v1 drafts are ignored and not restored.
+ * v3 is the manual wizard (no AI steps). Older drafts are ignored and removed.
  */
 
-import type { OwnerListingDraft } from "@/lib/tr/ownerClient";
 import type { TrProductFeatures } from "@/types/tr-marketplace";
-import type { TrHousePhotographyStyle } from "@/lib/tr/aiModel/types";
-import {
-  sanitizeColorVariantDrafts,
-  type ColorVariantUploadDraft,
-} from "@/lib/tr/catalog/colorSiblings";
 
-export const PRODUCT_CREATE_DRAFT_VERSION = 2 as const;
+export const PRODUCT_CREATE_DRAFT_VERSION = 3 as const;
 
-export interface ProductCreateDraftV2 {
+export interface ProductCreateDraft {
   version: typeof PRODUCT_CREATE_DRAFT_VERSION;
   updatedAt: number;
   stepIndex: number;
@@ -34,31 +28,20 @@ export interface ProductCreateDraftV2 {
   sizeStockInputs: Record<string, string>;
   category: string | null;
   images: string[];
-  marketplaceImages: string[];
-  lifestyleImages: string[];
-  listingDraft: OwnerListingDraft | null;
-  frontAnalysisDone: boolean;
-  frontDraftFailed: boolean;
-  catalogBackgroundId: string;
-  selectedModelId: string | null;
-  photographyStyle?: TrHousePhotographyStyle;
-  /** Construction family inferred from the photo (or owner-corrected). */
-  uploadType?: string | null;
-  /** Extra color photo pairs (linked SKUs). */
-  colorVariants?: ColorVariantUploadDraft[];
-  /** Skip Gemini / FASHN / Photoroom — owner fills fields. */
-  manualMode?: boolean;
 }
 
 function storageKey(boutiqueId: string): string {
+  return `tr:product-create-draft:v3:${boutiqueId.trim()}`;
+}
+
+/** The AI-era draft (v2): never restored, removed when a new draft is cleared. */
+function legacyStorageKey(boutiqueId: string): string {
   return `tr:product-create-draft:v2:${boutiqueId.trim()}`;
 }
 
-export function draftHasProgress(draft: ProductCreateDraftV2): boolean {
+export function draftHasProgress(draft: ProductCreateDraft): boolean {
   return (
     draft.images.some((u) => Boolean(u?.trim())) ||
-    draft.marketplaceImages.some((u) => Boolean(u?.trim())) ||
-    draft.lifestyleImages.some((u) => Boolean(u?.trim())) ||
     Boolean(draft.title.trim()) ||
     Boolean(draft.priceTry.trim()) ||
     draft.stepIndex > 0
@@ -67,15 +50,14 @@ export function draftHasProgress(draft: ProductCreateDraftV2): boolean {
 
 export function readProductCreateDraft(
   boutiqueId: string,
-): ProductCreateDraftV2 | null {
+): ProductCreateDraft | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = window.localStorage.getItem(storageKey(boutiqueId));
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as ProductCreateDraftV2;
+    const parsed = JSON.parse(raw) as ProductCreateDraft;
     if (parsed?.version !== PRODUCT_CREATE_DRAFT_VERSION) return null;
     if (!Array.isArray(parsed.images)) return null;
-    parsed.colorVariants = sanitizeColorVariantDrafts(parsed.colorVariants);
     return parsed;
   } catch {
     return null;
@@ -84,10 +66,10 @@ export function readProductCreateDraft(
 
 export function writeProductCreateDraft(
   boutiqueId: string,
-  draft: Omit<ProductCreateDraftV2, "version" | "updatedAt">,
+  draft: Omit<ProductCreateDraft, "version" | "updatedAt">,
 ): void {
   if (typeof window === "undefined") return;
-  const payload: ProductCreateDraftV2 = {
+  const payload: ProductCreateDraft = {
     ...draft,
     version: PRODUCT_CREATE_DRAFT_VERSION,
     updatedAt: Date.now(),
@@ -107,6 +89,7 @@ export function clearProductCreateDraft(boutiqueId: string): void {
   if (typeof window === "undefined") return;
   try {
     window.localStorage.removeItem(storageKey(boutiqueId));
+    window.localStorage.removeItem(legacyStorageKey(boutiqueId));
   } catch {
     // ignore
   }

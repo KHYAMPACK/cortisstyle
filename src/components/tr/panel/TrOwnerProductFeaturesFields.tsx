@@ -81,7 +81,7 @@ export function TrOwnerProductFeaturesFields({
         <div>
           <p className={labelClass}>Ürün özellikleri</p>
           <p className={`mt-1 ${hintClass}`}>
-            AI önerir; siz onaylarsınız. Boş bırakılanlar sitede görünmez.
+            Boş bırakılanlar sitede görünmez.
           </p>
         </div>
 
@@ -196,7 +196,7 @@ export function TrOwnerProductFeaturesFields({
       <div>
         <p className={labelClass}>Ürün özellikleri</p>
         <p className={`mt-1 ${hintClass}`}>
-          AI doldurur; boş bırakılanlar sitede görünmez. Üretim yeri, etiket,
+          Boş bırakılanlar sitede görünmez. Üretim yeri, etiket,
           kapama, cep ve manken ölçüsü yok.
         </p>
       </div>

@@ -1,135 +1,24 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { getCatalogBackground } from "@/lib/tr/catalogBackgrounds/registry";
-import { ELBISE_PACKSHOT_SLOT } from "@/lib/tr/fashion/garmentUploadTypes";
 import { formatTryFromKurus } from "@/types/tr-marketplace";
-
-type GalleryEntry =
-  | {
-      kind: "catalog" | "lifestyle";
-      label: string;
-      src: string;
-      pending?: false;
-    }
-  | {
-      kind: "catalog" | "lifestyle";
-      label: string;
-      src?: undefined;
-      pending: true;
-    };
 
 export interface TrOwnerStorePreviewProps {
   title: string;
   description?: string | null;
   priceTry?: string;
   compareAtPriceTry?: string | null;
+  /** The product's photos, shown in order as the shop shows them. */
   images: string[];
-  marketplaceImages: string[];
-  lifestyleImages?: string[];
-  catalogBackgroundId: string;
   sizes?: string[];
   colorNames?: string[];
-  /**
-   * When true, show 2 model-shot placeholders if lifestyle images are not ready yet
-   * (owner opted into model generation / jobs still running).
-   */
-  modelShotsPending?: boolean;
-  /** Expected model shot count while pending (default 2 = front + back). */
-  pendingModelShotCount?: number;
-  /**
-   * Construction catalog: shopper gallery is model shots first, packshot last.
-   * Owner manken originals stay off this preview (same as the storefront).
-   * Transparent packshot uses the catalog CSS backdrop.
-   */
-  onModelGallery?: boolean;
-  /**
-   * Takım: model shots first, then two item packshots (`marketplaceImages[0..1]`).
-   */
-  takimGallery?: boolean;
-}
-
-function lifestyleGalleryEntries(
-  lifestyleImages: string[],
-  modelShotsPending: boolean,
-  pendingModelShotCount: number,
-): GalleryEntry[] {
-  const ready = lifestyleImages
-    .filter((src) => Boolean(src?.trim()))
-    .map((src, index) => ({
-      kind: "lifestyle" as const,
-      label: index === 0 ? "Model" : `Model ${index + 1}`,
-      src: src.trim(),
-    }));
-  const entries: GalleryEntry[] = [...ready];
-  if (modelShotsPending) {
-    const need = Math.max(0, pendingModelShotCount - ready.length);
-    for (let i = 0; i < need; i += 1) {
-      const index = ready.length + i;
-      entries.push({
-        kind: "lifestyle",
-        label: index === 0 ? "Model" : `Model ${index + 1}`,
-        pending: true,
-      });
-    }
-  }
-  return entries;
-}
-
-function takimPackshotEntries(
-  images: string[],
-  marketplaceImages: string[],
-): GalleryEntry[] {
-  const entries: GalleryEntry[] = [];
-  for (const index of [0, 1] as const) {
-    const src = marketplaceImages[index]?.trim() || "";
-    const front = images[index * 2]?.trim() || "";
-    const back = images[index * 2 + 1]?.trim() || "";
-    const label = index === 0 ? "Parça 1 packshot" : "Parça 2 packshot";
-    if (src) {
-      entries.push({ kind: "catalog", label, src });
-    } else if (front && back) {
-      entries.push({ kind: "catalog", label, pending: true });
-    }
-  }
-  return entries;
-}
-
-function constructionPackshotEntry(
-  images: string[],
-  marketplaceImages: string[],
-): GalleryEntry | null {
-  const src =
-    marketplaceImages[ELBISE_PACKSHOT_SLOT]?.trim() ||
-    images[ELBISE_PACKSHOT_SLOT]?.trim() ||
-    "";
-  if (src) {
-    return { kind: "catalog", label: "Packshot", src };
-  }
-  if (images[0]?.trim() && images[1]?.trim()) {
-    return { kind: "catalog", label: "Packshot", pending: true };
-  }
-  return null;
-}
-
-function PendingSlot({ label }: { label: string }) {
-  return (
-    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[#EEEEEA] px-6 text-center">
-      <span
-        className="h-9 w-9 animate-spin rounded-full border-2 border-neutral-300 border-t-[color:var(--panel-accent)]"
-        aria-hidden
-      />
-      <p className="text-[15px] font-semibold text-neutral-800">{label}</p>
-      <p className="text-[13px] text-neutral-500">Hazırlanıyor…</p>
-    </div>
-  );
 }
 
 /**
- * Generic storefront preview (not boutique-themed).
- * Catalog slots use packshot/marketplace only — never raw uploads while processing.
+ * Generic storefront preview (not boutique-themed): the owner's photos as they are,
+ * the way the shop shows a product added by hand.
  */
 export function TrOwnerStorePreview({
   title,
@@ -137,73 +26,31 @@ export function TrOwnerStorePreview({
   priceTry,
   compareAtPriceTry,
   images,
-  marketplaceImages,
-  lifestyleImages = [],
-  catalogBackgroundId,
   sizes = [],
   colorNames = [],
-  modelShotsPending = false,
-  pendingModelShotCount = 1,
-  onModelGallery = false,
-  takimGallery = false,
 }: TrOwnerStorePreviewProps) {
-  const bg = getCatalogBackground(catalogBackgroundId);
+  const gallery = useMemo(
+    () =>
+      images
+        .map((src) => src?.trim())
+        .filter((src): src is string => Boolean(src))
+        .map((src, index) => ({ src, label: `Fotoğraf ${index + 1}` })),
+    [images],
+  );
 
-  const gallery = useMemo(() => {
-    const lifestyle = lifestyleGalleryEntries(
-      lifestyleImages,
-      modelShotsPending,
-      pendingModelShotCount,
-    );
-
-    if (takimGallery) {
-      return [...lifestyle, ...takimPackshotEntries(images, marketplaceImages)];
-    }
-
-    if (onModelGallery) {
-      const entries = [...lifestyle];
-      const packshot = constructionPackshotEntry(images, marketplaceImages);
-      if (packshot) entries.push(packshot);
-      return entries;
-    }
-
-    const entries: GalleryEntry[] = [];
-    for (const i of [0, 1] as const) {
-      const packshot = marketplaceImages[i]?.trim() || "";
-      const original = images[i]?.trim() || "";
-      const label = i === 0 ? "Ön" : "Arka";
-      if (packshot) {
-        entries.push({ kind: "catalog", label, src: packshot });
-      } else if (original) {
-        entries.push({ kind: "catalog", label, pending: true });
-      }
-    }
-    entries.push(...lifestyle);
-    return entries;
-  }, [
-    images,
-    marketplaceImages,
-    lifestyleImages,
-    modelShotsPending,
-    pendingModelShotCount,
-    onModelGallery,
-    takimGallery,
-  ]);
-
-  const [activeIndex, setActiveIndex] = useState(0);
-
-  useEffect(() => {
-    setActiveIndex(0);
-  }, [
-    gallery
-      .map((g) => (g.pending ? `pending:${g.label}` : g.src))
-      .join("|"),
-  ]);
+  // Back to the first photo whenever the photos change.
+  const galleryKey = gallery.map((entry) => entry.src).join("|");
+  const [selection, setSelection] = useState({ key: galleryKey, index: 0 });
+  const activeIndex = selection.key === galleryKey ? selection.index : 0;
+  const setActiveIndex = (update: number | ((current: number) => number)) =>
+    setSelection({
+      key: galleryKey,
+      index: typeof update === "function" ? update(activeIndex) : update,
+    });
 
   const safeIndex =
     gallery.length === 0 ? 0 : Math.min(activeIndex, gallery.length - 1);
   const active = gallery[safeIndex] ?? null;
-  const isCatalogCover = active?.kind === "catalog" && !active.pending;
 
   const sellKurus =
     priceTry && Number(priceTry.replace(",", ".")) > 0
@@ -240,29 +87,9 @@ export function TrOwnerStorePreview({
       </div>
 
       <div className="grid gap-0 sm:grid-cols-2">
-        <div
-          className="relative aspect-[3/4] w-full bg-[#EEEEEA]"
-          style={isCatalogCover ? { background: bg.css } : undefined}
-        >
+        <div className="relative aspect-[3/4] w-full bg-[#EEEEEA]">
           <AnimatePresence mode="wait">
-            {active?.pending ? (
-              <motion.div
-                key={`pending-${active.label}`}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.25 }}
-                className="absolute inset-0"
-              >
-                <PendingSlot
-                  label={
-                    active.kind === "lifestyle"
-                      ? "Model fotoğrafı hazırlanıyor"
-                      : "Katalog görseli hazırlanıyor"
-                  }
-                />
-              </motion.div>
-            ) : active?.src ? (
+            {active ? (
               <motion.div
                 key={active.src}
                 initial={{ opacity: 0 }}
@@ -275,11 +102,7 @@ export function TrOwnerStorePreview({
                   src={active.src}
                   alt={title || "Ürün"}
                   fill
-                  className={
-                    active.kind === "catalog"
-                      ? "object-contain p-6"
-                      : "object-cover"
-                  }
+                  className="object-cover"
                   sizes="(max-width: 640px) 100vw, 50vw"
                 />
               </motion.div>
@@ -357,42 +180,24 @@ export function TrOwnerStorePreview({
                 const selected = index === safeIndex;
                 return (
                   <button
-                    key={`${entry.kind}-${entry.pending ? entry.label : entry.src}-${index}`}
+                    key={`${entry.src}-${index}`}
                     type="button"
                     onClick={() => setActiveIndex(index)}
-                    className={`relative h-16 w-12 shrink-0 overflow-hidden rounded-lg border-2 ${
+                    className={`relative h-16 w-12 shrink-0 overflow-hidden rounded-lg border-2 bg-[#f5f5f5] ${
                       selected
                         ? "border-[color:var(--panel-accent)]"
                         : "border-neutral-200"
                     }`}
-                    style={
-                      entry.kind === "catalog" && !entry.pending
-                        ? { background: bg.css }
-                        : { background: "#f5f5f5" }
-                    }
                     aria-label={entry.label}
                     aria-pressed={selected}
                   >
-                    {entry.pending ? (
-                      <span className="absolute inset-0 flex items-center justify-center">
-                        <span
-                          className="h-4 w-4 animate-spin rounded-full border-2 border-neutral-300 border-t-[color:var(--panel-accent)]"
-                          aria-hidden
-                        />
-                      </span>
-                    ) : (
-                      <Image
-                        src={entry.src}
-                        alt=""
-                        fill
-                        className={
-                          entry.kind === "catalog"
-                            ? "object-contain p-1"
-                            : "object-cover"
-                        }
-                        sizes="48px"
-                      />
-                    )}
+                    <Image
+                      src={entry.src}
+                      alt=""
+                      fill
+                      className="object-cover"
+                      sizes="48px"
+                    />
                   </button>
                 );
               })}

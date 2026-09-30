@@ -5,8 +5,10 @@ import {
   isValidTryPrice,
   sanitizeTryPriceInput,
 } from "@/lib/tr/ownerProductConstraints";
-import type { ProductBatchCreateRow } from "@/lib/tr/productBatchCreateDraft";
-import { batchRowCover } from "@/lib/tr/productBatchCreateFlow";
+import {
+  batchRowCover,
+  type ProductBatchCreateRow,
+} from "@/lib/tr/productBatchCreateDraft";
 
 function saleNotBelowList(row: ProductBatchCreateRow): boolean {
   if (!row.discountEnabled || !row.salePriceTry.trim()) return false;

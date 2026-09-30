@@ -1,6 +1,6 @@
 # Fashion Beden & Kategori → foundation — plan
 
-_Prepared 2026-09-30 on branch `main-t0o1c2`. **S1, K1 and K2 built (2026-09-30); K0 was already in place. Not merged to `main`; lilabutik is still on `legacy` (switching it is Mert's step, see "Switching lilabutik").** Facts checked against the repo at `ff89987` (after PR #3) and against the live Supabase project with read-only `SELECT`s. Background: `docs/lilabutik-foundation-migration-plan.md` (this is a follow-up to its Area A; its Area B — moving sizes onto `tr_product_variants` — stays deferred and is **not** what this plan does)._
+_Prepared 2026-09-30 on branch `main-t0o1c2`. **S1, K1 and K2 built (2026-09-30); K0 was already in place. Merged to `main` (PR #4, `8aba2be`); lilabutik is still on `legacy` (switching it is Mert's step, see "Switching lilabutik").** Facts checked against the repo at `ff89987` (after PR #3) and against the live Supabase project with read-only `SELECT`s. Background: `docs/lilabutik-foundation-migration-plan.md` (this is a follow-up to its Area A; its Area B — moving sizes onto `tr_product_variants` — stays deferred and is **not** what this plan does)._
 
 **Goal (Mert):** a fashion boutique's **sizes (Beden)** and **categories (Kategori)** come from the boutique's own foundation definitions (Tanımlamalar → Varyant Türleri / Kategoriler) instead of lists hardcoded in code, so a new store can define its own without a code change.
 
