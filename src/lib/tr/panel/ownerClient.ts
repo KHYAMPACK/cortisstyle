@@ -349,6 +349,8 @@ async function readApiResponse<T>(
 export async function fetchOwnerCategories(boutiqueId: string): Promise<{
   mode: TrCategoryMode;
   categories: TrCategoryListEntry[];
+  /** The built-in tree can be imported ("Hazır kategorileri içe aktar"). */
+  importable: boolean;
 }> {
   return cachedOwnerFetch(ownerCacheKeys.categories(boutiqueId), async () => {
     const response = await ownerFetch(
@@ -357,9 +359,30 @@ export async function fetchOwnerCategories(boutiqueId: string): Promise<{
     const data = await readApiResponse<{
       mode?: TrCategoryMode;
       categories?: TrCategoryListEntry[];
+      importable?: boolean;
     }>(response, "Kategoriler yüklenemedi.");
-    return { mode: data.mode ?? "legacy", categories: data.categories ?? [] };
+    return {
+      mode: data.mode ?? "legacy",
+      categories: data.categories ?? [],
+      importable: data.importable === true,
+    };
   });
+}
+
+/** "Hazır kategorileri içe aktar": copies the built-in tree into the boutique's categories. */
+export async function importOwnerCategoryTemplate(
+  boutiqueId: string,
+): Promise<{ created: number; assigned: number }> {
+  const response = await ownerFetch("/api/tr/owner/categories/import", {
+    method: "POST",
+    body: JSON.stringify({ boutiqueId }),
+  });
+  const data = await readApiResponse<{ created?: number; assigned?: number }>(
+    response,
+    "Hazır kategoriler aktarılamadı.",
+  );
+  invalidateOwnerCache(ownerCacheKeys.categories(boutiqueId));
+  return { created: data.created ?? 0, assigned: data.assigned ?? 0 };
 }
 
 /** Brands, tags and suppliers the boutique already uses (suggestions for the creatable fields). */

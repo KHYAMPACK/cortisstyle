@@ -16,6 +16,17 @@ _Prepared 2026-09-30 on branch `main-t0o1c2`. **S1 built (2026-09-30); K0 alread
 
 **S1 complete.** K0 turned out to be in place already (see §0). Next: K1.
 
+**K1 part 1 built (2026-09-30)** — needs `supabase/patch_category_system_keys.sql` applied by Mert before the import can run.
+
+- `tr_categories.system_key` (unique per boutique when set).
+- **Import:** "Hazır kategorileri içe aktar" on the Kategoriler page, shown to a fashion boutique still on the built-in tree with no categories. It creates the 23 roots and shop leaves with the built-in ids as slug and system key, and files every product under its current category as primary.
+  - Hidden style variants are filed under their shop leaf; an unknown category becomes a top-level one of its own.
+  - It doesn't touch `tr_products.category` or the boutique's mode.
+  - All or nothing: a failure removes what it created.
+- **Code:** `categories/importPlan.ts` (pure, tested), `fashion/categoryTemplate.ts` (the template, tested against lilabutik's 8 categories), `importCategoryPlan` / `listProductCategoryColumns` in `catalog/categories.ts`, `POST /api/tr/owner/categories/import`.
+- After the import the page lists the categories read-only with a note that the shop is unchanged until the switch.
+- **Next (K1 part 2):** in `custom` mode, the fashion editor and create flows use the boutique's categories, and fashion logic reads garment kinds from system keys.
+
 ## Decisions (Mert, 2026-09-30)
 
 | Q | Decision |

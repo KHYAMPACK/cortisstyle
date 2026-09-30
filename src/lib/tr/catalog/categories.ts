@@ -11,6 +11,7 @@ import {
   type TrCategoryMode,
   type TrProductCategories,
 } from "@/lib/tr/categories/types";
+import type { CategoryImportPlan } from "@/lib/tr/categories/importPlan";
 import type { TrCategorySortCriterion } from "@/lib/tr/categories/sortCriteria";
 import { sanitizeSeo, type TrSeo } from "@/lib/tr/seo/seoFields";
 import { generateUniqueSlug, isValidSlug, slugify } from "@/lib/tr/seo/slug";
@@ -624,3 +625,91 @@ export async function categoryScopeIds(
   return categoryAndDescendantIds(await listCategories(boutiqueId), categoryId);
 }
 
+
+// ------------------------------------------------------------- ready-made tree import
+
+const SYSTEM_KEY_HINT =
+  "Hazır kategoriler aktarılamadı: veritabanı güncellemesi (patch_category_system_keys.sql) henüz uygulanmamış.";
+
+/**
+ * "Hazır kategorileri içe aktar": creates the planned categories (slug and system key
+ * from the vertical's template) and files each product under its planned category as
+ * primary. Only for a boutique with no categories yet. It doesn't change the boutique's
+ * category mode or any product's `category` column: nothing public reads these rows
+ * until the boutique is switched to `custom`. All or nothing: on a failure the rows it
+ * made are removed again.
+ */
+export async function importCategoryPlan(
+  boutiqueId: string,
+  plan: CategoryImportPlan,
+): Promise<number> {
+  if ((await listCategories(boutiqueId)).length > 0) {
+    throw new CategoryError("Bu butiğin zaten kategorileri var; hazır ağaç aktarılmadı.", 409);
+  }
+  const supabase = client();
+  const idBySlug = new Map<string, string>();
+  try {
+    for (const [index, entry] of plan.entries.entries()) {
+      const parentId = entry.parentSlug ? idBySlug.get(entry.parentSlug) : null;
+      const { data, error } = await supabase
+        .from("tr_categories")
+        .insert({
+          boutique_id: boutiqueId,
+          parent_id: parentId ?? null,
+          name: entry.name,
+          slug: entry.slug,
+          system_key: entry.systemKey,
+          sort_order: index,
+          seo: {},
+        })
+        .select("id")
+        .single();
+      if (error) {
+        if (isSchemaMissing(error)) {
+          throw new CategoryError(
+            /system_key/.test(error.message ?? "") ? SYSTEM_KEY_HINT : SCHEMA_HINT,
+          );
+        }
+        throw error;
+      }
+      idBySlug.set(entry.slug, String((data as { id: unknown }).id));
+    }
+
+    const rows = plan.assignments
+      .map((assignment) => ({
+        product_id: assignment.productId,
+        category_id: idBySlug.get(assignment.slug),
+        is_primary: true,
+      }))
+      .filter((row) => row.category_id);
+    for (let start = 0; start < rows.length; start += 200) {
+      const { error } = await supabase
+        .from("tr_product_categories")
+        .insert(rows.slice(start, start + 200));
+      if (error) throw error;
+    }
+  } catch (importError) {
+    // Deleting the categories also removes their product rows (on delete cascade).
+    const created = [...idBySlug.values()];
+    if (created.length > 0) {
+      await supabase.from("tr_categories").delete().in("id", created);
+    }
+    throw importError;
+  }
+  return idBySlug.size;
+}
+
+/** Every product's stored category (`tr_products.category`), for planning an import. */
+export async function listProductCategoryColumns(
+  boutiqueId: string,
+): Promise<Array<{ id: string; category: string | null }>> {
+  const { data, error } = await client()
+    .from("tr_products")
+    .select("id, category")
+    .eq("boutique_id", boutiqueId);
+  if (error) throw error;
+  return (data ?? []).map((row) => ({
+    id: String(row.id),
+    category: typeof row.category === "string" ? row.category : null,
+  }));
+}

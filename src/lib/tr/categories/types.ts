@@ -24,8 +24,21 @@ export interface TrCategory {
   sortCriterion: TrCategorySortCriterion | null;
   seo: TrSeo;
   sortOrder: number;
+  /**
+   * A stable key a vertical attaches meaning to (fashion: `elbise`, `takim`…), set by the
+   * category import; `null` for categories the owner made. Core never interprets it.
+   */
+  systemKey: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+/** One category of a ready-made tree a vertical offers for import. */
+export interface TrCategoryTemplateEntry {
+  /** Becomes both the slug and the system key, so product URLs and filters keep working. */
+  key: string;
+  name: string;
+  parentKey: string | null;
 }
 
 /** A category plus what the list page shows next to it. */
@@ -56,6 +69,7 @@ export function mapCategoryRow(row: Record<string, unknown>): TrCategory {
     sortCriterion: readCategorySortCriterion(row.sort_criterion),
     seo: sanitizeSeo(row.seo),
     sortOrder: typeof row.sort_order === "number" ? row.sort_order : 0,
+    systemKey: typeof row.system_key === "string" && row.system_key ? row.system_key : null,
     createdAt: String(row.created_at ?? ""),
     updatedAt: String(row.updated_at ?? ""),
   };
