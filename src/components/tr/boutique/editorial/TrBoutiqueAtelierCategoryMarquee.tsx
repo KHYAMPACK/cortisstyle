@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useLayoutEffect, useRef } from "react";
 import { TrBoutiqueEditorialProductCard } from "@/components/tr/boutique/editorial/TrBoutiqueEditorialProductCard";
-import { getTrCategoryShopAllLabel } from "@/lib/tr/fashion/categories";
+import { useStorefrontTaxonomy } from "@/components/tr/boutique/TrBoutiqueTaxonomy";
 import { trBoutiqueProductsPath } from "@/lib/tr/paths";
 import type { TrProduct } from "@/types/tr-marketplace";
 
@@ -45,12 +45,13 @@ export function TrBoutiqueAtelierCategoryMarquee({
   priority = false,
 }: TrBoutiqueAtelierCategoryMarqueeProps) {
   const scrollerRef = useRef<HTMLDivElement>(null);
+  const taxonomy = useStorefrontTaxonomy();
   const productKey = products.map((product) => product.id).join("|");
   const plpHref = categoryPlpHref(boutiqueSlug, categoryId);
   const shopAll =
     categoryId === "diger"
       ? "Tüm ürünler"
-      : getTrCategoryShopAllLabel(categoryId);
+      : taxonomy.shopAllLabel(categoryId);
   const copies =
     products.length > 1 ? Math.max(2, Math.ceil(8 / products.length)) : 1;
 

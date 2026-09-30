@@ -11,7 +11,10 @@ import { requireOwnedBoutique, requireTrOwner } from "@/lib/tr/ownerAuth";
 
 export const runtime = "nodejs";
 
-/** GET /api/tr/owner/categories?boutiqueId= — the boutique's categories and its category mode. */
+/**
+ * GET /api/tr/owner/categories?boutiqueId= — the boutique's categories, its category mode,
+ * and whether the built-in tree can be imported.
+ */
 export async function GET(request: Request) {
   const authResult = await requireTrOwner(request);
   if (!authResult.ok) return authResult.response;
@@ -28,7 +31,10 @@ export async function GET(request: Request) {
       getBoutiqueCategoryMode(boutique.id),
       listCategoryEntries(boutique.id),
     ]);
-    return Response.json({ mode, categories });
+    // A fashion boutique still on the built-in tree can import it as its own categories.
+    const importable =
+      mode === "legacy" && categories.length === 0 && boutique.catalogProfile === "fashion";
+    return Response.json({ mode, categories, importable });
   } catch (error) {
     return categoryErrorResponse(error, "Kategoriler yüklenemedi.");
   }

@@ -18,6 +18,7 @@ import {
   resolveCampaignSubText2,
   type EditorialHeroPromotion,
 } from "@/lib/tr/boutiqueHome";
+import { useStorefrontTaxonomy } from "@/components/tr/boutique/TrBoutiqueTaxonomy";
 import { trBoutiqueProductsPath } from "@/lib/tr/paths";
 
 const AUTO_MS = 5500;
@@ -681,7 +682,7 @@ function CampaignHeroSlide({
   const subText = resolveCampaignSubText(promo);
   const campaignName = resolveCampaignName(promo);
   const subText2 = resolveCampaignSubText2(promo);
-  const actions = resolveCampaignActions(promo);
+  const actions = resolveCampaignActions(promo, useStorefrontTaxonomy());
   const watermark = promo.watermark?.trim().toLocaleUpperCase("tr");
 
   return (
@@ -804,7 +805,7 @@ function ClassicHeroSlide({
 }) {
   const align = promo.contentAlign ?? "center";
   const sideAligned = align === "left" || align === "right";
-  const actions = resolveCampaignActions(promo).slice(0, 3);
+  const actions = resolveCampaignActions(promo, useStorefrontTaxonomy()).slice(0, 3);
   const subText = resolveCampaignSubText(promo);
   const title = resolveCampaignName(promo);
   const ctaTone = editorial ? "photo" : "classic";

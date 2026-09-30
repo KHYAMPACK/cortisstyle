@@ -140,7 +140,7 @@ export function TrProductVariantsCard({
     const { form, skipped } = addValues(formFromVariantType(type), [label]);
     if (skipped.length > 0) return "Bu değer zaten var.";
     try {
-      const saved = await updateOwnerVariantType(type.id, variantTypeBody(form));
+      const { type: saved } = await updateOwnerVariantType(type.id, variantTypeBody(form));
       await reload();
       const added = saved.values.find((value) => labelKey(value.label) === labelKey(label));
       if (added) {

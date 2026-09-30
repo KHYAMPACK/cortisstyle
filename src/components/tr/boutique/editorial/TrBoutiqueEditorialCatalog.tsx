@@ -5,12 +5,13 @@ import { useEffect, useMemo, useState } from "react";
 import { TrBoutiqueAtelierCategoryMarquee } from "@/components/tr/boutique/editorial/TrBoutiqueAtelierCategoryMarquee";
 import { TrBoutiqueEditorialProductCard } from "@/components/tr/boutique/editorial/TrBoutiqueEditorialProductCard";
 import { useTrBoutiqueCatalog } from "@/components/tr/boutique/TrBoutiqueCatalogContext";
+import { useStorefrontTaxonomy } from "@/components/tr/boutique/TrBoutiqueTaxonomy";
 import { isAtelierEditorialSkin } from "@/lib/tr/boutiqueHome";
 import {
   groupProductsForHomeCategoryRows,
   groupProductsForHomeRootCategoryRows,
 } from "@/lib/tr/catalog/homeCategoryRows";
-import { getTrCategoryLabel, isTrCategoryMatch } from "@/lib/tr/fashion/categories";
+import type { TrStorefrontTaxonomy } from "@/lib/tr/categories/taxonomy";
 import { trBoutiqueProductsPath } from "@/lib/tr/paths";
 import type { TrProduct } from "@/types/tr-marketplace";
 
@@ -22,10 +23,13 @@ interface TrBoutiqueEditorialCatalogProps {
   boutiqueName: string;
 }
 
-function filterLabel(categoryId: string | null): string {
+function filterLabel(
+  categoryId: string | null,
+  taxonomy: TrStorefrontTaxonomy,
+): string {
   if (!categoryId) return "Tüm ürünler";
   if (categoryId === "sale") return "İndirim";
-  return getTrCategoryLabel(categoryId) ?? categoryId;
+  return taxonomy.label(categoryId) ?? categoryId;
 }
 
 export function TrBoutiqueEditorialCatalog({
@@ -36,6 +40,7 @@ export function TrBoutiqueEditorialCatalog({
   const atelier = isAtelierEditorialSkin(boutiqueSlug);
   const { activeCategory, selectCategory, registerCatalogElement } =
     useTrBoutiqueCatalog();
+  const taxonomy = useStorefrontTaxonomy();
   const [sort, setSort] = useState<SortId>("default");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -60,7 +65,7 @@ export function TrBoutiqueEditorialCatalog({
       );
     } else if (activeCategory) {
       list = list.filter((p) =>
-        isTrCategoryMatch(p.category, activeCategory),
+        taxonomy.isMatch(p.category, activeCategory),
       );
     }
 
@@ -91,15 +96,15 @@ export function TrBoutiqueEditorialCatalog({
     }
 
     return sorted;
-  }, [activeCategory, products, searchQuery, sort]);
+  }, [activeCategory, products, searchQuery, sort, taxonomy]);
 
   const categoryRows = useMemo(
-    () => groupProductsForHomeCategoryRows(filtered),
-    [filtered],
+    () => groupProductsForHomeCategoryRows(filtered, taxonomy),
+    [filtered, taxonomy],
   );
   const rootCategoryRows = useMemo(
-    () => groupProductsForHomeRootCategoryRows(filtered),
-    [filtered],
+    () => groupProductsForHomeRootCategoryRows(filtered, taxonomy),
+    [filtered, taxonomy],
   );
   const splitByCategory = !activeCategory && categoryRows.length > 1;
   const atelierMarquee = atelier && !searchQuery;
@@ -171,7 +176,7 @@ export function TrBoutiqueEditorialCatalog({
           <>
             <p className="text-[11px] tracking-[0.2em] text-neutral-500 uppercase">
               Anasayfa
-              {activeCategory ? ` | ${filterLabel(activeCategory)}` : ""}
+              {activeCategory ? ` | ${filterLabel(activeCategory, taxonomy)}` : ""}
             </p>
 
             <div className="mt-4 flex justify-center">
@@ -232,7 +237,7 @@ export function TrBoutiqueEditorialCatalog({
 
         <p className="mt-4 text-[12px] tracking-[0.08em] text-neutral-500">
           {filtered.length} ürün
-          {activeCategory ? ` · ${filterLabel(activeCategory)}` : ""}
+          {activeCategory ? ` · ${filterLabel(activeCategory, taxonomy)}` : ""}
         </p>
       </div>
 

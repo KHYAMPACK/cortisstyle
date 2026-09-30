@@ -30,7 +30,9 @@ import {
   TrPanelProductTitleField,
   TrPanelProductVisibilityField,
 } from "@/components/tr/panel/TrPanelProductFields";
+import { TrPanelLoading } from "@/components/tr/panel/TrPanelMotion";
 import { TrProductImageLightbox } from "@/components/tr/panel/TrProductImageLightbox";
+import { useOwnerSizeSources } from "@/components/tr/panel/useOwnerSizeSources";
 import {
   panelAddChipClass,
   panelFieldClass,
@@ -70,9 +72,9 @@ import {
 } from "@/lib/tr/ownerProductConstraints";
 import { toast } from "@/lib/tr/panel/toast";
 import { hasRequiredProductPhotos } from "@/lib/tr/productPhotoChecks";
-import { emptyStockInputsForChart } from "@/lib/tr/sizeStockInputs";
+import { findSizeSource, NO_SIZE_SOURCE, type TrSizeSource } from "@/lib/tr/sizeSources";
+import { switchStockInputs } from "@/lib/tr/sizeStockInputs";
 import { slugify } from "@/lib/tr/seo/slug";
-import type { TrSizeChartId } from "@/lib/tr/productOptions";
 import type {
   TrProduct,
   TrProductColor,
@@ -155,21 +157,34 @@ function OptionToggle({
  * `rebaseFashionForm`, so it isn't reported as unsaved and a later Kaydet doesn't undo
  * it, while the owner's own unsaved edits are kept.
  */
-export function TrFashionProductEditor({
-  boutiqueId,
-  boutiqueSlug,
-  initialProduct,
-  onSaved,
-  onDeleted,
-}: {
+type FashionProductEditorProps = {
   boutiqueId: string;
   boutiqueSlug: string;
   initialProduct: TrProduct;
   onSaved: (product: TrProduct) => void;
   onDeleted?: () => void;
-}) {
+};
+
+export function TrFashionProductEditor(props: FashionProductEditorProps) {
+  // The size table offers the boutique's Beden types; the form reads a product's sizes
+  // against them, so it opens once they are in (the list is cached, usually instant).
+  const { sources, loaded } = useOwnerSizeSources(props.boutiqueId);
+  if (!loaded) {
+    return <TrPanelLoading label="Ürün yükleniyor…" />;
+  }
+  return <FashionProductEditorForm {...props} sizeSources={sources} />;
+}
+
+function FashionProductEditorForm({
+  boutiqueId,
+  boutiqueSlug,
+  initialProduct,
+  onSaved,
+  onDeleted,
+  sizeSources,
+}: FashionProductEditorProps & { sizeSources: TrSizeSource[] }) {
   const [state, setState] = useState(() => {
-    const loaded = fashionFormFromProduct(initialProduct);
+    const loaded = fashionFormFromProduct(initialProduct, sizeSources);
     return { form: loaded, baseline: loaded };
   });
   const { form, baseline } = state;
@@ -284,20 +299,18 @@ export function TrFashionProductEditor({
     });
   }, [extraCategories]);
 
-  const applySizeChart = (next: TrSizeChartId) => {
-    if (next === "none") {
-      change({ sizeChart: next, sizeStockInputs: {} });
-      return;
-    }
-    const prevDefaults =
-      form.sizeChart === "none"
-        ? new Set<string>()
-        : new Set(Object.keys(emptyStockInputsForChart(form.sizeChart, "0")));
-    const nextInputs = emptyStockInputsForChart(next, "0");
-    for (const [size, value] of Object.entries(form.sizeStockInputs)) {
-      if (size in nextInputs || !prevDefaults.has(size)) nextInputs[size] = value;
-    }
-    change({ sizeChart: next, sizeStockInputs: nextInputs });
+  const applySizeChart = (next: string) => {
+    change({
+      sizeChart: next,
+      sizeStockInputs:
+        next === NO_SIZE_SOURCE
+          ? {}
+          : switchStockInputs(
+              findSizeSource(sizeSources, form.sizeChart),
+              findSizeSource(sizeSources, next),
+              form.sizeStockInputs,
+            ),
+    });
   };
 
   const toggleColor = (color: TrProductColor) => {
@@ -359,7 +372,7 @@ export function TrFashionProductEditor({
     try {
       const saved = await updateOwnerProduct(
         initialProduct.id,
-        fashionProductPatch(submitted),
+        fashionProductPatch(submitted, sizeSources),
       );
       setState((current) => ({ ...current, baseline: submitted }));
       setSavedOnce(true);
@@ -548,7 +561,6 @@ export function TrFashionProductEditor({
               uploadType={family}
               features={form.features}
               listingDraft={listingDraft}
-              uploading={uploading}
               onUploadingChange={setUploading}
               onImagesChange={(images) => change({ images })}
               onMarketplaceImagesChange={(marketplaceImages) =>
@@ -762,13 +774,13 @@ export function TrFashionProductEditor({
           <TrOwnerSizeChartStock
             chart={form.sizeChart}
             onChartChange={applySizeChart}
+            sources={sizeSources}
             stockInputs={form.sizeStockInputs}
             onStockInputsChange={(sizeStockInputs) => change({ sizeStockInputs })}
             stock={form.stock}
             onStockChange={(stock) => change({ stock })}
             allowCustomSizes
             onlyListedSizes
-            variant="editor"
           />
 
           <div className="space-y-4 border-t border-neutral-100 pt-6">

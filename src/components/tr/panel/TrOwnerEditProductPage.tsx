@@ -12,7 +12,6 @@ import {
   TrPanelLoading,
 } from "@/components/tr/panel/TrPanelMotion";
 import { TrFashionProductEditor } from "@/components/tr/fashion/panel/TrFashionProductEditor";
-import { TrProductEditorForm } from "@/components/tr/panel/TrProductEditorForm";
 import {
   boutiqueLocationAddress,
   TrSimpleProductEditor,
@@ -30,18 +29,9 @@ import {
 
 interface TrOwnerEditProductPageProps {
   productId: string;
-  /**
-   * `legacy` (from `?editor=eski`) opens the old autosaving fashion editor instead of
-   * `TrFashionProductEditor`. A one-release fallback while the new editor settles in;
-   * see docs/lilabutik-foundation-migration-plan.md (A3).
-   */
-  requestedFashionEditor?: "legacy" | null;
 }
 
-export function TrOwnerEditProductPage({
-  productId,
-  requestedFashionEditor = null,
-}: TrOwnerEditProductPageProps) {
+export function TrOwnerEditProductPage({ productId }: TrOwnerEditProductPageProps) {
   const router = useRouter();
   const { isAuthenticated, isInitializing } = useAuth();
   const [product, setProduct] = useState<TrProduct | null>(null);
@@ -129,22 +119,6 @@ export function TrOwnerEditProductPage({
                     categoryMode={activeBoutique.categoryMode}
                     initialCategories={productCategories}
                     initialVariants={variants}
-                    onSaved={(saved) => {
-                      setProduct(saved);
-                    }}
-                    onDeleted={() => {
-                      router.push(trPanelProductsPath());
-                    }}
-                  />
-                </TrPanelFadeIn>
-              ) : product &&
-                productType === "fashion" &&
-                requestedFashionEditor === "legacy" ? (
-                <TrPanelFadeIn key="edit-form" shift={false}>
-                  <TrProductEditorForm
-                    boutiqueId={product.boutiqueId}
-                    boutiqueSlug={activeBoutique.slug}
-                    initialProduct={product}
                     onSaved={(saved) => {
                       setProduct(saved);
                     }}

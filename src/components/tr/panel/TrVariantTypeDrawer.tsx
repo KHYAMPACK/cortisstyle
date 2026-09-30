@@ -31,9 +31,11 @@ import {
   type VariantValueDraft,
 } from "@/lib/tr/variants/typeForm";
 import { normalizeHex, VARIANT_TYPE_LIMITS } from "@/lib/tr/variants/typeRules";
+import type { SizeRenameOffer } from "@/lib/tr/variants/sizeRenames";
 import type {
   TrVariantSelectionStyle,
   TrVariantType,
+  TrVariantTypeRole,
 } from "@/lib/tr/variants/types";
 
 const STYLE_OPTIONS: Array<{
@@ -43,6 +45,12 @@ const STYLE_OPTIONS: Array<{
 }> = [
   { id: "list", label: "Liste", hint: "Metin seçenekleri (S, M, L…)" },
   { id: "swatch", label: "Renk / Görsel", hint: "Her değer için bir renk veya görsel" },
+];
+
+const ROLE_OPTIONS: Array<{ id: TrVariantTypeRole | null; label: string; hint: string }> = [
+  { id: null, label: "Diğer", hint: "Genel bir seçenek" },
+  { id: "size", label: "Beden", hint: "Ürün düzenleyicide beden tablosu olarak çıkar" },
+  { id: "color", label: "Renk", hint: "Renk seçeneği" },
 ];
 
 const ICON_BUTTON =
@@ -70,7 +78,8 @@ export function TrVariantTypeDrawer({
   /** The boutique's types, for the "name already used" check. */
   types: ReadonlyArray<Pick<TrVariantType, "id" | "name">>;
   onClose: () => void;
-  onSaved: (type: TrVariantType) => void;
+  /** `sizeRenames`: renamed Beden values that products still carry (edit only). */
+  onSaved: (type: TrVariantType, sizeRenames: SizeRenameOffer[]) => void;
   onDeleted?: (typeId: string) => void;
 }) {
   const [form, setForm] = useState<VariantTypeFormState>(emptyVariantTypeForm);
@@ -141,11 +150,11 @@ export function TrVariantTypeDrawer({
     setSaving(true);
     try {
       const body = variantTypeBody(submitted);
-      const saved = type
+      const { type: saved, sizeRenames } = type
         ? await updateOwnerVariantType(type.id, body)
-        : await createOwnerVariantType(boutiqueId, body);
+        : { type: await createOwnerVariantType(boutiqueId, body), sizeRenames: [] };
       toast.success(type ? "Varyant türü kaydedildi." : "Varyant türü eklendi.");
-      onSaved(saved);
+      onSaved(saved, sizeRenames);
     } catch (saveError) {
       setForm(submitted);
       setDraft("");
@@ -222,6 +231,26 @@ export function TrVariantTypeDrawer({
                 aria-pressed={form.selectionStyle === option.id}
                 onClick={() => change({ selectionStyle: option.id })}
                 className={`${panelChipClass(form.selectionStyle === option.id)} h-auto flex-col items-start py-2 text-left`}
+              >
+                <span className="block">{option.label}</span>
+                <span className="mt-0.5 block text-[12px] font-normal opacity-80">
+                  {option.hint}
+                </span>
+              </button>
+            ))}
+          </div>
+        </fieldset>
+
+        <fieldset className="space-y-2">
+          <legend className={panelLabelClass}>Kullanım</legend>
+          <div className="grid grid-cols-3 gap-2">
+            {ROLE_OPTIONS.map((option) => (
+              <button
+                key={option.label}
+                type="button"
+                aria-pressed={form.role === option.id}
+                onClick={() => change({ role: option.id })}
+                className={`${panelChipClass(form.role === option.id)} h-auto flex-col items-start py-2 text-left`}
               >
                 <span className="block">{option.label}</span>
                 <span className="mt-0.5 block text-[12px] font-normal opacity-80">

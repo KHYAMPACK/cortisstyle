@@ -58,8 +58,8 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 
   try {
-    const type = await updateVariantType(loaded.type.id, input);
-    return Response.json({ type });
+    const { type, sizeRenames } = await updateVariantType(loaded.type.id, input);
+    return Response.json({ type, sizeRenames });
   } catch (error) {
     return variantTypeErrorResponse(error, "Varyant türü güncellenemedi.");
   }

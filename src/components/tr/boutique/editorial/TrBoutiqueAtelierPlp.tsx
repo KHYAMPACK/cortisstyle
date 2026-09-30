@@ -17,8 +17,9 @@ import {
   X,
 } from "lucide-react";
 import { TrBoutiqueEditorialProductCard } from "@/components/tr/boutique/editorial/TrBoutiqueEditorialProductCard";
+import { useStorefrontTaxonomy } from "@/components/tr/boutique/TrBoutiqueTaxonomy";
 import { getEditorialContent } from "@/lib/tr/boutiqueHome";
-import { getTrCategoryLabel, isTrCategoryMatch } from "@/lib/tr/fashion/categories";
+import type { TrStorefrontTaxonomy } from "@/lib/tr/categories/taxonomy";
 import { trBoutiquePath, trBoutiqueProductsPath } from "@/lib/tr/paths";
 import {
   resolveProductColors,
@@ -118,11 +119,12 @@ function pageTitle(opts: {
   saleOnly: boolean;
   categoryFilter: string | null;
   q: string;
+  taxonomy: TrStorefrontTaxonomy;
 }): string {
   if (opts.q) return `“${opts.q}”`;
   if (opts.saleOnly) return "İndirimdekiler";
   if (opts.categoryFilter) {
-    return getTrCategoryLabel(opts.categoryFilter) ?? opts.categoryFilter;
+    return opts.taxonomy.label(opts.categoryFilter) ?? opts.categoryFilter;
   }
   return "Tüm ürünler";
 }
@@ -174,7 +176,8 @@ export function TrBoutiqueAtelierPlp({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const content = getEditorialContent(boutique);
+  const taxonomy = useStorefrontTaxonomy();
+  const content = getEditorialContent(boutique, taxonomy);
 
   const kategori = searchParams.get("kategori")?.trim() || null;
   const saleOnly = searchParams.get("indirim") === "1" || kategori === "sale";
@@ -274,11 +277,11 @@ export function TrBoutiqueAtelierPlp({
     return [...ids]
       .map((id) => ({
         id,
-        label: getTrCategoryLabel(id) ?? id,
+        label: taxonomy.label(id) ?? id,
         image: imageByCategory.get(id),
       }))
       .sort((a, b) => a.label.localeCompare(b.label, "tr"));
-  }, [imageByCategory, products]);
+  }, [imageByCategory, products, taxonomy]);
 
   const chips: CategoryChip[] = useMemo(() => {
     return [
@@ -305,7 +308,7 @@ export function TrBoutiqueAtelierPlp({
       list = list.filter(isOnSale);
     } else if (categoryFilter) {
       list = list.filter((p) =>
-        isTrCategoryMatch(p.category, categoryFilter),
+        taxonomy.isMatch(p.category, categoryFilter),
       );
     }
 
@@ -361,6 +364,7 @@ export function TrBoutiqueAtelierPlp({
     renkParam,
     saleOnly,
     siraParam,
+    taxonomy,
   ]);
 
   const replaceParams = (patch: Record<string, string | null>) => {
@@ -398,7 +402,7 @@ export function TrBoutiqueAtelierPlp({
     setMobileFiltersOpen(false);
   };
 
-  const title = pageTitle({ saleOnly, categoryFilter, q });
+  const title = pageTitle({ saleOnly, categoryFilter, q, taxonomy });
   const hasActiveFilters = Boolean(
     renkParam ||
       saleOnly ||
@@ -424,7 +428,7 @@ export function TrBoutiqueAtelierPlp({
   } else if (categoryFilter) {
     activeFilterChips.push({
       id: `cat-${categoryFilter}`,
-      label: getTrCategoryLabel(categoryFilter) ?? categoryFilter,
+      label: taxonomy.label(categoryFilter) ?? categoryFilter,
       clear: { kategori: null },
     });
   }

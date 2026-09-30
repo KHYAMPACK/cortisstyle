@@ -1,11 +1,12 @@
-import type {
-  TrVariantSelectionStyle,
-  TrVariantType,
-  TrVariantTypeInput,
-  TrVariantTypeValue,
-  TrVariantTypeValueInput,
+import { ALL_NUMERIC_SIZES, DEFAULT_LETTER_SIZES } from "@/lib/tr/catalog/productOptions";
+import {
+  readVariantTypeRole,
+  type TrVariantSelectionStyle,
+  type TrVariantType,
+  type TrVariantTypeInput,
+  type TrVariantTypeValue,
+  type TrVariantTypeValueInput,
 } from "@/lib/tr/variants/types";
-import type { TrProductColor } from "@/types/tr-marketplace";
 
 /**
  * The rules for variant types, shared by the panel drawer and the API so a limit or a
@@ -61,6 +62,10 @@ export function readVariantTypeBody(body: Record<string, unknown>): TrVariantTyp
     throw new Error("Seçim stilini seçin.");
   }
   const selectionStyle: TrVariantSelectionStyle = body.selectionStyle;
+  if (body.role !== undefined && body.role !== null && readVariantTypeRole(body.role) === null) {
+    throw new Error("Kullanım alanı geçersiz.");
+  }
+  const role = readVariantTypeRole(body.role);
 
   if (!Array.isArray(body.values)) throw new Error("Değerler geçersiz.");
   const seen = new Set<string>();
@@ -93,7 +98,7 @@ export function readVariantTypeBody(body: Record<string, unknown>): TrVariantTyp
   if (values.length > VARIANT_TYPE_LIMITS.valuesMax) {
     throw new Error(`En fazla ${VARIANT_TYPE_LIMITS.valuesMax} değer ekleyebilirsiniz.`);
   }
-  return { name, selectionStyle, values };
+  return { name, selectionStyle, role, values };
 }
 
 /** What saving a type does to its stored values. */
@@ -147,49 +152,36 @@ export function planValueChanges(
 }
 
 /**
- * The Beden / Renk types a boutique's saved size and colour presets would become. A
- * type is left out when there is nothing to put in it. Colours without a valid hex
- * are skipped (a swatch needs a colour).
+ * The size types every fashion boutique can start from, matching the lists the panel
+ * used to hardcode: letter sizes and trouser sizes. Created by "Hazır bedenleri içe
+ * aktar" (never seeded), after which the boutique edits them like any other type.
  */
-export function presetsToTypeInputs(
-  sizePresets: readonly string[],
-  colorPresets: readonly TrProductColor[],
-): { beden: TrVariantTypeInput | null; renk: TrVariantTypeInput | null } {
-  const sizes: TrVariantTypeValueInput[] = [];
-  const sizeKeys = new Set<string>();
-  for (const size of sizePresets) {
-    const label = cleanLabel(size).slice(0, VARIANT_TYPE_LIMITS.labelMax);
-    if (!label || sizeKeys.has(labelKey(label))) continue;
-    sizeKeys.add(labelKey(label));
-    sizes.push({ label });
-  }
+export function builtInSizeTypeInputs(): TrVariantTypeInput[] {
+  return [
+    {
+      name: "Beden",
+      selectionStyle: "list",
+      role: "size",
+      values: DEFAULT_LETTER_SIZES.map((label) => ({ label })),
+    },
+    {
+      name: "Pantolon bedeni",
+      selectionStyle: "list",
+      role: "size",
+      values: ALL_NUMERIC_SIZES.map((label) => ({ label })),
+    },
+  ];
+}
 
-  const colors: TrVariantTypeValueInput[] = [];
-  const colorKeys = new Set<string>();
-  for (const color of colorPresets) {
-    const label = cleanLabel(color.name).slice(0, VARIANT_TYPE_LIMITS.labelMax);
-    const hex = normalizeHex(color.hex);
-    if (!label || !hex || colorKeys.has(labelKey(label))) continue;
-    colorKeys.add(labelKey(label));
-    colors.push({ label, hex, imageUrl: null });
-  }
-
-  return {
-    beden: sizes.length
-      ? {
-          name: "Beden",
-          selectionStyle: "list",
-          values: sizes.slice(0, VARIANT_TYPE_LIMITS.valuesMax),
-        }
-      : null,
-    renk: colors.length
-      ? {
-          name: "Renk",
-          selectionStyle: "swatch",
-          values: colors.slice(0, VARIANT_TYPE_LIMITS.valuesMax),
-        }
-      : null,
-  };
+/**
+ * The built-in size types a boutique can still import: offered only while it has no
+ * size type at all, and only those whose name isn't taken.
+ */
+export function importableSizeTypeInputs(
+  existing: ReadonlyArray<Pick<TrVariantType, "id" | "name" | "role">>,
+): TrVariantTypeInput[] {
+  if (existing.some((type) => type.role === "size")) return [];
+  return builtInSizeTypeInputs().filter((input) => !hasTypeNamed(existing, input.name));
 }
 
 /** A type's names, for the "already exists" check. */

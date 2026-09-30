@@ -41,7 +41,7 @@ import {
   guidedPhotoSlotCountForUploadType,
   isConstructionCatalogUpload,
   parseConstructionShopCategory,
-  requiredPhotoSlotsForUploadType,
+  REQUIRED_PHOTO_SLOTS,
   type ConstructionCatalogFamily,
 } from "@/lib/tr/fashion/garmentUploadTypes";
 import { resolveDressFeatureValue } from "@/lib/tr/fashion/dressFeatures";
@@ -335,7 +335,6 @@ export interface TrOwnerGuidedPhotoUploadProps {
   category?: string | null;
   productId?: string | null;
   uploadType?: string | null;
-  uploading: boolean;
   onUploadingChange: (value: boolean) => void;
   onImagesChange: (images: string[]) => void;
   onMarketplaceImagesChange: (urls: string[]) => void;
@@ -392,7 +391,6 @@ export function TrOwnerGuidedPhotoUpload({
   category,
   productId,
   uploadType = null,
-  uploading: _uploading,
   onUploadingChange,
   onImagesChange,
   onMarketplaceImagesChange,
@@ -500,9 +498,7 @@ export function TrOwnerGuidedPhotoUpload({
   const triageFamily = gateFamily ?? knownFamily;
   const family = triageFamily ?? "elbise";
   const shopCategory = gateCategory ?? category;
-  const requiredSlots = requiredPhotoSlotsForUploadType(
-    elbise ? uploadType ?? "elbise" : uploadType,
-  );
+  const requiredSlots = REQUIRED_PHOTO_SLOTS;
   const guidedSlots = photoSlotCount ?? (elbise
     ? skipDetailSlot && !images[ELBISE_DETAIL_SLOT]?.trim()
       ? 2

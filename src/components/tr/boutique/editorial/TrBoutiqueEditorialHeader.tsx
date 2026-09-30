@@ -15,6 +15,7 @@ import {
   useTrBoutiqueNavPendingOptional,
 } from "@/components/tr/boutique/editorial/TrBoutiqueNavPending";
 import { TrBoutiqueAtelierPageMorph } from "@/components/tr/boutique/editorial/TrBoutiqueAtelierPageMorph";
+import { useStorefrontTaxonomy } from "@/components/tr/boutique/TrBoutiqueTaxonomy";
 import { TrCartLink } from "@/components/tr/TrCartLink";
 import {
   EDITORIAL_SALE_RED,
@@ -27,12 +28,7 @@ import {
   resolveBoutiqueBrandLabel,
   resolveBoutiqueLogoUrl,
 } from "@/lib/tr/boutiqueBrand";
-import {
-  getTrCategoryNavChildren,
-  getTrCategoryShopAllLabel,
-  listTrCategoryRoots,
-  resolveTrCategoryDisplayLabel,
-} from "@/lib/tr/fashion/categories";
+import type { TrStorefrontTaxonomy } from "@/lib/tr/categories/taxonomy";
 import { DEMO_SHOPPER_SHIPPED_ORDER_ID } from "@/lib/tr/commerce/demoShopperOrders";
 import {
   trBoutiqueAuthPath,
@@ -94,12 +90,15 @@ function resolveShopTiles(content: EditorialDemoContent) {
   ];
 }
 
-function navItemDisplayLabel(item: EditorialNavItem): string {
+function navItemDisplayLabel(
+  item: EditorialNavItem,
+  taxonomy: TrStorefrontTaxonomy,
+): string {
   if (item.accent === "sale" || item.categoryId === "sale" || item.id === "new") {
     return item.label;
   }
   if (item.categoryId) {
-    return resolveTrCategoryDisplayLabel(item.categoryId, item.label);
+    return taxonomy.displayLabel(item.categoryId, item.label);
   }
   return item.label;
 }
@@ -108,11 +107,12 @@ function buildMegaFeatured(
   slug: string,
   item: EditorialNavItem,
   content: EditorialDemoContent,
+  taxonomy: TrStorefrontTaxonomy,
 ): MegaFeatured[] {
   const tiles = resolveShopTiles(content);
   const trends = content.trends?.items ?? [];
   const primaryHref = navItemHref(slug, item);
-  const itemLabel = navItemDisplayLabel(item);
+  const itemLabel = navItemDisplayLabel(item, taxonomy);
 
   const matched =
     tiles.find((tile) => tile.categoryId === item.categoryId) ??
@@ -128,7 +128,7 @@ function buildMegaFeatured(
   if (item.accent === "sale" || item.categoryId === "sale") {
     const saleTile =
       tiles.find((tile) => tile.categoryId === "sale") ?? matched;
-    const next = nextShopCategoryTile(null, tiles, ["sale"]);
+    const next = nextShopCategoryTile(null, tiles, taxonomy, ["sale"]);
     return [
       {
         label: saleTile?.label ?? "İndirim",
@@ -137,7 +137,7 @@ function buildMegaFeatured(
       },
       {
         label: next
-          ? resolveTrCategoryDisplayLabel(next.categoryId, next.label)
+          ? taxonomy.displayLabel(next.categoryId, next.label)
           : "Yeni",
         image: next?.image ?? trendAlt?.image,
         href: next
@@ -149,18 +149,18 @@ function buildMegaFeatured(
 
   if (item.id === "new") {
     return tiles.slice(0, 2).map((tile) => ({
-      label: resolveTrCategoryDisplayLabel(tile.categoryId, tile.label),
+      label: taxonomy.displayLabel(tile.categoryId, tile.label),
       image: tile.image,
       href: categoryProductsHref(slug, tile.categoryId),
     }));
   }
 
   const parentImage = matched?.image ?? trendMatch?.image;
-  const next = nextShopCategoryTile(item.categoryId, tiles);
+  const next = nextShopCategoryTile(item.categoryId, tiles, taxonomy);
 
   return [
     {
-      label: resolveTrCategoryDisplayLabel(
+      label: taxonomy.displayLabel(
         matched?.categoryId ?? item.categoryId,
         matched?.label ?? itemLabel,
       ),
@@ -169,7 +169,7 @@ function buildMegaFeatured(
     },
     {
       label: next
-        ? resolveTrCategoryDisplayLabel(next.categoryId, next.label)
+        ? taxonomy.displayLabel(next.categoryId, next.label)
         : (trendAlt?.title ?? "Koleksiyon"),
       image: next?.image ?? trendAlt?.image,
       href: next
@@ -183,9 +183,10 @@ function buildMegaFeatured(
 function nextShopCategoryTile(
   currentId: string | null | undefined,
   tiles: Array<{ categoryId: string; label: string; image?: string }>,
+  taxonomy: TrStorefrontTaxonomy,
   excludeIds: string[] = [],
 ): { categoryId: string; label: string; image?: string } | null {
-  const roots = listTrCategoryRoots().filter(
+  const roots = taxonomy.roots().filter(
     (root) => !excludeIds.includes(root.id),
   );
   if (roots.length === 0) {
@@ -224,6 +225,7 @@ function buildMegaLinks(
   slug: string,
   item: EditorialNavItem,
   content: EditorialDemoContent,
+  taxonomy: TrStorefrontTaxonomy,
 ): Array<{ label: string; href: string }> {
   const tiles = resolveShopTiles(content);
   const primaryHref = navItemHref(slug, item);
@@ -231,7 +233,7 @@ function buildMegaLinks(
   if (item.accent === "sale" || item.categoryId === "sale") {
     return [
       { label: "Tüm indirimler", href: primaryHref },
-      ...listTrCategoryRoots().map((root) => ({
+      ...taxonomy.roots().map((root) => ({
         label: root.label,
         href: trBoutiqueProductsPath(slug, {
           kategori: root.id,
@@ -244,7 +246,7 @@ function buildMegaLinks(
   if (item.id === "new") {
     return [
       { label: "Tüm yeniler", href: primaryHref },
-      ...listTrCategoryRoots().map((root) => ({
+      ...taxonomy.roots().map((root) => ({
         label: root.label,
         href: trBoutiqueProductsPath(slug, {
           kategori: root.id,
@@ -255,13 +257,13 @@ function buildMegaLinks(
   }
 
   const children = item.categoryId
-    ? getTrCategoryNavChildren(item.categoryId)
+    ? taxonomy.navChildren(item.categoryId)
     : [];
 
   const shopAll = item.categoryId
-    ? getTrCategoryShopAllLabel(item.categoryId)
+    ? taxonomy.shopAllLabel(item.categoryId)
     : (() => {
-        const label = navItemDisplayLabel(item);
+        const label = navItemDisplayLabel(item, taxonomy);
         return `Tüm ${label.charAt(0).toLocaleLowerCase("tr-TR")}${label.slice(1)}`;
       })();
 
@@ -288,8 +290,9 @@ function navItemCanDrill(
   slug: string,
   item: EditorialNavItem,
   content: EditorialDemoContent,
+  taxonomy: TrStorefrontTaxonomy,
 ): boolean {
-  return buildMegaLinks(slug, item, content).length > 1;
+  return buildMegaLinks(slug, item, content, taxonomy).length > 1;
 }
 
 export function TrBoutiqueEditorialHeader({
@@ -301,7 +304,8 @@ export function TrBoutiqueEditorialHeader({
   const commerce = useTrBoutiqueCommerceScope();
   const favorites = useTrScopedFavorites();
   const navPending = useTrBoutiqueNavPendingOptional();
-  const content = getEditorialContent(boutique);
+  const taxonomy = useStorefrontTaxonomy();
+  const content = getEditorialContent(boutique, taxonomy);
   const logoUrl = resolveBoutiqueLogoUrl(boutique);
   const atelier = isAtelierEditorialSkin(boutique.slug);
   const onCheckoutPage = /\/odeme(\/|$)/.test(pathname);
@@ -405,7 +409,7 @@ export function TrBoutiqueEditorialHeader({
   };
 
   const openMobileDrill = (item: EditorialNavItem) => {
-    if (atelier && navItemCanDrill(boutique.slug, item, content)) {
+    if (atelier && navItemCanDrill(boutique.slug, item, content, taxonomy)) {
       setMobileDrillId(item.id);
       return;
     }
@@ -417,10 +421,10 @@ export function TrBoutiqueEditorialHeader({
       ? (content.nav.find((item) => item.id === mobileDrillId) ?? null)
       : null;
   const mobileDrillLinks = mobileDrillItem
-    ? buildMegaLinks(boutique.slug, mobileDrillItem, content)
+    ? buildMegaLinks(boutique.slug, mobileDrillItem, content, taxonomy)
     : [];
   const mobileDrillFeatured = mobileDrillItem
-    ? buildMegaFeatured(boutique.slug, mobileDrillItem, content)[0]
+    ? buildMegaFeatured(boutique.slug, mobileDrillItem, content, taxonomy)[0]
     : null;
 
   const iconBtn =
@@ -530,7 +534,7 @@ export function TrBoutiqueEditorialHeader({
                   >
                     <ChevronLeft className="h-5 w-5" strokeWidth={1.5} />
                     <span className="text-[13px] tracking-[0.08em] uppercase">
-                      {navItemDisplayLabel(mobileDrillItem)}
+                      {navItemDisplayLabel(mobileDrillItem, taxonomy)}
                     </span>
                   </button>
                 ) : (
@@ -601,7 +605,7 @@ export function TrBoutiqueEditorialHeader({
                       {content.nav.map((item) => {
                         const canDrill =
                           atelier &&
-                          navItemCanDrill(boutique.slug, item, content);
+                          navItemCanDrill(boutique.slug, item, content, taxonomy);
                         return (
                           <li key={item.id} className="border-b border-black/5">
                             <button
@@ -629,7 +633,7 @@ export function TrBoutiqueEditorialHeader({
                                     : { color: "#111" }
                                 }
                               >
-                                {navItemDisplayLabel(item)}
+                                {navItemDisplayLabel(item, taxonomy)}
                               </span>
                               {canDrill ? (
                                 <ChevronRight
@@ -684,10 +688,10 @@ export function TrBoutiqueEditorialHeader({
       : null;
 
   const megaLinks = openMegaItem
-    ? buildMegaLinks(boutique.slug, openMegaItem, content)
+    ? buildMegaLinks(boutique.slug, openMegaItem, content, taxonomy)
     : [];
   const megaFeatured = openMegaItem
-    ? buildMegaFeatured(boutique.slug, openMegaItem, content)
+    ? buildMegaFeatured(boutique.slug, openMegaItem, content, taxonomy)
     : [];
 
   return (
@@ -830,7 +834,7 @@ export function TrBoutiqueEditorialHeader({
                         : undefined
                     }
                   >
-                    {navItemDisplayLabel(item)}
+                    {navItemDisplayLabel(item, taxonomy)}
                   </button>
                 </li>
               );
@@ -843,7 +847,7 @@ export function TrBoutiqueEditorialHeader({
             <motion.div
               key={openMegaItem.id}
               role="region"
-              aria-label={`${navItemDisplayLabel(openMegaItem)} menü`}
+              aria-label={`${navItemDisplayLabel(openMegaItem, taxonomy)} menü`}
               className="absolute inset-x-0 top-full z-40 border-b border-black/[0.06] bg-[#FAFAF8] shadow-[0_24px_48px_rgba(42,36,48,0.08)]"
               onMouseEnter={clearMegaClose}
               initial={{ opacity: 0, y: -6 }}
@@ -854,7 +858,7 @@ export function TrBoutiqueEditorialHeader({
               <div className="mx-auto grid max-w-7xl gap-8 px-4 py-8 sm:px-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] md:gap-10 md:px-8 md:py-10 lg:grid-cols-[minmax(12rem,0.85fr)_minmax(0,1.4fr)]">
                 <div>
                   <p className="text-[11px] font-medium tracking-[0.18em] text-neutral-950 uppercase">
-                    {navItemDisplayLabel(openMegaItem)}
+                    {navItemDisplayLabel(openMegaItem, taxonomy)}
                   </p>
                   <ul className="mt-4 space-y-2.5">
                     {megaLinks.map((link) => (

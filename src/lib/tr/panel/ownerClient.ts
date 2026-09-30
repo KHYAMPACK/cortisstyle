@@ -1,4 +1,5 @@
 import { getSupabaseClient } from "@/lib/supabaseClient";
+import type { SizeRenameOffer } from "@/lib/tr/variants/sizeRenames";
 import { prepareOwnerUploadFile } from "@/lib/tr/prepareOwnerUploadFile";
 import { sanitizeProductFeatures } from "@/lib/tr/catalog/productFeatures";
 import { parseAiCategoryId } from "@/lib/tr/fashion/categories";
@@ -31,7 +32,7 @@ import {
   EMPTY_PRODUCT_VARIANTS,
   type TrProductVariant,
   type TrProductVariants,
-  type TrVariantPresetImport,
+  type TrVariantTypeImportOffer,
   type TrVariantType,
   type TrVariantTypeListEntry,
 } from "@/lib/tr/variants/types";
@@ -348,6 +349,8 @@ async function readApiResponse<T>(
 export async function fetchOwnerCategories(boutiqueId: string): Promise<{
   mode: TrCategoryMode;
   categories: TrCategoryListEntry[];
+  /** The built-in tree can be imported ("Hazır kategorileri içe aktar"). */
+  importable: boolean;
 }> {
   return cachedOwnerFetch(ownerCacheKeys.categories(boutiqueId), async () => {
     const response = await ownerFetch(
@@ -356,9 +359,30 @@ export async function fetchOwnerCategories(boutiqueId: string): Promise<{
     const data = await readApiResponse<{
       mode?: TrCategoryMode;
       categories?: TrCategoryListEntry[];
+      importable?: boolean;
     }>(response, "Kategoriler yüklenemedi.");
-    return { mode: data.mode ?? "legacy", categories: data.categories ?? [] };
+    return {
+      mode: data.mode ?? "legacy",
+      categories: data.categories ?? [],
+      importable: data.importable === true,
+    };
   });
+}
+
+/** "Hazır kategorileri içe aktar": copies the built-in tree into the boutique's categories. */
+export async function importOwnerCategoryTemplate(
+  boutiqueId: string,
+): Promise<{ created: number; assigned: number }> {
+  const response = await ownerFetch("/api/tr/owner/categories/import", {
+    method: "POST",
+    body: JSON.stringify({ boutiqueId }),
+  });
+  const data = await readApiResponse<{ created?: number; assigned?: number }>(
+    response,
+    "Hazır kategoriler aktarılamadı.",
+  );
+  invalidateOwnerCache(ownerCacheKeys.categories(boutiqueId));
+  return { created: data.created ?? 0, assigned: data.assigned ?? 0 };
 }
 
 /** Brands, tags and suppliers the boutique already uses (suggestions for the creatable fields). */
@@ -571,10 +595,10 @@ export async function deleteOwnerCampaignCode(
   await readApiResponse<{ ok?: boolean }>(response, "Kupon silinemedi.");
 }
 
-/** The boutique's variant types, and how many saved sizes / colours could be imported. */
+/** The boutique's variant types, and the built-in size types it could still import. */
 export async function fetchOwnerVariantTypes(boutiqueId: string): Promise<{
   types: TrVariantTypeListEntry[];
-  importable: TrVariantPresetImport;
+  importable: TrVariantTypeImportOffer;
 }> {
   return cachedOwnerFetch(ownerCacheKeys.variantTypes(boutiqueId), async () => {
     const response = await ownerFetch(
@@ -582,11 +606,11 @@ export async function fetchOwnerVariantTypes(boutiqueId: string): Promise<{
     );
     const data = await readApiResponse<{
       types?: TrVariantTypeListEntry[];
-      importable?: TrVariantPresetImport;
+      importable?: TrVariantTypeImportOffer;
     }>(response, "Varyant türleri yüklenemedi.");
     return {
       types: data.types ?? [],
-      importable: data.importable ?? { sizes: 0, colors: 0 },
+      importable: { sizeTypes: data.importable?.sizeTypes ?? [] },
     };
   });
 }
@@ -608,21 +632,42 @@ export async function createOwnerVariantType(
   return data.type;
 }
 
+/**
+ * Saves a type. `sizeRenames` lists renamed sizes of a Beden type that products still
+ * carry, for the "update the products too?" offer.
+ */
 export async function updateOwnerVariantType(
   typeId: string,
   body: Record<string, unknown>,
-): Promise<TrVariantType> {
+): Promise<{ type: TrVariantType; sizeRenames: SizeRenameOffer[] }> {
   const response = await ownerFetch(
     `/api/tr/owner/variant-types/${encodeURIComponent(typeId)}`,
     { method: "PATCH", body: JSON.stringify(body) },
   );
-  const data = await readApiResponse<{ type?: TrVariantType }>(
-    response,
-    "Varyant türü güncellenemedi.",
-  );
+  const data = await readApiResponse<{
+    type?: TrVariantType;
+    sizeRenames?: SizeRenameOffer[];
+  }>(response, "Varyant türü güncellenemedi.");
   if (!data.type) throw new Error("Varyant türü güncellenemedi.");
   invalidateOwnerCache("variant-types:");
-  return data.type;
+  return { type: data.type, sizeRenames: data.sizeRenames ?? [] };
+}
+
+/** Renames sizes on the boutique's products after they were renamed in a Beden type. */
+export async function renameOwnerProductSizes(
+  typeId: string,
+  renames: ReadonlyArray<{ from: string; to: string }>,
+): Promise<number> {
+  const response = await ownerFetch(
+    `/api/tr/owner/variant-types/${encodeURIComponent(typeId)}/rename-sizes`,
+    { method: "POST", body: JSON.stringify({ renames }) },
+  );
+  const data = await readApiResponse<{ updated?: number }>(
+    response,
+    "Ürünlerdeki bedenler güncellenemedi.",
+  );
+  invalidateProductLists();
+  return data.updated ?? 0;
 }
 
 export async function deleteOwnerVariantType(typeId: string): Promise<void> {
@@ -634,8 +679,8 @@ export async function deleteOwnerVariantType(typeId: string): Promise<void> {
   invalidateOwnerCache("variant-types:");
 }
 
-/** Creates Beden and / or Renk from the boutique's saved sizes and colours. */
-export async function importOwnerVariantPresets(
+/** "Hazır bedenleri içe aktar": creates the built-in size types (Beden, Pantolon bedeni). */
+export async function importOwnerSizeTypes(
   boutiqueId: string,
 ): Promise<TrVariantType[]> {
   const response = await ownerFetch("/api/tr/owner/variant-types/import", {
@@ -1712,63 +1757,6 @@ export async function deleteOwnerOrderDraft(
   invalidateOwnerCache("order-drafts:");
 }
 
-export async function fetchOwnerContentPacks(boutiqueId: string) {
-  const response = await ownerFetch(
-    `/api/tr/owner/content-packs?boutiqueId=${encodeURIComponent(boutiqueId)}`,
-  );
-  const data = (await parseOwnerJson(response)) as {
-    packs?: import("@/lib/tr/contentPacks").TrContentPack[];
-    error?: string;
-  };
-  if (!response.ok) {
-    throw new Error(data.error ?? "İçerik paketleri yüklenemedi.");
-  }
-  return data.packs ?? [];
-}
-
-export async function fetchOwnerContentPack(packId: string) {
-  const response = await ownerFetch(
-    `/api/tr/owner/content-packs/${encodeURIComponent(packId)}`,
-  );
-  const data = (await parseOwnerJson(response)) as {
-    pack?: import("@/lib/tr/contentPacks").TrContentPack;
-    error?: string;
-  };
-  if (!response.ok) {
-    throw new Error(data.error ?? "İçerik paketi yüklenemedi.");
-  }
-  if (!data.pack) throw new Error("İçerik paketi bulunamadı.");
-  return data.pack;
-}
-
-export async function createOwnerContentPack(
-  boutiqueId: string,
-  productId: string,
-): Promise<{
-  pack: import("@/lib/tr/contentPacks").TrContentPack;
-  warning: string | null;
-}> {
-  const response = await ownerFetch("/api/tr/owner/content-packs", {
-    method: "POST",
-    body: JSON.stringify({ boutiqueId, productId }),
-  });
-  const data = (await parseOwnerJson(response)) as {
-    pack?: import("@/lib/tr/contentPacks").TrContentPack;
-    warning?: string | null;
-    error?: string;
-  };
-  if (!response.ok && !data.pack) {
-    throw new Error(data.error ?? "İçerik paketi oluşturulamadı.");
-  }
-  if (!data.pack) {
-    throw new Error(data.error ?? "İçerik paketi oluşturulamadı.");
-  }
-  return {
-    pack: data.pack,
-    warning: data.warning ?? data.error ?? null,
-  };
-}
-
 export interface TrOwnerBoutiqueSettings {
   id: string;
   slug: string;
@@ -1843,58 +1831,6 @@ export async function updateOwnerBoutiqueSettings(
   invalidateOwnerCache(ownerCacheKeys.boutiques);
   invalidateOwnerCache(ownerCacheKeys.settings(boutiqueId));
   return data.boutique;
-}
-
-export async function fetchOwnerBoutiqueOptions(boutiqueId: string): Promise<{
-  sizePresets: string[];
-  colorPresets: TrProductColor[];
-}> {
-  const response = await ownerFetch(
-    `/api/tr/owner/boutiques/${encodeURIComponent(boutiqueId)}/options`,
-  );
-  const data = (await parseOwnerJson(response)) as {
-    sizePresets?: string[];
-    colorPresets?: TrProductColor[];
-    error?: string;
-  };
-  if (!response.ok) {
-    throw new Error(data.error ?? "Seçenekler yüklenemedi.");
-  }
-  return {
-    sizePresets: data.sizePresets ?? [],
-    colorPresets: data.colorPresets ?? [],
-  };
-}
-
-export async function updateOwnerBoutiqueOptions(
-  boutiqueId: string,
-  payload: {
-    sizePresets?: string[];
-    colorPresets?: TrProductColor[];
-  },
-): Promise<{
-  sizePresets: string[];
-  colorPresets: TrProductColor[];
-}> {
-  const response = await ownerFetch(
-    `/api/tr/owner/boutiques/${encodeURIComponent(boutiqueId)}/options`,
-    {
-      method: "PATCH",
-      body: JSON.stringify(payload),
-    },
-  );
-  const data = (await parseOwnerJson(response)) as {
-    sizePresets?: string[];
-    colorPresets?: TrProductColor[];
-    error?: string;
-  };
-  if (!response.ok) {
-    throw new Error(data.error ?? "Seçenekler kaydedilemedi.");
-  }
-  return {
-    sizePresets: data.sizePresets ?? [],
-    colorPresets: data.colorPresets ?? [],
-  };
 }
 
 export async function fetchOwnerInvoices(

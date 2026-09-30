@@ -25,11 +25,12 @@ import { TrOwnerModelShotProgress } from "@/components/tr/panel/TrOwnerModelShot
 import { TrOwnerWizardPipelineStatus } from "@/components/tr/panel/TrOwnerWizardPipelineStatus";
 import { TrPanelFadeIn } from "@/components/tr/panel/TrPanelMotion";
 import { TrProductImageLightbox } from "@/components/tr/panel/TrProductImageLightbox";
-import {
-  emptyStockInputsForChart,
-  sizesFromStockInputs,
-  TrOwnerSizeChartStock,
-} from "@/components/tr/panel/TrOwnerSizeChartStock";
+import { TrOwnerSizeChartStock } from "@/components/tr/panel/TrOwnerSizeChartStock";
+import { useOwnerCategoryList } from "@/components/tr/panel/useOwnerCategories";
+import { useOwnerSizeSources } from "@/components/tr/panel/useOwnerSizeSources";
+import { categoryPayloadForGarment } from "@/lib/tr/fashion/garmentCategory";
+import { findSizeSource, resolveSizeSourceId } from "@/lib/tr/sizeSources";
+import { emptyStockInputs, sizesFromStockInputs } from "@/lib/tr/sizeStockInputs";
 import {
   panelBackLinkClass,
   panelErrorClass,
@@ -69,7 +70,6 @@ import {
   TR_OWNER_PRODUCT_LIMITS,
 } from "@/lib/tr/ownerProductConstraints";
 import { cleanedLifestyleImages } from "@/lib/tr/productImages";
-import type { TrSizeChartId } from "@/lib/tr/productOptions";
 import {
   applyTakimItemListingDraft,
   clearProductTakimCreateDraft,
@@ -155,8 +155,26 @@ function TakimCreateFlow({
   const [discountEnabled, setDiscountEnabled] = useState(false);
   const [salePriceTry, setSalePriceTry] = useState("");
   const [stock, setStock] = useState("1");
-  const [sizeChart, setSizeChart] = useState<TrSizeChartId>("letter");
+  // A size source id (a Beden type, or the built-in `letter` / `numeric`) or `none`.
+  const [sizeChart, setSizeChart] = useState<string>("letter");
   const [sizeStockInputs, setSizeStockInputs] = useState(empty.sizeStockInputs);
+  const { sources: sizeSources, loaded: sizeSourcesLoaded } =
+    useOwnerSizeSources(boutiqueId);
+  // A boutique on its own categories files the set under the category keyed `takim`.
+  const { categoryList, loaded: categoriesLoaded } = useOwnerCategoryList(boutiqueId);
+  const sizeSource = findSizeSource(sizeSources, sizeChart);
+  const applySizeChart = (chart: string) => {
+    setSizeChart(chart);
+    setSizeStockInputs(emptyStockInputs(findSizeSource(sizeSources, chart), "0"));
+  };
+  // Once the boutique's Beden types are in, move a built-in list (the default, or one
+  // restored from an older draft) onto the matching type.
+  useEffect(() => {
+    if (!sizeSourcesLoaded) return;
+    const resolved = resolveSizeSourceId(sizeSources, sizeChart);
+    if (resolved !== sizeChart) applySizeChart(resolved);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- applySizeChart reads the latest sources
+  }, [sizeSourcesLoaded, sizeSources, sizeChart]);
   const [lifestyleImages, setLifestyleImages] = useState<string[]>([]);
   const [catalogBackgroundId] = useState(empty.catalogBackgroundId);
   const [selectedModelId, setSelectedModelId] = useState<string | null>(null);
@@ -475,10 +493,10 @@ function TakimCreateFlow({
       }
     }
     if (step === "stock") {
-      if (sizeChart === "none") {
+      if (!sizeSource) {
         if (!isValidStock(stock)) return;
       } else {
-        const sizes = sizesFromStockInputs(sizeChart, sizeStockInputs);
+        const sizes = sizesFromStockInputs(sizeSource, sizeStockInputs);
         if (!sizes.every((size) => isValidStock(sizeStockInputs[size] ?? ""))) {
           return;
         }
@@ -492,6 +510,10 @@ function TakimCreateFlow({
   };
 
   const save = async () => {
+    if (!categoriesLoaded) {
+      setError("Kategoriler yükleniyor; birkaç saniye sonra tekrar deneyin.");
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
@@ -502,10 +524,7 @@ function TakimCreateFlow({
         sellPrice = Number(salePriceTry.replace(",", "."));
         compareAtPriceTry = listPrice;
       }
-      const sizes =
-        sizeChart === "none"
-          ? []
-          : sizesFromStockInputs(sizeChart, sizeStockInputs);
+      const sizes = sizesFromStockInputs(sizeSource, sizeStockInputs);
       let stockValue: number;
       let sizeStocks: Record<string, number> = {};
       if (sizes.length > 0) {
@@ -552,7 +571,7 @@ function TakimCreateFlow({
         compareAtPriceTry,
         sizes,
         colors: [],
-        category: TAKIM_SHOP_LEAF,
+        ...categoryPayloadForGarment(TAKIM_SHOP_LEAF, categoryList),
         images: manualMode ? items[0]?.images ?? [] : assembled.images,
         marketplaceImages: manualMode
           ? []
@@ -705,11 +724,6 @@ function TakimCreateFlow({
                 uploadType={item.uploadType}
                 deferConstructionPackshot
                 photoSlotCount={2}
-                uploading={Boolean(
-                  (photoJobs[index] ?? []).some(
-                    (job) => job.status === "running",
-                  ),
-                )}
                 onUploadingChange={() => undefined}
                 onImagesChange={(images) =>
                   patchItem(index as 0 | 1, { images })
@@ -960,15 +974,12 @@ function TakimCreateFlow({
       {step === "stock" ? (
         <TrOwnerSizeChartStock
           chart={sizeChart}
-          onChartChange={(chart) => {
-            setSizeChart(chart);
-            setSizeStockInputs(emptyStockInputsForChart(chart, "0"));
-          }}
+          onChartChange={applySizeChart}
+          sources={sizeSources}
           stockInputs={sizeStockInputs}
           onStockInputsChange={setSizeStockInputs}
           stock={stock}
           onStockChange={setStock}
-          variant="wizard"
         />
       ) : null}
 
@@ -982,11 +993,7 @@ function TakimCreateFlow({
           marketplaceImages={manualMode ? [] : assembled.marketplaceImages}
           lifestyleImages={lifestyleImages}
           catalogBackgroundId={catalogBackgroundId}
-          sizes={
-            sizeChart === "none"
-              ? []
-              : sizesFromStockInputs(sizeChart, sizeStockInputs)
-          }
+          sizes={sizesFromStockInputs(sizeSource, sizeStockInputs)}
           takimGallery
           modelShotsPending={modelBusy}
           pendingModelShotCount={2}

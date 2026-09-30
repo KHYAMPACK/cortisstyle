@@ -1,4 +1,4 @@
-import { isTrCategoryMatch } from "@/lib/tr/fashion/categories";
+import type { TrStorefrontTaxonomy } from "@/lib/tr/categories/taxonomy";
 import type { TrProductWithBoutique } from "@/types/tr-marketplace";
 
 const DEFAULT_PRODUCT_LIMIT = 8;
@@ -17,6 +17,8 @@ export function pickRelatedProducts(input: {
   excludeIds?: Iterable<string>;
   category?: string | null;
   limit?: number;
+  /** Decides "same category" (the boutique's own categories, or the built-in tree). */
+  taxonomy: Pick<TrStorefrontTaxonomy, "isMatch">;
 }): TrProductWithBoutique[] {
   const limit = input.limit ?? DEFAULT_PRODUCT_LIMIT;
   const exclude = new Set(input.excludeIds ?? []);
@@ -30,10 +32,10 @@ export function pickRelatedProducts(input: {
     .sort(byId);
 
   const sameCategory = category
-    ? pool.filter((product) => isTrCategoryMatch(product.category, category))
+    ? pool.filter((product) => input.taxonomy.isMatch(product.category, category))
     : [];
   const rest = category
-    ? pool.filter((product) => !isTrCategoryMatch(product.category, category))
+    ? pool.filter((product) => !input.taxonomy.isMatch(product.category, category))
     : pool;
 
   const picked: TrProductWithBoutique[] = [];

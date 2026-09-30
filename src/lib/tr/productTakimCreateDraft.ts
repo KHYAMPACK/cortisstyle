@@ -8,7 +8,8 @@ import {
   clampDescription,
   clampTitle,
 } from "@/lib/tr/ownerProductConstraints";
-import { sizesForChart, type TrSizeChartId } from "@/lib/tr/productOptions";
+import { BUILT_IN_SIZE_SOURCES, findSizeSource } from "@/lib/tr/sizeSources";
+import { emptyStockInputs } from "@/lib/tr/sizeStockInputs";
 import {
   isTakimShopLeaf,
   type ConstructionCatalogFamily,
@@ -60,7 +61,8 @@ export interface ProductTakimCreateDraftV1 {
   discountEnabled: boolean;
   salePriceTry: string;
   stock: string;
-  sizeChart: TrSizeChartId;
+  /** A size source id (Beden type, `letter` / `numeric`) or `none`; resolved by the page. */
+  sizeChart: string;
   sizeStockInputs: Record<string, string>;
   lifestyleImages: string[];
   catalogBackgroundId: string;
@@ -71,17 +73,6 @@ export interface ProductTakimCreateDraftV1 {
 
 function storageKey(boutiqueId: string): string {
   return `tr:product-create-takim-draft:v1:${boutiqueId.trim()}`;
-}
-
-export function emptyTakimStockInputs(
-  chart: TrSizeChartId,
-  fill = "0",
-): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const size of sizesForChart(chart)) {
-    out[size] = fill;
-  }
-  return out;
 }
 
 export function createEmptyTakimItem(): TakimItemDraft {
@@ -119,7 +110,8 @@ export function createEmptyTakimDraft(): Omit<
     salePriceTry: "",
     stock: "1",
     sizeChart: "letter",
-    sizeStockInputs: emptyTakimStockInputs("letter", "0"),
+    // The built-in letter list until the page resolves the boutique's Beden types.
+    sizeStockInputs: emptyStockInputs(findSizeSource(BUILT_IN_SIZE_SOURCES, "letter"), "0"),
     lifestyleImages: [],
     catalogBackgroundId: DEFAULT_CATALOG_BACKGROUND_ID,
     selectedModelId: null,

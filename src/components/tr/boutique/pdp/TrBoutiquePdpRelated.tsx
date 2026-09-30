@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { useTrBoutiqueProductsOptional } from "@/components/tr/boutique/TrBoutiqueProductsContext";
+import { useStorefrontTaxonomy } from "@/components/tr/boutique/TrBoutiqueTaxonomy";
 import { TrBoutiqueYouMayAlsoLike } from "@/components/tr/boutique/TrBoutiqueYouMayAlsoLike";
 import { excludeColorSiblingIds } from "@/lib/tr/catalog/colorSiblings";
 import { pickRelatedProducts } from "@/lib/tr/recommendations";
@@ -20,6 +21,7 @@ export function TrBoutiquePdpRelated({
   const boutiqueProducts = useTrBoutiqueProductsOptional();
   const catalog = boutiqueProducts?.products ?? [];
 
+  const taxonomy = useStorefrontTaxonomy();
   const related = useMemo(
     () =>
       pickRelatedProducts({
@@ -27,8 +29,9 @@ export function TrBoutiquePdpRelated({
         excludeIds: excludeColorSiblingIds(product),
         category: product.category,
         limit: 8,
+        taxonomy,
       }),
-    [catalog, product],
+    [catalog, product, taxonomy],
   );
 
   if (related.length === 0 || !product.boutique) return null;

@@ -1,21 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import type { TrSizeChartId } from "@/lib/tr/productOptions";
 import {
-  NUMERIC_EXPANDED_SIZES,
-  sizesForChart,
-} from "@/lib/tr/productOptions";
+  BUILT_IN_SIZE_SOURCES,
+  findSizeSource,
+  NO_SIZE_SOURCE,
+  type TrSizeSource,
+} from "@/lib/tr/sizeSources";
 import {
-  missingChartSizes,
-  sizesForStockInputs,
-  sizesInStockInputs,
-} from "@/lib/tr/sizeStockInputs";
-
-export {
-  emptyStockInputsForChart,
+  missingSourceSizes,
   sizesFromStockInputs,
-  stockInputsFromSizeStocks,
+  sizesInStockInputs,
 } from "@/lib/tr/sizeStockInputs";
 import {
   sanitizeStockInput,
@@ -31,43 +26,25 @@ import {
   panelStepperBtnClass,
 } from "@/components/tr/panel/panelUi";
 
-const CHART_OPTIONS: Array<{ id: TrSizeChartId; label: string; hint: string }> =
-  [
-    {
-      id: "letter",
-      label: "Harf (XS–3XL)",
-      hint: "Üst giyim / standart beden",
-    },
-    {
-      id: "numeric",
-      label: "Numara (24–40)",
-      hint: "Pantolon / jean ölçüsü",
-    },
-    {
-      id: "none",
-      label: "Beden yok",
-      hint: "Tek stok yeterli",
-    },
-  ];
-
 interface TrOwnerSizeChartStockProps {
-  chart: TrSizeChartId;
-  onChartChange?: (chart: TrSizeChartId) => void;
+  /** The chosen size source's id (a Beden type, `letter` / `numeric`) or `none`. */
+  chart: string;
+  onChartChange?: (chart: string) => void;
+  /** What the owner can pick from: the boutique's Beden types, or the built-in lists. */
+  sources?: readonly TrSizeSource[];
   stockInputs: Record<string, string>;
   onStockInputsChange: (next: Record<string, string>) => void;
   /** Single stock when chart is none. */
   stock?: string;
   onStockChange?: (value: string) => void;
-  /** Allow “+ Beden ekle” for sizes outside the default chart. */
+  /** Allow “+ Beden ekle” for sizes outside the source. */
   allowCustomSizes?: boolean;
-  /** @deprecated Both surfaces use the large accessible UI. */
-  variant?: "wizard" | "editor";
   /** Extra colors: stock rows only — chart is shared with the primary SKU. */
   hideChart?: boolean;
   heading?: string;
   /**
-   * Edit an existing garment: list only the sizes in `stockInputs` (no chart defaults
-   * added), let every size be removed, and offer the chart's missing sizes as chips.
+   * Edit an existing garment: list only the sizes in `stockInputs` (the source's other
+   * sizes aren't added), let every size be removed, and offer the missing ones as chips.
    */
   onlyListedSizes?: boolean;
 }
@@ -132,6 +109,7 @@ function StockQtyField({
 export function TrOwnerSizeChartStock({
   chart,
   onChartChange,
+  sources = BUILT_IN_SIZE_SOURCES,
   stockInputs,
   onStockInputsChange,
   stock = "1",
@@ -141,24 +119,24 @@ export function TrOwnerSizeChartStock({
   heading,
   onlyListedSizes = false,
 }: TrOwnerSizeChartStockProps) {
+  const source = findSizeSource(sources, chart);
   const chartSizes = onlyListedSizes
-    ? sizesInStockInputs(stockInputs)
-    : sizesForStockInputs(chart, stockInputs);
-  const addableChartSizes = onlyListedSizes
-    ? missingChartSizes(chart, stockInputs)
-    : [];
+    ? sizesInStockInputs(stockInputs, source)
+    : sizesFromStockInputs(source, stockInputs);
+  const addableChartSizes = onlyListedSizes ? missingSourceSizes(source, stockInputs) : [];
   const [addingSize, setAddingSize] = useState(false);
   const [newSize, setNewSize] = useState("");
-  const missingExpandedSizes =
-    chart === "numeric"
-      ? NUMERIC_EXPANDED_SIZES.filter((size) => stockInputs[size] === undefined)
-      : [];
+  const missingMoreSizes = (source?.moreValues ?? []).filter(
+    (size) => stockInputs[size] === undefined,
+  );
+  const chartOptions = [
+    ...sources.map((option) => ({ id: option.id, label: option.label, hint: option.hint })),
+    { id: NO_SIZE_SOURCE, label: "Beden yok", hint: "Tek stok yeterli" },
+  ];
 
-  const expandNumericSizes = () => {
+  const addMoreSizes = () => {
     const next = { ...stockInputs };
-    for (const size of NUMERIC_EXPANDED_SIZES) {
-      if (next[size] === undefined) next[size] = "0";
-    }
+    for (const size of missingMoreSizes) next[size] = "0";
     onStockInputsChange(next);
   };
 
@@ -178,9 +156,8 @@ export function TrOwnerSizeChartStock({
   const removeSize = (size: string) => {
     const next = { ...stockInputs };
     delete next[size];
-    // Keep chart defaults present as "0" so the row stays until chart change.
-    const defaults = new Set(sizesForChart(chart));
-    if (!onlyListedSizes && defaults.has(size)) {
+    // Keep the source's sizes present as "0" so the row stays until the source changes.
+    if (!onlyListedSizes && source?.values.includes(size)) {
       next[size] = "0";
     }
     onStockInputsChange(next);
@@ -192,12 +169,12 @@ export function TrOwnerSizeChartStock({
       <div className="space-y-3">
         <p className={panelLabelClass}>Beden tablosu</p>
         <p className={panelHintClass}>
-          Harf veya numara seçin — her beden için stok yazın veya + / − ile
+          Bir beden listesi seçin — her beden için stok yazın veya + / − ile
           ayarlayın. 0 = stokta yok (ürün sayfasında “gelince haber ver”
           görünür).
         </p>
         <div className="grid gap-3 sm:grid-cols-3">
-          {CHART_OPTIONS.map((option) => {
+          {chartOptions.map((option) => {
             const active = chart === option.id;
             return (
               <button
@@ -227,7 +204,7 @@ export function TrOwnerSizeChartStock({
 
       {heading ? <p className={panelLabelClass}>{heading}</p> : null}
 
-      {chart === "none" ? (
+      {!source ? (
         onStockChange ? (
           <div className="space-y-2">
             <p className={panelLabelClass}>Stok adedi</p>
@@ -243,11 +220,10 @@ export function TrOwnerSizeChartStock({
           <p className={panelLabelClass}>Beden stokları</p>
           <div className="space-y-3">
             {chartSizes.map((size) => {
-              const isDefault = sizesForChart(chart).includes(size);
-              const isExpandedNumeric = NUMERIC_EXPANDED_SIZES.includes(size);
+              const isDefault = source.values.includes(size);
+              const isMore = source.moreValues.includes(size);
               const canRemove =
-                onlyListedSizes ||
-                (!isDefault && (allowCustomSizes || isExpandedNumeric));
+                onlyListedSizes || (!isDefault && (allowCustomSizes || isMore));
               return (
                 <div
                   key={size}
@@ -301,13 +277,13 @@ export function TrOwnerSizeChartStock({
             </div>
           ) : null}
 
-          {missingExpandedSizes.length > 0 ? (
+          {missingMoreSizes.length > 0 && source.moreLabel ? (
             <button
               type="button"
               className={panelAddChipClass}
-              onClick={expandNumericSizes}
+              onClick={addMoreSizes}
             >
-              Daha büyük bedenler (42–52)
+              {source.moreLabel}
             </button>
           ) : null}
 

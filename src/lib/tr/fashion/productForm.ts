@@ -5,10 +5,14 @@ import {
   isAltGiyimShopLeaf,
   isTakimShopLeaf,
   isUstGiyimShopLeaf,
-  requiredPhotoSlotsForUploadType,
+  REQUIRED_PHOTO_SLOTS,
   type ConstructionCatalogFamily,
 } from "@/lib/tr/fashion/garmentUploadTypes";
+import { garmentCategoryFor } from "@/lib/tr/fashion/garmentCategory";
 import { isTakimCatalogProduct } from "@/lib/tr/fashion/takimUpload";
+import type { TrCategory, TrProductCategories } from "@/lib/tr/categories/types";
+
+type GarmentCategoryLike = Pick<TrCategory, "id" | "parentId" | "slug" | "systemKey">;
 import {
   isValidStock,
   isValidTryPrice,
@@ -22,7 +26,13 @@ import {
   hasRequiredProductPhotos,
 } from "@/lib/tr/productPhotoChecks";
 import { alignMarketplaceSlots, cleanedLifestyleImages } from "@/lib/tr/productImages";
-import { detectSizeChart, type TrSizeChartId } from "@/lib/tr/productOptions";
+import {
+  BUILT_IN_SIZE_SOURCES,
+  detectSizeSourceId,
+  findSizeSource,
+  NO_SIZE_SOURCE,
+  type TrSizeSource,
+} from "@/lib/tr/sizeSources";
 import {
   sizesInStockInputs,
   stockInputsForProductSizes,
@@ -55,11 +65,20 @@ export interface FashionProductFormState {
   /** Plain text: meta description, Google feed and AI fill read it. */
   description: string;
   features: TrProductFeatures;
+  /** The primary category's slug (what `tr_products.category` holds). */
   category: string | null;
+  /**
+   * The product's own categories when the boutique manages them (`custom` mode), kept
+   * in step with `category`; `null` on the built-in tree.
+   */
+  categories: TrProductCategories | null;
   /** "Kendi fotoğraflarım": a plain gallery instead of the guided front/back upload. */
   manualMode: boolean;
-  /** `none` = no sizes; the product then has one stock count. */
-  sizeChart: TrSizeChartId;
+  /**
+   * The size source (a Beden type, or `letter` / `numeric` for the built-in lists) the
+   * size table offers; `none` = no sizes, the product then has one stock count.
+   */
+  sizeChart: string;
   /**
    * Exactly the garment's sizes → typed stock. Unlike the create flows, the chart's
    * other defaults are not added: an XS–XL dress stays XS–XL (Mert, 2026-09-29).
@@ -78,11 +97,13 @@ export interface FashionProductFormState {
 
 export function fashionFormFromProduct(
   product: TrProduct,
+  sizeSources: readonly TrSizeSource[] = BUILT_IN_SIZE_SOURCES,
+  categories: TrProductCategories | null = null,
 ): FashionProductFormState {
   const onSale =
     typeof product.compareAtPriceKurus === "number" &&
     product.compareAtPriceKurus > product.priceKurus;
-  const sizeChart = detectSizeChart(product.sizes);
+  const sizeChart = detectSizeSourceId(sizeSources, product.sizes);
   return {
     title: product.title,
     priceTry: kurusToPriceInput(
@@ -92,10 +113,11 @@ export function fashionFormFromProduct(
     description: product.description ?? "",
     features: product.features ?? {},
     category: product.category,
+    categories,
     manualMode: isManualListing(product),
     sizeChart,
     sizeStockInputs:
-      sizeChart === "none"
+      sizeChart === NO_SIZE_SOURCE
         ? {}
         : stockInputsForProductSizes(product.sizes, product.sizeStocks),
     stock: String(product.stock ?? 1),
@@ -119,24 +141,43 @@ export interface FashionFormFacts {
   requiredPhotoSlots: number;
 }
 
+/**
+ * The built-in garment id fashion logic should use for the form's category: the slug
+ * itself on the built-in tree, else read through the boutique's category system keys.
+ */
+export function fashionGarmentCategory(
+  form: Pick<FashionProductFormState, "category">,
+  categoryList: readonly GarmentCategoryLike[] | null = null,
+): string | null {
+  return garmentCategoryFor(form.category, categoryList);
+}
+
 export function fashionFormFacts(
   form: Pick<FashionProductFormState, "features" | "category">,
+  categoryList: readonly GarmentCategoryLike[] | null = null,
 ): FashionFormFacts {
+  const garment = fashionGarmentCategory(form, categoryList);
   const takim =
-    isTakimCatalogProduct({ features: form.features }) ||
-    isTakimShopLeaf(form.category);
-  const family = takim ? null : constructionCatalogFamily(null, form.category);
+    isTakimCatalogProduct({ features: form.features }) || isTakimShopLeaf(garment);
+  const family = takim ? null : constructionCatalogFamily(null, garment);
   return {
     takim,
     family,
     elbise: family != null,
-    requiredPhotoSlots: requiredPhotoSlotsForUploadType(family),
+    requiredPhotoSlots: REQUIRED_PHOTO_SLOTS,
   };
 }
 
 /** The sizes that will be saved (none when the chart is `none`). */
-export function fashionFormSizes(form: FashionProductFormState): string[] {
-  return form.sizeChart === "none" ? [] : sizesInStockInputs(form.sizeStockInputs);
+export function fashionFormSizes(
+  form: FashionProductFormState,
+  sizeSources: readonly TrSizeSource[] = BUILT_IN_SIZE_SOURCES,
+): string[] {
+  if (form.sizeChart === NO_SIZE_SOURCE) return [];
+  return sizesInStockInputs(
+    form.sizeStockInputs,
+    findSizeSource(sizeSources, form.sizeChart),
+  );
 }
 
 /**
@@ -145,17 +186,19 @@ export function fashionFormSizes(form: FashionProductFormState): string[] {
  */
 export function validateFashionProductForm(
   form: FashionProductFormState,
+  categoryList: readonly GarmentCategoryLike[] | null = null,
 ): string | null {
   if (!isValidTryPrice(form.priceTry)) {
     return `Fiyat ${TR_OWNER_PRODUCT_LIMITS.priceMinTry}–${TR_OWNER_PRODUCT_LIMITS.priceMaxTry} TL arası olmalı.`;
   }
   if (!form.title.trim()) return "Başlık zorunlu.";
 
-  const { takim, family, elbise, requiredPhotoSlots } = fashionFormFacts(form);
-  if (family === "ust-giyim" && !isUstGiyimShopLeaf(form.category)) {
+  const { takim, family, elbise, requiredPhotoSlots } = fashionFormFacts(form, categoryList);
+  const garment = fashionGarmentCategory(form, categoryList);
+  if (family === "ust-giyim" && !isUstGiyimShopLeaf(garment)) {
     return "Üst giyim için alt kategori seçin (bluz, gömlek, tişört…).";
   }
-  if (family === "alt-giyim" && !isAltGiyimShopLeaf(form.category)) {
+  if (family === "alt-giyim" && !isAltGiyimShopLeaf(garment)) {
     return "Alt giyim için alt kategori seçin (etek, pantolon, eşofman).";
   }
   if (form.manualMode) {
@@ -169,7 +212,7 @@ export function validateFashionProductForm(
   }
 
   const sizes = fashionFormSizes(form);
-  if (form.sizeChart !== "none" && sizes.length === 0) {
+  if (form.sizeChart !== NO_SIZE_SOURCE && sizes.length === 0) {
     return "En az bir beden ekleyin ya da “Beden yok” seçin.";
   }
   if (sizes.length > 0) {
@@ -222,11 +265,13 @@ export function fashionProductStatus(
  */
 export function fashionProductPatch(
   form: FashionProductFormState,
+  sizeSources: readonly TrSizeSource[] = BUILT_IN_SIZE_SOURCES,
 ): TrOwnerProductPatch {
   const price = parseTryPrice(form.priceTry)!;
   const sale = form.salePriceTry.trim() ? parseTryPrice(form.salePriceTry)! : null;
 
-  const sizes = fashionFormSizes(form);
+  // Saved in the size source's order (XS, S, M… as the Beden type lists them).
+  const sizes = fashionFormSizes(form, sizeSources);
   const sizeStocks =
     sizes.length > 0 ? (parseSizeStockInputs(sizes, form.sizeStockInputs) ?? {}) : {};
 
@@ -240,7 +285,8 @@ export function fashionProductPatch(
     sizeStocks,
     stock: fashionFormStock(form),
     colors: form.colorsEnabled ? form.colors : [],
-    category: form.category,
+    // The boutique's own categories set the category column on the server.
+    ...(form.categories ? { categories: form.categories } : { category: form.category }),
     images: form.images,
     marketplaceImages: alignMarketplaceSlots(form.images, form.marketplaceImages),
     lifestyleImages: cleanedLifestyleImages(form.lifestyleImages),

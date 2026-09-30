@@ -209,7 +209,3 @@ export function describeModelPackageShots(
   return TR_AI_CATALOG_CREDITS.modelPackageShots;
 }
 
-/** @deprecated Use describeModelPackageCredits */
-export function describeEnhanceCredits(_modelShots?: number): number {
-  return describeModelPackageCredits();
-}
