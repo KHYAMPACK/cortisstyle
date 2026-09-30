@@ -1,6 +1,11 @@
 # No hardcoded store data: target architecture and plan
 
-_Prepared 2026-09-30 on branch `main-t0o1c2`. **Planning only; nothing here is built.** Mert asked for the architecturally cleanest approach: "no hardcoded stuff". This plan starts from where `docs/fashion-beden-kategori-plan.md` (S1, K1, K2 built) left off. Where it reverses an earlier decision, it says so and lists that as a question. It does **not** assume those decisions are overturned._
+_Prepared 2026-09-30 on branch `main-t0o1c2`. **Planning only; nothing here is built.** Mert asked for the architecturally cleanest approach: "no hardcoded stuff". This plan starts from where `docs/fashion-beden-kategori-plan.md` (S1, K1, K2 built) left off. Where it reverses an earlier decision, it says so and lists that as a question._
+
+_Revised 2026-09-30 after two decisions from Mert:_
+
+- **Colours become variants.** Colour-group products merge into one product with a Renk option. This reverses decision 8 of the lilabutik plan.
+- **The model is designed as if there were no AI pipeline.** People fill in product info and add photos by hand. Nothing in the data model, the editor or the shop depends on AI. What happens to today's AI flows is §7, and it is not decided here.
 
 ## 0. The rule
 
@@ -8,78 +13,91 @@ _Prepared 2026-09-30 on branch `main-t0o1c2`. **Planning only; nothing here is b
 
 The test for any piece of data: **could a new store set this up from the panel, without a deploy?** If not, it's hardcoded.
 
-That doesn't mean "no constants in code". Two kinds of things stay in code on purpose:
+Without an AI pipeline, almost nothing product-related needs to be vertical code. What stays in code:
 
-- **Vertical knowledge.** For example: what a dress needs for an AI try-on, which photo slots a bottom has, how fabric maps to care copy, what the size-guide figure looks like. This is behaviour, it is versioned with the code, and every store gets the same one.
-- **Starter templates.** For example: the fashion category tree, the Beden / Pantolon bedeni size types, default size-chart measurements. They live in code as seed data. They are **copied once** into a store's own rows (at creation, or with an "İçe aktar" button). After that, nothing reads the template at runtime.
+- **Generic behaviour.** The editor, the variant grid, checkout, stock, the feed, the storefront layouts. These are the same for every store and every vertical.
+- **Starter templates.** For example: the fashion category tree, product kinds with their fields, the Beden / Pantolon bedeni / Renk types, default size-chart measurements. They live in code as seed data and are **copied once** into a store's own rows (at creation, or with an "İçe aktar" button). After that, nothing reads the template at runtime.
 
-What must **not** be in code: anything keyed by a store's slug, and any list the storefront or panel reads at runtime to decide what a store sells, how it's grouped, or how it looks.
+What must **not** be in code: anything keyed by a store's slug, and any list the storefront or panel reads at runtime to decide what a store sells, how it's grouped, what fields a product has, or how the shop looks.
+
+The fashion "module" ends up as **a starter template plus, at most, a size-guide figure**. It no longer contains an editor, create flows or category rules.
 
 ## 1. Target model
 
-Five building blocks. Each is owned by core (generic) or by a vertical (fashion, custom_art), and each has one source of truth.
+Four building blocks, all store data, all generic (core):
 
-| Block | What it answers | Source of truth | Owner |
-|---|---|---|---|
-| **Kind** (product kind) | "What is this thing?" Dress, top, trousers, skirt, set… Drives the editor, photo rules, AI pipeline, default size type, Özellikler fields | A **key on the product** (`tr_products.kind`). The list of kinds and their behaviour is vertical code | Vertical (registers kinds); core (stores the key) |
-| **Categories** | "Where does a shopper find it?" Menu, PLP filters, category pages | `tr_categories` + `tr_product_categories`, per store | Core |
-| **Variants** | "Which one exactly, and how many are left?" Size, colour, SKU, stock, price | `tr_variant_types` (with `role`) + `tr_product_options` + `tr_product_variants`, per store | Core |
-| **Product groups** | "Which separate products are the same garment in another colour?" | A generic product-group table, per store | Core |
-| **Store presentation** | Skin, brand, favicon, carrier, AI house models | Columns / rows on the boutique (`tr_boutiques`, `tr_boutique_integrations`) | Core |
+| Block | What it answers | Tables |
+|---|---|---|
+| **Product kinds** | "What is this thing, and what do I fill in for it?" Elbise, Bluz, Pantolon, Takım… Each kind says which variant types a new product starts with and which Özellikler fields it has | new `tr_product_kinds` + `tr_attribute_definitions`; `tr_products.kind_id` |
+| **Categories** | "Where does a shopper find it?" Menu, PLP filters, category pages | `tr_categories` + `tr_product_categories` (exist) |
+| **Variants** | "Which one exactly, and how many are left?" Size × colour, SKU, stock, price, **photos per colour** | `tr_variant_types` (with `role`) + `tr_product_options` + `tr_product_variants` (exist); photos per option value (new) |
+| **Store presentation** | Skin, brand, favicon, carrier | columns / rows on the boutique (`tr_boutiques`, `tr_boutique_integrations`) |
 
-The key separation: **kind ≠ category**. Today fashion works out "this is a dress" from the category (`isUstGiyimCategory`, `isAltGiyimSkirtLeaf`, `garmentCategoryFor` via `system_key`…). That ties the shop's menu to how the editor and AI behave:
+**Kind ≠ category.** Today fashion works out "this is a dress" from the category (`isUstGiyimCategory`, `garmentCategoryFor` via `system_key`…), which ties the shop's menu to how the editor behaves. With a kind on the product, the owner can file a dress under "Abiye", "Yeni sezon" and "İndirim" and nothing about its form changes. A kind is plain data, like Shopify's product types or Akeneo's families:
 
-- a renamed or re-parented category can change which photo slots a product gets;
-- a product in "Yeni sezon" only has no garment meaning;
-- `system_key` exists only to paper over this.
+```
+tr_product_kinds
+  id, boutique_id, name ("Elbise"), sort_order
+  default_option_type_ids uuid[]   -- e.g. [Beden, Renk]: the variant grid a new product starts with
+  suggested_category_id            -- pre-selected in the category picker
+tr_attribute_definitions
+  id, boutique_id, key, label ("Kumaş"), input ('choice' | 'text' | 'multi'),
+  options jsonb, sort_order
+tr_product_kind_attributes (kind_id, attribute_id, required, sort_order)
+```
 
-With a kind on the product:
+- **Values stay in `tr_products.features` jsonb**, keyed by attribute key. Existing data (gender, fit, fabric, neckHem…) needs no migration; the template defines those keys.
+- **Takım** is just a kind whose variant grid has two size types (Üst beden, Alt beden) or one, as the store decides. There is no special code.
+- **The store edits kinds** in Tanımlamalar → Ürün türleri: rename, add fields, change which size type a kind starts with.
 
-- the owner can file a dress under "Abiye", "Yeni sezon" and "İndirim" and nothing about the dress changes;
-- `system_key`, `garmentCategory.ts` and the category checks in `garmentUploadTypes.ts` go away.
+**Colour is a variant type** (`role = 'color'`). A product in three colours and five sizes has one page, one title, one description, and up to 15 variants.
+
+- **Photos belong to the colour value**, not to each variant: new table `tr_product_option_media (product_id, option_value_id, images jsonb, sort_order)`. A product without colours keeps using `tr_products.images`.
+- The product page shows colour swatches. Picking one swaps the gallery and updates the address (`?renk=kirmizi`), so shared links and ads open the right colour. The canonical URL is the product.
+- The Google feed has one item per variant, with `item_group_id` = product and the `color` / `size` attributes. That is the structure Google asks for in apparel.
 
 ### How the pieces talk
 
 ```
-            ┌─────────── vertical (fashion) ───────────┐
-            │ kinds + their rules (photo slots, AI,    │
-            │ size-type default, Özellikler fields)    │
-            │ starter templates (seed data, copied     │
-            │ once): categories, size types, charts    │
-            └──────────────┬───────────────────────────┘
-                           │ registry (no direct imports from core/storefront)
-┌──────────────────────────▼───────────────────────────────────────┐
-│ core: products(kind) · categories · variant types/variants ·     │
-│ product groups · boutique presentation · commerce (checkout,     │
-│ inventory, orders, feed)                                         │
-└──────────────────────────┬───────────────────────────────────────┘
-                           │ reads data only
-                  storefront (+ vertical slots: size-guide modal, PDP extras)
+ starter templates (code, seed data only, copied once)
+   fashion: categories · kinds + fields · Beden / Pantolon bedeni / Renk · size charts
+                    │  "İçe aktar" / new-store setup
+                    ▼
+ store data (DB): kinds · attribute definitions · categories · variant types (+ size charts)
+                  · products (kind, features, categories) · variants · colour photos
+                  · boutique presentation
+                    │
+     ┌──────────────┼───────────────────────────┐
+     ▼              ▼                           ▼
+ one product     storefront                commerce
+ editor (panel)  (menu, PLP, PDP,          (checkout, stock, orders, feed)
+                 size guide)
 ```
 
-- The storefront and core **never import vertical code directly**. Verticals plug in through the existing registry pattern (the editor slot already does this, decision D6 of the lilabutik plan).
-- The ESLint fashion boundary becomes: **nothing outside `fashion/` imports `fashion/`**, except the registry file.
+- The storefront, commerce and the editor **read data only**. No file outside the template imports `fashion/`.
 
 ## 2. Hardcoded today (inventory)
 
-Verified on `main-t0o1c2` (`eee7188`).
+Verified on `main-t0o1c2`.
 
 | # | Hardcoded thing | Where | Becomes | Milestone |
 |---|---|---|---|---|
-| H1 | Built-in category tree as a runtime fallback (`legacy` mode) | `fashion/categories.ts`, `fashion/legacyTaxonomy.ts`, `category_mode` checks | Store data only; the tree is a starter template | F1 |
-| H2 | Panel category labels and legacy picker read the code tree | `TrOwnerProductListPage`, `orders/TrOrderProducts`, `dashboard/TrDashboardTopSellers`, `TrOwnerCategoryPicker` | Read the store's categories | F1 |
+| H1 | Built-in category tree as a runtime fallback (`legacy` mode) | `fashion/categories.ts`, `fashion/legacyTaxonomy.ts`, `category_mode` checks | Store data only; the tree is a template | F1 |
+| H2 | Panel category labels and legacy picker read the code tree | `TrOwnerProductListPage`, `orders/TrOrderProducts`, `dashboard/TrDashboardTopSellers`, `TrOwnerCategoryPicker` | The store's categories | F1 |
 | H3 | Two category URLs (`/urunler?kategori=` and `/kategori/<slug>`) | storefront links, `sitemap.ts` | One canonical URL | F1 |
-| H4 | Homepage campaign links to fixed slugs (`elbise`, `ust-giyim`, `aksesuar`), lilabutik hero image paths, "…Lila'da" copy | `boutiqueHome/editorialContent.ts` (`buildAtelierTrends`, `buildAtelierHeroPromotions`, `midCampaign`) | Editorial content in the DB (`tr_boutiques.editorial_content`, which already exists), links by category **id** | F1 |
-| H5 | Garment meaning inferred from the category | `garmentUploadTypes.ts` (`is*Category`, `constructionCatalogFamily`…), `garmentCategory.ts`, `tr_categories.system_key` | `tr_products.kind` | F2 |
-| H6 | Two size charts and their cm tables | `fashion/sizeCharts.ts` (`LETTER_SIZE_CHART`, `NUMERIC_SIZE_CHART`), `catalog/productOptions.ts` (`DEFAULT_NUMERIC_SIZES`…) | Measurements stored on the store's size type; the code keeps only the defaults as a template | F3 |
-| H7 | Sizes and per-size stock as columns on the product | `tr_products.sizes` / `size_stocks`, ~50 files (lilabutik plan §B.1) | Variants | F4, F5 |
-| H8 | Colour groups inside a JSON blob | `features.colorGroupId`, colour-sibling code | Generic product groups | F6 |
-| H9 | Özellikler fields fixed in code | `features` keys (gender, fit, fabric…), `dressFeatures.ts` | Attribute definitions per kind: vertical template, store-editable labels/options | F7 |
-| H10 | Editorial skin by slug | `boutiqueHome/editorialSkin.ts` (`SLUG_SKINS`) | `tr_boutiques.editorial_skin` | F8 |
-| H11 | Brand overrides by slug (7 maps), favicon | `storefront/boutiqueBrand.ts`, `seo/hostFavicon.ts` | Existing brand columns + a favicon column | F8 |
-| H12 | Carrier by slug + token env JSON | `shipping/registry.ts` (`SHIPPING_BY_SLUG`), `TR_SHIPPING_BASITKARGO_TOKENS` | `tr_boutique_integrations` | F8 |
-| H13 | AI house model by slug | `aiModel/registry.ts` (`BOUTIQUE_AI_MODELS`) | `tr_boutique_ai_models` (or a boutique column) | F8 |
-| H14 | Other slug checks | `proxy.ts`, `customDomain.ts`, `panel/panelLogo.ts`, `TrOwnerSettingsPage`, `admin/boutique-health`, `TrBoutiqueAtelierHomeSections` | Reviewed one by one in F8; most are fallbacks with a DB path already | F8 |
+| H4 | Homepage campaign links to fixed slugs, lilabutik hero paths, "…Lila'da" copy | `boutiqueHome/editorialContent.ts` (`buildAtelier*`, `midCampaign`) | `tr_boutiques.editorial_content` (exists), links by category id | F1 |
+| H5 | Garment meaning inferred from the category | `garmentUploadTypes.ts`, `garmentCategory.ts`, `tr_categories.system_key` | Product kinds (data) | F2 |
+| H6 | Özellikler fields fixed in code | `features` keys, `dressFeatures.ts`, the fashion editor's cards | Attribute definitions per kind | F2 |
+| H7 | A fashion-only editor and create flows | `TrFashionProductEditor`, `TrProductCreateWizard`, `TrOwnerBatchCreatePage` (+5 step files), `TrOwnerTakimCreatePage`, `TrOwnerFashionCreateChooser`, `fashion/productForm.ts`, `productPhotoChecks.ts`, `product_type = 'fashion'` | One generic editor (today's Basit/Gelişmiş editor grown up) | F3 |
+| H8 | Two size charts and their cm tables | `fashion/sizeCharts.ts`, `catalog/productOptions.ts` (`DEFAULT_NUMERIC_SIZES`…) | Measurements on the store's size type | F4 |
+| H9 | Sizes and per-size stock as columns on the product | `tr_products.sizes` / `size_stocks`, ~50 files (lilabutik plan §B.1) | Variants | F5, F6 |
+| H10 | Colour as separate products linked through JSON | `features.colorGroupId`, `features.color`, `tr_products.colors`, colour-sibling code (PDP, related products, panel) | Renk variant type + colour photos | F5, F6 |
+| H11 | Editorial skin by slug | `boutiqueHome/editorialSkin.ts` (`SLUG_SKINS`) | `tr_boutiques.editorial_skin` | F7 |
+| H12 | Brand overrides by slug (7 maps), favicon | `storefront/boutiqueBrand.ts`, `seo/hostFavicon.ts` | Brand columns (mostly exist) + favicon column | F7 |
+| H13 | Carrier by slug + token env JSON | `shipping/registry.ts` (`SHIPPING_BY_SLUG`), `TR_SHIPPING_BASITKARGO_TOKENS` | `tr_boutique_integrations` | F7 |
+| H14 | Other slug checks | `proxy.ts`, `customDomain.ts`, `panel/panelLogo.ts`, `TrOwnerSettingsPage`, `admin/boutique-health`, `TrBoutiqueAtelierHomeSections` | Reviewed one by one | F7 |
+
+The AI house-model registry (`aiModel/registry.ts`) is also slug-keyed, but it belongs to the AI pipeline, which this plan leaves out (§7).
 
 ## 3. Milestones
 
@@ -87,141 +105,178 @@ Each milestone ships on its own and leaves lilabutik working. The order follows 
 
 ### F1: Categories are only data (M)
 
-_Depends on: K2 merged, lilabutik switched to `custom` (steps in `fashion-beden-kategori-plan.md`)._
+_Depends on: K2 merged and lilabutik switched to `custom` (steps in `fashion-beden-kategori-plan.md`)._
 
-- The storefront, panel and sitemap read only `tr_categories`. Delete `legacyFashionTaxonomy`, the `legacy` branches and `fashion/categories.ts`'s runtime consumers. `categoryTemplate.ts` stays as the starter template.
-- **New boutiques get the template at creation** (`scripts/create-boutique.mts`), so there is no "no categories yet" state for a fashion store. `category_mode` stays in the DB (additive-only), but the code stops reading it.
-- **One URL per category: `/kategori/<slug>`**, rendered by the store's own PLP (atelier or classic), with filters as query params. `/urunler?kategori=x` redirects there. Only that URL is in the sitemap. Slug renames already record redirects (`catalog/categories.ts`).
-- **Editorial content references categories by id**, and is resolved to the current slug/label at render. lilabutik's atelier defaults (`buildAtelier*`) move into its `editorial_content` row: a one-time SQL patch written from what the code produces today. The `buildAtelier*` code is then deleted.
+- The storefront, panel and sitemap read only `tr_categories`. Delete `legacyFashionTaxonomy`, the `legacy` branches and every runtime consumer of `fashion/categories.ts`. `categoryTemplate.ts` stays as the template.
+- **New stores get the template at creation** (`scripts/create-boutique.mts`). `category_mode` stays in the DB (additive-only), but the code stops reading it.
+- **One URL per category: `/kategori/<slug>`**, rendered by the store's own PLP (atelier or classic), with filters as query params. `/urunler?kategori=x` redirects there. Only that URL is in the sitemap. Slug renames already record redirects.
+- **Editorial content references categories by id**, resolved to the current slug/label at render. lilabutik's atelier defaults (`buildAtelier*`) move into its `editorial_content` row: a one-time data patch generated from what the code renders today. The `buildAtelier*` code is then deleted.
 - Panel labels (H2) read the store's categories.
-- **SQL:** `patch_editorial_content_lilabutik.sql` (data only). **Freeze:** yes, storefront (links, `/kategori` layout). **lilabutik:** URLs change from `?kategori=` to `/kategori/`, with redirects in place.
+- **SQL:** `patch_editorial_content_lilabutik.sql` (data). **Freeze:** yes (links, `/kategori` layout). **lilabutik:** category URLs change, with redirects.
 
-### F2: Product kind (M)
+### F2: Product kinds and fields are data (M)
 
-- `tr_products.kind text null`: the vertical's key for what the product is.
-- **The fashion kinds are the distinctions fashion code actually branches on today**, found by listing every `is*` / `family` helper in `garmentUploadTypes.ts`, `takimUpload.ts`, `dressFeatures.ts`, `careInstructions.ts` and the AI pipeline. Expected set: elbise, üst, pantolon (paça), etek, takım, dış giyim, aksesuar, ev. The final list comes from that audit, not from the menu.
-- Each kind registers:
-  - label;
-  - photo slots and packshot rules;
-  - AI pipeline settings;
-  - default size type (by `role` + template key, not by name);
-  - Özellikler fields (F7);
-  - care-copy rules.
-- **Backfill:** one SQL patch sets `kind` for every existing product from its current category, using the mapping that `garmentCategory.ts` implements today (generated by a script from the pure function, so the SQL and the code can't disagree). Checked with read-only SELECTs before and after: every product gets a kind, and the counts match the category counts.
-- **Editor and create flows:**
-  - "Ne satıyorsun?" picks the kind and drives the form.
-  - "Nerede görünsün?" is the category picker (the store's categories, with the kind's usual category suggested).
-  - Batch and takım uploads set the kind directly.
-  - The AI listing draft proposes categories from the store's own list.
-- **Deleted:** `garmentCategory.ts`, `system_key` usage (column stays), `categoryPayloadForGarment`, the category-based `is*` helpers. Q7 of the Beden & Kategori plan goes away: the wizard picks a kind, then any categories.
-- **SQL:** `patch_product_kind.sql` (column + backfill). **Freeze:** no (panel only; the storefront doesn't need the kind until F3's size guide). **lilabutik:** no visible change.
+- **Schema:** `tr_product_kinds`, `tr_attribute_definitions`, `tr_product_kind_attributes`, plus `tr_products.kind_id uuid null`.
+- **Panel:** Tanımlamalar → **Ürün türleri** (list + drawer: name, starting variant types, suggested category, fields) and **Özellikler** (field definitions: label, input, options). Same patterns as the Kategoriler and Varyant Türleri pages.
+- **Template:** the fashion kinds and fields come from what the fashion editor shows today. The kinds are the distinctions the current code actually makes (expected: Elbise, Bluz / Üst, Pantolon, Etek, Takım, Dış giyim, Aksesuar); the fields are today's `features` keys and `dressFeatures.ts` groups, with their option lists. "Hazır türleri içe aktar" creates them. **No extra fields are added** (lilabutik plan Q6).
+- **Backfill:** one data patch sets `kind_id` for every existing product from its current category (generated from the tested mapping in `garmentCategory.ts`, so the SQL and the code can't disagree). Checked with read-only SELECTs: every product gets a kind, and the counts match the category counts.
+- Nothing reads `kind_id` yet except the product list (a Tür column/filter). The editor switches in F3.
+- **SQL:** `patch_product_kinds.sql` (schema), `patch_product_kinds_lilabutik.sql` (data). **Freeze:** no. **lilabutik:** no visible change.
 
-### F3: Size charts are data (S–M)
+### F3: One product editor (M–L)
 
-- The cm measurements move onto the size type. Each value of a size-role variant type gets measurement rows (point → cm), plus a measure kind (body / garment). Either a `size_chart jsonb` on `tr_variant_types` or a small `tr_size_chart_rows` table; decide at build time on what the Beden drawer needs to edit it.
-- The size-guide modal reads the product's size type's chart. The figure and the measuring hints stay fashion code (vertical knowledge).
-- "Hazır bedenleri içe aktar" also imports the default measurements. A one-time patch fills lilabutik's two types with today's `LETTER_SIZE_CHART` / `NUMERIC_SIZE_CHART` values.
-- A "Ölçü tablosu" section in the Beden drawer.
-- **Deleted:** the chart tables and `detectSizeChart`-style detection from sizes (the product's size type tells which chart applies).
-- **SQL:** `patch_size_charts.sql`. **Freeze:** yes, small (size-guide modal only). **lilabutik:** identical modal content.
+_Depends on F2. The fashion editor (Area A) was the right step for lilabutik at the time; this replaces it with the generic one._
 
-### F4: Variants can be sold in the shop (L), formerly M7c-2 + M7c-3
+- The Basit/Gelişmiş editor (`TrSimpleProductEditor`) becomes **the** editor for every product, create and edit, every vertical. Its cards:
+  - **Tür:** picks the kind. Changing it offers to add the kind's fields and variant types; it never deletes data.
+  - **Temel bilgi:** title, description.
+  - **Fotoğraflar:** product photos, or photos per colour once the product has a Renk option.
+  - **Fiyat.**
+  - **Varyantlar:** the variant grid, e.g. Beden × Renk, stock/SKU/price per variant. It starts from the kind's option types.
+  - **Özellikler:** the kind's fields, rendered from the definitions.
+  - **Kategoriler:** the picker, with the kind's suggested category pre-selected.
+  - **SEO / Durum:** as today.
+- **Photos:** a plain ordered list; the first is the cover. The fashion photo-slot rules (front / back / packshot, `productPhotoChecks.ts`) go away. At least one photo is needed to publish.
+- **Create = the same editor, empty.** "Ürün ekle" opens it with the kind picker first. There is no wizard and no separate batch or takım flow. A quick bulk path can be added later as a generic "import from spreadsheet", not as a fashion flow.
+- **Until F6, fashion products keep their size table.** Products still on `sizes` / `size_stocks` show the existing size-and-stock card (`TrOwnerSizeChartStock`) in place of the variant grid, so F3 can ship before the size cutover.
+- **Deleted at the end of F3:** `TrFashionProductEditor`, `TrProductCreateWizard` + drafts, the batch pages (6 files), `TrOwnerTakimCreatePage`, `TrOwnerFashionCreateChooser`, `fashion/productForm.ts`, `productPhotoChecks.ts`, the editor registry slot, `garmentUploadTypes.ts`, `garmentCategory.ts`, `categoryPayloadForGarment`. `product_type` stops being read (column stays). **What happens to the AI features these files contain is §7's question**; F3 doesn't start until that is answered.
+- **Freeze:** no (panel only). **lilabutik:** the owner's editor and create flow change. This is the biggest change the owner sees.
 
-- Product-page selectors, cart lines keyed by product + variant, a public read of active variants (view or RLS), a Google feed item per variant (`item_group_id` = product), Stok page rows per variant.
-- The server half (M7c-1: checkout, inventory, cancel/restock per variant) is already built.
-- Built for **all** products that have variants, not for fashion specifically. Proven on a Gelişmiş test product sold end to end before F5.
-- **Freeze:** yes, broad (PDP, cart, checkout client, feed). **lilabutik:** none (it has no variant products yet).
+### F4: Size charts are data (S–M)
 
-### F5: Fashion sizes become variants (L)
+- The cm measurements move onto the size type. Each value of a size-role variant type gets measurement rows (point → cm) plus a measure kind (body / garment), stored as `size_chart jsonb` on `tr_variant_types`. The Beden drawer gets an "Ölçü tablosu" section.
+- The size-guide modal reads the chart of the product's size type. The figure and measuring hints are the one piece of fashion code left in the storefront, shown only when the size type has a chart.
+- A one-time data patch fills lilabutik's two types with today's `LETTER_SIZE_CHART` / `NUMERIC_SIZE_CHART` values. "Hazır bedenleri içe aktar" includes the defaults.
+- **Deleted:** the chart tables and the chart detection from sizes.
+- **SQL:** `patch_size_charts.sql` + data. **Freeze:** yes, small (size-guide modal). **lilabutik:** identical modal.
 
-**This reverses the lilabutik plan's §B.3 "defer Area B" recommendation. It needs Mert's explicit yes (Q2).**
+### F5: Variants can be sold in the shop, with colours (L)
 
-- **New products:** the fashion editor, wizard, batch and takım write a Beden option + one variant per size (stock per variant) instead of `sizes` / `size_stocks`. The size table component already works on size types (S1), so it becomes a variant grid.
-- **Existing products** (lilabutik: 93 sized products, about 900 variant rows):
-  - A migration script creates the option + variants from `sizes` / `size_stocks`. It is idempotent and has a dry run that prints the per-product plan.
-  - It runs once, checked with SELECTs: per product, the sum of variant stock equals the sum of `size_stocks` before.
-- **Cutover:** one deploy switches checkout, inventory, cart and PDP for fashion products from the size map to variants.
-  - Old carts in shoppers' localStorage hold `(productId, size)` lines. They are mapped to the variant with that size label on load (`useTrBoutiqueCartRevalidate` already re-checks lines); one that can't be mapped is dropped with the existing "no longer available" notice.
-  - Pending iyzico holds and cancel/restock read the order line's `variant_id` when set, else the old `size` path. **The old path stays for old order lines only** (27 today), read-only.
-- **After the cutover:** `sizes` / `size_stocks` are no longer written. The columns stay (additive-only) and are ignored. Every shopper-side `size` code path listed in §B.1 is deleted in the same change or the next.
-- **SQL:** `patch_fashion_size_variants.sql` (data), run by Mert. **Freeze:** yes, broadest of all (checkout + inventory + PDP + cart + orders). **lilabutik:** no visible change if done right; this is the riskiest step in the plan.
+_Formerly M7c-2 + M7c-3, now including colour._
 
-### F6: Product groups (S–M)
+- **Product page:**
+  - swatches for a colour option, buttons for the others;
+  - the gallery switches with the colour (`tr_product_option_media`);
+  - `?renk=` in the URL, canonical = product;
+  - out-of-stock combinations disabled.
+- **Cart:** lines keyed by product + variant. Quick-add and the size gate choose a variant.
+- **Public read:** of active variants, options and colour photos (view or RLS).
+- **Feed:** one item per variant, `item_group_id` = product, `color` / `size` set, images from the colour.
+- **Stok page:** rows per variant.
+- **Server half (M7c-1) already built:** checkout, inventory, cancel/restock per variant.
+- **Proof:** a Gelişmiş test product in two colours × three sizes is sold end to end before F6.
+- **SQL:** `patch_product_option_media.sql` + public read policy. **Freeze:** yes, broad (PDP, cart, checkout client, feed). **lilabutik:** none (no variant products yet).
 
-- A generic "linked products" table: `tr_product_groups` (id, boutique, axis label e.g. "Renk") + `tr_products.group_id` + a per-product `group_value` ("Siyah", with an optional swatch).
-- Any vertical can use it.
-- Backfill from `features.colorGroupId` (28 products, 12 groups).
-- The PDP colour siblings, related-products exclusion and the panel/AI colour-variant flow read the table.
-- **This is not merging colours into variants.** Decision 8 of the lilabutik plan (colour-group products are never merged) stands: each colour keeps its own URL, photos, title and feed item. Variants' Renk remains available for stores that sell one product in several colours with shared photos.
-- **SQL:** `patch_product_groups.sql` (schema + backfill). **Freeze:** yes, small (PDP siblings). **lilabutik:** identical.
+### F6: lilabutik's sizes and colours become variants (L, riskiest)
 
-### F7: Özellikler as definitions (M, optional)
+_Reverses the lilabutik plan's "defer Area B" (§B.3) and decision 8 (colour groups never merged). Mert approved the colour merge in principle on 2026-09-30; the go-ahead for this milestone itself is Q2._
 
-- `tr_attribute_definitions` per store:
-  - key, label, input type (choice / text), options, which kinds it applies to, sort order.
-  - Seeded from the vertical's per-kind template (today's `dressFeatures.ts` groups, gender, fit, fabric…).
-- Values stay in `features` jsonb, keyed by definition key, so existing data needs no migration.
-- The editor renders the kind's definitions. The PDP spec list renders definitions with values.
-- Store owners can rename labels, add options or add their own fields.
-- **Freeze:** yes, small (PDP specs). **lilabutik:** identical.
-- Optional because "no extra fields" (lilabutik plan Q6) is a product decision, not an architecture one. This milestone makes fields *definable*; it doesn't add any.
+**Checklist before the migration** (live data, checked read-only 2026-09-30: 28 products in 12 colour groups):
 
-### F8: Store presentation leaves the slug maps (M)
+- [ ] **Colour labels.** 8 of the 28 have no `features.color`. They must be filled in, because each becomes a Renk value.
+- [ ] **Descriptions.** They differ per colour in every group (written per product). Per group, pick one, or write a new one. After the merge there is one per product.
+- [ ] **Titles.** Pick one per group, without the colour word ("Maxi Tek Omuz Elbise", not "Kırmızı Maxi…"). The colour is shown by the swatch.
+- [ ] **Is it one garment?** The group "Gri taşlı Wide Pantolon / Antrasit Taş Detaylı Jean Pantolon / Mavi Taş İşlemeli Geniş Paça Jean" looks like three different trousers. It is probably better left as three products. Mert decides per doubtful group.
+- [ ] **Size sets.** They differ inside 2 groups. Fine: only the size × colour combinations that exist are created.
+- [ ] **Prices and categories.** Identical inside every group (checked), so there is nothing to reconcile.
+- [ ] **Single-member groups (2).** They become ordinary products with one colour, or no Renk option.
 
-This is the lilabutik plan's Area C (C.1, C.4, C.5, C.6, plus C.3's data half). **Mert put these on hold** (decisions 10, 11, 12). This plan lists them because they are the remaining hardcoded store data, not because they're approved (Q5).
+**Migration:**
 
-- `tr_boutiques.editorial_skin` (+ public view). Resolver: column → `classic`. lilabutik's value is set by SQL, then `SLUG_SKINS` is deleted.
-- Brand overrides and favicon go to columns (most already exist: accent, logo, logo-on-dark); `IntroLoader` and the reset-password accent read them. The 7 maps in `boutiqueBrand.ts` are deleted.
-- Carrier: `tr_boutique_integrations` row per store (token encrypted at rest as the iyzico row is). `SHIPPING_BY_SLUG` and the env JSON are deleted.
-- AI house models: `tr_boutique_ai_models` (name, reference images, measurements, prompt persona). The persisted id `boutique:lilabutik` stays valid as the row's key. Setting one up stays staff-only (decision 12: manual ops), but through data, not a deploy.
+- A script builds a per-product plan from `sizes`, `size_stocks`, `features.color` and `colorGroupId`, plus the checklist answers (a small JSON file Mert fills in):
+  - which product survives each group (the oldest, so its URL stays);
+  - the Beden and Renk options;
+  - one variant per existing size × colour, with that product's size stock;
+  - colour photos from each merged product's images;
+  - redirects from the merged products' URLs.
+- **Dry run first:** it prints the plan per group and the checks:
+  - total stock per group before = after;
+  - every size_stocks entry lands on exactly one variant;
+  - photo counts match.
+- Merged products are **hidden, not deleted** (status + a `merged_into` pointer), so old order lines, favourites and shared links keep resolving. Their URLs 301 to the surviving product with `?renk=`.
+- **Cutover** is one deploy at a quiet hour:
+  - checkout, inventory, cart and PDP read variants for every product;
+  - old carts in shoppers' browsers hold `(productId, size)` lines; on load these map to the matching variant, following `merged_into` and the line's colour;
+  - a line that can't be mapped is dropped with the existing "no longer available" notice;
+  - order lines from before keep the old `size` path, read-only (27 today);
+  - pending iyzico holds made just before the cutover are also on the old path and are handled by it.
+- **After:** `sizes`, `size_stocks`, `colors` and `colorGroupId` are no longer written or read; the columns stay (additive-only). All the shopper-side `size` code (lilabutik plan §B.1) and the colour-sibling code is deleted in the same change or the next.
+- **SQL:** `patch_product_merged_into.sql` (column) + the generated data patch, run by Mert. **Freeze:** yes, the broadest (checkout, inventory, PDP, cart, orders, feed). **lilabutik:** fewer, richer product pages; 16 URLs redirect.
+
+### F7: Store presentation leaves the slug maps (M, on hold)
+
+This is the lilabutik plan's Area C (C.1, C.4, C.5, C.6). **Mert put it on hold** (decisions 10, 11); it is listed because it is the remaining hardcoded store data, not because it's approved (Q4).
+
+- `tr_boutiques.editorial_skin` (+ public view). lilabutik's value is set by SQL, then `SLUG_SKINS` is deleted.
+- Brand overrides and favicon go to columns (accent, logo and logo-on-dark exist already). `IntroLoader` and the reset-password accent read them. The 7 maps in `boutiqueBrand.ts` are deleted.
+- Carrier: a `tr_boutique_integrations` row per store (token encrypted as the iyzico row is, `payments/credentialEncryption.ts`). `SHIPPING_BY_SLUG` and the env JSON are deleted.
 - H14 slug checks are reviewed one by one: each is deleted, moved to a column, or documented as a platform rule (e.g. reserved subdomains).
-- **Freeze:** yes (13 storefront files take the skin from context instead of the slug). **lilabutik:** identical; verified by screenshots of home, PLP, PDP, cart and footer before and after.
+- **Freeze:** yes (13 storefront files take the skin from context). **lilabutik:** identical; screenshot parity on home, PLP, PDP, cart, footer.
 
-### F9: Lock it in (S)
+### F8: Lock it in (S)
 
 - ESLint:
-  - `src/components/tr/boutique/**`, `src/app/tr/[boutiqueSlug]/**`, `src/lib/tr/commerce/**` and `src/lib/tr/catalog/**` may not import `@/lib/tr/fashion/**` or `@/components/tr/fashion/**` (the registry file excepted);
-  - no string literal equal to a live boutique slug outside `supabase/` and tests (a small custom rule or a grep in CI).
-- Update the handoff docs (03, 04, 05, 06) to describe the new model. Delete the superseded sections of the older plans or mark them historical.
+  - nothing outside `src/lib/tr/fashion/` imports it, except the template importers (categories, kinds, size types) and the size-guide figure;
+  - no string literal equal to a live boutique slug outside `supabase/`, `scripts/` and tests (a small custom rule or a CI grep).
+- Update the handoff docs (03, 04, 05, 06). Mark superseded sections of older plans as historical.
 
 ## 4. Order and dependencies
 
 ```
-K2 merged + lilabutik on custom
+K2 merged + lilabutik on custom categories
         │
         ▼
-       F1 ──► F2 ──► F3
-        │             │
-        │             ▼
-        │     F4 ──► F5
+       F1 ──► F2 ──► F3 (needs §7 answered)
+                      │
+       F4 ◄───────────┘ (any time after F2)
         │
-        ├──► F6   (independent after F1)
-        ├──► F7   (after F2: definitions are per kind)
-        └──► F8   (independent; on hold)
-                         all ──► F9
+        ▼
+       F5 ──► F6
+        
+       F7 (independent; on hold)          everything ──► F8
 ```
 
-- F1–F3 are panel-heavy and moderate: the clean data model for categories, kinds and size charts.
-- F4–F5 are the expensive pair: the only milestones touching live checkout and stock.
-- If only part of this is wanted, **F1 + F2 give most of the architectural win**: categories become purely data, and the menu and the garment logic stop being tied together.
+- **F1–F4** are panel-heavy and moderate. They give the clean model: categories, kinds and fields, one editor, size charts.
+- **F5–F6** are the expensive pair, and the only milestones that touch live checkout and stock.
+- F3 can ship before F6 because the editor keeps the old size card for products not yet on variants.
 
 ## 5. Risks
 
 | Risk | Where | Mitigation |
 |---|---|---|
-| Wrong kind backfilled, so a product gets the wrong photo slots or AI prompt | F2 | Generate the SQL from the tested pure mapping; SELECT counts per kind vs per category before running; the editor shows the kind and lets the owner change it |
-| Old cart lines / pending payments during the size → variant cutover | F5 | Map `(productId, size)` → variant on cart load; old order lines keep the `size` path read-only; run the cutover at a quiet hour; dry run the migration first |
-| Stock drift between `size_stocks` and variants | F5 | Single cutover, not dual-write; per-product sum check before and after; the old columns are no longer written, so they can't diverge silently |
-| Google feed item ids change | F4, F5 | Keep the product-level id as `item_group_id` and give variants stable ids (`<productId>-<size>`); check Merchant Center diagnostics after the first feed |
-| lilabutik URLs change (`?kategori=` → `/kategori/`) | F1 | Redirects; one canonical URL per category; resubmit the sitemap |
-| Atelier look regresses when its defaults move to `editorial_content` | F1, F8 | Generate the row from what the code renders today; screenshot parity on home, PLP, PDP, cart, footer |
-| Broad freeze lifts | F1, F3–F8 | Each milestone asks for its own scoped lift, as before |
+| Wrong kind backfilled, so a product shows the wrong fields | F2 | Generate the SQL from the tested mapping; SELECT counts per kind vs per category; the owner can change a product's kind, and it never deletes values |
+| The owner loses a workflow they rely on | F3 | §7 answered first; lilabutik's owner tries the new editor behind a staff flag before the old flows are removed (as in Area A) |
+| Merging colours loses content | F6 | Checklist per group; merged products are hidden, not deleted; the dry run shows everything first |
+| Old cart lines / pending payments during the cutover | F6 | Map `(productId, size)` → variant via `merged_into` on cart load; old order lines keep the read-only `size` path; quiet-hour cutover |
+| Stock drift | F6 | Single cutover, not dual-write; per-group stock sums checked before and after; old columns no longer written |
+| Google feed item ids change | F5, F6 | Stable variant ids (`<productId>-<valueIds>`), product as `item_group_id`; check Merchant Center diagnostics after the first feed; expect a short re-review for the 16 merged items |
+| Search ranking during the merge | F6 | 301s to the surviving product; one canonical per garment; resubmit the sitemap |
+| lilabutik category URLs change | F1 | Redirects; one canonical per category |
+| Broad freeze lifts | F1, F4–F7 | Each milestone asks for its own scoped lift |
 
 ## 6. Questions for Mert
 
-1. **Adopt this as the target?** "Code = what the platform can do, DB = what a store has", with the five blocks in §1. Recommendation: yes.
-2. **F5 (fashion sizes → variants)** reverses the earlier "defer Area B". Architecturally it's the only way to have one stock model. It is also the riskiest change to lilabutik's live checkout. Recommendation: **yes, but last**, after F4 has sold a real Gelişmiş product, as §B.3 required.
-3. **One category URL (`/kategori/<slug>`, shop layout) with redirects from `?kategori=`?** (Q8 of the Beden & Kategori plan.) Recommendation: yes, as part of F1.
-4. **F7 (definable Özellikler):** in scope, or keep the fixed fields since you decided "no extra fields"? Recommendation: in scope, but after everything else. It removes hardcoding without adding fields.
-5. **F8 (skin, brand, carrier, AI model to the DB)** reopens decisions 10–12, which you put on hold. Recommendation: schedule it before the second real store onboards, not before.
-6. **Start point:** F1 right after K2 is merged and lilabutik is switched? Recommendation: yes. F1 and F2 give most of the win at moderate risk.
+1. **Adopt this as the target?** Four blocks, all store data (§1), with fashion reduced to a starter template. Recommendation: yes.
+2. **F6 go-ahead:** sizes and colours onto variants for lilabutik, including merging colour groups with the checklist in F6. Recommendation: yes, but last, after F5 has sold a real two-colour test product.
+3. **One category URL** (`/kategori/<slug>`, shop layout, redirects from `?kategori=`). Recommendation: yes, in F1.
+4. **F7** (skin, brand, carrier to the DB) reopens decisions 10–11. Recommendation: schedule it before a second real store onboards.
+5. **Start point:** F1 right after K2 is merged and lilabutik is switched? Recommendation: yes.
+
+## 7. The existing AI features (not decided)
+
+This plan's model has no AI in it: products are made by filling in the editor and adding photos. But lilabutik's current flows are built around AI:
+
+- the wizard's AI try-on / packshot photos and house model;
+- batch upload's AI category detection and listing drafts;
+- takım's AI split;
+- "AI ile doldur" in the editor;
+- restyle;
+- colour-variant photo generation.
+
+F3 deletes the files these live in. What to do with them is Mert's call:
+
+- **(a) Retire them.** The owner uploads real photos and writes listings by hand. Simplest; lilabutik's owner loses the AI photos and drafts. Existing AI-made photos stay on the products.
+- **(b) Keep them as optional helpers on top of the generic editor, later.** For example, an "AI ile fotoğraf üret" button in the Fotoğraflar card or "AI ile doldur" in Temel bilgi. They would write only through the same product API and fields, so the model never depends on them. Not part of this plan; each would be its own milestone.
+- **(c) Keep the current AI flows alive next to the new editor.** Not recommended: they depend on everything F2–F6 removes (garment ids from categories, `sizes`, colour groups).
+
+My recommendation is (b) if the AI photos matter to lilabutik's owner, otherwise (a). Either way **F3 waits for this answer**.
