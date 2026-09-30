@@ -12,8 +12,9 @@ import {
 import {
   hasTypeNamed,
   normalizeHex,
+  builtInSizeTypeInputs,
+  importableSizeTypeInputs,
   planValueChanges,
-  presetsToTypeInputs,
   readVariantTypeBody,
   VARIANT_TYPE_LIMITS,
 } from "@/lib/tr/variants/typeRules";
@@ -46,6 +47,7 @@ describe("readVariantTypeBody", () => {
     assert.deepEqual(input, {
       name: "Beden",
       selectionStyle: "list",
+      role: null,
       // a list type keeps no colours or pictures
       values: [
         { label: "S", hex: null, imageUrl: null },
@@ -156,35 +158,54 @@ describe("planValueChanges", () => {
   });
 });
 
-describe("presetsToTypeInputs", () => {
-  it("turns saved sizes and colours into Beden and Renk", () => {
-    const { beden, renk } = presetsToTypeInputs(
-      ["S", " M ", "s", "L"],
-      [
-        { name: "Kırmızı", hex: "#C8102E" },
-        { name: "kırmızı", hex: "#ff0000" },
-        { name: "Bozuk", hex: "renk" },
-        { name: "Mavi", hex: "#0000ff" },
-      ],
+describe("built-in size types", () => {
+  it("are Beden (XS–3XL) and Pantolon bedeni (24–52), marked as size types", () => {
+    const [beden, pantolon] = builtInSizeTypeInputs();
+    assert.equal(beden!.name, "Beden");
+    assert.equal(beden!.role, "size");
+    assert.deepEqual(
+      beden!.values.map((value) => value.label),
+      ["XS", "S", "M", "L", "XL", "2XL", "3XL"],
     );
-    assert.deepEqual(beden, {
-      name: "Beden",
-      selectionStyle: "list",
-      values: [{ label: "S" }, { label: "M" }, { label: "L" }],
-    });
-    assert.deepEqual(renk, {
-      name: "Renk",
-      selectionStyle: "swatch",
-      values: [
-        { label: "Kırmızı", hex: "#c8102e", imageUrl: null },
-        { label: "Mavi", hex: "#0000ff", imageUrl: null },
-      ],
-    });
+    assert.equal(pantolon!.name, "Pantolon bedeni");
+    assert.equal(pantolon!.values[0]!.label, "24");
+    assert.equal(pantolon!.values.at(-1)!.label, "52");
+    assert.equal(pantolon!.values.length, 15);
+    // Each is a valid body for the API.
+    for (const input of [beden!, pantolon!]) {
+      assert.deepEqual(readVariantTypeBody({ ...input }).role, "size");
+    }
   });
 
-  it("leaves a type out when there is nothing for it", () => {
-    assert.deepEqual(presetsToTypeInputs([], []), { beden: null, renk: null });
-    assert.equal(presetsToTypeInputs(["S"], [{ name: "x", hex: "bad" }]).renk, null);
+  it("are offered only while the boutique has no size type, skipping taken names", () => {
+    assert.deepEqual(
+      importableSizeTypeInputs([]).map((input) => input.name),
+      ["Beden", "Pantolon bedeni"],
+    );
+    assert.deepEqual(
+      importableSizeTypeInputs([{ id: "1", name: "beden", role: null }]).map((i) => i.name),
+      ["Pantolon bedeni"],
+    );
+    assert.deepEqual(
+      importableSizeTypeInputs([{ id: "1", name: "Numara", role: "size" }]),
+      [],
+    );
+  });
+});
+
+describe("variant type role", () => {
+  const base = { name: "Beden", selectionStyle: "list", values: [{ label: "S" }] };
+  it("reads size / color / none and rejects anything else", () => {
+    assert.equal(readVariantTypeBody({ ...base, role: "size" }).role, "size");
+    assert.equal(readVariantTypeBody({ ...base, role: "color" }).role, "color");
+    assert.equal(readVariantTypeBody({ ...base, role: null }).role, null);
+    assert.equal(readVariantTypeBody({ ...base }).role, null);
+    assert.throws(() => readVariantTypeBody({ ...base, role: "shoe" }), /Kullanım/);
+  });
+
+  it("maps a stored row, treating a missing column as no role", () => {
+    assert.equal(mapVariantTypeRow({ id: "t", boutique_id: "b", role: "size" }).role, "size");
+    assert.equal(mapVariantTypeRow({ id: "t", boutique_id: "b" }).role, null);
   });
 });
 
@@ -242,6 +263,7 @@ describe("variant type form", () => {
     assert.deepEqual(body, {
       name: "Renk",
       selectionStyle: "swatch",
+      role: null,
       values: [
         { id: "v1", label: "Kırmızı", hex: "#ff0000", imageUrl: null },
         { id: "v2", label: "Mavi", hex: "#0000ff", imageUrl: null },

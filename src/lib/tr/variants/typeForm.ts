@@ -8,6 +8,7 @@ import {
 import type {
   TrVariantSelectionStyle,
   TrVariantType,
+  TrVariantTypeRole,
 } from "@/lib/tr/variants/types";
 
 /**
@@ -29,6 +30,7 @@ export interface VariantValueDraft {
 export interface VariantTypeFormState {
   name: string;
   selectionStyle: TrVariantSelectionStyle;
+  role: TrVariantTypeRole | null;
   values: VariantValueDraft[];
 }
 
@@ -39,13 +41,14 @@ function nextKey(): string {
 }
 
 export function emptyVariantTypeForm(): VariantTypeFormState {
-  return { name: "", selectionStyle: "list", values: [] };
+  return { name: "", selectionStyle: "list", role: null, values: [] };
 }
 
 export function formFromVariantType(type: TrVariantType): VariantTypeFormState {
   return {
     name: type.name,
     selectionStyle: type.selectionStyle,
+    role: type.role,
     values: type.values.map((value) => ({
       key: value.id,
       id: value.id,
@@ -101,6 +104,7 @@ export function variantTypeBody(form: VariantTypeFormState): Record<string, unkn
   return {
     name: form.name,
     selectionStyle: form.selectionStyle,
+    role: form.role,
     values: form.values.map((value) => ({
       ...(value.id ? { id: value.id } : {}),
       label: value.label,

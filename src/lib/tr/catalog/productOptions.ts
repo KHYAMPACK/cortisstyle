@@ -134,21 +134,6 @@ export function sortProductSizes(sizes: string[]): string[] {
   });
 }
 
-export function resolveBoutiqueSizePresets(presets: string[]): string[] {
-  return presets.length > 0
-    ? sortProductSizes(presets)
-    : [...DEFAULT_LETTER_SIZES];
-}
-
-export function resolveBoutiqueColorPresets(
-  presets: TrProductColor[],
-): TrProductColor[] {
-  const cleaned = presets.filter(
-    (color) => color.name.trim() && color.hex.trim(),
-  );
-  return cleaned.length > 0 ? cleaned : DEFAULT_COLOR_PRESETS.map((c) => ({ ...c }));
-}
-
 function parseSizeToken(value: string): string[] {
   return value
     .split(/[,/|]/)

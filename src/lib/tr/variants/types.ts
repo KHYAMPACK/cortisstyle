@@ -10,6 +10,12 @@
  */
 export type TrVariantSelectionStyle = "list" | "swatch";
 
+/**
+ * What a type is used for, when it matters to a vertical: `size` types are what the
+ * fashion panel offers as Beden, `color` types as Renk. `null` = a plain option.
+ */
+export type TrVariantTypeRole = "size" | "color";
+
 export interface TrVariantTypeValue {
   id: string;
   label: string;
@@ -25,6 +31,7 @@ export interface TrVariantType {
   boutiqueId: string;
   name: string;
   selectionStyle: TrVariantSelectionStyle;
+  role: TrVariantTypeRole | null;
   sortOrder: number;
   /** In display order. */
   values: TrVariantTypeValue[];
@@ -42,6 +49,7 @@ export interface TrVariantTypeListEntry extends TrVariantType {
 export interface TrVariantTypeInput {
   name: string;
   selectionStyle: TrVariantSelectionStyle;
+  role: TrVariantTypeRole | null;
   values: TrVariantTypeValueInput[];
 }
 
@@ -52,14 +60,18 @@ export interface TrVariantTypeValueInput {
   imageUrl?: string | null;
 }
 
-/** Preset sizes / colours a boutique already keeps, offered for import as Beden / Renk. */
-export interface TrVariantPresetImport {
-  sizes: number;
-  colors: number;
+/** What the Varyant Türleri page can still import: the built-in size types not yet created. */
+export interface TrVariantTypeImportOffer {
+  /** Names of the built-in size types that would be created ("Beden", "Pantolon bedeni"). */
+  sizeTypes: string[];
 }
 
 export function readVariantSelectionStyle(value: unknown): TrVariantSelectionStyle {
   return value === "swatch" ? "swatch" : "list";
+}
+
+export function readVariantTypeRole(value: unknown): TrVariantTypeRole | null {
+  return value === "size" || value === "color" ? value : null;
 }
 
 export function mapVariantValueRow(row: Record<string, unknown>): TrVariantTypeValue {
@@ -81,6 +93,7 @@ export function mapVariantTypeRow(
     boutiqueId: String(row.boutique_id),
     name: String(row.name ?? ""),
     selectionStyle: readVariantSelectionStyle(row.selection_style),
+    role: readVariantTypeRole(row.role),
     sortOrder: typeof row.sort_order === "number" ? row.sort_order : 0,
     values: [...values].sort((a, b) => a.sortOrder - b.sortOrder),
     createdAt: String(row.created_at ?? ""),

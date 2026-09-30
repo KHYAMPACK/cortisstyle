@@ -4,6 +4,17 @@ _Prepared 2026-09-30 on branch `main-t0o1c2`. **Plan only, nothing built.** Fact
 
 **Goal (Mert):** a fashion boutique's **sizes (Beden)** and **categories (Kategori)** come from the boutique's own foundation definitions (Tanımlamalar → Varyant Türleri / Kategoriler) instead of lists hardcoded in code, so a new store can define its own without a code change.
 
+## Decisions (Mert, 2026-09-30)
+
+| Q | Decision |
+|---|---|
+| 1 | Beden first (S1), then Kategori (K0 → K1 → K2) |
+| 2 | **Two size types** to start: "Beden" (XS…3XL) and "Pantolon bedeni" (24…52) |
+| 3 | K0 freeze lift approved (sitemap + `/kategori/<slug>` check `category_mode`) |
+| 4 | K2 freeze lift approved, planned right after K1 |
+| 5 | Hidden style variants (kaşe mont, kot pantolon…) and legacy "Dış giyim" are left out of the import |
+| 6 | Renaming a size value that products use **offers to update those products** too |
+
 ## 0. What's hardcoded today (verified)
 
 ### Beden

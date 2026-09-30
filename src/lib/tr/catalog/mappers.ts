@@ -139,8 +139,6 @@ export function mapBoutiqueRow(row: Record<string, unknown>): TrBoutique {
     contactPhone: (row.contact_phone as string | null) ?? null,
     shippingAddress: (row.shipping_address as string | null) ?? null,
     returnAddress: (row.return_address as string | null) ?? null,
-    sizePresets: readStringArray(row.size_presets),
-    colorPresets: readProductColors(row.color_presets),
     // A database without the column reads as legacy: nothing changes until it is switched.
     categoryMode: readCategoryMode(row.category_mode),
     status: row.status as TrBoutique["status"],

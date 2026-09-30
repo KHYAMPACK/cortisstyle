@@ -22,12 +22,12 @@ import {
 } from "@/components/tr/panel/panelUi";
 import {
   fetchOwnerVariantTypes,
-  importOwnerVariantPresets,
+  importOwnerSizeTypes,
 } from "@/lib/tr/ownerClient";
 import { trPanelDefinitionsPath } from "@/lib/tr/paths";
 import { toast } from "@/lib/tr/panel/toast";
 import type {
-  TrVariantPresetImport,
+  TrVariantTypeImportOffer,
   TrVariantType,
   TrVariantTypeListEntry,
 } from "@/lib/tr/variants/types";
@@ -35,7 +35,7 @@ import type {
 interface Loaded {
   boutiqueId: string;
   types: TrVariantTypeListEntry[];
-  importable: TrVariantPresetImport;
+  importable: TrVariantTypeImportOffer;
 }
 
 const PREVIEW_VALUES = 5;
@@ -73,23 +73,20 @@ function ValuesPreview({ type }: { type: TrVariantType }) {
 }
 
 function ImportOffer({
-  importable,
+  sizeTypes,
   importing,
   onImport,
 }: {
-  importable: TrVariantPresetImport;
+  sizeTypes: string[];
   importing: boolean;
   onImport: () => void;
 }) {
-  const parts = [
-    importable.sizes > 0 ? `Beden (${importable.sizes} değer)` : null,
-    importable.colors > 0 ? `Renk (${importable.colors} değer)` : null,
-  ].filter(Boolean);
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[color:var(--panel-accent)]/30 bg-[color:var(--panel-accent-soft)] px-4 py-3">
       <p className="min-w-0 flex-1 basis-80 text-[14px] text-neutral-800">
-        Ürün düzenleyicideki kayıtlı beden ve renklerinizi varyant türü olarak
-        içe aktarabilirsiniz: <span className="font-semibold">{parts.join(" · ")}</span>.
+        Hazır beden listeleriyle başlayın, sonra dilediğiniz gibi düzenleyin:{" "}
+        <span className="font-semibold">{sizeTypes.join(" · ")}</span>. Ürün
+        düzenleyicideki beden tablosu bu listeleri kullanır.
       </p>
       <button
         type="button"
@@ -103,7 +100,7 @@ function ImportOffer({
             Aktarılıyor…
           </>
         ) : (
-          "İçe aktar"
+          "Hazır bedenleri içe aktar"
         )}
       </button>
     </div>
@@ -162,11 +159,11 @@ export function TrVariantTypesList({ boutiqueId }: { boutiqueId: string }) {
     setDrawer({ type });
   };
 
-  const importPresets = async () => {
+  const importSizeTypes = async () => {
     setImporting(true);
     try {
-      await importOwnerVariantPresets(boutiqueId);
-      toast.success("Beden ve renkler varyant türü olarak aktarıldı.");
+      await importOwnerSizeTypes(boutiqueId);
+      toast.success("Hazır bedenler aktarıldı.");
       setVersion((current) => current + 1);
     } catch (importError) {
       toast.error(importError, "İçe aktarılamadı.");
@@ -175,8 +172,7 @@ export function TrVariantTypesList({ boutiqueId }: { boutiqueId: string }) {
     }
   };
 
-  const showImport =
-    ready && (ready.importable.sizes > 0 || ready.importable.colors > 0);
+  const showImport = Boolean(ready && ready.importable.sizeTypes.length > 0);
 
   return (
     <div className="space-y-5">
@@ -210,9 +206,9 @@ export function TrVariantTypesList({ boutiqueId }: { boutiqueId: string }) {
         <TrPanelFadeIn className="space-y-4" shift={false}>
           {showImport ? (
             <ImportOffer
-              importable={ready.importable}
+              sizeTypes={ready.importable.sizeTypes}
               importing={importing}
-              onImport={() => void importPresets()}
+              onImport={() => void importSizeTypes()}
             />
           ) : null}
 
@@ -271,8 +267,15 @@ export function TrVariantTypesList({ boutiqueId }: { boutiqueId: string }) {
                           onClick={() => openDrawer(type)}
                           className="grid w-full cursor-pointer grid-cols-[12rem_9rem_minmax(0,1fr)_6rem] items-center gap-x-4 px-4 py-3 text-left transition-colors duration-150 hover:bg-[color:var(--panel-accent-soft)]/60 focus-visible:bg-[color:var(--panel-accent-soft)]/60 focus-visible:outline-none motion-reduce:transition-none"
                         >
-                          <span className="min-w-0 truncate text-[14px] font-semibold text-neutral-900">
-                            {type.name}
+                          <span className="flex min-w-0 items-center gap-2">
+                            <span className="min-w-0 truncate text-[14px] font-semibold text-neutral-900">
+                              {type.name}
+                            </span>
+                            {type.role ? (
+                              <span className="shrink-0 rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-medium text-neutral-600">
+                                {type.role === "size" ? "Beden" : "Renk"}
+                              </span>
+                            ) : null}
                           </span>
                           <span className="text-[13px] text-neutral-600">
                             {styleLabel(type)}

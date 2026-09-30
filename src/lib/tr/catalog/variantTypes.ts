@@ -1,20 +1,19 @@
 import { getServiceSupabase } from "@/lib/supabaseAdmin";
 import {
   hasTypeNamed,
+  importableSizeTypeInputs,
   planValueChanges,
-  presetsToTypeInputs,
   VARIANT_TYPE_LIMITS,
 } from "@/lib/tr/variants/typeRules";
 import {
   mapVariantTypeRow,
   mapVariantValueRow,
-  type TrVariantPresetImport,
   type TrVariantType,
+  type TrVariantTypeImportOffer,
   type TrVariantTypeInput,
   type TrVariantTypeListEntry,
   type TrVariantTypeValue,
 } from "@/lib/tr/variants/types";
-import { readProductColors } from "@/lib/tr/catalog/mappers";
 
 /**
  * A boutique's variant types (Renk, Beden…) and their values. Server only, through
@@ -38,6 +37,9 @@ function isUniqueViolation(error: DbError): boolean {
 const SCHEMA_HINT =
   "Varyant türleri kullanılamıyor: veritabanı güncellemesi (patch_variant_types.sql) henüz uygulanmamış.";
 
+const ROLE_SCHEMA_HINT =
+  "Beden / renk türü kaydedilemedi: veritabanı güncellemesi (patch_variant_type_roles.sql) henüz uygulanmamış.";
+
 export class VariantTypeError extends Error {
   constructor(
     message: string,
@@ -56,7 +58,11 @@ function client() {
 
 /** Turns a database failure into what the owner should see. */
 function failure(error: DbError, name?: string): never {
-  if (isSchemaMissing(error)) throw new VariantTypeError(SCHEMA_HINT);
+  if (isSchemaMissing(error)) {
+    throw new VariantTypeError(
+      /\brole\b/.test(error.message ?? "") ? ROLE_SCHEMA_HINT : SCHEMA_HINT,
+    );
+  }
   if (isUniqueViolation(error)) {
     throw new VariantTypeError(
       name
@@ -227,6 +233,8 @@ export async function createVariantType(
       boutique_id: boutiqueId,
       name: input.name,
       selection_style: input.selectionStyle,
+      // Only sent when set, so a database without the role patch still takes plain types.
+      ...(input.role ? { role: input.role } : {}),
       sort_order: nextOrder,
     })
     .select("*")
@@ -286,6 +294,8 @@ export async function updateVariantType(
     .update({
       name: input.name,
       selection_style: input.selectionStyle,
+      // Only sent when it changes, so a database without the role patch still saves.
+      ...(input.role !== current.role ? { role: input.role } : {}),
       updated_at: new Date().toISOString(),
     })
     .eq("id", id);
@@ -355,51 +365,21 @@ export async function deleteVariantType(id: string): Promise<void> {
   }
 }
 
-// ------------------------------------------------------- preset import
+// -------------------------------------------------- built-in size import
 
-/** The boutique's saved size / colour presets that are not yet a Beden / Renk type. */
-async function importablePresets(boutiqueId: string) {
-  const { data, error } = await client()
-    .from("tr_boutiques")
-    .select("size_presets, color_presets")
-    .eq("id", boutiqueId)
-    .maybeSingle();
-  if (error) {
-    if (!isSchemaMissing(error)) throw error;
-    return { beden: null, renk: null };
-  }
-  const sizes = Array.isArray(data?.size_presets)
-    ? data.size_presets.filter((entry): entry is string => typeof entry === "string")
-    : [];
-  const { beden, renk } = presetsToTypeInputs(
-    sizes,
-    readProductColors(data?.color_presets),
-  );
-
+/** What "Hazır bedenleri içe aktar" would create for this boutique (nothing = no offer). */
+export async function getImportOffer(boutiqueId: string): Promise<TrVariantTypeImportOffer> {
   const existing = await listVariantTypes(boutiqueId);
-  return {
-    beden: beden && !hasTypeNamed(existing, beden.name) ? beden : null,
-    renk: renk && !hasTypeNamed(existing, renk.name) ? renk : null,
-  };
+  return { sizeTypes: importableSizeTypeInputs(existing).map((input) => input.name) };
 }
 
-/** How many sizes / colours could be imported (0 = nothing to offer). */
-export async function getPresetImportInfo(
-  boutiqueId: string,
-): Promise<TrVariantPresetImport> {
-  const { beden, renk } = await importablePresets(boutiqueId);
-  return { sizes: beden?.values.length ?? 0, colors: renk?.values.length ?? 0 };
-}
-
-/** Creates Beden and / or Renk from the boutique's saved presets; returns what it made. */
-export async function importPresetTypes(boutiqueId: string): Promise<TrVariantType[]> {
-  const { beden, renk } = await importablePresets(boutiqueId);
+/** Creates the built-in size types (Beden, Pantolon bedeni); returns what it made. */
+export async function importBuiltInSizeTypes(boutiqueId: string): Promise<TrVariantType[]> {
+  const inputs = importableSizeTypeInputs(await listVariantTypes(boutiqueId));
+  if (inputs.length === 0) {
+    throw new VariantTypeError("İçe aktarılacak hazır beden bulunamadı.");
+  }
   const created: TrVariantType[] = [];
-  for (const input of [beden, renk]) {
-    if (input) created.push(await createVariantType(boutiqueId, input));
-  }
-  if (created.length === 0) {
-    throw new VariantTypeError("İçe aktarılacak beden veya renk bulunamadı.");
-  }
+  for (const input of inputs) created.push(await createVariantType(boutiqueId, input));
   return created;
 }

@@ -34,6 +34,7 @@ import { normalizeHex, VARIANT_TYPE_LIMITS } from "@/lib/tr/variants/typeRules";
 import type {
   TrVariantSelectionStyle,
   TrVariantType,
+  TrVariantTypeRole,
 } from "@/lib/tr/variants/types";
 
 const STYLE_OPTIONS: Array<{
@@ -43,6 +44,12 @@ const STYLE_OPTIONS: Array<{
 }> = [
   { id: "list", label: "Liste", hint: "Metin seçenekleri (S, M, L…)" },
   { id: "swatch", label: "Renk / Görsel", hint: "Her değer için bir renk veya görsel" },
+];
+
+const ROLE_OPTIONS: Array<{ id: TrVariantTypeRole | null; label: string; hint: string }> = [
+  { id: null, label: "Diğer", hint: "Genel bir seçenek" },
+  { id: "size", label: "Beden", hint: "Ürün düzenleyicide beden tablosu olarak çıkar" },
+  { id: "color", label: "Renk", hint: "Renk seçeneği" },
 ];
 
 const ICON_BUTTON =
@@ -222,6 +229,26 @@ export function TrVariantTypeDrawer({
                 aria-pressed={form.selectionStyle === option.id}
                 onClick={() => change({ selectionStyle: option.id })}
                 className={`${panelChipClass(form.selectionStyle === option.id)} h-auto flex-col items-start py-2 text-left`}
+              >
+                <span className="block">{option.label}</span>
+                <span className="mt-0.5 block text-[12px] font-normal opacity-80">
+                  {option.hint}
+                </span>
+              </button>
+            ))}
+          </div>
+        </fieldset>
+
+        <fieldset className="space-y-2">
+          <legend className={panelLabelClass}>Kullanım</legend>
+          <div className="grid grid-cols-3 gap-2">
+            {ROLE_OPTIONS.map((option) => (
+              <button
+                key={option.label}
+                type="button"
+                aria-pressed={form.role === option.id}
+                onClick={() => change({ role: option.id })}
+                className={`${panelChipClass(form.role === option.id)} h-auto flex-col items-start py-2 text-left`}
               >
                 <span className="block">{option.label}</span>
                 <span className="mt-0.5 block text-[12px] font-normal opacity-80">

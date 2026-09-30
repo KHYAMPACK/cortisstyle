@@ -1,6 +1,6 @@
 import {
   createVariantType,
-  getPresetImportInfo,
+  getImportOffer,
   listVariantTypeEntries,
 } from "@/lib/tr/catalog/variantTypes";
 import { variantTypeErrorResponse } from "@/lib/tr/catalog/variantTypeApi";
@@ -10,8 +10,8 @@ import { readVariantTypeBody } from "@/lib/tr/variants/typeRules";
 export const runtime = "nodejs";
 
 /**
- * GET /api/tr/owner/variant-types?boutiqueId= — the boutique's variant types, and how
- * many saved sizes / colours could still be imported as Beden / Renk.
+ * GET /api/tr/owner/variant-types?boutiqueId= — the boutique's variant types, and which
+ * built-in size types could still be imported.
  */
 export async function GET(request: Request) {
   const authResult = await requireTrOwner(request);
@@ -27,7 +27,7 @@ export async function GET(request: Request) {
   try {
     const [types, importable] = await Promise.all([
       listVariantTypeEntries(boutique.id),
-      getPresetImportInfo(boutique.id),
+      getImportOffer(boutique.id),
     ]);
     return Response.json({ types, importable });
   } catch (error) {

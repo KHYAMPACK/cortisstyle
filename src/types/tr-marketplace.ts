@@ -127,10 +127,6 @@ export interface TrBoutique extends TrBoutiquePublic {
   contactPhone: string | null;
   shippingAddress: string | null;
   returnAddress: string | null;
-  /** Boutique-scoped reusable size chips for the product editor. */
-  sizePresets: string[];
-  /** Boutique-scoped reusable color chips for the product editor. */
-  colorPresets: TrProductColor[];
   /** Which category system the storefront and panel use (see patch_categories.sql). */
   categoryMode: TrCategoryMode;
 }
