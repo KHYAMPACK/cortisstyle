@@ -9,10 +9,10 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { TrCategoryDefinition } from "@/lib/tr/fashion/categories";
+import type { TrTaxonomyCategory } from "@/lib/tr/categories/taxonomy";
 
 interface TrBoutiqueCatalogContextValue {
-  categories: TrCategoryDefinition[];
+  categories: TrTaxonomyCategory[];
   activeCategory: string | null;
   setActiveCategory: (categoryId: string | null) => void;
   selectCategory: (categoryId: string | null, options?: { scroll?: boolean }) => void;
@@ -27,7 +27,7 @@ const TrBoutiqueCatalogContext = createContext<TrBoutiqueCatalogContextValue | n
 );
 
 interface TrBoutiqueCatalogProviderProps {
-  categories: TrCategoryDefinition[];
+  categories: TrTaxonomyCategory[];
   children: ReactNode;
 }
 

@@ -32,7 +32,7 @@ If you clean up one of the areas listed under "known debt," add its directory to
 ## Known debt (disclosed, not blocking)
 
 - **~20 owner-panel components** (`TrProductCreateWizard`, `TrOwnerGuidedPhotoUpload`, `TrOwnerBatchCreatePage` + its steps, `TrOwnerStorePreview`, `TrOwnerProductListPage`, `TrOwnerStockPage`, `TrOwnerSizeChartStock`, `TrOwnerProductFeaturesFields`, `TrOwnerCategoryPicker`, `TrBoutiquePdpInfoSections`) interleave generic and garment-specific UI in the same file. Splitting them is a bigger, riskier job than a file move — deferred on purpose.
-- **No generic category-tree abstraction.** `fashion/categories.ts` is imported directly by ~25 files across the storefront and panel, because it's the *only* category system that exists — `custom_art` has zero category concept today. Building a multi-vertical registry nobody uses yet would be premature; do it when a second vertical genuinely needs categories, not before.
+- **Categories: the storefront no longer imports `fashion/categories.ts` directly** (branch `main-t0o1c2`). It goes through `TrStorefrontTaxonomy`; `fashion/legacyTaxonomy.ts` wraps this file's functions as the built-in tree, and `fashion/categoryTemplate.ts` + `fashion/garmentCategory.ts` let a boutique import the tree into its own `tr_categories` (with `system_key` = the built-in id) and map its categories back to garment ids for fashion logic. Panel pages still import `fashion/categories.ts` for labels and the legacy picker.
 - **`src/lib/tr/aiModel/elbiseTryOn.ts` and `src/lib/tr/ai/aiUsage.ts`** are garment-coupled (dress construction chips, FASHN-specific usage copy) but weren't in the original relocation's file inventory, so they're still sitting outside `fashion/`. Worth folding in on a future pass.
 
 ## Related

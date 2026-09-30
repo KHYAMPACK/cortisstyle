@@ -20,7 +20,7 @@ function importedCategories() {
     parentId: entry.parentSlug ? `id-${entry.parentSlug}` : null,
     name: entry.name,
     slug: entry.slug,
-    imageUrl: null,
+    imageUrl: null as string | null,
     sortOrder: index,
     systemKey: entry.systemKey,
   }));

@@ -6,6 +6,7 @@ import { X } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { useTrBoutiqueCommerceScope } from "@/components/tr/boutique/TrBoutiqueCommerceScope";
 import { useTrBoutiqueProductsOptional } from "@/components/tr/boutique/TrBoutiqueProductsContext";
+import { useStorefrontTaxonomy } from "@/components/tr/boutique/TrBoutiqueTaxonomy";
 import { TrDemoGarmentVisual } from "@/components/tr/demo/TrDemoGarmentVisual";
 import { TrProductCard } from "@/components/tr/TrProductCard";
 import { TrSoftNavLink } from "@/components/tr/TrSoftNavLink";
@@ -25,6 +26,7 @@ export function TrAddedToCartSheet() {
   const boutiqueScope = useTrBoutiqueCommerceScope();
   const boutiqueProducts = useTrBoutiqueProductsOptional();
 
+  const taxonomy = useStorefrontTaxonomy();
   const related = useMemo(() => {
     if (!payload) return [];
     const catalog = boutiqueProducts?.products ?? [];
@@ -33,8 +35,9 @@ export function TrAddedToCartSheet() {
       catalog,
       excludeIds: [payload.productId],
       limit: 4,
+      taxonomy,
     });
-  }, [boutiqueProducts?.products, payload]);
+  }, [boutiqueProducts?.products, payload, taxonomy]);
 
   useEffect(() => {
     if (!payload) return;

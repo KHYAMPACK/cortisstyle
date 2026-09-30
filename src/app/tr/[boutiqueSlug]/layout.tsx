@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
+import { loadStorefrontTaxonomyNodes } from "@/lib/tr/catalog/categories";
+import { fashionShopAllLabelFor } from "@/lib/tr/fashion/legacyTaxonomy";
 import { TrBoutiqueEditorialShell } from "@/components/tr/boutique/editorial/TrBoutiqueEditorialShell";
 import { TrIyzicoBuyerProtection } from "@/components/tr/commerce/TrIyzicoBuyerProtection";
 import { getIyzicoBuyerProtection } from "@/lib/tr/payments/registry";
@@ -144,10 +146,16 @@ export default async function BoutiqueLayout({
   }
 
   const storefront = await safeGetBoutiqueStorefront(boutiqueSlug);
+  // A boutique on its own categories: the menu, filters and labels use them.
+  const categoryNodes = await loadStorefrontTaxonomyNodes(
+    boutique.id,
+    boutique.catalogProfile === "fashion" ? fashionShopAllLabelFor : undefined,
+  );
   const shell = (
     <TrBoutiqueEditorialShell
       boutique={boutique}
       products={storefront?.products ?? []}
+      categoryNodes={categoryNodes}
     >
       {children}
     </TrBoutiqueEditorialShell>

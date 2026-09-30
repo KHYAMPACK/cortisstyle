@@ -9,6 +9,7 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react";
+import { useStorefrontTaxonomy } from "@/components/tr/boutique/TrBoutiqueTaxonomy";
 import { TrBoutiqueAtelierHomeSections } from "@/components/tr/boutique/editorial/TrBoutiqueAtelierHomeSections";
 import { TrBoutiqueEditorialHeroCarousel } from "@/components/tr/boutique/editorial/TrBoutiqueEditorialHeroCarousel";
 import {
@@ -97,7 +98,8 @@ export function TrBoutiqueEditorialSections({
   products = [],
 }: TrBoutiqueEditorialSectionsProps) {
   const boutiqueSlug = boutique.slug;
-  const content = getEditorialContent(boutique);
+  const taxonomy = useStorefrontTaxonomy();
+  const content = getEditorialContent(boutique, taxonomy);
   const logoUrl = resolveBoutiqueLogoUrl(boutique);
   const logoOnDarkUrl = resolveBoutiqueLogoOnDarkUrl(boutique);
   const productsHref = trBoutiqueProductsPath(boutiqueSlug);

@@ -1,10 +1,4 @@
-import {
-  canonicalizeTrCategoryId,
-  getTrCategoryLabel,
-  getTrCategoryRootId,
-  listAssignableTrCategories,
-  listTrCategoryRoots,
-} from "@/lib/tr/fashion/categories";
+import type { TrStorefrontTaxonomy } from "@/lib/tr/categories/taxonomy";
 
 export type HomeCategoryProductGroup<
   T extends { category: string | null; sortOrder: number },
@@ -22,15 +16,15 @@ export type HomeCategoryProductGroup<
  */
 export function groupProductsForHomeCategoryRows<
   T extends { category: string | null; sortOrder: number },
->(products: T[]): HomeCategoryProductGroup<T>[] {
+>(products: T[], taxonomy: TrStorefrontTaxonomy): HomeCategoryProductGroup<T>[] {
   const taxonomyOrder = new Map(
-    listAssignableTrCategories().map((entry, index) => [entry.id, index]),
+    taxonomy.assignable().map((entry, index) => [entry.id, index]),
   );
   const buckets = new Map<string, T[]>();
   const uncategorized: T[] = [];
 
   for (const product of products) {
-    const categoryId = canonicalizeTrCategoryId(product.category);
+    const categoryId = taxonomy.canonicalize(product.category);
     if (!categoryId) {
       uncategorized.push(product);
       continue;
@@ -51,7 +45,7 @@ export function groupProductsForHomeCategoryRows<
     })
     .map(([categoryId, items]) => ({
       categoryId,
-      label: getTrCategoryLabel(categoryId) ?? categoryId,
+      label: taxonomy.label(categoryId) ?? categoryId,
       products: [...items].sort(bySort),
     }));
 
@@ -72,9 +66,9 @@ export function groupProductsForHomeCategoryRows<
  */
 export function groupProductsForHomeRootCategoryRows<
   T extends { category: string | null; sortOrder: number },
->(products: T[]): HomeCategoryProductGroup<T>[] {
+>(products: T[], taxonomy: TrStorefrontTaxonomy): HomeCategoryProductGroup<T>[] {
   const taxonomyOrder = new Map(
-    listTrCategoryRoots({ includeLegacy: true }).map((entry, index) => [
+    taxonomy.roots({ includeLegacy: true }).map((entry, index) => [
       entry.id,
       index,
     ]),
@@ -83,8 +77,8 @@ export function groupProductsForHomeRootCategoryRows<
   const uncategorized: T[] = [];
 
   for (const product of products) {
-    const categoryId = getTrCategoryRootId(
-      canonicalizeTrCategoryId(product.category) ?? product.category,
+    const categoryId = taxonomy.rootId(
+      taxonomy.canonicalize(product.category) ?? product.category,
     );
     if (!categoryId) {
       uncategorized.push(product);
@@ -106,7 +100,7 @@ export function groupProductsForHomeRootCategoryRows<
     })
     .map(([categoryId, items]) => ({
       categoryId,
-      label: getTrCategoryLabel(categoryId) ?? categoryId,
+      label: taxonomy.label(categoryId) ?? categoryId,
       products: [...items].sort(bySort),
     }));
 

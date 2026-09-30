@@ -6,7 +6,7 @@ import { TrDemoGarmentVisual } from "@/components/tr/demo/TrDemoGarmentVisual";
 import { TrFavoriteButton } from "@/components/tr/TrFavoriteButton";
 import { TrQuickAddToCartButton } from "@/components/tr/TrQuickAddToCartButton";
 import { TrSoftNavLink } from "@/components/tr/TrSoftNavLink";
-import { getTrCategoryLabel } from "@/lib/tr/fashion/categories";
+import { useStorefrontTaxonomy } from "@/components/tr/boutique/TrBoutiqueTaxonomy";
 import { isTrDemoIconSrc } from "@/lib/tr/demoIcons";
 import {
   getProductCoverImageFor,
@@ -56,7 +56,7 @@ export function TrProductCard({
     boutiqueName ??
     ("boutique" in product ? product.boutique.name : undefined);
   const showSeller = showBoutique && Boolean(resolvedBoutiqueName);
-  const categoryLabel = getTrCategoryLabel(product.category);
+  const categoryLabel = useStorefrontTaxonomy().label(product.category);
   const quickView =
     Boolean(onSelect) && "boutique" in product
       ? (product as TrProductWithBoutique)

@@ -9,6 +9,7 @@ import {
   useTrScopedFavorites,
 } from "@/components/tr/boutique/TrBoutiqueCommerceScope";
 import { useTrBoutiqueProductsOptional } from "@/components/tr/boutique/TrBoutiqueProductsContext";
+import { useStorefrontTaxonomy } from "@/components/tr/boutique/TrBoutiqueTaxonomy";
 import { TrBoutiqueYouMayAlsoLike } from "@/components/tr/boutique/TrBoutiqueYouMayAlsoLike";
 import { TrDemoGarmentVisual } from "@/components/tr/demo/TrDemoGarmentVisual";
 import {
@@ -293,14 +294,16 @@ export function TrBoutiqueCartPageContent({
     [catalog, favoriteIds, cartIds],
   );
 
+  const taxonomy = useStorefrontTaxonomy();
   const relatedProducts = useMemo(
     () =>
       pickRelatedProducts({
         catalog,
         excludeIds: [...cartIds, ...favoriteProducts.map((p) => p.id)],
         limit: 8,
+        taxonomy,
       }),
-    [catalog, cartIds, favoriteProducts],
+    [catalog, cartIds, favoriteProducts, taxonomy],
   );
 
   const recommendations = (

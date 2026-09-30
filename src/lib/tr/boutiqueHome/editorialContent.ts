@@ -11,7 +11,8 @@ import {
   type EditorialNavItem,
 } from "@/lib/tr/boutiqueHome/editorialDemoContent";
 import { isAtelierEditorialSkin } from "@/lib/tr/boutiqueHome/editorialSkin";
-import { listTrCategoryRoots } from "@/lib/tr/fashion/categories";
+import type { TrStorefrontTaxonomy } from "@/lib/tr/categories/taxonomy";
+import { legacyFashionTaxonomy } from "@/lib/tr/fashion/legacyTaxonomy";
 import { trBoutiqueLegalPath, trBoutiquePath } from "@/lib/tr/paths";
 import { shippingFeeConfigOf } from "@/lib/tr/shipping/quoteShipping";
 import { shippingHomeBody } from "@/lib/tr/shipping/shippingCopy";
@@ -223,8 +224,16 @@ export function buildBoutiqueEditorialDefaults(
   };
 }
 
+/** The parts of the boutique's category system the editorial defaults are built from. */
+export type EditorialTaxonomy = Pick<TrStorefrontTaxonomy, "roots" | "imageUrl">;
+
+/**
+ * `taxonomy` is the boutique's category system (`useStorefrontTaxonomy()` in components);
+ * without it the built-in garment tree, as before categories became per boutique.
+ */
 export function getEditorialContent(
   boutique: TrBoutiquePublic,
+  taxonomy: EditorialTaxonomy = legacyFashionTaxonomy,
 ): EditorialDemoContent {
   const defaults = buildBoutiqueEditorialDefaults(boutique);
 
@@ -238,7 +247,7 @@ export function getEditorialContent(
 
   // Atelier nav + hero CTA packs + shop category row are taxonomy-owned (avoids DB drift).
   const atelier = isAtelierEditorialSkin(boutique.slug);
-  const nav = atelier ? buildAtelierTaxonomyNav() : merged.nav;
+  const nav = atelier ? buildAtelierTaxonomyNav(taxonomy) : merged.nav;
   const heroPromotions = atelier
     ? buildAtelierHeroPromotions(
         boutique.themeAccent?.trim() || "#9B7EBD",
@@ -246,7 +255,7 @@ export function getEditorialContent(
       )
     : mergedHeroPromotions;
   const shopCategories = atelier
-    ? buildAtelierShopCategories(boutique.slug)
+    ? buildAtelierShopCategories(boutique.slug, taxonomy)
     : merged.shopCategories;
   const trends = atelier
     ? buildAtelierTrends(boutique.slug)
@@ -280,12 +289,12 @@ export function getEditorialContent(
     },
     heroPromotions,
     featuredPair: atelier
-      ? buildAtelierFeaturedPair(boutique.slug)
+      ? buildAtelierFeaturedPair(boutique.slug, taxonomy)
       : merged.featuredPair?.length >= 2
         ? merged.featuredPair
         : defaults.featuredPair,
     categoryTiles: atelier
-      ? buildAtelierCategoryTiles(boutique.slug)
+      ? buildAtelierCategoryTiles(boutique.slug, taxonomy)
       : merged.categoryTiles?.length > 0
         ? merged.categoryTiles
         : defaults.categoryTiles,
@@ -369,10 +378,10 @@ function atelierHomeImage(
 }
 
 /** Yeni + taxonomy roots + İndirim — single source for atelier storefronts. */
-function buildAtelierTaxonomyNav(): EditorialNavItem[] {
+function buildAtelierTaxonomyNav(taxonomy: EditorialTaxonomy): EditorialNavItem[] {
   return [
     { id: "new", label: "Yeni", categoryId: null },
-    ...listTrCategoryRoots().map((root) => ({
+    ...taxonomy.roots().map((root) => ({
       id: root.id,
       label: root.label,
       categoryId: root.id,
@@ -386,23 +395,32 @@ function buildAtelierTaxonomyNav(): EditorialNavItem[] {
   ];
 }
 
-/** Category photo path under public/tr/boutiques/{slug}/categories/. */
-function atelierCategoryImage(slug: string, categoryId: string): string {
+/**
+ * A category's own picture (custom categories with `image_url`), else the photo under
+ * public/tr/boutiques/{slug}/categories/.
+ */
+function atelierCategoryImage(
+  slug: string,
+  categoryId: string,
+  taxonomy: EditorialTaxonomy,
+): string {
+  const own = taxonomy.imageUrl(categoryId);
+  if (own) return own;
   // v=2 busts stale DB / CDN placeholders that pointed at wrong stock art.
   return `/tr/boutiques/${encodeURIComponent(slug)}/categories/${encodeURIComponent(categoryId)}.jpg?v=2`;
 }
 
 /** Homepage “Kategorilere göz atın” row — taxonomy roots only. */
-function buildAtelierShopCategories(slug: string) {
-  return listTrCategoryRoots().map((root) => ({
+function buildAtelierShopCategories(slug: string, taxonomy: EditorialTaxonomy) {
+  return taxonomy.roots().map((root) => ({
     categoryId: root.id,
     label: root.label,
-    image: atelierCategoryImage(slug, root.id),
+    image: atelierCategoryImage(slug, root.id, taxonomy),
   }));
 }
 
-function buildAtelierFeaturedPair(slug: string) {
-  const roots = listTrCategoryRoots();
+function buildAtelierFeaturedPair(slug: string, taxonomy: EditorialTaxonomy) {
+  const roots = taxonomy.roots();
   const first = roots[0];
   const second = roots[1];
   if (!first || !second) return [];
@@ -410,25 +428,26 @@ function buildAtelierFeaturedPair(slug: string) {
     {
       categoryId: first.id,
       label: first.label,
-      image: atelierCategoryImage(slug, first.id),
+      image: atelierCategoryImage(slug, first.id, taxonomy),
       cta: "Keşfet",
     },
     {
       categoryId: second.id,
       label: second.label,
-      image: atelierCategoryImage(slug, second.id),
+      image: atelierCategoryImage(slug, second.id, taxonomy),
       cta: "Keşfet",
     },
   ];
 }
 
-function buildAtelierCategoryTiles(slug: string) {
-  return listTrCategoryRoots()
+function buildAtelierCategoryTiles(slug: string, taxonomy: EditorialTaxonomy) {
+  return taxonomy
+    .roots()
     .slice(2)
     .map((root) => ({
       categoryId: root.id,
       label: root.label,
-      image: atelierCategoryImage(slug, root.id),
+      image: atelierCategoryImage(slug, root.id, taxonomy),
       cta: "İncele",
     }));
 }
@@ -563,6 +582,7 @@ export function resolveCampaignSubText2(
 
 export function resolveCampaignActions(
   promo: EditorialHeroPromotion,
+  taxonomy: Pick<TrStorefrontTaxonomy, "roots"> = legacyFashionTaxonomy,
 ): Array<{ label: string; target: string; indirim?: boolean }> {
   const mapActions = (actions: EditorialCampaignAction[]) =>
     actions.slice(0, 6).map((action) => ({
@@ -584,7 +604,7 @@ export function resolveCampaignActions(
 
   // Sale / outlet solid campaigns → main taxonomy categories (unless already rich)
   if (isSaleOrientedCampaign(promo)) {
-    const roots = new Set(listTrCategoryRoots().map((root) => root.id));
+    const roots = new Set(taxonomy.roots().map((root) => root.id));
     const categoryHits =
       promo.actions?.filter((action) =>
         roots.has((action.target ?? "").trim()),
@@ -593,11 +613,14 @@ export function resolveCampaignActions(
       return mapActions(promo.actions ?? []);
     }
     return mapActions(
-      buildMainCategoryCampaignActions({
-        shopAllLabel: "Tüm indirimler",
-        shopAllTarget: "sale",
-        indirim: true,
-      }),
+      buildMainCategoryCampaignActions(
+        {
+          shopAllLabel: "Tüm indirimler",
+          shopAllTarget: "sale",
+          indirim: true,
+        },
+        taxonomy,
+      ),
     );
   }
 
@@ -614,12 +637,15 @@ export function resolveCampaignActions(
 }
 
 /** Taxonomy roots as hero / mega CTAs (Elbise · Üst · Alt · Aksesuar · Ev). */
-export function buildMainCategoryCampaignActions(options?: {
-  shopAllLabel?: string;
-  shopAllTarget?: string;
-  /** Apply `indirim=1` on category targets (sale hero / sale mega). */
-  indirim?: boolean;
-}): EditorialCampaignAction[] {
+export function buildMainCategoryCampaignActions(
+  options?: {
+    shopAllLabel?: string;
+    shopAllTarget?: string;
+    /** Apply `indirim=1` on category targets (sale hero / sale mega). */
+    indirim?: boolean;
+  },
+  taxonomy: Pick<TrStorefrontTaxonomy, "roots"> = legacyFashionTaxonomy,
+): EditorialCampaignAction[] {
   const actions: EditorialCampaignAction[] = [];
   if (options?.shopAllLabel) {
     actions.push({
@@ -627,7 +653,7 @@ export function buildMainCategoryCampaignActions(options?: {
       target: options.shopAllTarget ?? "all",
     });
   }
-  for (const root of listTrCategoryRoots()) {
+  for (const root of taxonomy.roots()) {
     actions.push({
       label: root.label,
       target: root.id,

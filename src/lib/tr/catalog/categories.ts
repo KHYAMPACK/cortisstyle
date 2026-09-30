@@ -12,6 +12,10 @@ import {
   type TrProductCategories,
 } from "@/lib/tr/categories/types";
 import type { CategoryImportPlan } from "@/lib/tr/categories/importPlan";
+import {
+  taxonomyNodesFromCategories,
+  type TrTaxonomyNode,
+} from "@/lib/tr/categories/taxonomy";
 import type { TrCategorySortCriterion } from "@/lib/tr/categories/sortCriteria";
 import { sanitizeSeo, type TrSeo } from "@/lib/tr/seo/seoFields";
 import { generateUniqueSlug, isValidSlug, slugify } from "@/lib/tr/seo/slug";
@@ -712,4 +716,24 @@ export async function listProductCategoryColumns(
     id: String(row.id),
     category: typeof row.category === "string" ? row.category : null,
   }));
+}
+
+// ----------------------------------------------------------------- storefront taxonomy
+
+/**
+ * The storefront's category nodes: the boutique's own categories when it is in `custom`
+ * mode, else `null` (the storefront then uses the built-in tree exactly as before). Any
+ * failure also reads as `null`, so the storefront never breaks on it.
+ */
+export async function loadStorefrontTaxonomyNodes(
+  boutiqueId: string,
+  shopAllLabelFor?: (category: Pick<TrCategory, "name" | "systemKey">) => string | null,
+): Promise<TrTaxonomyNode[] | null> {
+  try {
+    if ((await getBoutiqueCategoryMode(boutiqueId)) !== "custom") return null;
+    return taxonomyNodesFromCategories(await listCategories(boutiqueId), shopAllLabelFor);
+  } catch (error) {
+    console.error("[tr/categories] storefront taxonomy failed:", error);
+    return null;
+  }
 }

@@ -4,12 +4,13 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Search } from "lucide-react";
+import { useStorefrontTaxonomy } from "@/components/tr/boutique/TrBoutiqueTaxonomy";
 import { TrBoutiqueAtelierPlp } from "@/components/tr/boutique/editorial/TrBoutiqueAtelierPlp";
 import { TrBoutiqueEditorialProductCard } from "@/components/tr/boutique/editorial/TrBoutiqueEditorialProductCard";
 import { isAtelierEditorialSkin } from "@/lib/tr/boutiqueHome";
-import { getTrCategoryLabel, isTrCategoryMatch } from "@/lib/tr/fashion/categories";
 import { trBoutiquePath, trBoutiqueProductsPath } from "@/lib/tr/paths";
 import { resolveProductColors } from "@/lib/tr/productOptions";
+import type { TrStorefrontTaxonomy } from "@/lib/tr/categories/taxonomy";
 import type { TrBoutiquePublic, TrProduct } from "@/types/tr-marketplace";
 
 type SortId = "default" | "price-asc" | "price-desc" | "new";
@@ -19,10 +20,14 @@ interface TrBoutiqueEditorialPlpProps {
   products: TrProduct[];
 }
 
-function breadcrumbLabel(kategori: string | null, sale: boolean): string {
+function breadcrumbLabel(
+  kategori: string | null,
+  sale: boolean,
+  taxonomy: TrStorefrontTaxonomy,
+): string {
   if (sale) return "İndirim";
   if (!kategori) return "Tüm ürünler";
-  return (getTrCategoryLabel(kategori) ?? kategori).toLocaleUpperCase("tr");
+  return (taxonomy.label(kategori) ?? kategori).toLocaleUpperCase("tr");
 }
 
 function isOnSale(product: TrProduct): boolean {
@@ -52,6 +57,7 @@ function TrBoutiqueClassicEditorialPlp({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const taxonomy = useStorefrontTaxonomy();
 
   const kategori = searchParams.get("kategori")?.trim() || null;
   const saleOnly = searchParams.get("indirim") === "1" || kategori === "sale";
@@ -94,9 +100,9 @@ function TrBoutiqueClassicEditorialPlp({
         .filter((value): value is string => Boolean(value)),
     );
     return [...ids]
-      .map((id) => ({ id, label: getTrCategoryLabel(id) ?? id }))
+      .map((id) => ({ id, label: taxonomy.label(id) ?? id }))
       .sort((a, b) => a.label.localeCompare(b.label, "tr"));
-  }, [products]);
+  }, [products, taxonomy]);
 
   const filtered = useMemo(() => {
     let list = products.filter((p) => p.status === "available");
@@ -105,7 +111,7 @@ function TrBoutiqueClassicEditorialPlp({
       list = list.filter(isOnSale);
     } else if (categoryFilter) {
       list = list.filter((p) =>
-        isTrCategoryMatch(p.category, categoryFilter),
+        taxonomy.isMatch(p.category, categoryFilter),
       );
     }
 
@@ -142,7 +148,7 @@ function TrBoutiqueClassicEditorialPlp({
     }
 
     return sorted;
-  }, [categoryFilter, products, q, renkParam, saleOnly, siraParam]);
+  }, [categoryFilter, products, q, renkParam, saleOnly, siraParam, taxonomy]);
 
   const replaceParams = (patch: Record<string, string | null>) => {
     const next = new URLSearchParams(searchParams.toString());
@@ -157,6 +163,7 @@ function TrBoutiqueClassicEditorialPlp({
   const crumb = breadcrumbLabel(
     saleOnly ? null : categoryFilter,
     saleOnly,
+    taxonomy,
   );
 
   return (

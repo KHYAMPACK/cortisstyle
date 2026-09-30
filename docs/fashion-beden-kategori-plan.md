@@ -1,6 +1,6 @@
 # Fashion Beden & Kategori → foundation — plan
 
-_Prepared 2026-09-30 on branch `main-t0o1c2`. **S1 built (2026-09-30); K0 already in place; K1–K2 not started.** Facts checked against the repo at `ff89987` (after PR #3) and against the live Supabase project with read-only `SELECT`s. Background: `docs/lilabutik-foundation-migration-plan.md` (this is a follow-up to its Area A; its Area B — moving sizes onto `tr_product_variants` — stays deferred and is **not** what this plan does)._
+_Prepared 2026-09-30 on branch `main-t0o1c2`. **S1, K1 and K2 built (2026-09-30); K0 was already in place. Not merged to `main`; lilabutik is still on `legacy` (switching it is Mert's step, see "Switching lilabutik").** Facts checked against the repo at `ff89987` (after PR #3) and against the live Supabase project with read-only `SELECT`s. Background: `docs/lilabutik-foundation-migration-plan.md` (this is a follow-up to its Area A; its Area B — moving sizes onto `tr_product_variants` — stays deferred and is **not** what this plan does)._
 
 **Goal (Mert):** a fashion boutique's **sizes (Beden)** and **categories (Kategori)** come from the boutique's own foundation definitions (Tanımlamalar → Varyant Türleri / Kategoriler) instead of lists hardcoded in code, so a new store can define its own without a code change.
 
@@ -31,6 +31,22 @@ _Prepared 2026-09-30 on branch `main-t0o1c2`. **S1 built (2026-09-30); K0 alread
 - **Fashion editor, `custom` mode:** picks from the boutique's categories (`TrPanelCategoryPicker`, several with one primary) and saves them as `categories`. Validation, photo rules, AI fill, the photo pipeline, restyle and Özellikler all get the translated garment id. An AI-suggested category makes the keyed category primary.
 - **Create flows (wizard, batch, takım), `custom` mode:** they still choose a built-in garment id as today. At save it is filed under the boutique's category carrying that key (`categoryPayloadForGarment`), and saving waits until the categories are loaded. If the boutique deleted that keyed category, only the plain category column is set, to be fixed in the editor. **Open question for Mert (Q7 below).**
 - **Built-in-tree boutiques (lilabutik today):** unchanged; they send the category column as before.
+
+**K2 built (2026-09-30).** The storefront reads a `custom` boutique's own categories; a `legacy` boutique renders exactly as before.
+
+- **One seam:** `TrStorefrontTaxonomy` (`categories/taxonomy.ts`). `legacyFashionTaxonomy` (`fashion/legacyTaxonomy.ts`) is literally the old functions, so `legacy` output can't drift; `customTaxonomy(nodes)` is built from `tr_categories`.
+- **Loading:** the boutique layout calls `loadStorefrontTaxonomyNodes` (`catalog/categories.ts`): `null` unless the boutique is in `custom` mode, and `null` on any error, so the shop falls back to the built-in tree rather than breaking. Components read it with `useStorefrontTaxonomy()` (`TrBoutiqueTaxonomy.tsx`; without a provider it is the built-in tree).
+- **Wired:** header menu / mega-menu / mobile drill-down, both PLPs (chips, filters, titles, breadcrumbs), home rows and marquees, product card and PDP labels, related products (cart, PDP, added-to-cart sheet), editorial defaults (atelier nav, category row, featured pair, tiles, sale hero actions), footer.
+- **Parity test** (`fashion/legacyTaxonomy.test.ts`): the tree the import creates from lilabutik's 8 categories gives the same menu, labels, "Tüm …" copy, filters, product-category list and order as the built-in tree. Only difference: the legacy-only "Dış giyim" isn't offered to file under (it isn't imported, decision 5).
+- **Not changed:** panel pages that show a category label (Ürünler list, orders, dashboard top sellers, the legacy category picker) still use the built-in labels; an owner-made category there shows its slug humanized ("yeni-sezon" → "Yeni Sezon"). Flagged below (Q12), not done.
+
+### Switching lilabutik (Mert, after merging)
+
+1. Apply `supabase/patch_variant_type_roles.sql` and `supabase/patch_category_system_keys.sql` (if not yet).
+2. Panel → Tanımlamalar → Kategoriler → **Hazır kategorileri içe aktar**.
+3. Check the imported tree looks right (it is read-only until the switch).
+4. `update public.tr_boutiques set category_mode = 'custom' where slug = 'lilabutik';` — reverting is the same with `'legacy'`; the imported rows stay and do no harm.
+5. Check the menu, a PLP with a category filter, the home rows and a PDP. The parity test says they should look identical.
 
 ## Decisions (Mert, 2026-09-30)
 
@@ -121,3 +137,12 @@ Each ships on its own. Order: **S1 → K1 → K2** (K0 turned out to be in place
 5. **Hidden style variants** (kaşe mont, kot pantolon…) and legacy "Dış giyim": leave them out of the import (my default)?
 6. **Renaming a size value used by products** (e.g. "2XL" → "XXL"): block it, or offer to update those products too?
 7. **(Open, raised 2026-09-30 while building K1)** In `custom` mode, should the **create wizard's category step** offer the store's own categories (including ones without a built-in meaning, e.g. "Yeni sezon") instead of the built-in garment list? Today it keeps the built-in list and files the product under the matching own category, which also means a renamed category shows its built-in name there (e.g. "Bluz" rather than "Bluzlar"). Changing it reworks how the wizard picks elbise / üst giyim / alt giyim, so it is your call. Batch and takım have no category picker (AI or fixed), so they are not affected.
+
+**Raised 2026-09-30 while building K2 — not decided, the code keeps today's behaviour:**
+
+8. **Where category links go in `custom` mode.** The menu and tiles still link to the product list with a filter (`/urunler?kategori=elbise`), as today. Once a boutique is `custom`, `/kategori/elbise` (the plain M3a category page) also exists and is in the sitemap, so each category has two public URLs with different layouts. Options: keep linking to `/urunler?kategori=` and drop `/kategori/…` from the sitemap (or canonical it to the PLP); or point the menu at `/kategori/…` and give it the atelier layout. SEO/design call.
+9. **Category pictures.** The atelier category row / tiles use a category's own picture (`tr_categories.image_url`) when it has one, else the file under `public/tr/boutiques/<slug>/categories/<id>.jpg` as before. Imported categories have no picture, so lilabutik is unchanged. Fine, or should the panel picture never override the curated files (or the reverse: copy the files into `image_url` at import)?
+10. **Hard-coded campaign targets.** lilabutik's hero slides and "Trendleri keşfedin" link to fixed ids (`elbise`, `ust-giyim`, `aksesuar`). They keep working after the import (same slugs), but if the slug of one of those categories is changed in the panel the link shows an empty list. Leave as is (slugs rarely change), or make those links follow the category through its system key?
+11. **A `custom` boutique with no categories** gets an empty menu (only Yeni / İndirim). The import is the normal way in, so this only happens if someone switches the mode by hand first. Fall back to the built-in tree in that case, or leave it?
+12. **Panel labels** (Ürünler list, orders, dashboard): switch them to the boutique's own category names too? Small, panel-only, but not asked for.
+

@@ -18,7 +18,7 @@ import { TrProductSizePicker } from "@/components/tr/TrProductSizePicker";
 import { TrPurchaseActions } from "@/components/tr/TrPurchaseActions";
 import { TrSizeGateSheet } from "@/components/tr/TrSizeGateSheet";
 import { TrSoftNavLink } from "@/components/tr/TrSoftNavLink";
-import { getTrCategoryLabel } from "@/lib/tr/fashion/categories";
+import { useStorefrontTaxonomy } from "@/components/tr/boutique/TrBoutiqueTaxonomy";
 import { EDITORIAL_SALE_RED, isAtelierEditorialSkin } from "@/lib/tr/boutiqueHome";
 import { beginBuyNowCheckout, type TrPurchaseIntent } from "@/lib/tr/buyNow";
 import { getProductCoverImageFor } from "@/lib/tr/productImages";
@@ -58,7 +58,7 @@ export function TrProductDetailPanel({
   const colors = useMemo(() => resolveProductColors(product), [product]);
   const accent = resolveBoutiqueThemeAccent(product.boutique);
   const atelier = isAtelierEditorialSkin(product.boutique.slug);
-  const categoryLabel = getTrCategoryLabel(product.category);
+  const categoryLabel = useStorefrontTaxonomy().label(product.category);
   const isAvailable = product.status === "available";
   const cart = useTrScopedCart();
   const router = useRouter();

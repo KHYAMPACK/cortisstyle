@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useStorefrontTaxonomy } from "@/components/tr/boutique/TrBoutiqueTaxonomy";
 import { InstagramIcon } from "@/components/icons/InstagramIcon";
 import {
   resolveBoutiqueBrandLabel,
@@ -27,7 +28,7 @@ interface TrBoutiqueEditorialFooterProps {
 export function TrBoutiqueEditorialFooter({
   boutique,
 }: TrBoutiqueEditorialFooterProps) {
-  const content = getEditorialContent(boutique);
+  const content = getEditorialContent(boutique, useStorefrontTaxonomy());
   const { footer } = content;
   const logoUrl = resolveBoutiqueLogoUrl(boutique);
   const brandTitle = resolveBoutiqueBrandLabel(boutique.slug, boutique.name);

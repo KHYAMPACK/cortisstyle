@@ -2,6 +2,10 @@
 
 import { useEffect } from "react";
 import { TrBoutiqueCatalogProvider } from "@/components/tr/boutique/TrBoutiqueCatalogContext";
+import {
+  TrBoutiqueTaxonomyProvider,
+  useStorefrontTaxonomy,
+} from "@/components/tr/boutique/TrBoutiqueTaxonomy";
 import { TrBoutiqueCommerceScopeProvider } from "@/components/tr/boutique/TrBoutiqueCommerceScope";
 import { TrBoutiqueCookieNotice } from "@/components/tr/boutique/TrBoutiqueCookieNotice";
 import { TrBoutiqueEditorialCommercePanels } from "@/components/tr/boutique/editorial/TrBoutiqueEditorialCommercePanels";
@@ -16,22 +20,43 @@ import { TrBoutiqueProductsProvider } from "@/components/tr/boutique/TrBoutiqueP
 import { TrAddedToCartSheet } from "@/components/tr/TrAddedToCartSheet";
 import { resolveBoutiqueThemeAccent } from "@/lib/tr/boutiqueBrand";
 import { resolveEditorialSkin } from "@/lib/tr/boutiqueHome";
-import { listCategoriesForProducts } from "@/lib/tr/fashion/categories";
 import { trBoutiqueLegalPath } from "@/lib/tr/paths";
+import type { TrTaxonomyNode } from "@/lib/tr/categories/taxonomy";
 import type { TrBoutiquePublic, TrProduct } from "@/types/tr-marketplace";
 
 interface TrBoutiqueEditorialShellProps {
   boutique: TrBoutiquePublic;
   products?: TrProduct[];
+  /** The boutique's own categories (custom mode); null = the built-in tree. */
+  categoryNodes?: TrTaxonomyNode[] | null;
   children: React.ReactNode;
 }
 
 export function TrBoutiqueEditorialShell({
   boutique,
   products = [],
+  categoryNodes = null,
   children,
 }: TrBoutiqueEditorialShellProps) {
-  const categories = listCategoriesForProducts(products);
+  return (
+    <TrBoutiqueTaxonomyProvider nodes={categoryNodes}>
+      <EditorialShell boutique={boutique} products={products}>
+        {children}
+      </EditorialShell>
+    </TrBoutiqueTaxonomyProvider>
+  );
+}
+
+function EditorialShell({
+  boutique,
+  products,
+  children,
+}: {
+  boutique: TrBoutiquePublic;
+  products: TrProduct[];
+  children: React.ReactNode;
+}) {
+  const categories = useStorefrontTaxonomy().forProducts(products);
   const accent = resolveBoutiqueThemeAccent(boutique);
   const skin = resolveEditorialSkin(boutique.slug);
 
