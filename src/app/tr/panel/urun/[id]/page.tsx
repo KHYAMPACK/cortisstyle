@@ -20,7 +20,7 @@ export default async function TrPanelEditProductRoute({
   return (
     <TrOwnerEditProductPage
       productId={id}
-      requestedFashionEditor={editor === "yeni" ? "manual-save" : null}
+      requestedFashionEditor={editor === "eski" ? "legacy" : null}
     />
   );
 }

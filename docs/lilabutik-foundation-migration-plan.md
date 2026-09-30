@@ -6,7 +6,7 @@ Inputs: `docs/product-upload-foundation-plan.md` (all of it, esp. Status, §4 sa
 
 ## Status
 
-**A0, A1 and A2 built on `main-t0o1c2` (2026-09-29).** lilabutik's owner still gets the old autosaving editor; the new one opens only for staff via `urun/[id]?editor=yeni`. **A3** (the A.4 checklist, then the new editor as the default) waits for Mert's separate go-ahead.
+**A0–A2 merged (PR #2, 2026-09-29). A3 first half done (2026-09-30):** Mert ran the checks with `?editor=yeni` and approved, so **`TrFashionProductEditor` is now the default for every fashion product, lilabutik included.** The old autosaving editor stays reachable at `urun/[id]?editor=eski` for one release as a fallback. **Still to do in A3:** delete `TrProductEditorForm` and the `eski` switch, then add the dispatcher to `FASHION_FREE_CORE_TARGETS` via an editor registry slot.
 
 - **A1:** `components/tr/panel/TrPanelProductFields.tsx` holds the shared title, price, Durum, "Mağazada gör" and delete-card components. `TrSimpleProductEditor` now uses them with the same markup, so Basit/Gelişmiş look unchanged.
 - **A2:** `components/tr/fashion/panel/TrFashionProductEditor.tsx` covers the same cards and the same AI flows as the old editor, built on the A1 pieces with manual save (Kaydet, Ctrl+S, leave guard) and toasts. Deliberate differences from the old editor:

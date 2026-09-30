@@ -31,11 +31,11 @@ import {
 interface TrOwnerEditProductPageProps {
   productId: string;
   /**
-   * `manual-save` (from `?editor=yeni`) opens the rebuilt fashion editor instead of the
-   * autosaving one. Staff only while it is being checked against lilabutik; see
-   * docs/lilabutik-foundation-migration-plan.md (A2/A3).
+   * `legacy` (from `?editor=eski`) opens the old autosaving fashion editor instead of
+   * `TrFashionProductEditor`. A one-release fallback while the new editor settles in;
+   * see docs/lilabutik-foundation-migration-plan.md (A3).
    */
-  requestedFashionEditor?: "manual-save" | null;
+  requestedFashionEditor?: "legacy" | null;
 }
 
 export function TrOwnerEditProductPage({
@@ -96,7 +96,7 @@ export function TrOwnerEditProductPage({
 
   return (
     <TrOwnerPanelGate>
-      {({ activeBoutique, isStaff }) => (
+      {({ activeBoutique }) => (
         <TrOwnerProductRouteGate activeBoutique={activeBoutique}>
           <TrPanelEditor
             backHref={trPanelProductsPath()}
@@ -139,10 +139,9 @@ export function TrOwnerEditProductPage({
                 </TrPanelFadeIn>
               ) : product &&
                 productType === "fashion" &&
-                isStaff &&
-                requestedFashionEditor === "manual-save" ? (
-                <TrPanelFadeIn key="edit-fashion" shift={false}>
-                  <TrFashionProductEditor
+                requestedFashionEditor === "legacy" ? (
+                <TrPanelFadeIn key="edit-form" shift={false}>
+                  <TrProductEditorForm
                     boutiqueId={product.boutiqueId}
                     boutiqueSlug={activeBoutique.slug}
                     initialProduct={product}
@@ -155,8 +154,8 @@ export function TrOwnerEditProductPage({
                   />
                 </TrPanelFadeIn>
               ) : product && productType === "fashion" ? (
-                <TrPanelFadeIn key="edit-form" shift={false}>
-                  <TrProductEditorForm
+                <TrPanelFadeIn key="edit-fashion" shift={false}>
+                  <TrFashionProductEditor
                     boutiqueId={product.boutiqueId}
                     boutiqueSlug={activeBoutique.slug}
                     initialProduct={product}
