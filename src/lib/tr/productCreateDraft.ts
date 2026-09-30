@@ -11,7 +11,7 @@
 import type { TrSizeChartId } from "@/lib/tr/productOptions";
 import type { OwnerListingDraft } from "@/lib/tr/ownerClient";
 import type { TrProductFeatures } from "@/types/tr-marketplace";
-import type { TrLilaPhotographyStyle } from "@/lib/tr/aiModel/types";
+import type { TrHousePhotographyStyle } from "@/lib/tr/aiModel/types";
 import {
   sanitizeColorVariantDrafts,
   type ColorVariantUploadDraft,
@@ -41,7 +41,7 @@ export interface ProductCreateDraftV2 {
   frontDraftFailed: boolean;
   catalogBackgroundId: string;
   selectedModelId: string | null;
-  photographyStyle?: TrLilaPhotographyStyle;
+  photographyStyle?: TrHousePhotographyStyle;
   /** Construction family inferred from the photo (or owner-corrected). */
   uploadType?: string | null;
   /** Extra color photo pairs (linked SKUs). */

@@ -7,8 +7,8 @@
  */
 
 import { DEFAULT_CATALOG_BACKGROUND_ID } from "@/lib/tr/catalogBackgrounds/registry";
-import { LILA_DEFAULT_PHOTOGRAPHY_STYLE } from "@/lib/tr/aiModel/registry";
-import type { TrLilaPhotographyStyle } from "@/lib/tr/aiModel/types";
+import { DEFAULT_HOUSE_PHOTOGRAPHY_STYLE } from "@/lib/tr/aiModel/registry";
+import type { TrHousePhotographyStyle } from "@/lib/tr/aiModel/types";
 import type { OwnerListingDraft } from "@/lib/tr/ownerClient";
 import {
   clampDescription,
@@ -52,7 +52,7 @@ export interface ProductBatchCreateRow {
   frontDraftFailed: boolean;
   catalogBackgroundId: string;
   selectedModelId: string | null;
-  photographyStyle?: TrLilaPhotographyStyle;
+  photographyStyle?: TrHousePhotographyStyle;
   /** Construction family inferred from the photo (or owner-corrected). */
   uploadType?: ConstructionCatalogFamily | null;
   gateChips?: {
@@ -122,7 +122,7 @@ export function createEmptyBatchRow(): ProductBatchCreateRow {
     frontDraftFailed: false,
     catalogBackgroundId: DEFAULT_CATALOG_BACKGROUND_ID,
     selectedModelId: null,
-    photographyStyle: LILA_DEFAULT_PHOTOGRAPHY_STYLE,
+    photographyStyle: DEFAULT_HOUSE_PHOTOGRAPHY_STYLE,
     uploadType: null,
     gateChips: undefined,
     proposedChips: undefined,

@@ -2225,15 +2225,7 @@ export function TrOwnerGuidedPhotoUpload({
 }
 
 /** Required photo slots finished (URLs present). */
-export function hasRequiredProductPhotos(
-  images: string[],
-  requiredSlots = 2,
-): boolean {
-  for (let i = 0; i < requiredSlots; i += 1) {
-    if (!images[i]?.trim()) return false;
-  }
-  return true;
-}
+export { hasRequiredProductPhotos } from "@/lib/tr/productPhotoChecks";
 
 /** Required slots started (finished or still generating). */
 export function hasRequiredProductPhotosStarted(

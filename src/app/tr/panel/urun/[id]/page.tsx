@@ -8,11 +8,19 @@ export const metadata: Metadata = {
 
 interface EditProductPageProps {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 export default async function TrPanelEditProductRoute({
   params,
+  searchParams,
 }: EditProductPageProps) {
   const { id } = await params;
-  return <TrOwnerEditProductPage productId={id} />;
+  const { editor } = await searchParams;
+  return (
+    <TrOwnerEditProductPage
+      productId={id}
+      requestedFashionEditor={editor === "yeni" ? "manual-save" : null}
+    />
+  );
 }

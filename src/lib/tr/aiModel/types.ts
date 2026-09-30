@@ -18,8 +18,11 @@ export type TrAiModelJobStatus =
 
 export type TrAiModelGender = "woman" | "man";
 
-/** Lila house-model lighting. Owners pick this; pose stays random. */
-export type TrLilaPhotographyStyle = "blinds" | "flash";
+/**
+ * Lighting of a boutique house model that was shot in more than one style (Lila:
+ * blinds and flash). Owners pick the style; the pose stays random.
+ */
+export type TrHousePhotographyStyle = "blinds" | "flash";
 
 /**
  * Boutique "house model" — typically the owner, captured once in-shop.
@@ -35,6 +38,13 @@ export interface TrAiModelIdentity {
   /** Optional face-close refs for identity lock. */
   faceReferenceUrls?: string[];
   defaultPose?: TrAiModelPose;
+  /**
+   * Reference plates per photography style, when the house model was shot in several
+   * styles; the owner then picks a style. Absent = one set (`referenceImageUrls`).
+   */
+  referenceImageUrlsByStyle?: Record<TrHousePhotographyStyle, readonly string[]>;
+  /** Pinned grey-studio plates for elbise try-on; absent = first reference plate. */
+  elbiseTryOnPlates?: { threeQuarter: string; back: string | null };
   notes?: string;
 }
 
@@ -74,10 +84,10 @@ export interface TrAiModelGenerateRequest {
    */
   modelId?: string;
   /**
-   * Lila house model only: blinds (default) or flash.
-   * Ignored for studio models. Pose is still random within the style.
+   * For a house model shot in several styles (`referenceImageUrlsByStyle`): which one;
+   * blinds by default. Ignored otherwise. Pose is still random within the style.
    */
-  photographyStyle?: TrLilaPhotographyStyle;
+  photographyStyle?: TrHousePhotographyStyle;
   /**
    * Optional try-on styling prompt. Providers default to NATURAL_TRYON_PROMPT
    * (product-first Zara lookbook) when omitted.
@@ -106,7 +116,7 @@ export interface TrAiModelGenerateResult {
   providerId: TrAiModelProviderId;
   /** Public or storage URL when succeeded. */
   imageUrl?: string;
-  /** Lila style runs return two unique plates; studio stays one. */
+  /** Every image the run produced (one per shot). */
   imageUrls?: string[];
   jobId?: string;
   creditsUsed?: number | null;

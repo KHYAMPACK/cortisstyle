@@ -21,7 +21,7 @@
 - [ ] `physicalAddress` (recommended) — for legal pages (künye, mesafeli satış).
 
 **Brand**
-- [ ] `logoUrl` — path under `public/tr/boutiques/{slug}/` (no upload widget yet — drop the file in the repo, reference its path here).
+- [ ] `logoUrl` — path under `public/tr/boutiques/{slug}/` (no upload widget yet — drop the file in the repo, reference its path here). **Ask for a PNG**: sign-up and password-reset emails reuse this logo, and many email clients don't show SVG, so an SVG-only logo means emails go out without one.
 - [ ] `themeAccent` — hex color.
 - [ ] `description` — short storefront description.
 

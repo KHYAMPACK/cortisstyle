@@ -4,13 +4,8 @@ import { useId, useRef, useState } from "react";
 import { panelHintClass, panelSecondaryBtnClass } from "@/components/tr/panel/panelUi";
 import { uploadOwnerProductImage } from "@/lib/tr/ownerClient";
 import { TR_OWNER_PRODUCT_LIMITS } from "@/lib/tr/ownerProductConstraints";
+import { compactImageUrls as compactUrls } from "@/lib/tr/productPhotoChecks";
 
-function compactUrls(urls: string[]): string[] {
-  return urls.map((url) => url.trim()).filter(Boolean).slice(
-    0,
-    TR_OWNER_PRODUCT_LIMITS.maxImages,
-  );
-}
 
 function isAcceptedProductPhoto(file: File): boolean {
   if (file.type === "image/png" || file.type === "image/jpeg" || file.type === "image/webp") {
@@ -19,9 +14,7 @@ function isAcceptedProductPhoto(file: File): boolean {
   return /\.(png|jpe?g|webp)$/i.test(file.name);
 }
 
-export function hasManualGalleryPhoto(images: string[]): boolean {
-  return compactUrls(images).length > 0;
-}
+export { hasManualGalleryPhoto } from "@/lib/tr/productPhotoChecks";
 
 export function TrOwnerManualPhotoGallery({
   boutiqueId,

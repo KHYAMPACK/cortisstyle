@@ -5,8 +5,18 @@ import type { TrSizeChartId } from "@/lib/tr/productOptions";
 import {
   NUMERIC_EXPANDED_SIZES,
   sizesForChart,
-  sortProductSizes,
 } from "@/lib/tr/productOptions";
+import {
+  missingChartSizes,
+  sizesForStockInputs,
+  sizesInStockInputs,
+} from "@/lib/tr/sizeStockInputs";
+
+export {
+  emptyStockInputsForChart,
+  sizesFromStockInputs,
+  stockInputsFromSizeStocks,
+} from "@/lib/tr/sizeStockInputs";
 import {
   sanitizeStockInput,
   TR_OWNER_PRODUCT_LIMITS,
@@ -55,6 +65,11 @@ interface TrOwnerSizeChartStockProps {
   /** Extra colors: stock rows only — chart is shared with the primary SKU. */
   hideChart?: boolean;
   heading?: string;
+  /**
+   * Edit an existing garment: list only the sizes in `stockInputs` (no chart defaults
+   * added), let every size be removed, and offer the chart's missing sizes as chips.
+   */
+  onlyListedSizes?: boolean;
 }
 
 function parsedStockQty(raw: string): number {
@@ -114,18 +129,6 @@ function StockQtyField({
   );
 }
 
-function displaySizesForChart(
-  chart: TrSizeChartId,
-  stockInputs: Record<string, string>,
-): string[] {
-  if (chart === "none") return [];
-  const chartSizes = sizesForChart(chart);
-  const extras = Object.keys(stockInputs).filter(
-    (size) => size.trim() && !chartSizes.includes(size),
-  );
-  return sortProductSizes([...chartSizes, ...extras]);
-}
-
 export function TrOwnerSizeChartStock({
   chart,
   onChartChange,
@@ -136,8 +139,14 @@ export function TrOwnerSizeChartStock({
   allowCustomSizes = false,
   hideChart = false,
   heading,
+  onlyListedSizes = false,
 }: TrOwnerSizeChartStockProps) {
-  const chartSizes = displaySizesForChart(chart, stockInputs);
+  const chartSizes = onlyListedSizes
+    ? sizesInStockInputs(stockInputs)
+    : sizesForStockInputs(chart, stockInputs);
+  const addableChartSizes = onlyListedSizes
+    ? missingChartSizes(chart, stockInputs)
+    : [];
   const [addingSize, setAddingSize] = useState(false);
   const [newSize, setNewSize] = useState("");
   const missingExpandedSizes =
@@ -171,7 +180,7 @@ export function TrOwnerSizeChartStock({
     delete next[size];
     // Keep chart defaults present as "0" so the row stays until chart change.
     const defaults = new Set(sizesForChart(chart));
-    if (defaults.has(size)) {
+    if (!onlyListedSizes && defaults.has(size)) {
       next[size] = "0";
     }
     onStockInputsChange(next);
@@ -237,7 +246,8 @@ export function TrOwnerSizeChartStock({
               const isDefault = sizesForChart(chart).includes(size);
               const isExpandedNumeric = NUMERIC_EXPANDED_SIZES.includes(size);
               const canRemove =
-                !isDefault && (allowCustomSizes || isExpandedNumeric);
+                onlyListedSizes ||
+                (!isDefault && (allowCustomSizes || isExpandedNumeric));
               return (
                 <div
                   key={size}
@@ -269,6 +279,27 @@ export function TrOwnerSizeChartStock({
               );
             })}
           </div>
+
+          {chartSizes.length === 0 ? (
+            <p className={panelHintClass}>
+              Henüz beden yok. Aşağıdan ekleyin ya da “Beden yok” seçin.
+            </p>
+          ) : null}
+
+          {addableChartSizes.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {addableChartSizes.map((size) => (
+                <button
+                  key={size}
+                  type="button"
+                  className={panelAddChipClass}
+                  onClick={() => onStockInputsChange({ ...stockInputs, [size]: "0" })}
+                >
+                  + {size}
+                </button>
+              ))}
+            </div>
+          ) : null}
 
           {missingExpandedSizes.length > 0 ? (
             <button
@@ -332,39 +363,4 @@ export function TrOwnerSizeChartStock({
       )}
     </div>
   );
-}
-
-export function emptyStockInputsForChart(
-  chart: TrSizeChartId,
-  fill = "0",
-): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const size of sizesForChart(chart)) {
-    out[size] = fill;
-  }
-  return out;
-}
-
-export function stockInputsFromSizeStocks(
-  chart: TrSizeChartId,
-  sizeStocks: Record<string, number> | null | undefined,
-): Record<string, string> {
-  const out = emptyStockInputsForChart(chart, "0");
-  if (!sizeStocks) return out;
-  for (const [size, n] of Object.entries(sizeStocks)) {
-    if (!size.trim()) continue;
-    if (typeof n === "number" && Number.isFinite(n)) {
-      out[size] = String(Math.max(0, Math.floor(n)));
-    }
-  }
-  return out;
-}
-
-/** Sizes to persist: chart defaults plus any custom keys in the stock inputs. */
-export function sizesFromStockInputs(
-  chart: TrSizeChartId,
-  stockInputs: Record<string, string>,
-): string[] {
-  if (chart === "none") return [];
-  return displaySizesForChart(chart, stockInputs);
 }

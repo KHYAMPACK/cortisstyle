@@ -5,7 +5,8 @@
  * 1. Owner uploads flat-lay → Photoroom cutout (marketplaceImages)
  * 2. Optional FASHN packshot polish → marketplaceImages
  * 3. Model identity from registry (boutique house or studio:ayla/selin/deniz).
- *    Lila (non-elbise): owner picks blinds/flash; one random pose from that style.
+ *    House model shot in several styles (Lila, non-elbise): owner picks blinds/flash;
+ *    one random pose from that style.
  *    Studio (non-elbise): one random plate.
  *    Elbise: pinned grey-studio 3/4 + back plates; 3rd shot if detay chip.
  * 4. FASHN tryon-max only — not model-create
@@ -22,7 +23,7 @@ export type {
   TrAiModelOption,
   TrAiModelPose,
   TrAiModelProviderId,
-  TrLilaPhotographyStyle,
+  TrHousePhotographyStyle,
 } from "@/lib/tr/aiModel/types";
 
 export {
@@ -33,17 +34,17 @@ export {
   getDefaultReadyAiModelId,
   resolveReadyAiModelId,
   getElbiseTryOnPlates,
-  isLilaHouseModelId,
-  LILA_DEFAULT_PHOTOGRAPHY_STYLE,
+  DEFAULT_HOUSE_PHOTOGRAPHY_STYLE,
+  HOUSE_PHOTOGRAPHY_STYLE_LABELS,
+  HOUSE_PHOTOGRAPHY_STYLES,
+  housePhotographyStyleRefs,
   LILA_HOUSE_MODEL_ID,
-  LILA_PHOTOGRAPHY_STYLE_LABELS,
-  LILA_TRYON_SHOTS_PER_STYLE,
   LILABUTIK_LILA_TRYON_REFS,
   LILABUTIK_LILA_TRYON_REFS_BY_STYLE,
-  lilaTryOnShotCount,
   listAiModelOptions,
   listRegisteredAiModelBoutiqueSlugs,
-  parseLilaPhotographyStyle,
+  modelHasPhotographyStyles,
+  parseHousePhotographyStyle,
   pickDistinctModelReferenceUrls,
   pickRandomModelReferenceUrl,
   registerBoutiqueAiModelIdentity,

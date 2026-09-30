@@ -21,10 +21,10 @@ import {
 import {
   getAiModelOptionById,
   getElbiseTryOnPlates,
-  isLilaHouseModelId,
-  LILA_DEFAULT_PHOTOGRAPHY_STYLE,
+  modelHasPhotographyStyles,
+  DEFAULT_HOUSE_PHOTOGRAPHY_STYLE,
   listAiModelOptions,
-  type TrLilaPhotographyStyle,
+  type TrHousePhotographyStyle,
 } from "@/lib/tr/aiModel/registry";
 import {
   buildElbiseTryOnShots,
@@ -68,8 +68,8 @@ export interface TrOwnerAiCatalogEnhanceProps {
   lifestyleImages: string[];
   selectedModelId: string | null;
   onSelectedModelIdChange: (id: string | null) => void;
-  photographyStyle?: TrLilaPhotographyStyle;
-  onPhotographyStyleChange?: (style: TrLilaPhotographyStyle) => void;
+  photographyStyle?: TrHousePhotographyStyle;
+  onPhotographyStyleChange?: (style: TrHousePhotographyStyle) => void;
   onMarketplaceImagesChange: (urls: string[]) => void;
   onLifestyleImagesChange: (urls: string[]) => void;
   onFeaturesChange?: (features: TrProductFeatures) => void;
@@ -130,7 +130,7 @@ export function TrOwnerAiCatalogEnhance({
   lifestyleImages,
   selectedModelId,
   onSelectedModelIdChange,
-  photographyStyle = LILA_DEFAULT_PHOTOGRAPHY_STYLE,
+  photographyStyle = DEFAULT_HOUSE_PHOTOGRAPHY_STYLE,
   onPhotographyStyleChange,
   onMarketplaceImagesChange,
   onLifestyleImagesChange,
@@ -158,7 +158,7 @@ export function TrOwnerAiCatalogEnhance({
     null,
   );
   const [regenDraftStyle, setRegenDraftStyle] =
-    useState<TrLilaPhotographyStyle>(photographyStyle);
+    useState<TrHousePhotographyStyle>(photographyStyle);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [portalReady, setPortalReady] = useState(false);
   const regenTitleId = useId();
@@ -191,7 +191,7 @@ export function TrOwnerAiCatalogEnhance({
     selectedModelId,
     costContext,
   );
-  const lilaSelected = isLilaHouseModelId(selectedModelId);
+  const styledModelSelected = modelHasPhotographyStyles(selectedModelId);
   const storedPrimary =
     lifestyleModelIdAt(features, 0) ||
     lifestyleModelIdAt(features, 1) ||
@@ -292,7 +292,7 @@ export function TrOwnerAiCatalogEnhance({
     mode: "create" | "replace",
     override?: {
       modelId: string;
-      photographyStyle?: TrLilaPhotographyStyle;
+      photographyStyle?: TrHousePhotographyStyle;
       shotIndex?: number;
     },
   ) {
@@ -435,7 +435,7 @@ export function TrOwnerAiCatalogEnhance({
           title,
           category,
           modelId,
-          photographyStyle: isLilaHouseModelId(modelId) ? style : undefined,
+          photographyStyle: modelHasPhotographyStyles(modelId) ? style : undefined,
           pose: "standing-front",
           replaceLifestyleIndex: singleShot ? shotIndex : undefined,
         };
@@ -557,7 +557,7 @@ export function TrOwnerAiCatalogEnhance({
             ? shotCount > 2
               ? "2 stüdyo karesi (üç-çeyrek + sırt) ve 1 detay karesi."
               : "2 stüdyo karesi: üç-çeyrek ve sırt. Detay fotoğrafı varsa üçüncü kare eklenir."
-            : lilaSelected
+            : styledModelSelected
               ? "Seçilen ışık stilinden 1 model karesi."
               : "Ürün başına 1 model karesi (ön)."}
           {onSkip ? " İsterseniz bu adımı atlayabilirsiniz." : ""}
