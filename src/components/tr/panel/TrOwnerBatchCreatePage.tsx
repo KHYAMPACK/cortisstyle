@@ -16,11 +16,14 @@ import { TrOwnerBatchPricesStep } from "@/components/tr/panel/TrOwnerBatchPrices
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
 import { TrOwnerProductRouteGate } from "@/components/tr/panel/TrOwnerProductRouteGate";
 import { TrOwnerManualListingToggle } from "@/components/tr/panel/TrOwnerManualListingToggle";
+import { TrOwnerSizeChartStock } from "@/components/tr/panel/TrOwnerSizeChartStock";
+import { useOwnerSizeSources } from "@/components/tr/panel/useOwnerSizeSources";
 import {
-  emptyStockInputsForChart,
-  sizesFromStockInputs,
-  TrOwnerSizeChartStock,
-} from "@/components/tr/panel/TrOwnerSizeChartStock";
+  findSizeSource,
+  resolveSizeSourceId,
+  type TrSizeSource,
+} from "@/lib/tr/sizeSources";
+import { emptyStockInputs, sizesFromStockInputs } from "@/lib/tr/sizeStockInputs";
 import { TrOwnerStorePreview } from "@/components/tr/panel/TrOwnerStorePreview";
 import { TrPanelFadeIn } from "@/components/tr/panel/TrPanelMotion";
 import {
@@ -73,7 +76,6 @@ import {
   cleanedLifestyleImages,
   getPanelProductCover,
 } from "@/lib/tr/productImages";
-import type { TrSizeChartId } from "@/lib/tr/productOptions";
 import { parseSizeStockInputs, sumSizeStocks } from "@/lib/tr/sizeStocks";
 import {
   trBoutiqueProductPath,
@@ -117,9 +119,13 @@ function priceRowValid(row: ProductBatchCreateRow): boolean {
   return sale < price;
 }
 
-function stockRowValid(row: ProductBatchCreateRow): boolean {
-  if (row.sizeChart === "none") return isValidStock(row.stock);
-  const sizes = sizesFromStockInputs(row.sizeChart, row.sizeStockInputs);
+function stockRowValid(
+  row: ProductBatchCreateRow,
+  sources: readonly TrSizeSource[],
+): boolean {
+  const source = findSizeSource(sources, row.sizeChart);
+  if (!source) return isValidStock(row.stock);
+  const sizes = sizesFromStockInputs(source, row.sizeStockInputs);
   if (!sizes.every((size) => isValidStock(row.sizeStockInputs[size] ?? ""))) {
     return false;
   }
@@ -177,6 +183,8 @@ function BatchCreateFlow({
   boutiqueSlug: string;
 }) {
   const scheduleAiJob = useScheduleAiJob();
+  const { sources: sizeSources, loaded: sizeSourcesLoaded } =
+    useOwnerSizeSources(boutiqueId);
   const [rows, setRows] = useState<ProductBatchCreateRow[] | null>(null);
   const [stepIndex, setStepIndex] = useState(0);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -491,7 +499,7 @@ function BatchCreateFlow({
       }
     }
     if (step === "stock") {
-      if (!rows.every(stockRowValid)) {
+      if (!rows.every((row) => stockRowValid(row, sizeSources))) {
         setError(
           "Her üründe geçerli stok girin; en az bir bedende stok 1 veya daha fazla olmalı.",
         );
@@ -508,13 +516,14 @@ function BatchCreateFlow({
     setStepIndex((current) => Math.max(0, current - 1));
   };
 
-  const applySizeChart = (clientId: string, chart: TrSizeChartId) => {
+  const applySizeChart = (clientId: string, chart: string) => {
     const row = rowsRef.current.find((item) => item.clientId === clientId);
-    if (chart === "none") {
+    const source = findSizeSource(sizeSources, chart);
+    if (!source) {
       patchRow(clientId, { sizeChart: chart, sizeStockInputs: {} });
       return;
     }
-    const nextInputs = emptyStockInputsForChart(chart, "0");
+    const nextInputs = emptyStockInputs(source, "0");
     if (row) {
       for (const size of Object.keys(nextInputs)) {
         if (row.sizeStockInputs[size] !== undefined) {
@@ -524,6 +533,17 @@ function BatchCreateFlow({
     }
     patchRow(clientId, { sizeChart: chart, sizeStockInputs: nextInputs });
   };
+
+  // Once the boutique's Beden types are in, move rows on a built-in list (new rows, or
+  // rows restored from an older draft) onto the matching type.
+  useEffect(() => {
+    if (!sizeSourcesLoaded || !rows) return;
+    for (const row of rows) {
+      const resolved = resolveSizeSourceId(sizeSources, row.sizeChart);
+      if (resolved !== row.sizeChart) applySizeChart(row.clientId, resolved);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- applySizeChart reads the latest rows
+  }, [sizeSourcesLoaded, sizeSources, rows]);
 
   async function saveAll() {
     if (!rows) return;
@@ -540,7 +560,7 @@ function BatchCreateFlow({
     if (
       !rows.every(listingRowValid) ||
       !rows.every(priceRowValid) ||
-      !rows.every(stockRowValid)
+      !rows.every((row) => stockRowValid(row, sizeSources))
     ) {
       setError("Eksik isim, fiyat veya stok var.");
       return;
@@ -554,7 +574,7 @@ function BatchCreateFlow({
       async (clientId) => {
         const row = snapshot.find((item) => item.clientId === clientId);
         if (!row) throw new Error("Ürün bulunamadı.");
-        return createOwnerProduct(buildCreatePayload(boutiqueId, row, manualMode));
+        return createOwnerProduct(buildCreatePayload(boutiqueId, row, sizeSources, manualMode));
       },
       { concurrency: 4 },
     );
@@ -744,6 +764,7 @@ function BatchCreateFlow({
                     </p>
                     <TrOwnerSizeChartStock
                       chart={row.sizeChart}
+                      sources={sizeSources}
                       onChartChange={(chart) =>
                         applySizeChart(row.clientId, chart)
                       }
@@ -755,7 +776,6 @@ function BatchCreateFlow({
                       onStockChange={(stock) =>
                         patchRow(row.clientId, { stock })
                       }
-                      variant="wizard"
                     />
                   </section>
                 ))}
@@ -787,14 +807,10 @@ function BatchCreateFlow({
                       marketplaceImages={row.marketplaceImages}
                       lifestyleImages={row.lifestyleImages}
                       catalogBackgroundId={row.catalogBackgroundId}
-                      sizes={
-                        row.sizeChart === "none"
-                          ? []
-                          : sizesFromStockInputs(
-                              row.sizeChart,
-                              row.sizeStockInputs,
-                            )
-                      }
+                      sizes={sizesFromStockInputs(
+                        findSizeSource(sizeSources, row.sizeChart),
+                        row.sizeStockInputs,
+                      )}
                       onModelGallery
                       modelShotsPending={
                         modelStatusById[row.clientId]?.status === "running" ||
@@ -885,6 +901,7 @@ function BatchCreateFlow({
 function buildCreatePayload(
   boutiqueId: string,
   row: ProductBatchCreateRow,
+  sources: readonly TrSizeSource[],
   manualMode = false,
 ): TrOwnerProductPayload {
   const listPrice = Number(row.priceTry.replace(",", "."));
@@ -894,10 +911,10 @@ function buildCreatePayload(
     sellPrice = Number(row.salePriceTry.replace(",", "."));
     compareAtPriceTry = listPrice;
   }
-  const sizes =
-    row.sizeChart === "none"
-      ? []
-      : sizesFromStockInputs(row.sizeChart, row.sizeStockInputs);
+  const sizes = sizesFromStockInputs(
+    findSizeSource(sources, row.sizeChart),
+    row.sizeStockInputs,
+  );
   let stockValue: number;
   let sizeStocks: Record<string, number> = {};
   if (sizes.length > 0) {

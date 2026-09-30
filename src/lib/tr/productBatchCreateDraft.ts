@@ -14,7 +14,8 @@ import {
   clampDescription,
   clampTitle,
 } from "@/lib/tr/ownerProductConstraints";
-import { sizesForChart, type TrSizeChartId } from "@/lib/tr/productOptions";
+import { BUILT_IN_SIZE_SOURCES, findSizeSource } from "@/lib/tr/sizeSources";
+import { emptyStockInputs } from "@/lib/tr/sizeStockInputs";
 import type { ConstructionCatalogFamily } from "@/lib/tr/fashion/garmentUploadTypes";
 import type { TrProductFeatures } from "@/types/tr-marketplace";
 
@@ -41,7 +42,8 @@ export interface ProductBatchCreateRow {
   discountEnabled: boolean;
   salePriceTry: string;
   stock: string;
-  sizeChart: TrSizeChartId;
+  /** A size source id (Beden type, `letter` / `numeric`) or `none`; resolved by the page. */
+  sizeChart: string;
   sizeStockInputs: Record<string, string>;
   category: string | null;
   images: string[];
@@ -90,17 +92,6 @@ function storageKey(boutiqueId: string): string {
   return `tr:product-create-batch-draft:v2:${boutiqueId.trim()}`;
 }
 
-export function emptyBatchStockInputs(
-  chart: TrSizeChartId,
-  fill = "0",
-): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const size of sizesForChart(chart)) {
-    out[size] = fill;
-  }
-  return out;
-}
-
 export function createEmptyBatchRow(): ProductBatchCreateRow {
   return {
     clientId: crypto.randomUUID(),
@@ -112,7 +103,8 @@ export function createEmptyBatchRow(): ProductBatchCreateRow {
     salePriceTry: "",
     stock: "1",
     sizeChart: "letter",
-    sizeStockInputs: emptyBatchStockInputs("letter", "0"),
+    // The built-in letter list until the page resolves the boutique's Beden types.
+    sizeStockInputs: emptyStockInputs(findSizeSource(BUILT_IN_SIZE_SOURCES, "letter"), "0"),
     category: null,
     images: [],
     marketplaceImages: [],

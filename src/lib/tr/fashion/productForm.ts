@@ -22,7 +22,13 @@ import {
   hasRequiredProductPhotos,
 } from "@/lib/tr/productPhotoChecks";
 import { alignMarketplaceSlots, cleanedLifestyleImages } from "@/lib/tr/productImages";
-import { detectSizeChart, type TrSizeChartId } from "@/lib/tr/productOptions";
+import {
+  BUILT_IN_SIZE_SOURCES,
+  detectSizeSourceId,
+  findSizeSource,
+  NO_SIZE_SOURCE,
+  type TrSizeSource,
+} from "@/lib/tr/sizeSources";
 import {
   sizesInStockInputs,
   stockInputsForProductSizes,
@@ -58,8 +64,11 @@ export interface FashionProductFormState {
   category: string | null;
   /** "Kendi fotoğraflarım": a plain gallery instead of the guided front/back upload. */
   manualMode: boolean;
-  /** `none` = no sizes; the product then has one stock count. */
-  sizeChart: TrSizeChartId;
+  /**
+   * The size source (a Beden type, or `letter` / `numeric` for the built-in lists) the
+   * size table offers; `none` = no sizes, the product then has one stock count.
+   */
+  sizeChart: string;
   /**
    * Exactly the garment's sizes → typed stock. Unlike the create flows, the chart's
    * other defaults are not added: an XS–XL dress stays XS–XL (Mert, 2026-09-29).
@@ -78,11 +87,12 @@ export interface FashionProductFormState {
 
 export function fashionFormFromProduct(
   product: TrProduct,
+  sizeSources: readonly TrSizeSource[] = BUILT_IN_SIZE_SOURCES,
 ): FashionProductFormState {
   const onSale =
     typeof product.compareAtPriceKurus === "number" &&
     product.compareAtPriceKurus > product.priceKurus;
-  const sizeChart = detectSizeChart(product.sizes);
+  const sizeChart = detectSizeSourceId(sizeSources, product.sizes);
   return {
     title: product.title,
     priceTry: kurusToPriceInput(
@@ -95,7 +105,7 @@ export function fashionFormFromProduct(
     manualMode: isManualListing(product),
     sizeChart,
     sizeStockInputs:
-      sizeChart === "none"
+      sizeChart === NO_SIZE_SOURCE
         ? {}
         : stockInputsForProductSizes(product.sizes, product.sizeStocks),
     stock: String(product.stock ?? 1),
@@ -135,8 +145,15 @@ export function fashionFormFacts(
 }
 
 /** The sizes that will be saved (none when the chart is `none`). */
-export function fashionFormSizes(form: FashionProductFormState): string[] {
-  return form.sizeChart === "none" ? [] : sizesInStockInputs(form.sizeStockInputs);
+export function fashionFormSizes(
+  form: FashionProductFormState,
+  sizeSources: readonly TrSizeSource[] = BUILT_IN_SIZE_SOURCES,
+): string[] {
+  if (form.sizeChart === NO_SIZE_SOURCE) return [];
+  return sizesInStockInputs(
+    form.sizeStockInputs,
+    findSizeSource(sizeSources, form.sizeChart),
+  );
 }
 
 /**
@@ -169,7 +186,7 @@ export function validateFashionProductForm(
   }
 
   const sizes = fashionFormSizes(form);
-  if (form.sizeChart !== "none" && sizes.length === 0) {
+  if (form.sizeChart !== NO_SIZE_SOURCE && sizes.length === 0) {
     return "En az bir beden ekleyin ya da “Beden yok” seçin.";
   }
   if (sizes.length > 0) {
@@ -222,11 +239,13 @@ export function fashionProductStatus(
  */
 export function fashionProductPatch(
   form: FashionProductFormState,
+  sizeSources: readonly TrSizeSource[] = BUILT_IN_SIZE_SOURCES,
 ): TrOwnerProductPatch {
   const price = parseTryPrice(form.priceTry)!;
   const sale = form.salePriceTry.trim() ? parseTryPrice(form.salePriceTry)! : null;
 
-  const sizes = fashionFormSizes(form);
+  // Saved in the size source's order (XS, S, M… as the Beden type lists them).
+  const sizes = fashionFormSizes(form, sizeSources);
   const sizeStocks =
     sizes.length > 0 ? (parseSizeStockInputs(sizes, form.sizeStockInputs) ?? {}) : {};
 

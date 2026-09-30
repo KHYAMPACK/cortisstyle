@@ -1,8 +1,18 @@
 # Fashion Beden & Kategori → foundation — plan
 
-_Prepared 2026-09-30 on branch `main-t0o1c2`. **Plan only, nothing built.** Facts checked against the repo at `ff89987` (after PR #3) and against the live Supabase project with read-only `SELECT`s. Background: `docs/lilabutik-foundation-migration-plan.md` (this is a follow-up to its Area A; its Area B — moving sizes onto `tr_product_variants` — stays deferred and is **not** what this plan does)._
+_Prepared 2026-09-30 on branch `main-t0o1c2`. **S1 built (2026-09-30), K0–K2 not started.** Facts checked against the repo at `ff89987` (after PR #3) and against the live Supabase project with read-only `SELECT`s. Background: `docs/lilabutik-foundation-migration-plan.md` (this is a follow-up to its Area A; its Area B — moving sizes onto `tr_product_variants` — stays deferred and is **not** what this plan does)._
 
 **Goal (Mert):** a fashion boutique's **sizes (Beden)** and **categories (Kategori)** come from the boutique's own foundation definitions (Tanımlamalar → Varyant Türleri / Kategoriler) instead of lists hardcoded in code, so a new store can define its own without a code change.
+
+## Status
+
+**S1 built on `main-t0o1c2` (2026-09-30)** — needs `supabase/patch_variant_type_roles.sql` applied by Mert for the Kullanım (Beden/Renk) choice to save; everything else works without it.
+
+- **Variant types:** `role` (`size` / `color`) with a "Kullanım" choice in the drawer, and a Beden/Renk tag in the list. **"Hazır bedenleri içe aktar"** creates Beden (XS–3XL) and Pantolon bedeni (24–52) for a boutique with no size type yet.
+- **Size tables** (fashion editor, create wizard, batch and takım uploads) offer the boutique's size types (`sizeSources.ts`, `useOwnerSizeSources`), falling back to the built-in lists. Sizes are saved in the type's order. Drafts saved on `letter` / `numeric` are moved onto the matching type.
+- **Stok page** now keeps a garment's own sizes (it used to add the whole chart, e.g. 2XL/3XL on an XS–XL dress, whenever one size's stock changed) and no longer has the 42–52 button (sizes are added in the editor).
+- **Removed as dead code:** the old preset import and the unused `boutiques/[id]/options` API; `TrProductEditorForm`; `sizesForChart`, `sizesForStockBoard`, `missingNumericExpandedSizes`; the draft files' copies of the empty-board helper; the Stok page's never-read `savingIds`; the size table's deprecated `variant` prop.
+- **Not built yet from S1:** decision 6, the "update products too" offer when a size is renamed — next.
 
 ## Decisions (Mert, 2026-09-30)
 

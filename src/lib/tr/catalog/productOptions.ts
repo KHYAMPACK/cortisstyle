@@ -67,32 +67,6 @@ export const DEFAULT_COLOR_PRESETS: TrProductColor[] = [
   { name: "Yeşil", hex: "#2E5A3C" },
 ];
 
-export function sizesForChart(chart: TrSizeChartId): string[] {
-  if (chart === "letter") return [...DEFAULT_LETTER_SIZES];
-  if (chart === "numeric") return [...DEFAULT_NUMERIC_SIZES];
-  return [];
-}
-
-/**
- * Sizes shown on the stock board: chart defaults (XS–3XL / 24–40) plus any
- * extra labels already on the product (expanded 42–52, custom). Empty sizes → no size columns.
- */
-export function sizesForStockBoard(sizes: string[]): string[] {
-  const cleaned = sizes.map((size) => size.trim()).filter(Boolean);
-  if (cleaned.length === 0) return [];
-  const chart = detectSizeChart(cleaned);
-  if (chart === "none") return sortProductSizes(cleaned);
-  return sortProductSizes([...new Set([...sizesForChart(chart), ...cleaned])]);
-}
-
-/** Even sizes 42–52 not yet on this numeric product’s stock board. */
-export function missingNumericExpandedSizes(sizes: string[]): string[] {
-  const cleaned = sizes.map((size) => size.trim()).filter(Boolean);
-  if (detectSizeChart(cleaned) !== "numeric") return [];
-  const present = new Set(sizesForStockBoard(cleaned));
-  return NUMERIC_EXPANDED_SIZES.filter((size) => !present.has(size));
-}
-
 export function detectSizeChart(sizes: string[]): TrSizeChartId {
   const cleaned = sizes.map((size) => size.trim()).filter(Boolean);
   if (cleaned.length === 0) return "none";

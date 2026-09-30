@@ -16,11 +16,15 @@ import { TrOwnerStorePreview } from "@/components/tr/panel/TrOwnerStorePreview";
 import { useRegisterLeaveBusy } from "@/components/tr/panel/TrOwnerLeaveGuard";
 import { TrOwnerWizardPipelineStatus } from "@/components/tr/panel/TrOwnerWizardPipelineStatus";
 import { TrProductImageLightbox } from "@/components/tr/panel/TrProductImageLightbox";
+import { TrOwnerSizeChartStock } from "@/components/tr/panel/TrOwnerSizeChartStock";
+import { useOwnerSizeSources } from "@/components/tr/panel/useOwnerSizeSources";
 import {
-  emptyStockInputsForChart,
-  sizesFromStockInputs,
-  TrOwnerSizeChartStock,
-} from "@/components/tr/panel/TrOwnerSizeChartStock";
+  BUILT_IN_SIZE_SOURCES,
+  findSizeSource,
+  resolveSizeSourceId,
+  type TrSizeSource,
+} from "@/lib/tr/sizeSources";
+import { emptyStockInputs, sizesFromStockInputs } from "@/lib/tr/sizeStockInputs";
 import { TrOwnerCategoryPicker } from "@/components/tr/panel/TrOwnerCategoryPicker";
 import { TrOwnerManualListingToggle } from "@/components/tr/panel/TrOwnerManualListingToggle";
 import {
@@ -68,7 +72,6 @@ import {
 import {
   DEFAULT_CATALOG_BACKGROUND_ID,
 } from "@/lib/tr/catalogBackgrounds/registry";
-import type { TrSizeChartId } from "@/lib/tr/productOptions";
 import {
   clampDescription,
   clampTitle,
@@ -142,10 +145,10 @@ const ALL_STEPS = [
 ] as const;
 
 function remapStockInputsForChart(
-  chart: TrSizeChartId,
+  source: TrSizeSource | null,
   current: Record<string, string>,
 ): Record<string, string> {
-  const nextInputs = emptyStockInputsForChart(chart, "0");
+  const nextInputs = emptyStockInputs(source, "0");
   for (const size of Object.keys(nextInputs)) {
     if (current[size] !== undefined) nextInputs[size] = current[size]!;
   }
@@ -153,12 +156,12 @@ function remapStockInputsForChart(
 }
 
 function stockInputsReady(
-  chart: TrSizeChartId,
+  source: TrSizeSource | null,
   chartSizes: string[],
   stock: string,
   sizeStockInputs: Record<string, string>,
 ): boolean {
-  if (chart === "none") return isValidStock(stock);
+  if (!source) return isValidStock(stock);
   if (!chartSizes.every((size) => isValidStock(sizeStockInputs[size] ?? ""))) {
     return false;
   }
@@ -167,13 +170,12 @@ function stockInputsReady(
 }
 
 function parseListingStock(
-  chart: TrSizeChartId,
+  source: TrSizeSource | null,
   stock: string,
   sizeStockInputs: Record<string, string>,
   colorLabel: string,
 ): { stockValue: number; sizeStocks: Record<string, number>; sizes: string[] } {
-  const sizes =
-    chart === "none" ? [] : sizesFromStockInputs(chart, sizeStockInputs);
+  const sizes = sizesFromStockInputs(source, sizeStockInputs);
   if (sizes.length > 0) {
     const parsed = parseSizeStockInputs(sizes, sizeStockInputs);
     if (!parsed) {
@@ -227,10 +229,14 @@ export function TrProductCreateWizard({
   const [discountEnabled, setDiscountEnabled] = useState(false);
   const [salePriceTry, setSalePriceTry] = useState("");
   const [stock, setStock] = useState("1");
-  const [sizeChart, setSizeChart] = useState<TrSizeChartId>("letter");
+  // A size source id (a Beden type, or the built-in `letter` / `numeric`) or `none`.
+  const [sizeChart, setSizeChart] = useState<string>("letter");
   const [sizeStockInputs, setSizeStockInputs] = useState<
     Record<string, string>
-  >(() => emptyStockInputsForChart("letter", "0"));
+  >(() => emptyStockInputs(findSizeSource(BUILT_IN_SIZE_SOURCES, "letter"), "0"));
+  const { sources: sizeSources, loaded: sizeSourcesLoaded } =
+    useOwnerSizeSources(boutiqueId);
+  const sizeSource = findSizeSource(sizeSources, sizeChart);
   const [category, setCategory] = useState<string | null>(null);
   const [images, setImages] = useState<string[]>([]);
   const [marketplaceImages, setMarketplaceImages] = useState<string[]>([]);
@@ -346,8 +352,8 @@ export function TrProductCreateWizard({
   ]);
 
   const chartSizes = useMemo(
-    () => sizesFromStockInputs(sizeChart, sizeStockInputs),
-    [sizeChart, sizeStockInputs],
+    () => sizesFromStockInputs(sizeSource, sizeStockInputs),
+    [sizeSource, sizeStockInputs],
   );
 
   const modelGenerating = modelJobs.some((j) => j.status === "running");
@@ -366,9 +372,10 @@ export function TrProductCreateWizard({
     [photoJobs, modelJobs],
   );
 
-  const applySizeChart = (next: TrSizeChartId) => {
+  const applySizeChart = (next: string) => {
     setSizeChart(next);
-    if (next === "none") {
+    const nextSource = findSizeSource(sizeSources, next);
+    if (!nextSource) {
       setSizeStockInputs({});
       setColorVariants((current) =>
         current.map((variant) => ({
@@ -378,22 +385,31 @@ export function TrProductCreateWizard({
       );
       return;
     }
-    setSizeStockInputs((current) => remapStockInputsForChart(next, current));
+    setSizeStockInputs((current) => remapStockInputsForChart(nextSource, current));
     setColorVariants((current) =>
       current.map((variant) => ({
         ...variant,
         sizeStockInputs: remapStockInputsForChart(
-          next,
+          nextSource,
           variant.sizeStockInputs ?? {},
         ),
       })),
     );
   };
 
+  // Once the boutique's Beden types are in, move a built-in list (the default, or one
+  // restored from an older draft) onto the matching type.
   useEffect(() => {
-    if (sizeChart === "none") return;
+    if (!sizeSourcesLoaded) return;
+    const resolved = resolveSizeSourceId(sizeSources, sizeChart);
+    if (resolved !== sizeChart) applySizeChart(resolved);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- applySizeChart reads the latest sources
+  }, [sizeSourcesLoaded, sizeSources, sizeChart]);
+
+  useEffect(() => {
+    if (!sizeSource) return;
     setSizeStockInputs((current) => {
-      const defaults = emptyStockInputsForChart(sizeChart, "0");
+      const defaults = emptyStockInputs(sizeSource, "0");
       let changed = false;
       const next = { ...current };
       for (const [size, fill] of Object.entries(defaults)) {
@@ -404,7 +420,7 @@ export function TrProductCreateWizard({
       }
       return changed ? next : current;
     });
-  }, [sizeChart]);
+  }, [sizeSource]);
 
   useEffect(() => {
     setColorVariants((current) => {
@@ -503,16 +519,16 @@ export function TrProductCreateWizard({
       return true;
     }
     if (step.id === "sizes") {
-      if (!stockInputsReady(sizeChart, chartSizes, stock, sizeStockInputs)) {
+      if (!stockInputsReady(sizeSource, chartSizes, stock, sizeStockInputs)) {
         return false;
       }
       return colorVariants
         .filter(colorVariantPhotosReady)
         .every((variant) =>
           stockInputsReady(
-            sizeChart,
+            sizeSource,
             sizesFromStockInputs(
-              sizeChart,
+              sizeSource,
               variant.sizeStockInputs ?? sizeStockInputs,
             ),
             variant.stock ?? stock,
@@ -725,7 +741,7 @@ export function TrProductCreateWizard({
         );
       } else if (step.id === "sizes") {
         setError(
-          sizeChart === "none"
+          !sizeSource
             ? "Geçerli bir stok girin."
             : "Her beden için stok girin; en az bir bedende stok 1 veya daha fazla olmalı.",
         );
@@ -773,7 +789,7 @@ export function TrProductCreateWizard({
     setStock(draft.stock);
     setSizeChart(draft.sizeChart);
     setSizeStockInputs({
-      ...emptyStockInputsForChart(draft.sizeChart, "0"),
+      ...emptyStockInputs(findSizeSource(sizeSources, draft.sizeChart), "0"),
       ...(draft.sizeStockInputs ?? {}),
     });
     setCategory(draft.category);
@@ -842,7 +858,7 @@ export function TrProductCreateWizard({
       let stockValue: number;
       let sizeStocks: Record<string, number> = {};
       const primaryStock = parseListingStock(
-        sizeChart,
+        sizeSource,
         stock,
         sizeStockInputs,
         features.color?.trim() || "Ana renk",
@@ -950,7 +966,7 @@ export function TrProductCreateWizard({
               category,
             }) || colorName;
           const extraStock = parseListingStock(
-            sizeChart,
+            sizeSource,
             extra.stock ?? stock,
             extra.sizeStockInputs ?? sizeStockInputs,
             colorName,
@@ -1444,11 +1460,11 @@ export function TrProductCreateWizard({
                 <TrOwnerSizeChartStock
                   chart={sizeChart}
                   onChartChange={applySizeChart}
+                  sources={sizeSources}
                   stockInputs={sizeStockInputs}
                   onStockInputsChange={setSizeStockInputs}
                   stock={stock}
                   onStockChange={setStock}
-                  variant="wizard"
                   heading={
                     linkedColors
                       ? `Ana ürün${features.color?.trim() ? ` — ${features.color.trim()}` : ""}`
@@ -1462,6 +1478,7 @@ export function TrProductCreateWizard({
                   >
                     <TrOwnerSizeChartStock
                       chart={sizeChart}
+                      sources={sizeSources}
                       hideChart
                       heading={`Ürün ${index + 2}${
                         variant.colorName.trim()
@@ -1488,7 +1505,6 @@ export function TrProductCreateWizard({
                           ),
                         )
                       }
-                      variant="wizard"
                     />
                   </div>
                 ))}
@@ -1681,7 +1697,7 @@ export function TrProductCreateWizard({
                         lifestyleImages={variant.lifestyleImages}
                         catalogBackgroundId={catalogBackgroundId}
                         sizes={sizesFromStockInputs(
-                          sizeChart,
+                          sizeSource,
                           variant.sizeStockInputs ?? sizeStockInputs,
                         )}
                         modelShotsPending={extraTryingOn}

@@ -16,6 +16,7 @@ Cortisstyle started as a single-vertical (fashion) marketplace, so garment logic
 - `src/lib/tr/fashion/aiCatalog/` — the elbise/takım construction, packshot, and restyle pipeline (see [08-ai-catalog-pipeline.md](./08-ai-catalog-pipeline.md) for the full AI pipeline picture, generic and fashion parts together).
 - `src/lib/tr/fashion/fashn/` — the FASHN.ai garment try-on/packshot API client.
 - `src/components/tr/fashion/panel/` — pure garment-construction owner-panel components (`TrOwnerElbiseConstructionGate`, `TrOwnerTakimChipsStep`, `TrOwnerAiModelPicker`, …).
+- `src/components/tr/fashion/panel/TrFashionProductEditor.tsx` + `src/lib/tr/fashion/productForm.ts` — the garment product editor (manual save), built on the shared product fields.
 - `src/components/tr/fashion/pdp/` — garment-specific PDP pieces (size chart modal, model measurements).
 
 ## Product features
@@ -30,7 +31,7 @@ If you clean up one of the areas listed under "known debt," add its directory to
 
 ## Known debt (disclosed, not blocking)
 
-- **~20 owner-panel components** (`TrProductCreateWizard`, `TrProductEditorForm`, `TrOwnerGuidedPhotoUpload`, `TrOwnerBatchCreatePage` + its steps, `TrOwnerStorePreview`, `TrOwnerProductListPage`, `TrOwnerStockPage`, `TrOwnerSizeChartStock`, `TrOwnerProductFeaturesFields`, `TrOwnerCategoryPicker`, `TrBoutiquePdpInfoSections`) interleave generic and garment-specific UI in the same file. Splitting them is a bigger, riskier job than a file move — deferred on purpose.
+- **~20 owner-panel components** (`TrProductCreateWizard`, `TrOwnerGuidedPhotoUpload`, `TrOwnerBatchCreatePage` + its steps, `TrOwnerStorePreview`, `TrOwnerProductListPage`, `TrOwnerStockPage`, `TrOwnerSizeChartStock`, `TrOwnerProductFeaturesFields`, `TrOwnerCategoryPicker`, `TrBoutiquePdpInfoSections`) interleave generic and garment-specific UI in the same file. Splitting them is a bigger, riskier job than a file move — deferred on purpose.
 - **No generic category-tree abstraction.** `fashion/categories.ts` is imported directly by ~25 files across the storefront and panel, because it's the *only* category system that exists — `custom_art` has zero category concept today. Building a multi-vertical registry nobody uses yet would be premature; do it when a second vertical genuinely needs categories, not before.
 - **`src/lib/tr/aiModel/elbiseTryOn.ts` and `src/lib/tr/ai/aiUsage.ts`** are garment-coupled (dress construction chips, FASHN-specific usage copy) but weren't in the original relocation's file inventory, so they're still sitting outside `fashion/`. Worth folding in on a future pass.
 

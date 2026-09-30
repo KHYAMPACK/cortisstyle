@@ -8,7 +8,6 @@
  * v2 is photo-first (no Tür step). v1 drafts are ignored and not restored.
  */
 
-import type { TrSizeChartId } from "@/lib/tr/productOptions";
 import type { OwnerListingDraft } from "@/lib/tr/ownerClient";
 import type { TrProductFeatures } from "@/types/tr-marketplace";
 import type { TrHousePhotographyStyle } from "@/lib/tr/aiModel/types";
@@ -30,7 +29,8 @@ export interface ProductCreateDraftV2 {
   discountEnabled: boolean;
   salePriceTry: string;
   stock: string;
-  sizeChart: TrSizeChartId;
+  /** A size source id (Beden type, `letter` / `numeric`) or `none`; resolved on restore. */
+  sizeChart: string;
   sizeStockInputs: Record<string, string>;
   category: string | null;
   images: string[];

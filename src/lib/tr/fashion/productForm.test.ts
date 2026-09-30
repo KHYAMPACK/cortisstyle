@@ -10,6 +10,7 @@ import {
   validateFashionProductForm,
   type FashionProductFormState,
 } from "./productForm";
+import type { TrSizeSource } from "@/lib/tr/sizeSources";
 import type { TrProduct } from "@/types/tr-marketplace";
 
 const LETTER_FULL = ["XS", "S", "M", "L", "XL", "2XL", "3XL"];
@@ -153,6 +154,28 @@ describe("fashionFormFromProduct → fashionProductPatch (parity with the stored
       fashionProductPatch({ ...loaded, manualMode: false }).features?.manualListing,
       undefined,
     );
+  });
+});
+
+describe("with the boutique's own Beden types", () => {
+  const sources: TrSizeSource[] = [
+    {
+      id: "beden-type",
+      label: "Beden",
+      hint: "S–L",
+      values: ["S", "M", "L", "STD"],
+      moreValues: [],
+      moreLabel: null,
+    },
+  ];
+
+  it("reads the garment against the type and saves in the type's order", () => {
+    const product = garment({ sizes: ["STD", "S", "L"], sizeStocks: { STD: 1, S: 2, L: 0 } });
+    const loaded = fashionFormFromProduct(product, sources);
+    assert.equal(loaded.sizeChart, "beden-type");
+    const patch = fashionProductPatch(loaded, sources);
+    assert.deepEqual(patch.sizes, ["S", "L", "STD"]);
+    assert.equal(patch.stock, 3);
   });
 });
 

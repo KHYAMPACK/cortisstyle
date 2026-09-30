@@ -15,7 +15,6 @@ import {
   panelDesktopSecondaryBtnClass,
 } from "@/components/tr/panel/panelDesktopUi";
 import {
-  panelAddChipClass,
   panelBackLinkClass,
   panelChipClass,
   panelEmptyClass,
@@ -42,12 +41,7 @@ import {
   trPanelPath,
   trPanelProductsPath,
 } from "@/lib/tr/paths";
-import {
-  missingNumericExpandedSizes,
-  NUMERIC_EXPANDED_SIZES,
-  sizesForStockBoard,
-  sortProductSizes,
-} from "@/lib/tr/productOptions";
+import { sortProductSizes } from "@/lib/tr/productOptions";
 import { sumSizeStocks } from "@/lib/tr/sizeStocks";
 import type { TrProduct } from "@/types/tr-marketplace";
 
@@ -55,8 +49,16 @@ const LOW_STOCK = 2;
 
 type StockFilter = "all" | "low" | "out" | "available";
 
+/**
+ * The garment's own sizes, in its stored order. Other sizes of the list are not added
+ * (an XS–XL dress stays XS–XL); sizes are added or removed in the product editor.
+ */
+function boardSizes(product: TrProduct): string[] {
+  return [...new Set(product.sizes.map((size) => size.trim()).filter(Boolean))];
+}
+
 function productTotal(product: TrProduct): number {
-  const sizes = sizesForStockBoard(product.sizes);
+  const sizes = boardSizes(product);
   if (sizes.length > 0) {
     return sizes.reduce((sum, size) => sum + sizeQty(product, size), 0);
   }
@@ -168,7 +170,6 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
   const [products, setProducts] = useState<TrProduct[]>(cached?.products ?? []);
   const [loading, setLoading] = useState(!cached);
   const [error, setError] = useState<string | null>(null);
-  const [savingIds, setSavingIds] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
   const [bulkQty, setBulkQty] = useState("0");
   const [search, setSearch] = useState("");
@@ -259,15 +260,6 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
     });
   };
 
-  const markSaving = (id: string, on: boolean) => {
-    setSavingIds((current) => {
-      const next = new Set(current);
-      if (on) next.add(id);
-      else next.delete(id);
-      return next;
-    });
-  };
-
   const applyLocal = (updated: TrProduct) => {
     setProducts((current) =>
       current.map((entry) => (entry.id === updated.id ? updated : entry)),
@@ -293,7 +285,6 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
       product.id,
       setTimeout(() => {
         saveTimers.current.delete(product.id);
-        markSaving(product.id, true);
         setError(null);
         void updateOwnerProduct(product.id, {
           stock: patch.stock,
@@ -313,9 +304,6 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
                 ? saveError.message
                 : "Stok güncellenemedi.",
             );
-          })
-          .finally(() => {
-            markSaving(product.id, false);
           });
       }, 300),
     );
@@ -328,18 +316,11 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
 
   const setSizeStock = (product: TrProduct, size: string, next: number) => {
     if (next < 0) return;
-    const boardSizes = sizesForStockBoard(product.sizes);
-    const nextStocks: Record<string, number> = {};
-    for (const entry of boardSizes) {
-      nextStocks[entry] = entry === size ? next : sizeQty(product, entry);
-    }
-    if (!boardSizes.includes(size)) {
-      nextStocks[size] = next;
-    }
-    const persistedSizes = sortProductSizes(Object.keys(nextStocks));
+    const board = boardSizes(product);
+    const persistedSizes = board.includes(size) ? board : [...board, size];
     const persistedStocks: Record<string, number> = {};
     for (const entry of persistedSizes) {
-      persistedStocks[entry] = nextStocks[entry] ?? 0;
+      persistedStocks[entry] = entry === size ? next : sizeQty(product, entry);
     }
     const stock = sumSizeStocks(persistedStocks);
     patchStock(
@@ -353,32 +334,6 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
       {
         sizes: persistedSizes,
         sizeStocks: persistedStocks,
-        stock,
-      },
-    );
-  };
-
-  const expandNumericSizes = (product: TrProduct) => {
-    const board = sizesForStockBoard(product.sizes);
-    const nextSizes = sortProductSizes([
-      ...new Set([...board, ...NUMERIC_EXPANDED_SIZES]),
-    ]);
-    const nextStocks: Record<string, number> = {};
-    for (const size of nextSizes) {
-      nextStocks[size] = sizeQty(product, size);
-    }
-    const stock = sumSizeStocks(nextStocks);
-    patchStock(
-      product,
-      {
-        ...product,
-        sizes: nextSizes,
-        sizeStocks: nextStocks,
-        stock,
-      },
-      {
-        sizes: nextSizes,
-        sizeStocks: nextStocks,
         stock,
       },
     );
@@ -581,7 +536,7 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
                       getPanelProductCover(product) ??
                       product.images[0] ??
                       null;
-                    const sizes = sizesForStockBoard(product.sizes);
+                    const sizes = boardSizes(product);
                     const hasSizes = product.sizes.length > 0;
                     const total = hasSizes
                       ? sizes.reduce(
@@ -595,9 +550,6 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
                       product.status === "available" && total === 0;
                     const busy = bulkBusy;
                     const open = openIds.has(product.id);
-                    const missingExpanded = missingNumericExpandedSizes(
-                      product.sizes,
-                    );
 
                     return (
                       <motion.div
@@ -702,17 +654,6 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
                                           busy={busy}
                                           onChange={setSizeStock}
                                         />
-                                        {missingExpanded.length > 0 ? (
-                                          <button
-                                            type="button"
-                                            className={panelAddChipClass}
-                                            onClick={() =>
-                                              expandNumericSizes(product)
-                                            }
-                                          >
-                                            Daha büyük bedenler (42–52)
-                                          </button>
-                                        ) : null}
                                       </>
                                     ) : (
                                       <div className="flex items-center justify-between gap-3">
