@@ -282,11 +282,6 @@ export function TrOwnerBatchPhotoStep({
             category={row.category}
             uploadType={row.uploadType}
             deferConstructionPackshot
-            uploading={Boolean(
-              (photoJobsById[row.clientId] ?? []).some(
-                (job) => job.status === "running",
-              ),
-            )}
             onUploadingChange={ignoreUploadingChange}
             onImagesChange={(images) => onPatchRow(row.clientId, { images })}
             onMarketplaceImagesChange={(marketplaceImages) =>

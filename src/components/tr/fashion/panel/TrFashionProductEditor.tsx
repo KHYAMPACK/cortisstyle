@@ -561,7 +561,6 @@ function FashionProductEditorForm({
               uploadType={family}
               features={form.features}
               listingDraft={listingDraft}
-              uploading={uploading}
               onUploadingChange={setUploading}
               onImagesChange={(images) => change({ images })}
               onMarketplaceImagesChange={(marketplaceImages) =>

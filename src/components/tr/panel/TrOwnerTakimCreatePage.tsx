@@ -716,11 +716,6 @@ function TakimCreateFlow({
                 uploadType={item.uploadType}
                 deferConstructionPackshot
                 photoSlotCount={2}
-                uploading={Boolean(
-                  (photoJobs[index] ?? []).some(
-                    (job) => job.status === "running",
-                  ),
-                )}
                 onUploadingChange={() => undefined}
                 onImagesChange={(images) =>
                   patchItem(index as 0 | 1, { images })

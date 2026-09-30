@@ -57,7 +57,7 @@ import {
   isAltGiyimShopLeaf,
   isElbiseUpload,
   isUstGiyimShopLeaf,
-  requiredPhotoSlotsForUploadType,
+  REQUIRED_PHOTO_SLOTS,
   type ConstructionCatalogFamily,
 } from "@/lib/tr/fashion/garmentUploadTypes";
 import {
@@ -438,7 +438,7 @@ export function TrProductCreateWizard({
     });
   }, [sizeStockInputs, stock, colorVariants]);
 
-  const requiredSlots = requiredPhotoSlotsForUploadType(uploadType);
+  const requiredSlots = REQUIRED_PHOTO_SLOTS;
   const family = constructionCatalogFamily(uploadType, category);
   const elbise = true;
   const extraColorPhotos = useMemo(
@@ -1137,7 +1137,6 @@ export function TrProductCreateWizard({
           uploadType={uploadType}
           features={features}
           listingDraft={listingDraft}
-          uploading={uploading}
           onUploadingChange={setUploading}
           onImagesChange={setImages}
           onMarketplaceImagesChange={setMarketplaceImages}

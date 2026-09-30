@@ -217,12 +217,8 @@ export const ELBISE_PACKSHOT_SLOT = 3;
 /** Optional dekolte / detay manken photo. */
 export const ELBISE_DETAIL_SLOT = 2;
 
-/** Required owner photo slots before Gemini + ön packshot. */
-export function requiredPhotoSlotsForUploadType(
-  _uploadType: string | null | undefined,
-): number {
-  return 2;
-}
+/** Required owner photo slots (front + back) before Gemini + ön packshot, for every garment. */
+export const REQUIRED_PHOTO_SLOTS = 2;
 
 /** Guided picker tiles (construction catalog shows optional detay as slot 2). */
 export function guidedPhotoSlotCountForUploadType(

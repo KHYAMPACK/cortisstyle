@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import {
   fashionFormFacts,
   fashionFormFromProduct,
+  fashionGarmentCategory,
   fashionProductPatch,
   fashionProductStatus,
   fashionServerSavedFields,
@@ -176,6 +177,47 @@ describe("with the boutique's own Beden types", () => {
     const patch = fashionProductPatch(loaded, sources);
     assert.deepEqual(patch.sizes, ["S", "L", "STD"]);
     assert.equal(patch.stock, 3);
+  });
+});
+
+describe("with the boutique's own categories", () => {
+  const categoryList = [
+    { id: "c-elbise", parentId: null, slug: "elbiseler", systemKey: "elbise" },
+    { id: "c-abiye", parentId: "c-elbise", slug: "abiye", systemKey: null },
+    { id: "c-ust", parentId: null, slug: "ust-giyim", systemKey: "ust-giyim" },
+  ];
+
+  it("treats an owner-made subcategory of Elbise as a dress", () => {
+    const loaded = fashionFormFromProduct(garment({ category: "abiye" }), undefined, {
+      ids: ["c-abiye"],
+      primaryId: "c-abiye",
+    });
+    assert.equal(fashionFormFacts(loaded, categoryList).elbise, true);
+    assert.equal(fashionGarmentCategory(loaded, categoryList), "elbise");
+  });
+
+  it("sends the categories, not the category column", () => {
+    const loaded = fashionFormFromProduct(garment({ category: "abiye" }), undefined, {
+      ids: ["c-abiye"],
+      primaryId: "c-abiye",
+    });
+    const patch = fashionProductPatch(loaded);
+    assert.deepEqual(patch.categories, { ids: ["c-abiye"], primaryId: "c-abiye" });
+    assert.equal("category" in patch, false);
+  });
+
+  it("asks for a leaf under an üst giyim category read through its key", () => {
+    const loaded = fashionFormFromProduct(garment({ category: "ust-giyim" }), undefined, {
+      ids: ["c-ust"],
+      primaryId: "c-ust",
+    });
+    assert.match(validateFashionProductForm(loaded, categoryList)!, /Üst giyim/);
+  });
+
+  it("keeps sending the category column on the built-in tree", () => {
+    const patch = fashionProductPatch(fashionFormFromProduct(garment()));
+    assert.equal(patch.category, "elbise");
+    assert.equal("categories" in patch, false);
   });
 });
 
