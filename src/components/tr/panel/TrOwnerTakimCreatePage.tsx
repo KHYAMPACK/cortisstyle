@@ -26,7 +26,9 @@ import { TrOwnerWizardPipelineStatus } from "@/components/tr/panel/TrOwnerWizard
 import { TrPanelFadeIn } from "@/components/tr/panel/TrPanelMotion";
 import { TrProductImageLightbox } from "@/components/tr/panel/TrProductImageLightbox";
 import { TrOwnerSizeChartStock } from "@/components/tr/panel/TrOwnerSizeChartStock";
+import { useOwnerCategoryList } from "@/components/tr/panel/useOwnerCategories";
 import { useOwnerSizeSources } from "@/components/tr/panel/useOwnerSizeSources";
+import { categoryPayloadForGarment } from "@/lib/tr/fashion/garmentCategory";
 import { findSizeSource, resolveSizeSourceId } from "@/lib/tr/sizeSources";
 import { emptyStockInputs, sizesFromStockInputs } from "@/lib/tr/sizeStockInputs";
 import {
@@ -158,6 +160,8 @@ function TakimCreateFlow({
   const [sizeStockInputs, setSizeStockInputs] = useState(empty.sizeStockInputs);
   const { sources: sizeSources, loaded: sizeSourcesLoaded } =
     useOwnerSizeSources(boutiqueId);
+  // A boutique on its own categories files the set under the category keyed `takim`.
+  const { categoryList, loaded: categoriesLoaded } = useOwnerCategoryList(boutiqueId);
   const sizeSource = findSizeSource(sizeSources, sizeChart);
   const applySizeChart = (chart: string) => {
     setSizeChart(chart);
@@ -506,6 +510,10 @@ function TakimCreateFlow({
   };
 
   const save = async () => {
+    if (!categoriesLoaded) {
+      setError("Kategoriler yükleniyor; birkaç saniye sonra tekrar deneyin.");
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
@@ -563,7 +571,7 @@ function TakimCreateFlow({
         compareAtPriceTry,
         sizes,
         colors: [],
-        category: TAKIM_SHOP_LEAF,
+        ...categoryPayloadForGarment(TAKIM_SHOP_LEAF, categoryList),
         images: manualMode ? items[0]?.images ?? [] : assembled.images,
         marketplaceImages: manualMode
           ? []

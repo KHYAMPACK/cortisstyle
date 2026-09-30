@@ -67,3 +67,22 @@ export function withGarmentKeyPrimary(
   const ids = value.ids.includes(target.id) ? value.ids : [...value.ids, target.id];
   return { ids, primaryId: target.id };
 }
+
+/**
+ * A create flow's category for the API. The create flows (wizard, batch, takım) still
+ * choose a built-in garment id; for a boutique on its own categories it is filed under
+ * the category carrying that key. If the boutique has no such category (it deleted it),
+ * only the plain category column is set and the owner can file it in the editor.
+ */
+export function categoryPayloadForGarment(
+  garmentId: string | null,
+  categories: readonly CategoryLike[] | null,
+): { category: string | null; categories?: TrProductCategories } {
+  if (!categories) return { category: garmentId };
+  const target = categoryForGarmentKey(garmentId, categories);
+  if (!target) return { category: garmentId };
+  return {
+    category: target.slug,
+    categories: { ids: [target.id], primaryId: target.id },
+  };
+}

@@ -33,3 +33,37 @@ export function useOwnerCategories(boutiqueId: string, enabled: boolean) {
   const loaded = enabled && state?.boutiqueId === boutiqueId;
   return { categories: loaded ? state!.categories : [], loaded };
 }
+
+/**
+ * The boutique's own categories when it manages them (`custom` mode), else `null` (the
+ * built-in tree). For flows that don't know the mode up front, such as the create flows
+ * filing a garment under the category keyed with its built-in id.
+ */
+export function useOwnerCategoryList(boutiqueId: string) {
+  const [state, setState] = useState<{
+    boutiqueId: string;
+    categoryList: TrCategoryListEntry[] | null;
+  } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchOwnerCategories(boutiqueId)
+      .then((result) => {
+        if (!cancelled) {
+          setState({
+            boutiqueId,
+            categoryList: result.mode === "custom" ? result.categories : null,
+          });
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setState({ boutiqueId, categoryList: null });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [boutiqueId]);
+
+  const loaded = state?.boutiqueId === boutiqueId;
+  return { categoryList: loaded ? state!.categoryList : null, loaded };
+}

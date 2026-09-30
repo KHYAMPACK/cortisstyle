@@ -17,7 +17,10 @@ import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
 import { TrOwnerProductRouteGate } from "@/components/tr/panel/TrOwnerProductRouteGate";
 import { TrOwnerManualListingToggle } from "@/components/tr/panel/TrOwnerManualListingToggle";
 import { TrOwnerSizeChartStock } from "@/components/tr/panel/TrOwnerSizeChartStock";
+import { useOwnerCategoryList } from "@/components/tr/panel/useOwnerCategories";
 import { useOwnerSizeSources } from "@/components/tr/panel/useOwnerSizeSources";
+import { categoryPayloadForGarment } from "@/lib/tr/fashion/garmentCategory";
+import type { TrCategoryListEntry } from "@/lib/tr/categories/types";
 import {
   findSizeSource,
   resolveSizeSourceId,
@@ -185,6 +188,9 @@ function BatchCreateFlow({
   const scheduleAiJob = useScheduleAiJob();
   const { sources: sizeSources, loaded: sizeSourcesLoaded } =
     useOwnerSizeSources(boutiqueId);
+  // A boutique on its own categories files each garment under the category keyed with
+  // its built-in id (see garmentCategory.ts).
+  const { categoryList, loaded: categoriesLoaded } = useOwnerCategoryList(boutiqueId);
   const [rows, setRows] = useState<ProductBatchCreateRow[] | null>(null);
   const [stepIndex, setStepIndex] = useState(0);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -546,6 +552,10 @@ function BatchCreateFlow({
   }, [sizeSourcesLoaded, sizeSources, rows]);
 
   async function saveAll() {
+    if (!categoriesLoaded) {
+      setError("Kategoriler yükleniyor; birkaç saniye sonra tekrar deneyin.");
+      return;
+    }
     if (!rows) return;
     if (!manualMode && jobsRunning(photoJobsById, modelStatusById, packingById)) {
       setError(
@@ -574,7 +584,7 @@ function BatchCreateFlow({
       async (clientId) => {
         const row = snapshot.find((item) => item.clientId === clientId);
         if (!row) throw new Error("Ürün bulunamadı.");
-        return createOwnerProduct(buildCreatePayload(boutiqueId, row, sizeSources, manualMode));
+        return createOwnerProduct(buildCreatePayload(boutiqueId, row, sizeSources, categoryList, manualMode));
       },
       { concurrency: 4 },
     );
@@ -902,6 +912,7 @@ function buildCreatePayload(
   boutiqueId: string,
   row: ProductBatchCreateRow,
   sources: readonly TrSizeSource[],
+  categoryList: readonly TrCategoryListEntry[] | null,
   manualMode = false,
 ): TrOwnerProductPayload {
   const listPrice = Number(row.priceTry.replace(",", "."));
@@ -932,7 +943,7 @@ function buildCreatePayload(
     compareAtPriceTry,
     sizes,
     colors: [],
-    category: row.category,
+    ...categoryPayloadForGarment(row.category, categoryList),
     images: row.images,
     marketplaceImages: alignMarketplaceSlots(row.images, row.marketplaceImages),
     lifestyleImages: cleanedLifestyleImages(row.lifestyleImages),

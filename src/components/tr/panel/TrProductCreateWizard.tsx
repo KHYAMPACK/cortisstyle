@@ -17,7 +17,9 @@ import { useRegisterLeaveBusy } from "@/components/tr/panel/TrOwnerLeaveGuard";
 import { TrOwnerWizardPipelineStatus } from "@/components/tr/panel/TrOwnerWizardPipelineStatus";
 import { TrProductImageLightbox } from "@/components/tr/panel/TrProductImageLightbox";
 import { TrOwnerSizeChartStock } from "@/components/tr/panel/TrOwnerSizeChartStock";
+import { useOwnerCategoryList } from "@/components/tr/panel/useOwnerCategories";
 import { useOwnerSizeSources } from "@/components/tr/panel/useOwnerSizeSources";
+import { categoryPayloadForGarment } from "@/lib/tr/fashion/garmentCategory";
 import {
   BUILT_IN_SIZE_SOURCES,
   findSizeSource,
@@ -236,6 +238,9 @@ export function TrProductCreateWizard({
   >(() => emptyStockInputs(findSizeSource(BUILT_IN_SIZE_SOURCES, "letter"), "0"));
   const { sources: sizeSources, loaded: sizeSourcesLoaded } =
     useOwnerSizeSources(boutiqueId);
+  // A boutique on its own categories files the garment under the category keyed with
+  // its built-in id (see garmentCategory.ts).
+  const { categoryList, loaded: categoriesLoaded } = useOwnerCategoryList(boutiqueId);
   const sizeSource = findSizeSource(sizeSources, sizeChart);
   const [category, setCategory] = useState<string | null>(null);
   const [images, setImages] = useState<string[]>([]);
@@ -892,6 +897,9 @@ export function TrProductCreateWizard({
         manualMode,
       );
 
+      if (!categoriesLoaded) {
+        throw new Error("Kategoriler yükleniyor; birkaç saniye sonra tekrar deneyin.");
+      }
       const product = await createOwnerProduct({
         boutiqueId,
         title: title.trim(),
@@ -903,7 +911,7 @@ export function TrProductCreateWizard({
         colors: features.color?.trim()
           ? [colorSwatchFromName(features.color)]
           : [],
-        category,
+        ...categoryPayloadForGarment(category, categoryList),
         images,
         marketplaceImages: alignMarketplaceSlots(images, marketplaceImages),
         lifestyleImages: cleanedLifestyleImages(lifestyleImages),
@@ -981,7 +989,7 @@ export function TrProductCreateWizard({
               compareAtPriceTry: compareAtPriceTryValue,
               sizes: extraStock.sizes,
               colors: [colorSwatchFromName(colorName)],
-              category,
+              ...categoryPayloadForGarment(category, categoryList),
               images: constructionImagesForVariant(extra),
               marketplaceImages: constructionMarketplaceForVariant(extra),
               lifestyleImages: extraLifestyle,

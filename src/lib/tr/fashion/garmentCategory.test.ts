@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   categoryForGarmentKey,
+  categoryPayloadForGarment,
   garmentCategoryFor,
   primaryCategorySlug,
   withGarmentKeyPrimary,
@@ -56,5 +57,28 @@ describe("mapping back to the boutique's categories", () => {
       primaryCategorySlug({ ids: ["c-bluz"], primaryId: "c-bluz" }, categories),
       "bluz",
     );
+  });
+});
+
+describe("categoryPayloadForGarment", () => {
+  it("sends the plain category on the built-in tree", () => {
+    assert.deepEqual(categoryPayloadForGarment("bluz", null), { category: "bluz" });
+  });
+
+  it("files it under the keyed category in custom mode", () => {
+    assert.deepEqual(categoryPayloadForGarment("takim", categories), {
+      category: "takim",
+      categories: { ids: ["c-takim"], primaryId: "c-takim" },
+    });
+    assert.deepEqual(categoryPayloadForGarment("elbise", categories), {
+      category: "elbiseler",
+      categories: { ids: ["c-elbise"], primaryId: "c-elbise" },
+    });
+  });
+
+  it("falls back to the plain column when no category carries the key", () => {
+    assert.deepEqual(categoryPayloadForGarment("pantolon", categories), {
+      category: "pantolon",
+    });
   });
 });

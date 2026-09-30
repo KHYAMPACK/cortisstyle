@@ -25,7 +25,12 @@ _Prepared 2026-09-30 on branch `main-t0o1c2`. **S1 built (2026-09-30); K0 alread
   - All or nothing: a failure removes what it created.
 - **Code:** `categories/importPlan.ts` (pure, tested), `fashion/categoryTemplate.ts` (the template, tested against lilabutik's 8 categories), `importCategoryPlan` / `listProductCategoryColumns` in `catalog/categories.ts`, `POST /api/tr/owner/categories/import`.
 - After the import the page lists the categories read-only with a note that the shop is unchanged until the switch.
-- **Next (K1 part 2):** in `custom` mode, the fashion editor and create flows use the boutique's categories, and fashion logic reads garment kinds from system keys.
+**K1 part 2 built (2026-09-30).** Inert until a boutique is switched to `custom`.
+
+- **`fashion/garmentCategory.ts`** (pure, tested): translates between a boutique's categories and the built-in garment ids through system keys. A category is what its own key says, else its nearest keyed ancestor (an owner-made "Abiye" under the imported "Elbise" is a dress), so renaming a category or its slug changes nothing for fashion logic.
+- **Fashion editor, `custom` mode:** picks from the boutique's categories (`TrPanelCategoryPicker`, several with one primary) and saves them as `categories`. Validation, photo rules, AI fill, the photo pipeline, restyle and Özellikler all get the translated garment id. An AI-suggested category makes the keyed category primary.
+- **Create flows (wizard, batch, takım), `custom` mode:** they still choose a built-in garment id as today. At save it is filed under the boutique's category carrying that key (`categoryPayloadForGarment`), and saving waits until the categories are loaded. If the boutique deleted that keyed category, only the plain category column is set, to be fixed in the editor. **Open question for Mert (Q7 below).**
+- **Built-in-tree boutiques (lilabutik today):** unchanged; they send the category column as before.
 
 ## Decisions (Mert, 2026-09-30)
 
@@ -115,3 +120,4 @@ Each ships on its own. Order: **S1 → K1 → K2** (K0 turned out to be in place
 4. **K2 freeze lift** (storefront menu/PLP read the boutique's categories): OK to plan it as the step right after K1, so owner-created categories actually appear in the shop?
 5. **Hidden style variants** (kaşe mont, kot pantolon…) and legacy "Dış giyim": leave them out of the import (my default)?
 6. **Renaming a size value used by products** (e.g. "2XL" → "XXL"): block it, or offer to update those products too?
+7. **(Open, raised 2026-09-30 while building K1)** In `custom` mode, should the **create wizard's category step** offer the store's own categories (including ones without a built-in meaning, e.g. "Yeni sezon") instead of the built-in garment list? Today it keeps the built-in list and files the product under the matching own category, which also means a renamed category shows its built-in name there (e.g. "Bluz" rather than "Bluzlar"). Changing it reworks how the wizard picks elbise / üst giyim / alt giyim, so it is your call. Batch and takım have no category picker (AI or fixed), so they are not affected.
