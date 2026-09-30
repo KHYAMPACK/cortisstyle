@@ -5,7 +5,8 @@ _Prepared 2026-09-30 on branch `main-t0o1c2`. **Planning only; nothing here is b
 _Revised 2026-09-30 after two decisions from Mert:_
 
 - **Colours become variants.** Colour-group products merge into one product with a Renk option. This reverses decision 8 of the lilabutik plan.
-- **The model is designed as if there were no AI pipeline.** People fill in product info and add photos by hand. Nothing in the data model, the editor or the shop depends on AI. What happens to today's AI flows is §7, and it is not decided here.
+- **The model is designed as if there were no AI pipeline.** People fill in product info and add photos by hand. Nothing in the data model, the editor or the shop depends on AI.
+- **The AI pipeline is parked, not deleted** (Mert, 2026-09-30). It is archived intact, documented, and removed from the running code (F0). Once the data model is solid, it comes back as a layer on top of it (§7).
 
 ## 0. The rule
 
@@ -97,11 +98,54 @@ Verified on `main-t0o1c2`.
 | H13 | Carrier by slug + token env JSON | `shipping/registry.ts` (`SHIPPING_BY_SLUG`), `TR_SHIPPING_BASITKARGO_TOKENS` | `tr_boutique_integrations` | F7 |
 | H14 | Other slug checks | `proxy.ts`, `customDomain.ts`, `panel/panelLogo.ts`, `TrOwnerSettingsPage`, `admin/boutique-health`, `TrBoutiqueAtelierHomeSections` | Reviewed one by one | F7 |
 
-The AI house-model registry (`aiModel/registry.ts`) is also slug-keyed, but it belongs to the AI pipeline, which this plan leaves out (§7).
+The AI house-model registry (`aiModel/registry.ts`) is also slug-keyed. It leaves with the AI pipeline in F0 and is redesigned as data when the pipeline returns (§7).
 
 ## 3. Milestones
 
 Each milestone ships on its own and leaves lilabutik working. The order follows the dependencies. Sizes are S / M / L, where L means a broad storefront + checkout change.
+
+### F0: Park the AI pipeline (S–M)
+
+**Why first:**
+
+- The AI flows are threaded through exactly the code F2–F6 replace: garment ids from categories, `sizes`, colour groups, photo slots, the wizard and batch flows.
+- Keeping them working through every step would roughly double the work of F2, F3 and F6, and would pull the new model towards the old shape.
+- Taking them out first means each later step changes only plain data and plain forms.
+
+**Live usage** (read-only, 2026-09-30): lilabutik ran 543 AI jobs (336 packshots, 207 try-ons), the last on 2026-08-31, **none in the last 30 days**. Parking it doesn't interrupt anything in use right now. The owner will add new products with their own photos until it returns.
+
+**1. Archive.** Nothing is lost:
+
+- a git tag **`ai-pipeline-v1`** and a branch **`archive/ai-pipeline-v1`** on the last commit that still contains the pipeline;
+- the tag is never moved, and the branch is never merged.
+
+**2. Document.** `docs/ai-pipeline-v1.md`, written from the code before it is removed:
+
+- what each step does: packshot, try-on, elbise construction lock and restyle, takım sequential try-on, colour-variant photos, listing draft / "AI ile doldur", batch detection, house models, background removal;
+- its files, API routes and providers (FASHN, Photoroom, the LLM provider switch);
+- env vars, credits and costs (`uploadCostHints.ts`, `ai-credits`);
+- the prompts, and the data it writes (images, `features.aiModelId`, `tr_ai_usage_events`);
+- what worked, what didn't, and what the return should keep.
+
+The prompts and provider clients are the most valuable parts to preserve.
+
+**3. Remove from the running code.**
+
+| What goes | Files |
+|---|---|
+| AI libraries | `src/lib/tr/ai/`, `src/lib/tr/aiCatalog/`, `src/lib/tr/aiModel/`, `src/lib/tr/fashion/aiCatalog/`, `src/lib/tr/fashion/fashn/`, `src/lib/tr/aiUsage.ts` (≈5,300 lines) |
+| API routes | `/api/tr/owner/ai-catalog/*` (listing-draft, packshot, prepare-packshot), `/api/tr/owner/ai-credits`, `/api/tr/owner/ai-model/generate` |
+| AI-only panel UI | `TrOwnerAiCatalogEnhance`, `TrOwnerAiFillListing`, `TrOwnerAiJobQueue`, `TrOwnerModelShotProgress`, `TrOwnerWizardPipelineStatus`, `TrOwnerColorVariantPhotos`, `TrOwnerCreditsInfo`, `fashion/panel/TrOwnerAiModelPicker`, `fashion/panel/TrOwnerElbiseRestyleQueue`, `TrOwnerBatchModelsStep` |
+| AI steps inside shared flows | the wizard, batch (photo, chips, listings steps) and takım flows, and the fashion editor lose their AI steps and buttons and keep plain photo upload + manual fields. These files are deleted wholesale in F3, so F0 only removes the AI parts they need to keep compiling and working |
+
+**What stays:**
+
+- all data: AI-made photos stay on products and in the shop; `features.aiModelId` and `tr_ai_usage_events` stay in the DB, unwritten (additive-only);
+- the env vars can stay set in Vercel, unused.
+
+**Open detail (Q7):** the upload route (`/api/tr/owner/upload`) runs Photoroom background removal on front/back photos to make the marketplace cutout (`marketplaceUrl`). It's image processing rather than the generation pipeline. Park it too (uploads keep the original only; existing cutouts stay), or keep it?
+
+**Freeze:** no (panel and owner API only; the shop shows the same images). **lilabutik:** the owner's AI buttons, AI photo steps and credits page disappear until the pipeline returns.
 
 ### F1: Categories are only data (M)
 
@@ -139,7 +183,7 @@ _Depends on F2. The fashion editor (Area A) was the right step for lilabutik at 
 - **Photos:** a plain ordered list; the first is the cover. The fashion photo-slot rules (front / back / packshot, `productPhotoChecks.ts`) go away. At least one photo is needed to publish.
 - **Create = the same editor, empty.** "Ürün ekle" opens it with the kind picker first. There is no wizard and no separate batch or takım flow. A quick bulk path can be added later as a generic "import from spreadsheet", not as a fashion flow.
 - **Until F6, fashion products keep their size table.** Products still on `sizes` / `size_stocks` show the existing size-and-stock card (`TrOwnerSizeChartStock`) in place of the variant grid, so F3 can ship before the size cutover.
-- **Deleted at the end of F3:** `TrFashionProductEditor`, `TrProductCreateWizard` + drafts, the batch pages (6 files), `TrOwnerTakimCreatePage`, `TrOwnerFashionCreateChooser`, `fashion/productForm.ts`, `productPhotoChecks.ts`, the editor registry slot, `garmentUploadTypes.ts`, `garmentCategory.ts`, `categoryPayloadForGarment`. `product_type` stops being read (column stays). **What happens to the AI features these files contain is §7's question**; F3 doesn't start until that is answered.
+- **Deleted at the end of F3:** `TrFashionProductEditor`, `TrProductCreateWizard` + drafts, the batch pages (6 files), `TrOwnerTakimCreatePage`, `TrOwnerFashionCreateChooser`, `fashion/productForm.ts`, `productPhotoChecks.ts`, the editor registry slot, `garmentUploadTypes.ts`, `garmentCategory.ts`, `categoryPayloadForGarment`. `product_type` stops being read (column stays). Their AI parts are already gone (F0); the archive tag keeps the full versions.
 - **Freeze:** no (panel only). **lilabutik:** the owner's editor and create flow change. This is the biggest change the owner sees.
 
 ### F4: Size charts are data (S–M)
@@ -226,7 +270,7 @@ This is the lilabutik plan's Area C (C.1, C.4, C.5, C.6). **Mert put it on hold*
 K2 merged + lilabutik on custom categories
         │
         ▼
-       F1 ──► F2 ──► F3 (needs §7 answered)
+       F0 ──► F1 ──► F2 ──► F3
                       │
        F4 ◄───────────┘ (any time after F2)
         │
@@ -236,6 +280,7 @@ K2 merged + lilabutik on custom categories
        F7 (independent; on hold)          everything ──► F8
 ```
 
+- **F0** comes first because it makes every later step smaller. It is independent of K2 and could even go before it.
 - **F1–F4** are panel-heavy and moderate. They give the clean model: categories, kinds and fields, one editor, size charts.
 - **F5–F6** are the expensive pair, and the only milestones that touch live checkout and stock.
 - F3 can ship before F6 because the editor keeps the old size card for products not yet on variants.
@@ -245,7 +290,8 @@ K2 merged + lilabutik on custom categories
 | Risk | Where | Mitigation |
 |---|---|---|
 | Wrong kind backfilled, so a product shows the wrong fields | F2 | Generate the SQL from the tested mapping; SELECT counts per kind vs per category; the owner can change a product's kind, and it never deletes values |
-| The owner loses a workflow they rely on | F3 | §7 answered first; lilabutik's owner tries the new editor behind a staff flag before the old flows are removed (as in Area A) |
+| The owner loses a workflow they rely on | F0, F3 | AI unused for 30 days (checked); tell the owner before F0 ships; lilabutik's owner tries the new editor behind a staff flag before the old flows are removed (as in Area A) |
+| Parked AI code is hard to bring back | F0, §7 | Tag + branch keep it intact; `docs/ai-pipeline-v1.md` records how it worked; the return is designed against the new model rather than restored as-is |
 | Merging colours loses content | F6 | Checklist per group; merged products are hidden, not deleted; the dry run shows everything first |
 | Old cart lines / pending payments during the cutover | F6 | Map `(productId, size)` → variant via `merged_into` on cart load; old order lines keep the read-only `size` path; quiet-hour cutover |
 | Stock drift | F6 | Single cutover, not dual-write; per-group stock sums checked before and after; old columns no longer written |
@@ -260,23 +306,29 @@ K2 merged + lilabutik on custom categories
 2. **F6 go-ahead:** sizes and colours onto variants for lilabutik, including merging colour groups with the checklist in F6. Recommendation: yes, but last, after F5 has sold a real two-colour test product.
 3. **One category URL** (`/kategori/<slug>`, shop layout, redirects from `?kategori=`). Recommendation: yes, in F1.
 4. **F7** (skin, brand, carrier to the DB) reopens decisions 10–11. Recommendation: schedule it before a second real store onboards.
-5. **Start point:** F1 right after K2 is merged and lilabutik is switched? Recommendation: yes.
+5. **Start point:** F0 now, then F1 right after K2 is merged and lilabutik is switched? Recommendation: yes.
+6. **Tell lilabutik's owner before F0 ships** that the AI buttons are paused? Recommendation: yes, you or me drafting a short message.
+7. **Background removal on upload** (Photoroom, marketplace cutouts): park with the pipeline or keep? Recommendation: park it. It is the only AI call left, and keeping it keeps the Photoroom key, costs and failure handling in the upload path. Existing cutouts stay.
 
-## 7. The existing AI features (not decided)
+## 7. Bringing the AI pipeline back (later)
 
-This plan's model has no AI in it: products are made by filling in the editor and adding photos. But lilabutik's current flows are built around AI:
+**Decided (Mert, 2026-09-30):** the pipeline is parked in F0, not deleted, and returns once the data model (F1–F6) is solid. It comes back **as a layer on top of the model, never inside it.**
 
-- the wizard's AI try-on / packshot photos and house model;
-- batch upload's AI category detection and listing drafts;
-- takım's AI split;
-- "AI ile doldur" in the editor;
-- restyle;
-- colour-variant photo generation.
+**Rules for the return:**
 
-F3 deletes the files these live in. What to do with them is Mert's call:
+- **AI is a client of the product API.** It reads a product (kind, fields, variants, photos per colour) and writes only through the same endpoints and fields the editor uses. No AI-only columns on products and no AI-only product states. The model must work identically with the AI layer switched off.
+- **AI proposes, the owner accepts.** Generated photos and drafted text land as suggestions in the editor (e.g. a "Önerilen fotoğraflar" strip in the Fotoğraflar card, a "Taslak" in Temel bilgi / Özellikler) and are saved with Kaydet like anything typed by hand.
+- **Configuration is data, not code:**
+  - house models are rows (`tr_boutique_ai_models`: name, reference images, measurements, persona), not `BOUTIQUE_AI_MODELS`;
+  - per-kind AI settings (which photo types to generate, prompt hints) hang off `tr_product_kinds` as an optional jsonb, not off category ids;
+  - the persisted id `boutique:lilabutik` stays valid as a row key.
+- **Jobs are generic:** one AI job table (job type, product, input, output, cost, status), extending `tr_ai_usage_events`, with one queue UI. Not a pipeline per garment family.
+- **What to reuse from `ai-pipeline-v1`:** the provider clients (FASHN, Photoroom, LLM switch), the prompts, and the lessons in `docs/ai-pipeline-v1.md`. **What not to reuse:** anything keyed on garment categories, `sizes`, colour groups or photo slots. Those are exactly what the new model replaced.
 
-- **(a) Retire them.** The owner uploads real photos and writes listings by hand. Simplest; lilabutik's owner loses the AI photos and drafts. Existing AI-made photos stay on the products.
-- **(b) Keep them as optional helpers on top of the generic editor, later.** For example, an "AI ile fotoğraf üret" button in the Fotoğraflar card or "AI ile doldur" in Temel bilgi. They would write only through the same product API and fields, so the model never depends on them. Not part of this plan; each would be its own milestone.
-- **(c) Keep the current AI flows alive next to the new editor.** Not recommended: they depend on everything F2–F6 removes (garment ids from categories, `sizes`, colour groups).
+**Suggested return order, each its own milestone once F6 is done:**
 
-My recommendation is (b) if the AI photos matter to lilabutik's owner, otherwise (a). Either way **F3 waits for this answer**.
+1. AI ile doldur: text and Özellikler from photos, per kind's fields.
+2. Packshot / background removal on a colour's photos.
+3. Try-on with house models.
+4. Photos for a new colour.
+5. Bulk: run a job over many products.
