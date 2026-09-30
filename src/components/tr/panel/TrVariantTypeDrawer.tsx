@@ -31,6 +31,7 @@ import {
   type VariantValueDraft,
 } from "@/lib/tr/variants/typeForm";
 import { normalizeHex, VARIANT_TYPE_LIMITS } from "@/lib/tr/variants/typeRules";
+import type { SizeRenameOffer } from "@/lib/tr/variants/sizeRenames";
 import type {
   TrVariantSelectionStyle,
   TrVariantType,
@@ -77,7 +78,8 @@ export function TrVariantTypeDrawer({
   /** The boutique's types, for the "name already used" check. */
   types: ReadonlyArray<Pick<TrVariantType, "id" | "name">>;
   onClose: () => void;
-  onSaved: (type: TrVariantType) => void;
+  /** `sizeRenames`: renamed Beden values that products still carry (edit only). */
+  onSaved: (type: TrVariantType, sizeRenames: SizeRenameOffer[]) => void;
   onDeleted?: (typeId: string) => void;
 }) {
   const [form, setForm] = useState<VariantTypeFormState>(emptyVariantTypeForm);
@@ -148,11 +150,11 @@ export function TrVariantTypeDrawer({
     setSaving(true);
     try {
       const body = variantTypeBody(submitted);
-      const saved = type
+      const { type: saved, sizeRenames } = type
         ? await updateOwnerVariantType(type.id, body)
-        : await createOwnerVariantType(boutiqueId, body);
+        : { type: await createOwnerVariantType(boutiqueId, body), sizeRenames: [] };
       toast.success(type ? "Varyant türü kaydedildi." : "Varyant türü eklendi.");
-      onSaved(saved);
+      onSaved(saved, sizeRenames);
     } catch (saveError) {
       setForm(submitted);
       setDraft("");

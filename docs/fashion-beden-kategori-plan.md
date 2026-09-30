@@ -12,7 +12,9 @@ _Prepared 2026-09-30 on branch `main-t0o1c2`. **S1 built (2026-09-30), K0–K2 n
 - **Size tables** (fashion editor, create wizard, batch and takım uploads) offer the boutique's size types (`sizeSources.ts`, `useOwnerSizeSources`), falling back to the built-in lists. Sizes are saved in the type's order. Drafts saved on `letter` / `numeric` are moved onto the matching type.
 - **Stok page** now keeps a garment's own sizes (it used to add the whole chart, e.g. 2XL/3XL on an XS–XL dress, whenever one size's stock changed) and no longer has the 42–52 button (sizes are added in the editor).
 - **Removed as dead code:** the old preset import and the unused `boutiques/[id]/options` API; `TrProductEditorForm`; `sizesForChart`, `sizesForStockBoard`, `missingNumericExpandedSizes`; the draft files' copies of the empty-board helper; the Stok page's never-read `savingIds`; the size table's deprecated `variant` prop.
-- **Not built yet from S1:** decision 6, the "update products too" offer when a size is renamed — next.
+- **Rename offer (decision 6):** saving a Beden type that renamed sizes still on products opens "Ürünlerdeki bedenler de güncellensin mi?" with each rename and its product count. **Evet** renames the size on those products (`POST …/variant-types/[id]/rename-sizes`, rules in `variants/sizeRenames.ts`): swaps work, a rename onto a size the product already has merges the two, and total stock never changes. **Hayır** leaves products as they are. A shopper's cart holding the old label is re-checked at checkout like any size that no longer exists.
+
+**S1 complete.** Next: K0 (sitemap / category route check `category_mode`).
 
 ## Decisions (Mert, 2026-09-30)
 

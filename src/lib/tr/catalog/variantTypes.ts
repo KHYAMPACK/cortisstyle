@@ -1,4 +1,13 @@
 import { getServiceSupabase } from "@/lib/supabaseAdmin";
+import { updateProductAdmin } from "@/lib/tr/catalog/products";
+import { readSizeStocks } from "@/lib/tr/sizeStocks";
+import {
+  renameProductSizes,
+  sizeRenameOffers,
+  sizeRenamesFromUpdate,
+  type SizeRename,
+  type SizeRenameOffer,
+} from "@/lib/tr/variants/sizeRenames";
 import {
   hasTypeNamed,
   importableSizeTypeInputs,
@@ -256,10 +265,14 @@ export async function createVariantType(
   return (await getVariantType(typeId))!;
 }
 
+/**
+ * Saves the type. For a Beden type, also reports the renamed sizes that the boutique's
+ * products still carry, so the panel can offer to rename them there too.
+ */
 export async function updateVariantType(
   id: string,
   input: TrVariantTypeInput,
-): Promise<TrVariantType> {
+): Promise<{ type: TrVariantType; sizeRenames: SizeRenameOffer[] }> {
   const current = await getVariantType(id);
   if (!current) throw new VariantTypeError("Varyant türü bulunamadı.", 404);
 
@@ -343,7 +356,69 @@ export async function updateVariantType(
     plan.insert.map(({ input: value, sortOrder }) => ({ ...value, sortOrder })),
   );
 
-  return (await getVariantType(id))!;
+  const type = (await getVariantType(id))!;
+  const renames =
+    current.role === "size" || input.role === "size"
+      ? sizeRenamesFromUpdate(current.values, input.values)
+      : [];
+  const sizeRenames =
+    renames.length > 0
+      ? sizeRenameOffers(renames, await listProductSizes(current.boutiqueId))
+      : [];
+  return { type, sizeRenames };
+}
+
+// ------------------------------------------------------ renaming sizes on products
+
+async function listProductSizes(boutiqueId: string) {
+  const { data, error } = await client()
+    .from("tr_products")
+    .select("id, sizes, size_stocks, stock")
+    .eq("boutique_id", boutiqueId);
+  if (error) throw error;
+  return (data ?? []).map((row) => ({
+    id: String(row.id),
+    sizes: Array.isArray(row.sizes)
+      ? row.sizes.filter((size): size is string => typeof size === "string")
+      : [],
+    sizeStocks: readSizeStocks(row.size_stocks),
+    stock: typeof row.stock === "number" ? row.stock : 0,
+  }));
+}
+
+/**
+ * Renames sizes on the boutique's products after the owner renamed them in a Beden
+ * type ("offer to update", Mert 2026-09-30). Every new label must be a value of the
+ * type. A product's total stock doesn't change. Returns how many products changed.
+ */
+export async function renameSizesOnProducts(
+  typeId: string,
+  renames: readonly SizeRename[],
+): Promise<number> {
+  const type = await getVariantType(typeId);
+  if (!type) throw new VariantTypeError("Varyant türü bulunamadı.", 404);
+  if (type.role !== "size") {
+    throw new VariantTypeError("Yalnızca beden türlerinin değerleri ürünlerde güncellenir.");
+  }
+  const labels = new Set(type.values.map((value) => value.label));
+  for (const rename of renames) {
+    if (!labels.has(rename.to)) {
+      throw new VariantTypeError(`“${rename.to}” bu beden türünde yok.`);
+    }
+  }
+
+  let updated = 0;
+  for (const product of await listProductSizes(type.boutiqueId)) {
+    const next = renameProductSizes(product.sizes, product.sizeStocks, renames);
+    if (!next.changed) continue;
+    await updateProductAdmin(product.id, {
+      sizes: next.sizes,
+      sizeStocks: next.sizeStocks,
+      stock: product.stock,
+    });
+    updated += 1;
+  }
+  return updated;
 }
 
 /** Deletes the type and, by cascade, its values. */

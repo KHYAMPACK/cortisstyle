@@ -1,4 +1,5 @@
 import { getSupabaseClient } from "@/lib/supabaseClient";
+import type { SizeRenameOffer } from "@/lib/tr/variants/sizeRenames";
 import { prepareOwnerUploadFile } from "@/lib/tr/prepareOwnerUploadFile";
 import { sanitizeProductFeatures } from "@/lib/tr/catalog/productFeatures";
 import { parseAiCategoryId } from "@/lib/tr/fashion/categories";
@@ -608,21 +609,42 @@ export async function createOwnerVariantType(
   return data.type;
 }
 
+/**
+ * Saves a type. `sizeRenames` lists renamed sizes of a Beden type that products still
+ * carry, for the "update the products too?" offer.
+ */
 export async function updateOwnerVariantType(
   typeId: string,
   body: Record<string, unknown>,
-): Promise<TrVariantType> {
+): Promise<{ type: TrVariantType; sizeRenames: SizeRenameOffer[] }> {
   const response = await ownerFetch(
     `/api/tr/owner/variant-types/${encodeURIComponent(typeId)}`,
     { method: "PATCH", body: JSON.stringify(body) },
   );
-  const data = await readApiResponse<{ type?: TrVariantType }>(
-    response,
-    "Varyant türü güncellenemedi.",
-  );
+  const data = await readApiResponse<{
+    type?: TrVariantType;
+    sizeRenames?: SizeRenameOffer[];
+  }>(response, "Varyant türü güncellenemedi.");
   if (!data.type) throw new Error("Varyant türü güncellenemedi.");
   invalidateOwnerCache("variant-types:");
-  return data.type;
+  return { type: data.type, sizeRenames: data.sizeRenames ?? [] };
+}
+
+/** Renames sizes on the boutique's products after they were renamed in a Beden type. */
+export async function renameOwnerProductSizes(
+  typeId: string,
+  renames: ReadonlyArray<{ from: string; to: string }>,
+): Promise<number> {
+  const response = await ownerFetch(
+    `/api/tr/owner/variant-types/${encodeURIComponent(typeId)}/rename-sizes`,
+    { method: "POST", body: JSON.stringify({ renames }) },
+  );
+  const data = await readApiResponse<{ updated?: number }>(
+    response,
+    "Ürünlerdeki bedenler güncellenemedi.",
+  );
+  invalidateProductLists();
+  return data.updated ?? 0;
 }
 
 export async function deleteOwnerVariantType(typeId: string): Promise<void> {

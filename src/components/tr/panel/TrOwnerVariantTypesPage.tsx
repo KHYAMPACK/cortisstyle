@@ -10,6 +10,7 @@ import {
   TrPanelFadeIn,
   TrPanelListSkeleton,
 } from "@/components/tr/panel/TrPanelMotion";
+import { TrPanelModal } from "@/components/tr/panel/TrPanelModal";
 import { TrVariantTypeDrawer } from "@/components/tr/panel/TrVariantTypeDrawer";
 import {
   panelBackLinkClass,
@@ -23,9 +24,11 @@ import {
 import {
   fetchOwnerVariantTypes,
   importOwnerSizeTypes,
+  renameOwnerProductSizes,
 } from "@/lib/tr/ownerClient";
 import { trPanelDefinitionsPath } from "@/lib/tr/paths";
 import { toast } from "@/lib/tr/panel/toast";
+import type { SizeRenameOffer } from "@/lib/tr/variants/sizeRenames";
 import type {
   TrVariantTypeImportOffer,
   TrVariantType,
@@ -107,6 +110,90 @@ function ImportOffer({
   );
 }
 
+/**
+ * After a Beden type's sizes were renamed: offer to rename them on the products that
+ * still carry the old labels (Mert, 2026-09-30: "offer to update").
+ */
+function SizeRenameDialog({
+  pending,
+  onClose,
+}: {
+  pending: { typeId: string; offers: SizeRenameOffer[] } | null;
+  onClose: () => void;
+}) {
+  const [applying, setApplying] = useState(false);
+  const offers = pending?.offers ?? [];
+  const productCount = Math.max(0, ...offers.map((offer) => offer.productCount));
+
+  const apply = async () => {
+    if (!pending) return;
+    setApplying(true);
+    try {
+      const updated = await renameOwnerProductSizes(pending.typeId, pending.offers);
+      toast.success(`${updated} üründe beden güncellendi.`);
+      onClose();
+    } catch (applyError) {
+      toast.error(applyError, "Ürünlerdeki bedenler güncellenemedi.");
+    } finally {
+      setApplying(false);
+    }
+  };
+
+  return (
+    <TrPanelModal
+      open={pending !== null}
+      onClose={() => {
+        if (!applying) onClose();
+      }}
+      title="Ürünlerdeki bedenler de güncellensin mi?"
+      footer={
+        <>
+          <button
+            type="button"
+            className={panelSecondaryBtnClass}
+            disabled={applying}
+            onClick={onClose}
+          >
+            Hayır
+          </button>
+          <button
+            type="button"
+            className={`${panelPrimaryBtnClass} gap-2`}
+            disabled={applying}
+            onClick={() => void apply()}
+          >
+            {applying ? (
+              <>
+                <TrPanelBusySpinner />
+                Güncelleniyor…
+              </>
+            ) : (
+              "Evet, güncelle"
+            )}
+          </button>
+        </>
+      }
+    >
+      <div className="space-y-3 text-[14px] text-neutral-800">
+        <p>Değiştirdiğiniz bedenler ürünlerinizde hâlâ eski adıyla duruyor:</p>
+        <ul className="space-y-1">
+          {offers.map((offer) => (
+            <li key={offer.from}>
+              <span className="font-semibold">{offer.from}</span> →{" "}
+              <span className="font-semibold">{offer.to}</span>{" "}
+              <span className="text-neutral-500">({offer.productCount} ürün)</span>
+            </li>
+          ))}
+        </ul>
+        <p className={panelHintClass}>
+          Evet derseniz {productCount > 1 ? "bu ürünlerde" : "bu üründe"} beden adı
+          değişir; stok aynı kalır. Hayır derseniz ürünler eski bedenle kalır.
+        </p>
+      </div>
+    </TrPanelModal>
+  );
+}
+
 /** The list, drawer included; the page below only adds the panel gate around it. */
 export function TrVariantTypesList({ boutiqueId }: { boutiqueId: string }) {
   const [loaded, setLoaded] = useState<Loaded | null>(null);
@@ -118,6 +205,10 @@ export function TrVariantTypesList({ boutiqueId }: { boutiqueId: string }) {
   const [drawer, setDrawer] = useState<{ type: TrVariantType | null } | null>(null);
   // The drawer keeps showing what it last showed while it slides out.
   const [drawerType, setDrawerType] = useState<TrVariantType | null>(null);
+  const [pendingRenames, setPendingRenames] = useState<{
+    typeId: string;
+    offers: SizeRenameOffer[];
+  } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -301,15 +392,19 @@ export function TrVariantTypesList({ boutiqueId }: { boutiqueId: string }) {
         type={drawerType}
         types={ready?.types ?? []}
         onClose={() => setDrawer(null)}
-        onSaved={() => {
+        onSaved={(saved, sizeRenames) => {
           setDrawer(null);
           setVersion((current) => current + 1);
+          if (sizeRenames.length > 0) {
+            setPendingRenames({ typeId: saved.id, offers: sizeRenames });
+          }
         }}
         onDeleted={() => {
           setDrawer(null);
           setVersion((current) => current + 1);
         }}
       />
+      <SizeRenameDialog pending={pendingRenames} onClose={() => setPendingRenames(null)} />
     </div>
   );
 }
