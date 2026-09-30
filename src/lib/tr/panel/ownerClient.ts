@@ -1734,63 +1734,6 @@ export async function deleteOwnerOrderDraft(
   invalidateOwnerCache("order-drafts:");
 }
 
-export async function fetchOwnerContentPacks(boutiqueId: string) {
-  const response = await ownerFetch(
-    `/api/tr/owner/content-packs?boutiqueId=${encodeURIComponent(boutiqueId)}`,
-  );
-  const data = (await parseOwnerJson(response)) as {
-    packs?: import("@/lib/tr/contentPacks").TrContentPack[];
-    error?: string;
-  };
-  if (!response.ok) {
-    throw new Error(data.error ?? "İçerik paketleri yüklenemedi.");
-  }
-  return data.packs ?? [];
-}
-
-export async function fetchOwnerContentPack(packId: string) {
-  const response = await ownerFetch(
-    `/api/tr/owner/content-packs/${encodeURIComponent(packId)}`,
-  );
-  const data = (await parseOwnerJson(response)) as {
-    pack?: import("@/lib/tr/contentPacks").TrContentPack;
-    error?: string;
-  };
-  if (!response.ok) {
-    throw new Error(data.error ?? "İçerik paketi yüklenemedi.");
-  }
-  if (!data.pack) throw new Error("İçerik paketi bulunamadı.");
-  return data.pack;
-}
-
-export async function createOwnerContentPack(
-  boutiqueId: string,
-  productId: string,
-): Promise<{
-  pack: import("@/lib/tr/contentPacks").TrContentPack;
-  warning: string | null;
-}> {
-  const response = await ownerFetch("/api/tr/owner/content-packs", {
-    method: "POST",
-    body: JSON.stringify({ boutiqueId, productId }),
-  });
-  const data = (await parseOwnerJson(response)) as {
-    pack?: import("@/lib/tr/contentPacks").TrContentPack;
-    warning?: string | null;
-    error?: string;
-  };
-  if (!response.ok && !data.pack) {
-    throw new Error(data.error ?? "İçerik paketi oluşturulamadı.");
-  }
-  if (!data.pack) {
-    throw new Error(data.error ?? "İçerik paketi oluşturulamadı.");
-  }
-  return {
-    pack: data.pack,
-    warning: data.warning ?? data.error ?? null,
-  };
-}
-
 export interface TrOwnerBoutiqueSettings {
   id: string;
   slug: string;
