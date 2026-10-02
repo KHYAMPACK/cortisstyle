@@ -42,7 +42,7 @@ const GROUP = "20000000-0000-4000-8000-000000000001";
 const red = product(P1, {
   title: "Kırmızı Maxi Elbise",
   createdAt: "2026-08-01T00:00:00Z",
-  features: { color: "Kırmızı", colorGroupId: GROUP },
+  features: { color: "Kırmızı", colorGroupId: GROUP, colorSiblingIds: [P1, P2] },
 });
 const black = product(P2, {
   title: "Siyah Maxi Elbise",
@@ -102,6 +102,7 @@ describe("size migration plan", () => {
     assert.deepEqual(merged.merge?.images, [`https://cdn/${P1}.jpg`, `https://cdn/${P2}.jpg`]);
     assert.deepEqual(merged.variants[3]!.images, [`https://cdn/${P2}.jpg`]);
     assert.equal(merged.merge?.features.colorGroupId, undefined);
+    assert.equal(merged.merge?.features.colorSiblingIds, undefined);
     assert.equal(merged.merge?.features.manualListing, true);
     assert.deepEqual(plan.merges.map((m) => [m.productId, m.intoId, m.color]), [[P2, P1, "Siyah"]]);
     assert.equal(plan.merges[0]!.features.color, "Siyah");

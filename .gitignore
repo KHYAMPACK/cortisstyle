@@ -55,4 +55,6 @@ next-env.d.ts
 # F6 generator output (regenerate right before applying)
 /supabase/f6/*-report.md
 /supabase/patch_lilabutik_variants.sql
-/supabase/patch_lilabutik_variants_rollback.sql
+
+# Claude Code local settings
+/.claude/settings.local.json

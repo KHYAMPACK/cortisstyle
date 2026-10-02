@@ -14,8 +14,9 @@
  *   --boutique-id <uuid>  with --snapshot
  *   --snapshot-at <time>  with --snapshot: when it was read (for the SQL header)
  *
- * Writes supabase/f6/<slug>-report.md always, and supabase/patch_<slug>_variants.sql +
- * supabase/patch_<slug>_variants_rollback.sql when the plan has no blocking problem.
+ * Writes supabase/f6/<slug>-report.md always, and supabase/patch_<slug>_variants.sql when the
+ * plan has no blocking problem. A snapshot whose rows carry `hash` (SIZE_MIGRATION_HASH_SQL)
+ * gives the compact patch instead (small enough for one database call).
  * The SQL checks that nothing changed since the snapshot; re-run this right before applying.
  */
 import { randomUUID } from "node:crypto";
@@ -24,6 +25,7 @@ import { resolve } from "node:path";
 import {
   checkSizeMigration,
   planSizeMigration,
+  sizeMigrationCompactSql,
   sizeMigrationSql,
   type MigrationAnswers,
   type MigrationProduct,
@@ -195,10 +197,16 @@ async function main() {
     process.exitCode = 1;
     return;
   }
-  const sql = sizeMigrationSql({ plan, products, boutiqueId: source.boutiqueId, boutiqueSlug: slug, snapshotAt });
+  const hashes = new Map(
+    source.rows
+      .filter((row) => typeof row.hash === "string")
+      .map((row) => [String(row.id), String(row.hash)]),
+  );
+  const common = { plan, products, boutiqueId: source.boutiqueId, boutiqueSlug: slug, snapshotAt };
+  const sql = hashes.size > 0 ? sizeMigrationCompactSql({ ...common, hashes }) : sizeMigrationSql(common);
   writeFileSync(`supabase/patch_${slug}_variants.sql`, sql.apply);
-  writeFileSync(`supabase/patch_${slug}_variants_rollback.sql`, sql.rollback);
-  console.log(`SQL: supabase/patch_${slug}_variants.sql (+ _rollback.sql)`);
+  if (arg("full-too")) writeFileSync(arg("full-too")!, sizeMigrationSql(common).apply);
+  console.log(`SQL: supabase/patch_${slug}_variants.sql${hashes.size > 0 ? " (compact)" : ""}`);
 }
 
 main().catch((error: unknown) => {

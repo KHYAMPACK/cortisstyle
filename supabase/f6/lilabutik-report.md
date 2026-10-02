@@ -1,6 +1,6 @@
 # F6 dry run: lilabutik
 
-Snapshot: 2026-10-02 18:07:06.539107+00.
+Snapshot: 2026-10-02 18:15:09.890585+00.
 
 **Nothing blocks.** The SQL is in `supabase/`.
 
