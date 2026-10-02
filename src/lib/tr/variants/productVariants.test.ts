@@ -251,6 +251,23 @@ describe("the variants form", () => {
     assert.equal(removed, 2);
   });
 
+  it("allows one photo option per product", () => {
+    const photo = (id: string, name: string) =>
+      ({ id, name, hasPhotos: true, values: [value(`${id}1`, "A", 0)] }) as unknown as TrVariantType;
+    const withPhotos = [photo("renk2", "Renk"), photo("desen", "Desen"), beden as unknown as TrVariantType];
+    assert.match(
+      selectionProblem(
+        { typeIds: ["renk2", "desen"], valueIdsByType: { renk2: ["renk21"], desen: ["desen1"] } },
+        withPhotos,
+      )!,
+      /yalnızca bir fotoğraflı seçenek olabilir \(Renk, Desen\)/,
+    );
+    assert.equal(
+      selectionProblem({ typeIds: ["renk2", "beden"], valueIdsByType: { renk2: ["renk21"], beden: ["s"] } }, withPhotos),
+      null,
+    );
+  });
+
   it("explains a selection that can't be applied", () => {
     assert.equal(selectionProblem({ typeIds: [], valueIdsByType: {} }, types), null);
     assert.match(

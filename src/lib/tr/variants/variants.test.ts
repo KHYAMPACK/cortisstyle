@@ -264,12 +264,26 @@ describe("variant type form", () => {
       name: "Renk",
       selectionStyle: "swatch",
       role: null,
+      hasPhotos: false,
       values: [
         { id: "v1", label: "Kırmızı", hex: "#ff0000", imageUrl: null },
         { id: "v2", label: "Mavi", hex: "#0000ff", imageUrl: null },
       ],
     });
     assert.deepEqual(readVariantTypeBody(body).values.map((v) => v.id), ["v1", "v2"]);
+  });
+
+  it("reads the photo setting, and falls back to the colour role before the patch", () => {
+    const stored = mapVariantTypeRow({ id: "t", boutique_id: "b", name: "Desen", selection_style: "list", has_photos: true });
+    assert.equal(stored.hasPhotos, true);
+    const legacyColor = mapVariantTypeRow({ id: "t", boutique_id: "b", name: "Renk", selection_style: "list", role: "color" });
+    assert.equal(legacyColor.hasPhotos, true);
+    const explicitOff = mapVariantTypeRow({ id: "t", boutique_id: "b", name: "Renk", selection_style: "list", role: "color", has_photos: false });
+    assert.equal(explicitOff.hasPhotos, false);
+    const input = readVariantTypeBody({ name: "Desen", selectionStyle: "list", hasPhotos: true, values: [{ label: "Çizgili" }] });
+    assert.equal(input.hasPhotos, true);
+    assert.equal(readVariantTypeBody({ name: "Desen", selectionStyle: "list", values: [{ label: "A" }] }).hasPhotos, undefined);
+    assert.throws(() => readVariantTypeBody({ name: "D", selectionStyle: "list", hasPhotos: "yes", values: [{ label: "A" }] }));
   });
 
   it("validates with the API's rules and the boutique's existing names", () => {

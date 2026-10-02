@@ -32,6 +32,11 @@ export interface TrVariantType {
   name: string;
   selectionStyle: TrVariantSelectionStyle;
   role: TrVariantTypeRole | null;
+  /**
+   * Each value has its own photos (a colour, a pattern): in a product the variants of a
+   * value share them and the shop's gallery follows the choice. One per product.
+   */
+  hasPhotos: boolean;
   sortOrder: number;
   /** In display order. */
   values: TrVariantTypeValue[];
@@ -50,6 +55,8 @@ export interface TrVariantTypeInput {
   name: string;
   selectionStyle: TrVariantSelectionStyle;
   role: TrVariantTypeRole | null;
+  /** Omitted = leave as it is (a new type: no photos). */
+  hasPhotos?: boolean;
   values: TrVariantTypeValueInput[];
 }
 
@@ -94,6 +101,9 @@ export function mapVariantTypeRow(
     name: String(row.name ?? ""),
     selectionStyle: readVariantSelectionStyle(row.selection_style),
     role: readVariantTypeRole(row.role),
+    // Before patch_variant_type_photos.sql a colour type is the one with photos.
+    hasPhotos:
+      typeof row.has_photos === "boolean" ? row.has_photos : readVariantTypeRole(row.role) === "color",
     sortOrder: typeof row.sort_order === "number" ? row.sort_order : 0,
     values: [...values].sort((a, b) => a.sortOrder - b.sortOrder),
     createdAt: String(row.created_at ?? ""),

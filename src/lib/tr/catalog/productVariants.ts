@@ -220,6 +220,9 @@ export async function saveProductVariants(args: {
     if (input.typeIds.some((typeId) => !byId.has(typeId))) {
       throw new ProductVariantsError("Seçilen varyant türü bulunamadı.");
     }
+    if (input.typeIds.filter((typeId) => byId.get(typeId)!.hasPhotos).length > 1) {
+      throw new ProductVariantsError("Bir üründe yalnızca bir fotoğraflı seçenek olabilir.");
+    }
     for (const variant of input.variants) {
       variant.optionValueIds.forEach((valueId, index) => {
         const type = byId.get(input.typeIds[index]!)!;

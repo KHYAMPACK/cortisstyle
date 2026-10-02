@@ -31,6 +31,8 @@ export interface VariantTypeFormState {
   name: string;
   selectionStyle: TrVariantSelectionStyle;
   role: TrVariantTypeRole | null;
+  /** Each value gets its own photos in a product. */
+  hasPhotos: boolean;
   values: VariantValueDraft[];
 }
 
@@ -41,7 +43,7 @@ function nextKey(): string {
 }
 
 export function emptyVariantTypeForm(): VariantTypeFormState {
-  return { name: "", selectionStyle: "list", role: null, values: [] };
+  return { name: "", selectionStyle: "list", role: null, hasPhotos: false, values: [] };
 }
 
 export function formFromVariantType(type: TrVariantType): VariantTypeFormState {
@@ -49,6 +51,7 @@ export function formFromVariantType(type: TrVariantType): VariantTypeFormState {
     name: type.name,
     selectionStyle: type.selectionStyle,
     role: type.role,
+    hasPhotos: type.hasPhotos,
     values: type.values.map((value) => ({
       key: value.id,
       id: value.id,
@@ -105,6 +108,7 @@ export function variantTypeBody(form: VariantTypeFormState): Record<string, unkn
     name: form.name,
     selectionStyle: form.selectionStyle,
     role: form.role,
+    hasPhotos: form.hasPhotos,
     values: form.values.map((value) => ({
       ...(value.id ? { id: value.id } : {}),
       label: value.label,

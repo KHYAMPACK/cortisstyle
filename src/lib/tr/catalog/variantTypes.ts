@@ -48,6 +48,8 @@ const SCHEMA_HINT =
 
 const ROLE_SCHEMA_HINT =
   "Beden / renk türü kaydedilemedi: veritabanı güncellemesi (patch_variant_type_roles.sql) henüz uygulanmamış.";
+const PHOTOS_SCHEMA_HINT =
+  "Fotoğraf ayarı kaydedilemedi: veritabanı güncellemesi (patch_variant_type_photos.sql) henüz uygulanmamış.";
 
 export class VariantTypeError extends Error {
   constructor(
@@ -69,7 +71,11 @@ function client() {
 function failure(error: DbError, name?: string): never {
   if (isSchemaMissing(error)) {
     throw new VariantTypeError(
-      /\brole\b/.test(error.message ?? "") ? ROLE_SCHEMA_HINT : SCHEMA_HINT,
+      /\bhas_photos\b/.test(error.message ?? "")
+        ? PHOTOS_SCHEMA_HINT
+        : /\brole\b/.test(error.message ?? "")
+          ? ROLE_SCHEMA_HINT
+          : SCHEMA_HINT,
     );
   }
   if (isUniqueViolation(error)) {
@@ -244,6 +250,8 @@ export async function createVariantType(
       selection_style: input.selectionStyle,
       // Only sent when set, so a database without the role patch still takes plain types.
       ...(input.role ? { role: input.role } : {}),
+      // Likewise only when on, for a database without the photos patch.
+      ...(input.hasPhotos ? { has_photos: true } : {}),
       sort_order: nextOrder,
     })
     .select("*")
@@ -309,6 +317,9 @@ export async function updateVariantType(
       selection_style: input.selectionStyle,
       // Only sent when it changes, so a database without the role patch still saves.
       ...(input.role !== current.role ? { role: input.role } : {}),
+      ...(input.hasPhotos !== undefined && input.hasPhotos !== current.hasPhotos
+        ? { has_photos: input.hasPhotos }
+        : {}),
       updated_at: new Date().toISOString(),
     })
     .eq("id", id);

@@ -38,7 +38,8 @@ export interface VariantsFormState {
 
 export const EMPTY_VARIANTS_FORM: VariantsFormState = { typeIds: [], rows: [] };
 
-type TypeWithValues = Pick<TrVariantType, "id" | "values">;
+type TypeWithValues = Pick<TrVariantType, "id" | "values"> &
+  Partial<Pick<TrVariantType, "name" | "hasPhotos">>;
 
 export function variantsFormFromProduct(variants: TrProductVariants): VariantsFormState {
   return {
@@ -146,6 +147,14 @@ export function selectionProblem(
   if (selection.typeIds.length > PRODUCT_VARIANT_LIMITS.typesMax) {
     return `En fazla ${PRODUCT_VARIANT_LIMITS.typesMax} varyant türü seçebilirsiniz.`;
   }
+  const photoTypes = selection.typeIds
+    .map((id) => types.find((type) => type.id === id))
+    .filter((type) => type?.hasPhotos);
+  if (photoTypes.length > 1) {
+    return `Bir üründe yalnızca bir fotoğraflı seçenek olabilir (${photoTypes
+      .map((type) => type?.name ?? "")
+      .join(", ")}).`;
+  }
   const values = orderedValueIds(selection, types);
   if (values.some((list) => list.length === 0)) {
     return "Seçtiğiniz her tür için en az bir değer seçin.";
@@ -243,9 +252,9 @@ export function hasBulkChanges(changes: BulkChanges): boolean {
 
 // ------------------------------------------------------- sections
 
-/** The variants that share the first option's value (one colour), for the editor. */
+/** The variants that share a value of the photo option (one colour), for the editor. */
 export interface VariantRowGroup {
-  /** The first option's value id; `null` when the product has a single option. */
+  /** The photo option's value id; `null` when the product has no photo option. */
   valueId: string | null;
   rows: VariantRowDraft[];
   /** Active rows' stock. */
@@ -254,11 +263,12 @@ export interface VariantRowGroup {
 }
 
 /**
- * The editor's sections: with two or more options, one per value of the first option
- * (in `valueOrder`, then any other in row order); with one option, a single section.
+ * The editor's sections: one per value of the photo option (in `valueOrder`, then any
+ * other in row order), or a single section when the product has none.
  */
 export function groupVariantRows(
   form: VariantsFormState,
+  photoTypeId: string | null,
   valueOrder: readonly string[] = [],
 ): VariantRowGroup[] {
   const summarize = (valueId: string | null, rows: VariantRowDraft[]): VariantRowGroup => ({
@@ -267,10 +277,11 @@ export function groupVariantRows(
     stock: variantsTotalStock({ typeIds: form.typeIds, rows }),
     activeCount: rows.filter((row) => row.active).length,
   });
-  if (form.typeIds.length < 2) return form.rows.length > 0 ? [summarize(null, form.rows)] : [];
+  const index = photoTypeId ? form.typeIds.indexOf(photoTypeId) : -1;
+  if (index < 0) return form.rows.length > 0 ? [summarize(null, form.rows)] : [];
   const byValue = new Map<string, VariantRowDraft[]>();
   for (const row of form.rows) {
-    const valueId = row.optionValueIds[0] ?? "";
+    const valueId = row.optionValueIds[index] ?? "";
     byValue.set(valueId, [...(byValue.get(valueId) ?? []), row]);
   }
   const order = [
@@ -303,5 +314,22 @@ export function toggleGroupImage(
       const without = row.images.filter((image) => image !== url);
       return { ...row, images: remove ? without : [...without, url] };
     }),
+  };
+}
+
+/** Adds photos (just uploaded) to the given rows, after the ones they already have. */
+export function addImagesToRows(
+  form: VariantsFormState,
+  rowKeys: readonly string[],
+  urls: readonly string[],
+): VariantsFormState {
+  const keys = new Set(rowKeys);
+  return {
+    ...form,
+    rows: form.rows.map((row) =>
+      keys.has(row.key)
+        ? { ...row, images: [...row.images, ...urls.filter((url) => !row.images.includes(url))] }
+        : row,
+    ),
   };
 }

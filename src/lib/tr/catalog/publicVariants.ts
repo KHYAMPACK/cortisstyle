@@ -39,6 +39,7 @@ function build(
       typeId,
       name: type.name,
       role: type.role,
+      photos: type.hasPhotos,
       selectionStyle: type.selectionStyle,
       values: type.values
         .filter((value) => used.has(value.id))

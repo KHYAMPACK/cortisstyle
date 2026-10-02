@@ -49,8 +49,10 @@ import {
   fetchOwnerAttributes,
   fetchOwnerProductKinds,
   updateOwnerProduct,
+  uploadOwnerProductImage,
   type TrOwnerBoutiqueSummary,
 } from "@/lib/tr/ownerClient";
+import { addImagesToRows } from "@/lib/tr/variants/variantForm";
 import {
   effectiveStock,
   emptyProductForm,
@@ -280,6 +282,30 @@ function ProductEditorForm({
 
   const change = (patch: Partial<ProductFormState>) => {
     setForm((current) => ({ ...current, ...patch }));
+  };
+
+  /**
+   * Photos uploaded in a Varyant section: they join the product's photos (a variant can
+   * only show the product's own) and the variants of that value, in one update.
+   */
+  const uploadVariantPhotos = async (files: File[], rowKeys: string[]) => {
+    const used = form.images.filter((url) => url.trim()).length;
+    const room = TR_OWNER_PRODUCT_LIMITS.maxImagesAdvanced - used;
+    if (room <= 0) {
+      throw new Error(`Üründe en fazla ${TR_OWNER_PRODUCT_LIMITS.maxImagesAdvanced} fotoğraf olabilir.`);
+    }
+    const urls: string[] = [];
+    for (const file of files.slice(0, room)) {
+      urls.push((await uploadOwnerProductImage(boutiqueId, file)).url);
+    }
+    setForm((current) => ({
+      ...current,
+      images: [...current.images.filter((url) => url.trim()), ...urls],
+      variants: addImagesToRows(current.variants, rowKeys, urls),
+    }));
+    if (files.length > room) {
+      throw new Error(`${files.length - room} fotoğraf sığmadı (en fazla ${TR_OWNER_PRODUCT_LIMITS.maxImagesAdvanced}).`);
+    }
   };
 
   const save = async () => {
@@ -625,6 +651,12 @@ function ProductEditorForm({
               productImages={form.images}
               productPrice={form.priceTry}
               disabled={saving}
+              onUploadPhotos={uploadVariantPhotos}
+              uploadBlockedReason={
+                form.generatedGallery !== null
+                  ? "Fotoğraf yüklemek için önce Fotoğraflar kartında “Fotoğrafları düzenle”ye basın."
+                  : null
+              }
             />
           </TrPanelEditorCard>
         ) : null}

@@ -259,6 +259,24 @@ export function TrVariantTypeDrawer({
           </div>
         </fieldset>
 
+        <label className="flex items-start gap-3 rounded-lg border border-neutral-200 px-3.5 py-3">
+          <input
+            type="checkbox"
+            checked={form.hasPhotos}
+            onChange={(event) => change({ hasPhotos: event.target.checked })}
+            className="mt-0.5 h-4 w-4 shrink-0 accent-[color:var(--panel-accent)]"
+          />
+          <span className="min-w-0">
+            <span className="block text-[14px] font-semibold text-neutral-900">
+              Her değer için ayrı fotoğraf
+            </span>
+            <span className={`mt-0.5 block ${panelHintClass}`}>
+              Üründe her değerin (ör. her rengin) kendi fotoğrafları olur; müşteri seçince
+              galeri ona göre değişir. Bir üründe yalnızca bir tür fotoğraflı olabilir.
+            </span>
+          </span>
+        </label>
+
         <div className="space-y-2">
           <div className="flex items-baseline justify-between">
             <span className={panelLabelClass}>

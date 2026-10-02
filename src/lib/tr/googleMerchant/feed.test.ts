@@ -31,6 +31,7 @@ const variants: TrPublicVariants = {
       typeId: "renk",
       name: "Renk",
       role: "color",
+      photos: true,
       selectionStyle: "list",
       values: [{ id: "kirmizi", label: "Kırmızı", hex: null, imageUrl: null }],
     },
@@ -38,6 +39,7 @@ const variants: TrPublicVariants = {
       typeId: "beden",
       name: "Beden",
       role: "size",
+      photos: false,
       selectionStyle: "list",
       values: [
         { id: "s", label: "S", hex: null, imageUrl: null },

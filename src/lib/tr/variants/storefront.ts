@@ -5,8 +5,8 @@ import { variantLabel } from "@/lib/tr/variants/productVariantRules";
  * server loads it (`catalog/publicVariants.ts`); the product page, the quick-add sheet
  * and the cart use these rules. Pure.
  *
- * Photos per colour are the variants' own images: the gallery shows the images of the
- * variants that carry the chosen colour value, else the product's.
+ * Photos per value are the variants' own images: the gallery shows the images of the
+ * variants that carry the chosen value of the photo option (Renk…), else the product's.
  */
 
 export interface TrPublicVariantValue {
@@ -20,8 +20,11 @@ export interface TrPublicVariantValue {
 export interface TrPublicVariantOption {
   typeId: string;
   name: string;
-  /** `color` options become swatches and drive the gallery and `?renk=`. */
+  /** What the option means (Google's color/size attributes, the size filter). */
   role: "size" | "color" | null;
+  /** Each value has its own photos: this option drives the gallery and its address
+   *  parameter (`?renk=` for Renk). At most one per product. */
+  photos: boolean;
   selectionStyle: "list" | "swatch";
   /** Only values some active variant uses, in the type's order. */
   values: TrPublicVariantValue[];
@@ -133,21 +136,27 @@ export function pickValue(
   return next;
 }
 
-/** The colour option, if the product has one. */
-export function colorOption(data: TrPublicVariants): TrPublicVariantOption | null {
-  return data.options.find((option) => option.role === "color") ?? null;
+/** The option whose values have their own photos (Renk…), if the product has one. */
+export function photoOption(data: TrPublicVariants): TrPublicVariantOption | null {
+  return data.options.find((option) => option.photos) ?? null;
+}
+
+/** The address parameter of the photo option: its name as a slug ("Renk" → `renk`). */
+export function photoParamName(option: TrPublicVariantOption): string {
+  return valueParam(option.name) || "secenek";
 }
 
 /**
- * The starting selection: the colour from `?renk=` when it names one, else the first
- * colour that has stock; any option with a single sellable value is chosen too.
+ * The starting selection: the photo option's value from its address parameter
+ * (`?renk=`) when it names one, else its first value that has stock; any option with a
+ * single sellable value is chosen too.
  */
 export function initialSelection(
   data: TrPublicVariants,
   colorParam?: string | null,
 ): TrVariantSelection {
   let selection: TrVariantSelection = {};
-  const color = colorOption(data);
+  const color = photoOption(data);
   if (color) {
     const fromParam = colorParam ? valueForParam(color, colorParam) : null;
     const pick =
@@ -186,15 +195,15 @@ export function valueForParam(
 }
 
 /**
- * The gallery for the selection: the images of the variants with the chosen colour (in
- * variant order, without repeats), else the product's own images.
+ * The gallery for the selection: the images of the variants with the chosen value of
+ * the photo option (in variant order, without repeats), else the product's own images.
  */
 export function galleryForSelection(
   data: TrPublicVariants,
   selection: TrVariantSelection,
   productImages: readonly string[],
 ): string[] {
-  const color = colorOption(data);
+  const color = photoOption(data);
   const chosen = color ? selection[color.typeId] : null;
   if (!color || !chosen) return [...productImages];
   const index = data.options.indexOf(color);

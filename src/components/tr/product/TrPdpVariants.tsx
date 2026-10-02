@@ -4,7 +4,8 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 import { TrProductGallery } from "@/components/tr/TrProductGallery";
 import {
-  colorOption,
+  photoOption,
+  photoParamName,
   galleryForSelection,
   initialSelection,
   isValueAvailable,
@@ -19,8 +20,8 @@ import {
 
 /**
  * The product page's variant state (F5), shared by the gallery and the detail panel:
- * what the shopper picked, the variant it names, and the photos to show. The chosen
- * colour is kept in the address (`?renk=`) so a shared link opens that colour.
+ * what the shopper picked, the variant it names, and the photos to show. The chosen value
+ * of the photo option is kept in the address (`?renk=` for Renk) so a shared link opens it.
  */
 
 interface PdpVariantsValue {
@@ -53,19 +54,20 @@ export function TrPdpVariantsProvider({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [selection, setSelection] = useState<TrVariantSelection>(() =>
-    initialSelection(data, searchParams.get("renk")),
-  );
+  const [selection, setSelection] = useState<TrVariantSelection>(() => {
+    const option = photoOption(data);
+    return initialSelection(data, option ? searchParams.get(photoParamName(option)) : null);
+  });
 
   const pick = useCallback(
     (typeId: string, valueId: string) => {
       const next = pickValue(data, selection, typeId, valueId);
       setSelection(next);
-      const color = colorOption(data);
-      if (color && typeId === color.typeId) {
-        const value = color.values.find((entry) => entry.id === valueId);
+      const option = photoOption(data);
+      if (option && typeId === option.typeId) {
+        const value = option.values.find((entry) => entry.id === valueId);
         const params = new URLSearchParams(searchParams.toString());
-        if (value) params.set("renk", valueParam(value.label));
+        if (value) params.set(photoParamName(option), valueParam(value.label));
         router.replace(`${pathname}?${params.toString()}`, { scroll: false });
       }
     },

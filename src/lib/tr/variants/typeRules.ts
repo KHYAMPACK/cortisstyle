@@ -98,7 +98,16 @@ export function readVariantTypeBody(body: Record<string, unknown>): TrVariantTyp
   if (values.length > VARIANT_TYPE_LIMITS.valuesMax) {
     throw new Error(`En fazla ${VARIANT_TYPE_LIMITS.valuesMax} değer ekleyebilirsiniz.`);
   }
-  return { name, selectionStyle, role, values };
+  if (body.hasPhotos !== undefined && typeof body.hasPhotos !== "boolean") {
+    throw new Error("Fotoğraf ayarı geçersiz.");
+  }
+  return {
+    name,
+    selectionStyle,
+    role,
+    ...(typeof body.hasPhotos === "boolean" ? { hasPhotos: body.hasPhotos } : {}),
+    values,
+  };
 }
 
 /** What saving a type does to its stored values. */

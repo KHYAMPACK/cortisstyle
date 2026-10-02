@@ -3,6 +3,8 @@ import { describe, it } from "node:test";
 import {
   galleryForSelection,
   initialSelection,
+  photoOption,
+  photoParamName,
   isValueAvailable,
   pickValue,
   priceRange,
@@ -19,6 +21,7 @@ const data: TrPublicVariants = {
       typeId: "renk",
       name: "Renk",
       role: "color",
+      photos: true,
       selectionStyle: "swatch",
       values: [
         { id: "kirmizi", label: "Kırmızı", hex: "#b71c1c", imageUrl: null },
@@ -29,6 +32,7 @@ const data: TrPublicVariants = {
       typeId: "beden",
       name: "Beden",
       role: "size",
+      photos: false,
       selectionStyle: "list",
       values: [
         { id: "s", label: "S", hex: null, imageUrl: null },
@@ -104,5 +108,21 @@ describe("storefront variants", () => {
     assert.equal(own.priceKurus, 900);
     assert.equal(own.compareAtPriceKurus, null);
     assert.equal(own.stock, 0);
+  });
+
+  it("follows the photo option, whatever it is called", () => {
+    const pattern = {
+      ...data,
+      options: [
+        { ...data.options[0]!, name: "Desen", role: null, photos: true },
+        { ...data.options[1]!, photos: false },
+      ],
+    } as TrPublicVariants;
+    assert.equal(photoOption(pattern)?.name, "Desen");
+    assert.equal(photoParamName(photoOption(pattern)!), "desen");
+    assert.deepEqual(galleryForSelection(pattern, { renk: "kirmizi" }, ["p"]), ["r1", "r2", "r3"]);
+    const none = { ...data, options: data.options.map((option) => ({ ...option, photos: false })) };
+    assert.equal(photoOption(none), null);
+    assert.deepEqual(galleryForSelection(none, { renk: "kirmizi" }, ["p"]), ["p"]);
   });
 });
