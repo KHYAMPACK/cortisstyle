@@ -6,20 +6,18 @@ import {
   type TrStorefrontTaxonomy,
   type TrTaxonomyNode,
 } from "@/lib/tr/categories/taxonomy";
-import { legacyFashionTaxonomy } from "@/lib/tr/fashion/legacyTaxonomy";
 
 /**
- * The boutique's category system for storefront components: its own categories when it
- * is in `custom` mode (the layout passes them as nodes), else the built-in garment tree.
- * Without a provider (or with `null` nodes) it is the built-in tree, exactly as before.
+ * The boutique's categories for storefront components (the layout loads them as nodes).
+ * Without a provider, or for a boutique with no categories, it is an empty tree.
  */
-const TaxonomyNodesContext = createContext<readonly TrTaxonomyNode[] | null>(null);
+const TaxonomyNodesContext = createContext<readonly TrTaxonomyNode[]>([]);
 
 export function TrBoutiqueTaxonomyProvider({
   nodes,
   children,
 }: {
-  nodes: readonly TrTaxonomyNode[] | null;
+  nodes: readonly TrTaxonomyNode[];
   children: ReactNode;
 }) {
   return (
@@ -29,5 +27,5 @@ export function TrBoutiqueTaxonomyProvider({
 
 export function useStorefrontTaxonomy(): TrStorefrontTaxonomy {
   const nodes = useContext(TaxonomyNodesContext);
-  return useMemo(() => (nodes ? customTaxonomy(nodes) : legacyFashionTaxonomy), [nodes]);
+  return useMemo(() => customTaxonomy(nodes), [nodes]);
 }

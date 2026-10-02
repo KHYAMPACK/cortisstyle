@@ -10,11 +10,7 @@ import {
   TrPanelFadeIn,
   TrPanelLoading,
 } from "@/components/tr/panel/TrPanelMotion";
-import {
-  panelEmptyClass,
-  panelErrorClass,
-  panelHintClass,
-} from "@/components/tr/panel/panelUi";
+import { panelErrorClass } from "@/components/tr/panel/panelUi";
 import type { TrCategory } from "@/lib/tr/categories/types";
 import { fetchOwnerCategory } from "@/lib/tr/ownerClient";
 import {
@@ -74,16 +70,7 @@ export function TrOwnerCategoryEditorPage({
             title={categoryId ? "Kategoriyi düzenle" : "Kategori ekle"}
             subject={loaded?.category?.name}
           >
-            {activeBoutique.categoryMode !== "custom" ? (
-              <div className={`${panelEmptyClass} mt-4`}>
-                <p className="font-semibold text-neutral-900">
-                  Bu butik hazır kategori ağacını kullanıyor.
-                </p>
-                <p className={`mt-1 ${panelHintClass}`}>
-                  Özel kategoriler bu butik için etkin değil.
-                </p>
-              </div>
-            ) : categoryId && !loaded ? (
+            {categoryId && !loaded ? (
               <TrPanelLoading key="category-loading" label="Kategori yükleniyor…" />
             ) : loaded?.error ? (
               <p className={`${panelErrorClass} mt-4`}>{loaded.error}</p>

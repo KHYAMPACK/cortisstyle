@@ -2,8 +2,41 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { planCategoryImport } from "@/lib/tr/categories/importPlan";
 import { customTaxonomy, taxonomyNodesFromCategories } from "@/lib/tr/categories/taxonomy";
-import { fashionCategoryAliases, fashionCategoryTemplate } from "./categoryTemplate";
-import { fashionShopAllLabelFor, legacyFashionTaxonomy as legacy } from "./legacyTaxonomy";
+import type { TrStorefrontTaxonomy } from "@/lib/tr/categories/taxonomy";
+import {
+  canonicalizeTrCategoryId,
+  getTrCategoryLabel,
+  getTrCategoryNavChildren,
+  getTrCategoryRootId,
+  getTrCategoryShopAllLabel,
+  isTrCategoryMatch,
+  listAssignableTrCategories,
+  listCategoriesForProducts,
+  listTrCategoryRoots,
+  resolveTrCategoryDisplayLabel,
+} from "./categories";
+import {
+  fashionCategoryAliases,
+  fashionCategoryTemplate,
+  fashionShopAllLabelFor,
+} from "./categoryTemplate";
+
+/**
+ * What the storefront rendered before every boutique had its own categories: the
+ * built-in garment tree's functions. The imported tree must render the same.
+ */
+const legacy: Omit<TrStorefrontTaxonomy, "imageUrl"> = {
+  label: getTrCategoryLabel,
+  displayLabel: resolveTrCategoryDisplayLabel,
+  shopAllLabel: getTrCategoryShopAllLabel,
+  roots: listTrCategoryRoots,
+  navChildren: getTrCategoryNavChildren,
+  isMatch: isTrCategoryMatch,
+  rootId: getTrCategoryRootId,
+  canonicalize: canonicalizeTrCategoryId,
+  assignable: listAssignableTrCategories,
+  forProducts: listCategoriesForProducts,
+};
 
 /** lilabutik's categories in production (2026-09-30). */
 const LILA = ["elbise", "pantolon", "bluz", "ceket", "gomlek", "takim", "etek", "tshirt"];

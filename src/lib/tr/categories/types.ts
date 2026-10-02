@@ -4,12 +4,6 @@ import {
 } from "@/lib/tr/categories/sortCriteria";
 import { sanitizeSeo, type TrSeo } from "@/lib/tr/seo/seoFields";
 
-/**
- * Which category system a boutique uses: `legacy` = the built-in fashion tree in code
- * (what lilabutik runs on), `custom` = its own categories (`tr_categories`).
- */
-export type TrCategoryMode = "legacy" | "custom";
-
 /** One of a boutique's own categories. */
 export interface TrCategory {
   id: string;
@@ -53,9 +47,7 @@ export interface TrProductCategories {
   primaryId: string | null;
 }
 
-export function readCategoryMode(value: unknown): TrCategoryMode {
-  return value === "custom" ? "custom" : "legacy";
-}
+
 
 export function mapCategoryRow(row: Record<string, unknown>): TrCategory {
   return {

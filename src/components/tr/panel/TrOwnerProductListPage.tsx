@@ -38,11 +38,6 @@ import {
 import { TrPanelPopover } from "@/components/tr/panel/TrPanelPopover";
 import { useOwnerCategories } from "@/components/tr/panel/useOwnerCategories";
 import { flattenCategoryTree, slugsInScope } from "@/lib/tr/categories/tree";
-import {
-  getTrCategoryLabel,
-  listCategoriesForProducts,
-  TR_BOUTIQUE_CATEGORIES,
-} from "@/lib/tr/fashion/categories";
 import { runOwnerPatches } from "@/lib/tr/ownerBulk";
 import { getPanelProductCover } from "@/lib/tr/productImages";
 import {
@@ -99,13 +94,11 @@ function StatusBadge({ status }: { status: TrProductStatus }) {
   );
 }
 
-/** A product's category name: from the boutique's own categories, or the built-in tree. */
+/** A product's category name, from the boutique's categories. */
 function categoryName(
-  custom: boolean,
   ownNames: ReadonlyMap<string, string>,
   slug: string | null,
 ): string | null {
-  if (!custom) return getTrCategoryLabel(slug);
   return slug ? (ownNames.get(slug) ?? null) : null;
 }
 
@@ -233,18 +226,10 @@ function ListPager({
   );
 }
 
-function ProductList({
-  boutiqueId,
-  categoryMode,
-}: {
-  boutiqueId: string;
-  categoryMode: "legacy" | "custom";
-}) {
+function ProductList({ boutiqueId }: { boutiqueId: string }) {
   const router = useRouter();
-  // A boutique with its own categories filters and labels by them; every other
-  // boutique keeps the built-in tree exactly as before.
-  const custom = categoryMode === "custom";
-  const { categories: ownCategories } = useOwnerCategories(boutiqueId, custom);
+  // Filters and labels come from the boutique's categories.
+  const { categories: ownCategories } = useOwnerCategories(boutiqueId);
   const cached = peekOwnerProducts(boutiqueId);
   const [products, setProducts] = useState<TrProduct[]>(cached?.products ?? []);
   const [loading, setLoading] = useState(!cached);
@@ -289,13 +274,11 @@ function ProductList({
 
   const categories = useMemo(
     () =>
-      custom
-        ? flattenCategoryTree(ownCategories).map(({ category, depth }) => ({
-            id: category.slug,
-            label: `${"— ".repeat(depth)}${category.name}`,
-          }))
-        : listCategoriesForProducts(products),
-    [custom, ownCategories, products],
+      flattenCategoryTree(ownCategories).map(({ category, depth }) => ({
+        id: category.slug,
+        label: `${"— ".repeat(depth)}${category.name}`,
+      })),
+    [ownCategories],
   );
   const ownNames = useMemo(
     () => new Map(ownCategories.map((entry) => [entry.slug, entry.name])),
@@ -307,27 +290,14 @@ function ProductList({
     [products],
   );
 
-  const categoryOptions = useMemo(() => {
-    const known = new Map(
-      TR_BOUTIQUE_CATEGORIES.map((entry) => [entry.id, entry]),
-    );
-    for (const entry of categories) {
-      if (!known.has(entry.id)) known.set(entry.id, entry);
-    }
-    return [...known.values()];
-  }, [categories]);
 
   const visible = useMemo(() => {
     let list = products;
     if (categoryFilter === "uncategorized") {
       list = list.filter((product) => !product.category?.trim());
     } else if (categoryFilter !== "all") {
-      const scope = custom ? slugsInScope(ownCategories, categoryFilter) : null;
-      list = list.filter((product) =>
-        scope
-          ? scope.has(product.category?.trim() ?? "")
-          : product.category?.trim() === categoryFilter,
-      );
+      const scope = slugsInScope(ownCategories, categoryFilter);
+      list = list.filter((product) => scope.has(product.category?.trim() ?? ""));
     }
     if (statusFilter !== "all") {
       list = list.filter((product) => product.status === statusFilter);
@@ -340,7 +310,7 @@ function ProductList({
       list = list.filter((product) => {
         const title = product.title.toLocaleLowerCase("tr");
         const cat =
-          categoryName(custom, ownNames, product.category)?.toLocaleLowerCase("tr") ?? "";
+          categoryName(ownNames, product.category)?.toLocaleLowerCase("tr") ?? "";
         const id = product.id.toLocaleLowerCase("tr");
         if (title.includes(q) || cat.includes(q) || id.includes(q)) {
           return true;
@@ -356,7 +326,6 @@ function ProductList({
     statusFilter,
     products,
     search,
-    custom,
     ownCategories,
     ownNames,
   ]);
@@ -710,7 +679,7 @@ function ProductList({
               <div className="space-y-4 lg:hidden">
                 <TrPanelStagger className="space-y-3">
                   {pageItems.map((product, index) => {
-                    const categoryLabel = categoryName(custom, ownNames, product.category);
+                    const categoryLabel = categoryName(ownNames, product.category);
                     return (
                       <motion.div
                         key={product.id}
@@ -771,7 +740,7 @@ function ProductList({
                   footer={pager}
                 >
                   {pageItems.map((product, index) => {
-                    const categoryLabel = categoryName(custom, ownNames, product.category);
+                    const categoryLabel = categoryName(ownNames, product.category);
                     const href = trPanelEditProductPath(product.id);
                     return (
                       <TrPanelDataTableRow
@@ -853,52 +822,26 @@ function ProductList({
                       </option>
                     ))}
                   </select>
-                  {custom ? (
-                    <select
-                      className={panelDesktopSelectClass}
-                      defaultValue=""
-                      disabled={bulkBusy || ownCategories.length === 0}
-                      onChange={(event) => {
-                        const value = event.target.value;
-                        if (value === "") return;
-                        void runBulkAddToCategory(value);
-                        event.target.value = "";
-                      }}
-                    >
-                      <option value="" disabled>
-                        Kategori ekle…
+                  <select
+                    className={panelDesktopSelectClass}
+                    defaultValue=""
+                    disabled={bulkBusy || ownCategories.length === 0}
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      if (value === "") return;
+                      void runBulkAddToCategory(value);
+                      event.target.value = "";
+                    }}
+                  >
+                    <option value="" disabled>
+                      Kategori ekle…
+                    </option>
+                    {flattenCategoryTree(ownCategories).map(({ category, depth }) => (
+                      <option key={category.id} value={category.id}>
+                        {`${"— ".repeat(depth)}${category.name}`}
                       </option>
-                      {flattenCategoryTree(ownCategories).map(({ category, depth }) => (
-                        <option key={category.id} value={category.id}>
-                          {`${"— ".repeat(depth)}${category.name}`}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <select
-                      className={panelDesktopSelectClass}
-                      defaultValue=""
-                      disabled={bulkBusy}
-                      onChange={(event) => {
-                        const value = event.target.value;
-                        if (value === "") return;
-                        void runBulk({
-                          category: value === "__none__" ? null : value,
-                        });
-                        event.target.value = "";
-                      }}
-                    >
-                      <option value="" disabled>
-                        Kategori ata…
-                      </option>
-                      <option value="__none__">Kategorisiz</option>
-                      {categoryOptions.map((entry) => (
-                        <option key={entry.id} value={entry.id}>
-                          {entry.label}
-                        </option>
-                      ))}
-                    </select>
-                  )}
+                    ))}
+                  </select>
                   <button
                     type="button"
                     disabled={bulkBusy}
@@ -956,7 +899,6 @@ export function TrOwnerProductListPage() {
         <TrOwnerProductRouteGate activeBoutique={activeBoutique}>
           <ProductList
             boutiqueId={activeBoutique.id}
-            categoryMode={activeBoutique.categoryMode ?? "legacy"}
           />
         </TrOwnerProductRouteGate>
       )}

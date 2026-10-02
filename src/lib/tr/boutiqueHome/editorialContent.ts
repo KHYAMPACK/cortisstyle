@@ -12,7 +12,6 @@ import {
 } from "@/lib/tr/boutiqueHome/editorialDemoContent";
 import { isAtelierEditorialSkin } from "@/lib/tr/boutiqueHome/editorialSkin";
 import type { TrStorefrontTaxonomy } from "@/lib/tr/categories/taxonomy";
-import { legacyFashionTaxonomy } from "@/lib/tr/fashion/legacyTaxonomy";
 import { trBoutiqueLegalPath, trBoutiquePath } from "@/lib/tr/paths";
 import { shippingFeeConfigOf } from "@/lib/tr/shipping/quoteShipping";
 import { shippingHomeBody } from "@/lib/tr/shipping/shippingCopy";
@@ -227,13 +226,10 @@ export function buildBoutiqueEditorialDefaults(
 /** The parts of the boutique's category system the editorial defaults are built from. */
 export type EditorialTaxonomy = Pick<TrStorefrontTaxonomy, "roots" | "imageUrl">;
 
-/**
- * `taxonomy` is the boutique's category system (`useStorefrontTaxonomy()` in components);
- * without it the built-in garment tree, as before categories became per boutique.
- */
+/** `taxonomy` is the boutique's categories (`useStorefrontTaxonomy()` in components). */
 export function getEditorialContent(
   boutique: TrBoutiquePublic,
-  taxonomy: EditorialTaxonomy = legacyFashionTaxonomy,
+  taxonomy: EditorialTaxonomy,
 ): EditorialDemoContent {
   const defaults = buildBoutiqueEditorialDefaults(boutique);
 
@@ -582,7 +578,7 @@ export function resolveCampaignSubText2(
 
 export function resolveCampaignActions(
   promo: EditorialHeroPromotion,
-  taxonomy: Pick<TrStorefrontTaxonomy, "roots"> = legacyFashionTaxonomy,
+  taxonomy: Pick<TrStorefrontTaxonomy, "roots">,
 ): Array<{ label: string; target: string; indirim?: boolean }> {
   const mapActions = (actions: EditorialCampaignAction[]) =>
     actions.slice(0, 6).map((action) => ({
@@ -638,13 +634,13 @@ export function resolveCampaignActions(
 
 /** Taxonomy roots as hero / mega CTAs (Elbise · Üst · Alt · Aksesuar · Ev). */
 export function buildMainCategoryCampaignActions(
-  options?: {
+  options: {
     shopAllLabel?: string;
     shopAllTarget?: string;
     /** Apply `indirim=1` on category targets (sale hero / sale mega). */
     indirim?: boolean;
   },
-  taxonomy: Pick<TrStorefrontTaxonomy, "roots"> = legacyFashionTaxonomy,
+  taxonomy: Pick<TrStorefrontTaxonomy, "roots">,
 ): EditorialCampaignAction[] {
   const actions: EditorialCampaignAction[] = [];
   if (options?.shopAllLabel) {

@@ -1,15 +1,10 @@
 import type { TrCategory } from "@/lib/tr/categories/types";
 
 /**
- * What the storefront needs from a category system: labels, the menu tree, and
- * "is this product in that category". Two implementations share this shape:
- *
- * - the built-in garment tree (`legacyFashionTaxonomy`, in the fashion module), for a
- *   boutique in `legacy` category mode — it calls exactly the functions the storefront
- *   used before, so such a boutique renders as it always did;
- * - the boutique's own categories (`customTaxonomy` below), in `custom` mode.
- *
- * Categories are addressed by their slug, which is what `tr_products.category` holds.
+ * What the storefront needs from a boutique's categories: labels, the menu tree, and
+ * "is this product in that category" (`customTaxonomy` below, built from the boutique's
+ * `tr_categories`). Categories are addressed by their slug, which is what
+ * `tr_products.category` holds.
  */
 export interface TrTaxonomyCategory {
   id: string;
@@ -18,7 +13,6 @@ export interface TrTaxonomyCategory {
 }
 
 export interface TrStorefrontTaxonomy {
-  kind: "legacy" | "custom";
   /** A category's label; unknown ids are humanized ("yeni-sezon" → "Yeni Sezon"). */
   label(id: string | null | undefined): string | null;
   /** `label`, else the fallback, else "Kategori". */
@@ -33,7 +27,7 @@ export interface TrStorefrontTaxonomy {
   isMatch(productCategory: string | null | undefined, filterId: string | null | undefined): boolean;
   /** The top-level category a category belongs to. */
   rootId(id: string | null | undefined): string | null;
-  /** The category a product should be listed under (built-in tree: style variant → leaf). */
+  /** The category a product should be listed under. */
   canonicalize(id: string | null | undefined): string | null;
   /** Categories a product can be filed under, in menu order. */
   assignable(): TrTaxonomyCategory[];
@@ -117,7 +111,6 @@ export function customTaxonomy(nodes: readonly TrTaxonomyNode[]): TrStorefrontTa
   };
 
   return {
-    kind: "custom",
     label,
     displayLabel: (id, fallback) => label(id) ?? fallback?.trim() ?? "Kategori",
     shopAllLabel: (id) => {

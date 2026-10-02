@@ -19,7 +19,6 @@ import type { TrCategorySortCriterion } from "@/lib/tr/categories/sortCriteria";
 import type {
   TrCategory,
   TrCategoryListEntry,
-  TrCategoryMode,
   TrProductCategories,
 } from "@/lib/tr/categories/types";
 import type {
@@ -68,8 +67,6 @@ export interface TrOwnerBoutiqueSummary {
   shippingAddress?: string | null;
   /** Own domain, when connected (`tr_boutiques.custom_domain`). */
   customDomain?: string | null;
-  /** `custom` = the boutique manages its own categories; `legacy` = the built-in fashion tree. */
-  categoryMode?: "legacy" | "custom";
   offersIyzicoCheckout?: boolean;
 }
 
@@ -345,9 +342,8 @@ async function readApiResponse<T>(
 }
 
 export async function fetchOwnerCategories(boutiqueId: string): Promise<{
-  mode: TrCategoryMode;
   categories: TrCategoryListEntry[];
-  /** The built-in tree can be imported ("Hazır kategorileri içe aktar"). */
+  /** The fashion starter tree can be added ("Hazır kategorileri içe aktar"). */
   importable: boolean;
 }> {
   return cachedOwnerFetch(ownerCacheKeys.categories(boutiqueId), async () => {
@@ -355,12 +351,10 @@ export async function fetchOwnerCategories(boutiqueId: string): Promise<{
       `/api/tr/owner/categories?boutiqueId=${encodeURIComponent(boutiqueId)}`,
     );
     const data = await readApiResponse<{
-      mode?: TrCategoryMode;
       categories?: TrCategoryListEntry[];
       importable?: boolean;
     }>(response, "Kategoriler yüklenemedi.");
     return {
-      mode: data.mode ?? "legacy",
       categories: data.categories ?? [],
       importable: data.importable === true,
     };

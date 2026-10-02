@@ -32,7 +32,6 @@ export function TrOwnerNewSimpleProductPage({
               boutiqueId={activeBoutique.id}
               boutiqueSlug={activeBoutique.slug}
               customDomain={activeBoutique.customDomain}
-              categoryMode={activeBoutique.categoryMode}
               productType={productType}
               address={boutiqueLocationAddress(activeBoutique)}
               // The editor already raised the "Ürün eklendi" toast; it stays over the redirect.

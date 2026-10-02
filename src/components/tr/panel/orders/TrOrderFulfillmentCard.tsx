@@ -76,7 +76,7 @@ export function TrOrderFulfillmentCard({
         ) : null}
       </header>
 
-      <TrOrderProducts items={order.items} />
+      <TrOrderProducts boutiqueId={boutiqueId} items={order.items} />
 
       <div className="border-t border-neutral-100 px-4 py-4 sm:px-6 sm:py-5">
         {cancelled ? (

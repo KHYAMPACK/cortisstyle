@@ -1,6 +1,5 @@
 import {
   createCategory,
-  getBoutiqueCategoryMode,
   listCategoryEntries,
 } from "@/lib/tr/catalog/categories";
 import {
@@ -12,8 +11,8 @@ import { requireOwnedBoutique, requireTrOwner } from "@/lib/tr/ownerAuth";
 export const runtime = "nodejs";
 
 /**
- * GET /api/tr/owner/categories?boutiqueId= — the boutique's categories, its category mode,
- * and whether the built-in tree can be imported.
+ * GET /api/tr/owner/categories?boutiqueId= — the boutique's categories, and whether the
+ * fashion starter tree can be added (a fashion boutique with none yet).
  */
 export async function GET(request: Request) {
   const authResult = await requireTrOwner(request);
@@ -27,14 +26,10 @@ export async function GET(request: Request) {
   }
 
   try {
-    const [mode, categories] = await Promise.all([
-      getBoutiqueCategoryMode(boutique.id),
-      listCategoryEntries(boutique.id),
-    ]);
-    // A fashion boutique still on the built-in tree can import it as its own categories.
+    const categories = await listCategoryEntries(boutique.id);
     const importable =
-      mode === "legacy" && categories.length === 0 && boutique.catalogProfile === "fashion";
-    return Response.json({ mode, categories, importable });
+      categories.length === 0 && boutique.catalogProfile === "fashion";
+    return Response.json({ categories, importable });
   } catch (error) {
     return categoryErrorResponse(error, "Kategoriler yüklenemedi.");
   }

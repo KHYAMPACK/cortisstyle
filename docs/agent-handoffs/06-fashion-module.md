@@ -30,7 +30,7 @@ If you clean up one of the areas listed under "known debt," add its directory to
 ## Known debt (disclosed, not blocking)
 
 - **~20 owner-panel components** (`TrProductCreateWizard`, `TrOwnerBatchCreatePage` + its steps, `TrOwnerTakimCreatePage`, `TrOwnerProductListPage`, `TrOwnerStockPage`, `TrOwnerSizeChartStock`, `TrOwnerProductFeaturesFields`, `TrOwnerCategoryPicker`, `TrBoutiquePdpInfoSections`) interleave generic and garment-specific UI in the same file. Splitting them is a bigger, riskier job than a file move — deferred on purpose.
-- **Categories: the storefront no longer imports `fashion/categories.ts` directly** It goes through `TrStorefrontTaxonomy`; `fashion/legacyTaxonomy.ts` wraps this file's functions as the built-in tree, and `fashion/categoryTemplate.ts` + `fashion/garmentCategory.ts` let a boutique import the tree into its own `tr_categories` (with `system_key` = the built-in id) and map its categories back to garment ids for fashion logic. Panel pages still import `fashion/categories.ts` for labels and the legacy picker.
+- **Categories: the storefront no longer imports `fashion/categories.ts` directly** It goes through `TrStorefrontTaxonomy`; `fashion/categoryTemplate.ts` is the starter tree a boutique imports into its own `tr_categories` (with `system_key` = the built-in id; `fashion/seedCategories.ts`, run at store creation and by "Hazır kategorileri içe aktar"), and `fashion/garmentCategory.ts` maps its categories back to garment ids for fashion logic. Since F1 (2026-10-02) nothing renders the built-in tree as a store's categories; `fashion/categories.ts` remains only for garment logic, the template and the create wizard/batch picker (`TrOwnerCategoryPicker`) until F2.
 
 ## Related
 

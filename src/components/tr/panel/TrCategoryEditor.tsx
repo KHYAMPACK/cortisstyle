@@ -68,7 +68,7 @@ export function TrCategoryEditor({
   onSaved?: (category: TrCategory) => void;
   onDeleted?: () => void;
 }) {
-  const { categories, loaded: categoriesLoaded } = useOwnerCategories(boutiqueId, true);
+  const { categories, loaded: categoriesLoaded } = useOwnerCategories(boutiqueId);
   const [form, setForm] = useState<CategoryFormState>(() =>
     category ? categoryFormFromCategory(category) : emptyCategoryForm(),
   );

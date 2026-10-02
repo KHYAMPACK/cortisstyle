@@ -27,15 +27,15 @@ import type { TrBoutiquePublic, TrProduct } from "@/types/tr-marketplace";
 interface TrBoutiqueEditorialShellProps {
   boutique: TrBoutiquePublic;
   products?: TrProduct[];
-  /** The boutique's own categories (custom mode); null = the built-in tree. */
-  categoryNodes?: TrTaxonomyNode[] | null;
+  /** The boutique's categories, as storefront nodes (see `loadStorefrontTaxonomyNodes`). */
+  categoryNodes?: TrTaxonomyNode[];
   children: React.ReactNode;
 }
 
 export function TrBoutiqueEditorialShell({
   boutique,
   products = [],
-  categoryNodes = null,
+  categoryNodes = [],
   children,
 }: TrBoutiqueEditorialShellProps) {
   return (

@@ -4,7 +4,7 @@ import Image from "next/image";
 import { ExternalLink } from "lucide-react";
 import { TrPanelLink as Link } from "@/components/tr/panel/TrPanelLink";
 import { TrPanelPopover } from "@/components/tr/panel/TrPanelPopover";
-import { getTrCategoryLabel } from "@/lib/tr/fashion/categories";
+import { useOwnerCategoryName } from "@/components/tr/panel/useOwnerCategories";
 import { orderItemOption } from "@/lib/tr/orderItemOption";
 import { trPanelEditProductPath } from "@/lib/tr/paths";
 import {
@@ -62,12 +62,14 @@ function InfoRow({ label, children }: { label: string; children: React.ReactNode
 /** What a click on a product line shows: the product's details and a way to its page. */
 function ProductDetails({
   item,
+  category,
   close,
 }: {
   item: TrOrderItem;
+  /** The product's category name, from the boutique's own categories. */
+  category: string | null;
   close: () => void;
 }) {
-  const category = item.category ? getTrCategoryLabel(item.category) : null;
   const style = item.customization?.styleOption?.trim();
   const option = orderItemOption(item);
 
@@ -110,7 +112,14 @@ function ProductDetails({
 }
 
 /** Ürün · Adet · Fiyat · Toplam Tutar, one row per line, each opening its details. */
-export function TrOrderProducts({ items }: { items: TrOrderItem[] }) {
+export function TrOrderProducts({
+  boutiqueId,
+  items,
+}: {
+  boutiqueId: string;
+  items: TrOrderItem[];
+}) {
+  const categoryName = useOwnerCategoryName(boutiqueId);
   return (
     <div>
       <div
@@ -153,7 +162,13 @@ export function TrOrderProducts({ items }: { items: TrOrderItem[] }) {
                   </button>
                 )}
               >
-                {(close) => <ProductDetails item={item} close={close} />}
+                {(close) => (
+                  <ProductDetails
+                    item={item}
+                    category={categoryName(item.category)}
+                    close={close}
+                  />
+                )}
               </TrPanelPopover>
 
               <p className="mt-1 flex items-baseline justify-between gap-3 text-[13.5px] tabular-nums text-neutral-600 sm:contents">

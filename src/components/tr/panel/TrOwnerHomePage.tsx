@@ -123,7 +123,11 @@ function HomeDashboard({
             />
           </TrPanelFadeIn>
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-            <TrDashboardTopSellers dashboard={dashboard} compare={compare} />
+            <TrDashboardTopSellers
+              boutiqueId={boutiqueId}
+              dashboard={dashboard}
+              compare={compare}
+            />
             <TrDashboardGrowth dashboard={dashboard} compare={compare} />
           </div>
           <TrDashboardRecentOrders

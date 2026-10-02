@@ -1,22 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { TrCategoryListEntry } from "@/lib/tr/categories/types";
 import { fetchOwnerCategories } from "@/lib/tr/ownerClient";
 
 /**
- * The boutique's own categories for a picker or filter. Loads only when `enabled`
- * (the boutique manages its own categories); `loaded` says the list is really in
+ * The boutique's categories for a picker or filter. `loaded` says the list is really in
  * (an empty list before that would look like "no categories yet").
  */
-export function useOwnerCategories(boutiqueId: string, enabled: boolean) {
+export function useOwnerCategories(boutiqueId: string) {
   const [state, setState] = useState<{
     boutiqueId: string;
     categories: TrCategoryListEntry[];
   } | null>(null);
 
   useEffect(() => {
-    if (!enabled) return;
     let cancelled = false;
     fetchOwnerCategories(boutiqueId)
       .then((result) => {
@@ -28,16 +26,33 @@ export function useOwnerCategories(boutiqueId: string, enabled: boolean) {
     return () => {
       cancelled = true;
     };
-  }, [boutiqueId, enabled]);
+  }, [boutiqueId]);
 
-  const loaded = enabled && state?.boutiqueId === boutiqueId;
+  const loaded = state?.boutiqueId === boutiqueId;
   return { categories: loaded ? state!.categories : [], loaded };
 }
 
 /**
- * The boutique's own categories when it manages them (`custom` mode), else `null` (the
- * built-in tree). For flows that don't know the mode up front, such as the create flows
- * filing a garment under the category keyed with its built-in id.
+ * A category's name for a product's `category` slug, from the boutique's own categories.
+ * Falls back to the slug (a category deleted since); null without a slug or while the
+ * list is still loading (so a slug never flashes in before the name).
+ */
+export function useOwnerCategoryName(boutiqueId: string) {
+  const { categories, loaded } = useOwnerCategories(boutiqueId);
+  const names = useMemo(
+    () => new Map(categories.map((entry) => [entry.slug, entry.name])),
+    [categories],
+  );
+  return useCallback(
+    (slug: string | null | undefined): string | null =>
+      slug && loaded ? (names.get(slug) ?? slug) : null,
+    [names, loaded],
+  );
+}
+
+/**
+ * The boutique's categories, or `null` when they couldn't be loaded. For the create flows
+ * filing a garment under the category keyed with its built-in id (`garmentCategory.ts`).
  */
 export function useOwnerCategoryList(boutiqueId: string) {
   const [state, setState] = useState<{
@@ -52,7 +67,7 @@ export function useOwnerCategoryList(boutiqueId: string) {
         if (!cancelled) {
           setState({
             boutiqueId,
-            categoryList: result.mode === "custom" ? result.categories : null,
+            categoryList: result.categories,
           });
         }
       })

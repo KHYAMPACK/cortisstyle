@@ -1,10 +1,10 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useMemo, useState } from "react";
 import { TrCatalogBackgroundPicker } from "@/components/tr/panel/TrCatalogBackgroundPicker";
 import { useUnsavedChangesGuard } from "@/components/tr/panel/TrOwnerLeaveGuard";
-import { TrOwnerCategoryPicker } from "@/components/tr/panel/TrOwnerCategoryPicker";
+import { TrPanelCategoryPicker } from "@/components/tr/panel/TrPanelCategoryPicker";
+import { useOwnerCategories } from "@/components/tr/panel/useOwnerCategories";
 import { TrOwnerColorGroupLinker } from "@/components/tr/panel/TrOwnerColorGroupLinker";
 import { TrOwnerManualPhotoGallery } from "@/components/tr/panel/TrOwnerManualPhotoGallery";
 import { TrOwnerProductFeaturesFields } from "@/components/tr/panel/TrOwnerProductFeaturesFields";
@@ -33,7 +33,12 @@ import {
   panelSecondaryBtnClass,
 } from "@/components/tr/panel/panelUi";
 import { shopperGalleryUrls } from "@/lib/tr/catalog/productImages";
-import { TR_BOUTIQUE_CATEGORIES } from "@/lib/tr/fashion/categories";
+import type {
+  TrCategoryListEntry,
+  TrProductCategories,
+} from "@/lib/tr/categories/types";
+import { fashionGarmentCategory } from "@/lib/tr/fashion/productForm";
+import { primaryCategorySlug } from "@/lib/tr/fashion/garmentCategory";
 import {
   fashionFormFacts,
   fashionFormFromProduct,
@@ -54,7 +59,6 @@ import {
 import { toast } from "@/lib/tr/panel/toast";
 import { findSizeSource, NO_SIZE_SOURCE, type TrSizeSource } from "@/lib/tr/sizeSources";
 import { switchStockInputs } from "@/lib/tr/sizeStockInputs";
-import { slugify } from "@/lib/tr/seo/slug";
 import type { TrProduct, TrProductColor } from "@/types/tr-marketplace";
 
 const PRESET_COLORS: TrProductColor[] = [
@@ -143,30 +147,49 @@ type FashionProductEditorProps = {
   boutiqueId: string;
   boutiqueSlug: string;
   initialProduct: TrProduct;
+  /** The product's categories (all it is filed under, and the primary one). */
+  initialCategories?: TrProductCategories;
   onSaved: (product: TrProduct) => void;
   onDeleted?: () => void;
 };
 
 export function TrFashionProductEditor(props: FashionProductEditorProps) {
-  // The size table offers the boutique's Beden types; the form reads a product's sizes
-  // against them, so it opens once they are in (the list is cached, usually instant).
-  const { sources, loaded } = useOwnerSizeSources(props.boutiqueId);
-  if (!loaded) {
+  // The size table offers the boutique's Beden types and the category picker its
+  // categories; the form reads the product against both, so it opens once they are in
+  // (both lists are cached, usually instant).
+  const { sources, loaded: sizesLoaded } = useOwnerSizeSources(props.boutiqueId);
+  const { categories, loaded: categoriesLoaded } = useOwnerCategories(props.boutiqueId);
+  if (!sizesLoaded || !categoriesLoaded) {
     return <TrPanelLoading label="Ürün yükleniyor…" />;
   }
-  return <FashionProductEditorForm {...props} sizeSources={sources} />;
+  return (
+    <FashionProductEditorForm
+      {...props}
+      sizeSources={sources}
+      categoryList={categories}
+    />
+  );
 }
 
 function FashionProductEditorForm({
   boutiqueId,
   boutiqueSlug,
   initialProduct,
+  initialCategories,
   onSaved,
   onDeleted,
   sizeSources,
-}: FashionProductEditorProps & { sizeSources: TrSizeSource[] }) {
+  categoryList,
+}: FashionProductEditorProps & {
+  sizeSources: TrSizeSource[];
+  categoryList: TrCategoryListEntry[];
+}) {
   const [state, setState] = useState(() => {
-    const loaded = fashionFormFromProduct(initialProduct, sizeSources);
+    const loaded = fashionFormFromProduct(
+      initialProduct,
+      sizeSources,
+      initialCategories ?? { ids: [], primaryId: null },
+    );
     return { form: loaded, baseline: loaded };
   });
   const { form, baseline } = state;
@@ -177,21 +200,6 @@ function FashionProductEditorForm({
   const [lightbox, setLightbox] = useState<{ src: string; label: string } | null>(
     null,
   );
-  const [extraCategories, setExtraCategories] = useState<
-    Array<{ id: string; label: string }>
-  >(() =>
-    initialProduct.category &&
-    !TR_BOUTIQUE_CATEGORIES.some((entry) => entry.id === initialProduct.category)
-      ? [
-          {
-            id: initialProduct.category,
-            label: initialProduct.category.replace(/-/g, " "),
-          },
-        ]
-      : [],
-  );
-  const [addingCategory, setAddingCategory] = useState(false);
-  const [newCategoryLabel, setNewCategoryLabel] = useState("");
   const [addingColor, setAddingColor] = useState(false);
   const [newColorName, setNewColorName] = useState("");
   const [newColorHex, setNewColorHex] = useState("#C2185B");
@@ -210,7 +218,10 @@ function FashionProductEditorForm({
     setState((current) => rebaseFashionForm(current, server));
   }, []);
 
-  const { takim, elbise, family } = fashionFormFacts(form);
+  // Fashion logic reads the garment through the categories' system keys, so a renamed
+  // category (or an owner-made subcategory of Elbise) keeps working.
+  const { takim, elbise, family } = fashionFormFacts(form, categoryList);
+  const garmentCategory = fashionGarmentCategory(form, categoryList);
   const stockTotal = fashionFormStock(form);
   // What the shop shows for an AI-made product (model shots, then packshots).
   const shopGallery = useMemo(
@@ -241,15 +252,6 @@ function FashionProductEditorForm({
     });
   };
 
-  const categoryOptions = useMemo(() => {
-    const seen = new Set(TR_BOUTIQUE_CATEGORIES.map((entry) => entry.id));
-    return extraCategories.filter((entry) => {
-      if (seen.has(entry.id)) return false;
-      seen.add(entry.id);
-      return true;
-    });
-  }, [extraCategories]);
-
   const applySizeChart = (next: string) => {
     change({
       sizeChart: next,
@@ -277,25 +279,6 @@ function FashionProductEditorForm({
     });
   };
 
-  const commitCategory = () => {
-    const label = newCategoryLabel.trim();
-    if (!label) return;
-    const id = slugify(label).slice(0, 40) || `kategori-${Date.now()}`;
-    const existing = categoryOptions.find(
-      (entry) =>
-        entry.id === id ||
-        entry.label.toLocaleLowerCase("tr") === label.toLocaleLowerCase("tr"),
-    );
-    if (existing) {
-      change({ category: existing.id });
-    } else {
-      setExtraCategories((current) => [...current, { id, label }]);
-      change({ category: id });
-    }
-    setNewCategoryLabel("");
-    setAddingCategory(false);
-  };
-
   const commitColor = () => {
     const name = sanitizeColorName(newColorName).trim();
     let hex = newColorHex.trim();
@@ -313,7 +296,7 @@ function FashionProductEditorForm({
 
   const save = async () => {
     if (saving || uploading) return;
-    const problem = validateFashionProductForm(form);
+    const problem = validateFashionProductForm(form, categoryList);
     if (problem) {
       toast.error(problem);
       return;
@@ -511,7 +494,7 @@ function FashionProductEditorForm({
             hintClass={panelHintClass}
             variant={family ? "dress" : "default"}
             family={family ?? "elbise"}
-            shopCategory={form.category}
+            shopCategory={garmentCategory}
           />
 
           <div className="space-y-3 border-t border-neutral-100 pt-6">
@@ -530,61 +513,20 @@ function FashionProductEditorForm({
                 Etek, pantolon veya eşofman kullanın — alt giyim olarak bırakmayın.
               </p>
             ) : null}
-            <TrOwnerCategoryPicker
-              value={form.category}
-              onChange={(category) => change({ category })}
-              extras={categoryOptions}
-              disabled={takim}
+            <TrPanelCategoryPicker
+              categories={categoryList}
+              value={form.categories ?? { ids: [], primaryId: null }}
+              onChange={(next) =>
+                change({
+                  categories: next,
+                  category: primaryCategorySlug(next, categoryList),
+                })
+              }
+              disabled={takim || saving}
             />
-            {takim || addingCategory ? null : (
-              <button
-                type="button"
-                className={panelAddChipClass}
-                onClick={() => setAddingCategory(true)}
-              >
-                + Kategori ekle
-              </button>
-            )}
-            <AnimatePresence>
-              {addingCategory ? (
-                <motion.div
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -4 }}
-                  className="flex flex-wrap items-center gap-3"
-                >
-                  <input
-                    value={newCategoryLabel}
-                    onChange={(event) => setNewCategoryLabel(event.target.value)}
-                    placeholder="Örn. Aksesuar"
-                    className={`${panelFieldClass} min-w-[160px] flex-1`}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") {
-                        event.preventDefault();
-                        commitCategory();
-                      }
-                    }}
-                  />
-                  <button
-                    type="button"
-                    className={panelPrimaryBtnClass}
-                    onClick={commitCategory}
-                  >
-                    Ekle
-                  </button>
-                  <button
-                    type="button"
-                    className={panelSecondaryBtnClass}
-                    onClick={() => {
-                      setAddingCategory(false);
-                      setNewCategoryLabel("");
-                    }}
-                  >
-                    Vazgeç
-                  </button>
-                </motion.div>
-              ) : null}
-            </AnimatePresence>
+            <p className={panelHintClass}>
+              Ürünün listelendiği kategoriler; biri ana kategoridir.
+            </p>
           </div>
         </TrPanelEditorCard>
 

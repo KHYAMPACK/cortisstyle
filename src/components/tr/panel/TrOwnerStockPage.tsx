@@ -30,8 +30,8 @@ import {
   trPanelEase,
   trPanelStaggerItem,
 } from "@/components/tr/panel/TrPanelMotion";
+import { useOwnerCategoryName } from "@/components/tr/panel/useOwnerCategories";
 import { runOwnerPatches } from "@/lib/tr/ownerBulk";
-import { listCategoriesForProducts } from "@/lib/tr/fashion/categories";
 import { getPanelProductCover } from "@/lib/tr/productImages";
 import { fetchOwnerProducts, peekOwnerProducts, updateOwnerProduct } from "@/lib/tr/ownerClient";
 import { PanelSelectCheckbox } from "@/components/tr/panel/PanelSelectCheckbox";
@@ -210,10 +210,20 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
     };
   }, [boutiqueId]);
 
-  const categories = useMemo(
-    () => listCategoriesForProducts(products),
-    [products],
-  );
+  // Chips for the categories products are filed under (primary), named from the store's
+  // own categories.
+  const categoryName = useOwnerCategoryName(boutiqueId);
+  const categories = useMemo(() => {
+    const used = new Set(
+      products
+        .map((product) => product.category?.trim())
+        .filter((slug): slug is string => Boolean(slug)),
+    );
+    return [...used]
+      .map((slug) => ({ id: slug, label: categoryName(slug) }))
+      .filter((entry): entry is { id: string; label: string } => entry.label != null)
+      .sort((a, b) => a.label.localeCompare(b.label, "tr"));
+  }, [products, categoryName]);
 
   const visible = useMemo(() => {
     let list = products;

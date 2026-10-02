@@ -6,13 +6,13 @@ import { motion, useReducedMotion } from "framer-motion";
 import { ChevronDown, Tag } from "lucide-react";
 import { TrDashboardDelta } from "@/components/tr/panel/dashboard/TrDashboardDelta";
 import { formatCount } from "@/components/tr/panel/dashboard/dashboardFormat";
+import { useOwnerCategoryName } from "@/components/tr/panel/useOwnerCategories";
 import { panelCardClass } from "@/components/tr/panel/panelUi";
 import {
   TrPanelStagger,
   trPanelEase,
   trPanelStaggerItem,
 } from "@/components/tr/panel/TrPanelMotion";
-import { getTrCategoryLabel } from "@/lib/tr/fashion/categories";
 import {
   computeDelta,
   type TrOwnerDashboard,
@@ -69,13 +69,16 @@ function Thumb({ image, title }: { image: string | null; title: string }) {
 
 /** Best sellers by revenue, switchable between products and categories. */
 export function TrDashboardTopSellers({
+  boutiqueId,
   dashboard,
   compare,
 }: {
+  boutiqueId: string;
   dashboard: TrOwnerDashboard;
   compare: boolean;
 }) {
   const [grouping, setGrouping] = useState<Grouping>("products");
+  const categoryName = useOwnerCategoryName(boutiqueId);
 
   const rows: Row[] =
     grouping === "products"
@@ -83,8 +86,8 @@ export function TrDashboardTopSellers({
           key: `${product.productId ?? "deleted"}-${index}`,
           title: product.title,
           subtitle: `${formatCount(product.quantity)} adet${
-            product.category
-              ? ` · ${getTrCategoryLabel(product.category) ?? ""}`
+            categoryName(product.category)
+              ? ` · ${categoryName(product.category)}`
               : ""
           }`,
           image: product.image,
@@ -94,7 +97,7 @@ export function TrDashboardTopSellers({
       : dashboard.topCategories.map((entry) => ({
           key: entry.category ?? "uncategorised",
           title: entry.category
-            ? (getTrCategoryLabel(entry.category) ?? entry.category)
+            ? (categoryName(entry.category) ?? entry.category)
             : "Kategorisiz",
           subtitle: `${formatCount(entry.quantity)} adet`,
           image: null,

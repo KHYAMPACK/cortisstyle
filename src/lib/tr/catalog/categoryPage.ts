@@ -1,6 +1,5 @@
 import {
   findRedirectedCategoryId,
-  getBoutiqueCategoryMode,
   getSalesByProduct,
   listCategories,
   listProductIdsInCategories,
@@ -30,9 +29,8 @@ export type PublicCategoryPage =
   | { kind: "missing" };
 
 /**
- * Everything a category page shows, for a boutique with its own categories. A
- * boutique on the built-in tree, an unknown slug, or a database without the category
- * tables is `missing`; a renamed slug redirects to the current one.
+ * Everything a category page shows. An unknown slug, or a database without the
+ * category tables, is `missing`; a renamed slug redirects to the current one.
  */
 export async function loadPublicCategoryPage(
   boutiqueSlug: string,
@@ -40,9 +38,6 @@ export async function loadPublicCategoryPage(
 ): Promise<PublicCategoryPage> {
   const storefront = await safeGetBoutiqueStorefront(boutiqueSlug);
   if (!storefront) return { kind: "missing" };
-  if ((await getBoutiqueCategoryMode(storefront.id)) !== "custom") {
-    return { kind: "missing" };
-  }
 
   const all = await listCategories(storefront.id);
   const category = all.find((entry) => entry.slug === categorySlug);

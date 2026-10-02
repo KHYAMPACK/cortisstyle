@@ -1,7 +1,6 @@
 import type { TrFashionProductFeatures } from "@/lib/tr/fashion/types";
 import type { TrCustomArtProductFeatures } from "@/lib/tr/customArt/types";
 import type { TrSeo } from "@/lib/tr/seo/seoFields";
-import type { TrCategoryMode } from "@/lib/tr/categories/types";
 
 export type TrBoutiqueStatus = "draft" | "pending" | "verified" | "suspended";
 export type TrProductStatus = "available" | "sold" | "hidden";
@@ -127,8 +126,6 @@ export interface TrBoutique extends TrBoutiquePublic {
   contactPhone: string | null;
   shippingAddress: string | null;
   returnAddress: string | null;
-  /** Which category system the storefront and panel use (see patch_categories.sql). */
-  categoryMode: TrCategoryMode;
 }
 
 /** "Birim fiyat": the price per kg / l / m…, worked out from the content amount. */

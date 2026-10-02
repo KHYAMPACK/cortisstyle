@@ -1,6 +1,6 @@
 # No hardcoded store data: target architecture and plan
 
-_Prepared 2026-09-30 on branch `main-t0o1c2`. **F0 built (2026-09-30); F1–F8 are planning only.** Mert asked for the architecturally cleanest approach: "no hardcoded stuff". This plan starts from where `docs/fashion-beden-kategori-plan.md` (S1, K1, K2 built) left off. Where it reverses an earlier decision, it says so and lists that as a question._
+_Prepared 2026-09-30 on branch `main-t0o1c2`. **F0 built (2026-09-30); F1 built (2026-10-02) except the editorial-content move; F2–F8 are planning only.** Mert asked for the architecturally cleanest approach: "no hardcoded stuff". This plan starts from where `docs/fashion-beden-kategori-plan.md` (S1, K1, K2 built) left off. Where it reverses an earlier decision, it says so and lists that as a question._
 
 _Revised 2026-09-30 after two decisions from Mert:_
 
@@ -164,6 +164,9 @@ The prompts and provider clients are the most valuable parts to preserve.
 **Freeze:** no (panel and owner API only; the shop shows the same images). **lilabutik:** the owner's AI buttons, AI photo steps and credits page disappear until the pipeline returns.
 
 ### F1: Categories are only data (M)
+
+**Built (2026-10-02), on `main-t0o1c2`, not merged yet.** F1a: category pages live at `/kategori/<slug>` and render the store's own PLP (`catalog/plpLocation.ts` keeps the category in the path and the filters in the query; `/urunler?kategori=x` redirects there with a 308; `sale` stays `indirim=1` on `/urunler`). F1b: `category_mode` is no longer read anywhere and `fashion/legacyTaxonomy.ts` is deleted; the storefront, sitemap and `/kategori` pages always use the store's `tr_categories` (a store without any shows an empty category menu); the panel's labels (Ürünler list, Stok chips, order lines, dashboard top sellers) and the fashion editor's picker read the store's categories; a new store gets its profile's starter tree when it is created (`catalog/starterCategories.ts`, called from the admin seed route that `scripts/create-boutique.mts` uses); "Hazır kategorileri içe aktar" is offered to any fashion store with no categories. **Skipped for now (Mert, 2026-10-02):** the editorial-content move below (H4); `buildAtelier*` still renders lilabutik's defaults. **Still on the built-in garment list until F2:** the create wizard and batch (`TrOwnerCategoryPicker`); they file the product under the store's category carrying that garment's key.
+
 
 _Depends on: K2 merged and lilabutik switched to `custom` (steps in `fashion-beden-kategori-plan.md`)._
 

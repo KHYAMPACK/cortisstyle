@@ -1,10 +1,24 @@
-import type { TrCategoryTemplateEntry } from "@/lib/tr/categories/types";
+import type { TrCategory, TrCategoryTemplateEntry } from "@/lib/tr/categories/types";
 import {
   canonicalizeTrCategoryId,
+  getTrCategoryLabel,
+  getTrCategoryShopAllLabel,
   listAssignableTrCategories,
   listTrCategoryRoots,
   TR_BOUTIQUE_CATEGORIES,
 } from "@/lib/tr/fashion/categories";
+
+/**
+ * "Tüm …" copy for a category from this template: the built-in phrase ("Tüm elbiseler")
+ * while the category still has its template name; null (the default copy) otherwise.
+ */
+export function fashionShopAllLabelFor(
+  category: Pick<TrCategory, "name" | "systemKey">,
+): string | null {
+  if (!category.systemKey) return null;
+  if (getTrCategoryLabel(category.systemKey) !== category.name) return null;
+  return getTrCategoryShopAllLabel(category.systemKey);
+}
 
 /**
  * The built-in garment tree as a template for "Hazır kategorileri içe aktar": the

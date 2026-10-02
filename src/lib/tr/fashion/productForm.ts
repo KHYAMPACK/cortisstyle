@@ -68,8 +68,9 @@ export interface FashionProductFormState {
   /** The primary category's slug (what `tr_products.category` holds). */
   category: string | null;
   /**
-   * The product's own categories when the boutique manages them (`custom` mode), kept
-   * in step with `category`; `null` on the built-in tree.
+   * The product's categories in the boutique's own tree (what the edit page uses), kept
+   * in step with `category`; `null` where a form still picks from the built-in garment
+   * list (the create wizard, until F2), which then only sends `category`.
    */
   categories: TrProductCategories | null;
   /** "Kendi fotoğraflarım": a plain gallery instead of the guided front/back upload. */

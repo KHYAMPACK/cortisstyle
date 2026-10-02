@@ -3,7 +3,6 @@ import { getPublicBoutiqueBySlug, listPublicBoutiques } from "@/lib/tr/boutiques
 import { listPublicProductsByBoutiqueId } from "@/lib/tr/products";
 import { listProductSlugInfo } from "@/lib/tr/catalog/productSlug";
 import {
-  getBoutiqueCategoryMode,
   listCategories,
 } from "@/lib/tr/catalog/categories";
 import { trBoutiqueCategoryPath } from "@/lib/tr/paths";
@@ -47,24 +46,22 @@ async function boutiqueSitemapEntries(input: {
       boutique.id,
       boutique,
     );
-    // Category pages of a boutique with its own categories (none until the patch is applied).
-    if ((await getBoutiqueCategoryMode(boutique.id)) === "custom") {
-      for (const category of await listCategories(boutique.id)) {
-        if (category.seo.noindex) continue;
-        const path = boutiqueCustomerPath(
-          boutiqueSlug,
-          trBoutiqueCategoryPath(boutiqueSlug, category.slug),
-          mode,
-        );
-        entries.push({
-          url: absoluteUrl(origin, path),
-          lastModified: category.updatedAt
-            ? new Date(category.updatedAt)
-            : lastModified,
-          changeFrequency: "weekly",
-          priority: 0.7,
-        });
-      }
+    // Category pages (none until the patch is applied).
+    for (const category of await listCategories(boutique.id)) {
+      if (category.seo.noindex) continue;
+      const path = boutiqueCustomerPath(
+        boutiqueSlug,
+        trBoutiqueCategoryPath(boutiqueSlug, category.slug),
+        mode,
+      );
+      entries.push({
+        url: absoluteUrl(origin, path),
+        lastModified: category.updatedAt
+          ? new Date(category.updatedAt)
+          : lastModified,
+        changeFrequency: "weekly",
+        priority: 0.7,
+      });
     }
 
     // Slug and noindex per product (empty until the SEO patch is applied).

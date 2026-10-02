@@ -1,23 +1,13 @@
-import { planCategoryImport } from "@/lib/tr/categories/importPlan";
-import {
-  getBoutiqueCategoryMode,
-  importCategoryPlan,
-  listProductCategoryColumns,
-} from "@/lib/tr/catalog/categories";
 import { categoryErrorResponse } from "@/lib/tr/catalog/categoryApi";
-import {
-  fashionCategoryAliases,
-  fashionCategoryTemplate,
-} from "@/lib/tr/fashion/categoryTemplate";
+import { seedFashionCategories } from "@/lib/tr/fashion/seedCategories";
 import { requireOwnedBoutique, requireTrOwner } from "@/lib/tr/ownerAuth";
 
 export const runtime = "nodejs";
 
 /**
- * POST /api/tr/owner/categories/import — "Hazır kategorileri içe aktar": copy the
- * built-in garment tree into the boutique's own categories (same slugs, system keys set)
- * and file every product under its current category. Fashion boutiques on the built-in
- * tree only. The boutique stays in `legacy` mode; switching it is a separate step.
+ * POST /api/tr/owner/categories/import — "Hazır kategorileri içe aktar": give a fashion
+ * boutique with no categories yet the starter tree, and file every product under its
+ * current category (`seedFashionCategories`).
  */
 export async function POST(request: Request) {
   const authResult = await requireTrOwner(request);
@@ -42,22 +32,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    if ((await getBoutiqueCategoryMode(boutique.id)) !== "legacy") {
-      return Response.json(
-        { error: "Bu butik zaten kendi kategorilerini kullanıyor." },
-        { status: 409 },
-      );
-    }
-    const plan = planCategoryImport({
-      template: fashionCategoryTemplate(),
-      aliases: fashionCategoryAliases(),
-      products: await listProductCategoryColumns(boutique.id),
-    });
-    const created = await importCategoryPlan(boutique.id, plan);
-    return Response.json(
-      { created, assigned: plan.assignments.length },
-      { status: 201 },
-    );
+    return Response.json(await seedFashionCategories(boutique.id), { status: 201 });
   } catch (error) {
     return categoryErrorResponse(error, "Hazır kategoriler aktarılamadı.");
   }

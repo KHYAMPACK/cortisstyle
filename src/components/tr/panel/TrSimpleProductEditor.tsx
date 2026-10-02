@@ -134,7 +134,6 @@ export function TrSimpleProductEditor({
   address,
   product,
   ownerOnly,
-  categoryMode = "legacy",
   initialCategories,
   productType = "simple",
   initialVariants,
@@ -150,8 +149,6 @@ export function TrSimpleProductEditor({
   address: string | null;
   product?: TrProduct;
   ownerOnly?: TrProductPrivate;
-  /** `custom`: the boutique manages its own categories and the editor shows the picker. */
-  categoryMode?: "legacy" | "custom";
   /** The saved product's categories (edit). */
   initialCategories?: TrProductCategories;
   /** Which editor to create; an existing product's own type wins. */
@@ -162,16 +159,10 @@ export function TrSimpleProductEditor({
   onSaved?: (product: TrProduct) => void;
   onDeleted?: () => void;
 }) {
-  const managesCategories = categoryMode === "custom";
-  const { categories, loaded: categoriesLoaded } = useOwnerCategories(
-    boutiqueId,
-    managesCategories,
-  );
+  const { categories, loaded: categoriesLoaded } = useOwnerCategories(boutiqueId);
   const facets = useOwnerProductFacets(boutiqueId);
   const [form, setForm] = useState<SimpleProductFormState>(() => {
-    const own = managesCategories
-      ? (initialCategories ?? { ids: [], primaryId: null })
-      : null;
+    const own = initialCategories ?? { ids: [], primaryId: null };
     return product
       ? simpleFormFromProduct(
           product,
@@ -514,7 +505,7 @@ export function TrSimpleProductEditor({
             />
           </div>
 
-          {managesCategories && form.categories ? (
+          {form.categories ? (
             <div className="space-y-2">
               <p className={panelLabelClass}>Kategori</p>
               {categoriesLoaded ? (

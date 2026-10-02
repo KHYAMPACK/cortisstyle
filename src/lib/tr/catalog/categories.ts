@@ -5,10 +5,8 @@ import {
 } from "@/lib/tr/categories/tree";
 import {
   mapCategoryRow,
-  readCategoryMode,
   type TrCategory,
   type TrCategoryListEntry,
-  type TrCategoryMode,
   type TrProductCategories,
 } from "@/lib/tr/categories/types";
 import type { CategoryImportPlan } from "@/lib/tr/categories/importPlan";
@@ -21,12 +19,14 @@ import { sanitizeSeo, type TrSeo } from "@/lib/tr/seo/seoFields";
 import { generateUniqueSlug, isValidSlug, slugify } from "@/lib/tr/seo/slug";
 
 /**
- * A boutique's own categories (`category_mode = 'custom'`): reading, writing, and
- * assigning them to products. Server only, through the service role.
+ * A boutique's categories: reading, writing, and assigning them to products. Every
+ * boutique uses its own categories (the built-in tree is only a starter template,
+ * `fashion/categoryTemplate.ts`; `tr_boutiques.category_mode` is no longer read). Server
+ * only, through the service role.
  *
- * Reads are tolerant — before `patch_categories.sql` is applied they behave as
- * "legacy boutique, no categories" so the storefront never breaks. Writes report a
- * missing schema instead of failing silently.
+ * Reads are tolerant — before `patch_categories.sql` is applied they behave as "no
+ * categories" so the storefront never breaks. Writes report a missing schema instead of
+ * failing silently.
  */
 
 type DbError = { code?: string; message?: string };
@@ -62,25 +62,6 @@ function client() {
 }
 
 // ---------------------------------------------------------------- reads
-
-export async function getBoutiqueCategoryMode(
-  boutiqueId: string,
-): Promise<TrCategoryMode> {
-  const supabase = getServiceSupabase();
-  if (!supabase) return "legacy";
-  const { data, error } = await supabase
-    .from("tr_boutiques")
-    .select("category_mode")
-    .eq("id", boutiqueId)
-    .maybeSingle();
-  if (error) {
-    if (!isSchemaMissing(error)) {
-      console.error("[tr/categories] mode lookup failed:", error.message);
-    }
-    return "legacy";
-  }
-  return readCategoryMode(data?.category_mode);
-}
 
 /** Every category of a boutique, unordered. */
 export async function listCategories(boutiqueId: string): Promise<TrCategory[]> {
@@ -306,19 +287,10 @@ function nullIfBlank(value: string | null | undefined): string | null {
   return trimmed ? trimmed : null;
 }
 
-async function assertCustomMode(boutiqueId: string): Promise<void> {
-  if ((await getBoutiqueCategoryMode(boutiqueId)) !== "custom") {
-    throw new CategoryError(
-      "Bu butik hazır kategori ağacını kullanıyor; özel kategoriler etkin değil.",
-    );
-  }
-}
-
 export async function createCategory(
   boutiqueId: string,
   input: CategoryWriteInput,
 ): Promise<TrCategory> {
-  await assertCustomMode(boutiqueId);
   const name = cleanName(input.name);
   if (!name) throw new CategoryError("Kategori adı zorunlu.");
 
@@ -546,7 +518,6 @@ export async function setProductCategories(input: {
   categoryIds: readonly string[];
   primaryId?: string | null;
 }): Promise<TrProductCategories> {
-  await assertCustomMode(input.boutiqueId);
   const wanted = [...new Set(input.categoryIds)];
   const all = await listCategories(input.boutiqueId);
   const byId = new Map(all.map((category) => [category.id, category]));
@@ -721,19 +692,17 @@ export async function listProductCategoryColumns(
 // ----------------------------------------------------------------- storefront taxonomy
 
 /**
- * The storefront's category nodes: the boutique's own categories when it is in `custom`
- * mode, else `null` (the storefront then uses the built-in tree exactly as before). Any
- * failure also reads as `null`, so the storefront never breaks on it.
+ * The storefront's category nodes: the boutique's own categories, in menu order. A
+ * failure reads as no categories (an empty menu), so the storefront never breaks on it.
  */
 export async function loadStorefrontTaxonomyNodes(
   boutiqueId: string,
   shopAllLabelFor?: (category: Pick<TrCategory, "name" | "systemKey">) => string | null,
-): Promise<TrTaxonomyNode[] | null> {
+): Promise<TrTaxonomyNode[]> {
   try {
-    if ((await getBoutiqueCategoryMode(boutiqueId)) !== "custom") return null;
     return taxonomyNodesFromCategories(await listCategories(boutiqueId), shopAllLabelFor);
   } catch (error) {
     console.error("[tr/categories] storefront taxonomy failed:", error);
-    return null;
+    return [];
   }
 }

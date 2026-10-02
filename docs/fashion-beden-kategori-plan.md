@@ -32,6 +32,8 @@ _Prepared 2026-09-30 on branch `main-t0o1c2`. **S1, K1 and K2 built (2026-09-30)
 - **Create flows (wizard, batch, takım), `custom` mode:** they still choose a built-in garment id as today. At save it is filed under the boutique's category carrying that key (`categoryPayloadForGarment`), and saving waits until the categories are loaded. If the boutique deleted that keyed category, only the plain category column is set, to be fixed in the editor. **Open question for Mert (Q7 below).**
 - **Built-in-tree boutiques (lilabutik today):** unchanged; they send the category column as before.
 
+> **Superseded by F1 (2026-10-02, `docs/foundation-no-hardcode-plan.md`):** `category_mode` is no longer read and `legacyFashionTaxonomy` is deleted; every boutique uses its own categories (parity test now `fashion/categoryTemplate.parity.test.ts`), and the panel labels below read them too. The notes below are kept as history.
+
 **K2 built (2026-09-30).** The storefront reads a `custom` boutique's own categories; a `legacy` boutique renders exactly as before.
 
 - **One seam:** `TrStorefrontTaxonomy` (`categories/taxonomy.ts`). `legacyFashionTaxonomy` (`fashion/legacyTaxonomy.ts`) is literally the old functions, so `legacy` output can't drift; `customTaxonomy(nodes)` is built from `tr_categories`.

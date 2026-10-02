@@ -116,7 +116,6 @@ export function TrOwnerEditProductPage({ productId }: TrOwnerEditProductPageProp
                     address={boutiqueLocationAddress(activeBoutique)}
                     product={product}
                     ownerOnly={ownerOnly}
-                    categoryMode={activeBoutique.categoryMode}
                     initialCategories={productCategories}
                     initialVariants={variants}
                     onSaved={(saved) => {
@@ -133,6 +132,7 @@ export function TrOwnerEditProductPage({ productId }: TrOwnerEditProductPageProp
                     boutiqueId={product.boutiqueId}
                     boutiqueSlug={activeBoutique.slug}
                     initialProduct={product}
+                    initialCategories={productCategories}
                     onSaved={(saved) => {
                       setProduct(saved);
                     }}
