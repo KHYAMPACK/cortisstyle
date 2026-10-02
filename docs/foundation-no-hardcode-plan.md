@@ -1,6 +1,6 @@
 # No hardcoded store data: target architecture and plan
 
-_Prepared 2026-09-30 on branch `main-t0o1c2`. **F0 built (2026-09-30); F1 built (2026-10-02) except the editorial-content move; F2–F8 are planning only.** Mert asked for the architecturally cleanest approach: "no hardcoded stuff". This plan starts from where `docs/fashion-beden-kategori-plan.md` (S1, K1, K2 built) left off. Where it reverses an earlier decision, it says so and lists that as a question._
+_Prepared 2026-09-30 on branch `main-t0o1c2`. **F0 built (2026-09-30); F1 built (2026-10-02) except the editorial-content move; F2 built (2026-10-02); F3–F8 are planning only.** Mert asked for the architecturally cleanest approach: "no hardcoded stuff". This plan starts from where `docs/fashion-beden-kategori-plan.md` (S1, K1, K2 built) left off. Where it reverses an earlier decision, it says so and lists that as a question._
 
 _Revised 2026-09-30 after two decisions from Mert:_
 
@@ -165,7 +165,7 @@ The prompts and provider clients are the most valuable parts to preserve.
 
 ### F1: Categories are only data (M)
 
-**Built (2026-10-02), on `main-t0o1c2`, not merged yet.** F1a: category pages live at `/kategori/<slug>` and render the store's own PLP (`catalog/plpLocation.ts` keeps the category in the path and the filters in the query; `/urunler?kategori=x` redirects there with a 308; `sale` stays `indirim=1` on `/urunler`). F1b: `category_mode` is no longer read anywhere and `fashion/legacyTaxonomy.ts` is deleted; the storefront, sitemap and `/kategori` pages always use the store's `tr_categories` (a store without any shows an empty category menu); the panel's labels (Ürünler list, Stok chips, order lines, dashboard top sellers) and the fashion editor's picker read the store's categories; a new store gets its profile's starter tree when it is created (`catalog/starterCategories.ts`, called from the admin seed route that `scripts/create-boutique.mts` uses); "Hazır kategorileri içe aktar" is offered to any fashion store with no categories. **Skipped for now (Mert, 2026-10-02):** the editorial-content move below (H4); `buildAtelier*` still renders lilabutik's defaults. **Still on the built-in garment list until F2:** the create wizard and batch (`TrOwnerCategoryPicker`); they file the product under the store's category carrying that garment's key.
+**Built (2026-10-02), on `main-t0o1c2`, not merged yet.** F1a: category pages live at `/kategori/<slug>` and render the store's own PLP (`catalog/plpLocation.ts` keeps the category in the path and the filters in the query; `/urunler?kategori=x` redirects there with a 308; `sale` stays `indirim=1` on `/urunler`). F1b: `category_mode` is no longer read anywhere and `fashion/legacyTaxonomy.ts` is deleted; the storefront, sitemap and `/kategori` pages always use the store's `tr_categories` (a store without any shows an empty category menu); the panel's labels (Ürünler list, Stok chips, order lines, dashboard top sellers) and the fashion editor's picker read the store's categories; a new store gets its profile's starter tree when it is created (`catalog/starterDefinitions.ts`, called from the admin seed route that `scripts/create-boutique.mts` uses); "Hazır kategorileri içe aktar" is offered to any fashion store with no categories. **Skipped for now (Mert, 2026-10-02):** the editorial-content move below (H4); `buildAtelier*` still renders lilabutik's defaults. **Still on the built-in garment list until F2:** the create wizard and batch (`TrOwnerCategoryPicker`); they file the product under the store's category carrying that garment's key.
 
 
 _Depends on: K2 merged and lilabutik switched to `custom` (steps in `fashion-beden-kategori-plan.md`)._
@@ -179,10 +179,28 @@ _Depends on: K2 merged and lilabutik switched to `custom` (steps in `fashion-bed
 
 ### F2: Product kinds and fields are data (M)
 
+**Built (2026-10-02), on `main-t0o1c2`, not merged yet.** What differs from the plan below:
+
+- **Schema** (`supabase/patch_product_kinds.sql`): as planned, plus `tr_product_kinds.system_key` (the template's id, like `tr_categories.system_key`, so F3 and the AI return can tell a kind apart after a rename) and `tr_product_kind_attributes.options` (a kind can offer a narrower option list: Boy is Mini…Maxi for Elbise and Crop…Tunik boy for Üst giyim). Inputs are `text` / `textarea` / `choice`; a choice has `allow_custom` ("pick or type") because live data has wordings outside the chip lists (lilabutik: Kumaş "Hafif dokuma", Kalıp "Relaxed"). No `multi` input: nothing uses one today.
+- **Template** (`fashion/kindTemplate.ts`): built from `dressFeatures.ts`; a test checks each garment kind has exactly the editor's fields and options. Kinds: Elbise, Üst giyim, Etek, Pantolon (with eşofman), Takım, Aksesuar, Ev tekstili. Fields: Cinsiyet, Yaka, Kol, Kalıp, Boy, Dekolte, Bel, Paça, Kumaş, Fermuar, Esneklik, Silüet, Detay, Renk, Kompozisyon. Deviations: "Yaka / Paça detay" (free text on the plain grid) shares its key `neckHem` with Paça, so it is only on Pantolon (old values stay on products and on the PDP); Kalıp is left off Aksesuar and Ev tekstili.
+- **No backfill SQL.** "Hazır türleri içe aktar" (Tanımlamalar → Ürün türleri) creates the kinds and fields and gives every product without a kind the one its category maps to, with the tested mapping (`fashionKindKeyForCategory`, through system keys). Simulated on lilabutik's live tree: all 94 products get a kind (Elbise 52, Üst giyim 22, Pantolon 15, Takım 3, Etek 2). New stores get it at creation (`catalog/starterDefinitions.ts`). Starting variant types are filled only when the store has a type of that name ("Beden", "Pantolon bedeni"); lilabutik has none yet, so they stay empty until set in the drawer.
+- **Panel:** Tanımlamalar → Ürün türleri (list + drawer: name, starting variant types, suggested category, fields with order / Zorunlu / option subset) and Özellikler (list + drawer: label, input, options, "pick or type"). Ürünler list: Tür column, Tür filter, "Tür ata…" bulk action.
+- **For F3:** `sanitizeProductFeatures` keeps only the built-in keys today, so a field the owner creates can't hold a value until the editor saves `features` by the boutique's own field keys. Show a stored value that isn't in a choice's options as a selected chip (never drop it).
+
+**To switch it on (Mert):** apply `supabase/patch_product_kinds.sql`, then on each fashion store: Tanımlamalar → Ürün türleri → "Hazır türleri içe aktar". Read-only check afterwards:
+
+```sql
+select k.name, count(p.id) as products
+from tr_products p join tr_boutiques b on b.id = p.boutique_id
+left join tr_product_kinds k on k.id = p.kind_id
+where b.slug = 'lilabutik' group by k.name order by 2 desc;
+```
+
+
 - **Schema:** `tr_product_kinds`, `tr_attribute_definitions`, `tr_product_kind_attributes`, plus `tr_products.kind_id uuid null`.
 - **Panel:** Tanımlamalar → **Ürün türleri** (list + drawer: name, starting variant types, suggested category, fields) and **Özellikler** (field definitions: label, input, options). Same patterns as the Kategoriler and Varyant Türleri pages.
 - **Template:** the fashion kinds and fields come from what the fashion editor shows today. The kinds are the distinctions the current code actually makes (expected: Elbise, Bluz / Üst, Pantolon, Etek, Takım, Dış giyim, Aksesuar); the fields are today's `features` keys and `dressFeatures.ts` groups, with their option lists. "Hazır türleri içe aktar" creates them. **No extra fields are added** (lilabutik plan Q6).
-- **Backfill:** one data patch sets `kind_id` for every existing product from its current category (generated from the tested mapping in `garmentCategory.ts`, so the SQL and the code can't disagree). Checked with read-only SELECTs: every product gets a kind, and the counts match the category counts.
+- **Backfill (built differently, see above):** one data patch sets `kind_id` for every existing product from its current category (generated from the tested mapping in `garmentCategory.ts`, so the SQL and the code can't disagree). Checked with read-only SELECTs: every product gets a kind, and the counts match the category counts.
 - Nothing reads `kind_id` yet except the product list (a Tür column/filter). The editor switches in F3.
 - **SQL:** `patch_product_kinds.sql` (schema), `patch_product_kinds_lilabutik.sql` (data). **Freeze:** no. **lilabutik:** no visible change.
 

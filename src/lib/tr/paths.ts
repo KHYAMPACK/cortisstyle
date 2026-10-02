@@ -262,6 +262,14 @@ export function trPanelVariantTypesPath(): string {
   return "/tr/panel/tanimlamalar/varyant-turleri";
 }
 
+export function trPanelProductKindsPath(): string {
+  return "/tr/panel/tanimlamalar/urun-turleri";
+}
+
+export function trPanelAttributesPath(): string {
+  return "/tr/panel/tanimlamalar/ozellikler";
+}
+
 export function trPanelNewCategoryPath(): string {
   return "/tr/panel/tanimlamalar/kategoriler/yeni";
 }

@@ -73,6 +73,8 @@ export const ownerCacheKeys = {
   categories: (boutiqueId: string) => `categories:${boutiqueId}`,
   productFacets: (boutiqueId: string) => `product-facets:${boutiqueId}`,
   variantTypes: (boutiqueId: string) => `variant-types:${boutiqueId}`,
+  productKinds: (boutiqueId: string) => `product-kinds:${boutiqueId}`,
+  attributes: (boutiqueId: string) => `attributes:${boutiqueId}`,
   orders: (boutiqueId: string) => `orders:${boutiqueId}`,
   summary: (boutiqueId: string, range: string) =>
     `summary:${boutiqueId}:${range}`,

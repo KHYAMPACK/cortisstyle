@@ -37,11 +37,13 @@ import {
 } from "@/components/tr/panel/TrPanelMotion";
 import { TrPanelPopover } from "@/components/tr/panel/TrPanelPopover";
 import { useOwnerCategories } from "@/components/tr/panel/useOwnerCategories";
+import { useOwnerProductKinds } from "@/components/tr/panel/useOwnerProductKinds";
 import { flattenCategoryTree, slugsInScope } from "@/lib/tr/categories/tree";
 import { runOwnerPatches } from "@/lib/tr/ownerBulk";
 import { getPanelProductCover } from "@/lib/tr/productImages";
 import {
   addOwnerProductsToCategory,
+  assignOwnerProductKind,
   deleteOwnerProduct,
   fetchOwnerProducts,
   peekOwnerProducts,
@@ -230,12 +232,15 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
   const router = useRouter();
   // Filters and labels come from the boutique's categories.
   const { categories: ownCategories } = useOwnerCategories(boutiqueId);
+  // Product kinds (Ürün türleri): a column, a filter and a bulk action once there are any.
+  const { kinds, productKinds, reload: reloadKinds } = useOwnerProductKinds(boutiqueId);
   const cached = peekOwnerProducts(boutiqueId);
   const [products, setProducts] = useState<TrProduct[]>(cached?.products ?? []);
   const [loading, setLoading] = useState(!cached);
   // Only a failure to load the list; what an action did is a toast.
   const [error, setError] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string | "all">("all");
+  const [kindFilter, setKindFilter] = useState<string | "all" | "none">("all");
   const [statusFilter, setStatusFilter] = useState<"all" | TrProductStatus>(
     "all",
   );
@@ -285,6 +290,15 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
     [ownCategories],
   );
 
+  const kindNames = useMemo(
+    () => new Map(kinds.map((kind) => [kind.id, kind.name])),
+    [kinds],
+  );
+  const kindName = (productId: string): string | null => {
+    const kindId = productKinds[productId];
+    return kindId ? (kindNames.get(kindId) ?? null) : null;
+  };
+
   const uncategorizedCount = useMemo(
     () => products.filter((product) => !product.category?.trim()).length,
     [products],
@@ -298,6 +312,11 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
     } else if (categoryFilter !== "all") {
       const scope = slugsInScope(ownCategories, categoryFilter);
       list = list.filter((product) => scope.has(product.category?.trim() ?? ""));
+    }
+    if (kindFilter === "none") {
+      list = list.filter((product) => !productKinds[product.id]);
+    } else if (kindFilter !== "all") {
+      list = list.filter((product) => productKinds[product.id] === kindFilter);
     }
     if (statusFilter !== "all") {
       list = list.filter((product) => product.status === statusFilter);
@@ -323,6 +342,8 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
     return list;
   }, [
     categoryFilter,
+    kindFilter,
+    productKinds,
     statusFilter,
     products,
     search,
@@ -338,7 +359,9 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
   );
 
   const filterCount =
-    (statusFilter !== "all" ? 1 : 0) + (categoryFilter !== "all" ? 1 : 0);
+    (statusFilter !== "all" ? 1 : 0) +
+    (categoryFilter !== "all" ? 1 : 0) +
+    (kindFilter !== "all" ? 1 : 0);
 
   const orderedIds = useMemo(() => pageItems.map((p) => p.id), [pageItems]);
   const selection = usePanelRowSelection(orderedIds);
@@ -391,6 +414,26 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
       setProducts(fresh.products);
     } catch (bulkError) {
       toast.error(bulkError, "Ürünler kategoriye eklenemedi.");
+    } finally {
+      setBulkBusy(false);
+      selection.clear();
+    }
+  };
+
+  /** Set (or clear, with `null`) the kind of the selected products. */
+  const runBulkSetKind = async (kindId: string | null) => {
+    const ids = [...selection.selectedIds];
+    if (ids.length === 0) return;
+    setConfirmBulkDelete(false);
+    setBulkBusy(true);
+    try {
+      await assignOwnerProductKind(boutiqueId, kindId, ids);
+      toast.success(
+        kindId ? `${ids.length} ürüne tür atandı.` : `${ids.length} üründen tür kaldırıldı.`,
+      );
+      reloadKinds();
+    } catch (bulkError) {
+      toast.error(bulkError, "Ürün türü atanamadı.");
     } finally {
       setBulkBusy(false);
       selection.clear();
@@ -462,9 +505,14 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
     setCategoryFilter(value);
     setPage(1);
   };
+  const changeKind = (value: string) => {
+    setKindFilter(value);
+    setPage(1);
+  };
   const clearFilters = () => {
     setStatusFilter("all");
     setCategoryFilter("all");
+    setKindFilter("all");
     setPage(1);
   };
   const changePageSize = (value: number) => {
@@ -614,6 +662,24 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
               ) : null}
             </select>
           </label>
+          {kinds.length > 0 ? (
+            <label className="block space-y-2">
+              <span className={panelLabelClass}>Ürün türü</span>
+              <select
+                className={panelFieldClass}
+                value={kindFilter}
+                onChange={(event) => changeKind(event.target.value)}
+              >
+                <option value="all">Tümü</option>
+                {kinds.map((kind) => (
+                  <option key={kind.id} value={kind.id}>
+                    {kind.name}
+                  </option>
+                ))}
+                <option value="none">Türü olmayan</option>
+              </select>
+            </label>
+          ) : null}
           {filterCount > 0 ? (
             <button
               type="button"
@@ -701,9 +767,11 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
                               </p>
                               <StatusBadge status={product.status} />
                             </div>
-                            {categoryLabel ? (
+                            {categoryLabel || kindName(product.id) ? (
                               <p className="truncate text-[13px] text-neutral-500">
-                                {categoryLabel}
+                                {[categoryLabel, kindName(product.id)]
+                                  .filter(Boolean)
+                                  .join(" · ")}
                               </p>
                             ) : null}
                             <p className="flex flex-wrap items-baseline gap-x-3 text-[14px]">
@@ -736,7 +804,11 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
                     onChange: selection.setAllVisible,
                     disabled: bulkBusy,
                   }}
-                  headers={["Ürün", "Satış fiyatı", "Envanter"]}
+                  headers={
+                    kinds.length > 0
+                      ? ["Ürün", "Tür", "Satış fiyatı", "Envanter"]
+                      : ["Ürün", "Satış fiyatı", "Envanter"]
+                  }
                   footer={pager}
                 >
                   {pageItems.map((product, index) => {
@@ -783,6 +855,15 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
                             </div>
                           </div>
                         </TrPanelDataTableCell>
+                        {kinds.length > 0 ? (
+                          <TrPanelDataTableCell>
+                            <span className="text-[13px] text-neutral-700">
+                              {kindName(product.id) ?? (
+                                <span className="text-neutral-400">—</span>
+                              )}
+                            </span>
+                          </TrPanelDataTableCell>
+                        ) : null}
                         <TrPanelDataTableCell>
                           <ProductPrice product={product} />
                         </TrPanelDataTableCell>
@@ -842,6 +923,29 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
                       </option>
                     ))}
                   </select>
+                  {kinds.length > 0 ? (
+                    <select
+                      className={panelDesktopSelectClass}
+                      defaultValue=""
+                      disabled={bulkBusy}
+                      onChange={(event) => {
+                        const value = event.target.value;
+                        if (value === "") return;
+                        void runBulkSetKind(value === "none" ? null : value);
+                        event.target.value = "";
+                      }}
+                    >
+                      <option value="" disabled>
+                        Tür ata…
+                      </option>
+                      {kinds.map((kind) => (
+                        <option key={kind.id} value={kind.id}>
+                          {kind.name}
+                        </option>
+                      ))}
+                      <option value="none">Türü kaldır</option>
+                    </select>
+                  ) : null}
                   <button
                     type="button"
                     disabled={bulkBusy}

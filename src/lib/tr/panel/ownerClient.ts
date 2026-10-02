@@ -33,6 +33,12 @@ import {
   type TrVariantType,
   type TrVariantTypeListEntry,
 } from "@/lib/tr/variants/types";
+import type {
+  TrAttributeDefinition,
+  TrAttributeListEntry,
+  TrProductKind,
+  TrProductKindListEntry,
+} from "@/lib/tr/productKinds/types";
 import type { ManualOrderDraft } from "@/lib/tr/orders/manualOrder";
 import type { TrOrderDraft } from "@/lib/tr/orders/orderDraft";
 import type { TrShippingRate } from "@/lib/tr/shipping/types";
@@ -685,6 +691,167 @@ export async function importOwnerSizeTypes(
   );
   invalidateOwnerCache("variant-types:");
   return data.types ?? [];
+}
+
+/**
+ * The boutique's product kinds, each product's kind (`null` = none), and whether the
+ * starter kinds can be imported.
+ */
+export async function fetchOwnerProductKinds(boutiqueId: string): Promise<{
+  kinds: TrProductKindListEntry[];
+  productKinds: Record<string, string | null>;
+  importable: boolean;
+}> {
+  return cachedOwnerFetch(ownerCacheKeys.productKinds(boutiqueId), async () => {
+    const response = await ownerFetch(
+      `/api/tr/owner/product-kinds?boutiqueId=${encodeURIComponent(boutiqueId)}`,
+    );
+    const data = await readApiResponse<{
+      kinds?: TrProductKindListEntry[];
+      productKinds?: Record<string, string | null>;
+      importable?: boolean;
+    }>(response, "Ürün türleri yüklenemedi.");
+    return {
+      kinds: data.kinds ?? [],
+      productKinds: data.productKinds ?? {},
+      importable: data.importable === true,
+    };
+  });
+}
+
+function invalidateProductKinds(): void {
+  invalidateOwnerCache("product-kinds:");
+  invalidateOwnerCache("attributes:");
+}
+
+export async function createOwnerProductKind(
+  boutiqueId: string,
+  body: Record<string, unknown>,
+): Promise<TrProductKind> {
+  const response = await ownerFetch("/api/tr/owner/product-kinds", {
+    method: "POST",
+    body: JSON.stringify({ boutiqueId, ...body }),
+  });
+  const data = await readApiResponse<{ kind?: TrProductKind }>(
+    response,
+    "Ürün türü oluşturulamadı.",
+  );
+  if (!data.kind) throw new Error("Ürün türü oluşturulamadı.");
+  invalidateProductKinds();
+  return data.kind;
+}
+
+export async function updateOwnerProductKind(
+  kindId: string,
+  body: Record<string, unknown>,
+): Promise<TrProductKind> {
+  const response = await ownerFetch(
+    `/api/tr/owner/product-kinds/${encodeURIComponent(kindId)}`,
+    { method: "PATCH", body: JSON.stringify(body) },
+  );
+  const data = await readApiResponse<{ kind?: TrProductKind }>(
+    response,
+    "Ürün türü güncellenemedi.",
+  );
+  if (!data.kind) throw new Error("Ürün türü güncellenemedi.");
+  invalidateProductKinds();
+  return data.kind;
+}
+
+export async function deleteOwnerProductKind(kindId: string): Promise<void> {
+  const response = await ownerFetch(
+    `/api/tr/owner/product-kinds/${encodeURIComponent(kindId)}`,
+    { method: "DELETE" },
+  );
+  await readApiResponse<{ ok?: boolean }>(response, "Ürün türü silinemedi.");
+  invalidateProductKinds();
+}
+
+/** "Hazır türleri içe aktar": the starter kinds and fields, and products filed under them. */
+export async function importOwnerProductKinds(
+  boutiqueId: string,
+): Promise<{ kinds: number; attributes: number; assigned: number }> {
+  const response = await ownerFetch("/api/tr/owner/product-kinds/import", {
+    method: "POST",
+    body: JSON.stringify({ boutiqueId }),
+  });
+  const data = await readApiResponse<{ kinds?: number; attributes?: number; assigned?: number }>(
+    response,
+    "Hazır türler aktarılamadı.",
+  );
+  invalidateProductKinds();
+  return { kinds: data.kinds ?? 0, attributes: data.attributes ?? 0, assigned: data.assigned ?? 0 };
+}
+
+/** Bulk: set (or clear, with `null`) the kind of some products. */
+export async function assignOwnerProductKind(
+  boutiqueId: string,
+  kindId: string | null,
+  productIds: string[],
+): Promise<void> {
+  const response = await ownerFetch("/api/tr/owner/product-kinds/assign", {
+    method: "POST",
+    body: JSON.stringify({ boutiqueId, kindId, productIds }),
+  });
+  await readApiResponse<{ ok?: boolean }>(response, "Ürün türü atanamadı.");
+  invalidateProductKinds();
+}
+
+/** The boutique's product fields (Özellikler). */
+export async function fetchOwnerAttributes(boutiqueId: string): Promise<TrAttributeListEntry[]> {
+  return cachedOwnerFetch(ownerCacheKeys.attributes(boutiqueId), async () => {
+    const response = await ownerFetch(
+      `/api/tr/owner/attributes?boutiqueId=${encodeURIComponent(boutiqueId)}`,
+    );
+    const data = await readApiResponse<{ attributes?: TrAttributeListEntry[] }>(
+      response,
+      "Özellikler yüklenemedi.",
+    );
+    return data.attributes ?? [];
+  });
+}
+
+export async function createOwnerAttribute(
+  boutiqueId: string,
+  body: Record<string, unknown>,
+): Promise<TrAttributeDefinition> {
+  const response = await ownerFetch("/api/tr/owner/attributes", {
+    method: "POST",
+    body: JSON.stringify({ boutiqueId, ...body }),
+  });
+  const data = await readApiResponse<{ attribute?: TrAttributeDefinition }>(
+    response,
+    "Özellik oluşturulamadı.",
+  );
+  if (!data.attribute) throw new Error("Özellik oluşturulamadı.");
+  invalidateProductKinds();
+  return data.attribute;
+}
+
+export async function updateOwnerAttribute(
+  attributeId: string,
+  body: Record<string, unknown>,
+): Promise<TrAttributeDefinition> {
+  const response = await ownerFetch(
+    `/api/tr/owner/attributes/${encodeURIComponent(attributeId)}`,
+    { method: "PATCH", body: JSON.stringify(body) },
+  );
+  const data = await readApiResponse<{ attribute?: TrAttributeDefinition }>(
+    response,
+    "Özellik güncellenemedi.",
+  );
+  if (!data.attribute) throw new Error("Özellik güncellenemedi.");
+  invalidateProductKinds();
+  return data.attribute;
+}
+
+export async function deleteOwnerAttribute(attributeId: string): Promise<void> {
+  const response = await ownerFetch(
+    `/api/tr/owner/attributes/${encodeURIComponent(attributeId)}`,
+    { method: "DELETE" },
+  );
+  await readApiResponse<{ ok?: boolean }>(response, "Özellik silinemedi.");
+  invalidateProductKinds();
 }
 
 /** Bulk: add products to a category, keeping the categories they already have. */

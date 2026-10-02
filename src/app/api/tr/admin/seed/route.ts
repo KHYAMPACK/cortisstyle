@@ -15,7 +15,7 @@ import {
   updateOrderFulfillmentStatusAdmin,
 } from "@/lib/tr/orders";
 import { createProductAdmin } from "@/lib/tr/products";
-import { seedStarterCategories } from "@/lib/tr/catalog/starterCategories";
+import { seedStarterDefinitions } from "@/lib/tr/catalog/starterDefinitions";
 import { isTrAdminAuthorized } from "@/lib/tr/adminAuth";
 import { parseTryToKurus } from "@/types/tr-marketplace";
 import type { TrFulfillmentStatus } from "@/types/tr-marketplace";
@@ -253,10 +253,10 @@ export async function POST(request: Request) {
         });
       }
 
-      // A new boutique starts with its profile's category tree (every boutique uses its
-      // own categories), with its seeded products filed under them.
+      // A new boutique starts with its profile's categories and product kinds (every
+      // boutique uses its own), with its seeded products filed under them.
       if (!existing) {
-        await seedStarterCategories(boutique.id, boutiqueInput.catalogProfile ?? "fashion");
+        await seedStarterDefinitions(boutique.id, boutiqueInput.catalogProfile ?? "fashion");
       }
 
       for (const orderInput of boutiqueInput.sampleOrders ?? []) {
