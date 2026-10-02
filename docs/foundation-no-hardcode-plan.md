@@ -302,7 +302,7 @@ _Formerly M7c-2 + M7c-3, now including colour._
   - after a simulated sale the patch is refused;
   - the rollback leaves 0 differing rows.
 - **Answers (confirmed by Mert 2026-10-02):**
-  - The three-jeans group stays apart. The other 8 groups merge, with titles without the colour word.
+  - The three-jeans group stays apart. The other 9 groups merge (14 products fold in), with titles without the colour word. Two groups have a single product and are left as they are.
   - Colours for 6 products come from their titles; "Midi Straplez Elbise" is Siyah.
   - Nothing blocks: the dry run writes the SQL.
 - **Known after-effects:**

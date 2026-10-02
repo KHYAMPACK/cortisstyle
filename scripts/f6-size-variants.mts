@@ -12,6 +12,7 @@
  *   --snapshot <file>     read the products from a JSON array of tr_products rows instead
  *                         of the database (also needs --boutique-id)
  *   --boutique-id <uuid>  with --snapshot
+ *   --snapshot-at <time>  with --snapshot: when it was read (for the SQL header)
  *
  * Writes supabase/f6/<slug>-report.md always, and supabase/patch_<slug>_variants.sql +
  * supabase/patch_<slug>_variants_rollback.sql when the plan has no blocking problem.
@@ -173,7 +174,7 @@ async function main() {
     : await readFromDatabase(slug);
   if (!/^[0-9a-f-]{36}$/i.test(source.boutiqueId)) throw new Error("--boutique-id is required with --snapshot.");
 
-  const snapshotAt = new Date().toISOString();
+  const snapshotAt = (snapshotPath && arg("snapshot-at")) || new Date().toISOString();
   const products = source.rows.map(toProduct).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   const plan = planSizeMigration({
     products,
