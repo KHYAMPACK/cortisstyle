@@ -1,7 +1,10 @@
-import {
-  altGiyimUsesPaca,
-  type ConstructionCatalogFamily,
-} from "@/lib/tr/fashion/garmentUploadTypes";
+import { isTrCategoryMatch } from "@/lib/tr/fashion/categories";
+import type { ConstructionCatalogFamily } from "@/lib/tr/fashion/types";
+
+/** Pantolon / eşofman have a Paça; etek doesn't (an unknown bottom has one). */
+function altGiyimUsesPaca(category: string | null | undefined): boolean {
+  return !isTrCategoryMatch(category, "etek");
+}
 
 /** Structured elbise / üst giyim PDP chips: option ids, stored as Turkish labels. */
 

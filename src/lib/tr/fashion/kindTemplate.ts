@@ -1,5 +1,5 @@
 import type { TrCategory } from "@/lib/tr/categories/types";
-import { isTrCategoryMatch } from "@/lib/tr/fashion/categories";
+import { getTrCategoryDefinition, isTrCategoryMatch } from "@/lib/tr/fashion/categories";
 import {
   BOTTOM_FIT_OPTIONS,
   BOTTOM_HEM_OPTIONS,
@@ -11,13 +11,12 @@ import {
   TOP_LENGTH_OPTIONS,
   type DressFeatureOption,
 } from "@/lib/tr/fashion/dressFeatures";
-import { garmentCategoryFor } from "@/lib/tr/fashion/garmentCategory";
 import { TR_PRODUCT_FEATURE_LABELS } from "@/lib/tr/catalog/productFeatures";
 import type { TrKindTemplate } from "@/lib/tr/productKinds/types";
 
 /**
  * The fashion starter kinds and fields: exactly what the fashion editor shows today
- * (`TrOwnerProductFeaturesFields`, `getConstructionFeatureGroups`), as data. Copied once
+ * (the old fashion editor's field sets, `getConstructionFeatureGroups`), as data. Copied once
  * into a boutique's own rows ("Hazır türleri içe aktar", and at store creation); nothing
  * reads it at runtime. Values keep their `features` keys, so no product data moves.
  *
@@ -218,4 +217,31 @@ export function fashionKindKeyForCategory(
   categories: ReadonlyArray<Pick<TrCategory, "id" | "parentId" | "slug" | "systemKey">>,
 ): string | null {
   return fashionKindKeyForGarment(garmentCategoryFor(slug, categories));
+}
+
+type CategoryLike = Pick<TrCategory, "id" | "parentId" | "slug" | "systemKey">;
+
+/**
+ * A category slug → the built-in garment id it stands for, through the boutique's
+ * system keys: a category is what its own key says, else what its nearest keyed
+ * ancestor says (an owner-made "Abiye" under the imported "Elbise" is a dress), so
+ * renames don't matter. The slug itself when nothing is keyed.
+ */
+export function garmentCategoryFor(
+  slug: string | null,
+  categories: readonly CategoryLike[],
+): string | null {
+  const trimmed = slug?.trim() || null;
+  if (!trimmed) return null;
+  const byId = new Map(categories.map((category) => [category.id, category]));
+  let current = categories.find((category) => category.slug === trimmed);
+  const seen = new Set<string>();
+  while (current && !seen.has(current.id)) {
+    if (current.systemKey && getTrCategoryDefinition(current.systemKey)) {
+      return current.systemKey;
+    }
+    seen.add(current.id);
+    current = current.parentId ? byId.get(current.parentId) : undefined;
+  }
+  return trimmed;
 }

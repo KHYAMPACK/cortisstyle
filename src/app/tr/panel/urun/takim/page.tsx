@@ -1,11 +1,7 @@
-import type { Metadata } from "next";
-import { TrOwnerTakimCreatePage } from "@/components/tr/panel/TrOwnerTakimCreatePage";
+import { redirect } from "next/navigation";
+import { trPanelNewProductPath } from "@/lib/tr/paths";
 
-export const metadata: Metadata = {
-  title: "Takım yükle",
-  robots: { index: false, follow: false },
-};
-
-export default function TrPanelTakimNewProductRoute() {
-  return <TrOwnerTakimCreatePage />;
+/** Old create flow (removed in F3): products are added with the one editor now. */
+export default function TrPanelOldCreateRoute() {
+  redirect(trPanelNewProductPath());
 }

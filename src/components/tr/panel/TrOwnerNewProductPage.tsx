@@ -1,26 +1,42 @@
 "use client";
 
-import { AnimatePresence } from "framer-motion";
-import { useState } from "react";
+import { Layers, Package, Shapes } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
 import { TrOwnerProductRouteGate } from "@/components/tr/panel/TrOwnerProductRouteGate";
-import { TrOwnerProductCreatedSuccess } from "@/components/tr/panel/TrOwnerProductCreatedSuccess";
+import { TrPanelChoiceCard } from "@/components/tr/panel/TrPanelChoiceCard";
 import { TrPanelEditor } from "@/components/tr/panel/TrPanelEditor";
-import { TrPanelFadeIn } from "@/components/tr/panel/TrPanelMotion";
-import { TrProductCreateWizard } from "@/components/tr/panel/TrProductCreateWizard";
-import { trPanelProductsPath } from "@/lib/tr/paths";
-import type { TrProduct } from "@/types/tr-marketplace";
+import { TrPanelLoading } from "@/components/tr/panel/TrPanelMotion";
+import { panelHintClass } from "@/components/tr/panel/panelUi";
+import {
+  boutiqueLocationAddress,
+  TrProductEditor,
+} from "@/components/tr/panel/TrProductEditor";
+import { fetchOwnerProductKinds, type TrOwnerBoutiqueSummary } from "@/lib/tr/ownerClient";
+import { trPanelEditProductPath, trPanelProductsPath } from "@/lib/tr/paths";
+import type { TrProductKind } from "@/lib/tr/productKinds/types";
 
-export function TrOwnerNewProductPage() {
+/** What the owner picked before the editor opens. */
+type Start = { kindId: string | null; productType: "simple" | "advanced" };
+
+/**
+ * "Ürün ekle": first the product's kind (Elbise, Pantolon…), then the product editor,
+ * empty, starting from that kind (its fields, suggested category, size table). A
+ * boutique without kinds goes straight to the editor. `advanced` opens a product with
+ * variants (staff only until the shop can sell them).
+ */
+export function TrOwnerNewProductPage({ advanced = false }: { advanced?: boolean }) {
   return (
     <TrOwnerPanelGate>
-      {({ activeBoutique }) => (
+      {({ activeBoutique, isStaff }) => (
         <TrOwnerProductRouteGate activeBoutique={activeBoutique}>
-        <NewProductFlow
-          boutiqueId={activeBoutique.id}
-          boutiqueSlug={activeBoutique.slug}
-          boutiqueName={activeBoutique.name}
-        />
+          <NewProductFlow
+            key={activeBoutique.id}
+            boutique={activeBoutique}
+            isStaff={isStaff}
+            advanced={advanced && isStaff}
+          />
         </TrOwnerProductRouteGate>
       )}
     </TrOwnerPanelGate>
@@ -28,57 +44,92 @@ export function TrOwnerNewProductPage() {
 }
 
 function NewProductFlow({
-  boutiqueId,
-  boutiqueSlug,
-  boutiqueName,
+  boutique,
+  isStaff,
+  advanced,
 }: {
-  boutiqueId: string;
-  boutiqueSlug: string;
-  boutiqueName: string;
+  boutique: TrOwnerBoutiqueSummary;
+  isStaff: boolean;
+  advanced: boolean;
 }) {
-  const [created, setCreated] = useState<TrProduct | null>(null);
-  const [wizardKey, setWizardKey] = useState(0);
+  const router = useRouter();
+  const [kinds, setKinds] = useState<TrProductKind[] | null>(null);
+  const [start, setStart] = useState<Start | null>(
+    advanced ? { kindId: null, productType: "advanced" } : null,
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchOwnerProductKinds(boutique.id)
+      .then((result) => {
+        if (!cancelled) setKinds(result.kinds);
+      })
+      .catch(() => {
+        if (!cancelled) setKinds([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [boutique.id]);
+
+  const chosen = start ?? (kinds && kinds.length === 0 ? { kindId: null, productType: "simple" as const } : null);
+  const kindName = kinds?.find((kind) => kind.id === chosen?.kindId)?.name;
 
   return (
     <TrPanelEditor
       backHref={trPanelProductsPath()}
       parentLabel="Ürünler"
-      title={created ? "Ürün eklendi" : "Yeni ürün"}
+      title={kindName ? `Yeni ürün · ${kindName}` : "Yeni ürün"}
     >
-      <AnimatePresence mode="wait">
-        {created ? (
-          <TrPanelFadeIn key="created-success">
-            <TrOwnerProductCreatedSuccess
-              product={created}
-              boutiqueSlug={boutiqueSlug}
-              boutiqueName={boutiqueName}
-              onAddAnother={() => {
-                setCreated(null);
-                setWizardKey((key) => key + 1);
-                if (typeof window !== "undefined") {
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                }
-              }}
+      {chosen ? (
+        <TrProductEditor
+          boutiqueId={boutique.id}
+          boutiqueSlug={boutique.slug}
+          customDomain={boutique.customDomain}
+          address={boutiqueLocationAddress(boutique)}
+          productType={chosen.productType}
+          initialKindId={chosen.kindId}
+          // The editor already raised the "Ürün eklendi" toast; it stays over the redirect.
+          onCreated={(created) => router.replace(trPanelEditProductPath(created.id))}
+        />
+      ) : kinds === null ? (
+        <TrPanelLoading label="Ürün türleri yükleniyor…" />
+      ) : (
+        <div className="pt-3">
+          <h2 className="text-[18px] font-semibold text-neutral-900">
+            Ne tür bir ürün ekleyeceksiniz?
+          </h2>
+          <p className={`mt-1 ${panelHintClass}`}>
+            Tür, doldurulacak özellikleri ve önerilen kategoriyi belirler; sonradan
+            değiştirebilirsiniz.
+          </p>
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {kinds.map((kind) => (
+              <TrPanelChoiceCard
+                key={kind.id}
+                onClick={() => setStart({ kindId: kind.id, productType: "simple" })}
+                icon={<Shapes className="h-5 w-5" strokeWidth={1.75} aria-hidden />}
+                title={kind.name}
+                description={`${kind.attributes.length} özellik`}
+              />
+            ))}
+            <TrPanelChoiceCard
+              onClick={() => setStart({ kindId: null, productType: "simple" })}
+              icon={<Package className="h-5 w-5" strokeWidth={1.75} aria-hidden />}
+              title="Türü olmayan ürün"
+              description="Özellik alanı olmadan; tür sonradan seçilebilir."
             />
-          </TrPanelFadeIn>
-        ) : (
-          <TrPanelFadeIn key={`create-wizard-${wizardKey}`}>
-            <p className="mb-6 text-[15px] text-neutral-600">
-              Adım adım ilerleyin — önce fotoğraf, sonra isim ve fiyat.
-            </p>
-            <TrProductCreateWizard
-              key={wizardKey}
-              boutiqueId={boutiqueId}
-              onSaved={(product) => {
-                setCreated(product);
-                if (typeof window !== "undefined") {
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                }
-              }}
-            />
-          </TrPanelFadeIn>
-        )}
-      </AnimatePresence>
+            {isStaff ? (
+              <TrPanelChoiceCard
+                onClick={() => setStart({ kindId: null, productType: "advanced" })}
+                icon={<Layers className="h-5 w-5" strokeWidth={1.75} aria-hidden />}
+                title="Varyantlı ürün (personel)"
+                description="Her renk/beden kombinasyonu için ayrı fiyat, SKU ve stok. Mağaza henüz satamıyor."
+              />
+            ) : null}
+          </div>
+        </div>
+      )}
     </TrPanelEditor>
   );
 }

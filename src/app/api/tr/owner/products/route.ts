@@ -1,3 +1,4 @@
+import { ProductKindError, readProductKindId } from "@/lib/tr/catalog/productKinds";
 import {
   requireOwnedBoutique,
   requireTrOwner,
@@ -247,6 +248,16 @@ export async function POST(request: Request) {
   const seo = body.seo !== undefined ? sanitizeSeo(body.seo) : undefined;
   const categories = readCategoriesBody(body.categories);
 
+  let kindId: string | null | undefined;
+  try {
+    kindId = await readProductKindId(boutique.id, body.kindId);
+  } catch (error) {
+    return Response.json(
+      { error: error instanceof Error ? error.message : "Ürün türü geçersiz." },
+      { status: error instanceof ProductKindError ? error.status : 400 },
+    );
+  }
+
   let compareAtPriceKurus: number | null | undefined;
   if (
     body.compareAtPriceKurus !== undefined ||
@@ -324,6 +335,7 @@ export async function POST(request: Request) {
       productType,
       fulfillmentType: readFulfillmentType(body.fulfillmentType),
       seo,
+      kindId,
     };
 
     if (requestedSlug) await assertProductSlugFree(boutique.id, requestedSlug);

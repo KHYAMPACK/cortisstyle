@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
-import { TrOwnerNewSimpleProductPage } from "@/components/tr/panel/TrOwnerNewSimpleProductPage";
+import { TrOwnerNewProductPage } from "@/components/tr/panel/TrOwnerNewProductPage";
 
 export const metadata: Metadata = {
-  title: "Gelişmiş ürün ekle",
+  title: "Varyantlı ürün ekle",
   robots: { index: false, follow: false },
 };
 
+/** A product with variants; staff only until the shop can sell them (owners get the chooser). */
 export default function TrPanelNewAdvancedProductRoute() {
-  return <TrOwnerNewSimpleProductPage productType="advanced" />;
+  return <TrOwnerNewProductPage advanced />;
 }

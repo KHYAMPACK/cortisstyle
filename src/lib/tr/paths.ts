@@ -148,32 +148,9 @@ export function trPanelNewProductPath(): string {
   return "/tr/panel/urun/yeni";
 }
 
-/** Basit ürün editor. */
-export function trPanelNewSimpleProductPath(): string {
-  return "/tr/panel/urun/yeni/basit";
-}
-
-/** Gelişmiş ürün editor (Basit ürün + variants). */
+/** A product with variants (staff only until the shop can sell them). */
 export function trPanelNewAdvancedProductPath(): string {
   return "/tr/panel/urun/yeni/gelismis";
-}
-
-/** Fashion sub-chooser (tek parça sihirbazı / takım / toplu). */
-export function trPanelNewFashionProductPath(): string {
-  return "/tr/panel/urun/yeni/moda";
-}
-
-/** The single-garment AI wizard. */
-export function trPanelNewFashionSingleProductPath(): string {
-  return "/tr/panel/urun/yeni/moda/tek-parca";
-}
-
-export function trPanelBatchNewProductsPath(): string {
-  return "/tr/panel/urun/toplu";
-}
-
-export function trPanelTakimNewProductPath(): string {
-  return "/tr/panel/urun/takim";
 }
 
 export function trPanelEditProductPath(productId: string): string {

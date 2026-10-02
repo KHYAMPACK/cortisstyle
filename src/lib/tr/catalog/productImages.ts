@@ -3,7 +3,6 @@ import {
   deliverPublicAssetUrl,
   deliverPublicAssetUrls,
 } from "@/lib/tr/assets/deliverPublicAssetUrl";
-import { ELBISE_PACKSHOT_SLOT } from "@/lib/tr/fashion/garmentUploadTypes";
 import { isManualListing } from "@/lib/tr/catalog/productFeatures";
 import { isTakimCatalogProduct, takimPackshotUrls } from "@/lib/tr/fashion/takimUpload";
 import { TR_OWNER_PRODUCT_LIMITS } from "@/lib/tr/ownerProductConstraints";
@@ -12,6 +11,9 @@ import {
   isTrStorefrontAssetUrl,
 } from "@/lib/tr/trAssetUrls";
 import type { TrProduct } from "@/types/tr-marketplace";
+
+/** Where an AI-made product (parked pipeline) keeps its packshot among its photo slots. */
+const ELBISE_PACKSHOT_SLOT = 3;
 
 export type TrProductImageSurface = "boutique" | "marketplace";
 

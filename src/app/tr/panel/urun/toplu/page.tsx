@@ -1,11 +1,7 @@
-import type { Metadata } from "next";
-import { TrOwnerBatchCreatePage } from "@/components/tr/panel/TrOwnerBatchCreatePage";
+import { redirect } from "next/navigation";
+import { trPanelNewProductPath } from "@/lib/tr/paths";
 
-export const metadata: Metadata = {
-  title: "Toplu ürün ekle",
-  robots: { index: false, follow: false },
-};
-
-export default function TrPanelBatchNewProductsRoute() {
-  return <TrOwnerBatchCreatePage />;
+/** Old create flow (removed in F3): products are added with the one editor now. */
+export default function TrPanelOldCreateRoute() {
+  redirect(trPanelNewProductPath());
 }

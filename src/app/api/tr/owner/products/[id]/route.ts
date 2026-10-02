@@ -1,3 +1,4 @@
+import { ProductKindError, readProductKindId } from "@/lib/tr/catalog/productKinds";
 import {
   requireOwnedProductBoutique,
   requireTrOwner,
@@ -318,6 +319,16 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 
   const categories = readCategoriesBody(body.categories);
+
+  try {
+    const kindId = await readProductKindId(owned.productBoutiqueId, body.kindId);
+    if (kindId !== undefined) patch.kindId = kindId;
+  } catch (error) {
+    return Response.json(
+      { error: error instanceof Error ? error.message : "Ürün türü geçersiz." },
+      { status: error instanceof ProductKindError ? error.status : 400 },
+    );
+  }
 
   let costPriceKurus: number | null | undefined;
   try {

@@ -194,6 +194,8 @@ export interface TrProduct extends Partial<TrProductDetails> {
    */
   productType?: TrProductType;
   fulfillmentType?: TrFulfillmentType;
+  /** The product's kind (`tr_product_kinds`); owner/admin reads only, `null` = none. */
+  kindId?: string | null;
   /** Owner/admin reads only (the storefront reads slug and SEO through `productSlug.ts`). */
   slug?: string | null;
   seo?: TrSeo;
@@ -458,6 +460,8 @@ export interface CreateTrProductInput extends Partial<TrProductDetails> {
   /** Defaults to `fashion` (every programmatic caller is a garment flow). */
   productType?: TrProductType;
   fulfillmentType?: TrFulfillmentType;
+  /** The product's kind; omitted = none (and the column isn't written). */
+  kindId?: string | null;
   /** A valid, already-unique slug (see `generateUniqueProductSlug`). */
   slug?: string | null;
   seo?: TrSeo;
@@ -484,6 +488,8 @@ export interface UpdateTrProductInput extends Partial<TrProductDetails> {
   sizeStocks?: Record<string, number>;
   sortOrder?: number;
   fulfillmentType?: TrFulfillmentType;
+  /** `null` clears the kind; omitted leaves it. */
+  kindId?: string | null;
   /** The slug itself changes through `setProductSlugAdmin`, which also records the redirect. */
   seo?: TrSeo;
 }

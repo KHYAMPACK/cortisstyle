@@ -1,5 +1,8 @@
 /** Fashion module's typed view of `TrProduct.features` — garment vocabulary only. */
 
+/** The garment families with their own Özellikler set (and takım parts). */
+export type ConstructionCatalogFamily = "elbise" | "ust-giyim" | "alt-giyim";
+
 export type TrTakimSetItem = {
   family: "elbise" | "ust-giyim" | "alt-giyim";
   category: string | null;

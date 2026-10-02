@@ -1,11 +1,7 @@
-import type { Metadata } from "next";
-import { TrOwnerFashionCreateChooser } from "@/components/tr/fashion/panel/TrOwnerFashionCreateChooser";
+import { redirect } from "next/navigation";
+import { trPanelNewProductPath } from "@/lib/tr/paths";
 
-export const metadata: Metadata = {
-  title: "Moda ürünü ekle",
-  robots: { index: false, follow: false },
-};
-
-export default function TrPanelNewFashionProductRoute() {
-  return <TrOwnerFashionCreateChooser />;
+/** Old create flow (removed in F3): products are added with the one editor now. */
+export default function TrPanelOldCreateRoute() {
+  redirect(trPanelNewProductPath());
 }

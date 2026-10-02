@@ -1,11 +1,7 @@
-import type { Metadata } from "next";
-import { TrOwnerNewProductPage } from "@/components/tr/panel/TrOwnerNewProductPage";
+import { redirect } from "next/navigation";
+import { trPanelNewProductPath } from "@/lib/tr/paths";
 
-export const metadata: Metadata = {
-  title: "Yeni ürün · tek parça",
-  robots: { index: false, follow: false },
-};
-
-export default function TrPanelNewFashionSingleProductRoute() {
-  return <TrOwnerNewProductPage />;
+/** Old create flow (removed in F3): products are added with the one editor now. */
+export default function TrPanelOldCreateRoute() {
+  redirect(trPanelNewProductPath());
 }

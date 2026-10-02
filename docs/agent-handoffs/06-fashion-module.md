@@ -12,9 +12,8 @@ Cortisstyle started as a single-vertical (fashion) marketplace, so garment logic
 
 - `src/lib/tr/fashion/categories.ts` — the Turkish garment category taxonomy (elbise, üst-giyim, bluz, pantolon, takım, …). This is fashion's registered default tree, not a generic "category system" — see the caveat below.
 - `src/lib/tr/fashion/types.ts` — `TrFashionProductFeatures`, `TrTakimSetItem` (garment-specific fields of the `TrProductFeatures` union — see "Product features" below).
-- `src/lib/tr/fashion/{garmentUploadTypes,sizeCharts,modelMeasurements,dressFeatures,takimUpload,careInstructions}.ts` — garment upload taxonomy, cm size charts, house-model body measurements (the PDP line for AI-made products), dress construction-chip vocabulary, takım product helpers, wash-care copy.
-- `src/components/tr/fashion/panel/` — garment owner-panel components (the fashion editor, the create chooser).
-- `src/components/tr/fashion/panel/TrFashionProductEditor.tsx` + `src/lib/tr/fashion/productForm.ts` — the garment product editor (manual save), built on the shared product fields.
+- `src/lib/tr/fashion/{sizeCharts,modelMeasurements,dressFeatures,takimUpload,careInstructions}.ts` — cm size charts, house-model body measurements (the PDP line for AI-made products), dress construction-chip vocabulary, takım product helpers, wash-care copy.
+- The fashion product editor and create flows were removed in F3 (2026-10-02): fashion products open in the shared `TrProductEditor`, their fields come from the store's product kinds (`fashion/kindTemplate.ts` is the starter set).
 - `src/components/tr/fashion/pdp/` — garment-specific PDP pieces (size chart modal, model measurements).
 
 ## Product features
@@ -29,8 +28,8 @@ If you clean up one of the areas listed under "known debt," add its directory to
 
 ## Known debt (disclosed, not blocking)
 
-- **~20 owner-panel components** (`TrProductCreateWizard`, `TrOwnerBatchCreatePage` + its steps, `TrOwnerTakimCreatePage`, `TrOwnerProductListPage`, `TrOwnerStockPage`, `TrOwnerSizeChartStock`, `TrOwnerProductFeaturesFields`, `TrOwnerCategoryPicker`, `TrBoutiquePdpInfoSections`) interleave generic and garment-specific UI in the same file. Splitting them is a bigger, riskier job than a file move — deferred on purpose.
-- **Categories: the storefront no longer imports `fashion/categories.ts` directly** It goes through `TrStorefrontTaxonomy`; `fashion/categoryTemplate.ts` is the starter tree a boutique imports into its own `tr_categories` (with `system_key` = the built-in id; `fashion/seedCategories.ts`, run at store creation and by "Hazır kategorileri içe aktar"), and `fashion/garmentCategory.ts` maps its categories back to garment ids for fashion logic. Since F1 (2026-10-02) nothing renders the built-in tree as a store's categories; `fashion/categories.ts` remains only for garment logic, the template and the create wizard/batch picker (`TrOwnerCategoryPicker`) until F3. `fashion/kindTemplate.ts` (F2) is the starter set of product kinds and fields, built from `dressFeatures.ts` (a test keeps them equal to what the editor shows), plus the garment → kind mapping used when importing it (`fashion/seedKinds.ts`).
+- **Some owner-panel components** (`TrOwnerProductListPage`, `TrOwnerStockPage`, `TrOwnerSizeChartStock`, `TrBoutiquePdpInfoSections`) interleave generic and garment-specific UI in the same file. Splitting them is a bigger, riskier job than a file move — deferred on purpose.
+- **Categories: the storefront no longer imports `fashion/categories.ts` directly** It goes through `TrStorefrontTaxonomy`; `fashion/categoryTemplate.ts` is the starter tree a boutique imports into its own `tr_categories` (with `system_key` = the built-in id; `fashion/seedCategories.ts`, run at store creation and by "Hazır kategorileri içe aktar"), and `fashion/kindTemplate.ts` maps its categories back to garment ids (`garmentCategoryFor`) when kinds are imported. Since F1 (2026-10-02) nothing renders the built-in tree as a store's categories; `fashion/categories.ts` remains only for the templates and that mapping. `fashion/kindTemplate.ts` (F2) is the starter set of product kinds and fields, built from `dressFeatures.ts` (a test keeps them equal to what the editor shows), plus the garment → kind mapping used when importing it (`fashion/seedKinds.ts`).
 
 ## Related
 

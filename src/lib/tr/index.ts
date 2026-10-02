@@ -65,7 +65,6 @@ export {
   trPanelSettingsPath,
   trPanelOriginalsPath,
   trPanelStockPath,
-  trPanelTakimNewProductPath,
   trProductPath,
 } from "@/lib/tr/paths";
 

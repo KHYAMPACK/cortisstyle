@@ -120,6 +120,8 @@ async function parseOwnerJson(response: Response): Promise<unknown> {
 
 function invalidateProductLists(): void {
   invalidateOwnerCache("products:");
+  // Each product's kind (the Ürünler list's Tür column) and the kinds' product counts.
+  invalidateOwnerCache("product-kinds:");
   invalidateOwnerCache("categories:");
   invalidateOwnerCache("product-facets:");
   invalidateOwnerCache("product-originals:");
@@ -293,15 +295,17 @@ export interface TrOwnerProductPayload {
   sizeStocks?: Record<string, number>;
   conditionLabel?: string | null;
   status?: TrProductStatus;
-  /** Omitted by the fashion flows; the API then creates a `fashion` product. */
+  /** `simple` or `advanced` (variants); omitted = `fashion`, kept only for old products. */
   productType?: TrProductType;
+  /** The product's kind (Ürün türü); `null` clears it. */
+  kindId?: string | null;
   fulfillmentType?: TrFulfillmentType;
   /** Owner-only. `null` clears it. */
   costPriceTry?: number | string | null;
   /** URL slug; on create, omitted = the server derives one from the title (Basit ürün). */
   slug?: string | null;
   seo?: TrSeo;
-  /** Categories to assign (custom category mode only). */
+  /** The product's categories (all it is filed under, and the primary one). */
   categories?: TrProductCategories;
   /** Rich-text description (HTML); the server sanitizes it and derives `description`. */
   descriptionHtml?: string | null;

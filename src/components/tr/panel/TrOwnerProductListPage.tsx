@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, MoreHorizontal, Search, SlidersHorizontal } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search, SlidersHorizontal } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { TrPanelLink as Link } from "@/components/tr/panel/TrPanelLink";
@@ -53,10 +53,8 @@ import { toast } from "@/lib/tr/panel/toast";
 import { PanelSelectCheckbox } from "@/components/tr/panel/PanelSelectCheckbox";
 import { usePanelRowSelection } from "@/hooks/usePanelRowSelection";
 import {
-  trPanelBatchNewProductsPath,
   trPanelEditProductPath,
   trPanelNewProductPath,
-  trPanelTakimNewProductPath,
 } from "@/lib/tr/paths";
 import { formatTryFromKurus } from "@/types/tr-marketplace";
 import type { TrProduct, TrProductStatus } from "@/types/tr-marketplace";
@@ -537,44 +535,6 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
         Ürünler
       </h2>
       <div className="flex items-center gap-2">
-        <TrPanelPopover
-          label="Diğer ekleme yolları"
-          align="end"
-          panelClassName="w-52 p-1.5"
-          trigger={(props) => (
-            <button
-              type="button"
-              {...props}
-              aria-label="Diğer ekleme yolları"
-              className={`${panelSecondaryBtnClass} w-11 px-0 lg:w-9`}
-            >
-              <MoreHorizontal className="h-[18px] w-[18px]" strokeWidth={1.75} aria-hidden />
-            </button>
-          )}
-        >
-          {(close) => (
-            <ul className="text-[14px] text-neutral-800">
-              <li>
-                <Link
-                  href={trPanelTakimNewProductPath()}
-                  onClick={close}
-                  className="flex min-h-10 items-center rounded-md px-3 hover:bg-neutral-50"
-                >
-                  Takım yükle
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href={trPanelBatchNewProductsPath()}
-                  onClick={close}
-                  className="flex min-h-10 items-center rounded-md px-3 hover:bg-neutral-50"
-                >
-                  Toplu ekle
-                </Link>
-              </li>
-            </ul>
-          )}
-        </TrPanelPopover>
         <Link
           href={trPanelNewProductPath()}
           className={`${panelPrimaryBtnClass} ${desktopButtonSize}`}

@@ -11,11 +11,10 @@ import {
   TrPanelFadeIn,
   TrPanelLoading,
 } from "@/components/tr/panel/TrPanelMotion";
-import { TrFashionProductEditor } from "@/components/tr/fashion/panel/TrFashionProductEditor";
 import {
   boutiqueLocationAddress,
-  TrSimpleProductEditor,
-} from "@/components/tr/panel/TrSimpleProductEditor";
+  TrProductEditor,
+} from "@/components/tr/panel/TrProductEditor";
 import { useAuth } from "@/context/AuthContext";
 import { fetchOwnerProduct } from "@/lib/tr/ownerClient";
 import { trPanelProductsPath } from "@/lib/tr/paths";
@@ -80,10 +79,6 @@ export function TrOwnerEditProductPage({ productId }: TrOwnerEditProductPageProp
     };
   }, [isAuthenticated, isInitializing, productId]);
 
-  // The product's type decides the editor. Products from before types existed
-  // (or from a database without the column) are fashion products.
-  const productType = product?.productType ?? "fashion";
-
   return (
     <TrOwnerPanelGate>
       {({ activeBoutique }) => (
@@ -91,13 +86,7 @@ export function TrOwnerEditProductPage({ productId }: TrOwnerEditProductPageProp
           <TrPanelEditor
             backHref={trPanelProductsPath()}
             parentLabel="Ürünler"
-            title={
-              productType === "simple"
-                ? "Basit ürünü düzenle"
-                : productType === "advanced"
-                  ? "Gelişmiş ürünü düzenle"
-                  : "Ürünü düzenle"
-            }
+            title="Ürünü düzenle"
             subject={product?.title}
           >
             <AnimatePresence mode="wait">
@@ -107,9 +96,9 @@ export function TrOwnerEditProductPage({ productId }: TrOwnerEditProductPageProp
                 <TrPanelFadeIn key="edit-error">
                   <p className={panelErrorClass}>{error}</p>
                 </TrPanelFadeIn>
-              ) : product && (productType === "simple" || productType === "advanced") ? (
-                <TrPanelFadeIn key="edit-simple" shift={false}>
-                  <TrSimpleProductEditor
+              ) : product ? (
+                <TrPanelFadeIn key="edit-product" shift={false}>
+                  <TrProductEditor
                     boutiqueId={product.boutiqueId}
                     boutiqueSlug={activeBoutique.slug}
                     customDomain={activeBoutique.customDomain}
@@ -125,27 +114,6 @@ export function TrOwnerEditProductPage({ productId }: TrOwnerEditProductPageProp
                       router.push(trPanelProductsPath());
                     }}
                   />
-                </TrPanelFadeIn>
-              ) : product && productType === "fashion" ? (
-                <TrPanelFadeIn key="edit-fashion" shift={false}>
-                  <TrFashionProductEditor
-                    boutiqueId={product.boutiqueId}
-                    boutiqueSlug={activeBoutique.slug}
-                    initialProduct={product}
-                    initialCategories={productCategories}
-                    onSaved={(saved) => {
-                      setProduct(saved);
-                    }}
-                    onDeleted={() => {
-                      router.push(trPanelProductsPath());
-                    }}
-                  />
-                </TrPanelFadeIn>
-              ) : product ? (
-                <TrPanelFadeIn key="edit-unsupported">
-                  <p className={panelErrorClass}>
-                    Bu ürün türü henüz düzenlenemiyor.
-                  </p>
                 </TrPanelFadeIn>
               ) : null}
             </AnimatePresence>

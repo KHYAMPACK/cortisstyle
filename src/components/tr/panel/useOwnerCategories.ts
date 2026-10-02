@@ -49,36 +49,3 @@ export function useOwnerCategoryName(boutiqueId: string) {
     [names, loaded],
   );
 }
-
-/**
- * The boutique's categories, or `null` when they couldn't be loaded. For the create flows
- * filing a garment under the category keyed with its built-in id (`garmentCategory.ts`).
- */
-export function useOwnerCategoryList(boutiqueId: string) {
-  const [state, setState] = useState<{
-    boutiqueId: string;
-    categoryList: TrCategoryListEntry[] | null;
-  } | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetchOwnerCategories(boutiqueId)
-      .then((result) => {
-        if (!cancelled) {
-          setState({
-            boutiqueId,
-            categoryList: result.categories,
-          });
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setState({ boutiqueId, categoryList: null });
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [boutiqueId]);
-
-  const loaded = state?.boutiqueId === boutiqueId;
-  return { categoryList: loaded ? state!.categoryList : null, loaded };
-}

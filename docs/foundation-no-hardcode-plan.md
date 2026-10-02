@@ -1,6 +1,6 @@
 # No hardcoded store data: target architecture and plan
 
-_Prepared 2026-09-30 on branch `main-t0o1c2`. **F0 built (2026-09-30); F1 built (2026-10-02) except the editorial-content move; F2 built (2026-10-02); F3–F8 are planning only.** Mert asked for the architecturally cleanest approach: "no hardcoded stuff". This plan starts from where `docs/fashion-beden-kategori-plan.md` (S1, K1, K2 built) left off. Where it reverses an earlier decision, it says so and lists that as a question._
+_Prepared 2026-09-30 on branch `main-t0o1c2`. **F0 built (2026-09-30); F1 built (2026-10-02) except the editorial-content move; F2 and F3 built (2026-10-02); F4–F8 are planning only.** Mert asked for the architecturally cleanest approach: "no hardcoded stuff". This plan starts from where `docs/fashion-beden-kategori-plan.md` (S1, K1, K2 built) left off. Where it reverses an earlier decision, it says so and lists that as a question._
 
 _Revised 2026-09-30 after two decisions from Mert:_
 
@@ -205,6 +205,16 @@ where b.slug = 'lilabutik' group by k.name order by 2 desc;
 - **SQL:** `patch_product_kinds.sql` (schema), `patch_product_kinds_lilabutik.sql` (data). **Freeze:** no. **lilabutik:** no visible change.
 
 ### F3: One product editor (M–L)
+
+**Built (2026-10-02), on `main-t0o1c2`, not merged yet.** Mert: no staff-flag trial needed, remove the legacy flows. What differs from the plan below:
+
+- **The editor** is `TrProductEditor` (the Basit editor grown up), for every product, create and edit. The kind is a select in Temel bilgi (not a separate card); Özellikler renders the kind's fields; a new product starts from its kind (suggested category, first size type).
+- **Existing lilabutik products keep working** (checked read-only on live data: 91 of 94 have an AI-made gallery, 93 have sizes, 28 are in colour groups): an AI-made gallery is shown read-only with "Fotoğrafları düzenle" (turns it into a plain list, as the fashion editor did); the Stok card is the size table for every product without variants; a Renk grubu card keeps colour-group linking until F6. Saving never touches what the editor doesn't show (colours, the AI gallery while kept, takım parts and other platform entries in `features`).
+- **Variants stay staff-only** (`urun/yeni/gelismis`, a staff card in the kind chooser): the shop can't sell them until F5, so new products use the size table too.
+- **Store-defined fields can hold values:** `sanitizeProductFeatures` keeps any field-key-shaped text entry next to the built-in ones (up to 40, 400 characters), so owner-made Özellikler save. **Not done:** the product page's "Ürün özellikleri" still lists only the built-in fields with their built-in labels; showing a store's own fields with its labels is a storefront change (left for F5, which touches the PDP anyway).
+- **Deleted:** `TrFashionProductEditor`, `TrOwnerFashionCreateChooser`, `TrProductCreateWizard` + drafts, the batch pages (4 files) + draft, `TrOwnerTakimCreatePage` + draft, `TrOwnerProductTypeChooser` + `productTypes/registry.ts` (and the `productTypes` capability), `TrOwnerNewSimpleProductPage`, `TrOwnerCategoryPicker`, `TrOwnerProductFeaturesFields`, `TrOwnerProductCreatedSuccess`, `TrCatalogBackgroundPicker` + `catalogBackgrounds/registry.ts`, `fashion/productForm.ts`, `productPhotoChecks.ts`, `garmentUploadTypes.ts`, `garmentCategory.ts` (its mapping moved into `kindTemplate.ts`). Old create addresses redirect to `urun/yeni`. `product_type` is no longer read to pick an editor.
+- **Lost on purpose:** the quick bulk upload and the separate takım flow (a takım is a kind now); the catalog-background picker for AI packshots (the stored choice stays).
+
 
 _Depends on F2. The fashion editor (Area A) was the right step for lilabutik at the time; this replaces it with the generic one._
 

@@ -242,6 +242,9 @@ export function mapProductRow(row: Record<string, unknown>): TrProduct {
     sortOrder: (row.sort_order as number) ?? 0,
     productType: readProductType(row.product_type),
     fulfillmentType: readFulfillmentType(row.fulfillment_type),
+    ...("kind_id" in row
+      ? { kindId: typeof row.kind_id === "string" ? row.kind_id : null }
+      : {}),
     // Present only on `select *` reads; the storefront's column lists omit them.
     slug:
       "slug" in row

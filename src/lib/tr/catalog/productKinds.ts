@@ -407,6 +407,24 @@ export async function deleteKind(id: string): Promise<void> {
   if (error) failure(error, "");
 }
 
+/**
+ * A product body's `kindId`: `undefined` (not sent), `null` (clear) or the id of one of
+ * the boutique's kinds. Throws a sentence for the owner when it isn't theirs.
+ */
+export async function readProductKindId(
+  boutiqueId: string,
+  raw: unknown,
+): Promise<string | null | undefined> {
+  if (raw === undefined) return undefined;
+  if (raw === null || raw === "") return null;
+  if (typeof raw !== "string") throw new ProductKindError("Ürün türü geçersiz.");
+  const kind = await getKind(raw);
+  if (!kind || kind.boutiqueId !== boutiqueId) {
+    throw new ProductKindError("Ürün türü bulunamadı.", 404);
+  }
+  return kind.id;
+}
+
 /** Sets (or clears, with `null`) the kind of some of the boutique's products. */
 export async function setProductsKind(
   boutiqueId: string,

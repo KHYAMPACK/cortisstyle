@@ -133,6 +133,8 @@ function productInsertRow(
   // never touches (or depends on) the SEO columns.
   if (input.slug) row.slug = input.slug;
   if (input.seo && Object.keys(input.seo).length > 0) row.seo = input.seo;
+  // Only sent when set, so a database without patch_product_kinds.sql still takes products.
+  if (input.kindId) row.kind_id = input.kindId;
   for (const [column, value] of Object.entries(detailRow(input))) {
     if (!isEmptyDetail(value)) row[column] = value;
   }
@@ -616,6 +618,7 @@ function productUpdateRow(input: UpdateTrProductInput): Record<string, unknown> 
     row.fulfillment_type = input.fulfillmentType;
   }
   if (input.seo !== undefined) row.seo = input.seo;
+  if (input.kindId !== undefined) row.kind_id = input.kindId;
   Object.assign(row, detailRow(input));
 
   return row;
@@ -795,6 +798,7 @@ export async function duplicateProductAdmin(
     sortOrder: existing.sortOrder,
     productType: existing.productType,
     fulfillmentType: existing.fulfillmentType,
+    kindId: existing.kindId ?? null,
     // Copies keep the descriptive details; SKU and barcode identify one product, so
     // they stay empty.
     descriptionHtml: existing.descriptionHtml,

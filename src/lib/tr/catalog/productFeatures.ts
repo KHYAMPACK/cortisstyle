@@ -1,8 +1,6 @@
 /** PDP “Ürün özellikleri” — AI-filled on upload, owner-editable. */
 
-import type {
-  ConstructionCatalogFamily,
-} from "@/lib/tr/fashion/garmentUploadTypes";
+import type { ConstructionCatalogFamily } from "@/lib/tr/fashion/types";
 import {
   sanitizeColorGroupId,
   sanitizeColorSiblingIds,
@@ -244,7 +242,52 @@ export function sanitizeProductFeatures(
   if (next.neckline && next.neckHem) {
     delete next.neckHem;
   }
+  Object.assign(next, sanitizeOwnFieldValues(record));
   return next;
+}
+
+/** Longest value of a store's own field (Özellikler), and how many such fields a product keeps. */
+export const OWN_FIELD_VALUE_MAX = 400;
+
+/** Longest value a field can hold: the built-in field's own limit, else a store field's. */
+export function featureValueMax(key: string): number {
+  return (TR_PRODUCT_FEATURE_LIMITS as Record<string, number>)[key] ?? OWN_FIELD_VALUE_MAX;
+}
+const OWN_FIELDS_MAX = 40;
+const OWN_FIELD_KEY = /^[a-z][a-zA-Z0-9]{0,39}$/;
+
+/** Keys this module handles itself (built-in fields and the platform's own data). */
+const HANDLED_KEYS: ReadonlySet<string> = new Set<string>([
+  ...TR_PRODUCT_FEATURE_KEYS,
+  "hem",
+  "aiModelId",
+  "lifestyleModelIds",
+  "uploadKind",
+  "setItems",
+  "manualListing",
+  "madeToOrder",
+  "sizePricesKurus",
+  "colorGroupId",
+  "colorSiblingIds",
+]);
+
+/**
+ * Values of a store's own product fields (`tr_attribute_definitions`): any other key of
+ * the field-key shape holding text. They live next to the built-in ones in `features`,
+ * so the editor reads every field the same way (`productKinds/featureValues.ts`).
+ */
+function sanitizeOwnFieldValues(record: Record<string, unknown>): Record<string, string> {
+  const out: Record<string, string> = {};
+  let count = 0;
+  for (const [key, raw] of Object.entries(record)) {
+    if (count >= OWN_FIELDS_MAX) break;
+    if (HANDLED_KEYS.has(key) || !OWN_FIELD_KEY.test(key) || typeof raw !== "string") continue;
+    const value = raw.replace(/[ \t]+/g, " ").trim().slice(0, OWN_FIELD_VALUE_MAX);
+    if (!value) continue;
+    out[key] = value;
+    count += 1;
+  }
+  return out;
 }
 
 const TAKIM_FAMILIES: ConstructionCatalogFamily[] = [
