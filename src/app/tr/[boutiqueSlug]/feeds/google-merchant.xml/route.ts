@@ -5,6 +5,7 @@ import {
 } from "@/lib/tr/googleMerchant/feed";
 import { listPublicProductsByBoutiqueId } from "@/lib/tr/products";
 import { listProductSlugInfo } from "@/lib/tr/catalog/productSlug";
+import { loadPublicVariantsForProducts } from "@/lib/tr/catalog/publicVariants";
 import { resolveSeoHostContext } from "@/lib/tr/seo/storefrontSeo";
 
 export const runtime = "nodejs";
@@ -32,11 +33,20 @@ export async function GET(_request: Request, { params }: RouteParams) {
   const ctx = await resolveSeoHostContext();
   const requestOrigin = ctx.origin;
 
+  // Gelişmiş ürünler without readable variants are left out (they sell only by variant).
+  const variants = await loadPublicVariantsForProducts(
+    products.filter((product) => product.productType === "advanced"),
+  ).catch((error) => {
+    console.error("[google-merchant] variants", error);
+    return null;
+  });
+
   const items = buildGoogleMerchantFeedItems({
     boutique,
     products,
     requestOrigin,
     slugInfo: await listProductSlugInfo(boutique.id),
+    variants: variants ?? undefined,
   });
 
   const xml = renderGoogleMerchantRssXml({

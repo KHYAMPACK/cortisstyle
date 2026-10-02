@@ -155,6 +155,8 @@ export async function listPublicProductsByBoutiqueSlug(
 }
 
 const PRODUCT_SELECT_CANDIDATES: readonly string[] = [
+  // product_type tells the shop which products sell by variant (quick-add, the cart).
+  `${PUBLIC_PRODUCT_COLUMNS}, product_type`,
   PUBLIC_PRODUCT_COLUMNS,
   `${PRODUCT_COLUMNS_CORE}, size_stocks`,
   PRODUCT_COLUMNS_CORE,

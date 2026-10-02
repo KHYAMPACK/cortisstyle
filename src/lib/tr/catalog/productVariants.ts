@@ -1,6 +1,6 @@
 import { getServiceSupabase } from "@/lib/supabaseAdmin";
 import { listVariantTypes } from "@/lib/tr/catalog/variantTypes";
-import { planVariantChanges } from "@/lib/tr/variants/productVariantRules";
+import { planVariantChanges, sumActiveStock } from "@/lib/tr/variants/productVariantRules";
 import {
   EMPTY_PRODUCT_VARIANTS,
   mapProductVariantRow,
@@ -138,6 +138,52 @@ export async function listVariantsByBoutique(
     for (const [productId, variants] of chunk) byProduct.set(productId, variants);
   }
   return byProduct;
+}
+
+/**
+ * Sets one variant's stock (the Stok page) and keeps the product's stock the sum of its
+ * active variants. `null` = no such variant in this boutique.
+ */
+export async function setVariantStock(args: {
+  boutiqueId: string;
+  variantId: string;
+  stock: number;
+}): Promise<{ variant: TrProductVariant; productId: string; productStock: number } | null> {
+  const supabase = client();
+  const found = await supabase
+    .from("tr_product_variants")
+    .select("product_id, tr_products!inner(boutique_id)")
+    .eq("id", args.variantId)
+    .eq("tr_products.boutique_id", args.boutiqueId)
+    .maybeSingle();
+  if (found.error) failure(found.error);
+  if (!found.data) return null;
+  const productId = String((found.data as Record<string, unknown>).product_id);
+
+  const updated = await supabase
+    .from("tr_product_variants")
+    .update({ stock: Math.max(0, Math.round(args.stock)) })
+    .eq("id", args.variantId)
+    .select("*")
+    .single();
+  if (updated.error) failure(updated.error);
+
+  const rows = await supabase
+    .from("tr_product_variants")
+    .select("stock, active")
+    .eq("product_id", productId);
+  if (rows.error) failure(rows.error);
+  const productStock = sumActiveStock(
+    (rows.data ?? []).map((row) => ({ stock: Number(row.stock) || 0, active: row.active !== false })),
+  );
+  const product = await supabase.from("tr_products").update({ stock: productStock }).eq("id", productId);
+  if (product.error) throw product.error;
+
+  return {
+    variant: mapProductVariantRow(updated.data as Record<string, unknown>),
+    productId,
+    productStock,
+  };
 }
 
 /** Looks up a variant value's label ("Kırmızı") among a boutique's variant types. */

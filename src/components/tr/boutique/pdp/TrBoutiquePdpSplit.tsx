@@ -1,4 +1,11 @@
+import { Suspense } from "react";
 import { TrBoutiquePdpRelated } from "@/components/tr/boutique/pdp/TrBoutiquePdpRelated";
+import {
+  TrPdpVariantGallery,
+  TrPdpVariantsProvider,
+} from "@/components/tr/product/TrPdpVariants";
+import { deliverPublicAssetUrls } from "@/lib/tr/assets/deliverPublicAssetUrl";
+import type { TrPublicVariants } from "@/lib/tr/variants/storefront";
 import { TrProductDetailPanel } from "@/components/tr/TrProductDetailPanel";
 import { TrProductGallery } from "@/components/tr/TrProductGallery";
 import { isAtelierEditorialSkin } from "@/lib/tr/boutiqueHome";
@@ -9,6 +16,7 @@ interface TrBoutiquePdpSplitProps {
   product: TrProductWithBoutique;
   branded: boolean;
   colorSiblings?: TrProductWithBoutique[];
+  variants?: TrPublicVariants | null;
   iyzicoCheckout?: boolean;
 }
 
@@ -20,6 +28,7 @@ export function TrBoutiquePdpSplit({
   product,
   branded,
   colorSiblings = [],
+  variants = null,
   iyzicoCheckout = false,
 }: TrBoutiquePdpSplitProps) {
   const atelier = isAtelierEditorialSkin(product.boutique.slug);
@@ -44,7 +53,7 @@ export function TrBoutiquePdpSplit({
     <TrBoutiquePdpRelated product={product} branded={branded} />
   );
 
-  return (
+  const page = (
     <div className={panelClass}>
       <div className={wrapperClass}>
         <div className={gridClass}>
@@ -55,7 +64,11 @@ export function TrBoutiquePdpSplit({
                 : "border-b border-blueprint-border px-5 py-6 md:px-10 lg:border-r lg:border-b-0"
             }
           >
-            <TrProductGallery product={galleryProduct} />
+            {variants ? (
+              <TrPdpVariantGallery title={product.title} />
+            ) : (
+              <TrProductGallery product={galleryProduct} />
+            )}
           </div>
 
           <div
@@ -91,5 +104,22 @@ export function TrBoutiquePdpSplit({
         {atelier ? <div className="mt-14 md:mt-20">{related}</div> : null}
       </div>
     </div>
+  );
+
+  if (!variants) return page;
+  // The gallery and the detail panel share the shopper's choice (and `?renk=`).
+  const delivered: TrPublicVariants = {
+    ...variants,
+    variants: variants.variants.map((variant) => ({
+      ...variant,
+      images: deliverPublicAssetUrls(variant.images, "full"),
+    })),
+  };
+  return (
+    <Suspense fallback={page}>
+      <TrPdpVariantsProvider data={delivered} productImages={galleryProduct.images}>
+        {page}
+      </TrPdpVariantsProvider>
+    </Suspense>
   );
 }

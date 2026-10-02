@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-/** Gelişmiş ürün (variants); staff only until the shop can sell them (an owner gets a Basit one). */
+/** Gelişmiş ürün (variants). */
 export default function TrPanelNewAdvancedProductRoute() {
   return <TrOwnerNewProductPage advanced />;
 }

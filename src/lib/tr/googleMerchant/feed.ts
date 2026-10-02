@@ -15,6 +15,11 @@ import {
 } from "@/lib/tr/seo/storefrontSeo";
 import { sumSizeStocks } from "@/lib/tr/sizeStocks";
 import { siteLegal } from "@/lib/siteLegal";
+import {
+  publicVariantLabel,
+  valueParam,
+  type TrPublicVariants,
+} from "@/lib/tr/variants/storefront";
 import type { TrBoutiquePublic, TrProduct } from "@/types/tr-marketplace";
 
 export type GoogleMerchantFeedItem = {
@@ -32,6 +37,8 @@ export type GoogleMerchantFeedItem = {
   color: string | null;
   size: string | null;
   productType: string | null;
+  /** The product id, on each item of a product sold as variants. */
+  itemGroupId: string | null;
 };
 
 function escapeXml(value: string): string {
@@ -109,8 +116,10 @@ export function buildGoogleMerchantFeedItems(input: {
   requestOrigin: string;
   /** Slug and noindex per product id (`listProductSlugInfo`); products not in it use their id. */
   slugInfo?: ReadonlyMap<string, { slug: string | null; noindex: boolean }>;
+  /** Variants per product id (`loadPublicVariantsForProducts`): one item per variant. */
+  variants?: ReadonlyMap<string, TrPublicVariants>;
 }): GoogleMerchantFeedItem[] {
-  const { boutique, products, requestOrigin, slugInfo } = input;
+  const { boutique, products, requestOrigin, slugInfo, variants } = input;
   const { origin, mode } = resolveMerchantStoreOrigin(boutique, requestOrigin);
   const assetOrigin = siteLegal.siteUrl;
   const brand = resolveBoutiqueBrandLabel(boutique.slug, boutique.name);
@@ -164,6 +173,27 @@ export function buildGoogleMerchantFeedItems(input: {
       .join("/");
     const sizes = product.sizes.map((s) => s.trim()).filter(Boolean).join("/");
 
+    const variantData = variants?.get(product.id);
+    if (variantData) {
+      items.push(
+        ...variantFeedItems({
+          data: variantData,
+          productId: product.id,
+          title: title.slice(0, 150),
+          description: description || title,
+          link,
+          productImages: [imageLink, ...additionalImageLinks],
+          assetOrigin,
+          condition: mapCondition(product.conditionLabel),
+          brand,
+          productType: product.category?.trim() || null,
+        }),
+      );
+      continue;
+    }
+    // A Gelişmiş ürün sells only as one of its variants.
+    if (product.productType === "advanced") continue;
+
     items.push({
       id: product.id,
       title: title.slice(0, 150),
@@ -183,10 +213,67 @@ export function buildGoogleMerchantFeedItems(input: {
       color: colors || null,
       size: sizes || null,
       productType: product.category?.trim() || null,
+      itemGroupId: null,
     });
   }
 
   return items;
+}
+
+/**
+ * A product sold as variants: one item per active variant, grouped by the product id.
+ * The variant id is the item id (a uuid fits Google's 50 characters); the link opens
+ * the variant's colour (`?renk=`) and its own photos lead when it has any.
+ */
+function variantFeedItems(input: {
+  data: TrPublicVariants;
+  productId: string;
+  title: string;
+  description: string;
+  link: string;
+  productImages: string[];
+  assetOrigin: string;
+  condition: GoogleMerchantFeedItem["condition"];
+  brand: string;
+  productType: string | null;
+}): GoogleMerchantFeedItem[] {
+  const { data } = input;
+  const colorIndex = data.options.findIndex((option) => option.role === "color");
+  const sizeIndex = data.options.findIndex((option) => option.role === "size");
+  const labels = new Map(
+    data.options.flatMap((option) => option.values.map((value) => [value.id, value.label])),
+  );
+  return data.variants.map((variant) => {
+    const color = colorIndex >= 0 ? (labels.get(variant.optionValueIds[colorIndex]!) ?? null) : null;
+    const size = sizeIndex >= 0 ? (labels.get(variant.optionValueIds[sizeIndex]!) ?? null) : null;
+    const own = variant.images
+      .map((src) => absolutizeAssetUrl(src, input.assetOrigin))
+      .filter(Boolean);
+    const images = own.length > 0 ? own : input.productImages;
+    const label = publicVariantLabel(data, variant);
+    const onSale =
+      variant.compareAtPriceKurus != null && variant.compareAtPriceKurus > variant.priceKurus;
+    const link = color
+      ? `${input.link}${input.link.includes("?") ? "&" : "?"}renk=${encodeURIComponent(valueParam(color))}`
+      : input.link;
+    return {
+      id: variant.id,
+      title: (label ? `${input.title} - ${label}` : input.title).slice(0, 150),
+      description: input.description,
+      link,
+      imageLink: images[0]!,
+      additionalImageLinks: images.slice(1, 11),
+      availability: variant.stock > 0 ? "in_stock" : "out_of_stock",
+      price: formatGoogleMerchantPrice(onSale ? variant.compareAtPriceKurus! : variant.priceKurus),
+      salePrice: onSale ? formatGoogleMerchantPrice(variant.priceKurus) : null,
+      condition: input.condition,
+      brand: input.brand,
+      color,
+      size,
+      productType: input.productType,
+      itemGroupId: input.productId,
+    };
+  });
 }
 
 function gTag(name: string, value: string): string {
@@ -210,6 +297,7 @@ export function renderGoogleMerchantRssXml(input: {
     .map((item) => {
       const lines = [
         gTag("id", item.id),
+        ...(item.itemGroupId ? [gTag("item_group_id", item.itemGroupId)] : []),
         gTag("title", item.title),
         gTag("description", item.description),
         gTag("link", item.link),

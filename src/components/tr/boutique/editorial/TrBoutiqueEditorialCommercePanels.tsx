@@ -123,7 +123,9 @@ function CartPanel() {
                 >
                   {item.title}
                 </Link>
-                {item.size ? (
+                {item.variantLabel ? (
+                  <p className="mt-1 text-[11px] text-neutral-500">{item.variantLabel}</p>
+                ) : item.size ? (
                   <p className="mt-1 text-[11px] text-neutral-500">
                     Beden: {item.size}
                   </p>
@@ -133,7 +135,7 @@ function CartPanel() {
                 </p>
                 <button
                   type="button"
-                  onClick={() => cart.removeItem(item.productId, item.size)}
+                  onClick={() => cart.removeItem(item.productId, item.size, item.variantId)}
                   className="mt-2 text-[11px] text-neutral-500 underline-offset-2 hover:underline"
                 >
                   Kaldır

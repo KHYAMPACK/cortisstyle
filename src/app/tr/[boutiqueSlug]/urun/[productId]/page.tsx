@@ -3,6 +3,7 @@ import { notFound, permanentRedirect } from "next/navigation";
 import { cache } from "react";
 import { TrBoutiqueProductPage } from "@/components/tr/boutique/pdp/TrBoutiqueProductPage";
 import { getProductSlugSeo } from "@/lib/tr/catalog/productSlug";
+import { loadPublicProductVariants } from "@/lib/tr/catalog/publicVariants";
 import { boutiqueOffersIyzicoCheckout } from "@/lib/tr/payments/registry";
 import {
   safeGetPublicColorSiblings,
@@ -88,6 +89,12 @@ export default async function BoutiqueProductPage({
 
   const { product } = result;
   const colorSiblings = await safeGetPublicColorSiblings(product);
+  // A product with variants sells by variant; a failed read shows it like before
+  // (checkout still requires a variant, so nothing can be bought wrongly).
+  const variants = await loadPublicProductVariants(product).catch((error: unknown) => {
+    console.error("[tr/pdp] variants failed:", error);
+    return null;
+  });
   const iyzicoCheckout = await boutiqueOffersIyzicoCheckout(
     product.boutique.slug,
   );
@@ -96,6 +103,7 @@ export default async function BoutiqueProductPage({
     <TrBoutiqueProductPage
       product={product}
       colorSiblings={colorSiblings}
+      variants={variants}
       iyzicoCheckout={iyzicoCheckout}
     />
   );

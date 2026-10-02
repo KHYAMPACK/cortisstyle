@@ -592,6 +592,7 @@ function TrCheckoutForm({
             productId: item.productId,
             boutiqueId: item.boutiqueId,
             size: item.size,
+            variantId: item.variantId ?? null,
             quantity: 1,
             referenceImageUrl: item.referenceImageUrl ?? null,
             referenceId: item.referenceId ?? null,
@@ -1158,10 +1159,10 @@ function TrCheckoutForm({
                     >
                       <span className="truncate">
                         {item.title}
-                        {item.size ? (
+                        {item.variantLabel || item.size ? (
                           <span className="text-neutral-500">
                             {" "}
-                            · {item.size}
+                            · {item.variantLabel || item.size}
                           </span>
                         ) : null}
                       </span>

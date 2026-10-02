@@ -10,7 +10,9 @@ import { cartLineKey } from "@/types/tr-cart";
 
 /**
  * Keep boutique cart lines honest vs live catalog: refresh price/title,
- * drop sold / OOS / missing products.
+ * drop sold / OOS / missing products. A variant line keeps its own price (the catalog
+ * carries the product's, not the variant's); checkout re-checks it. A product that has
+ * moved to variants (F6) no longer sells by size, so its old size lines are dropped.
  */
 export function useTrBoutiqueCartRevalidate(boutiqueSlug: string) {
   const cart = useTrScopedCart();
@@ -27,8 +29,22 @@ export function useTrBoutiqueCartRevalidate(boutiqueSlug: string) {
       const product = byId.get(line.productId);
       if (!product || product.status !== "available") continue;
 
+      if (line.variantId) {
+        if (product.stock <= 0) continue;
+        next.push({
+          ...line,
+          title: product.title,
+          boutiqueId: product.boutiqueId,
+          boutiqueName: product.boutique.name,
+          boutiqueSlug: product.boutique.slug,
+        });
+        continue;
+      }
+
       const sizes = resolveProductSizes(product);
-      if (line.size) {
+      if (product.productType === "advanced") {
+        continue;
+      } else if (line.size) {
         if (
           !isProductSizeSellable({
             sizes,

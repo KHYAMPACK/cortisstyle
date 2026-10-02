@@ -98,7 +98,7 @@ function CartLineRow({
   boutiqueSlug: string;
   selected: boolean;
   onToggle: (lineKey: string, next: boolean) => void;
-  onRemove: (productId: string, size?: string | null) => void;
+  onRemove: (productId: string, size?: string | null, variantId?: string | null) => void;
 }) {
   const cutout =
     !isTrDemoIconSrc(item.image) && isCatalogCutoutImage(item.image);
@@ -153,7 +153,9 @@ function CartLineRow({
           <span className="text-neutral-700">{item.title}</span>
         </TrSoftNavLink>
 
-        {item.size ? (
+        {item.variantLabel ? (
+          <p className="mt-1.5 text-[11px] text-neutral-800">{item.variantLabel}</p>
+        ) : item.size ? (
           <p className="mt-1.5 text-[11px] text-neutral-500">
             Beden: <span className="text-neutral-800">{item.size}</span>
           </p>
@@ -165,7 +167,7 @@ function CartLineRow({
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => onRemove(item.productId, item.size)}
+              onClick={() => onRemove(item.productId, item.size, item.variantId)}
               className="inline-flex items-center gap-1 text-[11px] tracking-[0.08em] text-neutral-500 uppercase transition-colors hover:text-neutral-900"
             >
               <Trash2 className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
@@ -178,7 +180,7 @@ function CartLineRow({
             >
               <button
                 type="button"
-                onClick={() => onRemove(item.productId, item.size)}
+                onClick={() => onRemove(item.productId, item.size, item.variantId)}
                 aria-label="Kaldır"
                 className="px-2.5 py-1.5 transition-colors hover:bg-black/5"
               >

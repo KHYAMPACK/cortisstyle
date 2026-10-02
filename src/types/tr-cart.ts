@@ -7,19 +7,27 @@ export interface TrCartLineItem {
   priceKurus: number;
   image: string | null;
   size: string | null;
+  /** The chosen variant of a product with variants (then `size` is null). */
+  variantId?: string | null;
+  /** "Kırmızı / S", shown on the line; the order keeps the server's own label. */
+  variantLabel?: string | null;
   /** Customer reference photo for custom_art lines. */
   referenceImageUrl?: string | null;
   referenceId?: string | null;
   styleOption?: string | null;
 }
 
-/** Stable identity for one cart row — same product + different beden = separate lines. */
-export function cartLineKey(
-  item: Pick<
-    TrCartLineItem,
-    "productId" | "size" | "referenceImageUrl" | "styleOption"
-  >,
-): string {
+type CartLineIdentity = Pick<
+  TrCartLineItem,
+  "productId" | "size" | "variantId" | "referenceImageUrl" | "styleOption"
+>;
+
+/**
+ * Stable identity for one cart row: same product + different beden (or variant) =
+ * separate lines.
+ */
+export function cartLineKey(item: CartLineIdentity): string {
+  if (item.variantId) return `${item.productId}::v:${item.variantId}`;
   const size = item.size?.trim().toLocaleUpperCase("en") ?? "";
   const ref = item.referenceImageUrl?.trim() ?? "";
   if (!ref) {
@@ -29,16 +37,7 @@ export function cartLineKey(
   return `${item.productId}::${size}::${ref}::${style}`;
 }
 
-export function sameCartLine(
-  a: Pick<
-    TrCartLineItem,
-    "productId" | "size" | "referenceImageUrl" | "styleOption"
-  >,
-  b: Pick<
-    TrCartLineItem,
-    "productId" | "size" | "referenceImageUrl" | "styleOption"
-  >,
-): boolean {
+export function sameCartLine(a: CartLineIdentity, b: CartLineIdentity): boolean {
   return cartLineKey(a) === cartLineKey(b);
 }
 

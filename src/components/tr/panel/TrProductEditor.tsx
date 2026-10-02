@@ -188,7 +188,7 @@ type ProductEditorProps = {
   ownerOnly?: TrProductPrivate;
   /** The saved product's categories (edit). */
   initialCategories?: TrProductCategories;
-  /** Create a Gelişmiş ürün (variants; staff only until the shop sells them). */
+  /** Create a Gelişmiş ürün (variants). */
   productType?: "simple" | "advanced";
   /** A Gelişmiş product's saved option types and variants (edit). */
   initialVariants?: TrProductVariants;

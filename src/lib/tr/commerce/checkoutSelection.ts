@@ -60,7 +60,7 @@ export function removeBoutiqueCheckedOutCartLines(boutiqueSlug: string): void {
       : new Set(items.map((item) => cartLineKey(item)));
   for (const item of items) {
     if (keys.has(cartLineKey(item))) {
-      store.getState().removeItem(item.productId, item.size);
+      store.getState().removeItem(item.productId, item.size, item.variantId);
     }
   }
   clearBoutiqueCheckoutSelection(slug);

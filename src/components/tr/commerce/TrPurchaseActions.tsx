@@ -23,6 +23,10 @@ interface TrPurchaseActionsProps {
   priceKurus: number;
   image: string | null;
   size: string | null;
+  /** The chosen variant of a product with variants (then `size` is null). */
+  variantId?: string | null;
+  /** "Kırmızı / S", shown on the cart line. */
+  variantLabel?: string | null;
   color?: string | null;
   status: TrProductStatus;
   /** Hard block (e.g. unavailable) — not used for missing size. */
@@ -51,7 +55,9 @@ function toCartLineItem(props: TrPurchaseActionsProps): TrCartLineItem {
     title: props.title,
     priceKurus: props.priceKurus,
     image: props.image,
-    size: props.size,
+    size: props.variantId ? null : props.size,
+    variantId: props.variantId ?? null,
+    variantLabel: props.variantId ? (props.variantLabel ?? null) : null,
     referenceImageUrl: props.referenceImageUrl ?? null,
     referenceId: props.referenceId ?? null,
     styleOption: props.styleOption ?? null,
@@ -125,7 +131,7 @@ export function TrPurchaseActions(props: TrPurchaseActionsProps) {
     );
   }
 
-  const openSheet = (size: string | null = props.size) => {
+  const openSheet = (size: string | null = props.variantLabel ?? props.size) => {
     openAddedSheet({
       productId: props.productId,
       title: props.title,

@@ -3,6 +3,12 @@
 import { useState, type MouseEvent } from "react";
 import { useTrScopedCart } from "@/components/tr/boutique/TrBoutiqueCommerceScope";
 import { TrSizeGateSheet } from "@/components/tr/TrSizeGateSheet";
+import { TrVariantGateSheet } from "@/components/tr/commerce/TrVariantGateSheet";
+import {
+  publicVariantLabel,
+  type TrPublicVariant,
+  type TrPublicVariants,
+} from "@/lib/tr/variants/storefront";
 import { getProductCoverImageFor } from "@/lib/tr/productImages";
 import { resolveProductSizes } from "@/lib/tr/productOptions";
 import { isProductSizeSellable } from "@/lib/tr/sizeStocks";
@@ -20,7 +26,8 @@ interface TrQuickAddToCartButtonProps {
 
 /**
  * One-tap Sepete ekle for cards / outfit rows.
- * Opens a size sheet when beden is required and not unique.
+ * Opens a size sheet when beden is required and not unique, and a variant sheet for a
+ * product that sells by variant (its options load when the sheet opens).
  */
 export function TrQuickAddToCartButton({
   product,
@@ -31,6 +38,8 @@ export function TrQuickAddToCartButton({
   const cart = useTrScopedCart();
   const openAddedSheet = useTrAddedToCartStore((state) => state.open);
   const [sizeSheetOpen, setSizeSheetOpen] = useState(false);
+  const [variantSheetOpen, setVariantSheetOpen] = useState(false);
+  const [variants, setVariants] = useState<TrPublicVariants | null>(null);
 
   if (product.status !== "available") {
     return null;
@@ -66,9 +75,53 @@ export function TrQuickAddToCartButton({
     setSizeSheetOpen(false);
   };
 
+  const commitVariant = (variant: TrPublicVariant) => {
+    if (!variants) return;
+    const label = publicVariantLabel(variants, variant);
+    const lineImage = variant.images[0] ?? image;
+    cart.addItem({
+      productId: product.id,
+      boutiqueId: product.boutiqueId,
+      boutiqueName: product.boutique.name,
+      boutiqueSlug: product.boutique.slug,
+      title: product.title,
+      priceKurus: variant.priceKurus,
+      image: lineImage,
+      size: null,
+      variantId: variant.id,
+      variantLabel: label,
+    });
+    openAddedSheet({
+      productId: product.id,
+      title: product.title,
+      priceKurus: variant.priceKurus,
+      image: lineImage,
+      size: label,
+      color: null,
+      boutiqueName: product.boutique.name,
+    });
+    setVariantSheetOpen(false);
+  };
+
+  const openVariantSheet = () => {
+    setVariantSheetOpen(true);
+    if (variants) return;
+    void fetch(`/api/tr/products/${encodeURIComponent(product.id)}/variants`)
+      .then((response) => (response.ok ? response.json() : null))
+      .then((body: { variants?: TrPublicVariants | null } | null) => {
+        if (body?.variants) setVariants(body.variants);
+        else setVariantSheetOpen(false);
+      })
+      .catch(() => setVariantSheetOpen(false));
+  };
+
   const handleClick = (event: MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
     event.stopPropagation();
+    if (product.productType === "advanced") {
+      openVariantSheet();
+      return;
+    }
     if (inCart) return;
     if (sizes.length > 1) {
       setSizeSheetOpen(true);
@@ -101,11 +154,21 @@ export function TrQuickAddToCartButton({
       <button
         type="button"
         onClick={handleClick}
-        disabled={inCart}
-        aria-label={inCart ? "Sepette" : "Sepete ekle"}
+        disabled={inCart && product.productType !== "advanced"}
+        aria-label={inCart && product.productType !== "advanced" ? "Sepette" : "Sepete ekle"}
         className={className || defaultClass}
       >
-        {iconOnly ? (inCart ? "✓" : "+") : inCart ? "Sepette" : "Sepete ekle"}
+        {product.productType === "advanced"
+          ? iconOnly
+            ? "+"
+            : "Sepete ekle"
+          : iconOnly
+            ? inCart
+              ? "✓"
+              : "+"
+            : inCart
+              ? "Sepette"
+              : "Sepete ekle"}
       </button>
 
       <TrSizeGateSheet
@@ -116,6 +179,12 @@ export function TrQuickAddToCartButton({
         productTitle={product.title}
         whatsappPhone={product.boutique.whatsappPhone}
         onConfirm={commit}
+      />
+      <TrVariantGateSheet
+        open={variantSheetOpen}
+        onClose={() => setVariantSheetOpen(false)}
+        data={variants}
+        onConfirm={commitVariant}
       />
     </>
   );

@@ -244,9 +244,24 @@ _Depends on F2. The fashion editor (Area A) was the right step for lilabutik at 
 - **Deleted:** the chart tables and the chart detection from sizes.
 - **SQL:** `patch_size_charts.sql` + data. **Freeze:** yes, small (size-guide modal). **lilabutik:** identical modal.
 
-### F5: Variants can be sold in the shop, with colours (L)
+### F5: Variants can be sold in the shop, with colours (L) — **built 2026-10-02, not live-tested**
 
 _Formerly M7c-2 + M7c-3, now including colour._
+
+**As built** (branch `main-t0o1c2`; no SQL needed):
+
+- **Photos per colour** are the variants' own images (already a subset of the product's), so there is no `tr_product_option_media` table. The gallery shows the images of the variants with the chosen colour, else the product's.
+- **Public read** goes through the server with the service role (`catalog/publicVariants.ts`): active variants only, and only the option values they use. Quick-add reads `GET /api/tr/products/:id/variants`. No RLS change.
+- **Rules** (pure, tested): `lib/tr/variants/storefront.ts` — availability, selection, `?renk=`, gallery, labels, price range. A variant's own price replaces the product's price and its discount.
+- **PDP:** `TrPdpVariants.tsx` (provider, gallery, picker); the detail panel, purchase panels, mobile bar and the gate sheet sell the chosen variant.
+- **Cart:** lines carry `variantId` + `variantLabel` (key `productId::v:variantId`); checkout sends `variantId`. Revalidate keeps a variant line while the product is in stock, and drops size lines of a Gelişmiş ürün (this is how old carts behave after F6).
+- **Quick-add** opens `TrVariantGateSheet` for a Gelişmiş ürün.
+- **Feed:** one item per active variant (id = variant id, `item_group_id` = product, color/size from the option roles, the variant's photos, link with `?renk=`). A Gelişmiş ürün without variants is left out.
+- **Stok:** variant rows with their own stepper (`PATCH /api/tr/owner/product-variants/:id`, product stock = sum of active variants); bulk set/add/subtract applies to each variant.
+- **Gelişmiş ürün** is open to owners (no longer staff only).
+- **Not done yet:** the end-to-end proof sale. No product has variants in the live DB today (checked read-only 2026-10-02).
+
+**Original plan:**
 
 - **Product page:**
   - swatches for a colour option, buttons for the others;

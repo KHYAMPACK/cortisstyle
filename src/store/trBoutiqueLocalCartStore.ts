@@ -7,7 +7,7 @@ import { sameCartLine, type TrCartLineItem } from "@/types/tr-cart";
 interface TrBoutiqueLocalCartStore {
   items: TrCartLineItem[];
   addItem: (item: TrCartLineItem) => boolean;
-  removeItem: (productId: string, size?: string | null) => void;
+  removeItem: (productId: string, size?: string | null, variantId?: string | null) => void;
   clearCart: () => void;
   setItems: (items: TrCartLineItem[]) => void;
   hasItem: (productId: string, size?: string | null) => boolean;
@@ -32,13 +32,13 @@ function cartApi(set: (partial: { items: TrCartLineItem[] }) => void, get: () =>
       set({ items: [...get().items, item] });
       return true;
     },
-    removeItem: (productId: string, size?: string | null) => {
+    removeItem: (productId: string, size?: string | null, variantId?: string | null) => {
       set({
         items: get().items.filter((entry) => {
-          if (size === undefined) {
+          if (size === undefined && !variantId) {
             return entry.productId !== productId;
           }
-          return !sameCartLine(entry, { productId, size });
+          return !sameCartLine(entry, { productId, size: size ?? null, variantId });
         }),
       });
     },

@@ -153,7 +153,7 @@ export function trPanelNewSimpleProductPath(): string {
   return "/tr/panel/urun/yeni/basit";
 }
 
-/** A Gelişmiş ürün: variants (staff only until the shop can sell them). */
+/** A Gelişmiş ürün: variants. */
 export function trPanelNewAdvancedProductPath(): string {
   return "/tr/panel/urun/yeni/gelismis";
 }

@@ -12,6 +12,8 @@ import { TrFavoriteButton } from "@/components/tr/TrFavoriteButton";
 import { TrMobileBuyBar } from "@/components/tr/TrMobileBuyBar";
 import { TrProductColorPicker } from "@/components/tr/TrProductColorPicker";
 import { TrProductColorSiblings } from "@/components/tr/product/TrProductColorSiblings";
+import { TrVariantPicker, usePdpVariants } from "@/components/tr/product/TrPdpVariants";
+import { TrVariantGateSheet } from "@/components/tr/commerce/TrVariantGateSheet";
 import { TrProductPurchasePanel } from "@/components/tr/TrProductPurchasePanel";
 import { TrProductSizePicker } from "@/components/tr/TrProductSizePicker";
 import { TrPurchaseActions } from "@/components/tr/TrPurchaseActions";
@@ -30,6 +32,7 @@ import { isSizeInStock } from "@/lib/tr/sizeStocks";
 import { trBoutiquePath } from "@/lib/tr/paths";
 import { resolveBoutiqueThemeAccent } from "@/lib/tr/boutiqueBrand";
 import { useTrAddedToCartStore } from "@/store/trAddedToCartStore";
+import { priceRange, publicVariantLabel } from "@/lib/tr/variants/storefront";
 import { formatTryFromKurus } from "@/types/tr-marketplace";
 import type { TrProductWithBoutique } from "@/types/tr-marketplace";
 import { useRouter } from "next/navigation";
@@ -60,6 +63,20 @@ export function TrProductDetailPanel({
   const isAvailable = product.status === "available";
   const cart = useTrScopedCart();
   const router = useRouter();
+  // A product with variants sells by variant: the picker replaces colours and sizes.
+  const pdp = usePdpVariants();
+  const variant = pdp?.variant ?? null;
+  const range = pdp ? priceRange(pdp.data) : null;
+  const variantImage = variant?.images[0] ?? null;
+  const chosenVariant =
+    pdp && variant && pdp.label
+      ? {
+          id: variant.id,
+          label: pdp.label,
+          priceKurus: variant.priceKurus,
+          image: variantImage ?? getProductCoverImageFor("marketplace", product),
+        }
+      : null;
 
   const [selectedSize, setSelectedSize] = useState<string | null>(
     inStockSizes.length === 1 ? inStockSizes[0]! : null,
@@ -80,28 +97,33 @@ export function TrProductDetailPanel({
 
   const openAddedSheet = useTrAddedToCartStore((state) => state.open);
 
-  const sizeRequired = sizes.length > 0;
-  const selectionRequired = sizeRequired && !selectedSize;
+  const sizeRequired = !pdp && sizes.length > 0;
+  const selectionRequired = pdp ? !variant : sizeRequired && !selectedSize;
   const sizeOutOfStock =
+    !pdp &&
     Boolean(selectedSize) &&
     !isSizeInStock(product.sizeStocks, selectedSize!);
-  const canOrder =
-    isAvailable &&
-    (!sizeRequired ||
-      (Boolean(selectedSize) && !sizeOutOfStock));
+  const canOrder = pdp
+    ? isAvailable && Boolean(variant && variant.stock > 0)
+    : isAvailable &&
+      (!sizeRequired || (Boolean(selectedSize) && !sizeOutOfStock));
 
   const backFallback = trBoutiquePath(product.boutique.slug);
   const backClass = branded
     ? "text-[11px] tracking-[0.12em] text-neutral-600 uppercase transition-colors hover:text-neutral-900"
     : "text-meta text-[10px] tracking-[0.22em] uppercase transition-colors hover:text-jet-black";
 
-  const compareAt = product.compareAtPriceKurus;
+  // With variants: the chosen variant's price, else the cheapest ("…'den başlayan").
+  const shownPrice = variant?.priceKurus ?? range?.min ?? product.priceKurus;
+  const compareAt = pdp ? (variant?.compareAtPriceKurus ?? null) : product.compareAtPriceKurus;
+  // Until a variant is chosen, a price that differs per option says so.
+  const priceVaries = Boolean(pdp && !variant && range?.varies);
   const onSale =
     branded &&
     typeof compareAt === "number" &&
-    compareAt > product.priceKurus;
+    compareAt > shownPrice;
   const salePct = onSale
-    ? discountPercentFromPrices(product.priceKurus, compareAt)
+    ? discountPercentFromPrices(shownPrice, compareAt)
     : 0;
 
   const openSizeGate = (intent: TrPurchaseIntent = "add") => {
@@ -187,7 +209,7 @@ export function TrProductDetailPanel({
               className="text-[1.65rem] font-medium tracking-[-0.02em] md:text-[1.85rem]"
               style={{ color: atelier ? accent : EDITORIAL_SALE_RED }}
             >
-              {formatTryFromKurus(product.priceKurus)}
+              {formatTryFromKurus(shownPrice)}
             </span>
             {salePct > 0 ? (
               <TrEditorialSaleBadge percent={salePct} size="md" />
@@ -203,11 +225,23 @@ export function TrProductDetailPanel({
                 : "mt-4 font-serif text-2xl tracking-[-0.02em] text-brand-primary"
             }
           >
-            {formatTryFromKurus(product.priceKurus)}
+            {formatTryFromKurus(shownPrice)}
+            {priceVaries ? (
+              <span className="ml-2 text-[12px] font-normal tracking-normal text-neutral-500">
+                seçeneğe göre değişir
+              </span>
+            ) : null}
           </p>
         )}
 
-        {colorSiblings.length >= 2 ? (
+        {pdp ? (
+          <TrVariantPicker
+            data={pdp.data}
+            selection={pdp.selection}
+            onPick={pdp.pick}
+            accentColor={accent}
+          />
+        ) : colorSiblings.length >= 2 ? (
           <TrProductColorSiblings
             product={product}
             siblings={colorSiblings}
@@ -222,6 +256,7 @@ export function TrProductDetailPanel({
           />
         )}
 
+        {pdp ? null : (
         <TrProductSizePicker
           sizes={sizes}
           selectedSize={selectedSize}
@@ -231,6 +266,7 @@ export function TrProductDetailPanel({
           whatsappPhone={product.boutique.whatsappPhone}
           accentColor={accent}
         />
+        )}
 
         {modelScale ? (
           <TrBoutiqueModelMeasurements scale={modelScale} />
@@ -297,11 +333,13 @@ export function TrProductDetailPanel({
               Stok
             </dt>
             <dd>
-              {sizeOutOfStock
-                ? `${selectedSize} stokta yok`
-                : isAvailable
-                  ? "Satışta"
-                  : "Satıldı"}
+              {pdp && variant && variant.stock <= 0
+                ? `${pdp.label} stokta yok`
+                : sizeOutOfStock
+                  ? `${selectedSize} stokta yok`
+                  : isAvailable
+                    ? "Satışta"
+                    : "Satıldı"}
             </dd>
           </div>
         </dl>
@@ -337,6 +375,7 @@ export function TrProductDetailPanel({
           selectionRequired={selectionRequired}
           sizeOutOfStock={sizeOutOfStock}
           onRequestSelection={openSizeGate}
+          variant={chosenVariant}
           className="hidden md:block"
           iyzicoCheckout={iyzicoCheckout}
         />
@@ -349,6 +388,7 @@ export function TrProductDetailPanel({
           selectionRequired={selectionRequired}
           sizeOutOfStock={sizeOutOfStock}
           onRequestSelection={openSizeGate}
+          variant={chosenVariant}
           hideActions
           className="md:hidden"
           iyzicoCheckout={iyzicoCheckout}
@@ -365,10 +405,12 @@ export function TrProductDetailPanel({
             boutiqueName={product.boutique.name}
             boutiqueSlug={product.boutique.slug}
             title={product.title}
-            priceKurus={product.priceKurus}
-            image={getProductCoverImageFor("marketplace", product)}
-            size={selectedSize}
-            color={selectedColor?.name ?? null}
+            priceKurus={chosenVariant?.priceKurus ?? product.priceKurus}
+            image={chosenVariant?.image ?? getProductCoverImageFor("marketplace", product)}
+            size={pdp ? null : selectedSize}
+            variantId={chosenVariant?.id ?? null}
+            variantLabel={chosenVariant?.label ?? null}
+            color={pdp ? null : (selectedColor?.name ?? null)}
             status={product.status}
             selectionRequired={selectionRequired}
             onRequestSelection={openSizeGate}
@@ -378,6 +420,50 @@ export function TrProductDetailPanel({
         </TrMobileBuyBar>
       ) : null}
 
+      {pdp ? (
+        <TrVariantGateSheet
+          open={sizeSheetOpen}
+          onClose={() => setSizeSheetOpen(false)}
+          data={pdp.data}
+          initial={pdp.selection}
+          accentColor={accent}
+          confirmLabel={sizeGateIntent === "buyNow" ? "Hemen al" : "Sepete ekle"}
+          onConfirm={(picked, selection) => {
+            for (const [typeId, valueId] of Object.entries(selection)) {
+              pdp.pick(typeId, valueId);
+            }
+            setSizeSheetOpen(false);
+            const label = publicVariantLabel(pdp.data, picked);
+            const image = picked.images[0] ?? getProductCoverImageFor("marketplace", product);
+            const line = {
+              productId: product.id,
+              boutiqueId: product.boutiqueId,
+              boutiqueName: product.boutique.name,
+              boutiqueSlug: product.boutique.slug,
+              title: product.title,
+              priceKurus: picked.priceKurus,
+              image,
+              size: null,
+              variantId: picked.id,
+              variantLabel: label,
+            };
+            cart.addItem(line);
+            if (sizeGateIntent === "buyNow") {
+              router.push(beginBuyNowCheckout(line));
+              return;
+            }
+            openAddedSheet({
+              productId: product.id,
+              title: product.title,
+              priceKurus: picked.priceKurus,
+              image,
+              size: label,
+              color: null,
+              boutiqueName: product.boutique.name,
+            });
+          }}
+        />
+      ) : (
       <TrSizeGateSheet
         open={sizeSheetOpen}
         onClose={() => setSizeSheetOpen(false)}
@@ -390,6 +476,7 @@ export function TrProductDetailPanel({
         confirmLabel={sizeGateIntent === "buyNow" ? "Hemen al" : "Sepete ekle"}
         onConfirm={addWithSize}
       />
+      )}
 
     </>
   );

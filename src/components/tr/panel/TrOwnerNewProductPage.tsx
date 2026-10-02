@@ -20,13 +20,12 @@ import {
 
 /**
  * "Ürün ekle": Basit or Gelişmiş. Both open the product editor, where the product's
- * kind (Ürün türü) is picked like its categories. Gelişmiş (variants) is offered to
- * staff only until the shop can sell variants; the owner sees it as "Yakında".
+ * kind (Ürün türü) is picked like its categories. Gelişmiş sells as variants (F5).
  */
 export function TrOwnerProductKindChooser() {
   return (
     <TrOwnerPanelGate>
-      {({ activeBoutique, isStaff }) => (
+      {({ activeBoutique }) => (
         <TrOwnerProductRouteGate activeBoutique={activeBoutique}>
           <TrPanelEditor backHref={trPanelProductsPath()} parentLabel="Ürünler" title="Yeni ürün">
             <div className="pt-3">
@@ -46,8 +45,6 @@ export function TrOwnerProductKindChooser() {
                 />
                 <TrPanelChoiceCard
                   href={trPanelNewAdvancedProductPath()}
-                  disabled={!isStaff}
-                  badge={isStaff ? "Personel" : "Yakında"}
                   icon={<Layers className="h-5 w-5" strokeWidth={1.75} aria-hidden />}
                   title="Gelişmiş ürün"
                   description="Varyantlar: renk, beden gibi seçeneklerin her kombinasyonu için ayrı fiyat, SKU ve stok."
@@ -61,17 +58,17 @@ export function TrOwnerProductKindChooser() {
   );
 }
 
-/** The editor for a new product; `advanced` = Gelişmiş (staff only for now). */
+/** The editor for a new product; `advanced` = Gelişmiş (variants). */
 export function TrOwnerNewProductPage({ advanced = false }: { advanced?: boolean }) {
   const router = useRouter();
   return (
     <TrOwnerPanelGate>
-      {({ activeBoutique, isStaff }) => (
+      {({ activeBoutique }) => (
         <TrOwnerProductRouteGate activeBoutique={activeBoutique}>
           <TrPanelEditor
             backHref={trPanelProductsPath()}
             parentLabel="Ürünler"
-            title={advanced && isStaff ? "Gelişmiş ürün ekle" : "Basit ürün ekle"}
+            title={advanced ? "Gelişmiş ürün ekle" : "Basit ürün ekle"}
           >
             <TrProductEditor
               key={activeBoutique.id}
@@ -79,7 +76,7 @@ export function TrOwnerNewProductPage({ advanced = false }: { advanced?: boolean
               boutiqueSlug={activeBoutique.slug}
               customDomain={activeBoutique.customDomain}
               address={boutiqueLocationAddress(activeBoutique)}
-              productType={advanced && isStaff ? "advanced" : "simple"}
+              productType={advanced ? "advanced" : "simple"}
               // The editor already raised the "Ürün eklendi" toast; it stays over the redirect.
               onCreated={(created) => router.replace(trPanelEditProductPath(created.id))}
             />

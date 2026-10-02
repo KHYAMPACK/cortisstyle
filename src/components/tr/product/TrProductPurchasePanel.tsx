@@ -18,6 +18,8 @@ interface TrProductPurchasePanelProps {
   onRequestSelection?: (intent?: "add" | "buyNow") => void;
   /** Selected beden has no stock — CTA becomes gelince haber et. */
   sizeOutOfStock?: boolean;
+  /** The chosen variant of a product with variants: its id, label, price and photo. */
+  variant?: { id: string; label: string; priceKurus: number; image: string | null } | null;
   /** Hide primary purchase CTAs (e.g. moved to mobile sticky bar). */
   hideActions?: boolean;
   className?: string;
@@ -32,15 +34,16 @@ export function TrProductPurchasePanel({
   selectionRequired = false,
   onRequestSelection,
   sizeOutOfStock = false,
+  variant = null,
   hideActions = false,
   className = "",
   iyzicoCheckout = false,
 }: TrProductPurchasePanelProps) {
   const orderProduct = {
     title: product.title,
-    priceKurus: product.priceKurus,
-    size: selectedSize,
-    color: selectedColor,
+    priceKurus: variant?.priceKurus ?? product.priceKurus,
+    size: variant?.label ?? selectedSize,
+    color: variant ? null : selectedColor,
   };
 
   return (
@@ -54,9 +57,11 @@ export function TrProductPurchasePanel({
           boutiqueName={product.boutique.name}
           boutiqueSlug={product.boutique.slug}
           title={product.title}
-          priceKurus={product.priceKurus}
-          image={getProductCoverImageFor("marketplace", product)}
-          size={selectedSize}
+          priceKurus={variant?.priceKurus ?? product.priceKurus}
+          image={variant?.image ?? getProductCoverImageFor("marketplace", product)}
+          size={variant ? null : selectedSize}
+          variantId={variant?.id ?? null}
+          variantLabel={variant?.label ?? null}
           color={selectedColor}
           status={product.status}
           disabled={!canOrder && !selectionRequired}

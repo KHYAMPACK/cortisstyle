@@ -1540,6 +1540,29 @@ export async function fetchOwnerProductVariants(
   });
 }
 
+/** One variant's stock (the Stok page); returns the product's new stock. */
+export async function updateOwnerVariantStock(
+  boutiqueId: string,
+  variantId: string,
+  stock: number,
+): Promise<{ variant: TrProductVariant; productId: string; productStock: number }> {
+  const response = await ownerFetch(
+    `/api/tr/owner/product-variants/${encodeURIComponent(variantId)}`,
+    { method: "PATCH", body: JSON.stringify({ boutiqueId, stock }) },
+  );
+  const data = (await parseOwnerJson(response)) as {
+    variant?: TrProductVariant;
+    productId?: string;
+    productStock?: number;
+    error?: string;
+  };
+  if (!response.ok || !data.variant || !data.productId) {
+    throw new Error(data.error ?? "Stok güncellenemedi.");
+  }
+  invalidateProductLists();
+  return { variant: data.variant, productId: data.productId, productStock: data.productStock ?? 0 };
+}
+
 /**
  * Creates an order by hand. `draftId` is the draft it was made from, which the server
  * deletes. Placing an order moves stock, so the product lists are refreshed too.

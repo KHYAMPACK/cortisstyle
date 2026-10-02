@@ -34,7 +34,15 @@ import { TrPanelFadeIn, TrPanelListSkeleton } from "@/components/tr/panel/TrPane
 import { useOwnerCategoryName } from "@/components/tr/panel/useOwnerCategories";
 import { runOwnerPatches } from "@/lib/tr/ownerBulk";
 import { getPanelProductCover } from "@/lib/tr/productImages";
-import { fetchOwnerProducts, peekOwnerProducts, updateOwnerProduct } from "@/lib/tr/ownerClient";
+import {
+  fetchOwnerProducts,
+  fetchOwnerProductVariants,
+  peekOwnerProducts,
+  peekOwnerProductVariants,
+  updateOwnerProduct,
+  updateOwnerVariantStock,
+  type OwnerProductVariants,
+} from "@/lib/tr/ownerClient";
 import { PanelSelectCheckbox } from "@/components/tr/panel/PanelSelectCheckbox";
 import { usePanelRowSelection } from "@/hooks/usePanelRowSelection";
 import {
@@ -44,6 +52,7 @@ import {
 } from "@/lib/tr/paths";
 import { sortProductSizes } from "@/lib/tr/productOptions";
 import { sumSizeStocks } from "@/lib/tr/sizeStocks";
+import type { TrProductVariant } from "@/lib/tr/variants/types";
 import type { TrProduct } from "@/types/tr-marketplace";
 
 const LOW_STOCK = 2;
@@ -58,7 +67,24 @@ function boardSizes(product: TrProduct): string[] {
   return [...new Set(product.sizes.map((size) => size.trim()).filter(Boolean))];
 }
 
-function productTotal(product: TrProduct): number {
+/** A Gelişmiş ürün's active variants (its stock rows), else none. */
+function activeVariants(
+  product: TrProduct,
+  data: OwnerProductVariants | null,
+): TrProductVariant[] {
+  if (product.productType !== "advanced" || !data) return [];
+  return (data.variants[product.id] ?? []).filter((variant) => variant.active);
+}
+
+function variantName(variant: TrProductVariant, data: OwnerProductVariants): string {
+  return variant.optionValueIds.map((id) => data.labels[id] ?? "?").join(" / ");
+}
+
+function productTotal(product: TrProduct, data: OwnerProductVariants | null = null): number {
+  const variants = activeVariants(product, data);
+  if (variants.length > 0) {
+    return variants.reduce((sum, variant) => sum + Math.max(0, variant.stock), 0);
+  }
   const sizes = boardSizes(product);
   if (sizes.length > 0) {
     return sizes.reduce((sum, size) => sum + sizeQty(product, size), 0);
@@ -135,6 +161,9 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
   const router = useRouter();
   const cached = peekOwnerProducts(boutiqueId);
   const [products, setProducts] = useState<TrProduct[]>(cached?.products ?? []);
+  const [variantData, setVariantData] = useState<OwnerProductVariants | null>(
+    () => peekOwnerProductVariants(boutiqueId) ?? null,
+  );
   const [loading, setLoading] = useState(!cached);
   const [error, setError] = useState<string | null>(null);
   const [bulkBusy, setBulkBusy] = useState(false);
@@ -145,6 +174,7 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
   const [openIds, setOpenIds] = useState<Set<string>>(() => new Set());
   const saveTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
   const revertById = useRef(new Map<string, TrProduct>());
+  const revertVariant = useRef(new Map<string, TrProductVariant>());
 
   useEffect(() => {
     return () => {
@@ -157,8 +187,15 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
     async function load() {
       setError(null);
       try {
-        const result = await fetchOwnerProducts(boutiqueId);
-        if (!cancelled) setProducts(result.products);
+        const [result, variants] = await Promise.all([
+          fetchOwnerProducts(boutiqueId),
+          // Without the variants a Gelişmiş ürün shows its total only.
+          fetchOwnerProductVariants(boutiqueId).catch(() => null),
+        ]);
+        if (!cancelled) {
+          setProducts(result.products);
+          setVariantData(variants);
+        }
       } catch (loadError) {
         if (!cancelled) {
           setError(
@@ -206,13 +243,13 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
     } else if (stockFilter === "low") {
       list = list.filter((product) => {
         if (product.status !== "available") return false;
-        const total = productTotal(product);
+        const total = productTotal(product, variantData);
         return total > 0 && total <= LOW_STOCK;
       });
     } else if (stockFilter === "out") {
       list = list.filter((product) => {
         if (product.status !== "available") return false;
-        return productTotal(product) === 0;
+        return productTotal(product, variantData) === 0;
       });
     }
 
@@ -223,16 +260,16 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
       );
     }
     return list;
-  }, [products, search, stockFilter, categoryFilter]);
+  }, [products, variantData, search, stockFilter, categoryFilter]);
 
   const orderedIds = useMemo(() => visible.map((p) => p.id), [visible]);
   const selection = usePanelRowSelection(orderedIds);
 
+  // Rows under a product: its variants, else its sizes.
+  const hasRows = (product: TrProduct) =>
+    activeVariants(product, variantData).length > 0 || boardSizes(product).length > 0;
   const allOpen =
-    visible.some((product) => boardSizes(product).length > 0) &&
-    visible
-      .filter((product) => boardSizes(product).length > 0)
-      .every((product) => openIds.has(product.id));
+    visible.some(hasRows) && visible.filter(hasRows).every((product) => openIds.has(product.id));
 
   const toggleOpen = (id: string) => {
     setOpenIds((current) => {
@@ -292,6 +329,54 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
     );
   };
 
+  const applyVariant = (productId: string, variant: TrProductVariant) => {
+    setVariantData((current) =>
+      current
+        ? {
+            ...current,
+            variants: {
+              ...current.variants,
+              [productId]: (current.variants[productId] ?? []).map((entry) =>
+                entry.id === variant.id ? variant : entry,
+              ),
+            },
+          }
+        : current,
+    );
+  };
+
+  const setVariantStock = (product: TrProduct, variant: TrProductVariant, next: number) => {
+    if (next < 0) return;
+    applyVariant(product.id, { ...variant, stock: next });
+    if (!revertVariant.current.has(variant.id)) revertVariant.current.set(variant.id, variant);
+    const key = `variant:${variant.id}`;
+    const existing = saveTimers.current.get(key);
+    if (existing) clearTimeout(existing);
+    saveTimers.current.set(
+      key,
+      setTimeout(() => {
+        saveTimers.current.delete(key);
+        setError(null);
+        void updateOwnerVariantStock(boutiqueId, variant.id, next)
+          .then((result) => {
+            revertVariant.current.delete(variant.id);
+            applyVariant(product.id, result.variant);
+            setProducts((current) =>
+              current.map((entry) =>
+                entry.id === result.productId ? { ...entry, stock: result.productStock } : entry,
+              ),
+            );
+          })
+          .catch((saveError: unknown) => {
+            const original = revertVariant.current.get(variant.id);
+            if (original) applyVariant(product.id, original);
+            revertVariant.current.delete(variant.id);
+            setError(saveError instanceof Error ? saveError.message : "Stok güncellenemedi.");
+          });
+      }, 300),
+    );
+  };
+
   const setTotalStock = (product: TrProduct, next: number) => {
     if (next < 0) return;
     patchStock(product, { ...product, stock: next }, { stock: next });
@@ -339,6 +424,29 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
       async (id) => {
         const product = byId.get(id);
         if (!product) throw new Error("Ürün bulunamadı.");
+        const variants = activeVariants(product, variantData);
+        if (variants.length > 0) {
+          let productStock = product.stock;
+          for (const variant of variants) {
+            const next =
+              mode === "set"
+                ? qty
+                : mode === "add"
+                  ? variant.stock + qty
+                  : Math.max(0, variant.stock - qty);
+            const result = await updateOwnerVariantStock(boutiqueId, variant.id, next);
+            applyVariant(product.id, result.variant);
+            productStock = result.productStock;
+          }
+          return { ...product, stock: productStock };
+        }
+        if (product.productType === "advanced") {
+          throw new Error(
+            variantData
+              ? "Gelişmiş ürünün stoğu varyantlarındadır; önce varyant ekleyin."
+              : "Varyantlar yüklenemedi; sayfayı yenileyin.",
+          );
+        }
         if (product.sizes.length > 0) {
           const sizes = sortProductSizes(product.sizes);
           const nextStocks: Record<string, number> = {};
@@ -373,6 +481,8 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
 
   const lowCount = products.filter((p) => {
     if (p.status !== "available") return false;
+    const variants = activeVariants(p, variantData);
+    if (variants.length > 0) return variants.some((variant) => variant.stock <= LOW_STOCK);
     if (p.sizes.length > 0) {
       return sortProductSizes(p.sizes).some(
         (size) => sizeQty(p, size) <= LOW_STOCK,
@@ -403,7 +513,8 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
                 : `${visible.length} / ${products.length} ürün`}
             </p>
             <p className="mt-1 text-[15px] text-neutral-700 lg:text-[13px]">
-              Bedenli ürünlerde oka basın, bedenlerin stoğu açılsın. Toplam otomatik hesaplanır.
+              Bedenli ve varyantlı ürünlerde oka basın, her satırın stoğu açılsın. Toplam otomatik
+              hesaplanır.
             </p>
           </div>
 
@@ -458,23 +569,19 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
                 </div>
               }
             >
-              {visible.some((product) => boardSizes(product).length > 0) ? (
+              {visible.some(hasRows) ? (
                 <button
                   type="button"
                   onClick={() =>
                     setOpenIds(
                       allOpen
                         ? new Set()
-                        : new Set(
-                            visible
-                              .filter((product) => boardSizes(product).length > 0)
-                              .map((product) => product.id),
-                          ),
+                        : new Set(visible.filter(hasRows).map((product) => product.id)),
                     )
                   }
                   className="text-[13px] font-semibold text-[color:var(--panel-accent-deep)] hover:underline"
                 >
-                  {allOpen ? "Tümünü daralt" : "Bedenleri genişlet"}
+                  {allOpen ? "Tümünü daralt" : "Tümünü genişlet"}
                 </button>
               ) : null}
             </TrPanelTableToolbar>
@@ -517,9 +624,10 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
               >
                 {visible.flatMap((product) => {
                   const cover = getPanelProductCover(product) ?? product.images[0] ?? null;
-                  const sizes = boardSizes(product);
-                  const hasSizes = sizes.length > 0;
-                  const total = productTotal(product);
+                  const variants = activeVariants(product, variantData);
+                  const sizes = variants.length > 0 ? [] : boardSizes(product);
+                  const hasSizes = sizes.length > 0 || variants.length > 0;
+                  const total = productTotal(product, variantData);
                   const hidden = product.status === "hidden";
                   const open = openIds.has(product.id);
                   const href = trPanelEditProductPath(product.id);
@@ -547,7 +655,7 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
                               type="button"
                               onClick={() => toggleOpen(product.id)}
                               aria-expanded={open}
-                              aria-label={`${product.title} bedenlerini ${open ? "gizle" : "göster"}`}
+                              aria-label={`${product.title} ${variants.length > 0 ? "varyantlarını" : "bedenlerini"} ${open ? "gizle" : "göster"}`}
                               className="grid h-6 w-6 shrink-0 place-items-center rounded text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800"
                             >
                               {open ? (
@@ -572,7 +680,14 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
                               {product.title}
                             </Link>
                             <span className="block truncate text-[12px] text-neutral-500">
-                              {[category, hasSizes ? `${sizes.length} beden` : null]
+                              {[
+                                category,
+                                variants.length > 0
+                                  ? `${variants.length} varyant`
+                                  : sizes.length > 0
+                                    ? `${sizes.length} beden`
+                                    : null,
+                              ]
                                 .filter(Boolean)
                                 .join(" · ")}
                             </span>
@@ -583,7 +698,8 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
                         <StockBadge qty={total} hidden={hidden} />
                       </TrPanelDataTableCell>
                       <TrPanelDataTableCell className="text-right">
-                        {hasSizes ? (
+                        {/* A Gelişmiş ürün's stock is its variants' (edited on their rows). */}
+                        {hasSizes || product.productType === "advanced" ? (
                           <span className="font-semibold tabular-nums text-neutral-900">
                             {total} adet
                           </span>
@@ -601,6 +717,39 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
                   );
 
                   if (!hasSizes || !open) return [parent];
+                  if (variants.length > 0 && variantData) {
+                    return [
+                      parent,
+                      ...variants.map((variant) => {
+                        const name = variantName(variant, variantData);
+                        return (
+                          <TrPanelDataTableRow key={`${product.id}:${variant.id}`} className="bg-neutral-50/60">
+                            <TrPanelDataTableCell className="w-10" />
+                            <TrPanelDataTableCell>
+                              <div className="pl-[4.5rem]">
+                                <span className="block font-medium text-neutral-900">{name}</span>
+                                <span className="block truncate text-[12px] text-neutral-500">
+                                  {[product.title, variant.sku].filter(Boolean).join(" · ")}
+                                </span>
+                              </div>
+                            </TrPanelDataTableCell>
+                            <TrPanelDataTableCell>
+                              <StockBadge qty={variant.stock} hidden={hidden} />
+                            </TrPanelDataTableCell>
+                            <TrPanelDataTableCell className="text-right">
+                              <StockStepper
+                                value={variant.stock}
+                                disabled={bulkBusy}
+                                label={`${product.title} ${name}`}
+                                onDecrease={() => setVariantStock(product, variant, variant.stock - 1)}
+                                onIncrease={() => setVariantStock(product, variant, variant.stock + 1)}
+                              />
+                            </TrPanelDataTableCell>
+                          </TrPanelDataTableRow>
+                        );
+                      }),
+                    ];
+                  }
                   return [
                     parent,
                     ...sizes.map((size) => {
@@ -644,7 +793,7 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
                   <div className="flex w-full flex-col gap-2 sm:w-auto">
                     <p className="text-[12px] text-neutral-600">
                       Seçili ürünlerin stokuna uygula (bedenli ürünlerde her
-                      bedene):
+                      bedene, varyantlı ürünlerde her varyanta):
                     </p>
                     <div className="flex flex-wrap items-center gap-2">
                       <label className="flex items-center gap-1.5 text-[12px] font-medium text-neutral-700">
