@@ -211,6 +211,8 @@ export function resolveCanonicalRedirect(input: {
   if (input.hostKind.kind === "subdomain") {
     return input.customDomain ? target() : null;
   }
-  // custom-domain kind: canonical unless the request came in on the www. variant.
-  return input.hostKind.hostWasWww ? target() : null;
+  // custom-domain kind: never redirected here, apex or www. Which of the two is primary
+  // is the hosting's domain setting (Vercel sends the apex to www.); redirecting www. back
+  // to the apex here looped with it (ERR_TOO_MANY_REDIRECTS, 2026-10-02).
+  return null;
 }

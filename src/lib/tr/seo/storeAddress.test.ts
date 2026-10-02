@@ -228,8 +228,8 @@ describe("resolveCanonicalRedirect", () => {
     );
   });
 
-  it("sends www.<custom domain> to the apex", () => {
-    assert.deepEqual(
+  it("does not redirect www.<custom domain> — the hosting decides apex vs www (a redirect here looped)", () => {
+    assert.equal(
       resolveCanonicalRedirect({
         hostKind: customDomainWww,
         cleanPath: "/",
@@ -237,7 +237,7 @@ describe("resolveCanonicalRedirect", () => {
         customDomain: "lilaboutiquedenizli.com",
         storesDomain: "corti.store",
       }),
-      { host: "lilaboutiquedenizli.com", path: "/" },
+      null,
     );
   });
 
