@@ -42,7 +42,7 @@ Every boutique keeps cart/favorites in `localStorage`, scoped per boutique slug 
 | Cart page | `src/components/tr/boutique/editorial/TrBoutiqueCartPageContent.tsx` |
 | Category browsing | `src/components/tr/boutique/TrBoutiqueCategoryDrawer.tsx`, `TrBoutiqueProductGrid.tsx`, `TrBoutiqueCatalogContext.tsx` |
 | PDP shell | `src/components/tr/product/TrProductDetailPanel.tsx`, `src/components/tr/boutique/pdp/TrBoutiquePdpInfoSections.tsx` |
-| Fashion-specific PDP pieces | `src/components/tr/fashion/pdp/` (size chart, model measurements) |
+| Fashion-specific PDP pieces | `src/components/tr/fashion/pdp/` (model measurements; the size-chart modal was removed 2026-10-02) |
 | Custom-art PDP | `src/components/tr/boutique/pdp/TrCustomArtProductPanel.tsx` |
 | Local cart / favorites | `src/store/trBoutiqueLocalCartStore.ts`, `trBoutiqueLocalFavoritesStore.ts` |
 | Commerce scope wrapper | `src/components/tr/boutique/TrBoutiqueCommerceScope.tsx` |

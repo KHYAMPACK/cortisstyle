@@ -12,9 +12,9 @@ Cortisstyle started as a single-vertical (fashion) marketplace, so garment logic
 
 - `src/lib/tr/fashion/categories.ts` — the Turkish garment category taxonomy (elbise, üst-giyim, bluz, pantolon, takım, …). This is fashion's registered default tree, not a generic "category system" — see the caveat below.
 - `src/lib/tr/fashion/types.ts` — `TrFashionProductFeatures`, `TrTakimSetItem` (garment-specific fields of the `TrProductFeatures` union — see "Product features" below).
-- `src/lib/tr/fashion/{sizeCharts,modelMeasurements,dressFeatures,takimUpload,careInstructions}.ts` — cm size charts, house-model body measurements (the PDP line for AI-made products), dress construction-chip vocabulary, takım product helpers, wash-care copy.
+- `src/lib/tr/fashion/{modelMeasurements,dressFeatures,takimUpload,careInstructions}.ts` — house-model body measurements (the PDP line for AI-made products), dress construction-chip vocabulary, takım product helpers, wash-care copy.
 - The fashion product editor and create flows were removed in F3 (2026-10-02): fashion products open in the shared `TrProductEditor`, their fields come from the store's product kinds (`fashion/kindTemplate.ts` is the starter set).
-- `src/components/tr/fashion/pdp/` — garment-specific PDP pieces (size chart modal, model measurements).
+- `src/components/tr/fashion/pdp/` — garment-specific PDP pieces (model measurements). The cm size charts and the PDP "Beden tablosu" modal were removed on 2026-10-02 (Mert: to be re-added cleanly as data later, see F4 in `docs/foundation-no-hardcode-plan.md`).
 
 ## Product features
 

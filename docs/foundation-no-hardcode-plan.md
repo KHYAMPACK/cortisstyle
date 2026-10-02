@@ -235,6 +235,9 @@ _Depends on F2. The fashion editor (Area A) was the right step for lilabutik at 
 
 ### F4: Size charts are data (S–M)
 
+**2026-10-02: the old charts are removed** (Mert: delete them now, re-add cleanly later). `fashion/sizeCharts.ts` (the `LETTER_SIZE_CHART` / `NUMERIC_SIZE_CHART` cm tables), the PDP "Beden tablosu" link and its modal (`TrBoutiqueSizeChartModal`, `TrBoutiqueSizeChartBodyGuide`) are deleted, so the shop shows no size guide until F4 is built. The values are in git history (before commit "Remove size charts") if they are wanted as the starter data. Unaffected: the size buttons, per-size stock, and the model-measurements line on AI-made products.
+
+
 - The cm measurements move onto the size type. Each value of a size-role variant type gets measurement rows (point → cm) plus a measure kind (body / garment), stored as `size_chart jsonb` on `tr_variant_types`. The Beden drawer gets an "Ölçü tablosu" section.
 - The size-guide modal reads the chart of the product's size type. The figure and measuring hints are the one piece of fashion code left in the storefront, shown only when the size type has a chart.
 - A one-time data patch fills lilabutik's two types with today's `LETTER_SIZE_CHART` / `NUMERIC_SIZE_CHART` values. "Hazır bedenleri içe aktar" includes the defaults.

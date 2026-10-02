@@ -3,7 +3,6 @@
 import { useTrScopedCart } from "@/components/tr/boutique/TrBoutiqueCommerceScope";
 import { TrBoutiqueModelMeasurements } from "@/components/tr/fashion/pdp/TrBoutiqueModelMeasurements";
 import { TrBoutiquePdpInfoSections } from "@/components/tr/boutique/pdp/TrBoutiquePdpInfoSections";
-import { TrBoutiqueSizeChartModal } from "@/components/tr/fashion/pdp/TrBoutiqueSizeChartModal";
 import { TrBackButton } from "@/components/tr/TrBackButton";
 import {
   TrEditorialSaleBadge,
@@ -27,7 +26,6 @@ import {
   resolveProductSizes,
 } from "@/lib/tr/productOptions";
 import { resolveProductModelScale } from "@/lib/tr/fashion/modelMeasurements";
-import { resolveProductSizeChart } from "@/lib/tr/fashion/sizeCharts";
 import { isSizeInStock } from "@/lib/tr/sizeStocks";
 import { trBoutiquePath } from "@/lib/tr/paths";
 import { resolveBoutiqueThemeAccent } from "@/lib/tr/boutiqueBrand";
@@ -71,11 +69,6 @@ export function TrProductDetailPanel({
   );
   const [sizeSheetOpen, setSizeSheetOpen] = useState(false);
   const [sizeGateIntent, setSizeGateIntent] = useState<TrPurchaseIntent>("add");
-  const [sizeChartOpen, setSizeChartOpen] = useState(false);
-  const sizeChart = useMemo(
-    () => resolveProductSizeChart(sizes),
-    [sizes],
-  );
   const modelScale = useMemo(
     () =>
       resolveProductModelScale({
@@ -237,7 +230,6 @@ export function TrProductDetailPanel({
           productTitle={product.title}
           whatsappPhone={product.boutique.whatsappPhone}
           accentColor={accent}
-          onOpenSizeChart={sizeChart ? () => setSizeChartOpen(true) : undefined}
         />
 
         {modelScale ? (
@@ -399,13 +391,6 @@ export function TrProductDetailPanel({
         onConfirm={addWithSize}
       />
 
-      {sizeChart ? (
-        <TrBoutiqueSizeChartModal
-          open={sizeChartOpen}
-          chart={sizeChart}
-          onClose={() => setSizeChartOpen(false)}
-        />
-      ) : null}
     </>
   );
 }
