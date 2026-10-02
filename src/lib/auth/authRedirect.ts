@@ -47,10 +47,18 @@ export function resolveAuthRedirectOrigin(options?: {
   return getSiteUrl();
 }
 
+/**
+ * The bare custom domain, as auth links have always used it: Supabase's redirect
+ * allow-list is set up for it, so a stored `www.` main address doesn't change auth links.
+ */
 function normalizePublicHost(raw?: string | null): string | null {
   const value = raw?.trim().toLowerCase();
   if (!value) return null;
-  return value.replace(/^https?:\/\//, "").replace(/\/$/, "").replace(/:\d+$/, "");
+  return value
+    .replace(/^https?:\/\//, "")
+    .replace(/\/$/, "")
+    .replace(/:\d+$/, "")
+    .replace(/^www\./, "");
 }
 
 /** Supabase magic-link return URL — validates session then routes to `DEFAULT_AUTH_NEXT_PATH`. */

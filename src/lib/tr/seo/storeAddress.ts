@@ -35,9 +35,13 @@ function platformHost(): string {
   return new URL(siteLegal.siteUrl).host;
 }
 
-/** The store's canonical origin: its custom domain when it has one, else the platform. */
+/**
+ * The store's canonical origin: its custom domain when it has one, else the platform.
+ * `custom_domain` is the store's main address exactly as served (lilabutik:
+ * `www.lilaboutiquedenizli.com`, since the hosting sends the bare domain to `www.`).
+ */
 export function storeAddress(input: StoreAddressInput): StoreAddress {
-  const domain = input.customDomain?.trim().toLowerCase().replace(/^www\./, "");
+  const domain = input.customDomain?.trim().toLowerCase();
   if (domain) {
     return { mode: "boutique-domain", host: domain, origin: `https://${domain}` };
   }
@@ -173,7 +177,8 @@ export function canonicalStoreHost(input: {
   customDomain: string | null;
   storesDomain: string | null;
 }): string | null {
-  const domain = input.customDomain?.trim().toLowerCase().replace(/^www\./, "");
+  // The stored main address as is (apex or `www.`), see `storeAddress`.
+  const domain = input.customDomain?.trim().toLowerCase();
   // `.includes(".")` guards against a malformed value ("localhost", a typo) reaching a
   // redirect target — a real domain always has a dot.
   if (domain && domain.includes(".")) return domain;
