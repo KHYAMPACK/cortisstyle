@@ -51,6 +51,21 @@ SEO is URL-heavy, so the addresses themselves need a structure. Today a store on
   - **lilabutik:** set to `www.lilaboutiquedenizli.com` by `supabase/patch_lilabutik_www_domain.sql` (applied by Mert).
   - **Unchanged, on the bare domain:** auth email links (Supabase's redirect allow-list), `info@` contact email, legal docs and the iyzico return address. Moving auth links to `www.` needs `www.` added to Supabase's redirect URLs first.
   - **Self-serve domains (planned):** `www.` is the main address by convention, as Vercel sets it up.
+- **To do with the custom-domain screen (planned self-serve "Alan adı" in Ayarlar; noted 2026-10-02). None of these is broken today:**
+  - **The screen itself:**
+    - the owner enters a domain;
+    - the server adds both the bare domain and `www.` to the Vercel project through the Domains API, with the bare domain redirecting to `www.`;
+    - the screen shows the two DNS records to add;
+    - it polls verification, then saves the `www.` host as `custom_domain`;
+    - it can also remove a domain.
+  - **Login and password emails:**
+    - add `https://www.<domain>/**` to Supabase → Authentication → URL Configuration (for each connected domain, as part of connecting it);
+    - then drop the `www.` stripping in `normalizePublicHost` (`src/lib/auth/authRedirect.ts`), so auth links use the stored main address;
+    - test a magic link and a password reset on the domain.
+  - **iyzico return address:**
+    - use the stored main address instead of the bare domain in `src/lib/tr/payments/startCheckoutForm.ts` (and `TR_IYZICO_CALLBACK_ORIGIN` if set), removing Vercel's extra hop;
+    - verify with a real test payment, including a failed one and a cancel.
+  - **Stays on the bare domain:** the `info@` contact email (`commerce/checkoutMode.ts`). Legal-doc text (`legal/docs.ts`) is cosmetic; switch it to the main address with the rest if convenient.
 - **Still open:** ops sets `TR_STORES_DOMAIN` + wildcard DNS/cert (step 5), then validate the subdomain path against `deneme-butik` in production before it's considered fully proven (step 6 is just setting the env var once that's done — no further code change expected).
 
 ## 0. Goal and rules
