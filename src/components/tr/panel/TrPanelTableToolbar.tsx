@@ -5,7 +5,6 @@ import type { ReactNode } from "react";
 import { TrPanelPopover } from "@/components/tr/panel/TrPanelPopover";
 import {
   panelFieldClass,
-  panelFilterChipClass,
   panelLabelClass,
   panelSecondaryBtnClass,
 } from "@/components/tr/panel/panelUi";
@@ -76,39 +75,7 @@ export function TrPanelTableToolbar({
 }
 
 
-/** One filter in a Filtre popover: a heading and a row of chips, one of them active. */
-export function TrPanelFilterChips<T extends string>({
-  label,
-  options,
-  value,
-  onChange,
-}: {
-  label: string;
-  options: ReadonlyArray<{ id: T; label: string }>;
-  value: T;
-  onChange: (next: T) => void;
-}) {
-  return (
-    <div className="space-y-2">
-      <p className={panelLabelClass}>{label}</p>
-      <div className="flex flex-wrap gap-2">
-        {options.map((option) => (
-          <button
-            key={option.id}
-            type="button"
-            aria-pressed={value === option.id}
-            onClick={() => onChange(option.id)}
-            className={panelFilterChipClass(value === option.id)}
-          >
-            {option.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/** A filter with many options (long labels): a select. */
+/** One filter in a Filtre popover: its title and a dropdown of its options. */
 export function TrPanelFilterSelect<T extends string>({
   label,
   options,

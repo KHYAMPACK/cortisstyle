@@ -13,7 +13,10 @@ import {
   panelDesktopInputClass,
   panelDesktopSecondaryBtnClass,
 } from "@/components/tr/panel/panelDesktopUi";
-import { TrPanelTableToolbar } from "@/components/tr/panel/TrPanelTableToolbar";
+import {
+  TrPanelFilterSelect,
+  TrPanelTableToolbar,
+} from "@/components/tr/panel/TrPanelTableToolbar";
 import {
   TrPanelDataTable,
   TrPanelDataTableCell,
@@ -24,7 +27,6 @@ import {
   panelEmptyClass,
   panelErrorClass,
   panelFieldClass,
-  panelFilterChipClass,
   panelLabelClass,
   panelPageTitleClass,
 } from "@/components/tr/panel/panelUi";
@@ -413,28 +415,17 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
               filterCount={(stockFilter !== "all" ? 1 : 0) + (categoryFilter !== "all" ? 1 : 0)}
               filters={
                 <div className="space-y-4">
-                  <div className="space-y-2">
-                    <p className={panelLabelClass}>Stok</p>
-                    <div className="flex flex-wrap gap-2">
-                      {(
-                        [
-                          { id: "all", label: "Tümü" },
-                          { id: "available", label: "Satışta" },
-                          { id: "low", label: "Düşük stok" },
-                          { id: "out", label: "Stokta yok" },
-                        ] as const
-                      ).map((entry) => (
-                        <button
-                          key={entry.id}
-                          type="button"
-                          onClick={() => setStockFilter(entry.id)}
-                          className={panelFilterChipClass(stockFilter === entry.id)}
-                        >
-                          {entry.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                  <TrPanelFilterSelect
+                    label="Stok"
+                    options={[
+                      { id: "all", label: "Tümü" },
+                      { id: "available", label: "Satışta" },
+                      { id: "low", label: "Düşük stok" },
+                      { id: "out", label: "Stokta yok" },
+                    ]}
+                    value={stockFilter}
+                    onChange={setStockFilter}
+                  />
                   {categories.length > 0 ? (
                     <label className="block space-y-2">
                       <span className={panelLabelClass}>Kategori</span>

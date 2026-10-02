@@ -7,7 +7,7 @@ import { TrOwnerProductRouteGate } from "@/components/tr/panel/TrOwnerProductRou
 import { TrPanelLink as Link } from "@/components/tr/panel/TrPanelLink";
 import { TrPanelFadeIn, TrPanelListSkeleton } from "@/components/tr/panel/TrPanelMotion";
 import {
-  TrPanelFilterChips,
+  TrPanelFilterSelect,
   TrPanelFilterClear,
   TrPanelTableToolbar,
 } from "@/components/tr/panel/TrPanelTableToolbar";
@@ -155,13 +155,13 @@ function AttributesList({ boutiqueId }: { boutiqueId: string }) {
               filterCount={filterCount}
               filters={
                 <div className="space-y-4">
-                  <TrPanelFilterChips
+                  <TrPanelFilterSelect
                     label="Giriş"
                     options={INPUT_FILTER}
                     value={inputFilter}
                     onChange={setInputFilter}
                   />
-                  <TrPanelFilterChips
+                  <TrPanelFilterSelect
                     label="Kullanım"
                     options={USE_FILTER}
                     value={useFilter}

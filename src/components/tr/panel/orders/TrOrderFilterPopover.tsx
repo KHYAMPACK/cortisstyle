@@ -6,12 +6,9 @@ import {
   FULFILLMENT_LABEL,
   PAYMENT_LABEL,
 } from "@/components/tr/panel/orderFulfillmentUi";
-import {
-  panelFilterChipClass,
-  panelLabelClass,
-  panelSecondaryBtnClass,
-} from "@/components/tr/panel/panelUi";
+import { panelSecondaryBtnClass } from "@/components/tr/panel/panelUi";
 import { TrPanelPopover } from "@/components/tr/panel/TrPanelPopover";
+import { TrPanelFilterSelect } from "@/components/tr/panel/TrPanelTableToolbar";
 import {
   ORDER_PERIOD_OPTIONS,
   orderFilterCount,
@@ -58,60 +55,30 @@ export function TrOrderFilterPopover({
       )}
     >
       <div className="space-y-4">
-        <div className="space-y-2">
-          <p className={panelLabelClass}>Sipariş durumu</p>
-          <div className="flex flex-wrap gap-2">
-            {FULFILLMENT_FILTERS.map((status) => (
-              <button
-                key={status}
-                type="button"
-                onClick={() => onChange({ fulfillment: status })}
-                className={panelFilterChipClass(filters.fulfillment === status)}
-              >
-                {status === "all" ? "Tümü" : FULFILLMENT_LABEL[status]}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <p className={panelLabelClass}>Ödeme durumu</p>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => onChange({ payment: "all" })}
-              className={panelFilterChipClass(filters.payment === "all")}
-            >
-              Tümü
-            </button>
-            {paymentStatuses.map((status) => (
-              <button
-                key={status}
-                type="button"
-                onClick={() => onChange({ payment: status })}
-                className={panelFilterChipClass(filters.payment === status)}
-              >
-                {PAYMENT_LABEL[status]}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <p className={panelLabelClass}>Tarih</p>
-          <div className="flex flex-wrap gap-2">
-            {ORDER_PERIOD_OPTIONS.map((option) => (
-              <button
-                key={option.id}
-                type="button"
-                onClick={() => onChange({ period: option.id })}
-                className={panelFilterChipClass(filters.period === option.id)}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        </div>
+        <TrPanelFilterSelect
+          label="Sipariş durumu"
+          options={FULFILLMENT_FILTERS.map((status) => ({
+            id: status,
+            label: status === "all" ? "Tümü" : FULFILLMENT_LABEL[status],
+          }))}
+          value={filters.fulfillment}
+          onChange={(fulfillment) => onChange({ fulfillment })}
+        />
+        <TrPanelFilterSelect
+          label="Ödeme durumu"
+          options={[
+            { id: "all" as const, label: "Tümü" },
+            ...paymentStatuses.map((status) => ({ id: status, label: PAYMENT_LABEL[status] })),
+          ]}
+          value={filters.payment}
+          onChange={(payment) => onChange({ payment })}
+        />
+        <TrPanelFilterSelect
+          label="Tarih"
+          options={ORDER_PERIOD_OPTIONS}
+          value={filters.period}
+          onChange={(period) => onChange({ period })}
+        />
 
         {count > 0 ? (
           <button

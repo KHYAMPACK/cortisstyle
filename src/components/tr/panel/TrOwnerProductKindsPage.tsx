@@ -11,7 +11,7 @@ import {
 } from "@/components/tr/panel/TrPanelMotion";
 import { TrProductKindDrawer } from "@/components/tr/panel/TrProductKindDrawer";
 import {
-  TrPanelFilterChips,
+  TrPanelFilterSelect,
   TrPanelFilterClear,
   TrPanelTableToolbar,
 } from "@/components/tr/panel/TrPanelTableToolbar";
@@ -255,13 +255,13 @@ function ProductKindsList({ boutiqueId }: { boutiqueId: string }) {
               filterCount={filterCount}
               filters={
                 <div className="space-y-4">
-                  <TrPanelFilterChips
+                  <TrPanelFilterSelect
                     label="Ürünler"
                     options={PRODUCTS_FILTER}
                     value={productsFilter}
                     onChange={setProductsFilter}
                   />
-                  <TrPanelFilterChips
+                  <TrPanelFilterSelect
                     label="Başlangıç varyantları"
                     options={VARIANTS_FILTER}
                     value={variantsFilter}

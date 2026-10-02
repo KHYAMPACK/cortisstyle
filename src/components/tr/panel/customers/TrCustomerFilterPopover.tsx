@@ -1,12 +1,9 @@
 "use client";
 
 import { SlidersHorizontal } from "lucide-react";
-import {
-  panelFilterChipClass,
-  panelLabelClass,
-  panelSecondaryBtnClass,
-} from "@/components/tr/panel/panelUi";
+import { panelSecondaryBtnClass } from "@/components/tr/panel/panelUi";
 import { TrPanelPopover } from "@/components/tr/panel/TrPanelPopover";
+import { TrPanelFilterSelect } from "@/components/tr/panel/TrPanelTableToolbar";
 import {
   CUSTOMER_ORDERS_OPTIONS,
   customerFilterCount,
@@ -47,37 +44,18 @@ export function TrCustomerFilterPopover({
       )}
     >
       <div className="space-y-4">
-        <div className="space-y-2">
-          <p className={panelLabelClass}>Sipariş</p>
-          <div className="flex flex-wrap gap-2">
-            {CUSTOMER_ORDERS_OPTIONS.map((option) => (
-              <button
-                key={option.id}
-                type="button"
-                onClick={() => onChange({ orders: option.id })}
-                className={panelFilterChipClass(filters.orders === option.id)}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <p className={panelLabelClass}>Oluşturulma tarihi</p>
-          <div className="flex flex-wrap gap-2">
-            {ORDER_PERIOD_OPTIONS.map((option) => (
-              <button
-                key={option.id}
-                type="button"
-                onClick={() => onChange({ period: option.id })}
-                className={panelFilterChipClass(filters.period === option.id)}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        </div>
+        <TrPanelFilterSelect
+          label="Sipariş"
+          options={CUSTOMER_ORDERS_OPTIONS}
+          value={filters.orders}
+          onChange={(orders) => onChange({ orders })}
+        />
+        <TrPanelFilterSelect
+          label="Oluşturulma tarihi"
+          options={ORDER_PERIOD_OPTIONS}
+          value={filters.period}
+          onChange={(period) => onChange({ period })}
+        />
 
         {count > 0 ? (
           <button

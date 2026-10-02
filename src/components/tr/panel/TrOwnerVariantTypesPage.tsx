@@ -12,7 +12,7 @@ import {
 import { TrPanelModal } from "@/components/tr/panel/TrPanelModal";
 import { TrVariantTypeDrawer } from "@/components/tr/panel/TrVariantTypeDrawer";
 import {
-  TrPanelFilterChips,
+  TrPanelFilterSelect,
   TrPanelFilterClear,
   TrPanelTableToolbar,
 } from "@/components/tr/panel/TrPanelTableToolbar";
@@ -353,13 +353,13 @@ export function TrVariantTypesList({ boutiqueId }: { boutiqueId: string }) {
                 filterCount={filterCount}
                 filters={
                   <div className="space-y-4">
-                    <TrPanelFilterChips
+                    <TrPanelFilterSelect
                       label="Seçim stili"
                       options={STYLE_FILTER}
                       value={styleFilter}
                       onChange={setStyleFilter}
                     />
-                    <TrPanelFilterChips
+                    <TrPanelFilterSelect
                       label="Kullanım"
                       options={ROLE_FILTER}
                       value={roleFilter}

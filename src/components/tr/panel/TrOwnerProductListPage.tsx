@@ -21,7 +21,6 @@ import {
   panelDesktopSelectClass,
 } from "@/components/tr/panel/panelDesktopUi";
 import {
-  panelChipClass,
   panelEmptyClass,
   panelErrorClass,
   panelFieldClass,
@@ -34,7 +33,10 @@ import {
   TrPanelStagger,
   trPanelStaggerItem,
 } from "@/components/tr/panel/TrPanelMotion";
-import { TrPanelTableToolbar } from "@/components/tr/panel/TrPanelTableToolbar";
+import {
+  TrPanelFilterSelect,
+  TrPanelTableToolbar,
+} from "@/components/tr/panel/TrPanelTableToolbar";
 import { useOwnerCategories } from "@/components/tr/panel/useOwnerCategories";
 import { useOwnerProductKinds } from "@/components/tr/panel/useOwnerProductKinds";
 import { flattenCategoryTree, slugsInScope } from "@/lib/tr/categories/tree";
@@ -74,9 +76,6 @@ const STATUS_OPTIONS: TrProductStatus[] = ["available", "sold", "hidden"];
 
 const PAGE_SIZES = [20, 50, 100] as const;
 
-/** Same chip, tighter on desktop. */
-const filterChipClass = (active: boolean) =>
-  `${panelChipClass(active)} lg:min-h-0 lg:rounded-lg lg:px-3 lg:py-1.5 lg:text-[13px]`;
 
 const desktopButtonSize =
   "lg:h-9 lg:min-h-0 lg:rounded-lg lg:px-4 lg:py-0 lg:text-[13px]";
@@ -552,28 +551,15 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
       filterCount={filterCount}
       filters={
             <div className="space-y-4">
-              <div className="space-y-2">
-                <p className={panelLabelClass}>Durum</p>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => changeStatus("all")}
-                    className={filterChipClass(statusFilter === "all")}
-                  >
-                    Tümü
-                  </button>
-                  {STATUS_OPTIONS.map((status) => (
-                    <button
-                      key={status}
-                      type="button"
-                      onClick={() => changeStatus(status)}
-                      className={filterChipClass(statusFilter === status)}
-                    >
-                      {STATUS_LABEL[status]}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <TrPanelFilterSelect
+                label="Durum"
+                options={[
+                  { id: "all", label: "Tümü" },
+                  ...STATUS_OPTIONS.map((status) => ({ id: status, label: STATUS_LABEL[status] })),
+                ]}
+                value={statusFilter}
+                onChange={changeStatus}
+              />
               <label className="block space-y-2">
                 <span className={panelLabelClass}>Kategori</span>
                 <select

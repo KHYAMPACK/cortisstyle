@@ -12,9 +12,8 @@ import {
 } from "@/components/tr/panel/TrPanelDataTable";
 import { TrPanelLink as Link } from "@/components/tr/panel/TrPanelLink";
 import {
-  TrPanelFilterChips,
-  TrPanelFilterClear,
   TrPanelFilterSelect,
+  TrPanelFilterClear,
   TrPanelTableToolbar,
 } from "@/components/tr/panel/TrPanelTableToolbar";
 import {
@@ -231,7 +230,7 @@ function CategoriesList({ boutiqueId }: { boutiqueId: string }) {
                   value={sortFilter}
                   onChange={setSortFilter}
                 />
-                <TrPanelFilterChips
+                <TrPanelFilterSelect
                   label="Ürünler"
                   options={PRODUCTS_FILTER_OPTIONS}
                   value={productsFilter}

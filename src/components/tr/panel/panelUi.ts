@@ -51,10 +51,6 @@ export const panelChipClass = (active: boolean) =>
       : "bg-white text-neutral-600 ring-1 ring-neutral-200 hover:bg-neutral-50",
   ].join(" ");
 
-/** The chip inside a Filtre popover: the standard chip, tighter on desktop. */
-export const panelFilterChipClass = (active: boolean) =>
-  `${panelChipClass(active)} lg:min-h-0 lg:rounded-lg lg:px-3 lg:py-1.5 lg:text-[13px]`;
-
 export const panelAddChipClass =
   `min-h-10 rounded-lg border border-dashed border-neutral-300 bg-white px-3.5 py-2 text-[13px] font-semibold text-neutral-600 hover:bg-neutral-50 lg:min-h-8 ${panelBtnMotion} ${panelFocusRing}`;
 
