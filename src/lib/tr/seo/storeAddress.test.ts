@@ -18,12 +18,13 @@ const onDomain = { boutiqueSlug: "lilabutik", customDomain: "lilaboutiquedenizli
 const onPlatform = { boutiqueSlug: "deneme-butik", customDomain: null };
 
 describe("storeAddress", () => {
-  it("uses the custom domain when there is one, without www", () => {
+  it("uses the custom domain as stored, www. included", () => {
     assert.deepEqual(storeAddress({ ...onDomain, customDomain: "WWW.Lilaboutiquedenizli.com" }), {
       mode: "boutique-domain",
-      host: "lilaboutiquedenizli.com",
-      origin: "https://lilaboutiquedenizli.com",
+      host: "www.lilaboutiquedenizli.com",
+      origin: "https://www.lilaboutiquedenizli.com",
     });
+    assert.equal(storeAddress(onDomain).origin, "https://lilaboutiquedenizli.com");
   });
 
   it("falls back to the platform host", () => {
@@ -123,14 +124,14 @@ describe("resolveStoreHostKind", () => {
 });
 
 describe("canonicalStoreHost", () => {
-  it("prefers the custom domain, stripped of www", () => {
+  it("prefers the custom domain, as stored (www. included)", () => {
     assert.equal(
       canonicalStoreHost({
         slug: "lilabutik",
         customDomain: "WWW.Lilaboutiquedenizli.com",
         storesDomain: "corti.store",
       }),
-      "lilaboutiquedenizli.com",
+      "www.lilaboutiquedenizli.com",
     );
   });
 

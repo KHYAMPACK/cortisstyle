@@ -133,8 +133,11 @@ async function fetchEdgeBoutiqueMapFromDb(): Promise<EdgeBoutiqueMap> {
     for (const row of rows) {
       const slug = row.slug?.trim().toLowerCase();
       if (!slug) continue;
-      const host = row.custom_domain?.trim().toLowerCase().replace(/^www\./, "") || null;
-      bySlug[slug] = host;
+      // The stored main address (apex or `www.`) is the canonical one; both variants
+      // resolve to the boutique.
+      const stored = row.custom_domain?.trim().toLowerCase() || null;
+      bySlug[slug] = stored;
+      const host = stored?.replace(/^www\./, "") || null;
       if (host) {
         hostToSlug[host] = slug;
         hostToSlug[`www.${host}`] = slug;
