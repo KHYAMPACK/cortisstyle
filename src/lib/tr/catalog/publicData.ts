@@ -6,6 +6,7 @@ import {
   listPublicBoutiques,
 } from "@/lib/tr";
 import { colorSiblingIdsOf } from "@/lib/tr/catalog/colorSiblings";
+import { findMergedProductTarget } from "@/lib/tr/catalog/mergedProducts";
 import { listProductsByIdsAdmin } from "@/lib/tr/catalog/products";
 import {
   resolveProductParam,
@@ -17,6 +18,7 @@ import {
   getProductSlugSeo,
 } from "@/lib/tr/catalog/productSlug";
 import { mapProductsWithLookbookImages } from "@/lib/tr/lookbookImages";
+import { valueParam } from "@/lib/tr/variants/storefront";
 import type {
   TrBoutiquePublic,
   TrBoutiqueStorefront,
@@ -132,7 +134,7 @@ export async function safeResolvePublicProduct(
     const boutique = await safeGetPublicBoutique(boutiqueSlug);
     if (!boutique) return { kind: "missing" };
 
-    return await resolveProductParam<TrProductWithBoutique>(param, {
+    const result = await resolveProductParam<TrProductWithBoutique>(param, {
       getById: async (id) => {
         const product = await safeGetPublicProduct(id);
         return product && product.boutique.slug === boutiqueSlug
@@ -144,6 +146,16 @@ export async function safeResolvePublicProduct(
         findRedirectedProductId(boutique.id, oldSlug),
       getCurrentSlug: async (id) => (await getProductSlugSeo(id)).slug,
     });
+    if (result.kind !== "missing") return result;
+    // A colour merged into another product (F6) opens that product in its colour.
+    const merged = await findMergedProductTarget(boutique.id, param);
+    if (!merged) return result;
+    const slug = (await getProductSlugSeo(merged.productId)).slug;
+    return {
+      kind: "redirect",
+      toParam: slug ?? merged.productId,
+      ...(merged.color ? { query: `renk=${encodeURIComponent(valueParam(merged.color))}` } : {}),
+    };
   } catch (error) {
     console.error(
       `Failed to resolve TR product (${boutiqueSlug}/${param}):`,

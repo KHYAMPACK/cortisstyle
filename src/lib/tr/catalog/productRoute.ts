@@ -7,7 +7,8 @@ import { looksLikeUuid } from "@/lib/tr/seo/slug";
  */
 export type ProductRouteResult<P> =
   | { kind: "found"; product: P }
-  | { kind: "redirect"; toParam: string }
+  /** `query` (without `?`) is added to the new address, e.g. `renk=kirmizi`. */
+  | { kind: "redirect"; toParam: string; query?: string }
   | { kind: "missing" };
 
 export interface ProductRouteDeps<P> {

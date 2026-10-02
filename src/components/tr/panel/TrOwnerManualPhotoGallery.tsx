@@ -14,11 +14,11 @@ function isAcceptedProductPhoto(file: File): boolean {
 }
 
 /** Non-empty image URLs, capped at the product image limit. */
-function compactUrls(urls: string[]): string[] {
+function compactUrls(urls: string[], max: number): string[] {
   return urls
     .map((url) => url.trim())
     .filter(Boolean)
-    .slice(0, TR_OWNER_PRODUCT_LIMITS.maxImages);
+    .slice(0, max);
 }
 
 export function TrOwnerManualPhotoGallery({
@@ -30,6 +30,7 @@ export function TrOwnerManualPhotoGallery({
   disabled = false,
   uploading = false,
   onUploadingChange,
+  maxImages = TR_OWNER_PRODUCT_LIMITS.maxImages,
 }: {
   boutiqueId: string;
   images: string[];
@@ -39,12 +40,13 @@ export function TrOwnerManualPhotoGallery({
   disabled?: boolean;
   uploading?: boolean;
   onUploadingChange?: (value: boolean) => void;
+  maxImages?: number;
 }) {
   const inputId = useId();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [busyIndex, setBusyIndex] = useState<number | null>(null);
-  const gallery = compactUrls(images);
-  const canAdd = gallery.length < TR_OWNER_PRODUCT_LIMITS.maxImages;
+  const gallery = compactUrls(images, maxImages);
+  const canAdd = gallery.length < maxImages;
   const locked = disabled || uploading || busyIndex != null;
 
   async function addFiles(files: FileList | File[]) {
@@ -53,9 +55,9 @@ export function TrOwnerManualPhotoGallery({
       onError("PNG, JPEG veya WebP yükleyin.");
       return;
     }
-    const room = TR_OWNER_PRODUCT_LIMITS.maxImages - gallery.length;
+    const room = maxImages - gallery.length;
     if (room <= 0) {
-      onError("En fazla 8 fotoğraf.");
+      onError(`En fazla ${maxImages} fotoğraf.`);
       return;
     }
     const batch = photos.slice(0, room);
@@ -66,7 +68,7 @@ export function TrOwnerManualPhotoGallery({
       for (let i = 0; i < batch.length; i += 1) {
         setBusyIndex(next.length);
         const uploaded = await uploadOwnerProductImage(boutiqueId, batch[i]!);
-        next = compactUrls([...next, uploaded.url]);
+        next = compactUrls([...next, uploaded.url], maxImages);
         onImagesChange(next);
       }
     } catch (uploadError) {
@@ -99,7 +101,7 @@ export function TrOwnerManualPhotoGallery({
         <p className="text-[17px] font-semibold text-neutral-800">Fotoğraflar</p>
         <p className={`mt-1 ${panelHintClass}`}>
           En az bir fotoğraf. Sıra sitede görünen sıra — en fazla{" "}
-          {TR_OWNER_PRODUCT_LIMITS.maxImages} kare.
+          {maxImages} kare.
         </p>
       </div>
 

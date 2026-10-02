@@ -276,7 +276,51 @@ _Formerly M7c-2 + M7c-3, now including colour._
 - **Proof:** a Gelişmiş test product in two colours × three sizes is sold end to end before F6.
 - **SQL:** `patch_product_option_media.sql` + public read policy. **Freeze:** yes, broad (PDP, cart, checkout client, feed). **lilabutik:** none (no variant products yet).
 
-### F6: lilabutik's sizes and colours become variants (L, riskiest)
+### F6: lilabutik's sizes and colours become variants (L, riskiest) — **generator built 2026-10-02, not applied**
+
+**As built** (branch `main-t0o1c2`):
+
+- **Planner** (pure, tested): `lib/tr/variants/sizeMigration.ts`.
+  - Every product with sizes becomes a Gelişmiş ürün, with Beden (letter sizes) or Pantolon bedeni (numbers) and one variant per size.
+  - A merged group gets a Renk option and colour × size variants. The oldest member survives. Each colour's shop photos become its variants' photos, and the survivor's gallery is all of them as a plain photo list.
+  - The other members are hidden, with `merged_into` set and `features.color` filled in.
+  - `sizes` stays (the size filter reads it); `size_stocks` is emptied; `colorGroupId` is removed from every group member, merged or not.
+- **Generator:** `scripts/f6-size-variants.mts`.
+  - It reads the boutique (read-only) and the answers in `supabase/f6/lilabutik-answers.json`.
+  - It writes `supabase/f6/lilabutik-report.md`, plus the patch and its rollback when nothing blocks.
+- **Guards in the patch:**
+  - It is one transaction, and stops if the boutique already has variant types.
+  - It stops if any product it touches changed since the snapshot (a sale, an edit), so generate it right before applying.
+  - The rollback restores every product exactly; it fails if an order line already points at a new variant.
+- **Redirects:** a merged product's address 308s to the survivor with `?renk=` (`catalog/mergedProducts.ts`, `publicData.safeResolvePublicProduct`).
+- **Photos:** a Gelişmiş ürün can hold 40 photos (Basit stays at 8).
+- **Old carts:** size lines of a Gelişmiş ürün are dropped, and lines of a merged (hidden) product are dropped, with the existing "no longer available" handling. They are not mapped to variants (simpler; carts are short-lived).
+- **Tested** on a throwaway local Postgres with the repo's patch files and a snapshot of lilabutik's products (descriptions left out):
+  - 79 products move to variants, 784 variants in all, 14 products are merged;
+  - stock is 877 before and 877 after;
+  - a second run is refused;
+  - after a simulated sale the patch is refused;
+  - the rollback leaves 0 differing rows.
+- **Answers (suggested 2026-10-02, Mert confirms):**
+  - The three-jeans group stays apart. The other 8 groups merge, with titles without the colour word.
+  - Colours for 6 products were guessed from their titles.
+  - Still open: the colour of "Midi Straplez Elbise" (`7fe1829b…`).
+- **Known after-effects:**
+  - The shop's colour filter sees only a merged product's survivor colour.
+  - The numeric size type is called "Pantolon bedeni" on dresses that use numbers too (rename it in Varyant türleri if wanted).
+
+**Steps for Mert** (PowerShell, from the repo):
+
+```powershell
+vercel env pull .env.production.local --environment=production
+npx tsx scripts/f6-size-variants.mts --env-file .env.production.local
+# read supabase/f6/lilabutik-report.md
+# in the Supabase SQL editor: supabase/patch_product_merged_into.sql, then supabase/patch_lilabutik_variants.sql
+```
+
+Deploy the code (merge to main) **before** applying the patch: older code doesn't know `product_type = advanced` products sell by variant.
+
+**Original plan:**
 
 _Reverses the lilabutik plan's "defer Area B" (§B.3) and decision 8 (colour groups never merged). Mert approved the colour merge in principle on 2026-09-30; the go-ahead for this milestone itself is Q2._
 

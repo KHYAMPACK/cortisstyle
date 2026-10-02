@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useUnsavedChangesGuard } from "@/components/tr/panel/TrOwnerLeaveGuard";
 import { TrOwnerColorGroupLinker } from "@/components/tr/panel/TrOwnerColorGroupLinker";
 import { TrOwnerManualPhotoGallery } from "@/components/tr/panel/TrOwnerManualPhotoGallery";
+import { TR_OWNER_PRODUCT_LIMITS } from "@/lib/tr/ownerProductConstraints";
 import { TrOwnerSizeChartStock } from "@/components/tr/panel/TrOwnerSizeChartStock";
 import { TrProductAttributesFields } from "@/components/tr/panel/TrProductAttributesFields";
 import {
@@ -602,6 +603,11 @@ function ProductEditorForm({
               disabled={saving}
               uploading={uploading}
               onUploadingChange={setUploading}
+              maxImages={
+                advanced
+                  ? TR_OWNER_PRODUCT_LIMITS.maxImagesAdvanced
+                  : TR_OWNER_PRODUCT_LIMITS.maxImages
+              }
             />
           )}
         </TrPanelEditorCard>

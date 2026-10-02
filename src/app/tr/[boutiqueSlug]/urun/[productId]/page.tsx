@@ -75,16 +75,15 @@ export default async function BoutiqueProductPage({
     notFound();
   }
 
-  // An old slug: send the visitor (and search engines) to the product's current address.
+  // An old slug, or a colour merged into another product (F6): send the visitor (and search engines) to the product's current address.
   if (result.kind === "redirect") {
     const host = await resolveSeoHostContext();
-    permanentRedirect(
-      storeCustomerPath(
-        boutiqueSlug,
-        trBoutiqueProductPath(boutiqueSlug, result.toParam),
-        host.kind === "boutique" ? "boutique-domain" : "platform",
-      ),
+    const path = storeCustomerPath(
+      boutiqueSlug,
+      trBoutiqueProductPath(boutiqueSlug, result.toParam),
+      host.kind === "boutique" ? "boutique-domain" : "platform",
     );
+    permanentRedirect(result.query ? `${path}?${result.query}` : path);
   }
 
   const { product } = result;

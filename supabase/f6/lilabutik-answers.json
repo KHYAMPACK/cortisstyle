@@ -1,0 +1,23 @@
+{
+  "_readme": "F6 checklist answers for lilabutik (docs/foundation-no-hardcode-plan.md, F6). Suggestions by Claude from the titles, 2026-10-02; Mert confirms. colors: product id -> colour, for members without features.color. groups: colour group id -> merge or not, the merged title (no colour word), optional survivorId (default the oldest) and descriptionFrom (default the survivor).",
+  "colors": {
+    "5d28b0a1-7a7e-4b06-a3e0-711a5f66b3c8": "Siyah",
+    "b69a3fd1-4a48-4a52-8ef1-8b39f92456c1": "Kahverengi",
+    "f952c9e0-c082-4084-ae16-adb4d53b7a4e": "Beyaz",
+    "da3754b9-63d9-4dbf-8daa-eabcbdaf61f4": "Kırmızı",
+    "30875216-4540-4da8-965b-cb098eb14347": "Krem",
+    "e994a83a-7104-4d54-9a6f-e2557e316b1e": "Siyah"
+  },
+  "groups": {
+    "235c07cb-0e72-4823-ae91-4025f2f5855f": { "merge": false },
+    "4882e5d0-5bab-4791-b413-236f5fefe13e": { "merge": true, "title": "Maxi Tek Omuz Elbise" },
+    "4c4c3ecd-f1c4-4e3b-8fca-6151c1b165c9": { "merge": true, "title": "Ceket Pantolon Takım" },
+    "51dad8ee-e381-4e85-bb46-75d0f2d828a3": { "merge": true, "title": "Pile Detaylı Kolsuz Bluz" },
+    "5764f995-7986-4c04-b346-aa0f7a35edee": { "merge": true, "title": "Kemerli Pantolon" },
+    "62f81bb4-ff83-4774-b956-7c89329f8ff2": { "merge": true, "title": "Maxi Bisiklet Yaka Elbise" },
+    "ae723d38-5e4b-45c4-b83d-437ece980af1": { "merge": true, "title": "Midi Jean Elbise" },
+    "d67f106e-637c-4f55-a10c-6bbc8e1b0c06": { "merge": true, "title": "Midi Straplez Elbise" },
+    "da7a3fd6-43f4-4d8e-8fa0-b60a20432c87": { "merge": true, "title": "Fırfırlı Bluz" },
+    "ea2a34ee-0caf-43be-85d1-fcfc1c3f78fc": { "merge": true, "title": "V Yaka Midi Elbise" }
+  }
+}

@@ -51,3 +51,8 @@ yarn-error.log*
 next-env.d.ts
 
 .vercel
+
+# F6 generator output (regenerate right before applying)
+/supabase/f6/*-report.md
+/supabase/patch_lilabutik_variants.sql
+/supabase/patch_lilabutik_variants_rollback.sql
