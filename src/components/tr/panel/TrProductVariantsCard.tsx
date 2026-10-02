@@ -1,5 +1,6 @@
 "use client";
 
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import { TrVariantPickerDrawer } from "@/components/tr/panel/TrVariantPickerDrawer";
 import { TrVariantTypeDrawer } from "@/components/tr/panel/TrVariantTypeDrawer";
@@ -25,6 +26,9 @@ import { labelKey } from "@/lib/tr/variants/typeRules";
 import {
   applyBulk,
   applySelection,
+  groupHasImage,
+  groupVariantRows,
+  toggleGroupImage,
   hasBulkChanges,
   selectionCombinations,
   selectionFromForm,
@@ -46,10 +50,47 @@ const CELL_INPUT =
 
 const EMPTY_SELECTION: VariantSelection = { typeIds: [], valueIdsByType: {} };
 
+/** One of the product's photos, picked (ringed) or not, for a variant or a colour. */
+function ImageToggle({
+  url,
+  index,
+  selected,
+  disabled,
+  size,
+  onToggle,
+}: {
+  url: string;
+  index: number;
+  selected: boolean;
+  disabled: boolean;
+  size: string;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={selected}
+      aria-label={`${index + 1}. görsel`}
+      disabled={disabled}
+      onClick={onToggle}
+      className={`${size} overflow-hidden rounded border transition-[box-shadow,opacity] ${
+        selected
+          ? "border-[color:var(--panel-accent)] ring-2 ring-[color:var(--panel-accent)]/40"
+          : "border-neutral-200 opacity-55 hover:opacity-100"
+      }`}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={url} alt="" className="size-full object-cover" />
+    </button>
+  );
+}
+
 /**
  * The Varyant card of a Gelişmiş product: choose option types and values in the drawer,
- * then edit the generated variants (SKU, barcode, price, stock, on/off, pictures) in a
- * table. It edits the form's variants only; they are saved with the product's Kaydet.
+ * then edit the generated variants (SKU, barcode, price, stock, on/off, pictures). With
+ * two options the variants are split into a section per value of the first one (a
+ * colour), which also picks that colour's photos. It edits the form's variants only;
+ * they are saved with the product's Kaydet.
  */
 export function TrProductVariantsCard({
   boutiqueId,
@@ -78,6 +119,8 @@ export function TrProductVariantsCard({
   const [typeDrawer, setTypeDrawer] = useState<{ type: TrVariantType | null } | null>(null);
   const [typeDrawerType, setTypeDrawerType] = useState<TrVariantType | null>(null);
   const [bulkOpen, setBulkOpen] = useState(false);
+  // Which colour sections are open (unset = the default: open when there are at most two).
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [bulkTarget, setBulkTarget] = useState("all");
   const [bulk, setBulk] = useState<{ price: string; stock: string; active: "keep" | "on" | "off" }>(
     { price: "", stock: "", active: "keep" },
@@ -178,6 +221,13 @@ export function TrProductVariantsCard({
     const values = (type?.values ?? []).filter((value) => used.has(value.id));
     return { typeId, name: type?.name ?? "…", values };
   });
+
+  // Sections: one per value of the first option (a colour) when there are two options.
+  const grouped = variants.typeIds.length >= 2;
+  const groups = groupVariantRows(variants, optionSummary[0]?.values.map((value) => value.id));
+  const restHeader = optionSummary.slice(1).map((option) => option.name).join(" / ") || "Varyant";
+  const isOpen = (id: string) => expanded[id] ?? groups.length <= 2;
+  const allOpen = groups.every((group) => isOpen(group.valueId ?? ""));
 
   const bulkTargetValue = (): BulkTarget =>
     bulkTarget === "all" ? { kind: "all" } : { kind: "value", valueId: bulkTarget };
@@ -312,126 +362,201 @@ export function TrProductVariantsCard({
             </div>
           ) : null}
 
-          <div className="overflow-x-auto rounded-lg border border-neutral-200">
-            <table className="w-full min-w-[44rem] border-collapse text-left">
-              <thead>
-                <tr className="border-b border-neutral-200 bg-neutral-50 text-[12px] font-semibold tracking-wide text-neutral-500">
-                  <th className="px-3 py-2">Varyant</th>
-                  <th className="px-2 py-2">Görsel</th>
-                  <th className="px-2 py-2">SKU</th>
-                  <th className="px-2 py-2">Barkod</th>
-                  <th className="px-2 py-2">Fiyat (₺)</th>
-                  <th className="px-2 py-2">Stok</th>
-                  <th className="px-3 py-2 text-center">Aktif</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-neutral-100">
-                {variants.rows.map((row) => {
-                  const label = variantLabel(row.optionValueIds, labelOf);
-                  return (
-                    <tr key={row.key} className={row.active ? "" : "bg-neutral-50/60"}>
-                      <td className="px-3 py-2 text-[13px] font-medium whitespace-nowrap text-neutral-900">
-                        {label}
-                      </td>
-                      <td className="px-2 py-2">
-                        {productImages.length === 0 ? (
-                          <span className="text-[12px] text-neutral-400">—</span>
-                        ) : (
+          {grouped && groups.length > 2 ? (
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() =>
+                  setExpanded(
+                    Object.fromEntries(groups.map((group) => [group.valueId ?? "", !allOpen])),
+                  )
+                }
+                className="text-[13px] font-semibold text-[color:var(--panel-accent-deep)] hover:underline"
+              >
+                {allOpen ? "Tümünü kapat" : "Tümünü aç"}
+              </button>
+            </div>
+          ) : null}
+
+          <div className="space-y-3">
+            {groups.map((group) => {
+              const id = group.valueId ?? "";
+              const open = !grouped || isOpen(id);
+              const inactive = group.rows.length - group.activeCount;
+              const rowKeys = group.rows.map((row) => row.key);
+              return (
+                <section key={id} className="overflow-hidden rounded-lg border border-neutral-200">
+                  {grouped ? (
+                    <button
+                      type="button"
+                      onClick={() => setExpanded((current) => ({ ...current, [id]: !open }))}
+                      aria-expanded={open}
+                      className="flex w-full items-center gap-3 bg-neutral-50 px-3.5 py-2.5 text-left hover:bg-neutral-100"
+                    >
+                      {open ? (
+                        <ChevronDown className="h-4 w-4 shrink-0 text-neutral-500" strokeWidth={1.75} aria-hidden />
+                      ) : (
+                        <ChevronRight className="h-4 w-4 shrink-0 text-neutral-500" strokeWidth={1.75} aria-hidden />
+                      )}
+                      <span className="text-[14px] font-semibold text-neutral-900">
+                        {labelOf(group.valueId!)}
+                      </span>
+                      <span className="text-[12px] text-neutral-500">
+                        {[
+                          `${group.rows.length} varyant`,
+                          `${group.stock} adet`,
+                          inactive > 0 ? `${inactive} pasif` : null,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </span>
+                    </button>
+                  ) : null}
+
+                  {open ? (
+                    <div className={grouped ? "space-y-3 border-t border-neutral-200 p-3" : ""}>
+                      {grouped && productImages.length > 0 ? (
+                        <div>
+                          <p className={panelLabelClass}>{labelOf(group.valueId!)} fotoğrafları</p>
                           <div
-                            className="flex max-w-[15rem] flex-wrap gap-1"
+                            className="mt-1.5 flex flex-wrap gap-1.5"
                             role="group"
-                            aria-label={`${label} görselleri`}
+                            aria-label={`${labelOf(group.valueId!)} fotoğrafları`}
                           >
-                            {productImages.map((url, index) => {
-                              const selected = row.images.includes(url);
+                            {productImages.map((url, index) => (
+                              <ImageToggle
+                                key={`${url}-${index}`}
+                                url={url}
+                                index={index}
+                                selected={groupHasImage(group.rows, url)}
+                                disabled={disabled}
+                                size="size-12"
+                                onToggle={() => onChange(toggleGroupImage(variants, rowKeys, url))}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
+                      <div className={grouped ? "overflow-x-auto rounded-md border border-neutral-100" : "overflow-x-auto"}>
+                        <table className={`w-full border-collapse text-left ${grouped ? "min-w-[34rem]" : "min-w-[44rem]"}`}>
+                          <thead>
+                            <tr className="border-b border-neutral-200 bg-neutral-50 text-[12px] font-semibold tracking-wide text-neutral-500">
+                              <th className="px-3 py-2">{grouped ? restHeader : "Varyant"}</th>
+                              {grouped ? null : <th className="px-2 py-2">Görsel</th>}
+                              <th className="px-2 py-2">SKU</th>
+                              <th className="px-2 py-2">Barkod</th>
+                              <th className="px-2 py-2">Fiyat (₺)</th>
+                              <th className="px-2 py-2">Stok</th>
+                              <th className="px-3 py-2 text-center">Aktif</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-neutral-100">
+                            {group.rows.map((row) => {
+                              const label = variantLabel(row.optionValueIds, labelOf);
+                              const shortLabel = grouped
+                                ? variantLabel(row.optionValueIds.slice(1), labelOf)
+                                : label;
                               return (
-                                <button
-                                  key={`${url}-${index}`}
-                                  type="button"
-                                  aria-pressed={selected}
-                                  aria-label={`${index + 1}. görsel`}
-                                  disabled={disabled}
-                                  onClick={() => toggleImage(row, url)}
-                                  className={`size-7 overflow-hidden rounded border transition-[box-shadow,opacity] ${
-                                    selected
-                                      ? "border-[color:var(--panel-accent)] ring-2 ring-[color:var(--panel-accent)]/40"
-                                      : "border-neutral-200 opacity-55 hover:opacity-100"
-                                  }`}
-                                >
-                                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                                  <img src={url} alt="" className="size-full object-cover" />
-                                </button>
+                                <tr key={row.key} className={row.active ? "" : "bg-neutral-50/60"}>
+                                  <td className="px-3 py-2 text-[13px] font-medium whitespace-nowrap text-neutral-900">
+                                    {shortLabel}
+                                  </td>
+                                  {grouped ? null : (
+                                    <td className="px-2 py-2">
+                                      {productImages.length === 0 ? (
+                                        <span className="text-[12px] text-neutral-400">—</span>
+                                      ) : (
+                                        <div
+                                          className="flex max-w-[15rem] flex-wrap gap-1"
+                                          role="group"
+                                          aria-label={`${label} görselleri`}
+                                        >
+                                          {productImages.map((url, index) => (
+                                            <ImageToggle
+                                              key={`${url}-${index}`}
+                                              url={url}
+                                              index={index}
+                                              selected={row.images.includes(url)}
+                                              disabled={disabled}
+                                              size="size-7"
+                                              onToggle={() => toggleImage(row, url)}
+                                            />
+                                          ))}
+                                        </div>
+                                      )}
+                                    </td>
+                                  )}
+                                  <td className="px-2 py-2">
+                                    <input
+                                      value={row.sku}
+                                      onChange={(event) => updateRow(row.key, { sku: event.target.value })}
+                                      maxLength={64}
+                                      aria-label={`${label} SKU`}
+                                      disabled={disabled}
+                                      className={CELL_INPUT}
+                                    />
+                                  </td>
+                                  <td className="px-2 py-2">
+                                    <input
+                                      value={row.barcode}
+                                      onChange={(event) => updateRow(row.key, { barcode: event.target.value })}
+                                      maxLength={64}
+                                      aria-label={`${label} barkod`}
+                                      disabled={disabled}
+                                      className={CELL_INPUT}
+                                    />
+                                  </td>
+                                  <td className="px-2 py-2">
+                                    <input
+                                      value={row.price}
+                                      onChange={(event) =>
+                                        updateRow(row.key, { price: sanitizeTryPriceInput(event.target.value) })
+                                      }
+                                      inputMode="decimal"
+                                      placeholder={productPrice || "Ürün fiyatı"}
+                                      aria-label={`${label} fiyatı`}
+                                      disabled={disabled}
+                                      className={`${CELL_INPUT} w-24`}
+                                    />
+                                  </td>
+                                  <td className="px-2 py-2">
+                                    <input
+                                      value={row.stock}
+                                      onChange={(event) =>
+                                        updateRow(row.key, { stock: sanitizeStockInput(event.target.value) })
+                                      }
+                                      inputMode="numeric"
+                                      aria-label={`${label} stoğu`}
+                                      disabled={disabled}
+                                      className={`${CELL_INPUT} w-20`}
+                                    />
+                                  </td>
+                                  <td className="px-3 py-2 text-center">
+                                    <input
+                                      type="checkbox"
+                                      checked={row.active}
+                                      onChange={(event) => updateRow(row.key, { active: event.target.checked })}
+                                      aria-label={`${label} aktif`}
+                                      disabled={disabled}
+                                      className="h-4 w-4 accent-[color:var(--panel-accent)]"
+                                    />
+                                  </td>
+                                </tr>
                               );
                             })}
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-2 py-2">
-                        <input
-                          value={row.sku}
-                          onChange={(event) => updateRow(row.key, { sku: event.target.value })}
-                          maxLength={64}
-                          aria-label={`${label} SKU`}
-                          disabled={disabled}
-                          className={CELL_INPUT}
-                        />
-                      </td>
-                      <td className="px-2 py-2">
-                        <input
-                          value={row.barcode}
-                          onChange={(event) => updateRow(row.key, { barcode: event.target.value })}
-                          maxLength={64}
-                          aria-label={`${label} barkod`}
-                          disabled={disabled}
-                          className={CELL_INPUT}
-                        />
-                      </td>
-                      <td className="px-2 py-2">
-                        <input
-                          value={row.price}
-                          onChange={(event) =>
-                            updateRow(row.key, { price: sanitizeTryPriceInput(event.target.value) })
-                          }
-                          inputMode="decimal"
-                          placeholder={productPrice || "Ürün fiyatı"}
-                          aria-label={`${label} fiyatı`}
-                          disabled={disabled}
-                          className={`${CELL_INPUT} w-24`}
-                        />
-                      </td>
-                      <td className="px-2 py-2">
-                        <input
-                          value={row.stock}
-                          onChange={(event) =>
-                            updateRow(row.key, { stock: sanitizeStockInput(event.target.value) })
-                          }
-                          inputMode="numeric"
-                          aria-label={`${label} stoğu`}
-                          disabled={disabled}
-                          className={`${CELL_INPUT} w-20`}
-                        />
-                      </td>
-                      <td className="px-3 py-2 text-center">
-                        <input
-                          type="checkbox"
-                          checked={row.active}
-                          onChange={(event) => updateRow(row.key, { active: event.target.checked })}
-                          aria-label={`${label} aktif`}
-                          disabled={disabled}
-                          className="h-4 w-4 accent-[color:var(--panel-accent)]"
-                        />
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  ) : null}
+                </section>
+              );
+            })}
           </div>
 
           <p className={panelHintClass}>
             Toplam stok: <span className="font-semibold text-neutral-800">{variantsTotalStock(variants)}</span>{" "}
-            (aktif varyantların toplamı). Boş bıraktığınız fiyat ürün fiyatını kullanır. Şimdilik
-            kaydedilir; mağaza henüz varyant seçtirmiyor.
+            (aktif varyantların toplamı). Boş bıraktığınız fiyat ürün fiyatını kullanır.
           </p>
         </>
       )}

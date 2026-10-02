@@ -240,3 +240,68 @@ export function hasBulkChanges(changes: BulkChanges): boolean {
     changes.active !== undefined
   );
 }
+
+// ------------------------------------------------------- sections
+
+/** The variants that share the first option's value (one colour), for the editor. */
+export interface VariantRowGroup {
+  /** The first option's value id; `null` when the product has a single option. */
+  valueId: string | null;
+  rows: VariantRowDraft[];
+  /** Active rows' stock. */
+  stock: number;
+  activeCount: number;
+}
+
+/**
+ * The editor's sections: with two or more options, one per value of the first option
+ * (in `valueOrder`, then any other in row order); with one option, a single section.
+ */
+export function groupVariantRows(
+  form: VariantsFormState,
+  valueOrder: readonly string[] = [],
+): VariantRowGroup[] {
+  const summarize = (valueId: string | null, rows: VariantRowDraft[]): VariantRowGroup => ({
+    valueId,
+    rows,
+    stock: variantsTotalStock({ typeIds: form.typeIds, rows }),
+    activeCount: rows.filter((row) => row.active).length,
+  });
+  if (form.typeIds.length < 2) return form.rows.length > 0 ? [summarize(null, form.rows)] : [];
+  const byValue = new Map<string, VariantRowDraft[]>();
+  for (const row of form.rows) {
+    const valueId = row.optionValueIds[0] ?? "";
+    byValue.set(valueId, [...(byValue.get(valueId) ?? []), row]);
+  }
+  const order = [
+    ...valueOrder.filter((id) => byValue.has(id)),
+    ...[...byValue.keys()].filter((id) => !valueOrder.includes(id)),
+  ];
+  return order.map((valueId) => summarize(valueId, byValue.get(valueId)!));
+}
+
+/**
+ * A group's photos: shown as picked when every row of the group has them. Toggling a
+ * photo adds it to every row of the group, or removes it from all of them.
+ */
+export function groupHasImage(rows: readonly VariantRowDraft[], url: string): boolean {
+  return rows.length > 0 && rows.every((row) => row.images.includes(url));
+}
+
+export function toggleGroupImage(
+  form: VariantsFormState,
+  rowKeys: readonly string[],
+  url: string,
+): VariantsFormState {
+  const keys = new Set(rowKeys);
+  const group = form.rows.filter((row) => keys.has(row.key));
+  const remove = groupHasImage(group, url);
+  return {
+    ...form,
+    rows: form.rows.map((row) => {
+      if (!keys.has(row.key)) return row;
+      const without = row.images.filter((image) => image !== url);
+      return { ...row, images: remove ? without : [...without, url] };
+    }),
+  };
+}
