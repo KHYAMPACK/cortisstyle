@@ -154,3 +154,56 @@ export function slugsInScope<T extends TrCategoryNode & { slug: string }>(
     categories.filter((entry) => scope.has(entry.id)).map((entry) => entry.slug),
   );
 }
+
+/** A row of a collapsible category table. */
+export interface CategoryTableRow<T extends TrCategoryNode> {
+  category: T;
+  depth: number;
+  hasChildren: boolean;
+  /** "Elbise › Abiye" for the parent chain, "" for a root (shown under the name). */
+  parentPath: string;
+}
+
+/**
+ * The rows a collapsible category table shows: tree order, a category's children only
+ * while it is expanded. With a search query, every match, flat (its parents may not
+ * match), with its parent path so it can still be told apart.
+ */
+export function visibleCategoryRows<T extends TrCategoryNode>(
+  categories: readonly T[],
+  expanded: ReadonlySet<string>,
+  query = "",
+): CategoryTableRow<T>[] {
+  const withChildren = new Set(
+    categories.map((entry) => entry.parentId).filter((id): id is string => Boolean(id)),
+  );
+  const parentPath = (id: string) =>
+    categoryPath(categories, id)
+      .slice(0, -1)
+      .map((entry) => entry.name)
+      .join(" › ");
+  const needle = query.trim().toLocaleLowerCase("tr");
+  const rows = flattenCategoryTree(categories);
+
+  if (needle) {
+    return rows
+      .filter(({ category }) => category.name.toLocaleLowerCase("tr").includes(needle))
+      .map(({ category }) => ({
+        category,
+        depth: 0,
+        hasChildren: false,
+        parentPath: parentPath(category.id),
+      }));
+  }
+
+  const out: CategoryTableRow<T>[] = [];
+  let hiddenBelow: number | null = null;
+  for (const { category, depth } of rows) {
+    if (hiddenBelow !== null && depth > hiddenBelow) continue;
+    hiddenBelow = null;
+    const hasChildren = withChildren.has(category.id);
+    out.push({ category, depth, hasChildren, parentPath: parentPath(category.id) });
+    if (hasChildren && !expanded.has(category.id)) hiddenBelow = depth;
+  }
+  return out;
+}

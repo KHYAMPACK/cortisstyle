@@ -9,6 +9,7 @@ import {
   flattenCategoryTree,
   parentOptions,
   slugsInScope,
+  visibleCategoryRows,
   wouldCreateCycle,
   type TrCategoryNode,
 } from "./tree";
@@ -106,5 +107,36 @@ describe("slugsInScope", () => {
 
   it("falls back to the slug itself when it is not a known category", () => {
     assert.deepEqual([...slugsInScope(withSlugs, "bilinmeyen")], ["bilinmeyen"]);
+  });
+});
+
+describe("visibleCategoryRows", () => {
+  const tree = [
+    { id: "a", parentId: null, name: "Elbise", sortOrder: 0 },
+    { id: "b", parentId: "a", name: "Abiye", sortOrder: 0 },
+    { id: "c", parentId: "b", name: "Uzun abiye", sortOrder: 0 },
+    { id: "d", parentId: null, name: "Bluz", sortOrder: 1 },
+  ];
+
+  it("hides the children of a collapsed parent", () => {
+    const rows = visibleCategoryRows(tree, new Set());
+    assert.deepEqual(rows.map((row) => row.category.id), ["a", "d"]);
+    assert.equal(rows[0]!.hasChildren, true);
+    assert.equal(rows[1]!.hasChildren, false);
+  });
+
+  it("shows children, with their parent path, once expanded", () => {
+    const rows = visibleCategoryRows(tree, new Set(["a"]));
+    assert.deepEqual(rows.map((row) => row.category.id), ["a", "b", "d"]);
+    assert.equal(rows[1]!.parentPath, "Elbise");
+    const deeper = visibleCategoryRows(tree, new Set(["a", "b"]));
+    assert.deepEqual(deeper.map((row) => row.category.id), ["a", "b", "c", "d"]);
+    assert.equal(deeper[2]!.parentPath, "Elbise › Abiye");
+  });
+
+  it("lists every match flat while searching", () => {
+    const rows = visibleCategoryRows(tree, new Set(), "abi");
+    assert.deepEqual(rows.map((row) => row.category.id), ["b", "c"]);
+    assert.equal(rows[1]!.depth, 0);
   });
 });

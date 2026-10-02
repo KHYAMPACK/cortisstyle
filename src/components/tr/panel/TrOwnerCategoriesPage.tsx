@@ -1,17 +1,21 @@
 "use client";
 
-import { Search } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronRight, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
 import { TrOwnerProductRouteGate } from "@/components/tr/panel/TrOwnerProductRouteGate";
+import {
+  TrPanelDataTable,
+  TrPanelDataTableCell,
+  TrPanelDataTableRow,
+} from "@/components/tr/panel/TrPanelDataTable";
 import { TrPanelLink as Link } from "@/components/tr/panel/TrPanelLink";
 import {
   TrPanelFadeIn,
   TrPanelListSkeleton,
 } from "@/components/tr/panel/TrPanelMotion";
 import {
-  panelBackLinkClass,
   panelEmptyClass,
   panelErrorClass,
   panelFieldClass,
@@ -19,7 +23,7 @@ import {
   panelPrimaryBtnClass,
 } from "@/components/tr/panel/panelUi";
 import { categorySortLabel } from "@/lib/tr/categories/sortCriteria";
-import { flattenCategoryTree } from "@/lib/tr/categories/tree";
+import { visibleCategoryRows } from "@/lib/tr/categories/tree";
 import type { TrCategoryListEntry } from "@/lib/tr/categories/types";
 import { toast } from "@/lib/tr/panel/toast";
 import {
@@ -46,6 +50,8 @@ function CategoriesList({ boutiqueId }: { boutiqueId: string }) {
   const [search, setSearch] = useState("");
   const [importing, setImporting] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  // Parent categories start collapsed; a chevron opens one.
+  const [expanded, setExpanded] = useState<ReadonlySet<string>>(() => new Set());
 
   useEffect(() => {
     let cancelled = false;
@@ -84,34 +90,48 @@ function CategoriesList({ boutiqueId }: { boutiqueId: string }) {
   };
 
   const ready = loaded?.boutiqueId === boutiqueId ? loaded : null;
-  const query = search.trim().toLocaleLowerCase("tr");
-  const rows = useMemo(() => {
-    if (!ready) return [];
-    const tree = flattenCategoryTree(ready.categories);
-    if (!query) return tree;
-    // While searching, show the matches flat: their parents may not match.
-    return tree
-      .filter(({ category }) =>
-        category.name.toLocaleLowerCase("tr").includes(query),
-      )
-      .map((row) => ({ ...row, depth: 0 }));
-  }, [ready, query]);
+  const rows = useMemo(
+    () => (ready ? visibleCategoryRows(ready.categories, expanded, search) : []),
+    [ready, expanded, search],
+  );
+  const parentIds = useMemo(
+    () =>
+      new Set(
+        (ready?.categories ?? [])
+          .map((category) => category.parentId)
+          .filter((id): id is string => Boolean(id)),
+      ),
+    [ready],
+  );
+  const allExpanded = parentIds.size > 0 && [...parentIds].every((id) => expanded.has(id));
+
+  const toggle = (id: string) =>
+    setExpanded((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
 
   const header = (
-    <div className="space-y-1">
-      <Link href={trPanelDefinitionsPath()} className={panelBackLinkClass}>
-        ← Tanımlamalar
-      </Link>
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-[1.25rem] font-semibold tracking-tight text-neutral-900 sm:text-[1.375rem]">
+    <div className="flex items-center justify-between gap-3">
+      <div className="flex min-w-0 items-center gap-3">
+        <Link
+          href={trPanelDefinitionsPath()}
+          aria-label="Tanımlamalar sayfasına dön"
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-neutral-200 bg-white text-neutral-600 transition-colors duration-150 hover:bg-neutral-50 hover:text-neutral-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--panel-accent-deep)] motion-reduce:transition-none"
+        >
+          <ArrowLeft className="h-[18px] w-[18px]" strokeWidth={1.75} aria-hidden />
+        </Link>
+        <h2 className="truncate text-[1.25rem] font-semibold tracking-tight text-neutral-900 sm:text-[1.375rem]">
           Kategoriler
         </h2>
-        {ready ? (
-          <Link href={trPanelNewCategoryPath()} className={panelPrimaryBtnClass}>
-            Kategori Ekle
-          </Link>
-        ) : null}
       </div>
+      {ready ? (
+        <Link href={trPanelNewCategoryPath()} className={panelPrimaryBtnClass}>
+          Kategori Ekle
+        </Link>
+      ) : null}
     </div>
   );
 
@@ -164,68 +184,95 @@ function CategoriesList({ boutiqueId }: { boutiqueId: string }) {
         </TrPanelFadeIn>
       ) : (
         <TrPanelFadeIn className="space-y-3" shift={false}>
-          <div className="relative max-w-sm">
-            <Search
-              className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-neutral-400"
-              strokeWidth={1.75}
-              aria-hidden
-            />
-            <input
-              type="search"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Tabloda arama yapın"
-              className={`${panelFieldClass} pl-9`}
-              aria-label="Kategorilerde ara"
-            />
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="relative w-full max-w-sm">
+              <Search
+                className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-neutral-400"
+                strokeWidth={1.75}
+                aria-hidden
+              />
+              <input
+                type="search"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Tabloda arama yapın"
+                className={`${panelFieldClass} pl-9`}
+                aria-label="Kategorilerde ara"
+              />
+            </div>
+            {parentIds.size > 0 && !search.trim() ? (
+              <button
+                type="button"
+                onClick={() => setExpanded(allExpanded ? new Set() : new Set(parentIds))}
+                className="text-[13px] font-semibold text-[color:var(--panel-accent-deep)] hover:underline"
+              >
+                {allExpanded ? "Tümünü daralt" : "Tümünü genişlet"}
+              </button>
+            ) : null}
           </div>
 
-          <div className="overflow-hidden rounded-xl border border-neutral-200/80 bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
-            <div className="hidden grid-cols-[minmax(0,1fr)_16rem_6rem] gap-4 border-b border-neutral-200 bg-neutral-50 px-4 py-2.5 text-[12px] font-semibold tracking-wide text-neutral-500 lg:grid">
-              <span>Ad</span>
-              <span>Sıralama Ölçütü</span>
-              <span className="text-right">Ürünler</span>
-            </div>
-            {rows.length === 0 ? (
-              <p className="px-4 py-10 text-center text-[14px] text-neutral-500">
-                Aramanıza uyan kategori yok.
-              </p>
-            ) : (
-              <ul className="divide-y divide-neutral-100">
-                {rows.map(({ category, depth }) => (
-                  <li
-                    key={category.id}
-                    onClick={(event) => {
-                      if ((event.target as HTMLElement).closest("a")) return;
-                      router.push(trPanelEditCategoryPath(category.id));
-                    }}
-                    onPointerEnter={() =>
-                      router.prefetch(trPanelEditCategoryPath(category.id))
-                    }
-                    className="grid cursor-pointer grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-0.5 px-4 py-3 transition-colors duration-150 hover:bg-[color:var(--panel-accent-soft)]/60 motion-reduce:transition-none lg:grid-cols-[minmax(0,1fr)_16rem_6rem]"
-                  >
-                    <span
-                      className="min-w-0 truncate"
-                      style={{ paddingLeft: `${depth * 20}px` }}
+          <TrPanelDataTable
+            contained={false}
+            headers={["Ad", "Sıralama Ölçütü", <span key="n" className="block text-right">Ürünler</span>]}
+            empty={rows.length === 0 ? "Aramanıza uyan kategori yok." : undefined}
+            footer={`${ready.categories.length} kategori`}
+          >
+            {rows.map(({ category, depth, hasChildren, parentPath }) => {
+              const href = trPanelEditCategoryPath(category.id);
+              const open = expanded.has(category.id);
+              return (
+                <TrPanelDataTableRow
+                  key={category.id}
+                  onActivate={() => router.push(href)}
+                  onPointerEnter={() => router.prefetch(href)}
+                >
+                  <TrPanelDataTableCell>
+                    <div
+                      className="flex items-center gap-1.5"
+                      style={{ paddingLeft: `${depth * 24}px` }}
                     >
-                      <Link
-                        href={trPanelEditCategoryPath(category.id)}
-                        className="text-[14px] font-semibold text-neutral-900 hover:underline"
-                      >
-                        {category.name}
-                      </Link>
-                    </span>
-                    <span className="text-right text-[13px] text-neutral-600 tabular-nums lg:order-3">
-                      {category.productCount} ürün
-                    </span>
-                    <span className="col-span-2 text-[13px] text-neutral-500 lg:order-2 lg:col-span-1">
-                      {categorySortLabel(category.sortCriterion) || "—"}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+                      {hasChildren ? (
+                        <button
+                          type="button"
+                          onClick={() => toggle(category.id)}
+                          aria-expanded={open}
+                          aria-label={`${category.name} alt kategorilerini ${open ? "gizle" : "göster"}`}
+                          className="grid h-6 w-6 shrink-0 place-items-center rounded text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800"
+                        >
+                          {open ? (
+                            <ChevronDown className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+                          ) : (
+                            <ChevronRight className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+                          )}
+                        </button>
+                      ) : (
+                        <span className="w-6 shrink-0" aria-hidden />
+                      )}
+                      <span className="min-w-0">
+                        <Link
+                          href={href}
+                          className="block truncate text-[14px] text-neutral-900 hover:underline"
+                        >
+                          {category.name}
+                        </Link>
+                        {parentPath ? (
+                          <span className="block truncate text-[12.5px] text-neutral-500">
+                            {parentPath}
+                          </span>
+                        ) : null}
+                      </span>
+                    </div>
+                  </TrPanelDataTableCell>
+                  <TrPanelDataTableCell className="text-neutral-600">
+                    {categorySortLabel(category.sortCriterion) || "—"}
+                  </TrPanelDataTableCell>
+                  <TrPanelDataTableCell className="text-right text-neutral-600 tabular-nums">
+                    {category.productCount} ürün
+                  </TrPanelDataTableCell>
+                </TrPanelDataTableRow>
+              );
+            })}
+          </TrPanelDataTable>
         </TrPanelFadeIn>
       )}
     </div>
