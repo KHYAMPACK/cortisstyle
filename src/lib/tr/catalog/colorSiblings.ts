@@ -6,8 +6,6 @@ import type {
   TrProductFeatures,
 } from "@/types/tr-marketplace";
 
-/** Upload session: primary + this many extras. */
-export const COLOR_GROUP_UPLOAD_MAX = 3;
 /** Manual editor linking. */
 export const COLOR_GROUP_MANUAL_MAX = 6;
 
@@ -38,99 +36,6 @@ const COLOR_NAME_ALIASES: Record<string, string> = {
   turuncu: "#C45C26",
   bordo: "#6E1F2A",
 };
-
-export type ColorVariantUploadDraft = {
-  id: string;
-  frontUrl: string;
-  backUrl: string;
-  packshotUrl: string;
-  lifestyleImages: string[];
-  colorName: string;
-  colorHex: string;
-  /** Per-SKU size stocks; falls back to the primary listing. */
-  sizeStockInputs?: Record<string, string>;
-  /** Per-SKU stock when the chart is `none`. */
-  stock?: string;
-};
-
-export function emptyColorVariantDraft(): ColorVariantUploadDraft {
-  return {
-    id:
-      typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? crypto.randomUUID()
-        : `color-${Date.now()}`,
-    frontUrl: "",
-    backUrl: "",
-    packshotUrl: "",
-    lifestyleImages: [],
-    colorName: "",
-    colorHex: COLOR_GROUP_NEUTRAL_HEX,
-  };
-}
-
-function sanitizeSizeStockInputs(
-  raw: unknown,
-): Record<string, string> | undefined {
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
-  const out: Record<string, string> = {};
-  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
-    const size = key.trim();
-    if (!size || typeof value !== "string") continue;
-    out[size] = value;
-  }
-  return Object.keys(out).length > 0 ? out : undefined;
-}
-
-export function sanitizeColorVariantDrafts(
-  raw: unknown,
-): ColorVariantUploadDraft[] {
-  if (!Array.isArray(raw)) return [];
-  return raw
-    .slice(0, COLOR_GROUP_UPLOAD_MAX - 1)
-    .flatMap((entry): ColorVariantUploadDraft[] => {
-      if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
-        return [];
-      }
-      const row = entry as Record<string, unknown>;
-      const id = typeof row.id === "string" && row.id.trim() ? row.id.trim() : "";
-      if (!id) return [];
-      const lifestyle = Array.isArray(row.lifestyleImages)
-        ? row.lifestyleImages.filter(
-            (url): url is string =>
-              typeof url === "string" && Boolean(url.trim()),
-          )
-        : [];
-      const sizeStockInputs = sanitizeSizeStockInputs(row.sizeStockInputs);
-      const stock =
-        typeof row.stock === "string" && row.stock.trim()
-          ? row.stock.trim()
-          : undefined;
-      return [
-        {
-          id,
-          frontUrl:
-            typeof row.frontUrl === "string" ? row.frontUrl.trim() : "",
-          backUrl: typeof row.backUrl === "string" ? row.backUrl.trim() : "",
-          packshotUrl:
-            typeof row.packshotUrl === "string" ? row.packshotUrl.trim() : "",
-          lifestyleImages: lifestyle.slice(0, 3),
-          colorName:
-            typeof row.colorName === "string" ? row.colorName.trim() : "",
-          colorHex: sanitizeColorHex(
-            typeof row.colorHex === "string" ? row.colorHex : "",
-          ),
-          ...(sizeStockInputs ? { sizeStockInputs } : {}),
-          ...(stock ? { stock } : {}),
-        },
-      ];
-    });
-}
-
-export function colorVariantPhotosReady(
-  variant: ColorVariantUploadDraft,
-): boolean {
-  return Boolean(variant.frontUrl.trim() && variant.backUrl.trim());
-}
 
 export function sanitizeColorGroupId(raw: unknown): string | undefined {
   if (typeof raw !== "string") return undefined;
@@ -208,16 +113,6 @@ function foldTurkishColorKey(name: string): string {
     .replace(/[\u0300-\u036f]/g, "");
 }
 
-export function sanitizeColorHex(raw: string): string {
-  const hex = raw.trim();
-  if (/^#[0-9a-fA-F]{6}$/.test(hex)) return hex.toUpperCase();
-  if (/^#[0-9a-fA-F]{3}$/.test(hex)) {
-    const [, a, b, c] = hex;
-    return `#${a}${a}${b}${b}${c}${c}`.toUpperCase();
-  }
-  return COLOR_GROUP_NEUTRAL_HEX;
-}
-
 export function hexFromTurkishColorName(name: string): string {
   const trimmed = name.replace(/\s+/g, " ").trim();
   if (!trimmed) return COLOR_GROUP_NEUTRAL_HEX;
@@ -241,30 +136,6 @@ export function hexFromTurkishColorName(name: string): string {
 export function colorSwatchFromName(name: string): TrProductColor {
   const trimmed = name.replace(/\s+/g, " ").trim() || "Renk";
   return { name: trimmed, hex: hexFromTurkishColorName(trimmed) };
-}
-
-export function featuresForColorVariant(
-  base: TrProductFeatures,
-  colorName: string,
-): TrProductFeatures {
-  const next: TrProductFeatures = { ...base };
-  const color = colorName.replace(/\s+/g, " ").trim();
-  if (color) next.color = color;
-  delete next.colorGroupId;
-  delete next.colorSiblingIds;
-  return next;
-}
-
-export function constructionImagesForVariant(
-  variant: ColorVariantUploadDraft,
-): string[] {
-  return [variant.frontUrl, variant.backUrl, "", variant.packshotUrl];
-}
-
-export function constructionMarketplaceForVariant(
-  variant: ColorVariantUploadDraft,
-): string[] {
-  return ["", "", "", variant.packshotUrl];
 }
 
 export function resolveColorSiblings<T extends Pick<TrProduct, "id" | "features">>(

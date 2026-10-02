@@ -1,6 +1,6 @@
 # No hardcoded store data: target architecture and plan
 
-_Prepared 2026-09-30 on branch `main-t0o1c2`. **Planning only; nothing here is built.** Mert asked for the architecturally cleanest approach: "no hardcoded stuff". This plan starts from where `docs/fashion-beden-kategori-plan.md` (S1, K1, K2 built) left off. Where it reverses an earlier decision, it says so and lists that as a question._
+_Prepared 2026-09-30 on branch `main-t0o1c2`. **F0 built (2026-09-30); F1–F8 are planning only.** Mert asked for the architecturally cleanest approach: "no hardcoded stuff". This plan starts from where `docs/fashion-beden-kategori-plan.md` (S1, K1, K2 built) left off. Where it reverses an earlier decision, it says so and lists that as a question._
 
 _Revised 2026-09-30 after two decisions from Mert:_
 
@@ -104,7 +104,23 @@ The AI house-model registry (`aiModel/registry.ts`) is also slug-keyed. It leave
 
 Each milestone ships on its own and leaves lilabutik working. The order follows the dependencies. Sizes are S / M / L, where L means a broad storefront + checkout change.
 
-### F0: Park the AI pipeline (S–M)
+### F0: Park the AI pipeline (S–M) — **built 2026-09-30**
+
+**Built:**
+
+- The code is intact at commit `8aba2be` on `main`. The cloud session could only push its working branch, so the named tag is a one-liner for Mert, in `docs/ai-pipeline-v1.md`.
+- The pipeline is documented in `docs/ai-pipeline-v1.md`.
+- **Removed:** the AI libraries and API routes, the AI screens, background removal on upload (Q7), the model plates (`public/tr/ai-models/`), and the plate scripts.
+- **Manual-only now:** the wizard, Toplu ekle and Takım run their existing "Elle ekle" path, so their draft keys were bumped and old AI drafts are dropped.
+- **Fashion editor:**
+  - a hand-added product keeps its plain gallery;
+  - an AI-made product shows its shop gallery read-only, with "Fotoğrafları düzenle" to turn it into a plain list;
+  - nothing changes for existing products until the owner does that.
+- **Other panel changes:** the product list lost "Packshot + model", and the dashboard lost the credits card.
+- The shop's image logic is untouched.
+- Q6 answered: the owner isn't told.
+
+The rest of this section is the plan as approved.
 
 **Why first:**
 
@@ -143,7 +159,7 @@ The prompts and provider clients are the most valuable parts to preserve.
 - all data: AI-made photos stay on products and in the shop; `features.aiModelId` and `tr_ai_usage_events` stay in the DB, unwritten (additive-only);
 - the env vars can stay set in Vercel, unused.
 
-**Open detail (Q7):** the upload route (`/api/tr/owner/upload`) runs Photoroom background removal on front/back photos to make the marketplace cutout (`marketplaceUrl`). It's image processing rather than the generation pipeline. Park it too (uploads keep the original only; existing cutouts stay), or keep it?
+**Q7 (decided: park it).** The upload route (`/api/tr/owner/upload`) ran Photoroom background removal on front/back photos to make the marketplace cutout (`marketplaceUrl`). It is parked with the pipeline: uploads keep the original only, and existing cutouts stay.
 
 **Freeze:** no (panel and owner API only; the shop shows the same images). **lilabutik:** the owner's AI buttons, AI photo steps and credits page disappear until the pipeline returns.
 
@@ -291,7 +307,7 @@ K2 merged + lilabutik on custom categories
 |---|---|---|
 | Wrong kind backfilled, so a product shows the wrong fields | F2 | Generate the SQL from the tested mapping; SELECT counts per kind vs per category; the owner can change a product's kind, and it never deletes values |
 | The owner loses a workflow they rely on | F0, F3 | AI unused for 30 days (checked); tell the owner before F0 ships; lilabutik's owner tries the new editor behind a staff flag before the old flows are removed (as in Area A) |
-| Parked AI code is hard to bring back | F0, §7 | Tag + branch keep it intact; `docs/ai-pipeline-v1.md` records how it worked; the return is designed against the new model rather than restored as-is |
+| Parked AI code is hard to bring back | F0, §7 | Commit `8aba2be` (and the tag, once made) keeps it intact; `docs/ai-pipeline-v1.md` records how it worked; the return is designed against the new model rather than restored as-is |
 | Merging colours loses content | F6 | Checklist per group; merged products are hidden, not deleted; the dry run shows everything first |
 | Old cart lines / pending payments during the cutover | F6 | Map `(productId, size)` → variant via `merged_into` on cart load; old order lines keep the read-only `size` path; quiet-hour cutover |
 | Stock drift | F6 | Single cutover, not dual-write; per-group stock sums checked before and after; old columns no longer written |
@@ -306,9 +322,9 @@ K2 merged + lilabutik on custom categories
 2. **F6 go-ahead:** sizes and colours onto variants for lilabutik, including merging colour groups with the checklist in F6. Recommendation: yes, but last, after F5 has sold a real two-colour test product.
 3. **One category URL** (`/kategori/<slug>`, shop layout, redirects from `?kategori=`). Recommendation: yes, in F1.
 4. **F7** (skin, brand, carrier to the DB) reopens decisions 10–11. Recommendation: schedule it before a second real store onboards.
-5. **Start point:** F0 now, then F1 right after K2 is merged and lilabutik is switched? Recommendation: yes.
-6. **Tell lilabutik's owner before F0 ships** that the AI buttons are paused? Recommendation: yes, you or me drafting a short message.
-7. **Background removal on upload** (Photoroom, marketplace cutouts): park with the pipeline or keep? Recommendation: park it. It is the only AI call left, and keeping it keeps the Photoroom key, costs and failure handling in the upload path. Existing cutouts stay.
+5. **Start point:** F0 is done; F1 right after lilabutik is switched to its own categories (K2 is merged)? Recommendation: yes.
+6. ~~Tell lilabutik's owner before F0 ships?~~ **Decided: no** (Mert, 2026-09-30).
+7. ~~Background removal on upload?~~ **Decided: park it with the pipeline** (Mert, 2026-09-30).
 
 ## 7. Bringing the AI pipeline back (later)
 

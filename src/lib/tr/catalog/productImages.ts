@@ -267,6 +267,15 @@ export function hasRealMarketplaceImagery(
 }
 
 /**
+ * The shop's gallery for a product as stored URLs, in the order the PDP shows them
+ * (before delivery transforms). The editor uses it to turn an AI-made gallery into
+ * a plain photo list that looks the same in the shop.
+ */
+export function shopperGalleryUrls(product: CatalogImageProduct): string[] {
+  return shopperFacingGallery(product);
+}
+
+/**
  * Boutique PDP / Merchant: model shots first when present, then packshot.
  * Owner uploads stay in `images` (panel / orijinaller). Do not prefer leftover
  * storefront WebP copies.

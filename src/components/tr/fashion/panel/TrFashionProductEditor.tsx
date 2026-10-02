@@ -1,20 +1,11 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { useCallback, useMemo, useRef, useState } from "react";
-import {
-  useElbiseRestyleModelLocked,
-  useElbiseRestyleSaved,
-  useOpenElbiseRestyle,
-} from "@/components/tr/fashion/panel/TrOwnerElbiseRestyleSession";
+import { useCallback, useMemo, useState } from "react";
 import { TrCatalogBackgroundPicker } from "@/components/tr/panel/TrCatalogBackgroundPicker";
 import { useUnsavedChangesGuard } from "@/components/tr/panel/TrOwnerLeaveGuard";
-import { TrOwnerAiCatalogEnhance } from "@/components/tr/panel/TrOwnerAiCatalogEnhance";
-import { TrOwnerAiFillListing } from "@/components/tr/panel/TrOwnerAiFillListing";
 import { TrOwnerCategoryPicker } from "@/components/tr/panel/TrOwnerCategoryPicker";
 import { TrOwnerColorGroupLinker } from "@/components/tr/panel/TrOwnerColorGroupLinker";
-import { TrOwnerGuidedPhotoUpload } from "@/components/tr/panel/TrOwnerGuidedPhotoUpload";
-import { TrOwnerManualListingToggle } from "@/components/tr/panel/TrOwnerManualListingToggle";
 import { TrOwnerManualPhotoGallery } from "@/components/tr/panel/TrOwnerManualPhotoGallery";
 import { TrOwnerProductFeaturesFields } from "@/components/tr/panel/TrOwnerProductFeaturesFields";
 import { TrOwnerSizeChartStock } from "@/components/tr/panel/TrOwnerSizeChartStock";
@@ -41,11 +32,7 @@ import {
   panelPrimaryBtnClass,
   panelSecondaryBtnClass,
 } from "@/components/tr/panel/panelUi";
-import {
-  DEFAULT_HOUSE_PHOTOGRAPHY_STYLE,
-  type TrHousePhotographyStyle,
-} from "@/lib/tr/aiModel/registry";
-import { getCatalogBackground } from "@/lib/tr/catalogBackgrounds/registry";
+import { shopperGalleryUrls } from "@/lib/tr/catalog/productImages";
 import { TR_BOUTIQUE_CATEGORIES } from "@/lib/tr/fashion/categories";
 import {
   fashionFormFacts,
@@ -58,28 +45,17 @@ import {
   type FashionProductFormState,
   type FashionServerSavedFields,
 } from "@/lib/tr/fashion/productForm";
-import {
-  deleteOwnerProduct,
-  fetchOwnerProduct,
-  type OwnerListingDraft,
-  updateOwnerProduct,
-} from "@/lib/tr/ownerClient";
+import { deleteOwnerProduct, updateOwnerProduct } from "@/lib/tr/ownerClient";
 import {
   clampDescription,
-  clampTitle,
   sanitizeColorName,
   TR_OWNER_PRODUCT_LIMITS,
 } from "@/lib/tr/ownerProductConstraints";
 import { toast } from "@/lib/tr/panel/toast";
-import { hasRequiredProductPhotos } from "@/lib/tr/productPhotoChecks";
 import { findSizeSource, NO_SIZE_SOURCE, type TrSizeSource } from "@/lib/tr/sizeSources";
 import { switchStockInputs } from "@/lib/tr/sizeStockInputs";
 import { slugify } from "@/lib/tr/seo/slug";
-import type {
-  TrProduct,
-  TrProductColor,
-  TrProductFeatures,
-} from "@/types/tr-marketplace";
+import type { TrProduct, TrProductColor } from "@/types/tr-marketplace";
 
 const PRESET_COLORS: TrProductColor[] = [
   { name: "Siyah", hex: "#1A1A1A" },
@@ -100,21 +76,24 @@ const EDIT_TABS = [
   { id: "editor-envanter", label: "Envanter" },
 ] as const;
 
-/** Keep the garment markers an AI listing draft must not overwrite. */
-function withDraftFeatures(
-  current: TrProductFeatures,
-  draft: TrProductFeatures,
-): TrProductFeatures {
-  return {
-    ...draft,
-    ...(current.uploadKind
-      ? { uploadKind: current.uploadKind, setItems: current.setItems }
-      : {}),
-    ...(current.aiModelId ? { aiModelId: current.aiModelId } : {}),
-    ...(current.lifestyleModelIds?.length
-      ? { lifestyleModelIds: current.lifestyleModelIds }
-      : {}),
-  };
+/** Read-only thumbnails of photos the editor doesn't change directly. */
+function PhotoStrip({ urls }: { urls: string[] }) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {urls
+        .filter((url) => Boolean(url?.trim()))
+        .slice(0, 8)
+        .map((src) => (
+          <div
+            key={src}
+            className="relative h-24 w-16 overflow-hidden rounded-lg bg-neutral-100"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={src} alt="" className="h-full w-full object-contain p-1" />
+          </div>
+        ))}
+    </div>
+  );
 }
 
 function OptionToggle({
@@ -152,10 +131,13 @@ function OptionToggle({
  * Ctrl/Cmd+S) and asks before leaving with unsaved edits, like every other panel form.
  * The form rules and the save body are in `lib/tr/fashion/productForm.ts`.
  *
- * Some actions save on the server by themselves (packshot + model restyle, model
- * photos, colour group). Their result is folded into the form's baseline with
- * `rebaseFashionForm`, so it isn't reported as unsaved and a later Kaydet doesn't undo
- * it, while the owner's own unsaved edits are kept.
+ * Photos: a product added by hand has a plain gallery. A product whose shop photos
+ * were made by the (parked) AI pipeline keeps them as they are until the owner chooses
+ * "Fotoğrafları düzenle", which turns the shop's current gallery into a plain list.
+ *
+ * Linking a colour group saves on the server by itself; its result is folded into the
+ * form's baseline with `rebaseFashionForm`, so it isn't reported as unsaved and a later
+ * Kaydet doesn't undo it, while the owner's own unsaved edits are kept.
  */
 type FashionProductEditorProps = {
   boutiqueId: string;
@@ -192,9 +174,6 @@ function FashionProductEditorForm({
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [savedOnce, setSavedOnce] = useState(false);
-  const [listingDraft, setListingDraft] = useState<OwnerListingDraft | null>(null);
-  const [photographyStyle, setPhotographyStyle] =
-    useState<TrHousePhotographyStyle>(DEFAULT_HOUSE_PHOTOGRAPHY_STYLE);
   const [lightbox, setLightbox] = useState<{ src: string; label: string } | null>(
     null,
   );
@@ -226,69 +205,41 @@ function FashionProductEditorForm({
   const change = useCallback((patch: Partial<FashionProductFormState>) => {
     setState((current) => ({ ...current, form: { ...current.form, ...patch } }));
   }, []);
-  const changeFeatures = useCallback(
-    (next: (current: TrProductFeatures) => TrProductFeatures) => {
-      setState((current) => ({
-        ...current,
-        form: { ...current.form, features: next(current.form.features) },
-      }));
-    },
-    [],
-  );
-
   /** An action saved these fields on the server: make them the baseline. */
   const rebase = useCallback((server: FashionServerSavedFields) => {
     setState((current) => rebaseFashionForm(current, server));
   }, []);
 
-  // Model photos (generated or deleted) are written to the product by the server; its
-  // exact result (images + the model ids in features) is read back and rebased.
-  const refreshSeq = useRef(0);
-  const refreshServerSaved = useCallback(() => {
-    const seq = ++refreshSeq.current;
-    void fetchOwnerProduct(initialProduct.id)
-      .then(({ product }) => {
-        if (seq !== refreshSeq.current) return;
-        rebase(fashionServerSavedFields(product, ["lifestyleImages", "features"]));
-        onSaved(product);
-      })
-      .catch(() => {
-        // The photos are in the form already; Kaydet would save them anyway.
-      });
-  }, [initialProduct.id, onSaved, rebase]);
-
-  const { takim, family, elbise, requiredPhotoSlots } = fashionFormFacts(form);
-  const catalogBackground = getCatalogBackground(form.catalogBackgroundId);
-  const selectedModelId = form.features.aiModelId?.trim() || null;
+  const { takim, elbise, family } = fashionFormFacts(form);
   const stockTotal = fashionFormStock(form);
-
-  const selectAiModel = useCallback(
-    (id: string | null) => {
-      changeFeatures((current) => {
-        const next = { ...current };
-        const trimmed = id?.trim() || "";
-        if (trimmed) next.aiModelId = trimmed;
-        else delete next.aiModelId;
-        return next;
-      });
-    },
-    [changeFeatures],
+  // What the shop shows for an AI-made product (model shots, then packshots).
+  const shopGallery = useMemo(
+    () =>
+      shopperGalleryUrls({
+        images: form.images,
+        marketplaceImages: form.marketplaceImages,
+        lifestyleImages: form.lifestyleImages,
+        features: form.features,
+      }),
+    [form.images, form.marketplaceImages, form.lifestyleImages, form.features],
   );
+  const hasGeneratedImages =
+    form.marketplaceImages.some((url) => url?.trim()) ||
+    form.lifestyleImages.some((url) => url?.trim());
 
-  const openRestyle = useOpenElbiseRestyle();
-  useElbiseRestyleModelLocked(selectAiModel);
-  useElbiseRestyleSaved((saved) => {
-    if (saved.id !== initialProduct.id) return;
-    rebase(
-      fashionServerSavedFields(saved, [
-        "images",
-        "marketplaceImages",
-        "lifestyleImages",
-        "features",
-      ]),
-    );
-    onSaved(saved);
-  });
+  /**
+   * An AI-made product's photos become a plain list: the shop's current gallery, in
+   * its order. Saved with Kaydet like any other edit; until then it can be undone by
+   * leaving without saving.
+   */
+  const editGeneratedPhotos = () => {
+    change({
+      manualMode: true,
+      images: shopGallery,
+      marketplaceImages: [],
+      lifestyleImages: [],
+    });
+  };
 
   const categoryOptions = useMemo(() => {
     const seen = new Set(TR_BOUTIQUE_CATEGORIES.map((entry) => entry.id));
@@ -437,40 +388,6 @@ function FashionProductEditorForm({
           title="Temel bilgi"
           hint="Mağazada görünen ad, fiyat ve satış durumu."
         >
-          {form.manualMode ? null : (
-            <TrOwnerAiFillListing
-              boutiqueId={boutiqueId}
-              sourceImageUrl={form.images[0]?.trim() || null}
-              backImageUrl={elbise ? form.images[1]?.trim() || null : null}
-              detailImageUrl={elbise ? form.images[2]?.trim() || null : null}
-              category={form.category}
-              uploadType={family}
-              cachedDraft={listingDraft}
-              onError={(message) => {
-                if (message) toast.error(message);
-              }}
-              onApply={(draft) => {
-                setState((current) => ({
-                  ...current,
-                  form: {
-                    ...current.form,
-                    title: clampTitle(draft.title),
-                    description: clampDescription(draft.description),
-                    ...(draft.features
-                      ? {
-                          features: withDraftFeatures(
-                            current.form.features,
-                            draft.features,
-                          ),
-                        }
-                      : {}),
-                    ...(draft.category ? { category: draft.category } : {}),
-                  },
-                }));
-                setListingDraft(draft);
-              }}
-            />
-          )}
           <TrPanelProductTitleField
             value={form.title}
             onChange={(title) => change({ title })}
@@ -507,157 +424,62 @@ function FashionProductEditorForm({
           title="Medya"
           hint="Fotoğraflar mağazada bu sırayla görünür."
         >
-          <TrOwnerManualListingToggle
-            checked={form.manualMode}
-            onChange={(manualMode) => change({ manualMode })}
-          />
-          <p className={panelHintClass}>
-            {takim
-              ? "Takım görselleri bu sihirbazda değiştirilmez. Yeni packshot / model için Takım yükle akışını kullanın."
-              : form.manualMode
-                ? "Fotoğraflar sitede bu sırayla görünür. En az bir kare."
-                : elbise
-                  ? "Ön ve arka manken zorunlu; dekolte / detay isteğe bağlı. Packshot ön+arka tamamınca üretilir."
-                  : "Önce ön, sonra arka — her fotoğraf önizlenir."}
-          </p>
-
           {takim ? (
-            <div className="flex flex-wrap gap-2">
-              {[...form.lifestyleImages, ...form.marketplaceImages, ...form.images]
-                .filter((url) => Boolean(url?.trim()))
-                .slice(0, 8)
-                .map((src) => (
-                  <div
-                    key={src}
-                    className="relative h-24 w-16 overflow-hidden rounded-lg bg-neutral-100"
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={src} alt="" className="h-full w-full object-contain p-1" />
-                  </div>
-                ))}
-            </div>
-          ) : form.manualMode ? (
-            <TrOwnerManualPhotoGallery
-              boutiqueId={boutiqueId}
-              images={form.images}
-              onImagesChange={(images) => change({ images })}
-              onError={(message) => {
-                if (message) toast.error(message);
-              }}
-              onLightbox={setLightbox}
-              disabled={saving}
-              uploading={uploading}
-              onUploadingChange={setUploading}
-            />
-          ) : (
-            <TrOwnerGuidedPhotoUpload
-              boutiqueId={boutiqueId}
-              images={form.images}
-              marketplaceImages={form.marketplaceImages}
-              catalogBackgroundCss={elbise ? undefined : catalogBackground.css}
-              title={form.title}
-              category={form.category}
-              productId={initialProduct.id}
-              uploadType={family}
-              features={form.features}
-              listingDraft={listingDraft}
-              onUploadingChange={setUploading}
-              onImagesChange={(images) => change({ images })}
-              onMarketplaceImagesChange={(marketplaceImages) =>
-                change({ marketplaceImages })
-              }
-              onError={(message) => {
-                if (message) toast.error(message);
-              }}
-              onLightbox={setLightbox}
-              onListingDraft={(draft) => {
-                setListingDraft(draft);
-                if (draft.features) {
-                  changeFeatures((current) =>
-                    withDraftFeatures(current, draft.features!),
-                  );
-                }
-              }}
-            />
-          )}
-
-          {takim ||
-          form.manualMode ||
-          !hasRequiredProductPhotos(form.images, requiredPhotoSlots) ? null : (
-            <div className="space-y-6 rounded-xl border border-[color:var(--panel-accent-border)] bg-[color:var(--panel-accent-soft)] p-4 sm:p-5">
-              <TrOwnerAiCatalogEnhance
-                boutiqueId={boutiqueId}
-                boutiqueSlug={boutiqueSlug}
-                productId={initialProduct.id}
-                title={form.title}
-                category={form.category}
-                images={form.images}
-                marketplaceImages={form.marketplaceImages}
-                lifestyleImages={form.lifestyleImages}
-                selectedModelId={selectedModelId}
-                onSelectedModelIdChange={selectAiModel}
-                photographyStyle={photographyStyle}
-                onPhotographyStyleChange={setPhotographyStyle}
-                onMarketplaceImagesChange={(marketplaceImages) =>
-                  change({ marketplaceImages })
-                }
-                onLifestyleImagesChange={(lifestyleImages) => {
-                  // Model photos are saved on the product by the server.
-                  change({ lifestyleImages });
-                  refreshServerSaved();
-                }}
-                onFeaturesChange={(features) => change({ features })}
-                onListingDraft={setListingDraft}
-                disabled={busy}
-                skipPackshot={elbise}
-                features={form.features}
-                uploadType={family}
+            <>
+              <p className={panelHintClass}>
+                Takım görselleri burada değiştirilmez.
+              </p>
+              <PhotoStrip
+                urls={[
+                  ...form.lifestyleImages,
+                  ...form.marketplaceImages,
+                  ...form.images,
+                ]}
               />
-              {elbise ? (
-                <div className="space-y-2">
-                  <button
-                    type="button"
-                    className={panelPrimaryBtnClass}
-                    disabled={busy}
-                    onClick={() =>
-                      openRestyle?.({
-                        boutiqueId,
-                        boutiqueSlug,
-                        products: [
-                          {
-                            ...initialProduct,
-                            title: form.title.trim() || initialProduct.title,
-                            category: form.category,
-                            images: form.images,
-                            marketplaceImages: form.marketplaceImages,
-                            lifestyleImages: form.lifestyleImages,
-                            features: form.features,
-                          },
-                        ],
-                        initiallyCheckedIds: [initialProduct.id],
-                        initialModelId: selectedModelId,
-                      })
-                    }
-                  >
-                    Packshot + modeli yenile
-                  </button>
-                  <p className={panelHintClass}>
-                    Seçili model kullanılır. Chip onayı → ön packshot → model
-                    kareleri. Askı fotoğrafları aynı kalır. Sonuç ürüne hemen
-                    kaydedilir.
-                  </p>
-                </div>
-              ) : null}
-              {!elbise &&
-              (form.marketplaceImages.some((url) => url?.trim()) ||
-                form.lifestyleImages.length > 0) ? (
+            </>
+          ) : form.manualMode ? (
+            <>
+              <p className={panelHintClass}>
+                Fotoğraflar sitede bu sırayla görünür. En az bir kare.
+              </p>
+              <TrOwnerManualPhotoGallery
+                boutiqueId={boutiqueId}
+                images={form.images}
+                onImagesChange={(images) => change({ images })}
+                onError={(message) => {
+                  if (message) toast.error(message);
+                }}
+                onLightbox={setLightbox}
+                disabled={saving}
+                uploading={uploading}
+                onUploadingChange={setUploading}
+              />
+            </>
+          ) : (
+            <>
+              <p className={panelHintClass}>
+                Bu ürünün mağaza görselleri (packshot ve model kareleri) otomatik
+                hazırlandı ve olduğu gibi kalır. Değiştirmek için “Fotoğrafları
+                düzenle”ye basın: mağazadaki kareler bu sırayla listeye alınır;
+                sonra ekleyip çıkarabilir, sırasını değiştirebilirsiniz.
+              </p>
+              <PhotoStrip urls={shopGallery} />
+              <button
+                type="button"
+                className={panelSecondaryBtnClass}
+                disabled={busy || shopGallery.length === 0}
+                onClick={editGeneratedPhotos}
+              >
+                Fotoğrafları düzenle
+              </button>
+              {!elbise && hasGeneratedImages ? (
                 <TrCatalogBackgroundPicker
                   value={form.catalogBackgroundId}
                   onChange={(catalogBackgroundId) => change({ catalogBackgroundId })}
                   disabled={busy}
                 />
               ) : null}
-            </div>
+            </>
           )}
         </TrPanelEditorCard>
 

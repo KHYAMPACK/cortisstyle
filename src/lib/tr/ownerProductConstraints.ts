@@ -36,11 +36,6 @@ export function productPhotoRoleLabel(role: TrProductPhotoRole): string {
   return "Ek fotoğraf";
 }
 
-/** Whether the Nth uploaded slot (0-based) should run Photoroom cutout. */
-export function shouldRemoveBackgroundForSlot(slotIndex: number): boolean {
-  return slotIndex < TR_OWNER_PRODUCT_LIMITS.cutoutPhotoSlots;
-}
-
 /** Digits + optional single decimal separator (`.` or `,`). */
 export function sanitizeTryPriceInput(raw: string): string {
   const cleaned = raw.replace(/[^\d.,]/g, "");

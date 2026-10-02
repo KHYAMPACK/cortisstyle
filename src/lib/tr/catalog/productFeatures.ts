@@ -108,56 +108,6 @@ export function sanitizeLifestyleModelIds(raw: unknown): string[] | undefined {
   return ids.some(Boolean) ? ids : undefined;
 }
 
-/** Model that produced lifestyle shot `index`. Falls back to product-level id. */
-export function lifestyleModelIdAt(
-  features: TrProductFeatures | null | undefined,
-  index: number,
-): string | undefined {
-  const ids = features?.lifestyleModelIds;
-  const at = sanitizeAiModelId(
-    typeof ids?.[index] === "string" ? ids[index] : null,
-  );
-  if (at) return at;
-  return sanitizeAiModelId(features?.aiModelId);
-}
-
-export function withLifestyleModelShot(
-  features: TrProductFeatures | null | undefined,
-  index: number,
-  modelId: string,
-  totalShots: number,
-): TrProductFeatures {
-  const id = sanitizeAiModelId(modelId);
-  const next: TrProductFeatures = { ...(features ?? {}) };
-  if (!id) return next;
-  const count = Math.max(1, Math.min(3, totalShots));
-  const ids = Array.from({ length: count }, (_, slot) => {
-    return (
-      sanitizeAiModelId(next.lifestyleModelIds?.[slot]) ||
-      sanitizeAiModelId(next.aiModelId) ||
-      ""
-    );
-  });
-  while (ids.length <= index) ids.push("");
-  ids[index] = id;
-  next.lifestyleModelIds = ids;
-  return next;
-}
-
-export function withLifestyleModelsAll(
-  features: TrProductFeatures | null | undefined,
-  modelId: string,
-  shotCount: number,
-): TrProductFeatures {
-  const id = sanitizeAiModelId(modelId);
-  const next: TrProductFeatures = { ...(features ?? {}) };
-  if (!id || shotCount < 1) return next;
-  const count = Math.min(3, shotCount);
-  next.aiModelId = id;
-  next.lifestyleModelIds = Array.from({ length: count }, () => id);
-  return next;
-}
-
 export function hasLifestyleModelRecord(
   features: TrProductFeatures | null | undefined,
 ): boolean {

@@ -60,9 +60,7 @@ export function TrOwnerManualPhotoGallery({
     try {
       for (let i = 0; i < batch.length; i += 1) {
         setBusyIndex(next.length);
-        const uploaded = await uploadOwnerProductImage(boutiqueId, batch[i]!, {
-          removeBackground: false,
-        });
+        const uploaded = await uploadOwnerProductImage(boutiqueId, batch[i]!);
         next = compactUrls([...next, uploaded.url]);
         onImagesChange(next);
       }

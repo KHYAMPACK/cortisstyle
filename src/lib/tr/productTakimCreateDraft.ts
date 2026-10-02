@@ -1,29 +1,19 @@
 /**
- * Client-side draft for Takım yükleme (two garments → one listing).
+ * Client-side draft for Takım yükleme (a two-piece set saved as one product).
+ *
+ * v2 is the manual flow (photos → listing → prices → stock → preview). Older drafts
+ * are ignored and removed.
  */
 
-import { DEFAULT_CATALOG_BACKGROUND_ID } from "@/lib/tr/catalogBackgrounds/registry";
-import type { OwnerListingDraft } from "@/lib/tr/ownerClient";
-import {
-  clampDescription,
-  clampTitle,
-} from "@/lib/tr/ownerProductConstraints";
 import { BUILT_IN_SIZE_SOURCES, findSizeSource } from "@/lib/tr/sizeSources";
 import { emptyStockInputs } from "@/lib/tr/sizeStockInputs";
-import {
-  isTakimShopLeaf,
-  type ConstructionCatalogFamily,
-} from "@/lib/tr/fashion/garmentUploadTypes";
-import type { TakimGateChips } from "@/lib/tr/fashion/takimUpload";
 import type { TrProductFeatures } from "@/types/tr-marketplace";
 
-export const PRODUCT_TAKIM_CREATE_DRAFT_VERSION = 1 as const;
+export const PRODUCT_TAKIM_CREATE_DRAFT_VERSION = 2 as const;
 
 export const TAKIM_CREATE_STEPS = [
   "photos",
-  "chips",
   "listing",
-  "models",
   "prices",
   "stock",
   "preview",
@@ -31,29 +21,11 @@ export const TAKIM_CREATE_STEPS = [
 
 export type TakimCreateStepId = (typeof TAKIM_CREATE_STEPS)[number];
 
-export interface TakimItemDraft {
-  clientId: string;
-  title: string;
-  description: string;
-  features?: TrProductFeatures;
-  category: string | null;
-  images: string[];
-  marketplaceImages: string[];
-  listingDraft: OwnerListingDraft | null;
-  frontAnalysisDone: boolean;
-  frontDraftFailed: boolean;
-  uploadType: ConstructionCatalogFamily | null;
-  gateChips?: TakimGateChips;
-  proposedChips?: TakimGateChips;
-  preparedPrompt?: string;
-  packshotError?: string | null;
-}
-
-export interface ProductTakimCreateDraftV1 {
+export interface ProductTakimCreateDraft {
   version: typeof PRODUCT_TAKIM_CREATE_DRAFT_VERSION;
   updatedAt: number;
   stepIndex: number;
-  items: [TakimItemDraft, TakimItemDraft];
+  images: string[];
   title: string;
   description: string;
   features: TrProductFeatures;
@@ -64,44 +36,26 @@ export interface ProductTakimCreateDraftV1 {
   /** A size source id (Beden type, `letter` / `numeric`) or `none`; resolved by the page. */
   sizeChart: string;
   sizeStockInputs: Record<string, string>;
-  lifestyleImages: string[];
-  catalogBackgroundId: string;
-  selectedModelId: string | null;
-  /** Skip Gemini / FASHN / Photoroom — owner fills fields. */
-  manualMode?: boolean;
 }
 
+export type ProductTakimCreateFields = Omit<
+  ProductTakimCreateDraft,
+  "version" | "updatedAt"
+>;
+
 function storageKey(boutiqueId: string): string {
+  return `tr:product-create-takim-draft:v2:${boutiqueId.trim()}`;
+}
+
+/** The AI-era draft (v1): never restored, removed when a new draft is cleared. */
+function legacyStorageKey(boutiqueId: string): string {
   return `tr:product-create-takim-draft:v1:${boutiqueId.trim()}`;
 }
 
-export function createEmptyTakimItem(): TakimItemDraft {
-  return {
-    clientId: crypto.randomUUID(),
-    title: "",
-    description: "",
-    features: {},
-    category: null,
-    images: [],
-    marketplaceImages: [],
-    listingDraft: null,
-    frontAnalysisDone: false,
-    frontDraftFailed: false,
-    uploadType: null,
-    gateChips: undefined,
-    proposedChips: undefined,
-    preparedPrompt: "",
-    packshotError: null,
-  };
-}
-
-export function createEmptyTakimDraft(): Omit<
-  ProductTakimCreateDraftV1,
-  "version" | "updatedAt"
-> {
+export function createEmptyTakimDraft(): ProductTakimCreateFields {
   return {
     stepIndex: 0,
-    items: [createEmptyTakimItem(), createEmptyTakimItem()],
+    images: [],
     title: "",
     description: "",
     features: {},
@@ -112,78 +66,36 @@ export function createEmptyTakimDraft(): Omit<
     sizeChart: "letter",
     // The built-in letter list until the page resolves the boutique's Beden types.
     sizeStockInputs: emptyStockInputs(findSizeSource(BUILT_IN_SIZE_SOURCES, "letter"), "0"),
-    lifestyleImages: [],
-    catalogBackgroundId: DEFAULT_CATALOG_BACKGROUND_ID,
-    selectedModelId: null,
-  };
-}
-
-export function applyTakimItemListingDraft(
-  item: TakimItemDraft,
-  draft: OwnerListingDraft,
-): Partial<TakimItemDraft> {
-  const nextCategory = draft.category ?? item.category;
-  return {
-    title: clampTitle(draft.title),
-    description: clampDescription(draft.description ?? ""),
-    features: draft.features ?? item.features,
-    category: isTakimShopLeaf(nextCategory) ? null : nextCategory,
-    listingDraft: draft,
   };
 }
 
 export function takimDraftHasProgress(
-  draft: Pick<ProductTakimCreateDraftV1, "items" | "title" | "priceTry">,
+  draft: Pick<ProductTakimCreateDraft, "images" | "title" | "priceTry">,
 ): boolean {
   return (
     Boolean(draft.title.trim()) ||
     Boolean(draft.priceTry.trim()) ||
-    draft.items.some(
-      (item) =>
-        item.images.some((url) => Boolean(url?.trim())) ||
-        item.marketplaceImages.some((url) => Boolean(url?.trim())) ||
-        Boolean(item.title.trim()),
-    )
-  );
-}
-
-function isTakimItem(value: unknown): value is TakimItemDraft {
-  if (!value || typeof value !== "object") return false;
-  const item = value as TakimItemDraft;
-  return (
-    typeof item.clientId === "string" &&
-    item.clientId.trim().length > 0 &&
-    Array.isArray(item.images)
+    draft.images.some((url) => Boolean(url?.trim()))
   );
 }
 
 export function readProductTakimCreateDraft(
   boutiqueId: string,
-): ProductTakimCreateDraftV1 | null {
+): ProductTakimCreateDraft | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = window.localStorage.getItem(storageKey(boutiqueId));
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as ProductTakimCreateDraftV1;
+    const parsed = JSON.parse(raw) as ProductTakimCreateDraft;
     if (parsed?.version !== PRODUCT_TAKIM_CREATE_DRAFT_VERSION) return null;
-    if (
-      !Array.isArray(parsed.items) ||
-      parsed.items.length !== 2 ||
-      !parsed.items.every(isTakimItem)
-    ) {
-      return null;
-    }
+    if (!Array.isArray(parsed.images)) return null;
     const stepIndex = Number.isFinite(parsed.stepIndex)
       ? Math.min(
           Math.max(0, Math.floor(parsed.stepIndex)),
           TAKIM_CREATE_STEPS.length - 1,
         )
       : 0;
-    return {
-      ...parsed,
-      items: [parsed.items[0]!, parsed.items[1]!],
-      stepIndex,
-    };
+    return { ...parsed, stepIndex };
   } catch {
     return null;
   }
@@ -191,10 +103,10 @@ export function readProductTakimCreateDraft(
 
 export function writeProductTakimCreateDraft(
   boutiqueId: string,
-  input: Omit<ProductTakimCreateDraftV1, "version" | "updatedAt">,
+  input: ProductTakimCreateFields,
 ): void {
   if (typeof window === "undefined") return;
-  const payload: ProductTakimCreateDraftV1 = {
+  const payload: ProductTakimCreateDraft = {
     version: PRODUCT_TAKIM_CREATE_DRAFT_VERSION,
     updatedAt: Date.now(),
     ...input,
@@ -214,6 +126,7 @@ export function clearProductTakimCreateDraft(boutiqueId: string): void {
   if (typeof window === "undefined") return;
   try {
     window.localStorage.removeItem(storageKey(boutiqueId));
+    window.localStorage.removeItem(legacyStorageKey(boutiqueId));
   } catch {
     // ignore
   }

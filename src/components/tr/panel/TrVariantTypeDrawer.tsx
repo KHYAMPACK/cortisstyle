@@ -184,9 +184,7 @@ export function TrVariantTypeDrawer({
     if (!key) return;
     setUploadingKey(key);
     try {
-      const uploaded = await uploadOwnerProductImage(boutiqueId, file, {
-        removeBackground: false,
-      });
+      const uploaded = await uploadOwnerProductImage(boutiqueId, file);
       updateValue(key, { imageUrl: uploaded.url });
     } catch (uploadError) {
       toast.error(uploadError, "Görsel yüklenemedi.");

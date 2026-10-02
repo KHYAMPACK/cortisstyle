@@ -79,18 +79,6 @@ export const TR_CATALOG_BACKGROUNDS: readonly TrCatalogBackground[] = [
 
 export const DEFAULT_CATALOG_BACKGROUND_ID = "studio-white";
 
-export function getCatalogBackground(
-  id: string | null | undefined,
-): TrCatalogBackground {
-  const found = TR_CATALOG_BACKGROUNDS.find((entry) => entry.id === id);
-  return (
-    found ??
-    TR_CATALOG_BACKGROUNDS.find(
-      (entry) => entry.id === DEFAULT_CATALOG_BACKGROUND_ID,
-    )!
-  );
-}
-
 export function isCatalogBackgroundId(id: string): boolean {
   return TR_CATALOG_BACKGROUNDS.some((entry) => entry.id === id);
 }

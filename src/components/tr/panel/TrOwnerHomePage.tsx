@@ -9,7 +9,6 @@ import { TrDashboardToolbar } from "@/components/tr/panel/dashboard/TrDashboardT
 import { TrDashboardTopSellers } from "@/components/tr/panel/dashboard/TrDashboardTopSellers";
 import { TrDashboardTrendCard } from "@/components/tr/panel/dashboard/TrDashboardTrendCard";
 import type { TrDashboardMetricId } from "@/components/tr/panel/dashboard/dashboardFormat";
-import { TrOwnerCreditsUsageCard } from "@/components/tr/panel/TrOwnerCreditsInfo";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
 import { panelErrorClass, panelSecondaryBtnClass } from "@/components/tr/panel/panelUi";
 import { usePanelStoredFlag } from "@/components/tr/panel/panelStoredFlag";
@@ -127,19 +126,10 @@ function HomeDashboard({
             <TrDashboardTopSellers dashboard={dashboard} compare={compare} />
             <TrDashboardGrowth dashboard={dashboard} compare={compare} />
           </div>
-          <div
-            className={`grid gap-4 ${
-              printOnDemand ? "" : "lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]"
-            }`}
-          >
-            <TrDashboardRecentOrders
-              boutiqueId={boutiqueId}
-              offersIyzicoCheckout={offersIyzicoCheckout}
-            />
-            {!printOnDemand ? (
-              <TrOwnerCreditsUsageCard boutiqueId={boutiqueId} />
-            ) : null}
-          </div>
+          <TrDashboardRecentOrders
+            boutiqueId={boutiqueId}
+            offersIyzicoCheckout={offersIyzicoCheckout}
+          />
           {/* Keeps the last card clear of the floating action bar. */}
           <div className="h-14" aria-hidden />
         </div>

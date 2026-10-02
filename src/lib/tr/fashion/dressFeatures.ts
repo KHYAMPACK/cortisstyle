@@ -3,7 +3,7 @@ import {
   type ConstructionCatalogFamily,
 } from "@/lib/tr/fashion/garmentUploadTypes";
 
-/** Structured elbise / üst giyim PDP chips — Gemini suggests ids, we store Turkish labels. */
+/** Structured elbise / üst giyim PDP chips: option ids, stored as Turkish labels. */
 
 export type DressFeatureKey =
   | "neckline"
@@ -30,7 +30,7 @@ export interface DressFeatureGroup {
   key: DressFeatureKey;
   label: string;
   options: DressFeatureOption[];
-  /** Owner can leave empty / Gemini omits when not visible. */
+  /** Owner can leave it empty. */
   optional?: boolean;
 }
 
@@ -284,7 +284,7 @@ export function dressFeatureLabel(
   return option?.label ?? value;
 }
 
-/** Map Gemini id or owner chip to the stored Turkish label. */
+/** Map an option id or owner chip to the stored Turkish label. */
 export function resolveDressFeatureValue(
   key: DressFeatureKey,
   raw: string | null | undefined,
@@ -338,36 +338,13 @@ export function getConstructionFeatureGroups(
   return groups;
 }
 
-export function dressGeminiEnumHint(
-  family: ConstructionCatalogFamily = "elbise",
-  category?: string | null,
-): string {
-  return getConstructionFeatureGroups(family, category).map((group) => {
-    const ids = group.options.map((option) => option.id).join(" | ");
-    const omit = group.optional ? " (omit if not visible)" : "";
-    return `- ${group.key}: ${ids}${omit}`;
-  }).join("\n");
-}
-
 export function getDressFeatureGroup(
   key: DressFeatureKey,
 ): DressFeatureGroup | null {
   return DRESS_FEATURE_GROUPS.find((group) => group.key === key) ?? null;
 }
 
-export function getConstructionGateGroup(
-  key: DressFeatureKey,
-  family: ConstructionCatalogFamily = "elbise",
-  category?: string | null,
-): DressFeatureGroup | null {
-  return (
-    getConstructionFeatureGroups(family, category).find(
-      (group) => group.key === key,
-    ) ?? null
-  );
-}
-
-/** Chip id from Gemini id or stored Turkish label. */
+/** Chip id from an option id or stored Turkish label. */
 export function dressFeatureOptionId(
   key: DressFeatureKey,
   raw: string | null | undefined,
@@ -378,114 +355,4 @@ export function dressFeatureOptionId(
     OPTION_BY_KEY.get(key)?.get(value) ??
     OPTION_BY_KEY.get(key)?.get(value.toLocaleLowerCase("tr"));
   return option?.id ?? null;
-}
-
-/** Stored label for no decollete — used when the owner skipped the 3rd photo. */
-export function decolleteNoneLabel(): string {
-  return resolveDressFeatureValue("decollete", "yok") || "Yok";
-}
-
-export type ConstructionGateKey =
-  | "length"
-  | "neckline"
-  | "sleeves"
-  | "fit"
-  | "decollete"
-  | "rise"
-  | "hem";
-
-/** Boy / yaka / kol / detay shown before FASHN. Tops also require Kalıp. */
-export const DRESS_PACKSHOT_GATE_GROUPS: Array<{
-  key: ConstructionGateKey;
-  label: string;
-  required: boolean;
-}> = [
-  { key: "length", label: "Boy", required: true },
-  { key: "neckline", label: "Yaka", required: true },
-  { key: "sleeves", label: "Kol", required: true },
-  { key: "decollete", label: "Detay", required: false },
-];
-
-export function getConstructionPackshotGateGroups(
-  family: ConstructionCatalogFamily = "elbise",
-  category?: string | null,
-  hasDetailPhoto = true,
-): Array<{
-  key: ConstructionGateKey;
-  label: string;
-  required: boolean;
-}> {
-  if (family === "alt-giyim") {
-    const groups: Array<{
-      key: ConstructionGateKey;
-      label: string;
-      required: boolean;
-    }> = [
-      { key: "length", label: "Boy", required: true },
-      { key: "rise", label: "Bel", required: true },
-      { key: "fit", label: "Kalıp", required: true },
-    ];
-    if (altGiyimUsesPaca(category)) {
-      groups.push({ key: "hem", label: "Paça", required: true });
-    }
-    return groups;
-  }
-  if (family === "ust-giyim") {
-    const groups: Array<{
-      key: ConstructionGateKey;
-      label: string;
-      required: boolean;
-    }> = [
-      { key: "length", label: "Boy", required: true },
-      { key: "neckline", label: "Yaka", required: true },
-      { key: "sleeves", label: "Kol", required: true },
-      { key: "fit", label: "Kalıp", required: true },
-    ];
-    if (hasDetailPhoto) {
-      groups.push({ key: "decollete", label: "Detay", required: false });
-    }
-    return groups;
-  }
-  return hasDetailPhoto
-    ? DRESS_PACKSHOT_GATE_GROUPS
-    : DRESS_PACKSHOT_GATE_GROUPS.filter((group) => group.key !== "decollete");
-}
-
-/** Owner-facing required-chip list for gate copy. */
-export function constructionGateRequiredCopy(
-  family: ConstructionCatalogFamily,
-  category?: string | null,
-): string {
-  if (family === "alt-giyim") {
-    return altGiyimUsesPaca(category)
-      ? "Boy, bel, kalıp ve paça"
-      : "Boy, bel ve kalıp";
-  }
-  if (family === "ust-giyim") return "Boy, yaka, kol ve kalıp";
-  return "Boy, yaka ve kol";
-}
-
-const SLEEVELESS_NECKLINE_IDS = new Set([
-  "straplez",
-  "ince-aski",
-  "halter",
-  "tek-omuz",
-]);
-
-/** Preselect Kolsuz for straplez / askı / halter / tek omuz when Kol is empty. */
-export function defaultSleevesForNeckline(
-  neckline: string | null | undefined,
-): string {
-  const id = dressFeatureOptionId("neckline", neckline);
-  if (!id || !SLEEVELESS_NECKLINE_IDS.has(id)) return "";
-  return resolveDressFeatureValue("sleeves", "kolsuz");
-}
-
-export function withDefaultSleeves<
-  T extends { neckline?: string | null; sleeves?: string | null },
->(chips: T): T {
-  if (chips.sleeves?.trim()) return chips;
-  const sleeves = defaultSleevesForNeckline(chips.neckline);
-  if (!sleeves) return chips;
-  return { ...chips, sleeves };
 }

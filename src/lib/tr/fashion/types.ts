@@ -50,8 +50,9 @@ export type TrFashionProductFeatures = {
   uploadKind?: "takim";
   setItems?: TrTakimSetItem[];
   /**
-   * Owner bypassed Gemini / FASHN / Photoroom. Photos in `images` are
-   * shopper-facing. Can combine with `uploadKind: "takim"`.
+   * Photos in `images` are shopper-facing, as uploaded. Every product added since the
+   * AI pipeline was parked has it; without it, the shop shows the AI-made packshot and
+   * model shots instead. Can combine with `uploadKind: "takim"`.
    */
   manualListing?: boolean;
   /**

@@ -1,6 +1,6 @@
 # 06 — Fashion module
 
-**What this is:** the garment/apparel vertical — everything specific to selling clothes (Turkish category taxonomy, size charts, construction chips, AI try-on/packshot pipeline) lives here, separated from the generic e-commerce core so that a fashion-specific bug or change can't break checkout, payments, or a future non-fashion boutique.
+**What this is:** the garment/apparel vertical — everything specific to selling clothes (Turkish category taxonomy, size charts, construction chips; the AI try-on/packshot pipeline is parked, see `docs/ai-pipeline-v1.md`) lives here, separated from the generic e-commerce core so that a fashion-specific bug or change can't break checkout, payments, or a future non-fashion boutique.
 
 ## Why this split exists
 
@@ -12,10 +12,8 @@ Cortisstyle started as a single-vertical (fashion) marketplace, so garment logic
 
 - `src/lib/tr/fashion/categories.ts` — the Turkish garment category taxonomy (elbise, üst-giyim, bluz, pantolon, takım, …). This is fashion's registered default tree, not a generic "category system" — see the caveat below.
 - `src/lib/tr/fashion/types.ts` — `TrFashionProductFeatures`, `TrTakimSetItem` (garment-specific fields of the `TrProductFeatures` union — see "Product features" below).
-- `src/lib/tr/fashion/{garmentUploadTypes,sizeCharts,modelMeasurements,dressFeatures,takimUpload,careInstructions}.ts` — garment upload taxonomy, cm size charts, AI-model body measurements, dress construction-chip vocabulary, two-piece "takım" set logic, wash-care copy.
-- `src/lib/tr/fashion/aiCatalog/` — the elbise/takım construction, packshot, and restyle pipeline (see [08-ai-catalog-pipeline.md](./08-ai-catalog-pipeline.md) for the full AI pipeline picture, generic and fashion parts together).
-- `src/lib/tr/fashion/fashn/` — the FASHN.ai garment try-on/packshot API client.
-- `src/components/tr/fashion/panel/` — pure garment-construction owner-panel components (`TrOwnerElbiseConstructionGate`, `TrOwnerTakimChipsStep`, `TrOwnerAiModelPicker`, …).
+- `src/lib/tr/fashion/{garmentUploadTypes,sizeCharts,modelMeasurements,dressFeatures,takimUpload,careInstructions}.ts` — garment upload taxonomy, cm size charts, house-model body measurements (the PDP line for AI-made products), dress construction-chip vocabulary, takım product helpers, wash-care copy.
+- `src/components/tr/fashion/panel/` — garment owner-panel components (the fashion editor, the create chooser).
 - `src/components/tr/fashion/panel/TrFashionProductEditor.tsx` + `src/lib/tr/fashion/productForm.ts` — the garment product editor (manual save), built on the shared product fields.
 - `src/components/tr/fashion/pdp/` — garment-specific PDP pieces (size chart modal, model measurements).
 
@@ -31,13 +29,12 @@ If you clean up one of the areas listed under "known debt," add its directory to
 
 ## Known debt (disclosed, not blocking)
 
-- **~20 owner-panel components** (`TrProductCreateWizard`, `TrOwnerGuidedPhotoUpload`, `TrOwnerBatchCreatePage` + its steps, `TrOwnerStorePreview`, `TrOwnerProductListPage`, `TrOwnerStockPage`, `TrOwnerSizeChartStock`, `TrOwnerProductFeaturesFields`, `TrOwnerCategoryPicker`, `TrBoutiquePdpInfoSections`) interleave generic and garment-specific UI in the same file. Splitting them is a bigger, riskier job than a file move — deferred on purpose.
-- **Categories: the storefront no longer imports `fashion/categories.ts` directly** (branch `main-t0o1c2`). It goes through `TrStorefrontTaxonomy`; `fashion/legacyTaxonomy.ts` wraps this file's functions as the built-in tree, and `fashion/categoryTemplate.ts` + `fashion/garmentCategory.ts` let a boutique import the tree into its own `tr_categories` (with `system_key` = the built-in id) and map its categories back to garment ids for fashion logic. Panel pages still import `fashion/categories.ts` for labels and the legacy picker.
-- **`src/lib/tr/aiModel/elbiseTryOn.ts` and `src/lib/tr/ai/aiUsage.ts`** are garment-coupled (dress construction chips, FASHN-specific usage copy) but weren't in the original relocation's file inventory, so they're still sitting outside `fashion/`. Worth folding in on a future pass.
+- **~20 owner-panel components** (`TrProductCreateWizard`, `TrOwnerBatchCreatePage` + its steps, `TrOwnerTakimCreatePage`, `TrOwnerProductListPage`, `TrOwnerStockPage`, `TrOwnerSizeChartStock`, `TrOwnerProductFeaturesFields`, `TrOwnerCategoryPicker`, `TrBoutiquePdpInfoSections`) interleave generic and garment-specific UI in the same file. Splitting them is a bigger, riskier job than a file move — deferred on purpose.
+- **Categories: the storefront no longer imports `fashion/categories.ts` directly** It goes through `TrStorefrontTaxonomy`; `fashion/legacyTaxonomy.ts` wraps this file's functions as the built-in tree, and `fashion/categoryTemplate.ts` + `fashion/garmentCategory.ts` let a boutique import the tree into its own `tr_categories` (with `system_key` = the built-in id) and map its categories back to garment ids for fashion logic. Panel pages still import `fashion/categories.ts` for labels and the legacy picker.
 
 ## Related
 
 - Custom-art vertical (the sibling module, same pattern): [07-custom-art-module.md](./07-custom-art-module.md)
-- The full AI catalog pipeline (generic + fashion-specific parts): [08-ai-catalog-pipeline.md](./08-ai-catalog-pipeline.md)
+- The parked AI catalog pipeline: [08-ai-catalog-pipeline.md](./08-ai-catalog-pipeline.md)
 - Owner panel (where most of the "known debt" mixed components live): [05-owner-panel-commerce.md](./05-owner-panel-commerce.md)
 - Storefront category browsing (the other consumer of `fashion/categories.ts`): [04-storefront-editorial-home.md](./04-storefront-editorial-home.md)

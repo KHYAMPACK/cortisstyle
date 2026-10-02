@@ -1,7 +1,4 @@
-import {
-  isTrCategoryMatch,
-  parseAiCategoryId,
-} from "@/lib/tr/fashion/categories";
+import { isTrCategoryMatch } from "@/lib/tr/fashion/categories";
 
 /** Garment-specific product upload pipelines. Elbise + üst giyim + alt giyim are live. */
 
@@ -87,13 +84,6 @@ export function isElbiseUpload(
   return parseGarmentUploadTypeId(uploadType) === "elbise";
 }
 
-export function isConstructionCatalogUpload(
-  uploadType: string | null | undefined,
-): boolean {
-  const id = parseGarmentUploadTypeId(uploadType);
-  return id === "elbise" || id === "ust-giyim" || id === "alt-giyim";
-}
-
 /** Parent `ust-giyim` or any descendant leaf (bluz, gömlek, …). */
 export function isUstGiyimCategory(
   category: string | null | undefined,
@@ -149,18 +139,6 @@ export function altGiyimUsesPaca(
   return !isAltGiyimSkirtLeaf(category);
 }
 
-/** Elbise, or an üst / alt giyim leaf (a saved bluz is `bluz`, not `ust-giyim`). Takım is not construction. */
-export function isConstructionCatalogCategory(
-  category: string | null | undefined,
-): boolean {
-  if (isTakimShopLeaf(category)) return false;
-  return (
-    isElbiseUpload(category) ||
-    isUstGiyimCategory(category) ||
-    isAltGiyimCategory(category)
-  );
-}
-
 export function constructionCatalogFamily(
   uploadType?: string | null,
   category?: string | null,
@@ -176,53 +154,8 @@ export function constructionCatalogFamily(
   return null;
 }
 
-/** Keep the shop leaf when the owner switches family only if it still belongs. */
-export function familyStillMatchesCategory(
-  family: ConstructionCatalogFamily,
-  category: string | null,
-): boolean {
-  if (isTakimShopLeaf(category)) return false;
-  if (family === "elbise") return true;
-  if (family === "ust-giyim") return isUstGiyimShopLeaf(category);
-  return isAltGiyimShopLeaf(category);
-}
-
-/** Family plus shop leaf (etek / bluz…) required before packshot. */
-export function constructionFamilyLeafReady(
-  family: ConstructionCatalogFamily | null,
-  shopCategory: string | null,
-): boolean {
-  if (!family) return false;
-  if (family === "elbise") return true;
-  if (family === "ust-giyim") return isUstGiyimShopLeaf(shopCategory);
-  return isAltGiyimShopLeaf(shopCategory);
-}
-
-/** Persist a shop leaf — never parent `ust-giyim` / `alt-giyim`, never `takim`. */
-export function parseConstructionShopCategory(
-  raw: unknown,
-  family: ConstructionCatalogFamily,
-): string | null {
-  if (family === "elbise") return "elbise";
-  const id = parseAiCategoryId(raw);
-  if (!id || isTakimShopLeaf(id)) return null;
-  if (family === "alt-giyim") {
-    return isAltGiyimShopLeaf(id) ? id : null;
-  }
-  return isUstGiyimShopLeaf(id) ? id : null;
-}
-
-/** Elbise FASHN packshot always lives here — not `requiredPhotoSlots`. */
+/** Where an AI-made product (parked pipeline) keeps its packshot — not `requiredPhotoSlots`. */
 export const ELBISE_PACKSHOT_SLOT = 3;
-/** Optional dekolte / detay manken photo. */
-export const ELBISE_DETAIL_SLOT = 2;
-
-/** Required owner photo slots (front + back) before Gemini + ön packshot, for every garment. */
+/** Front + back photos an AI-made product (parked pipeline) was created from. */
 export const REQUIRED_PHOTO_SLOTS = 2;
 
-/** Guided picker tiles (construction catalog shows optional detay as slot 2). */
-export function guidedPhotoSlotCountForUploadType(
-  uploadType: string | null | undefined,
-): number {
-  return isConstructionCatalogUpload(uploadType) ? 3 : 2;
-}

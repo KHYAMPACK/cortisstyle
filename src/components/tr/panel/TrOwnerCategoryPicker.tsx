@@ -2,7 +2,6 @@
 
 import { panelChipClass } from "@/components/tr/panel/panelUi";
 import {
-  getTrCategoryNavChildren,
   listTrCategoriesGrouped,
   type TrCategoryDefinition,
 } from "@/lib/tr/fashion/categories";
@@ -13,10 +12,6 @@ interface TrOwnerCategoryPickerProps {
   /** Extra unknown categories (e.g. legacy product ids). */
   extras?: TrCategoryDefinition[];
   disabled?: boolean;
-  /** When set, only that family's shop leaves (AI pick + owner correction). */
-  parentId?: string | null;
-  /** Hide leaves that belong to another pipeline (e.g. takım as a set item). */
-  excludeIds?: string[];
 }
 
 export function TrOwnerCategoryPicker({
@@ -24,35 +19,7 @@ export function TrOwnerCategoryPicker({
   onChange,
   extras = [],
   disabled = false,
-  parentId = null,
-  excludeIds = [],
 }: TrOwnerCategoryPickerProps) {
-  const hidden = new Set(excludeIds);
-  if (parentId) {
-    const items = getTrCategoryNavChildren(parentId).filter(
-      (entry) => !hidden.has(entry.id),
-    );
-    if (items.length === 0) return null;
-    return (
-      <div className="flex flex-wrap gap-2">
-        {items.map((entry) => {
-          const active = value === entry.id;
-          return (
-            <button
-              key={entry.id}
-              type="button"
-              disabled={disabled}
-              onClick={() => onChange(entry.id)}
-              className={panelChipClass(active)}
-            >
-              {entry.label}
-            </button>
-          );
-        })}
-      </div>
-    );
-  }
-
   const groups = listTrCategoriesGrouped();
   const knownIds = new Set(
     groups.flatMap((group) => group.items.map((item) => item.id)),

@@ -54,9 +54,7 @@ export function TrPanelImageField({
     setUploading(true);
     onUploadingChange?.(true);
     try {
-      const uploaded = await uploadOwnerProductImage(boutiqueId, file, {
-        removeBackground: false,
-      });
+      const uploaded = await uploadOwnerProductImage(boutiqueId, file);
       onChange(uploaded.url);
     } catch (error) {
       onError(error instanceof Error ? error.message : "Görsel yüklenemedi.");

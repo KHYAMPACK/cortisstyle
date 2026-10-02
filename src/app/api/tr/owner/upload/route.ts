@@ -6,14 +6,6 @@ import {
   requireOwnedBoutique,
   requireTrOwner,
 } from "@/lib/tr/ownerAuth";
-import {
-  isTrProductImageNormalizeEnabled,
-  normalizeProductCutoutToCanvas,
-} from "@/lib/tr/normalizeProductImage";
-import {
-  isPhotoroomConfigured,
-  removeGarmentBackground,
-} from "@/lib/tr/ai/photoroomRemoveBg";
 import { uploadTrProductAsset } from "@/lib/tr/trAssetStorage";
 
 export const runtime = "nodejs";
@@ -21,13 +13,11 @@ export const maxDuration = 60;
 
 const ALLOWED_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
 
-export type TrMarketplaceUploadStatus = "ready" | "skipped" | "failed";
-
 /**
  * POST /api/tr/owner/upload
- * multipart: file + boutiqueId + optional removeBackground ("true"|"false")
- * Returns original URL always; marketplaceUrl when Photoroom + normalize succeed.
- * Front/back product photos remove BG; extra gallery photos skip cutout.
+ * multipart: file + boutiqueId. Stores the photo (WebP, capped edge) and returns its URL.
+ * (Background removal for marketplace cutouts was part of the AI pipeline, parked in
+ * docs/ai-pipeline-v1.md.)
  */
 export async function POST(request: Request) {
   const authResult = await requireTrOwner(request);
@@ -69,12 +59,6 @@ export async function POST(request: Request) {
     );
   }
 
-  const removeBackgroundRaw = formData.get("removeBackground");
-  const removeBackground =
-    removeBackgroundRaw === null || removeBackgroundRaw === undefined
-      ? true
-      : String(removeBackgroundRaw).trim().toLowerCase() !== "false";
-
   try {
     const rawBytes = Buffer.from(await file.arrayBuffer());
     const originalEncoded = await encodeOpaqueWebp(
@@ -89,59 +73,7 @@ export async function POST(request: Request) {
       kind: "original",
     });
 
-    let marketplaceUrl: string | null = null;
-    let marketplacePath: string | null = null;
-    let marketplaceStatus: TrMarketplaceUploadStatus = "skipped";
-    let marketplaceError: string | null = null;
-
-    if (!removeBackground) {
-      marketplaceStatus = "skipped";
-    } else if (!isTrProductImageNormalizeEnabled()) {
-      marketplaceStatus = "skipped";
-    } else if (!isPhotoroomConfigured()) {
-      marketplaceStatus = "failed";
-      marketplaceError = "PHOTOROOM_API_KEY sunucuda tanımlı değil.";
-      console.error("[tr/owner/upload]", marketplaceError);
-    } else {
-      try {
-        const cutout = await removeGarmentBackground({
-          bytes: rawBytes,
-          filename: file.name || "product.jpg",
-          mimeType: contentType,
-        });
-        const normalized = await normalizeProductCutoutToCanvas(cutout);
-        const marketplace = await uploadTrProductAsset({
-          userId: authResult.auth.user.id,
-          boutiqueId: boutique.id,
-          bytes: normalized,
-          contentType: "image/png",
-          kind: "marketplace",
-        });
-        marketplaceUrl = marketplace.url;
-        marketplacePath = marketplace.path;
-        marketplaceStatus = "ready";
-      } catch (normalizeError) {
-        marketplaceStatus = "failed";
-        marketplaceError =
-          normalizeError instanceof Error
-            ? normalizeError.message
-            : "Katalog kesiti oluşturulamadı.";
-        console.error(
-          "[tr/owner/upload] marketplace normalize failed (keeping original):",
-          normalizeError,
-        );
-      }
-    }
-
-    return Response.json({
-      url: original.url,
-      path: original.path,
-      marketplaceUrl,
-      marketplacePath,
-      marketplaceStatus,
-      marketplaceError,
-      removeBackground,
-    });
+    return Response.json({ url: original.url, path: original.path });
   } catch (error) {
     console.error("[tr/owner/upload] failed:", error);
     return Response.json(

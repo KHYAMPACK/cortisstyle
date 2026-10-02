@@ -69,7 +69,6 @@ function NewProductFlow({
             <TrProductCreateWizard
               key={wizardKey}
               boutiqueId={boutiqueId}
-              boutiqueSlug={boutiqueSlug}
               onSaved={(product) => {
                 setCreated(product);
                 if (typeof window !== "undefined") {

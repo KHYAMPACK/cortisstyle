@@ -12,10 +12,6 @@ import {
   TrPanelDataTableCell,
   TrPanelDataTableRow,
 } from "@/components/tr/panel/TrPanelDataTable";
-import {
-  useElbiseRestyleSaved,
-  useOpenElbiseRestyle,
-} from "@/components/tr/fashion/panel/TrOwnerElbiseRestyleSession";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
 import { TrOwnerProductRouteGate } from "@/components/tr/panel/TrOwnerProductRouteGate";
 import {
@@ -49,7 +45,6 @@ import {
 } from "@/lib/tr/fashion/categories";
 import { runOwnerPatches } from "@/lib/tr/ownerBulk";
 import { getPanelProductCover } from "@/lib/tr/productImages";
-import { isElbiseRestyleCandidate } from "@/lib/tr/fashion/aiCatalog/elbiseRestyle";
 import {
   addOwnerProductsToCategory,
   deleteOwnerProduct,
@@ -240,11 +235,9 @@ function ListPager({
 
 function ProductList({
   boutiqueId,
-  boutiqueSlug,
   categoryMode,
 }: {
   boutiqueId: string;
-  boutiqueSlug: string;
   categoryMode: "legacy" | "custom";
 }) {
   const router = useRouter();
@@ -266,7 +259,6 @@ function ProductList({
   const [pageSize, setPageSize] = useState<number>(PAGE_SIZES[0]);
   const [bulkBusy, setBulkBusy] = useState(false);
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
-  const openRestyle = useOpenElbiseRestyle();
 
   useEffect(() => {
     let cancelled = false;
@@ -381,17 +373,6 @@ function ProductList({
 
   const orderedIds = useMemo(() => pageItems.map((p) => p.id), [pageItems]);
   const selection = usePanelRowSelection(orderedIds);
-  const restyleCandidates = useMemo(
-    () => products.filter(isElbiseRestyleCandidate),
-    [products],
-  );
-  const restyleSelectionIds = useMemo(
-    () =>
-      restyleCandidates
-        .filter((product) => selection.selectedIds.has(product.id))
-        .map((product) => product.id),
-    [restyleCandidates, selection.selectedIds],
-  );
 
   useEffect(() => {
     if (selection.selectedCount === 0) setConfirmBulkDelete(false);
@@ -402,7 +383,6 @@ function ProductList({
       current.map((entry) => (entry.id === updated.id ? updated : entry)),
     );
   };
-  useElbiseRestyleSaved(applyLocal);
 
   const runBulk = async (
     patch: Parameters<typeof updateOwnerProduct>[1],
@@ -575,24 +555,6 @@ function ProductList({
                   Toplu ekle
                 </Link>
               </li>
-              {restyleCandidates.length > 0 ? (
-                <li>
-                  <button
-                    type="button"
-                    className="flex min-h-10 w-full items-center rounded-md px-3 text-left hover:bg-neutral-50"
-                    onClick={() => {
-                      close();
-                      openRestyle?.({
-                        boutiqueId,
-                        boutiqueSlug,
-                        products: restyleCandidates,
-                      });
-                    }}
-                  >
-                    Packshot + model
-                  </button>
-                </li>
-              ) : null}
             </ul>
           )}
         </TrPanelPopover>
@@ -939,21 +901,6 @@ function ProductList({
                   )}
                   <button
                     type="button"
-                    disabled={bulkBusy || restyleSelectionIds.length === 0}
-                    className={panelDesktopBtnClass}
-                    onClick={() => {
-                      openRestyle?.({
-                        boutiqueId,
-                        boutiqueSlug,
-                        products: restyleCandidates,
-                        initiallyCheckedIds: restyleSelectionIds,
-                      });
-                    }}
-                  >
-                    Packshot + model
-                  </button>
-                  <button
-                    type="button"
                     disabled={bulkBusy}
                     className={panelDesktopBtnClass}
                     onClick={() => void runBulk({ status: "hidden" })}
@@ -1009,7 +956,6 @@ export function TrOwnerProductListPage() {
         <TrOwnerProductRouteGate activeBoutique={activeBoutique}>
           <ProductList
             boutiqueId={activeBoutique.id}
-            boutiqueSlug={activeBoutique.slug}
             categoryMode={activeBoutique.categoryMode ?? "legacy"}
           />
         </TrOwnerProductRouteGate>
