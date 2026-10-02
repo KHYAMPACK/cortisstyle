@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import { TrPanelLink as Link } from "@/components/tr/panel/TrPanelLink";
-import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { TrPanelBulkBar } from "@/components/tr/panel/TrPanelBulkBar";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
@@ -15,21 +15,19 @@ import {
   panelDesktopSecondaryBtnClass,
 } from "@/components/tr/panel/panelDesktopUi";
 import {
+  TrPanelDataTable,
+  TrPanelDataTableCell,
+  TrPanelDataTableRow,
+} from "@/components/tr/panel/TrPanelDataTable";
+import {
   panelBackLinkClass,
   panelChipClass,
   panelEmptyClass,
   panelErrorClass,
   panelPageTitleClass,
-  panelStepperBtnClass,
   panelStickyFilterClass,
 } from "@/components/tr/panel/panelUi";
-import {
-  TrPanelFadeIn,
-  TrPanelListSkeleton,
-  TrPanelStagger,
-  trPanelEase,
-  trPanelStaggerItem,
-} from "@/components/tr/panel/TrPanelMotion";
+import { TrPanelFadeIn, TrPanelListSkeleton } from "@/components/tr/panel/TrPanelMotion";
 import { useOwnerCategoryName } from "@/components/tr/panel/useOwnerCategories";
 import { runOwnerPatches } from "@/lib/tr/ownerBulk";
 import { getPanelProductCover } from "@/lib/tr/productImages";
@@ -70,6 +68,10 @@ function sizeQty(product: TrProduct, size: string): number {
   return typeof n === "number" && Number.isFinite(n) ? Math.max(0, n) : 0;
 }
 
+const STEP_BTN =
+  "grid h-7 w-7 place-items-center rounded-md border border-neutral-200 bg-white text-[15px] font-semibold text-neutral-700 transition-colors duration-150 hover:bg-neutral-50 disabled:pointer-events-none disabled:opacity-40 motion-reduce:transition-none";
+
+/** − n + for one stock count, compact enough for a table row. */
 function StockStepper({
   value,
   disabled,
@@ -84,24 +86,24 @@ function StockStepper({
   label: string;
 }) {
   return (
-    <div className="flex items-center gap-3">
+    <div className="inline-flex items-center gap-2">
       <button
         type="button"
         disabled={disabled || value <= 0}
         onClick={onDecrease}
-        className={panelStepperBtnClass}
+        className={STEP_BTN}
         aria-label={`${label} azalt`}
       >
         −
       </button>
-      <span className="min-w-[2.5rem] text-center text-[22px] font-semibold tabular-nums text-neutral-950">
+      <span className="min-w-[2rem] text-center text-[14px] font-semibold tabular-nums text-neutral-950">
         {value}
       </span>
       <button
         type="button"
         disabled={disabled}
         onClick={onIncrease}
-        className={panelStepperBtnClass}
+        className={STEP_BTN}
         aria-label={`${label} artır`}
       >
         +
@@ -110,62 +112,24 @@ function StockStepper({
   );
 }
 
-function SizeStockList({
-  product,
-  sizes,
-  busy,
-  onChange,
-}: {
-  product: TrProduct;
-  sizes: string[];
-  busy: boolean;
-  onChange: (product: TrProduct, size: string, next: number) => void;
-}) {
+/** Stokta / Az kaldı / Stokta yok, or Gizli for a hidden product. */
+function StockBadge({ qty, hidden }: { qty: number; hidden: boolean }) {
+  const [label, tone] = hidden
+    ? ["Gizli", "bg-neutral-100 text-neutral-500"]
+    : qty === 0
+      ? ["Stokta yok", "bg-neutral-100 text-neutral-600"]
+      : qty <= LOW_STOCK
+        ? ["Az kaldı", "bg-amber-50 text-amber-800"]
+        : ["Stokta", "bg-emerald-50 text-emerald-800"];
   return (
-    <div className="space-y-2">
-      {sizes.map((size) => {
-        const qty = sizeQty(product, size);
-        const sizeLow =
-          product.status === "available" && qty > 0 && qty <= LOW_STOCK;
-        const empty = qty === 0;
-        return (
-          <div
-            key={size}
-            className={`flex items-center justify-between gap-3 rounded-xl px-3 py-3 ${
-              empty
-                ? "bg-neutral-100"
-                : "bg-[color:var(--panel-accent-soft)]"
-            }`}
-          >
-            <div>
-              <p className="text-[18px] font-semibold text-neutral-900 lg:text-[15px]">
-                {size}
-              </p>
-              <p
-                className={`text-[14px] lg:text-[12px] ${
-                  empty
-                    ? "font-medium text-neutral-500"
-                    : "text-neutral-600"
-                }`}
-              >
-                {empty ? "Stokta yok" : sizeLow ? "Az kaldı" : "Stokta"}
-              </p>
-            </div>
-            <StockStepper
-              value={qty}
-              disabled={busy}
-              label={`${product.title} ${size}`}
-              onDecrease={() => onChange(product, size, qty - 1)}
-              onIncrease={() => onChange(product, size, qty + 1)}
-            />
-          </div>
-        );
-      })}
-    </div>
+    <span className={`inline-flex rounded-full px-2 py-0.5 text-[12px] font-medium ${tone}`}>
+      {label}
+    </span>
   );
 }
 
 function StockBoard({ boutiqueId }: { boutiqueId: string }) {
+  const router = useRouter();
   const cached = peekOwnerProducts(boutiqueId);
   const [products, setProducts] = useState<TrProduct[]>(cached?.products ?? []);
   const [loading, setLoading] = useState(!cached);
@@ -260,6 +224,12 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
 
   const orderedIds = useMemo(() => visible.map((p) => p.id), [visible]);
   const selection = usePanelRowSelection(orderedIds);
+
+  const allOpen =
+    visible.some((product) => boardSizes(product).length > 0) &&
+    visible
+      .filter((product) => boardSizes(product).length > 0)
+      .every((product) => openIds.has(product.id));
 
   const toggleOpen = (id: string) => {
     setOpenIds((current) => {
@@ -430,7 +400,7 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
                 : `${visible.length} / ${products.length} ürün`}
             </p>
             <p className="mt-1 text-[15px] text-neutral-700 lg:text-[13px]">
-              Ürüne dokunarak stokları açın. Toplam otomatik hesaplanır.
+              Bedenli ürünlerde oka basın, bedenlerin stoğu açılsın. Toplam otomatik hesaplanır.
             </p>
           </div>
 
@@ -507,199 +477,165 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
             </p>
           ) : (
             <>
-              <div
-                className="space-y-3"
-                tabIndex={0}
-                onKeyDown={selection.onKeyDown}
-                role="region"
-                aria-label="Stok listesi"
-              >
-                <div className="hidden items-center gap-3 lg:flex">
-                  <label className="flex items-center gap-2 text-[13px] text-neutral-600">
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 accent-[color:var(--panel-accent)]"
-                      checked={selection.allVisibleSelected}
-                      ref={(el) => {
-                        if (el) {
-                          el.indeterminate =
-                            selection.someVisibleSelected &&
-                            !selection.allVisibleSelected;
-                        }
-                      }}
-                      onChange={(event) =>
-                        selection.setAllVisible(event.target.checked)
-                      }
-                      disabled={bulkBusy}
-                      aria-label="Tümünü seç"
-                    />
-                    Tümünü seç
-                  </label>
-                  <p className="text-[12px] text-neutral-500">
-                    Shift aralık · Ctrl+A tümü
-                  </p>
+              {visible.some((product) => boardSizes(product).length > 0) ? (
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setOpenIds(
+                        allOpen
+                          ? new Set()
+                          : new Set(
+                              visible
+                                .filter((product) => boardSizes(product).length > 0)
+                                .map((product) => product.id),
+                            ),
+                      )
+                    }
+                    className="text-[13px] font-semibold text-[color:var(--panel-accent-deep)] hover:underline"
+                  >
+                    {allOpen ? "Tümünü daralt" : "Bedenleri genişlet"}
+                  </button>
                 </div>
+              ) : null}
 
-                <TrPanelStagger className="space-y-3">
-                  {visible.map((product) => {
-                    const cover =
-                      getPanelProductCover(product) ??
-                      product.images[0] ??
-                      null;
-                    const sizes = boardSizes(product);
-                    const hasSizes = product.sizes.length > 0;
-                    const total = hasSizes
-                      ? sizes.reduce(
-                          (sum, size) => sum + sizeQty(product, size),
-                          0,
-                        )
-                      : product.stock;
-                    const low =
-                      product.status === "available" && total <= LOW_STOCK;
-                    const outOfStock =
-                      product.status === "available" && total === 0;
-                    const busy = bulkBusy;
-                    const open = openIds.has(product.id);
+              <TrPanelDataTable
+                contained={false}
+                onKeyDown={selection.onKeyDown}
+                selectAll={{
+                  checked: selection.allVisibleSelected,
+                  indeterminate: selection.someVisibleSelected && !selection.allVisibleSelected,
+                  onChange: selection.setAllVisible,
+                  disabled: bulkBusy,
+                }}
+                headers={[
+                  "Ürün",
+                  "Durum",
+                  <span key="stok" className="block text-right">
+                    Stok
+                  </span>,
+                ]}
+                footer={`${visible.length} ürün`}
+              >
+                {visible.flatMap((product) => {
+                  const cover = getPanelProductCover(product) ?? product.images[0] ?? null;
+                  const sizes = boardSizes(product);
+                  const hasSizes = sizes.length > 0;
+                  const total = productTotal(product);
+                  const hidden = product.status === "hidden";
+                  const open = openIds.has(product.id);
+                  const href = trPanelEditProductPath(product.id);
+                  const category = categoryName(product.category);
 
-                    return (
-                      <motion.div
-                        key={product.id}
-                        variants={trPanelStaggerItem}
-                        className={`rounded-2xl border bg-white p-4 shadow-sm sm:p-5 lg:rounded-xl lg:p-4 ${
-                          outOfStock
-                            ? "border-neutral-300"
-                            : "border-[color:var(--panel-accent-border)]"
-                        }`}
-                      >
-                        <div className="flex items-start gap-3">
-                          <div className="hidden shrink-0 pt-2 lg:block">
-                            <PanelSelectCheckbox
-                              id={product.id}
-                              checked={selection.isSelected(product.id)}
-                              disabled={bulkBusy}
-                              label={`${product.title} seç`}
-                              onItemClick={selection.onItemClick}
-                            />
-                          </div>
-                          <div className="min-w-0 flex-1">
+                  const parent = (
+                    <TrPanelDataTableRow
+                      key={product.id}
+                      selected={selection.isSelected(product.id)}
+                      onActivate={() => (hasSizes ? toggleOpen(product.id) : router.push(href))}
+                    >
+                      <TrPanelDataTableCell className="w-10">
+                        <PanelSelectCheckbox
+                          id={product.id}
+                          checked={selection.isSelected(product.id)}
+                          disabled={bulkBusy}
+                          label={`${product.title} seç`}
+                          onItemClick={selection.onItemClick}
+                        />
+                      </TrPanelDataTableCell>
+                      <TrPanelDataTableCell>
+                        <div className="flex items-center gap-2">
+                          {hasSizes ? (
                             <button
                               type="button"
-                              aria-expanded={open}
-                              aria-controls={`stock-rows-${product.id}`}
                               onClick={() => toggleOpen(product.id)}
-                              className="flex w-full min-h-11 items-start gap-4 text-left"
+                              aria-expanded={open}
+                              aria-label={`${product.title} bedenlerini ${open ? "gizle" : "göster"}`}
+                              className="grid h-6 w-6 shrink-0 place-items-center rounded text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800"
                             >
-                              <span className="relative h-20 w-16 shrink-0 overflow-hidden rounded-xl bg-[color:var(--panel-accent-soft)] lg:h-14 lg:w-11 lg:rounded-lg">
-                                {cover ? (
-                                  <Image
-                                    src={cover}
-                                    alt=""
-                                    fill
-                                    className="object-contain p-2 lg:p-1"
-                                    sizes="64px"
-                                  />
-                                ) : null}
-                              </span>
-                              <span className="min-w-0 flex-1 space-y-1">
-                                <span className="block text-[19px] leading-snug font-semibold text-neutral-900 lg:text-[15px]">
-                                  {product.title}
-                                </span>
-                                {outOfStock ? (
-                                  <span className="inline-flex rounded-lg bg-neutral-100 px-2.5 py-1 text-[14px] font-semibold text-neutral-600 lg:text-[12px]">
-                                    Stokta yok
-                                  </span>
-                                ) : low ? (
-                                  <span className="block text-[14px] font-semibold text-neutral-700 lg:text-[12px]">
-                                    Düşük stok — dikkat
-                                  </span>
-                                ) : null}
-                                <span className="block text-[15px] text-neutral-600 lg:text-[13px]">
-                                  Toplam:{" "}
-                                  <span className="font-semibold text-neutral-900">
-                                    {total}
-                                  </span>
-                                  {hasSizes ? " adet (tüm bedenler)" : " adet"}
-                                </span>
-                              </span>
-                              <ChevronDown
-                                className={`mt-1 h-5 w-5 shrink-0 text-neutral-400 transition-transform duration-200 ${
-                                  open ? "rotate-180" : ""
-                                }`}
-                                strokeWidth={1.75}
-                                aria-hidden
-                              />
-                            </button>
-
-                            <AnimatePresence initial={false}>
                               {open ? (
-                                <motion.div
-                                  key="stock-body"
-                                  initial={{ height: 0, opacity: 0 }}
-                                  animate={{ height: "auto", opacity: 1 }}
-                                  exit={{ height: 0, opacity: 0 }}
-                                  transition={{
-                                    duration: 0.28,
-                                    ease: trPanelEase,
-                                  }}
-                                  className="overflow-hidden"
-                                >
-                                  <div
-                                    id={`stock-rows-${product.id}`}
-                                    className="mt-4 space-y-3 border-t border-[color:var(--panel-accent-border)] pt-4"
-                                  >
-                                    <Link
-                                      href={trPanelEditProductPath(product.id)}
-                                      className="inline-block text-[15px] font-medium text-[color:var(--panel-accent-deep)] lg:text-[13px]"
-                                    >
-                                      Ürünü düzenle →
-                                    </Link>
-                                    {hasSizes ? (
-                                      <>
-                                        <p className="text-[16px] font-semibold text-neutral-800 lg:text-[13px]">
-                                          Beden stokları
-                                        </p>
-                                        <SizeStockList
-                                          product={product}
-                                          sizes={sizes}
-                                          busy={busy}
-                                          onChange={setSizeStock}
-                                        />
-                                      </>
-                                    ) : (
-                                      <div className="flex items-center justify-between gap-3">
-                                        <p className="text-[16px] font-semibold text-neutral-800 lg:text-[13px]">
-                                          Toplam stok
-                                        </p>
-                                        <StockStepper
-                                          value={product.stock}
-                                          disabled={busy}
-                                          label={product.title}
-                                          onDecrease={() =>
-                                            setTotalStock(
-                                              product,
-                                              product.stock - 1,
-                                            )
-                                          }
-                                          onIncrease={() =>
-                                            setTotalStock(
-                                              product,
-                                              product.stock + 1,
-                                            )
-                                          }
-                                        />
-                                      </div>
-                                    )}
-                                  </div>
-                                </motion.div>
-                              ) : null}
-                            </AnimatePresence>
-                          </div>
+                                <ChevronDown className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+                              ) : (
+                                <ChevronRight className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+                              )}
+                            </button>
+                          ) : (
+                            <span className="w-6 shrink-0" aria-hidden />
+                          )}
+                          <span className="relative h-12 w-10 shrink-0 overflow-hidden rounded bg-[color:var(--panel-accent-soft)]">
+                            {cover ? (
+                              <Image src={cover} alt="" fill className="object-contain p-0.5" sizes="40px" />
+                            ) : null}
+                          </span>
+                          <span className="min-w-0">
+                            <Link
+                              href={href}
+                              className="block max-w-[360px] truncate font-semibold text-neutral-900 hover:underline"
+                            >
+                              {product.title}
+                            </Link>
+                            <span className="block truncate text-[12px] text-neutral-500">
+                              {[category, hasSizes ? `${sizes.length} beden` : null]
+                                .filter(Boolean)
+                                .join(" · ")}
+                            </span>
+                          </span>
                         </div>
-                      </motion.div>
-                    );
-                  })}
-                </TrPanelStagger>
-              </div>
+                      </TrPanelDataTableCell>
+                      <TrPanelDataTableCell>
+                        <StockBadge qty={total} hidden={hidden} />
+                      </TrPanelDataTableCell>
+                      <TrPanelDataTableCell className="text-right">
+                        {hasSizes ? (
+                          <span className="font-semibold tabular-nums text-neutral-900">
+                            {total} adet
+                          </span>
+                        ) : (
+                          <StockStepper
+                            value={product.stock}
+                            disabled={bulkBusy}
+                            label={product.title}
+                            onDecrease={() => setTotalStock(product, product.stock - 1)}
+                            onIncrease={() => setTotalStock(product, product.stock + 1)}
+                          />
+                        )}
+                      </TrPanelDataTableCell>
+                    </TrPanelDataTableRow>
+                  );
+
+                  if (!hasSizes || !open) return [parent];
+                  return [
+                    parent,
+                    ...sizes.map((size) => {
+                      const qty = sizeQty(product, size);
+                      return (
+                        <TrPanelDataTableRow key={`${product.id}:${size}`} className="bg-neutral-50/60">
+                          <TrPanelDataTableCell className="w-10" />
+                          <TrPanelDataTableCell>
+                            <div className="pl-[4.5rem]">
+                              <span className="block font-medium text-neutral-900">{size}</span>
+                              <span className="block truncate text-[12px] text-neutral-500">
+                                {product.title}
+                              </span>
+                            </div>
+                          </TrPanelDataTableCell>
+                          <TrPanelDataTableCell>
+                            <StockBadge qty={qty} hidden={hidden} />
+                          </TrPanelDataTableCell>
+                          <TrPanelDataTableCell className="text-right">
+                            <StockStepper
+                              value={qty}
+                              disabled={bulkBusy}
+                              label={`${product.title} ${size}`}
+                              onDecrease={() => setSizeStock(product, size, qty - 1)}
+                              onIncrease={() => setSizeStock(product, size, qty + 1)}
+                            />
+                          </TrPanelDataTableCell>
+                        </TrPanelDataTableRow>
+                      );
+                    }),
+                  ];
+                })}
+              </TrPanelDataTable>
 
               <div className="hidden lg:block">
                 <TrPanelBulkBar
@@ -780,7 +716,7 @@ export function TrOwnerStockPage() {
             </Link>
             <h2 className={panelPageTitleClass}>Stok</h2>
             <p className="mt-2 text-[16px] leading-relaxed text-neutral-600 lg:text-[14px]">
-              Ürüne dokunun, beden stokları açılsın.
+              Stokları buradan hızlıca güncelleyin; değişiklikler hemen kaydedilir.
             </p>
           </div>
           <StockBoard boutiqueId={activeBoutique.id} />
