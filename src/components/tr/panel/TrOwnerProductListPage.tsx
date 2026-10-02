@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Search, SlidersHorizontal } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { TrPanelLink as Link } from "@/components/tr/panel/TrPanelLink";
@@ -27,7 +27,6 @@ import {
   panelFieldClass,
   panelLabelClass,
   panelPrimaryBtnClass,
-  panelSecondaryBtnClass,
 } from "@/components/tr/panel/panelUi";
 import {
   TrPanelFadeIn,
@@ -35,7 +34,7 @@ import {
   TrPanelStagger,
   trPanelStaggerItem,
 } from "@/components/tr/panel/TrPanelMotion";
-import { TrPanelPopover } from "@/components/tr/panel/TrPanelPopover";
+import { TrPanelTableToolbar } from "@/components/tr/panel/TrPanelTableToolbar";
 import { useOwnerCategories } from "@/components/tr/panel/useOwnerCategories";
 import { useOwnerProductKinds } from "@/components/tr/panel/useOwnerProductKinds";
 import { flattenCategoryTree, slugsInScope } from "@/lib/tr/categories/tree";
@@ -546,112 +545,83 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
   );
 
   const toolbar = (
-    <div className="flex flex-wrap items-center gap-2">
-      <div className="relative min-w-0 flex-1 sm:max-w-sm">
-        <Search
-          className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-neutral-400"
-          strokeWidth={1.75}
-          aria-hidden
-        />
-        <input
-          type="search"
-          value={search}
-          onChange={(event) => changeSearch(event.target.value)}
-          placeholder="Tabloda arama yapın"
-          className={`${panelFieldClass} pl-9`}
-          aria-label="Ürünlerde ara"
-        />
-      </div>
-      <TrPanelPopover
-        label="Filtreler"
-        panelClassName="w-[19rem] p-4"
-        trigger={(props) => (
-          <button
-            type="button"
-            {...props}
-            className={`${panelSecondaryBtnClass} gap-2`}
-          >
-            <SlidersHorizontal className="h-4 w-4" strokeWidth={1.75} aria-hidden />
-            Filtre
-            {filterCount > 0 ? (
-              <span className="grid h-5 min-w-5 place-items-center rounded-full bg-[color:var(--panel-accent)] px-1 text-[11px] font-semibold text-white">
-                {filterCount}
-              </span>
-            ) : null}
-          </button>
-        )}
-      >
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <p className={panelLabelClass}>Durum</p>
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => changeStatus("all")}
-                className={filterChipClass(statusFilter === "all")}
-              >
-                Tümü
-              </button>
-              {STATUS_OPTIONS.map((status) => (
-                <button
-                  key={status}
-                  type="button"
-                  onClick={() => changeStatus(status)}
-                  className={filterChipClass(statusFilter === status)}
+    <TrPanelTableToolbar
+      search={search}
+      onSearchChange={changeSearch}
+      searchLabel="Ürünlerde ara"
+      filterCount={filterCount}
+      filters={
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <p className={panelLabelClass}>Durum</p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => changeStatus("all")}
+                    className={filterChipClass(statusFilter === "all")}
+                  >
+                    Tümü
+                  </button>
+                  {STATUS_OPTIONS.map((status) => (
+                    <button
+                      key={status}
+                      type="button"
+                      onClick={() => changeStatus(status)}
+                      className={filterChipClass(statusFilter === status)}
+                    >
+                      {STATUS_LABEL[status]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <label className="block space-y-2">
+                <span className={panelLabelClass}>Kategori</span>
+                <select
+                  className={panelFieldClass}
+                  value={categoryFilter}
+                  onChange={(event) => changeCategory(event.target.value)}
                 >
-                  {STATUS_LABEL[status]}
-                </button>
-              ))}
-            </div>
-          </div>
-          <label className="block space-y-2">
-            <span className={panelLabelClass}>Kategori</span>
-            <select
-              className={panelFieldClass}
-              value={categoryFilter}
-              onChange={(event) => changeCategory(event.target.value)}
-            >
-              <option value="all">Tümü</option>
-              {categories.map((entry) => (
-                <option key={entry.id} value={entry.id}>
-                  {entry.label}
-                </option>
-              ))}
-              {uncategorizedCount > 0 ? (
-                <option value="uncategorized">Kategorisiz</option>
+                  <option value="all">Tümü</option>
+                  {categories.map((entry) => (
+                    <option key={entry.id} value={entry.id}>
+                      {entry.label}
+                    </option>
+                  ))}
+                  {uncategorizedCount > 0 ? (
+                    <option value="uncategorized">Kategorisiz</option>
+                  ) : null}
+                </select>
+              </label>
+              {kinds.length > 0 ? (
+                <label className="block space-y-2">
+                  <span className={panelLabelClass}>Ürün türü</span>
+                  <select
+                    className={panelFieldClass}
+                    value={kindFilter}
+                    onChange={(event) => changeKind(event.target.value)}
+                  >
+                    <option value="all">Tümü</option>
+                    {kinds.map((kind) => (
+                      <option key={kind.id} value={kind.id}>
+                        {kind.name}
+                      </option>
+                    ))}
+                    <option value="none">Türü olmayan</option>
+                  </select>
+                </label>
               ) : null}
-            </select>
-          </label>
-          {kinds.length > 0 ? (
-            <label className="block space-y-2">
-              <span className={panelLabelClass}>Ürün türü</span>
-              <select
-                className={panelFieldClass}
-                value={kindFilter}
-                onChange={(event) => changeKind(event.target.value)}
-              >
-                <option value="all">Tümü</option>
-                {kinds.map((kind) => (
-                  <option key={kind.id} value={kind.id}>
-                    {kind.name}
-                  </option>
-                ))}
-                <option value="none">Türü olmayan</option>
-              </select>
-            </label>
-          ) : null}
-          {filterCount > 0 ? (
-            <button
-              type="button"
-              onClick={clearFilters}
-              className="text-[13px] font-semibold text-[color:var(--panel-accent-deep)] hover:underline"
-            >
-              Filtreleri temizle
-            </button>
-          ) : null}
-        </div>
-      </TrPanelPopover>
-    </div>
+              {filterCount > 0 ? (
+                <button
+                  type="button"
+                  onClick={clearFilters}
+                  className="text-[13px] font-semibold text-[color:var(--panel-accent-deep)] hover:underline"
+                >
+                  Filtreleri temizle
+                </button>
+              ) : null}
+            </div>
+      }
+    />
   );
 
   return (

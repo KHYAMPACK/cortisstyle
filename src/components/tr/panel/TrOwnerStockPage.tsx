@@ -11,9 +11,9 @@ import { TrOwnerProductRouteGate } from "@/components/tr/panel/TrOwnerProductRou
 import {
   panelDesktopBtnClass,
   panelDesktopInputClass,
-  panelDesktopSearchClass,
   panelDesktopSecondaryBtnClass,
 } from "@/components/tr/panel/panelDesktopUi";
+import { TrPanelTableToolbar } from "@/components/tr/panel/TrPanelTableToolbar";
 import {
   TrPanelDataTable,
   TrPanelDataTableCell,
@@ -21,11 +21,12 @@ import {
 } from "@/components/tr/panel/TrPanelDataTable";
 import {
   panelBackLinkClass,
-  panelChipClass,
   panelEmptyClass,
   panelErrorClass,
+  panelFieldClass,
+  panelFilterChipClass,
+  panelLabelClass,
   panelPageTitleClass,
-  panelStickyFilterClass,
 } from "@/components/tr/panel/panelUi";
 import { TrPanelFadeIn, TrPanelListSkeleton } from "@/components/tr/panel/TrPanelMotion";
 import { useOwnerCategoryName } from "@/components/tr/panel/useOwnerCategories";
@@ -405,59 +406,87 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
           </div>
 
           {products.length > 0 ? (
-            <div className={panelStickyFilterClass}>
-              <input
-                type="search"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Ürün adına göre ara…"
-                className={`${panelDesktopSearchClass} max-w-none lg:max-w-sm`}
-                aria-label="Stokta ara"
-              />
-              <div className="flex flex-wrap gap-2">
-                {(
-                  [
-                    { id: "all", label: "Tümü" },
-                    { id: "available", label: "Satışta" },
-                    { id: "low", label: "Düşük stok" },
-                    { id: "out", label: "Stokta yok" },
-                  ] as const
-                ).map((entry) => (
-                  <button
-                    key={entry.id}
-                    type="button"
-                    onClick={() => setStockFilter(entry.id)}
-                    className={`${panelChipClass(stockFilter === entry.id)} lg:min-h-0 lg:rounded-lg lg:px-3 lg:py-1.5 lg:text-[13px]`}
-
-                  >
-                    {entry.label}
-                  </button>
-                ))}
-              </div>
-              {categories.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setCategoryFilter("all")}
-                    className={`${panelChipClass(categoryFilter === "all")} lg:min-h-0 lg:rounded-lg lg:px-3 lg:py-1.5 lg:text-[13px]`}
-
-                  >
-                    Tüm kategoriler
-                  </button>
-                  {categories.map((entry) => (
+            <TrPanelTableToolbar
+              search={search}
+              onSearchChange={setSearch}
+              searchLabel="Stokta ara"
+              filterCount={(stockFilter !== "all" ? 1 : 0) + (categoryFilter !== "all" ? 1 : 0)}
+              filters={
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <p className={panelLabelClass}>Stok</p>
+                    <div className="flex flex-wrap gap-2">
+                      {(
+                        [
+                          { id: "all", label: "Tümü" },
+                          { id: "available", label: "Satışta" },
+                          { id: "low", label: "Düşük stok" },
+                          { id: "out", label: "Stokta yok" },
+                        ] as const
+                      ).map((entry) => (
+                        <button
+                          key={entry.id}
+                          type="button"
+                          onClick={() => setStockFilter(entry.id)}
+                          className={panelFilterChipClass(stockFilter === entry.id)}
+                        >
+                          {entry.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {categories.length > 0 ? (
+                    <label className="block space-y-2">
+                      <span className={panelLabelClass}>Kategori</span>
+                      <select
+                        className={panelFieldClass}
+                        value={categoryFilter}
+                        onChange={(event) => setCategoryFilter(event.target.value)}
+                      >
+                        <option value="all">Tümü</option>
+                        {categories.map((entry) => (
+                          <option key={entry.id} value={entry.id}>
+                            {entry.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  ) : null}
+                  {stockFilter !== "all" || categoryFilter !== "all" ? (
                     <button
-                      key={entry.id}
                       type="button"
-                      onClick={() => setCategoryFilter(entry.id)}
-                      className={`${panelChipClass(categoryFilter === entry.id)} lg:min-h-0 lg:rounded-lg lg:px-3 lg:py-1.5 lg:text-[13px]`}
-
+                      onClick={() => {
+                        setStockFilter("all");
+                        setCategoryFilter("all");
+                      }}
+                      className="text-[13px] font-semibold text-[color:var(--panel-accent-deep)] hover:underline"
                     >
-                      {entry.label}
+                      Filtreleri temizle
                     </button>
-                  ))}
+                  ) : null}
                 </div>
+              }
+            >
+              {visible.some((product) => boardSizes(product).length > 0) ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setOpenIds(
+                      allOpen
+                        ? new Set()
+                        : new Set(
+                            visible
+                              .filter((product) => boardSizes(product).length > 0)
+                              .map((product) => product.id),
+                          ),
+                    )
+                  }
+                  className="text-[13px] font-semibold text-[color:var(--panel-accent-deep)] hover:underline"
+                >
+                  {allOpen ? "Tümünü daralt" : "Bedenleri genişlet"}
+                </button>
               ) : null}
-            </div>
+            </TrPanelTableToolbar>
           ) : null}
 
           {products.length === 0 ? (
@@ -477,28 +506,6 @@ function StockBoard({ boutiqueId }: { boutiqueId: string }) {
             </p>
           ) : (
             <>
-              {visible.some((product) => boardSizes(product).length > 0) ? (
-                <div className="flex justify-end">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setOpenIds(
-                        allOpen
-                          ? new Set()
-                          : new Set(
-                              visible
-                                .filter((product) => boardSizes(product).length > 0)
-                                .map((product) => product.id),
-                            ),
-                      )
-                    }
-                    className="text-[13px] font-semibold text-[color:var(--panel-accent-deep)] hover:underline"
-                  >
-                    {allOpen ? "Tümünü daralt" : "Bedenleri genişlet"}
-                  </button>
-                </div>
-              ) : null}
-
               <TrPanelDataTable
                 contained={false}
                 onKeyDown={selection.onKeyDown}

@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, ChevronDown, ChevronRight, Search } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
@@ -11,6 +11,7 @@ import {
   TrPanelDataTableRow,
 } from "@/components/tr/panel/TrPanelDataTable";
 import { TrPanelLink as Link } from "@/components/tr/panel/TrPanelLink";
+import { TrPanelTableToolbar } from "@/components/tr/panel/TrPanelTableToolbar";
 import {
   TrPanelFadeIn,
   TrPanelListSkeleton,
@@ -18,7 +19,6 @@ import {
 import {
   panelEmptyClass,
   panelErrorClass,
-  panelFieldClass,
   panelHintClass,
   panelPrimaryBtnClass,
 } from "@/components/tr/panel/panelUi";
@@ -184,22 +184,11 @@ function CategoriesList({ boutiqueId }: { boutiqueId: string }) {
         </TrPanelFadeIn>
       ) : (
         <TrPanelFadeIn className="space-y-3" shift={false}>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="relative w-full max-w-sm">
-              <Search
-                className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-neutral-400"
-                strokeWidth={1.75}
-                aria-hidden
-              />
-              <input
-                type="search"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Tabloda arama yapın"
-                className={`${panelFieldClass} pl-9`}
-                aria-label="Kategorilerde ara"
-              />
-            </div>
+          <TrPanelTableToolbar
+            search={search}
+            onSearchChange={setSearch}
+            searchLabel="Kategorilerde ara"
+          >
             {parentIds.size > 0 && !search.trim() ? (
               <button
                 type="button"
@@ -209,7 +198,7 @@ function CategoriesList({ boutiqueId }: { boutiqueId: string }) {
                 {allExpanded ? "Tümünü daralt" : "Tümünü genişlet"}
               </button>
             ) : null}
-          </div>
+          </TrPanelTableToolbar>
 
           <TrPanelDataTable
             contained={false}
