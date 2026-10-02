@@ -109,10 +109,10 @@ function redirectResponse(
 
 /**
  * Store URLs (docs/product-upload-foundation-plan.md): does this request belong on a
- * different, canonical host — and if so, where? Handles all three stray variants: the
- * platform's `/tr/<slug>/…` duplicate, a boutique's default subdomain once a custom
- * domain is connected, and `www.` on a custom domain. Returns null (do nothing) for a
- * path that never redirects (`isCanonicalRedirectExemptPath`), a host that isn't tied to
+ * different, canonical host — and if so, where? Handles two stray variants: the
+ * platform's `/tr/<slug>/…` duplicate, and a boutique's default subdomain once a custom
+ * domain is connected. `www.` vs apex on a custom domain is left to the hosting's domain
+ * setting. Returns null (do nothing) for a path that never redirects (`isCanonicalRedirectExemptPath`), a host that isn't tied to
  * any one boutique, or a boutique with nothing canonical to send it to yet.
  */
 async function resolveProxyRedirect(
@@ -150,16 +150,9 @@ async function resolveProxyRedirect(
     });
   }
 
-  // custom-domain kind: only the www. variant can possibly redirect (to the apex).
-  if (!hostKind.hostWasWww) return null;
-  const customDomain = (await lookupBoutiqueCustomDomainAtEdge(hostKind.slug)) ?? null;
-  return resolveCanonicalRedirect({
-    hostKind,
-    cleanPath: pathname + search,
-    slug: hostKind.slug,
-    customDomain,
-    storesDomain,
-  });
+  // custom-domain kind: apex and www. are both served as they are; the hosting's domain
+  // setting picks the primary one (redirecting www. here looped with it).
+  return null;
 }
 
 export async function proxy(request: NextRequest) {
