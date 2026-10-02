@@ -20,6 +20,7 @@ import { TrBoutiqueEditorialProductCard } from "@/components/tr/boutique/editori
 import { useStorefrontTaxonomy } from "@/components/tr/boutique/TrBoutiqueTaxonomy";
 import { getEditorialContent } from "@/lib/tr/boutiqueHome";
 import type { TrStorefrontTaxonomy } from "@/lib/tr/categories/taxonomy";
+import { plpCategory, plpHref } from "@/lib/tr/catalog/plpLocation";
 import { trBoutiquePath, trBoutiqueProductsPath } from "@/lib/tr/paths";
 import {
   resolveProductColors,
@@ -106,6 +107,16 @@ const SORT_OPTIONS: Array<{ id: SortId; label: string }> = [
 interface TrBoutiqueAtelierPlpProps {
   boutique: TrBoutiquePublic;
   products: TrProduct[];
+  /** The category in the page's path (`…/kategori/<slug>`); null on `…/urunler`. */
+  categoryId?: string | null;
+  /**
+   * On a category page: the products filed under the category or its subcategories (any
+   * of their categories, not just the primary one), and whether `ids` is the category's
+   * own sort order (a sıralama ölçütü is set) rather than the shop's default order.
+   */
+  categoryScope?: { ids: string[]; ordered: boolean } | null;
+  /** The category's description (Kategoriler → Açıklama), shown under the heading. */
+  intro?: string | null;
 }
 
 function isOnSale(product: TrProduct): boolean {
@@ -172,6 +183,9 @@ type AccordionId = "sort" | "category" | "size" | "color" | "price";
 export function TrBoutiqueAtelierPlp({
   boutique,
   products,
+  categoryId = null,
+  categoryScope = null,
+  intro = null,
 }: TrBoutiqueAtelierPlpProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -179,7 +193,15 @@ export function TrBoutiqueAtelierPlp({
   const taxonomy = useStorefrontTaxonomy();
   const content = getEditorialContent(boutique, taxonomy);
 
-  const kategori = searchParams.get("kategori")?.trim() || null;
+  const kategori = plpCategory(categoryId, searchParams);
+  const scopeIndex = useMemo(
+    () =>
+      categoryScope
+        ? new Map(categoryScope.ids.map((id, index) => [id, index]))
+        : null,
+    [categoryScope],
+  );
+
   const saleOnly = searchParams.get("indirim") === "1" || kategori === "sale";
   const categoryFilter =
     saleOnly || kategori === "sale" ? null : kategori;
@@ -306,6 +328,8 @@ export function TrBoutiqueAtelierPlp({
 
     if (saleOnly) {
       list = list.filter(isOnSale);
+    } else if (categoryFilter && scopeIndex && categoryFilter === categoryId) {
+      list = list.filter((p) => scopeIndex.has(p.id));
     } else if (categoryFilter) {
       list = list.filter((p) =>
         taxonomy.isMatch(p.category, categoryFilter),
@@ -351,7 +375,13 @@ export function TrBoutiqueAtelierPlp({
         });
         break;
       default:
-        sorted.sort((a, b) => a.sortOrder - b.sortOrder);
+        if (scopeIndex && categoryScope?.ordered && categoryFilter === categoryId) {
+          sorted.sort(
+            (a, b) => (scopeIndex.get(a.id) ?? 0) - (scopeIndex.get(b.id) ?? 0),
+          );
+        } else {
+          sorted.sort((a, b) => a.sortOrder - b.sortOrder);
+        }
     }
 
     return sorted;
@@ -365,16 +395,22 @@ export function TrBoutiqueAtelierPlp({
     saleOnly,
     siraParam,
     taxonomy,
+    categoryId,
+    categoryScope,
+    scopeIndex,
   ]);
 
+  // A category change moves between `…/kategori/<slug>` and `…/urunler` (plpLocation.ts).
   const replaceParams = (patch: Record<string, string | null>) => {
-    const next = new URLSearchParams(searchParams.toString());
-    for (const [key, value] of Object.entries(patch)) {
-      if (value == null || value === "") next.delete(key);
-      else next.set(key, value);
-    }
-    const qs = next.toString();
-    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    router.replace(
+      plpHref({
+        pathname,
+        search: searchParams.toString(),
+        routeCategory: categoryId,
+        patch,
+      }),
+      { scroll: false },
+    );
   };
 
   const openMobileFilters = () => {
@@ -873,6 +909,11 @@ export function TrBoutiqueAtelierPlp({
         <h1 className="mt-3 font-serif text-[1.95rem] leading-tight font-light tracking-[-0.01em] text-neutral-950 sm:mt-4 sm:text-[2.45rem] md:text-[2.85rem]">
           {title}
         </h1>
+        {intro?.trim() && categoryFilter === categoryId ? (
+          <p className="mt-3 max-w-2xl text-[14px] leading-relaxed whitespace-pre-line text-neutral-600">
+            {intro.trim()}
+          </p>
+        ) : null}
 
         <form
           className="mt-5 flex w-full max-w-xl gap-2 md:mt-6"

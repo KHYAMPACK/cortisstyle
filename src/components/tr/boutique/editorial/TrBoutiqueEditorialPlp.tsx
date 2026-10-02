@@ -11,6 +11,7 @@ import { isAtelierEditorialSkin } from "@/lib/tr/boutiqueHome";
 import { trBoutiquePath, trBoutiqueProductsPath } from "@/lib/tr/paths";
 import { resolveProductColors } from "@/lib/tr/productOptions";
 import type { TrStorefrontTaxonomy } from "@/lib/tr/categories/taxonomy";
+import { plpCategory, plpHref } from "@/lib/tr/catalog/plpLocation";
 import type { TrBoutiquePublic, TrProduct } from "@/types/tr-marketplace";
 
 type SortId = "default" | "price-asc" | "price-desc" | "new";
@@ -18,6 +19,16 @@ type SortId = "default" | "price-asc" | "price-desc" | "new";
 interface TrBoutiqueEditorialPlpProps {
   boutique: TrBoutiquePublic;
   products: TrProduct[];
+  /** The category in the page's path (`…/kategori/<slug>`); null on `…/urunler`. */
+  categoryId?: string | null;
+  /**
+   * On a category page: the products filed under the category or its subcategories (any
+   * of their categories, not just the primary one), and whether `ids` is the category's
+   * own sort order (a sıralama ölçütü is set) rather than the shop's default order.
+   */
+  categoryScope?: { ids: string[]; ordered: boolean } | null;
+  /** The category's description (Kategoriler → Açıklama), shown under the heading. */
+  intro?: string | null;
 }
 
 function breadcrumbLabel(
@@ -40,26 +51,54 @@ function isOnSale(product: TrProduct): boolean {
 export function TrBoutiqueEditorialPlp({
   boutique,
   products,
+  categoryId = null,
+  categoryScope = null,
+  intro = null,
 }: TrBoutiqueEditorialPlpProps) {
   if (isAtelierEditorialSkin(boutique.slug)) {
-    return <TrBoutiqueAtelierPlp boutique={boutique} products={products} />;
+    return (
+      <TrBoutiqueAtelierPlp
+        boutique={boutique}
+        products={products}
+        categoryId={categoryId}
+        categoryScope={categoryScope}
+        intro={intro}
+      />
+    );
   }
 
   return (
-    <TrBoutiqueClassicEditorialPlp boutique={boutique} products={products} />
+    <TrBoutiqueClassicEditorialPlp
+      boutique={boutique}
+      products={products}
+      categoryId={categoryId}
+      categoryScope={categoryScope}
+      intro={intro}
+    />
   );
 }
 
 function TrBoutiqueClassicEditorialPlp({
   boutique,
   products,
+  categoryId = null,
+  categoryScope = null,
+  intro = null,
 }: TrBoutiqueEditorialPlpProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const taxonomy = useStorefrontTaxonomy();
 
-  const kategori = searchParams.get("kategori")?.trim() || null;
+  const kategori = plpCategory(categoryId, searchParams);
+  const scopeIndex = useMemo(
+    () =>
+      categoryScope
+        ? new Map(categoryScope.ids.map((id, index) => [id, index]))
+        : null,
+    [categoryScope],
+  );
+
   const saleOnly = searchParams.get("indirim") === "1" || kategori === "sale";
   const categoryFilter = saleOnly
     ? null
@@ -109,6 +148,8 @@ function TrBoutiqueClassicEditorialPlp({
 
     if (saleOnly) {
       list = list.filter(isOnSale);
+    } else if (categoryFilter && scopeIndex && categoryFilter === categoryId) {
+      list = list.filter((p) => scopeIndex.has(p.id));
     } else if (categoryFilter) {
       list = list.filter((p) =>
         taxonomy.isMatch(p.category, categoryFilter),
@@ -144,20 +185,40 @@ function TrBoutiqueClassicEditorialPlp({
         });
         break;
       default:
-        sorted.sort((a, b) => a.sortOrder - b.sortOrder);
+        if (scopeIndex && categoryScope?.ordered && categoryFilter === categoryId) {
+          sorted.sort(
+            (a, b) => (scopeIndex.get(a.id) ?? 0) - (scopeIndex.get(b.id) ?? 0),
+          );
+        } else {
+          sorted.sort((a, b) => a.sortOrder - b.sortOrder);
+        }
     }
 
     return sorted;
-  }, [categoryFilter, products, q, renkParam, saleOnly, siraParam, taxonomy]);
+  }, [
+    categoryFilter,
+    categoryId,
+    categoryScope,
+    products,
+    q,
+    renkParam,
+    saleOnly,
+    scopeIndex,
+    siraParam,
+    taxonomy,
+  ]);
 
+  // A category change moves between `…/kategori/<slug>` and `…/urunler` (plpLocation.ts).
   const replaceParams = (patch: Record<string, string | null>) => {
-    const next = new URLSearchParams(searchParams.toString());
-    for (const [key, value] of Object.entries(patch)) {
-      if (value == null || value === "") next.delete(key);
-      else next.set(key, value);
-    }
-    const qs = next.toString();
-    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    router.replace(
+      plpHref({
+        pathname,
+        search: searchParams.toString(),
+        routeCategory: categoryId,
+        patch,
+      }),
+      { scroll: false },
+    );
   };
 
   const crumb = breadcrumbLabel(
@@ -182,6 +243,11 @@ function TrBoutiqueClassicEditorialPlp({
           <span className="mx-2 text-neutral-300">|</span>
           <span className="text-neutral-900">{crumb}</span>
         </nav>
+        {intro?.trim() && categoryFilter === categoryId ? (
+          <p className="mx-auto mt-4 max-w-2xl text-[14px] leading-relaxed whitespace-pre-line text-neutral-600">
+            {intro.trim()}
+          </p>
+        ) : null}
 
         <form
           className="mx-auto mt-6 flex w-full max-w-xl gap-2"

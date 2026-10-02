@@ -103,7 +103,11 @@ export function resolveAtelierPageId(
   if (normalized.includes("/giris") || normalized.includes("/hesap") || normalized.includes("/adresler")) {
     return "account";
   }
-  if (normalized.includes("/urunler") || normalized.includes("/urun/")) {
+  if (
+    normalized.includes("/urunler") ||
+    normalized.includes("/kategori/") ||
+    normalized.includes("/urun/")
+  ) {
     return "products";
   }
   if (normalized === base || normalized === "/") return "home";

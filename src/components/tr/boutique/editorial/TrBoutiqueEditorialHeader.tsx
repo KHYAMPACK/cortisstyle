@@ -320,7 +320,8 @@ export function TrBoutiqueEditorialHeader({
 
   const favCount = favorites.hydrated ? favorites.itemCount : 0;
   const productsPath = trBoutiqueProductsPath(boutique.slug);
-  const onProductsPage = pathname.includes("/urunler");
+  const onProductsPage =
+    pathname.includes("/urunler") || pathname.includes("/kategori/");
   const hideCategoryNav =
     atelier && /\/(giris|hesap|adresler|sepet|favoriler)(\/|$)/.test(pathname);
   const brandTitle = resolveBoutiqueBrandLabel(boutique.slug, boutique.name);

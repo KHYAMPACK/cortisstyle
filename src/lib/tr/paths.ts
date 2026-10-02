@@ -16,6 +16,11 @@ export function isBoutiqueHomePath(
 }
 
 /** Boutique storefront product listing (editorial PLP). */
+/**
+ * A boutique's product list. With `kategori` it is that category's page
+ * (`/tr/{boutique}/kategori/{slug}`); the other parameters narrow the list. `kategori:
+ * "sale"` is the discount filter on the full list, not a category.
+ */
 export function trBoutiqueProductsPath(
   boutiqueSlug: string,
   params?: {
@@ -26,15 +31,18 @@ export function trBoutiqueProductsPath(
     sira?: string;
   },
 ): string {
-  const base = `/tr/${encodeURIComponent(boutiqueSlug)}/urunler`;
+  const kategori = params?.kategori?.trim();
+  const sale = kategori === "sale";
+  const base =
+    kategori && !sale
+      ? trBoutiqueCategoryPath(boutiqueSlug, kategori)
+      : `/tr/${encodeURIComponent(boutiqueSlug)}/urunler`;
   const search = new URLSearchParams();
   const q = params?.q?.trim();
-  const kategori = params?.kategori?.trim();
   const renk = params?.renk?.trim();
   const sira = params?.sira?.trim();
   if (q) search.set("q", q);
-  if (kategori) search.set("kategori", kategori);
-  if (params?.indirim) search.set("indirim", "1");
+  if (params?.indirim || sale) search.set("indirim", "1");
   if (renk) search.set("renk", renk);
   if (sira) search.set("sira", sira);
   const qs = search.toString();
