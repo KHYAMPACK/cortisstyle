@@ -301,10 +301,10 @@ _Formerly M7c-2 + M7c-3, now including colour._
   - a second run is refused;
   - after a simulated sale the patch is refused;
   - the rollback leaves 0 differing rows.
-- **Answers (suggested 2026-10-02, Mert confirms):**
+- **Answers (confirmed by Mert 2026-10-02):**
   - The three-jeans group stays apart. The other 8 groups merge, with titles without the colour word.
-  - Colours for 6 products were guessed from their titles.
-  - Still open: the colour of "Midi Straplez Elbise" (`7fe1829b…`).
+  - Colours for 6 products come from their titles; "Midi Straplez Elbise" is Siyah.
+  - Nothing blocks: the dry run writes the SQL.
 - **Known after-effects:**
   - The shop's colour filter sees only a merged product's survivor colour.
   - The numeric size type is called "Pantolon bedeni" on dresses that use numbers too (rename it in Varyant türleri if wanted).
