@@ -17,6 +17,8 @@ import {
   type StoreHostKind,
   type StoreRedirectTarget,
 } from "@/lib/tr/seo/storeAddress";
+import { productPagePath, productRedirectTarget } from "@/lib/tr/catalog/productRedirectRules";
+import { lookupProductRedirectAtEdge } from "@/lib/tr/catalog/productRedirectsAtEdge";
 import {
   BOUTIQUE_WELL_KNOWN_ICON_PATHS,
   resolveHostFaviconPublicPath,
@@ -192,6 +194,21 @@ export async function proxy(request: NextRequest) {
     hostKind.kind === "custom-domain" || hostKind.kind === "subdomain"
       ? hostKind.slug
       : null;
+
+  // A product address that moved (renamed slug, colour merged into another product):
+  // answered here with a real 308, since the product page streams behind loading.tsx and
+  // a redirect from inside it can only be a meta refresh.
+  const productPath = productPagePath(pathname, boutiqueSlug);
+  if (productPath) {
+    const moved = await lookupProductRedirectAtEdge(productPath.boutiqueSlug, productPath.param);
+    if (moved) {
+      const target = productRedirectTarget(productPath, moved, request.nextUrl.search);
+      const url = request.nextUrl.clone();
+      url.pathname = target.pathname;
+      url.search = target.search;
+      return NextResponse.redirect(url, 308);
+    }
+  }
   if (boutiqueSlug && BOUTIQUE_WELL_KNOWN_ICON_PATHS.has(pathname)) {
     const iconPath = resolveHostFaviconPublicPath(boutiqueSlug);
     const url = request.nextUrl.clone();
