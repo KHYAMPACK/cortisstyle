@@ -1,6 +1,5 @@
 "use client";
 
-import { Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
 import { TrOwnerProductRouteGate } from "@/components/tr/panel/TrOwnerProductRouteGate";
@@ -13,10 +12,14 @@ import {
 import { TrPanelModal } from "@/components/tr/panel/TrPanelModal";
 import { TrVariantTypeDrawer } from "@/components/tr/panel/TrVariantTypeDrawer";
 import {
+  TrPanelFilterChips,
+  TrPanelFilterClear,
+  TrPanelTableToolbar,
+} from "@/components/tr/panel/TrPanelTableToolbar";
+import {
   panelBackLinkClass,
   panelEmptyClass,
   panelErrorClass,
-  panelFieldClass,
   panelHintClass,
   panelPrimaryBtnClass,
   panelSecondaryBtnClass,
@@ -42,6 +45,22 @@ interface Loaded {
 }
 
 const PREVIEW_VALUES = 5;
+
+type StyleFilter = "all" | "list" | "swatch";
+type RoleFilter = "all" | "size" | "color" | "other";
+
+const STYLE_FILTER: ReadonlyArray<{ id: StyleFilter; label: string }> = [
+  { id: "all", label: "Tümü" },
+  { id: "list", label: "Liste" },
+  { id: "swatch", label: "Renk / Görsel" },
+];
+
+const ROLE_FILTER: ReadonlyArray<{ id: RoleFilter; label: string }> = [
+  { id: "all", label: "Tümü" },
+  { id: "size", label: "Beden" },
+  { id: "color", label: "Renk" },
+  { id: "other", label: "Diğer" },
+];
 
 function styleLabel(type: TrVariantType): string {
   return type.selectionStyle === "swatch" ? "Renk / Görsel" : "Liste";
@@ -199,6 +218,9 @@ export function TrVariantTypesList({ boutiqueId }: { boutiqueId: string }) {
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [styleFilter, setStyleFilter] = useState<StyleFilter>("all");
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
+  const filterCount = (styleFilter !== "all" ? 1 : 0) + (roleFilter !== "all" ? 1 : 0);
   const [version, setVersion] = useState(0);
   const [importing, setImporting] = useState(false);
   // `null` = closed; `{ type: null }` = creating; `{ type }` = editing.
@@ -237,13 +259,15 @@ export function TrVariantTypesList({ boutiqueId }: { boutiqueId: string }) {
   const query = search.trim().toLocaleLowerCase("tr");
   const rows = useMemo(() => {
     if (!ready) return [];
-    if (!query) return ready.types;
     return ready.types.filter(
       (type) =>
-        type.name.toLocaleLowerCase("tr").includes(query) ||
-        type.values.some((value) => value.label.toLocaleLowerCase("tr").includes(query)),
+        (!query ||
+          type.name.toLocaleLowerCase("tr").includes(query) ||
+          type.values.some((value) => value.label.toLocaleLowerCase("tr").includes(query))) &&
+        (styleFilter === "all" || type.selectionStyle === styleFilter) &&
+        (roleFilter === "all" || (type.role ?? "other") === roleFilter),
     );
-  }, [ready, query]);
+  }, [ready, query, styleFilter, roleFilter]);
 
   const openDrawer = (type: TrVariantType | null) => {
     setDrawerType(type);
@@ -322,21 +346,35 @@ export function TrVariantTypesList({ boutiqueId }: { boutiqueId: string }) {
             </div>
           ) : (
             <div className="space-y-3">
-              <div className="relative max-w-sm">
-                <Search
-                  className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-neutral-400"
-                  strokeWidth={1.75}
-                  aria-hidden
-                />
-                <input
-                  type="search"
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Tabloda arama yapın"
-                  className={`${panelFieldClass} pl-9`}
-                  aria-label="Varyant türlerinde ara"
-                />
-              </div>
+              <TrPanelTableToolbar
+                search={search}
+                onSearchChange={setSearch}
+                searchLabel="Varyant türlerinde ara"
+                filterCount={filterCount}
+                filters={
+                  <div className="space-y-4">
+                    <TrPanelFilterChips
+                      label="Seçim stili"
+                      options={STYLE_FILTER}
+                      value={styleFilter}
+                      onChange={setStyleFilter}
+                    />
+                    <TrPanelFilterChips
+                      label="Kullanım"
+                      options={ROLE_FILTER}
+                      value={roleFilter}
+                      onChange={setRoleFilter}
+                    />
+                    <TrPanelFilterClear
+                      active={filterCount > 0}
+                      onClear={() => {
+                        setStyleFilter("all");
+                        setRoleFilter("all");
+                      }}
+                    />
+                  </div>
+                }
+              />
 
               <div className="overflow-hidden rounded-xl border border-neutral-200/80 bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
                 <div className="hidden grid-cols-[12rem_9rem_minmax(0,1fr)_6rem] gap-4 border-b border-neutral-200 bg-neutral-50 px-4 py-2.5 text-[12px] font-semibold tracking-wide text-neutral-500 lg:grid">
@@ -347,7 +385,7 @@ export function TrVariantTypesList({ boutiqueId }: { boutiqueId: string }) {
                 </div>
                 {rows.length === 0 ? (
                   <p className="px-4 py-10 text-center text-[14px] text-neutral-500">
-                    Aramanıza uyan varyant türü yok.
+                    Aramanıza veya filtrelere uyan varyant türü yok.
                   </p>
                 ) : (
                   <ul className="divide-y divide-neutral-100">

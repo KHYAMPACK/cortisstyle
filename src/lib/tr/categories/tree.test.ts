@@ -134,6 +134,18 @@ describe("visibleCategoryRows", () => {
     assert.equal(deeper[2]!.parentPath, "Elbise › Abiye");
   });
 
+  it("lists every filter match flat, combined with the search", () => {
+    const deep = (category: { id: string }) => category.id !== "a";
+    assert.deepEqual(
+      visibleCategoryRows(tree, new Set(), "", deep).map((row) => row.category.id),
+      ["b", "c", "d"],
+    );
+    assert.deepEqual(
+      visibleCategoryRows(tree, new Set(), "uzun", deep).map((row) => row.category.id),
+      ["c"],
+    );
+  });
+
   it("lists every match flat while searching", () => {
     const rows = visibleCategoryRows(tree, new Set(), "abi");
     assert.deepEqual(rows.map((row) => row.category.id), ["b", "c"]);

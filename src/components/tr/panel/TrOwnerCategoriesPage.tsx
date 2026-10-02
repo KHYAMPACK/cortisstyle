@@ -11,7 +11,12 @@ import {
   TrPanelDataTableRow,
 } from "@/components/tr/panel/TrPanelDataTable";
 import { TrPanelLink as Link } from "@/components/tr/panel/TrPanelLink";
-import { TrPanelTableToolbar } from "@/components/tr/panel/TrPanelTableToolbar";
+import {
+  TrPanelFilterChips,
+  TrPanelFilterClear,
+  TrPanelFilterSelect,
+  TrPanelTableToolbar,
+} from "@/components/tr/panel/TrPanelTableToolbar";
 import {
   TrPanelFadeIn,
   TrPanelListSkeleton,
@@ -22,7 +27,7 @@ import {
   panelHintClass,
   panelPrimaryBtnClass,
 } from "@/components/tr/panel/panelUi";
-import { categorySortLabel } from "@/lib/tr/categories/sortCriteria";
+import { CATEGORY_SORT_OPTIONS, categorySortLabel } from "@/lib/tr/categories/sortCriteria";
 import { visibleCategoryRows } from "@/lib/tr/categories/tree";
 import type { TrCategoryListEntry } from "@/lib/tr/categories/types";
 import { toast } from "@/lib/tr/panel/toast";
@@ -35,6 +40,21 @@ import {
   trPanelEditCategoryPath,
   trPanelNewCategoryPath,
 } from "@/lib/tr/paths";
+
+type SortFilter = "all" | "default" | (typeof CATEGORY_SORT_OPTIONS)[number]["id"];
+type ProductsFilter = "all" | "with" | "empty";
+
+const SORT_FILTER_OPTIONS: ReadonlyArray<{ id: SortFilter; label: string }> = [
+  { id: "all", label: "Tümü" },
+  { id: "default", label: "Varsayılan (seçilmemiş)" },
+  ...CATEGORY_SORT_OPTIONS,
+];
+
+const PRODUCTS_FILTER_OPTIONS: ReadonlyArray<{ id: ProductsFilter; label: string }> = [
+  { id: "all", label: "Tümü" },
+  { id: "with", label: "Ürünü olan" },
+  { id: "empty", label: "Boş" },
+];
 
 interface Loaded {
   boutiqueId: string;
@@ -52,6 +72,9 @@ function CategoriesList({ boutiqueId }: { boutiqueId: string }) {
   const [reloadKey, setReloadKey] = useState(0);
   // Parent categories start collapsed; a chevron opens one.
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(() => new Set());
+  const [sortFilter, setSortFilter] = useState<SortFilter>("all");
+  const [productsFilter, setProductsFilter] = useState<ProductsFilter>("all");
+  const filterCount = (sortFilter !== "all" ? 1 : 0) + (productsFilter !== "all" ? 1 : 0);
 
   useEffect(() => {
     let cancelled = false;
@@ -90,10 +113,21 @@ function CategoriesList({ boutiqueId }: { boutiqueId: string }) {
   };
 
   const ready = loaded?.boutiqueId === boutiqueId ? loaded : null;
-  const rows = useMemo(
-    () => (ready ? visibleCategoryRows(ready.categories, expanded, search) : []),
-    [ready, expanded, search],
-  );
+  const rows = useMemo(() => {
+    if (!ready) return [];
+    // Filters list their matches flat, like a search.
+    const match =
+      filterCount === 0
+        ? undefined
+        : (category: TrCategoryListEntry) =>
+            (sortFilter === "all" ||
+              (sortFilter === "default"
+                ? category.sortCriterion == null
+                : category.sortCriterion === sortFilter)) &&
+            (productsFilter === "all" ||
+              (productsFilter === "with" ? category.productCount > 0 : category.productCount === 0));
+    return visibleCategoryRows(ready.categories, expanded, search, match);
+  }, [ready, expanded, search, filterCount, sortFilter, productsFilter]);
   const parentIds = useMemo(
     () =>
       new Set(
@@ -188,8 +222,32 @@ function CategoriesList({ boutiqueId }: { boutiqueId: string }) {
             search={search}
             onSearchChange={setSearch}
             searchLabel="Kategorilerde ara"
+            filterCount={filterCount}
+            filters={
+              <div className="space-y-4">
+                <TrPanelFilterSelect
+                  label="Sıralama ölçütü"
+                  options={SORT_FILTER_OPTIONS}
+                  value={sortFilter}
+                  onChange={setSortFilter}
+                />
+                <TrPanelFilterChips
+                  label="Ürünler"
+                  options={PRODUCTS_FILTER_OPTIONS}
+                  value={productsFilter}
+                  onChange={setProductsFilter}
+                />
+                <TrPanelFilterClear
+                  active={filterCount > 0}
+                  onClear={() => {
+                    setSortFilter("all");
+                    setProductsFilter("all");
+                  }}
+                />
+              </div>
+            }
           >
-            {parentIds.size > 0 && !search.trim() ? (
+            {parentIds.size > 0 && !search.trim() && filterCount === 0 ? (
               <button
                 type="button"
                 onClick={() => setExpanded(allExpanded ? new Set() : new Set(parentIds))}
@@ -203,7 +261,7 @@ function CategoriesList({ boutiqueId }: { boutiqueId: string }) {
           <TrPanelDataTable
             contained={false}
             headers={["Ad", "Sıralama Ölçütü", <span key="n" className="block text-right">Ürünler</span>]}
-            empty={rows.length === 0 ? "Aramanıza uyan kategori yok." : undefined}
+            empty={rows.length === 0 ? "Aramanıza veya filtrelere uyan kategori yok." : undefined}
             footer={`${ready.categories.length} kategori`}
           >
             {rows.map(({ category, depth, hasChildren, parentPath }) => {

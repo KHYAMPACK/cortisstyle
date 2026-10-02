@@ -166,13 +166,15 @@ export interface CategoryTableRow<T extends TrCategoryNode> {
 
 /**
  * The rows a collapsible category table shows: tree order, a category's children only
- * while it is expanded. With a search query, every match, flat (its parents may not
- * match), with its parent path so it can still be told apart.
+ * while it is expanded. With a search query or a filter, every match, flat (its parents
+ * may not match), with its parent path so it can still be told apart.
  */
 export function visibleCategoryRows<T extends TrCategoryNode>(
   categories: readonly T[],
   expanded: ReadonlySet<string>,
   query = "",
+  /** A filter: like a search, it lists the matches flat. */
+  match?: (category: T) => boolean,
 ): CategoryTableRow<T>[] {
   const withChildren = new Set(
     categories.map((entry) => entry.parentId).filter((id): id is string => Boolean(id)),
@@ -185,9 +187,13 @@ export function visibleCategoryRows<T extends TrCategoryNode>(
   const needle = query.trim().toLocaleLowerCase("tr");
   const rows = flattenCategoryTree(categories);
 
-  if (needle) {
+  if (needle || match) {
     return rows
-      .filter(({ category }) => category.name.toLocaleLowerCase("tr").includes(needle))
+      .filter(
+        ({ category }) =>
+          category.name.toLocaleLowerCase("tr").includes(needle) &&
+          (!match || match(category)),
+      )
       .map(({ category }) => ({
         category,
         depth: 0,

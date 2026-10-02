@@ -3,7 +3,12 @@
 import { Search, SlidersHorizontal } from "lucide-react";
 import type { ReactNode } from "react";
 import { TrPanelPopover } from "@/components/tr/panel/TrPanelPopover";
-import { panelFieldClass, panelSecondaryBtnClass } from "@/components/tr/panel/panelUi";
+import {
+  panelFieldClass,
+  panelFilterChipClass,
+  panelLabelClass,
+  panelSecondaryBtnClass,
+} from "@/components/tr/panel/panelUi";
 
 /**
  * The bar above a panel table: "Tabloda arama yapın" and, when the page has filters,
@@ -70,3 +75,78 @@ export function TrPanelTableToolbar({
   );
 }
 
+
+/** One filter in a Filtre popover: a heading and a row of chips, one of them active. */
+export function TrPanelFilterChips<T extends string>({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  options: ReadonlyArray<{ id: T; label: string }>;
+  value: T;
+  onChange: (next: T) => void;
+}) {
+  return (
+    <div className="space-y-2">
+      <p className={panelLabelClass}>{label}</p>
+      <div className="flex flex-wrap gap-2">
+        {options.map((option) => (
+          <button
+            key={option.id}
+            type="button"
+            aria-pressed={value === option.id}
+            onClick={() => onChange(option.id)}
+            className={panelFilterChipClass(value === option.id)}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** A filter with many options (long labels): a select. */
+export function TrPanelFilterSelect<T extends string>({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  options: ReadonlyArray<{ id: T; label: string }>;
+  value: T;
+  onChange: (next: T) => void;
+}) {
+  return (
+    <label className="block space-y-2">
+      <span className={panelLabelClass}>{label}</span>
+      <select
+        className={panelFieldClass}
+        value={value}
+        onChange={(event) => onChange(event.target.value as T)}
+      >
+        {options.map((option) => (
+          <option key={option.id} value={option.id}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+/** "Filtreleri temizle", shown while any filter is on. */
+export function TrPanelFilterClear({ active, onClear }: { active: boolean; onClear: () => void }) {
+  return active ? (
+    <button
+      type="button"
+      onClick={onClear}
+      className="text-[13px] font-semibold text-[color:var(--panel-accent-deep)] hover:underline"
+    >
+      Filtreleri temizle
+    </button>
+  ) : null;
+}
