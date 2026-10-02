@@ -928,3 +928,172 @@ function packedJson(urls: readonly string[], prefix: string): string {
   if (packed.includes("@/") === false) return sqlJson(urls);
   return `replace(${sqlText(packed)}, '@/', ${sqlText(prefix)})::jsonb`;
 }
+
+/**
+ * The compact patch split for sending through a size-limited SQL tool: `stage` loads
+ * the patch's data into a private `f6` schema in small statements (each checkable with
+ * `stageCheck` before anything changes), then `migrate` — short, data-free — runs the
+ * whole migration in one transaction from those tables and drops the schema.
+ */
+export function sizeMigrationStagedSql(input: {
+  plan: SizeMigrationPlan;
+  products: readonly MigrationProduct[];
+  hashes: ReadonlyMap<string, string>;
+  boutiqueId: string;
+  maxChunk?: number;
+}): { stage: string[]; stageCheck: string; migrate: string } {
+  const { plan, products, hashes, boutiqueId } = input;
+  const maxChunk = input.maxChunk ?? 12_000;
+  if (plan.problems.some((problem) => problem.level === "block")) {
+    throw new Error("Plan has blocking problems; fix them before writing SQL.");
+  }
+  const byId = new Map(products.map((product) => [product.id, product]));
+  const touched = [
+    ...plan.products.map((entry) => entry.productId),
+    ...plan.merges.map((entry) => entry.productId),
+  ];
+  const prefix = commonUrlPrefix(plan);
+  const colorType = plan.types.find((type) => type.role === "color") ?? null;
+  const merged = plan.products.filter((entry) => entry.merge);
+  const ungrouped = plan.products.filter((entry) => !entry.merge && entry.features);
+
+  // Rows per staging table.
+  const rows: Record<string, string[]> = {
+    hash: touched.map((id) => `(${lit(id)},${sqlText(hashes.get(id) ?? "")})`),
+    types: plan.types.map((type) => `(${lit(type.id)},${sqlText(type.name)},${sqlText(type.role)},${type.sortOrder})`),
+    vals: plan.types.flatMap((type) =>
+      type.values.map((value) => `(${lit(value.id)},${lit(type.id)},${sqlText(value.label)},${value.sortOrder})`),
+    ),
+    options: plan.products.map((entry) =>
+      entry.typeIds.length === 2
+        ? `(${lit(entry.productId)},${lit(entry.typeIds[0]!)},${lit(entry.typeIds[1]!)})`
+        : `(${lit(entry.productId)},null,${lit(entry.typeIds[0]!)})`,
+    ),
+    members: [],
+    survivors: [],
+    ungrouped: ungrouped.map((entry) => `(${lit(entry.productId)})`),
+  };
+  for (const id of touched) if (!hashes.get(id)) throw new Error(`No fingerprint for ${id}.`);
+  for (const entry of merged) {
+    const merge = entry.merge!;
+    merge.memberIds.forEach((memberId, ord) => {
+      const color = colorOfVariantLabel(entry, memberId, plan);
+      const first = entry.variants.find((variant) => variant.label.startsWith(`${color} / `));
+      const valueLabel = colorType!.values.find((value) => labelKey(value.label) === labelKey(color))!.label;
+      rows.members!.push(
+        `(${lit(entry.productId)},${lit(memberId)},${ord},${sqlText(valueLabel)},${sqlText(color)},${packedJson((first?.images ?? []).slice(0, 8), prefix)})`,
+      );
+    });
+    const survivor = byId.get(entry.productId)!;
+    const from =
+      merge.description === survivor.description && merge.descriptionHtml === survivor.descriptionHtml
+        ? entry.productId
+        : merge.memberIds.find((id) => {
+            const member = byId.get(id)!;
+            return member.description === merge.description && member.descriptionHtml === merge.descriptionHtml;
+          })!;
+    rows.survivors!.push(
+      `(${lit(entry.productId)},${sqlText(merge.title)},${lit(from)},${packedJson(merge.images, prefix)},${sqlJson(merge.features)},${sqlJson(entry.sizes)})`,
+    );
+  }
+
+  const tables: Record<string, string> = {
+    hash: "id uuid primary key, h text not null",
+    types: "id uuid primary key, name text not null, role text not null, sort_order integer not null",
+    vals: "id uuid primary key, type_id uuid not null, label text not null, sort_order integer not null",
+    options: "product_id uuid primary key, color_type uuid, size_type uuid not null",
+    members: "survivor uuid not null, member uuid primary key, ord integer not null, value_label text not null, color text not null, gallery jsonb not null",
+    survivors: "id uuid primary key, title text not null, description_from uuid not null, images jsonb not null, features jsonb not null, sizes jsonb not null",
+    ungrouped: "id uuid primary key",
+  };
+  const stage: string[] = [
+    [
+      "create schema f6;",
+      "revoke all on schema f6 from public;",
+      ...Object.entries(tables).map(([name, columns]) => `create table f6.${name} (${columns});`),
+    ].join("\n"),
+  ];
+  for (const [name, list] of Object.entries(rows)) {
+    let batch: string[] = [];
+    let size = 0;
+    const flush = () => {
+      if (batch.length > 0) stage.push(`insert into f6.${name} values ${batch.join(",")};`);
+      batch = [];
+      size = 0;
+    };
+    for (const row of list) {
+      if (size + row.length > maxChunk) flush();
+      batch.push(row);
+      size += row.length + 1;
+    }
+    flush();
+  }
+
+  // One fingerprint per staging table, to compare with the same query run locally.
+  const fingerprint = (name: string, order: string) =>
+    `select '${name}' as t, count(*) as n, md5(coalesce(string_agg(to_jsonb(x)::text, ',' order by ${order}), '')) as h from f6.${name} x`;
+  const stageCheck = [
+    fingerprint("hash", "x.id"),
+    fingerprint("types", "x.id"),
+    fingerprint("vals", "x.id"),
+    fingerprint("options", "x.product_id"),
+    fingerprint("members", "x.member"),
+    fingerprint("survivors", "x.id"),
+    fingerprint("ungrouped", "x.id"),
+  ].join("\nunion all ") + ";";
+
+  const counts = Object.fromEntries(Object.entries(rows).map(([name, list]) => [name, list.length]));
+  const derived = rows.members!.length > 0 &&
+    merged.every((entry) => entry.variants.every((variant) => variant.images.length <= 8));
+  const B = sqlUuid(boutiqueId);
+  const m: string[] = [
+    "begin;",
+    "do $f6$",
+    "declare changed integer;",
+    "begin",
+    `  if exists (select 1 from public.tr_variant_types where boutique_id = ${B}) then raise exception 'F6: the boutique already has variant types'; end if;`,
+    `  if (select count(*) from f6.hash) <> ${counts.hash} or (select count(*) from f6.types) <> ${counts.types} or (select count(*) from f6.vals) <> ${counts.vals} or (select count(*) from f6.options) <> ${counts.options} or (select count(*) from f6.members) <> ${counts.members} or (select count(*) from f6.survivors) <> ${counts.survivors} or (select count(*) from f6.ungrouped) <> ${counts.ungrouped} then raise exception 'F6: staging is incomplete'; end if;`,
+    "  select count(*) into changed from f6.hash s left join public.tr_products p on p.id = s.id",
+    `  where p.id is null or p.boutique_id <> ${B} or p.merged_into is not null or ${SIZE_MIGRATION_HASH_SQL} <> s.h;`,
+    "  if changed > 0 then raise exception 'F6: % product(s) changed since the snapshot; re-run the script', changed; end if;",
+    "end",
+    "$f6$;",
+    "create table public.tr_f6_products_backup as select timezone('utc'::text, now()) as backed_up_at, p.* from public.tr_products p where p.id in (select id from f6.hash);",
+    "alter table public.tr_f6_products_backup enable row level security;",
+    `insert into public.tr_variant_types (id, boutique_id, name, selection_style, role, sort_order) select id, ${B}, name, 'list', role, sort_order from f6.types;`,
+    "insert into public.tr_variant_type_values (id, type_id, label, sort_order) select id, type_id, label, sort_order from f6.vals;",
+    "insert into public.tr_product_options (product_id, type_id, sort_order)",
+    "  select product_id, color_type, 0 from f6.options where color_type is not null",
+    "  union all select product_id, size_type, case when color_type is null then 0 else 1 end from f6.options;",
+    "insert into public.tr_product_variants (product_id, option_value_ids, stock, images, active, sort_order)",
+    "  select o.product_id, array[v.id], greatest(0, coalesce(round((p.size_stocks ->> v.label)::numeric), 0))::integer, '[]'::jsonb, true,",
+    "    (row_number() over (partition by o.product_id order by v.sort_order) - 1)::integer",
+    "  from f6.options o join public.tr_products p on p.id = o.product_id",
+    "  join public.tr_variant_type_values v on v.type_id = o.size_type and p.sizes ? v.label",
+    "  where o.color_type is null;",
+    "insert into public.tr_product_variants (product_id, option_value_ids, stock, images, active, sort_order)",
+    "  select m.survivor, array[cv.id, sv.id], greatest(0, coalesce(round((mp.size_stocks ->> sv.label)::numeric), 0))::integer, m.gallery, true,",
+    "    (row_number() over (partition by m.survivor order by m.ord, sv.sort_order) - 1)::integer",
+    "  from f6.members m join public.tr_products mp on mp.id = m.member",
+    "  join f6.options o on o.product_id = m.survivor",
+    "  join public.tr_variant_type_values cv on cv.type_id = o.color_type and cv.label = m.value_label",
+    "  join public.tr_variant_type_values sv on sv.type_id = o.size_type and mp.sizes ? sv.label;",
+    "update public.tr_products p set title = s.title, description = d.description, description_html = d.description_html,",
+    derived
+      ? "  images = coalesce((select jsonb_agg(x.u order by x.pos) from (select g.u, min(m.ord * 1000 + g.n) as pos from f6.members m, jsonb_array_elements_text(m.gallery) with ordinality g(u, n) where m.survivor = s.id group by g.u) x), '[]'::jsonb),"
+      : "  images = s.images,",
+    "  marketplace_images = '[]'::jsonb, lifestyle_images = '[]'::jsonb, features = s.features, sizes = s.sizes",
+    "from f6.survivors s join public.tr_products d on d.id = s.description_from where p.id = s.id;",
+    "update public.tr_products p set status = 'hidden', merged_into = m.survivor,",
+    "  features = (p.features - 'colorGroupId' - 'colorSiblingIds') || jsonb_build_object('color', m.color)",
+    "from f6.members m where p.id = m.member and m.member <> m.survivor;",
+    "update public.tr_products set features = features - 'colorGroupId' - 'colorSiblingIds' where id in (select id from f6.ungrouped);",
+    "update public.tr_products p set product_type = 'advanced', size_stocks = '{}'::jsonb,",
+    "  stock = coalesce((select sum(v.stock) from public.tr_product_variants v where v.product_id = p.id), 0)",
+    "from f6.options o where p.id = o.product_id;",
+    "update public.tr_products set updated_at = timezone('utc'::text, now()) where id in (select id from f6.hash);",
+    "drop schema f6 cascade;",
+    "commit;",
+  ];
+  return { stage, stageCheck, migrate: `${m.join("\n")}\n` };
+}
