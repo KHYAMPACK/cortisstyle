@@ -24,7 +24,11 @@ import type {
   TrCategoryListEntry,
   TrCategoryMode,
 } from "@/lib/tr/categories/types";
-import { fetchOwnerCategories } from "@/lib/tr/ownerClient";
+import { toast } from "@/lib/tr/panel/toast";
+import {
+  fetchOwnerCategories,
+  importOwnerCategoryTemplate,
+} from "@/lib/tr/ownerClient";
 import {
   trPanelDefinitionsPath,
   trPanelEditCategoryPath,
@@ -35,6 +39,8 @@ interface Loaded {
   boutiqueId: string;
   mode: TrCategoryMode;
   categories: TrCategoryListEntry[];
+  /** The built-in tree can be imported ("Hazır kategorileri içe aktar"). */
+  importable: boolean;
 }
 
 function CategoriesList({ boutiqueId }: { boutiqueId: string }) {
@@ -42,6 +48,8 @@ function CategoriesList({ boutiqueId }: { boutiqueId: string }) {
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [importing, setImporting] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -64,9 +72,24 @@ function CategoriesList({ boutiqueId }: { boutiqueId: string }) {
     return () => {
       cancelled = true;
     };
-  }, [boutiqueId]);
+  }, [boutiqueId, reloadKey]);
+
+  const runImport = async () => {
+    setImporting(true);
+    try {
+      const { created, assigned } = await importOwnerCategoryTemplate(boutiqueId);
+      toast.success(`${created} kategori aktarıldı, ${assigned} ürün bağlandı.`);
+      setReloadKey((key) => key + 1);
+    } catch (importError) {
+      toast.error(importError, "Hazır kategoriler aktarılamadı.");
+    } finally {
+      setImporting(false);
+    }
+  };
 
   const ready = loaded?.boutiqueId === boutiqueId ? loaded : null;
+  // Imported but not switched over yet: the list is shown, not edited.
+  const editable = ready?.mode === "custom";
   const query = search.trim().toLocaleLowerCase("tr");
   const rows = useMemo(() => {
     if (!ready) return [];
@@ -106,7 +129,28 @@ function CategoriesList({ boutiqueId }: { boutiqueId: string }) {
         <p className={panelErrorClass}>{error}</p>
       ) : !ready ? (
         <TrPanelListSkeleton rows={4} label="Kategoriler yükleniyor" />
-      ) : ready.mode !== "custom" ? (
+      ) : ready.mode !== "custom" && ready.importable ? (
+        <TrPanelFadeIn>
+          <div className={panelEmptyClass}>
+            <p className="font-semibold text-neutral-900">
+              Bu butik hazır kategori ağacını kullanıyor.
+            </p>
+            <p className={`mt-1 ${panelHintClass}`}>
+              Hazır ağacı bu butiğin kendi kategorileri olarak içe aktarabilirsiniz;
+              her ürün bugünkü kategorisine bağlanır. Mağaza bu adımla değişmez:
+              kendi kategorilerine geçiş ayrıca yapılır.
+            </p>
+            <button
+              type="button"
+              className={`${panelPrimaryBtnClass} mt-4`}
+              disabled={importing}
+              onClick={() => void runImport()}
+            >
+              {importing ? "Aktarılıyor…" : "Hazır kategorileri içe aktar"}
+            </button>
+          </div>
+        </TrPanelFadeIn>
+      ) : ready.mode !== "custom" && ready.categories.length === 0 ? (
         <TrPanelFadeIn>
           <div className={panelEmptyClass}>
             <p className="font-semibold text-neutral-900">
@@ -137,6 +181,13 @@ function CategoriesList({ boutiqueId }: { boutiqueId: string }) {
         </TrPanelFadeIn>
       ) : (
         <TrPanelFadeIn className="space-y-3" shift={false}>
+          {ready.mode !== "custom" ? (
+            <p className={`rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[14px] text-amber-950`}>
+              Kategoriler içe aktarıldı. Mağaza, kendi kategorilerine geçilene kadar
+              hazır ağacı kullanmaya devam eder; o zamana kadar bu liste yalnızca
+              görüntülenir.
+            </p>
+          ) : null}
           <div className="relative max-w-sm">
             <Search
               className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-neutral-400"
@@ -169,24 +220,35 @@ function CategoriesList({ boutiqueId }: { boutiqueId: string }) {
                   <li
                     key={category.id}
                     onClick={(event) => {
+                      if (!editable) return;
                       if ((event.target as HTMLElement).closest("a")) return;
                       router.push(trPanelEditCategoryPath(category.id));
                     }}
-                    onPointerEnter={() =>
-                      router.prefetch(trPanelEditCategoryPath(category.id))
-                    }
-                    className="grid cursor-pointer grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-0.5 px-4 py-3 transition-colors duration-150 hover:bg-[color:var(--panel-accent-soft)]/60 motion-reduce:transition-none lg:grid-cols-[minmax(0,1fr)_16rem_6rem]"
+                    onPointerEnter={() => {
+                      if (editable) router.prefetch(trPanelEditCategoryPath(category.id));
+                    }}
+                    className={`grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-0.5 px-4 py-3 lg:grid-cols-[minmax(0,1fr)_16rem_6rem] ${
+                      editable
+                        ? "cursor-pointer transition-colors duration-150 hover:bg-[color:var(--panel-accent-soft)]/60 motion-reduce:transition-none"
+                        : ""
+                    }`}
                   >
                     <span
                       className="min-w-0 truncate"
                       style={{ paddingLeft: `${depth * 20}px` }}
                     >
-                      <Link
-                        href={trPanelEditCategoryPath(category.id)}
-                        className="text-[14px] font-semibold text-neutral-900 hover:underline"
-                      >
-                        {category.name}
-                      </Link>
+                      {editable ? (
+                        <Link
+                          href={trPanelEditCategoryPath(category.id)}
+                          className="text-[14px] font-semibold text-neutral-900 hover:underline"
+                        >
+                          {category.name}
+                        </Link>
+                      ) : (
+                        <span className="text-[14px] font-semibold text-neutral-900">
+                          {category.name}
+                        </span>
+                      )}
                     </span>
                     <span className="text-right text-[13px] text-neutral-600 tabular-nums lg:order-3">
                       {category.productCount} ürün
