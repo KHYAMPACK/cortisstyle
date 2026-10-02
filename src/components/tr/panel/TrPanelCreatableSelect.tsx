@@ -347,3 +347,140 @@ export function TrPanelTagsField({
     </div>
   );
 }
+
+/**
+ * One value from a fixed list, as a compact searchable box (Özellikler choice fields).
+ * Focusing it lists every option; typing narrows the list. With `allowCustom` the typed
+ * text can be used as the value too. A stored value outside the list stays shown.
+ */
+export function TrPanelComboboxField({
+  label,
+  value,
+  onChange,
+  options,
+  allowCustom = false,
+  required = false,
+  maxLength,
+  disabled,
+}: {
+  label: string;
+  value: string;
+  onChange: (next: string) => void;
+  options: readonly string[];
+  allowCustom?: boolean;
+  required?: boolean;
+  maxLength?: number;
+  disabled?: boolean;
+}) {
+  const listId = useId();
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [active, setActive] = useState(-1);
+  const wrapper = useRef<HTMLDivElement>(null);
+
+  const needle = key(query.trim());
+  const suggestions = useMemo(
+    () => options.filter((option) => key(option).includes(needle)),
+    [options, needle],
+  );
+  const typed = query.trim();
+  const addLabel =
+    allowCustom && typed && !options.some((option) => key(option) === key(typed))
+      ? `“${typed}” kullan`
+      : undefined;
+  const rowCount = suggestions.length + (addLabel ? 1 : 0);
+  const showList = open && rowCount > 0;
+
+  const close = () => {
+    setOpen(false);
+    setQuery("");
+    setActive(-1);
+  };
+  const pick = (next: string) => {
+    onChange(next);
+    close();
+  };
+  const pickRow = (index: number) => {
+    if (addLabel && index === 0) pick(typed);
+    else pick(suggestions[addLabel ? index - 1 : index]!);
+  };
+
+  const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setOpen(true);
+      setActive((index) => Math.min(index + 1, rowCount - 1));
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setActive((index) => Math.max(index - 1, -1));
+    } else if (event.key === "Enter") {
+      // Never submits the form from here.
+      event.preventDefault();
+      if (showList && active >= 0) pickRow(active);
+      else if (addLabel) pick(typed);
+    } else if (event.key === "Escape" && open) {
+      event.preventDefault();
+      close();
+    }
+  };
+
+  return (
+    <div
+      ref={wrapper}
+      className="relative space-y-2"
+      onBlur={(event) => {
+        if (!wrapper.current?.contains(event.relatedTarget as Node | null)) close();
+      }}
+    >
+      <label className="block space-y-2">
+        <span className="text-[14px] font-medium text-neutral-700">
+          {label}
+          {required ? <span className="text-[color:var(--panel-accent)]"> *</span> : null}
+        </span>
+        <div className="relative">
+          <input
+            value={open ? query : value}
+            disabled={disabled}
+            maxLength={maxLength}
+            placeholder={open && value ? value : "Seçin"}
+            role="combobox"
+            aria-expanded={showList}
+            aria-controls={listId}
+            aria-autocomplete="list"
+            aria-activedescendant={showList && active >= 0 ? `${listId}-${active}` : undefined}
+            autoComplete="off"
+            onChange={(event) => {
+              setQuery(event.target.value);
+              setOpen(true);
+              setActive(-1);
+            }}
+            onFocus={() => setOpen(true)}
+            onKeyDown={onKeyDown}
+            className={`${panelFieldClass} pr-9`}
+          />
+          {value && !disabled ? (
+            <button
+              type="button"
+              aria-label={`${label} seçimini temizle`}
+              // Keep focus handling simple: clearing doesn't open the list.
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => pick("")}
+              className="absolute top-1/2 right-2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700"
+            >
+              <X className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
+            </button>
+          ) : null}
+        </div>
+      </label>
+      {showList ? (
+        <SuggestionList
+          id={listId}
+          suggestions={suggestions}
+          activeIndex={active}
+          onPick={(row) => pick(row === "" && addLabel ? typed : row)}
+          addLabel={addLabel}
+        />
+      ) : null}
+    </div>
+  );
+}

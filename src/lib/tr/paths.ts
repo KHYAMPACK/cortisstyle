@@ -148,7 +148,12 @@ export function trPanelNewProductPath(): string {
   return "/tr/panel/urun/yeni";
 }
 
-/** A product with variants (staff only until the shop can sell them). */
+/** A Basit ürün: one price, the size table or one stock count. */
+export function trPanelNewSimpleProductPath(): string {
+  return "/tr/panel/urun/yeni/basit";
+}
+
+/** A Gelişmiş ürün: variants (staff only until the shop can sell them). */
 export function trPanelNewAdvancedProductPath(): string {
   return "/tr/panel/urun/yeni/gelismis";
 }

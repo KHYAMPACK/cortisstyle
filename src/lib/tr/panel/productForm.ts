@@ -132,14 +132,13 @@ export interface ProductFormState {
 export function emptyProductForm(
   categories: TrProductCategories | null = null,
   productType: "simple" | "advanced" = "simple",
-  start: { kindId?: string | null; sizeChart?: string } = {},
 ): ProductFormState {
   return {
     productType,
-    kindId: start.kindId ?? null,
+    kindId: null,
     savedKindId: null,
     features: {},
-    sizeChart: start.sizeChart ?? NO_SIZE_SOURCE,
+    sizeChart: NO_SIZE_SOURCE,
     sizeStockInputs: {},
     generatedGallery: null,
     galleryConverted: false,

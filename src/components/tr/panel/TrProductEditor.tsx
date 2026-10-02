@@ -13,6 +13,7 @@ import {
   TrPanelEditorTabs,
 } from "@/components/tr/panel/TrPanelEditor";
 import { TrPanelCategoryPicker } from "@/components/tr/panel/TrPanelCategoryPicker";
+import { TrPanelKindPicker } from "@/components/tr/panel/TrPanelKindPicker";
 import {
   TrPanelCreatableSelect,
   TrPanelTagsField,
@@ -58,7 +59,7 @@ import {
   validateProductForm,
   type ProductFormState,
 } from "@/lib/tr/panel/productForm";
-import { trPanelProductKindsPath, trPanelSettingsPath } from "@/lib/tr/paths";
+import { trPanelSettingsPath } from "@/lib/tr/paths";
 import { missingRequiredField } from "@/lib/tr/productKinds/featureValues";
 import type { TrAttributeDefinition, TrProductKind } from "@/lib/tr/productKinds/types";
 import { findSizeSource, NO_SIZE_SOURCE, type TrSizeSource } from "@/lib/tr/sizeSources";
@@ -99,6 +100,7 @@ function editorTabs(options: { variants: boolean; attributes: boolean }) {
     { id: "editor-temel", label: "Temel bilgi" },
     { id: "editor-medya", label: "Medya" },
     ...(options.variants ? [{ id: "editor-varyant", label: "Varyant" }] : []),
+    { id: "editor-tur", label: "Ürün türü" },
     ...(options.attributes ? [{ id: "editor-ozellikler", label: "Özellikler" }] : []),
     { id: "editor-detay", label: "Ürün detayı" },
     { id: "editor-envanter", label: "Envanter" },
@@ -190,8 +192,6 @@ type ProductEditorProps = {
   productType?: "simple" | "advanced";
   /** A Gelişmiş product's saved option types and variants (edit). */
   initialVariants?: TrProductVariants;
-  /** The kind a new product starts as (picked before the editor opens). */
-  initialKindId?: string | null;
   onCreated?: (product: TrProduct, warning?: string) => void;
   onSaved?: (product: TrProduct) => void;
   onDeleted?: () => void;
@@ -199,9 +199,9 @@ type ProductEditorProps = {
 
 /**
  * The product editor: every product, create and edit (foundation plan F3). Its kind
- * (Tür) decides the Özellikler fields; categories, photos, prices, stock and SEO are the
- * same for all. Stock is per variant for a product with variants, else the size table
- * (sizes, or one count). Saving is explicit (Kaydet in the top bar) and leaving with
+ * (Ürün türü card, picked like categories) decides the Özellikler fields; categories,
+ * photos, prices, stock and SEO are the same for all. Stock is per variant for a product
+ * with variants, else the size table (sizes, or one count). Saving is explicit (Kaydet in the top bar) and leaving with
  * unsaved edits asks first.
  *
  * The form reads the product against the boutique's size types and kinds, so it opens
@@ -233,7 +233,6 @@ function ProductEditorForm({
   initialCategories,
   productType = "simple",
   initialVariants,
-  initialKindId = null,
   onCreated,
   onSaved,
   onDeleted,
@@ -258,16 +257,8 @@ function ProductEditorForm({
         sizeSources,
       );
     }
-    // A new product starts from its kind: suggested category, first size type.
-    const kind = kinds.find((entry) => entry.id === initialKindId) ?? null;
-    const sizeChart =
-      kind?.defaultOptionTypeIds.find((id) => findSizeSource(sizeSources, id)) ??
-      NO_SIZE_SOURCE;
-    const suggested =
-      kind?.suggestedCategoryId && own.ids.length === 0
-        ? { ids: [kind.suggestedCategoryId], primaryId: kind.suggestedCategoryId }
-        : own;
-    return emptyProductForm(suggested, productType, { kindId: kind?.id ?? null, sizeChart });
+    // A new product takes its kind's suggestions when the kind is picked (`changeKind`).
+    return emptyProductForm(own, productType);
   });
   const [baseline, setBaseline] = useState(() => JSON.stringify(form));
   // The rich-text field owns its content after the first load.
@@ -371,6 +362,29 @@ function ProductEditorForm({
     });
   };
 
+  /**
+   * Picks the product's kind. A new product also takes the kind's suggestions where it
+   * has nothing yet: its category, and the size table of its first size type.
+   */
+  const changeKind = (kindId: string | null) => {
+    const next = kinds.find((entry) => entry.id === kindId) ?? null;
+    setForm((current) => {
+      const patch: Partial<ProductFormState> = { kindId };
+      if (!product && next) {
+        const noCategory = !current.categories || current.categories.ids.length === 0;
+        if (noCategory && next.suggestedCategoryId) {
+          patch.categories = { ids: [next.suggestedCategoryId], primaryId: next.suggestedCategoryId };
+        }
+        const sizeType = next.defaultOptionTypeIds.find((id) => findSizeSource(sizeSources, id));
+        if (sizeType && current.sizeChart === NO_SIZE_SOURCE && current.variants.rows.length === 0) {
+          patch.sizeChart = sizeType;
+          patch.sizeStockInputs = {};
+        }
+      }
+      return { ...current, ...patch };
+    });
+  };
+
   /** An AI-made gallery becomes a plain list, in the shop's order (saved with Kaydet). */
   const editGeneratedPhotos = () => {
     if (!form.generatedGallery) return;
@@ -441,42 +455,11 @@ function ProductEditorForm({
           title="Temel bilgi"
           hint="Mağazada görünen ad, fiyat ve satış durumu."
         >
-          <TrPanelProductTitleField
-            value={form.title}
-            onChange={(title) => change({ title })}
-          />
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="block space-y-2">
-              <span className={panelLabelClass}>Ürün türü</span>
-              {kinds.length > 0 ? (
-                <select
-                  value={form.kindId ?? ""}
-                  onChange={(event) => change({ kindId: event.target.value || null })}
-                  className={panelFieldClass}
-                >
-                  <option value="">Türü yok</option>
-                  {kinds.map((entry) => (
-                    <option key={entry.id} value={entry.id}>
-                      {entry.name}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <p className={panelHintClass}>
-                  Henüz ürün türü yok.{" "}
-                  <Link
-                    href={trPanelProductKindsPath()}
-                    className="font-semibold text-[color:var(--panel-accent-deep)] hover:underline"
-                  >
-                    Ürün türleri
-                  </Link>
-                </p>
-              )}
-              <span className={`block ${panelHintClass}`}>
-                Özellikler kartındaki alanları belirler. Değiştirmek kayıtlı bilgileri
-                silmez.
-              </span>
-            </label>
+          <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_14rem]">
+            <TrPanelProductTitleField
+              value={form.title}
+              onChange={(title) => change({ title })}
+            />
             <label className="block space-y-2">
               <span className={panelLabelClass}>
                 Teslimat
@@ -640,11 +623,25 @@ function ProductEditorForm({
           </TrPanelEditorCard>
         ) : null}
 
+        <TrPanelEditorCard
+          id="editor-tur"
+          title="Ürün türü"
+          hint="Ürünün ne olduğu (Elbise, Pantolon…): Özellikler kartındaki alanları belirler."
+        >
+          <TrPanelKindPicker
+            kinds={kinds}
+            value={form.kindId}
+            onChange={changeKind}
+            disabled={saving}
+          />
+        </TrPanelEditorCard>
+
         {kind && showAttributes ? (
           <TrPanelEditorCard
             id="editor-ozellikler"
             title="Özellikler"
             hint={`${kind.name} türünün alanları; ürün sayfasında “Ürün özellikleri” olarak görünür.`}
+            allowOverflow
           >
             <TrProductAttributesFields
               kind={kind}
