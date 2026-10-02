@@ -1,5 +1,6 @@
 "use client";
 
+import { TrPanelBusyButton } from "@/components/tr/panel/TrPanelBusyButton";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -884,14 +885,14 @@ function ProductList({ boutiqueId }: { boutiqueId: string }) {
                       <span className="text-[12px] font-medium text-red-800">
                         {selection.selectedCount} ürün silinsin mi?
                       </span>
-                      <button
-                        type="button"
-                        disabled={bulkBusy}
+                      <TrPanelBusyButton
+                        busy={bulkBusy}
+                        busyLabel="Siliniyor…"
                         className={panelDesktopDangerBtnClass}
                         onClick={() => void runBulkDelete()}
                       >
                         Evet, sil
-                      </button>
+                      </TrPanelBusyButton>
                       <button
                         type="button"
                         disabled={bulkBusy}

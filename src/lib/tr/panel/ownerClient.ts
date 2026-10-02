@@ -1,3 +1,4 @@
+import { beginPanelTask, panelRequestLabel, trackPanelTask } from "@/lib/tr/panel/panelBusy";
 import { getSupabaseClient } from "@/lib/supabaseClient";
 import type { SizeRenameOffer } from "@/lib/tr/variants/sizeRenames";
 import { prepareOwnerUploadFile } from "@/lib/tr/prepareOwnerUploadFile";
@@ -83,22 +84,36 @@ async function getAccessToken(): Promise<string | null> {
   return session?.access_token ?? null;
 }
 
+/**
+ * Every owner API call. A request that changes something (POST, PATCH, PUT, DELETE)
+ * shows in the panel's shared busy indicator while it runs; `busyLabel` names it more
+ * precisely, or `false` keeps a background call out of it. Reads stay silent (pages
+ * show their own skeletons).
+ */
 async function ownerFetch(
   path: string,
   init?: RequestInit,
+  options: { busyLabel?: string | false } = {},
 ): Promise<Response> {
-  const token = await getAccessToken();
-  if (!token) {
-    throw new Error("Oturum gerekli.");
-  }
+  const label =
+    options.busyLabel === false ? null : (options.busyLabel ?? panelRequestLabel(init?.method));
+  const end = label ? beginPanelTask(label) : null;
+  try {
+    const token = await getAccessToken();
+    if (!token) {
+      throw new Error("Oturum gerekli.");
+    }
 
-  const headers = new Headers(init?.headers);
-  headers.set("Authorization", `Bearer ${token}`);
-  if (init?.body && !(init.body instanceof FormData) && !headers.has("Content-Type")) {
-    headers.set("Content-Type", "application/json");
-  }
+    const headers = new Headers(init?.headers);
+    headers.set("Authorization", `Bearer ${token}`);
+    if (init?.body && !(init.body instanceof FormData) && !headers.has("Content-Type")) {
+      headers.set("Content-Type", "application/json");
+    }
 
-  return fetch(path, { ...init, headers });
+    return await fetch(path, { ...init, headers });
+  } finally {
+    end?.();
+  }
 }
 
 async function parseOwnerJson(response: Response): Promise<unknown> {
@@ -960,15 +975,24 @@ export async function uploadOwnerProductImage(
   boutiqueId: string,
   file: File,
 ): Promise<OwnerProductImageUploadResult> {
+  // Shown from the start: preparing (resizing) a photo can take a moment too.
+  return trackPanelTask("Fotoğraf yükleniyor…", () => uploadProductImage(boutiqueId, file));
+}
+
+async function uploadProductImage(
+  boutiqueId: string,
+  file: File,
+): Promise<OwnerProductImageUploadResult> {
   const prepared = await prepareOwnerUploadFile(file);
   const formData = new FormData();
   formData.set("boutiqueId", boutiqueId);
   formData.set("file", prepared);
 
-  const response = await ownerFetch("/api/tr/owner/upload", {
-    method: "POST",
-    body: formData,
-  });
+  const response = await ownerFetch(
+    "/api/tr/owner/upload",
+    { method: "POST", body: formData },
+    { busyLabel: false },
+  );
 
   if (response.status === 413) {
     throw new Error(

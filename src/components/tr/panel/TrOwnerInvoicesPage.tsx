@@ -1,5 +1,6 @@
 "use client";
 
+import { TrPanelBusyButton } from "@/components/tr/panel/TrPanelBusyButton";
 import { TrPanelLink as Link } from "@/components/tr/panel/TrPanelLink";
 import { useEffect, useState } from "react";
 import { TrOwnerPanelGate } from "@/components/tr/panel/TrOwnerPanelGate";
@@ -37,6 +38,8 @@ function InvoicesList({ boutiqueId }: { boutiqueId: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  // Which button of the row is running, for its spinner.
+  const [busyAction, setBusyAction] = useState<string | null>(null);
   const [draftNos, setDraftNos] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -81,8 +84,10 @@ function InvoicesList({ boutiqueId }: { boutiqueId: string }) {
       status?: TrInvoiceStatus;
       externalInvoiceNo?: string | null;
     },
+    action: string,
   ) => {
     setBusyId(invoice.id);
+    setBusyAction(action);
     setError(null);
     try {
       const updated = await updateOwnerInvoice(invoice.id, {
@@ -100,6 +105,7 @@ function InvoicesList({ boutiqueId }: { boutiqueId: string }) {
       );
     } finally {
       setBusyId(null);
+      setBusyAction(null);
     }
   };
 
@@ -168,42 +174,49 @@ function InvoicesList({ boutiqueId }: { boutiqueId: string }) {
                   />
                 </label>
                 <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
+                  <TrPanelBusyButton
+                    busy={busyId === invoice.id && busyAction === "issue"}
+                    busyLabel="Kaydediliyor…"
                     disabled={busyId === invoice.id}
                     onClick={() =>
-                      void patchInvoice(invoice, {
-                        externalInvoiceNo: draftNos[invoice.id] ?? "",
-                        status: "issued_offline",
-                      })
+                      void patchInvoice(
+                        invoice,
+                        {
+                          externalInvoiceNo: draftNos[invoice.id] ?? "",
+                          status: "issued_offline",
+                        },
+                        "issue",
+                      )
                     }
                     className="border border-black/15 bg-neutral-950 px-3 py-2 text-[11px] tracking-[0.12em] text-white uppercase disabled:opacity-50"
                   >
                     Kesildi olarak işaretle
-                  </button>
+                  </TrPanelBusyButton>
                   {invoice.status !== "void" ? (
-                    <button
-                      type="button"
+                    <TrPanelBusyButton
+                      busy={busyId === invoice.id && busyAction === "void"}
+                      busyLabel="İptal ediliyor…"
                       disabled={busyId === invoice.id}
                       onClick={() =>
-                        void patchInvoice(invoice, { status: "void" })
+                        void patchInvoice(invoice, { status: "void" }, "void")
                       }
                       className="border border-black/15 px-3 py-2 text-[11px] tracking-[0.12em] uppercase disabled:opacity-50"
                     >
                       İptal
-                    </button>
+                    </TrPanelBusyButton>
                   ) : null}
                   {invoice.status === "void" ? (
-                    <button
-                      type="button"
+                    <TrPanelBusyButton
+                      busy={busyId === invoice.id && busyAction === "draft"}
+                      busyLabel="Kaydediliyor…"
                       disabled={busyId === invoice.id}
                       onClick={() =>
-                        void patchInvoice(invoice, { status: "draft" })
+                        void patchInvoice(invoice, { status: "draft" }, "draft")
                       }
                       className="border border-black/15 px-3 py-2 text-[11px] tracking-[0.12em] uppercase disabled:opacity-50"
                     >
                       Taslağa al
-                    </button>
+                    </TrPanelBusyButton>
                   ) : null}
                 </div>
               </div>

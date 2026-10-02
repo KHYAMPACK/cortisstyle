@@ -1,5 +1,6 @@
 "use client";
 
+import { TrPanelBusyButton } from "@/components/tr/panel/TrPanelBusyButton";
 import { TrPanelLink as Link } from "@/components/tr/panel/TrPanelLink";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
@@ -169,8 +170,10 @@ function ProductSalesList({ boutiqueId }: { boutiqueId: string }) {
       product.compareAtPriceKurus > product.priceKurus,
   );
 
+  const [clearingId, setClearingId] = useState<string | null>(null);
   const clearSale = async (product: TrProduct) => {
     setSaving(true);
+    setClearingId(product.id);
     setError(null);
     try {
       await updateOwnerProduct(product.id, { compareAtPriceTry: null });
@@ -180,6 +183,7 @@ function ProductSalesList({ boutiqueId }: { boutiqueId: string }) {
       setError(saveError instanceof Error ? saveError.message : "İndirim kaldırılamadı.");
     } finally {
       setSaving(false);
+      setClearingId(null);
     }
   };
 
@@ -214,14 +218,15 @@ function ProductSalesList({ boutiqueId }: { boutiqueId: string }) {
                     ) : null}
                   </p>
                 </Link>
-                <button
-                  type="button"
+                <TrPanelBusyButton
+                  busy={clearingId === product.id}
+                  busyLabel="Kaldırılıyor…"
                   disabled={saving}
                   onClick={() => void clearSale(product)}
                   className={panelSecondaryBtnClass}
                 >
                   İndirimi kaldır
-                </button>
+                </TrPanelBusyButton>
               </div>
             </motion.div>
           ))}

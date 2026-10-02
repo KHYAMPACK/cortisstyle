@@ -12,6 +12,7 @@ import {
   type ReactNode,
 } from "react";
 import { AuthPopup } from "@/components/AuthPopup";
+import { TrPanelBusyIndicator } from "@/components/tr/panel/TrPanelBusyIndicator";
 import { TrPanelToaster } from "@/components/tr/panel/TrPanelToaster";
 import {
   TrOwnerLeaveGuardProvider,
@@ -78,6 +79,7 @@ export function TrPanelShell({ children }: { children: ReactNode }) {
   return (
     <TrOwnerLeaveGuardProvider>
       <TrPanelShellBody>{children}</TrPanelShellBody>
+      <TrPanelBusyIndicator />
       <TrPanelToaster />
     </TrOwnerLeaveGuardProvider>
   );

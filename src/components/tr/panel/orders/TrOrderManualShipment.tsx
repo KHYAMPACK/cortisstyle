@@ -12,6 +12,7 @@ import {
   panelPrimaryBtnClass,
   panelSecondaryBtnClass,
 } from "@/components/tr/panel/panelUi";
+import { TrPanelBusyButton } from "@/components/tr/panel/TrPanelBusyButton";
 import { TrPanelDrawer } from "@/components/tr/panel/TrPanelDrawer";
 import { toast } from "@/lib/tr/panel/toast";
 import { saveOwnerManualShipment } from "@/lib/tr/ownerClient";
@@ -48,6 +49,8 @@ export function TrOrderManualShipment({
   const savedTracking = shipment.trackingCode ?? "";
 
   const [open, setOpen] = useState(false);
+  // The status button last pressed, for its spinner while `busy`.
+  const [requested, setRequested] = useState<string | null>(null);
   const [carrier, setCarrier] = useState("");
   const [tracking, setTracking] = useState("");
   const [saving, setSaving] = useState(false);
@@ -119,27 +122,35 @@ export function TrOrderManualShipment({
               Kargoya ver
             </button>
             {status === "created" ? (
-              <button
-                type="button"
-                onClick={() => onStatus("ready")}
+              <TrPanelBusyButton
+                busy={busy && requested === "ready"}
+                busyLabel="Kaydediliyor…"
+                onClick={() => {
+                  setRequested("ready");
+                  onStatus("ready");
+                }}
                 disabled={busy}
                 className={panelSecondaryBtnClass}
               >
                 Kargoya hazır
-              </button>
+              </TrPanelBusyButton>
             ) : null}
           </>
         ) : null}
         {status === "shipped" ? (
           <>
-            <button
-              type="button"
-              onClick={() => onStatus("delivered")}
+            <TrPanelBusyButton
+              busy={busy && requested === "delivered"}
+              busyLabel="Kaydediliyor…"
+              onClick={() => {
+                setRequested("delivered");
+                onStatus("delivered");
+              }}
               disabled={busy}
               className={panelPrimaryBtnClass}
             >
               Teslim edildi
-            </button>
+            </TrPanelBusyButton>
             <button
               type="button"
               onClick={openDrawer}

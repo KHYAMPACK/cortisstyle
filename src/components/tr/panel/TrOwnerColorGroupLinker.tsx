@@ -1,5 +1,6 @@
 "use client";
 
+import { TrPanelBusyButton } from "@/components/tr/panel/TrPanelBusyButton";
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -36,6 +37,8 @@ export function TrOwnerColorGroupLinker({
   const [query, setQuery] = useState("");
   const [pickerOpen, setPickerOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  // The button last pressed, for its spinner while `busy`.
+  const [pressed, setPressed] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -143,18 +146,18 @@ export function TrOwnerColorGroupLinker({
                   ) : null}
                 </span>
                 {current ? null : (
-                  <button
-                    type="button"
+                  <TrPanelBusyButton
                     className={`${panelSecondaryBtnClass} min-h-11 px-3 text-[13px]`}
+                    busy={busy && pressed === `remove:${sibling.id}`}
+                    busyLabel="Kaldırılıyor…"
                     disabled={busy}
-                    onClick={() =>
-                      void applyMembers(
-                        siblingIds.filter((id) => id !== sibling.id),
-                      )
-                    }
+                    onClick={() => {
+                      setPressed(`remove:${sibling.id}`);
+                      void applyMembers(siblingIds.filter((id) => id !== sibling.id));
+                    }}
                   >
                     Kaldır
-                  </button>
+                  </TrPanelBusyButton>
                 )}
               </li>
             );
@@ -165,14 +168,18 @@ export function TrOwnerColorGroupLinker({
       )}
 
       {grouped ? (
-        <button
-          type="button"
+        <TrPanelBusyButton
           className={panelSecondaryBtnClass}
+          busy={busy && pressed === "remove-all"}
+          busyLabel="Kaldırılıyor…"
           disabled={busy}
-          onClick={() => void applyMembers([product.id])}
+          onClick={() => {
+            setPressed("remove-all");
+            void applyMembers([product.id]);
+          }}
         >
           Tüm bağlantıları kaldır
-        </button>
+        </TrPanelBusyButton>
       ) : null}
 
       {canAdd ? (

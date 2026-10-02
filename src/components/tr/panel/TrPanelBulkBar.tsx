@@ -1,5 +1,6 @@
 "use client";
 
+import { TrPanelBusySpinner } from "@/components/tr/panel/TrPanelMotion";
 import type { ReactNode } from "react";
 import { panelDesktopSecondaryBtnClass } from "@/components/tr/panel/panelDesktopUi";
 
@@ -20,9 +21,13 @@ export function TrPanelBulkBar({
 
   return (
     <div className="sticky bottom-4 z-20 flex flex-wrap items-center gap-3 rounded-xl border border-[color:var(--panel-accent-border)] bg-white px-4 py-3 shadow-lg">
-      <p className="text-[13px] font-semibold text-neutral-800">
+      <p className="inline-flex items-center gap-2 text-[13px] font-semibold text-neutral-800">
         {selectedCount} seçili
-        {busy ? " · kaydediliyor…" : null}
+        {busy ? (
+          <span className="inline-flex items-center gap-1.5 font-medium text-neutral-600">
+            · <TrPanelBusySpinner className="h-3.5 w-3.5 rounded-full" /> Kaydediliyor…
+          </span>
+        ) : null}
       </p>
       <div className="flex flex-wrap items-center gap-2">{children}</div>
       <button

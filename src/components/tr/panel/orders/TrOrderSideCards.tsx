@@ -1,5 +1,6 @@
 "use client";
 
+import { TrPanelBusyButton } from "@/components/tr/panel/TrPanelBusyButton";
 import NextLink from "next/link";
 import { PenLine, Store } from "lucide-react";
 import { formatOrderDateLong } from "@/components/tr/panel/orderFulfillmentUi";
@@ -157,14 +158,14 @@ export function TrOrderPaymentCard({
               ? "Bu siparişi siz oluşturdunuz. Ödemeyi elden, havale ya da başka bir yolla aldığınızda “Ödendi” işaretleyin; sonra paketleyin."
               : "Kart ödemesi açık değil. Havale / WhatsApp ile tahsil ettiğinizde “Ödendi” işaretleyin; sonra paketleyin."}
           </p>
-          <button
-            type="button"
-            disabled={busy}
+          <TrPanelBusyButton
+            busy={busy}
+            busyLabel="Kaydediliyor…"
             onClick={onMarkPaid}
             className={`${panelSecondaryBtnClass} w-full`}
           >
             Ödendi olarak işaretle
-          </button>
+          </TrPanelBusyButton>
         </div>
       ) : null}
     </section>

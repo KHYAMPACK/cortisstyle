@@ -1,5 +1,6 @@
 "use client";
 
+import { TrPanelBusyButton } from "@/components/tr/panel/TrPanelBusyButton";
 import { motion } from "framer-motion";
 import { useState } from "react";
 import {
@@ -74,6 +75,8 @@ export function TrOwnerShipmentSection({
   onOrder: (order: TrOrderWithItems) => void;
 }) {
   const [busy, setBusy] = useState(false);
+  // Which carrier call is running, for that button's spinner.
+  const [busyAction, setBusyAction] = useState<"fulfill" | "cancel" | "label" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [trackingPath, setTrackingPath] = useState<string | null>(null);
   const [whatsappConfirmed, setWhatsappConfirmed] = useState(false);
@@ -117,9 +120,13 @@ export function TrOwnerShipmentSection({
     draft.postalCode !== order.shippingAddress.postalCode;
 
   /** Runs a carrier call; returns whether it worked (failures land in `error`). */
-  const run = async (fn: () => Promise<void>): Promise<boolean> => {
+  const run = async (
+    fn: () => Promise<void>,
+    action: "fulfill" | "cancel" | "label" | null = null,
+  ): Promise<boolean> => {
     if (busy) return false;
     setBusy(true);
+    setBusyAction(action);
     setError(null);
     try {
       await fn();
@@ -129,6 +136,7 @@ export function TrOwnerShipmentSection({
       return false;
     } finally {
       setBusy(false);
+      setBusyAction(null);
     }
   };
 
@@ -142,13 +150,13 @@ export function TrOwnerShipmentSection({
           result.order.shipment.lastError ?? "Etiket üretilemedi.",
         );
       }
-    });
+    }, "fulfill");
 
   const cancel = () =>
     void run(async () => {
       const result = await cancelOwnerShipmentBarcode(boutiqueId, order.id);
       onOrder(result.order);
-    });
+    }, "cancel");
 
   const printLabel = () =>
     void run(async () => {
@@ -161,7 +169,7 @@ export function TrOwnerShipmentSection({
         }
         throw err;
       }
-    });
+    }, "label");
 
   const openAddressDrawer = () => {
     // Every open starts from the address on the order, not from abandoned edits.
@@ -278,24 +286,26 @@ export function TrOwnerShipmentSection({
 
           {hasBarcode ? (
             <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
+              <TrPanelBusyButton
+                busy={busyAction === "label"}
+                busyLabel="Açılıyor…"
                 disabled={busy}
                 onClick={printLabel}
                 className={panelPrimaryBtnClass}
               >
-                {busy ? "Açılıyor…" : "Etiket yazdır"}
-              </button>
+                Etiket yazdır
+              </TrPanelBusyButton>
               {shipment.status === "READY_TO_SHIP" ||
               shipment.status === "NEW" ? (
-                <button
-                  type="button"
+                <TrPanelBusyButton
+                  busy={busyAction === "cancel"}
+                  busyLabel="İptal ediliyor…"
                   disabled={busy}
                   onClick={cancel}
                   className={panelSecondaryBtnClass}
                 >
                   Kargo kodunu iptal et
-                </button>
+                </TrPanelBusyButton>
               ) : null}
             </div>
           ) : addressRejected && retryUsed ? (
@@ -341,24 +351,26 @@ export function TrOwnerShipmentSection({
                     ? "Bakiyeyi yükleyip tekrar deneyin. Bu bir adres hatası değil."
                     : "Adres değiştirmeyin; önce kargo hesabını kontrol edin.")}
               </p>
-              <button
-                type="button"
+              <TrPanelBusyButton
+                busy={busyAction === "fulfill"}
+                busyLabel="Hazırlanıyor…"
                 disabled={busy}
                 onClick={fulfill}
                 className={panelPrimaryBtnClass}
               >
-                {busy ? "Hazırlanıyor…" : "Etiket hazırla"}
-              </button>
+                Etiket hazırla
+              </TrPanelBusyButton>
             </div>
           ) : (
-            <button
-              type="button"
+            <TrPanelBusyButton
+              busy={busyAction === "fulfill"}
+              busyLabel="Hazırlanıyor…"
               disabled={busy}
               onClick={fulfill}
               className={panelPrimaryBtnClass}
             >
-              {busy ? "Hazırlanıyor…" : "Etiket hazırla"}
-            </button>
+              Etiket hazırla
+            </TrPanelBusyButton>
           )}
 
           {trackingPath ? (
